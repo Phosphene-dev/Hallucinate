@@ -196,6 +196,9 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     assert QMetaObject.invokeMethod(window, "openArtist", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "Someone"))
     qapp.processEvents()
     assert window.findChild(QObject, "artistListening") is not None
+    assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "recap"))
+    qapp.processEvents()
+    assert window.findChild(QObject, "recapCard") is not None
     # Library health and the command palette
     assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "health"))
     qapp.processEvents()
