@@ -8,6 +8,7 @@ from PySide6.QtCore import Property, QFileSystemWatcher, QObject, QTimer, QUrl, 
 
 from .core import albums as album_views
 from .core import artists as artist_views
+from .core import folders as folder_views
 from .core import health as health_checks
 from .core.db import Database, fold
 from .core.radio import radio_tracks
@@ -680,6 +681,33 @@ class Library(QObject):
         self._debounce.start()
 
     # --- album views: liner notes, colour wall, timeline ------------------------------------
+    @Slot(str, result="QVariantMap")
+    def folderContents(self, path):
+        """One folder of the library (see core.folders.contents); "" lists the library folders."""
+        try:
+            data = folder_views.contents(self._db, path, self._db.folders())
+        except Exception:  # noqa: BLE001
+            logger.exception("Folder listing failed")
+            return {"path": path, "folders": [], "tracks": [], "crumbs": []}
+        for f in data["folders"]:
+            f["artUrl"] = QUrl.fromLocalFile(f["art"]).toString() if f["art"] else ""
+            f["durText"] = fmt_duration(f["duration"])
+        decorate(data["tracks"])
+        return data
+
+    @Slot(str, bool)
+    def playFolder(self, path, shuffle=False):
+        """Play a folder and everything below it, folder by folder."""
+        tracks = decorate(folder_views.tracks_below(self._db, path))
+        if shuffle and tracks and self._player is not None:
+            self._player.setShuffle(True)
+        self._play(tracks, random.randrange(len(tracks)) if shuffle and tracks else 0)
+
+    @Slot(str)
+    def enqueueFolder(self, path):
+        if self._player is not None:
+            self._player.enqueueAll(decorate(folder_views.tracks_below(self._db, path)))
+
     @Slot(str, result="QVariantMap")
     def artistProfile(self, name):
         """Facts, your listening, most played songs, discography by year and "appears on" for an artist page."""

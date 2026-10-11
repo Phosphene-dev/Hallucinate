@@ -38,6 +38,7 @@ ApplicationWindow {
         case "history": return historyPage
         case "health": return healthPage
         case "recap": return recapPage
+        case "folders": return foldersPage
         case "visualizer": return visualizerPage
         case "settings": return settingsPage
         case "liked": return likedPage
@@ -78,6 +79,7 @@ ApplicationWindow {
     Component { id: historyPage; HistoryPage {} }
     Component { id: healthPage; HealthPage {} }
     Component { id: recapPage; RecapPage {} }
+    Component { id: foldersPage; FoldersPage {} }
     Component { id: visualizerPage; VisualizerPage {} }
     Component { id: settingsPage; SettingsPage {} }
     Component { id: likedPage; PlaylistPage { liked: true } }
@@ -137,7 +139,7 @@ ApplicationWindow {
         }
     }
 
-    TrackMenu { id: trackMenu }
+    TrackMenu { id: trackMenu; objectName: "trackMenu" }
     CommandPalette { id: commandPalette; win: window }
 
     // Playlist files
