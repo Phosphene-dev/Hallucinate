@@ -245,8 +245,9 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     qapp.processEvents()
     assert now_playing.property("open")
     now_playing.setProperty("lyricsMode", True)
-    qapp.processEvents()
-    assert window.findChild(QObject, "nowPlayingLyrics").property("visible")
+    # the view fades in, and its children count as visible from the first animation tick
+    lyrics = window.findChild(QObject, "nowPlayingLyrics")
+    assert wait_for(lambda: lyrics.property("visible"))
     now_playing.setProperty("lyricsMode", False)
     shell.setNowPlayingVinyl(True)
     qapp.processEvents()
