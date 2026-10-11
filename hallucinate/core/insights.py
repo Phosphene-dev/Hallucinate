@@ -67,20 +67,22 @@ def on_this_day(db, now=None, window_days=3, limit=12):
     """Albums you listened to around today's date in earlier years, most recent year first."""
     now = time.time() if now is None else now
     today = datetime.date.fromtimestamp(now)
-    rows = db._rows(
-        "SELECT l.ts AS ts, t.album_key AS album_key FROM play_log l JOIN tracks t ON t.path = l.path "
-        "WHERE l.ts < ?",
-        (now - 300 * DAY,),
+    # Month-day labels around today; a 29 February listen counts as 28 February in other years
+    days = {(today + datetime.timedelta(days=d)).strftime("%m-%d") for d in range(-window_days, window_days + 1)}
+    if "02-28" in days:
+        days.add("02-29")
+    marks = ",".join("?" * len(days))
+    rows = db.conn.execute(
+        f"""SELECT t.album_key AS album_key, CAST(strftime('%Y', l.ts, 'unixepoch', 'localtime') AS INTEGER) AS played_year
+            FROM play_log l JOIN tracks t ON t.path = l.path
+            WHERE l.ts < ? AND strftime('%m-%d', l.ts, 'unixepoch', 'localtime') IN ({marks})
+            GROUP BY t.album_key, played_year""",
+        (now - 300 * DAY, *sorted(days)),
     )
     years = {}
     for r in rows:
-        day = datetime.date.fromtimestamp(r["ts"])
-        try:
-            same_day = day.replace(year=today.year)
-        except ValueError:  # 29 February
-            same_day = day.replace(year=today.year, day=28)
-        if day.year < today.year and abs((same_day - today).days) <= window_days:
-            years.setdefault(r["album_key"], set()).add(day.year)
+        if r["played_year"] < today.year:
+            years.setdefault(r["album_key"], set()).add(r["played_year"])
     if not years:
         return []
     keys = sorted(years, key=lambda k: (-max(years[k]), k))[:limit]

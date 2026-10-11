@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS play_log(
   id INTEGER PRIMARY KEY, ts REAL NOT NULL, path TEXT, artist TEXT NOT NULL DEFAULT '',
   title TEXT NOT NULL DEFAULT '', album TEXT NOT NULL DEFAULT '', duration REAL NOT NULL DEFAULT 0,
   source TEXT NOT NULL DEFAULT 'local',
+  s_artist TEXT NOT NULL DEFAULT '', s_title TEXT NOT NULL DEFAULT '', s_album TEXT NOT NULL DEFAULT '',
   UNIQUE(ts, artist, title));
 CREATE INDEX IF NOT EXISTS idx_play_log_ts ON play_log(ts);
 CREATE TABLE IF NOT EXISTS album_colors(album_key TEXT PRIMARY KEY, art TEXT NOT NULL, color TEXT NOT NULL,
@@ -100,6 +101,7 @@ class Database:
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_stitle ON tracks(s_title)")
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_saa ON tracks(s_aa)")
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_sartist ON tracks(s_artist)")
+        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_play_log_sartist ON play_log(s_artist)")
         try:
             self.conn.execute(FTS)
             self.has_fts = True
@@ -142,6 +144,11 @@ class Database:
                      (SELECT duration FROM tracks WHERE tracks.path=play_log.path), 0)
                    WHERE duration=0 AND path IS NOT NULL"""
             )
+        if "s_artist" not in log_cols:
+            # Folded copies make history, artist and stats queries index-friendly (fold() per row is slow).
+            for c in ("s_artist", "s_title", "s_album"):
+                self.conn.execute(f"ALTER TABLE play_log ADD COLUMN {c} TEXT NOT NULL DEFAULT ''")
+            self.conn.execute("UPDATE play_log SET s_artist=fold(artist), s_title=fold(title), s_album=fold(album)")
 
     def close(self):
         self.conn.close()
@@ -235,8 +242,9 @@ class Database:
     def record_play(self, path: str, when: Optional[float] = None):
         when = when or time.time()
         self.conn.execute(
-            "INSERT OR IGNORE INTO play_log(ts, path, artist, title, album, duration, source) "
-            "SELECT ?, path, artist, title, album, duration, 'local' FROM tracks WHERE path=?", (when, path))
+            "INSERT OR IGNORE INTO play_log(ts, path, artist, title, album, duration, source, s_artist, s_title, s_album) "
+            "SELECT ?, path, artist, title, album, duration, 'local', s_artist, s_title, s_album FROM tracks WHERE path=?",
+            (when, path))
         self.conn.execute(
             "INSERT INTO plays(path, count, last) VALUES(?,1,?) "
             "ON CONFLICT(path) DO UPDATE SET count=count+1, last=excluded.last",
@@ -265,9 +273,10 @@ class Database:
             except (TypeError, ValueError):
                 duration = 0
             cur = self.conn.execute(
-                "INSERT OR IGNORE INTO play_log(ts, path, artist, title, album, duration, source) "
-                "VALUES(?,?,?,?,?,?,?)",
-                (ts, path, artist, title, it.get("album") or "", duration, source))
+                "INSERT OR IGNORE INTO play_log(ts, path, artist, title, album, duration, source, s_artist, s_title, s_album) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?)",
+                (ts, path, artist, title, it.get("album") or "", duration, source, fold(artist), fold(title),
+                 fold(it.get("album") or "")))
             if not cur.rowcount:
                 continue
             added += 1
@@ -311,7 +320,7 @@ class Database:
                 f"""SELECT MIN(l.artist) AS name, COUNT(*) AS plays, COUNT(DISTINCT l.album) AS albums,
                            COUNT(DISTINCT l.title) AS tracks, MAX(t.art) AS art
                     FROM play_log l LEFT JOIN tracks t ON t.path=l.path {where}
-                    GROUP BY fold(l.artist) ORDER BY plays DESC, name COLLATE NOCASE LIMIT ?""",
+                    GROUP BY +l.s_artist ORDER BY plays DESC, name COLLATE NOCASE LIMIT ?""",
                 (*params, limit),
             )
             albums = self._rows(
@@ -319,7 +328,7 @@ class Database:
                            MAX(t.year) AS year, COUNT(*) AS n, SUM(l.duration) AS duration,
                            MAX(t.art) AS art, MAX(l.ts) AS added, COUNT(*) AS plays
                     FROM play_log l LEFT JOIN tracks t ON t.path=l.path {where}
-                    GROUP BY fold(l.artist), fold(l.album)
+                    GROUP BY +l.s_artist, l.s_album
                     ORDER BY plays DESC, album COLLATE NOCASE LIMIT ?""",
                 (*params, limit),
             )
@@ -329,7 +338,7 @@ class Database:
                            COUNT(*) AS plays, MAX(t.year) AS year, MAX(t.track_no) AS track_no,
                            MAX(t.disc_no) AS disc_no, MAX(t.id) AS id
                     FROM play_log l LEFT JOIN tracks t ON t.path=l.path {where} AND l.path IS NOT NULL
-                    GROUP BY fold(l.artist), fold(l.title)
+                    GROUP BY +l.s_artist, l.s_title
                     ORDER BY plays DESC, title COLLATE NOCASE LIMIT ?""",
                 (*params, limit),
             )

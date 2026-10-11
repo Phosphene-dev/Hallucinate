@@ -193,6 +193,9 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     qapp.processEvents()
     for name in ("historyList", "historyHeatmap", "historySummary", "historySearch"):
         assert window.findChild(QObject, name) is not None, name
+    assert QMetaObject.invokeMethod(window, "openArtist", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "Someone"))
+    qapp.processEvents()
+    assert window.findChild(QObject, "artistListening") is not None
     # Library health and the command palette
     assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "health"))
     qapp.processEvents()

@@ -7,7 +7,7 @@ from collections import Counter
 from pathlib import Path
 
 from PySide6.QtCore import Property, QObject, QSize, QUrl, Signal, Slot
-from PySide6.QtGui import QColor, QFont, QGuiApplication, QImageReader
+from PySide6.QtGui import QColor, QFont, QGuiApplication, QImage, QImageReader
 
 logger = logging.getLogger(__name__)
 COLOR_KEYS = ("bg", "panel", "surface", "surfaceHi", "border", "text", "textDim", "accent", "error", "onAccent")
@@ -53,13 +53,28 @@ def cover_color(path):
     image = reader.read()
     if image.isNull():
         return None
-    red = green = blue = weight = 0.0
-    for y in range(image.height()):
-        for x in range(image.width()):
-            c = image.pixelColor(x, y)
-            w = 0.15 + c.saturationF() * c.valueF()
-            red, green, blue, weight = red + c.redF() * w, green + c.greenF() * w, blue + c.blueF() * w, weight + w
-    color = QColor.fromRgbF(red / weight, green / weight, blue / weight)
+    image = image.convertToFormat(QImage.Format.Format_RGB32)
+    try:
+        import numpy as np
+    except ImportError:  # numpy is optional; fall back to reading pixels one by one
+        np = None
+    if np is not None:
+        raw = np.frombuffer(image.constBits(), np.uint8, image.sizeInBytes())
+        px = raw.reshape(image.height(), image.bytesPerLine())[:, : image.width() * 4].reshape(-1, 4)
+        rgb = px[:, 2::-1].astype(np.float32) / 255.0  # BGRA in memory
+        hi, lo = rgb.max(axis=1), rgb.min(axis=1)
+        sat = np.where(hi > 0, (hi - lo) / np.maximum(hi, 1e-6), 0.0)
+        w = 0.15 + sat * hi
+        red, green, blue = (rgb * w[:, None]).sum(axis=0) / w.sum()
+    else:
+        red = green = blue = weight = 0.0
+        for y in range(image.height()):
+            for x in range(image.width()):
+                c = image.pixelColor(x, y)
+                w = 0.15 + c.saturationF() * c.valueF()
+                red, green, blue, weight = red + c.redF() * w, green + c.greenF() * w, blue + c.blueF() * w, weight + w
+        red, green, blue = red / weight, green / weight, blue / weight
+    color = QColor.fromRgbF(float(red), float(green), float(blue))
     return {"color": color.name(), "hue": max(0.0, color.hsvHueF()), "sat": color.hsvSaturationF(),
             "val": color.valueF()}
 

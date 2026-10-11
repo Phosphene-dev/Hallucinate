@@ -5,7 +5,7 @@ back weekly, monthly and yearly summaries later. `now` is a Unix timestamp so te
 import datetime
 import time
 
-from .db import _like, _tokens
+from .db import _like, _tokens, fold
 
 PERIODS = ("all", "today", "7d", "30d", "week", "month", "year")
 _COLS = """l.id AS id, l.ts AS ts, l.path AS path, l.title AS title, l.artist AS artist, l.album AS album,
@@ -62,15 +62,15 @@ def _where(query="", start=None, end=None, artist="", source=""):
         clauses.append("l.ts < ?")
         params.append(end)
     if artist:
-        clauses.append("fold(l.artist) = fold(?)")
-        params.append(artist)
+        clauses.append("l.s_artist = ?")
+        params.append(fold(artist))
     if source == "local":
         clauses.append("l.source = 'local'")
     elif source == "imported":
         clauses.append("l.source != 'local'")
     for token in _tokens(query):
         clauses.append(
-            "(fold(l.title) LIKE ? ESCAPE '\\' OR fold(l.artist) LIKE ? ESCAPE '\\' OR fold(l.album) LIKE ? ESCAPE '\\')")
+            "(l.s_title LIKE ? ESCAPE '\\' OR l.s_artist LIKE ? ESCAPE '\\' OR l.s_album LIKE ? ESCAPE '\\')")
         params += [_like(token)] * 3
     return ("WHERE " + " AND ".join(clauses)) if clauses else "", params
 
@@ -99,9 +99,9 @@ def summary(db, query="", start=None, end=None, artist="", source=""):
     where, params = _where(query, start, end, artist, source)
     row = db.conn.execute(
         f"""SELECT COUNT(*) AS plays, COALESCE(SUM(l.duration), 0) AS seconds,
-                   COUNT(DISTINCT fold(l.artist) || char(31) || fold(l.title)) AS songs,
-                   COUNT(DISTINCT fold(l.artist)) AS artists,
-                   COUNT(DISTINCT fold(l.artist) || char(31) || fold(l.album)) AS albums,
+                   COUNT(DISTINCT l.s_artist || char(31) || l.s_title) AS songs,
+                   COUNT(DISTINCT l.s_artist) AS artists,
+                   COUNT(DISTINCT l.s_artist || char(31) || l.s_album) AS albums,
                    COUNT(DISTINCT date(l.ts, 'unixepoch', 'localtime')) AS days,
                    MIN(l.ts) AS first, MAX(l.ts) AS last
             FROM play_log l {where}""",
