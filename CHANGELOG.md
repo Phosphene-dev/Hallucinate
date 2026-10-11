@@ -5,6 +5,8 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-11
+
 ### Added
 - Artist pages: a round picture lit by its own colours, facts (albums, songs, hours, years active, genres), your listening (plays, time, rank among your artists, first listen, plays per month for the last year), most played songs, the discography grouped by year, albums they appear on, and every song on demand. Radio starts from their most played song.
 - Recap (in the sidebar): a week, month or year of listening summed up, with listening time against the period before, plays, songs, artists and days, top artists, albums and songs, new artists, top genres, the busiest day, the longest streak, when you listen (time of day, day of the week, and month by month for a year) and albums added. Step back through earlier periods, and save the highlights card as an image in Pictures.
