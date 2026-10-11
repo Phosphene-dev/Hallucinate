@@ -118,6 +118,9 @@ def main(argv=None) -> int:
     discord = DiscordPresence(player)
     shell = DesktopShell(app, player, app.windowIcon())
 
+    if not library.folders and not args.folders:
+        # A fresh install: open on the welcome (music folder, theme, scrobbling) until it is finished
+        shell.setUiValue("welcome", "1")
     for f in args.folders:
         library.addFolder(f)
     if not library.folders:

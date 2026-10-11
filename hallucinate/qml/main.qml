@@ -393,6 +393,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+Q"; onActivated: Qt.quit() }
 
     NowPlayingView { id: nowPlaying; anchors.fill: parent }
+    Welcome { anchors.fill: parent; onFinished: window.go("home") }
 
     Rectangle {
         anchors.fill: parent
