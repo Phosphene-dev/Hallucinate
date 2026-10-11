@@ -43,6 +43,32 @@ def art_palette(path, count=3):
     return picks
 
 
+def _luminance(color):
+    def channel(c):
+        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+    return 0.2126 * channel(color.redF()) + 0.7152 * channel(color.greenF()) + 0.0722 * channel(color.blueF())
+
+
+def contrast(a, b):
+    """WCAG contrast ratio of two colours (1 to 21)."""
+    la, lb = sorted((_luminance(a), _luminance(b)), reverse=True)
+    return (la + 0.05) / (lb + 0.05)
+
+
+def readable_on(color, background, ratio=4.5):
+    """`color` lightened (on a dark background) or darkened (on a light one) until text in it reads on
+    `background`. Accents taken from covers can be nearly black, which would make accent text vanish."""
+    color = QColor(color)
+    hue, sat, light, _a = color.getHslF()
+    step = 0.04 if _luminance(background) < 0.4 else -0.04
+    for _ in range(25):
+        if contrast(color, background) >= ratio:
+            break
+        light = min(1.0, max(0.0, light + step))
+        color = QColor.fromHslF(max(hue, 0.0), sat, light)
+    return color
+
+
 def cover_color(path):
     """The colour a cover reads as from across the room, for ordering the colour wall.
 
@@ -207,7 +233,7 @@ class ThemeManager(QObject):
         if colors != self._art_colors:
             self._art_colors = colors
             self.artColorsChanged.emit()
-        accent = colors[0] if self._album_art_accent and colors else None
+        accent = readable_on(colors[0], QColor(self._theme()["colors"]["bg"])) if self._album_art_accent and colors else None
         if accent != self._album_accent:
             self._album_accent = accent
             self.themeChanged.emit()

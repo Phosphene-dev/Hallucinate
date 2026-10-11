@@ -8,6 +8,7 @@ from PySide6.QtGui import QColor, QIcon, QImage
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
 
+from hallucinate.core.db import Database
 from hallucinate.discord import DiscordPresence
 from hallucinate.library import Library
 from hallucinate.lyricsctl import LyricsController
@@ -120,6 +121,23 @@ def test_album_art_accent_tracks_current_cover(manager_factory, tmp_path):
     assert manager.accent == base_accent
 
 
+def test_accent_from_a_dark_cover_stays_readable(manager_factory, tmp_path):
+    from hallucinate.themes import contrast
+
+    image_path = tmp_path / "dark.png"
+    image = QImage(16, 16, QImage.Format.Format_RGB32)
+    image.fill(QColor("#3c0b14"))  # a nearly black red sleeve: saturated enough to be picked
+    assert image.save(str(image_path))
+    player = FakePlayer()
+    player.set_art(image_path.as_uri())
+    manager = manager_factory(player=player)
+    manager.setAlbumArtAccent(True)
+    for theme in ("Hallucinate", "Light"):
+        assert manager.selectTheme(theme)
+        assert manager.accent.red() > manager.accent.blue()  # still the cover's colour
+        assert contrast(manager.accent, manager.bg) >= 4.5, (theme, manager.accent.name())
+
+
 def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeypatch):
     from hallucinate import scrobbling
     from hallucinate.listenbrainz import ListenBrainzScrobbler
@@ -136,6 +154,18 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     custom_theme["name"] = "Font Test"
     custom_theme["fonts"] = {"family": "DejaVu Sans", "scale": 1.2}
     (user_themes / "font-test.json").write_text(json.dumps(custom_theme), encoding="utf-8")
+    # A song with plays, so the Stats page has top artists and albums to draw
+    seed = Database(tmp_path / "library.db")
+    seed.upsert_track({
+        "path": str(tmp_path / "song.flac"), "mtime": 0, "size": 1, "title": "Song", "artist": "Seeded Artist",
+        "album_artist": "Seeded Artist", "aa_tag": 1, "album": "Seeded Album", "album_key": "seeded", "track_no": 1,
+        "disc_no": 0, "year": 2000, "genre": "", "duration": 200.0, "fmt": "FLAC", "codec": "FLAC", "bitrate": 0,
+        "sample_rate": 44100,
+    })
+    seed.commit()
+    for _ in range(3):
+        seed.record_play(str(tmp_path / "song.flac"))
+    seed.close()
     library = Library(tmp_path / "library.db", tmp_path / "art")
     player = Player(session_file=tmp_path / "session.json")
     scrobbler = LastFmScrobbler(player, tmp_path / "data")
@@ -197,6 +227,22 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     for section in ("home", "albums", "artists", "songs", "stats", "history", "visualizer", "settings"):
         assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", section))
         qapp.processEvents()
+    # Stats: the top artist and album rows are themed (a broken binding leaves them white)
+    assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "stats"))
+    assert wait_for(lambda: user_lib.topArtists.count > 0 and user_lib.topAlbums.count > 0)
+    qapp.processEvents()
+    stats_page = window.findChild(QObject, "stats")
+
+    def item_named(item, name):  # Repeater rows are only reachable through the visual tree
+        if item.objectName() == name:
+            return item
+        return next((found for child in item.childItems() if (found := item_named(child, name))), None)
+
+    for name in ("statsTopArtist", "statsTopAlbum"):
+        row = item_named(stats_page, name)
+        assert row is not None, name
+        assert row.property("color") == manager.surface, (name, row.property("color"))
+    del row, stats_page
     assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "history"))
     qapp.processEvents()
     for name in ("historyList", "historyHeatmap", "historySummary", "historySearch"):

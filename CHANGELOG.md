@@ -5,6 +5,11 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Fixed
+- The Stats page's top artists and top albums showed as white rows with unreadable text.
+- The sidebar no longer piles its entries on top of each other in short windows (tiling window managers, fractional scaling): entries tighten up, and whatever still doesn't fit scrolls above Settings.
+- An accent taken from a dark album cover (Settings → Appearance → album colours) could make the playing song's title nearly invisible; it is now lightened (or darkened on light themes) until it reads.
+
 ## [0.6.0] - 2026-10-11
 
 ### Added

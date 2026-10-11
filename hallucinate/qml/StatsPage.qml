@@ -128,9 +128,11 @@ Item {
                 Repeater {
                     model: userLib.topArtists
                     Rectangle {
+                        required property int index
                         required property string name
                         required property int plays
                         required property int albums
+                        objectName: index === 0 ? "statsTopArtist" : ""
                         width: parent.width
                         height: 42
                         color: index % 2 ? "transparent" : Theme.surface
@@ -161,9 +163,11 @@ Item {
                 Repeater {
                     model: userLib.topAlbums
                     Rectangle {
+                        required property int index
                         required property string album
                         required property string album_artist
                         required property int plays
+                        objectName: index === 0 ? "statsTopAlbum" : ""
                         width: parent.width
                         height: 42
                         color: index % 2 ? "transparent" : Theme.surface
