@@ -35,6 +35,7 @@ ApplicationWindow {
         case "stats": return statsPage
         case "history": return historyPage
         case "health": return healthPage
+        case "recap": return recapPage
         case "visualizer": return visualizerPage
         case "settings": return settingsPage
         case "liked": return likedPage
@@ -74,6 +75,7 @@ ApplicationWindow {
     Component { id: statsPage; StatsPage {} }
     Component { id: historyPage; HistoryPage {} }
     Component { id: healthPage; HealthPage {} }
+    Component { id: recapPage; RecapPage {} }
     Component { id: visualizerPage; VisualizerPage {} }
     Component { id: settingsPage; SettingsPage {} }
     Component { id: likedPage; PlaylistPage { liked: true } }

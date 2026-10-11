@@ -9,7 +9,7 @@ import time
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
-from .core import history, insights
+from .core import history, insights, recap
 from .core import rules as smart_rules
 from .library import _Reader, decorate
 from .models import ALBUM_KEYS, ARTIST_KEYS, TRACK_KEYS, DictModel
@@ -37,6 +37,8 @@ class UserLibrary(QObject):
     historyChanged = Signal()
     _history_loaded = Signal(object)
     _history_requery = Signal()
+    recapChanged = Signal()
+    _recap_loaded = Signal(object)
     _smart_loaded = Signal(object)
     _refreshed = Signal(object)
     _playlist_loaded = Signal(object)
@@ -74,6 +76,10 @@ class UserLibrary(QObject):
         self._history_info = {"summary": {}, "days": {}, "heatmap": {}, "hasMore": False, "loading": False}
         self._history_loaded.connect(self._apply_history)
         self._history_requery.connect(self._reload_history)
+        self._recap = {}
+        self._recap_period = ""
+        self._recap_loading = False
+        self._recap_loaded.connect(self._apply_recap)
         self._refreshed.connect(self._apply_refresh)
         self._playlist_loaded.connect(self._apply_playlist)
         self._smart_loaded.connect(self._apply_smart)
@@ -608,6 +614,77 @@ class UserLibrary(QObject):
         t = self._track(row.get("path")) if row.get("path") else None
         if t:
             self._play([t], 0)
+
+    # --- recaps ------------------------------------------------------------------------
+    @Property("QVariantMap", notify=recapChanged)
+    def recap(self):
+        """The loaded recap (see core.recap.recap), plus "loading"."""
+        return {**self._recap, "loading": self._recap_loading}
+
+    @Slot(str)
+    def loadRecap(self, period):
+        """Load a recap: "week", "month" or "year" for the current one, or a full period like "month:2026-09"."""
+        if period in recap.KINDS:
+            period = recap.current(period)
+        try:
+            recap.parse(period)
+        except ValueError:
+            return
+        self._recap_period = period
+        self._recap_loading = True
+        self.recapChanged.emit()
+
+        def work(db):
+            try:
+                data = recap.recap(db, period)
+                for key in ("topArtists", "topAlbums", "topSongs", "discoveries"):
+                    decorate(data[key])
+            except Exception:  # noqa: BLE001
+                logger.exception("Recap failed")
+                data = {}
+            self._recap_loaded.emit((period, data))
+
+        self._reader.submit(work)
+
+    @Slot(int)
+    def stepRecap(self, delta):
+        if self._recap_period:
+            self.loadRecap(recap.step(self._recap_period, delta))
+
+    @Slot(object)
+    def _apply_recap(self, payload):
+        period, data = payload
+        if period != self._recap_period:
+            return
+        self._recap = data
+        self._recap_loading = False
+        self.recapChanged.emit()
+
+    @Slot("QVariant", result=str)
+    def saveRecapImage(self, image):
+        """Save a rendered recap card under Pictures; returns the file path, or "" when it couldn't be written."""
+        import os
+        import re
+
+        from PySide6.QtCore import QStandardPaths
+
+        folder = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.PicturesLocation) or os.path.expanduser("~")
+        name = re.sub(r'[\\/:*?"<>|]', "-", self._recap.get("title") or "recap")
+        period = (self._recap.get("period") or "").replace(":", " ")
+        path = os.path.join(folder, f"Hallucinate recap - {name} ({period}).png" if period else f"Hallucinate recap - {name}.png")
+        try:
+            os.makedirs(folder, exist_ok=True)
+        except OSError:
+            return ""
+        return path if image is not None and not image.isNull() and image.save(path) else ""
+
+    @Slot(int)
+    def playRecapSong(self, index):
+        songs = self._recap.get("topSongs") or []
+        if 0 <= index < len(songs) and songs[index].get("path"):
+            t = self._track(songs[index]["path"])
+            if t:
+                self._play([t], 0)
 
     def shutdown(self):
         self._reader.close()

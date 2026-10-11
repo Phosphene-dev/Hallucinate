@@ -3,13 +3,13 @@ from hallucinate.core import health
 
 
 def add(db, path, album="A", artist="Band", album_artist=None, year=2000, genre="Pop", track=1, art="/c.jpg",
-        codec="FLAC", bitrate=900_000, title=None, duration=100.0):
+        codec="FLAC", bitrate=900_000, title=None, duration=100.0, rg=-6.0):
     aa = album_artist or artist
     db.upsert_track({
         "path": path, "mtime": 0, "size": 1, "title": title or path, "artist": artist,
         "album_artist": aa, "aa_tag": 1, "album": album, "album_key": f"{aa}|{album}", "track_no": track,
         "disc_no": 0, "year": year, "genre": genre, "duration": duration, "fmt": codec, "codec": codec,
-        "bitrate": bitrate, "sample_rate": 44100, "art": art,
+        "bitrate": bitrate, "sample_rate": 44100, "art": art, "rg_track": rg, "rg_album": rg, "rg_peak": 0.9,
     })
 
 

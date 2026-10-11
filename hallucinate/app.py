@@ -21,6 +21,7 @@ from .listenbrainz import ListenBrainzScrobbler
 from .lyricsctl import LyricsController
 from .metaedit import MetadataEditor
 from .player import Player
+from .replaygain import ReplayGainAnalyzer
 from .scrobbling import LastFmScrobbler
 from .shell import DesktopShell
 from .themes import ThemeManager
@@ -105,6 +106,8 @@ def main(argv=None) -> int:
     library.reloaded.connect(user_lib.refresh)
     meta_editor = MetadataEditor(paths.db_path(), paths.art_dir())
     meta_editor.changed.connect(library.reload)
+    replay_gain = ReplayGainAnalyzer(paths.db_path())
+    replay_gain.finished.connect(library.reload)
     lyrics = LyricsController(paths.db_path(), player)
     scrobbler = LastFmScrobbler(player, paths.data_dir())
     listenbrainz = ListenBrainzScrobbler(player, paths.data_dir(), user_lib)
@@ -129,6 +132,7 @@ def main(argv=None) -> int:
     ctx.setContextProperty("player", player)
     ctx.setContextProperty("userLib", user_lib)
     ctx.setContextProperty("metaEditor", meta_editor)
+    ctx.setContextProperty("replayGain", replay_gain)
     ctx.setContextProperty("lyricsCtl", lyrics)
     ctx.setContextProperty("scrobbler", scrobbler)
     ctx.setContextProperty("listenbrainz", listenbrainz)
@@ -181,6 +185,7 @@ def main(argv=None) -> int:
         media_controls.shutdown()
     player.shutdown()
     waveforms.shutdown()
+    replay_gain.shutdown()
     lyrics.shutdown()
     meta_editor.shutdown()
     user_lib.shutdown()

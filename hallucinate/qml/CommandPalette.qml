@@ -52,6 +52,7 @@ Popup {
             { t: "Liked Songs", s: "Go to", i: "heart", run: () => w.go("liked") },
             { t: "Stats", s: "Go to", i: "stats", run: () => w.go("stats") },
             { t: "History", s: "Go to", i: "history", run: () => w.go("history") },
+            { t: "Recap", s: "Go to  ·  your week, month or year", i: "sparkle", run: () => w.go("recap") },
             { t: "Visualizer", s: "Go to", i: "wave", run: () => w.go("visualizer") },
             { t: "Settings", s: "Go to", i: "settings", run: () => w.go("settings") },
             { t: "Library health", s: "Go to", i: "sparkle", run: () => w.go("health") },

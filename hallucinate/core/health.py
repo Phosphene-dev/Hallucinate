@@ -80,6 +80,13 @@ def split_albums(db):
                   "artist. Give them the same album artist.", "album", rows)
 
 
+def missing_replaygain(db):
+    return _check("replaygain", "Songs without ReplayGain",
+                  "Without it, loud and quiet records jump in volume. Hallucinate can measure them "
+                  "(your files aren't changed).", "album",
+                  _albums(db, "SUM(CASE WHEN rg_track IS NULL THEN 1 ELSE 0 END) > 0"))
+
+
 def low_bitrate(db):
     marks = ",".join("?" * len(LOSSY))
     rows = db._rows(
@@ -105,7 +112,7 @@ def missing_folders(db):
 
 
 CHECKS = (missing_folders, unknown_artist_or_album, split_albums, missing_covers, missing_track_numbers,
-          missing_year, missing_genre, duplicates, low_bitrate)
+          missing_year, missing_genre, missing_replaygain, duplicates, low_bitrate)
 
 
 def report(db):
@@ -120,7 +127,7 @@ def report(db):
     track_issues = sum(r["count"] for r in results if r["kind"] == "track")
     parts = []
     if albums:
-        parts.append(max(0.0, 1 - album_issues / (albums * 5)))  # five album checks
+        parts.append(max(0.0, 1 - album_issues / (albums * 6)))  # six album checks
     if tracks:
         parts.append(max(0.0, 1 - track_issues / (tracks * 3)))  # three track checks
     score = round(100 * sum(parts) / len(parts)) if parts else 100
