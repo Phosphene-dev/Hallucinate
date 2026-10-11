@@ -1,6 +1,8 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
+import QtCore
 import "."
 
 ApplicationWindow {
@@ -110,6 +112,14 @@ ApplicationWindow {
         function onOpenHealth() { window.go("health") }
         function onOpenPalette() { commandPalette.show() }
         function onNewSmartPlaylist() { smartEditor.openNew() }
+        function onImportPlaylist() { importDialog.open() }
+        function onExportPlaylist(kind, name) {
+            exportDialog.kind = kind
+            exportDialog.selectedFile = StandardPaths.writableLocation(StandardPaths.MusicLocation) + "/"
+                                        + (name || "Playlist").replace(/[\\/:*?"<>|]/g, "-") + ".m3u8"
+            exportDialog.open()
+        }
+        function onNotify(message) { toast.show(message) }
         function onBack() { if (stack.depth > 1) stack.pop() }
     }
 
@@ -129,6 +139,64 @@ ApplicationWindow {
 
     TrackMenu { id: trackMenu }
     CommandPalette { id: commandPalette; win: window }
+
+    // Playlist files
+    FileDialog {
+        id: importDialog
+        title: "Import a playlist"
+        nameFilters: ["Playlists (*.m3u *.m3u8 *.pls)", "All files (*)"]
+        onAccepted: userLib.importPlaylist(selectedFile.toString())
+    }
+    FileDialog {
+        id: exportDialog
+        property string kind: "playlist"
+        title: "Export as a playlist file"
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "m3u8"
+        nameFilters: ["M3U8 playlist (*.m3u8)", "M3U playlist (*.m3u)"]
+        onAccepted: {
+            var err = userLib.exportPlaylist(kind, selectedFile.toString())
+            toast.show(err.length ? err : "Playlist saved")
+        }
+    }
+    Connections {
+        target: userLib
+        function onPlaylistImported(result) {
+            if (result.error) { toast.show(result.error); return }
+            if (result.id < 0) { toast.show("None of those songs are in your library"); return }
+            toast.show("Imported “" + result.name + "”: " + result.added + (result.added === 1 ? " song" : " songs")
+                       + (result.missing ? ", " + result.missing + " not found in your library" : ""))
+            window.openPlaylist(result.id, result.name)
+        }
+    }
+
+    // A short message at the bottom of the window
+    Rectangle {
+        id: toast
+        objectName: "toast"
+        property string message: ""
+        function show(text) { message = text; opacity = 1; toastTimer.restart() }
+        z: 60
+        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 118 }
+        width: toastText.implicitWidth + 36
+        height: 40
+        radius: 20
+        color: Theme.glassStrong
+        border.width: 1
+        border.color: Theme.strokeHi
+        opacity: 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 220 } }
+        Text {
+            id: toastText
+            anchors.centerIn: parent
+            text: toast.message
+            color: Theme.text
+            font.family: Theme.fontFamily
+            font.pixelSize: Theme.fontSize(13)
+        }
+        Timer { id: toastTimer; interval: 4500; onTriggered: toast.opacity = 0 }
+    }
     SmartPlaylistEditor {
         id: smartEditor
         onSaved: function (id, name) { window.openSmartPlaylist(id, name) }
@@ -299,7 +367,13 @@ ApplicationWindow {
     Shortcut { sequence: "F"; enabled: !window.typing; onActivated: nowPlaying.toggle() }
     Shortcut { sequence: "Escape"; enabled: nowPlaying.open; onActivated: nowPlaying.open = false }
     Shortcut { sequence: "F11"; onActivated: nowPlaying.toggleFullScreen() }
-    Shortcut { sequence: "L"; enabled: !window.typing; onActivated: { window.lyricsOpen = !window.lyricsOpen; if (window.lyricsOpen) window.queueOpen = false } }
+    Shortcut {
+        sequence: "L"; enabled: !window.typing
+        onActivated: {
+            if (nowPlaying.open) { nowPlaying.lyricsMode = !nowPlaying.lyricsMode; return }
+            window.lyricsOpen = !window.lyricsOpen; if (window.lyricsOpen) window.queueOpen = false
+        }
+    }
     Shortcut { sequence: "Alt+Left"; onActivated: Nav.back() }
     Shortcut { sequences: ["Ctrl+K", "Ctrl+P"]; onActivated: commandPalette.opened ? commandPalette.close() : commandPalette.show() }
     Shortcut { sequences: ["/", "Ctrl+F"]; enabled: !window.typing; onActivated: { searchField.forceActiveFocus(); searchField.selectAll() } }

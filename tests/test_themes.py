@@ -154,6 +154,10 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
 
     replay_gain = ReplayGainAnalyzer(tmp_path / "library.db")
     context.setContextProperty("replayGain", replay_gain)
+    from hallucinate.headphones import HeadphoneFinder
+
+    headphone_finder = HeadphoneFinder(tmp_path / "cache", player)
+    context.setContextProperty("headphones", headphone_finder)
     context.setContextProperty("lyricsCtl", lyrics)
     shell = DesktopShell(qapp, player, QIcon())
     context.setContextProperty("shell", shell)
@@ -240,6 +244,11 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     window.findChild(QObject, "openNowPlaying").clicked.emit()
     qapp.processEvents()
     assert now_playing.property("open")
+    now_playing.setProperty("lyricsMode", True)
+    # the view fades in, and its children count as visible from the first animation tick
+    lyrics_box = window.findChild(QObject, "nowPlayingLyrics")
+    assert wait_for(lambda: lyrics_box.property("visible"))
+    now_playing.setProperty("lyricsMode", False)
     shell.setNowPlayingVinyl(True)
     qapp.processEvents()
     assert window.findChild(QObject, "vinylRecord").property("x") >= 0
@@ -290,6 +299,7 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     lyrics.shutdown()
     meta_editor.shutdown()
     replay_gain.shutdown()
+    headphone_finder.shutdown()
     user_lib.shutdown()
     library.shutdown()
     qapp.setFont(old_font)

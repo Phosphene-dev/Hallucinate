@@ -36,14 +36,22 @@ def available():
     return np is not None
 
 
-def design_fir(gains_db, rate, taps=TAPS):
-    """Linear-phase FIR whose magnitude interpolates the band gains (log-frequency)."""
+def design_fir(gains_db, rate, taps=TAPS, curve=None):
+    """Linear-phase FIR whose magnitude interpolates the band gains (log-frequency).
+
+    `curve` is an optional extra correction, [[freq, dB], ...] (a headphone profile), added under the bands;
+    with it, the whole response is lowered by its largest boost so the correction can't clip."""
     n = 16384
     freqs = np.fft.rfftfreq(n, 1.0 / rate)
     logf = np.log10(np.maximum(freqs, 1.0))
     centers = np.log10(np.array(BANDS, dtype=float))
     gains = np.clip(np.array(gains_db, dtype=float), -MAX_GAIN_DB, MAX_GAIN_DB)
     mag_db = np.interp(logf, centers, gains)
+    if curve:
+        pts = np.array(curve, dtype=float)
+        mag_db = mag_db + np.interp(logf, np.log10(pts[:, 0]), pts[:, 1])
+        audible = (freqs >= 20) & (freqs <= 20000)
+        mag_db -= max(0.0, float(mag_db[audible].max()))
     mag = 10 ** (mag_db / 20)
     impulse = np.fft.fftshift(np.fft.irfft(mag, n))
     mid = n // 2
@@ -56,6 +64,7 @@ class EqProcessor:
 
     def __init__(self):
         self.gains = [0.0] * 10
+        self.curve = None
         self.rate = 44100
         self.channels = 2
         self._h = None
@@ -64,7 +73,7 @@ class EqProcessor:
 
     @property
     def flat(self):
-        return not any(abs(g) > 0.01 for g in self.gains)
+        return not self.curve and not any(abs(g) > 0.01 for g in self.gains)
 
     def configure(self, rate, channels):
         if (rate, channels) != (self.rate, self.channels):
@@ -76,12 +85,16 @@ class EqProcessor:
         self.gains = [float(g) for g in gains]
         self._h = None
 
+    def set_curve(self, curve):
+        self.curve = curve or None
+        self._h = None
+
     def reset(self):
         self._tail = None
 
     def _kernel(self, nfft):
         if self._h is None:
-            self._h = design_fir(self.gains, self.rate)
+            self._h = design_fir(self.gains, self.rate, curve=self.curve)
             self._cache = {}
         spec = self._cache.get(nfft)
         if spec is None:

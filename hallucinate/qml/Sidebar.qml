@@ -122,11 +122,13 @@ Item {
                 id: newPlMenu
                 MenuItem { text: "New playlist"; onTriggered: side.newPlaylist() }
                 MenuItem { text: "New smart playlist"; onTriggered: side.newSmartPlaylist() }
+                MenuItem { text: "Import playlist file…"; onTriggered: Nav.importPlaylist() }
             }
             Menu {
                 id: playlistMenu
                 MenuItem { text: "New playlist…"; onTriggered: side.newPlaylist() }
                 MenuItem { text: "New smart playlist…"; onTriggered: side.newSmartPlaylist() }
+                MenuItem { text: "Import playlist file…"; onTriggered: Nav.importPlaylist() }
                 MenuSeparator {}
                 Instantiator {
                     model: userLib.playlists

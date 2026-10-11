@@ -14,6 +14,8 @@ Item {
     readonly property bool shown: open || melt.running
     readonly property bool vinyl: shell.nowPlayingVinyl
     property bool idle: false
+    property bool lyricsMode: shell.uiValue("nowPlayingLyrics", "0") === "1"
+    onLyricsModeChanged: shell.setUiValue("nowPlayingLyrics", lyricsMode ? "1" : "0")
     visible: opacity > 0
     opacity: open ? 1 : 0
     enabled: open
@@ -167,7 +169,7 @@ Item {
                     text: player.hasTrack ? player.current.title : "Nothing playing"
                     color: "white"
                     font.family: Theme.displayFamily
-                    font.pixelSize: Theme.fontSize(Math.max(26, Math.min(46, view.width / 30)))
+                    font.pixelSize: Theme.fontSize(view.lyricsMode ? 24 : Math.max(26, Math.min(46, view.width / 30)))
                     font.weight: Font.Bold
                     wrapMode: Text.Wrap
                     maximumLineCount: 3
@@ -179,7 +181,7 @@ Item {
                     text: player.hasTrack ? player.current.artist : ""
                     color: Qt.rgba(1, 1, 1, 0.88)
                     font.family: Theme.fontFamily
-                    font.pixelSize: Theme.fontSize(20)
+                    font.pixelSize: Theme.fontSize(view.lyricsMode ? 16 : 20)
                     elide: Text.ElideRight
                     MouseArea {
                         anchors.fill: parent
@@ -189,7 +191,7 @@ Item {
                 }
                 Text {
                     Layout.fillWidth: true
-                    visible: player.hasTrack && (player.current.album || "").length > 0
+                    visible: player.hasTrack && (player.current.album || "").length > 0 && !view.lyricsMode
                     text: player.hasTrack ? player.current.album + (player.current.year > 0 ? "  ·  " + player.current.year : "") : ""
                     color: Qt.rgba(1, 1, 1, 0.6)
                     font.family: Theme.fontFamily
@@ -200,6 +202,69 @@ Item {
                         enabled: player.hasTrack && (player.current.album_key || "").length > 0
                         cursorShape: Qt.PointingHandCursor
                         onClicked: { view.open = false; Nav.openAlbum(player.current.album_key) }
+                    }
+                }
+                // Lyrics, karaoke style: the sung line large and bright, the others fading with distance
+                Item {
+                    id: lyricsBox
+                    objectName: "nowPlayingLyrics"
+                    visible: view.lyricsMode
+                    Layout.fillWidth: true
+                    Layout.maximumWidth: 640
+                    Layout.preferredHeight: Math.min(view.height * 0.42, 380)
+                    ListView {
+                        id: lyricLines
+                        anchors.fill: parent
+                        visible: lyricsCtl.status === "found" && lyricsCtl.synced
+                        clip: true
+                        interactive: false
+                        model: lyricsCtl.lines
+                        spacing: 10
+                        highlightRangeMode: ListView.StrictlyEnforceRange
+                        preferredHighlightBegin: height * 0.38
+                        preferredHighlightEnd: height * 0.38 + 40
+                        currentIndex: Math.max(0, lyricsCtl.currentLine)
+                        highlightMoveDuration: 380
+                        delegate: Text {
+                            required property var modelData
+                            required property int index
+                            readonly property int distance: Math.abs(index - lyricsCtl.currentLine)
+                            width: lyricLines.width
+                            text: modelData.text.length ? modelData.text : "♪"
+                            wrapMode: Text.WordWrap
+                            color: "white"
+                            opacity: distance === 0 ? 1 : Math.max(0.12, 0.62 - 0.14 * distance)
+                            font.family: Theme.displayFamily
+                            font.pixelSize: Theme.fontSize(distance === 0 ? 26 : 20)
+                            font.weight: distance === 0 ? Font.Bold : Font.DemiBold
+                            Behavior on opacity { NumberAnimation { duration: 260 } }
+                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: player.seek(modelData.t) }
+                        }
+                    }
+                    Flickable {
+                        anchors.fill: parent
+                        visible: lyricsCtl.status === "found" && !lyricsCtl.synced
+                        clip: true
+                        contentHeight: plainLyrics.implicitHeight
+                        boundsBehavior: Flickable.StopAtBounds
+                        Text {
+                            id: plainLyrics
+                            width: parent.width
+                            text: lyricsCtl.plain
+                            wrapMode: Text.WordWrap
+                            color: Qt.rgba(1, 1, 1, 0.85)
+                            font.family: Theme.fontFamily
+                            font.pixelSize: Theme.fontSize(17)
+                            lineHeight: 1.3
+                        }
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: lyricsCtl.status !== "found"
+                        text: lyricsCtl.status === "loading" ? "Looking for lyrics…" : "No lyrics for this song"
+                        color: Qt.rgba(1, 1, 1, 0.55)
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.fontSize(16)
                     }
                 }
                 SignalPath { light: true; Layout.topMargin: 4 }
@@ -283,6 +348,13 @@ Item {
                 }
             }
             Item { width: 6; height: 1 }
+            IconButton {
+                objectName: "lyricsToggle"
+                anchors.verticalCenter: parent.verticalCenter
+                icon: "note"; active: view.lyricsMode
+                tip: view.lyricsMode ? "Hide lyrics" : "Show lyrics (L)"
+                onClicked: view.lyricsMode = !view.lyricsMode
+            }
             IconButton {
                 objectName: "vinylToggle"
                 anchors.verticalCenter: parent.verticalCenter

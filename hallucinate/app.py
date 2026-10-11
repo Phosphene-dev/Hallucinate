@@ -16,6 +16,7 @@ from . import __version__
 from .control import ControlServer, send_control
 from .core import paths
 from .discord import DiscordPresence
+from .headphones import HeadphoneFinder
 from .library import Library
 from .listenbrainz import ListenBrainzScrobbler
 from .lyricsctl import LyricsController
@@ -108,6 +109,7 @@ def main(argv=None) -> int:
     meta_editor.changed.connect(library.reload)
     replay_gain = ReplayGainAnalyzer(paths.db_path())
     replay_gain.finished.connect(library.reload)
+    headphones = HeadphoneFinder(paths.cache_dir(), player)
     lyrics = LyricsController(paths.db_path(), player)
     scrobbler = LastFmScrobbler(player, paths.data_dir())
     listenbrainz = ListenBrainzScrobbler(player, paths.data_dir(), user_lib)
@@ -133,6 +135,7 @@ def main(argv=None) -> int:
     ctx.setContextProperty("userLib", user_lib)
     ctx.setContextProperty("metaEditor", meta_editor)
     ctx.setContextProperty("replayGain", replay_gain)
+    ctx.setContextProperty("headphones", headphones)
     ctx.setContextProperty("lyricsCtl", lyrics)
     ctx.setContextProperty("scrobbler", scrobbler)
     ctx.setContextProperty("listenbrainz", listenbrainz)
@@ -186,6 +189,7 @@ def main(argv=None) -> int:
     player.shutdown()
     waveforms.shutdown()
     replay_gain.shutdown()
+    headphones.shutdown()
     lyrics.shutdown()
     meta_editor.shutdown()
     user_lib.shutdown()

@@ -21,6 +21,12 @@ Rectangle {
         anchors { right: parent.right; rightMargin: 14; verticalCenter: head.verticalCenter }
         spacing: 8
         PillButton {
+            height: 30
+            text: "Export"
+            enabled: player.queueModel.count > 0
+            onClicked: Nav.exportPlaylist("queue", "Queue")
+        }
+        PillButton {
             objectName: "saveQueue"
             height: 30
             text: "Save"
