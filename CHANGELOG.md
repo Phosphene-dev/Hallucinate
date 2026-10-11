@@ -8,6 +8,7 @@ All notable changes to this project are documented here. Format based on
 ### Added
 - Artist pages: a round picture lit by its own colours, facts (albums, songs, hours, years active, genres), your listening (plays, time, rank among your artists, first listen, plays per month for the last year), most played songs, the discography grouped by year, albums they appear on, and every song on demand. Radio starts from their most played song.
 - Recap (in the sidebar): a week, month or year of listening summed up, with listening time against the period before, plays, songs, artists and days, top artists, albums and songs, new artists, top genres, the busiest day, the longest streak, when you listen (time of day, day of the week, and month by month for a year) and albums added. Step back through earlier periods, and save the highlights card as an image in Pictures.
+- ReplayGain analysis: songs whose files have no ReplayGain tags can be measured (EBU R128 / ITU-R BS.1770 loudness, ReplayGain 2.0's -18 LUFS reference), with album gain from each album measured as a whole. Start it from Settings → Playback or from the new "Songs without ReplayGain" check on the Library health page. Files are never changed: results are kept in the library, survive rescans while the file is unchanged, and tags always win. The signal path marks measured gain.
 - `scripts/bench_library.py` times the heavy library queries against a synthetic 50,000-song library.
 
 ### Changed

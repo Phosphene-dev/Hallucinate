@@ -54,6 +54,8 @@ CREATE TABLE IF NOT EXISTS play_log(
   s_artist TEXT NOT NULL DEFAULT '', s_title TEXT NOT NULL DEFAULT '', s_album TEXT NOT NULL DEFAULT '',
   UNIQUE(ts, artist, title));
 CREATE INDEX IF NOT EXISTS idx_play_log_ts ON play_log(ts);
+CREATE TABLE IF NOT EXISTS loudness(path TEXT PRIMARY KEY, mtime REAL NOT NULL, size INTEGER NOT NULL,
+  track_gain REAL, album_gain REAL, peak REAL, measured REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS album_colors(album_key TEXT PRIMARY KEY, art TEXT NOT NULL, color TEXT NOT NULL,
   hue REAL NOT NULL, sat REAL NOT NULL, val REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS lyrics(path TEXT PRIMARY KEY, synced TEXT NOT NULL DEFAULT '',
@@ -116,6 +118,9 @@ class Database:
                 self.conn.execute(f"ALTER TABLE tracks ADD COLUMN {c} REAL")
             # Zero mtime makes the next scan re-read every file so ReplayGain tags get picked up.
             self.conn.execute("UPDATE tracks SET mtime=0")
+        if "rg_measured" not in cols:
+            # 1 when the ReplayGain values came from Hallucinate's own analysis rather than the file's tags
+            self.conn.execute("ALTER TABLE tracks ADD COLUMN rg_measured INTEGER NOT NULL DEFAULT 0")
         if "codec" not in cols:
             self.conn.execute("ALTER TABLE tracks ADD COLUMN codec TEXT NOT NULL DEFAULT ''")
             self.conn.execute(
@@ -500,15 +505,25 @@ class Database:
         params["s_album"] = fold(t["album"])
         params["s_aa"] = fold(t["album_artist"])
         params["s_artist"] = fold(t["artist"])
+        params["rg_measured"] = 0
+        if params.get("rg_track") is None and params.get("rg_album") is None:
+            # No ReplayGain tags: use our own measurement if it is for this very file
+            m = self.conn.execute(
+                "SELECT track_gain, album_gain, peak FROM loudness WHERE path=? AND mtime=? AND size=?",
+                (t["path"], t.get("mtime"), t.get("size")),
+            ).fetchone()
+            if m:
+                params.update(rg_track=m["track_gain"], rg_album=m["album_gain"], rg_peak=m["peak"], rg_measured=1)
+        extra = SEARCH_COLS + ["rg_measured"]
         row = self.conn.execute("SELECT id, art FROM tracks WHERE path=?", (t["path"],)).fetchone()
         if row:
             tid = row["id"]
             params["art"] = params["art"] or row["art"]
-            sets = ", ".join(f"{c}=:{c}" for c in COLS + SEARCH_COLS)
+            sets = ", ".join(f"{c}=:{c}" for c in COLS + extra)
             self.conn.execute(f"UPDATE tracks SET {sets} WHERE id=:id", {**params, "id": tid})
         else:
-            cols = ", ".join(COLS + SEARCH_COLS + ["added"])
-            vals = ", ".join(":" + c for c in COLS + SEARCH_COLS + ["added"])
+            cols = ", ".join(COLS + extra + ["added"])
+            vals = ", ".join(":" + c for c in COLS + extra + ["added"])
             cur = self.conn.execute(
                 f"INSERT INTO tracks({cols}) VALUES({vals})", {**params, "added": time.time()}
             )
@@ -520,6 +535,38 @@ class Database:
                 (tid, t["title"], t["artist"], t["album"]),
             )
         return tid
+
+    # --- ReplayGain analysis -----------------------------------------------
+    def albums_needing_gain(self, limit=None):
+        """[(album_key, [paths in album order])] for albums with a song lacking ReplayGain; whole albums are
+        returned so album gain covers every song."""
+        keys = [r[0] for r in self.conn.execute(
+            "SELECT DISTINCT album_key FROM tracks WHERE rg_track IS NULL ORDER BY album_key"
+            + (" LIMIT ?" if limit else ""), (limit,) if limit else ())]
+        return [(k, [r[0] for r in self.conn.execute(
+            f"SELECT path FROM tracks WHERE album_key=? ORDER BY {_ORDER}", (k,))]) for k in keys]
+
+    def tracks_without_gain(self) -> int:
+        return self.conn.execute("SELECT COUNT(*) FROM tracks WHERE rg_track IS NULL").fetchone()[0]
+
+    def store_loudness(self, results):
+        """Save measurements [{path, track_gain, album_gain, peak}] and use them for songs without gain tags."""
+        now = time.time()
+        for r in results:
+            st = self.conn.execute("SELECT mtime, size FROM tracks WHERE path=?", (r["path"],)).fetchone()
+            if st is None:
+                continue
+            self.conn.execute(
+                "INSERT OR REPLACE INTO loudness(path, mtime, size, track_gain, album_gain, peak, measured) "
+                "VALUES(?,?,?,?,?,?,?)",
+                (r["path"], st["mtime"], st["size"], r["track_gain"], r["album_gain"], r["peak"], now),
+            )
+            self.conn.execute(
+                "UPDATE tracks SET rg_track=?, rg_album=?, rg_peak=?, rg_measured=1 "
+                "WHERE path=? AND (rg_track IS NULL OR rg_measured=1)",
+                (r["track_gain"], r["album_gain"], r["peak"], r["path"]),
+            )
+        self.conn.commit()
 
     def remove_paths(self, paths: Iterable[str]):
         for p in paths:

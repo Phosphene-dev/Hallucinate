@@ -177,6 +177,22 @@ Item {
         }
         Row {
             spacing: 12
+            PillButton {
+                objectName: "analyseReplayGain"
+                text: replayGain.busy ? "Stop measuring" : "Measure songs without ReplayGain"
+                onClicked: replayGain.busy ? replayGain.cancel() : replayGain.analyseMissing()
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: replayGain.busy ? "Measured " + replayGain.done + " of " + replayGain.total + " songs…"
+                    : "Measures loudness (EBU R128) for songs whose files have no ReplayGain tags. Files aren't changed."
+                color: Theme.textDim
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.fontSize(12)
+            }
+        }
+        Row {
+            spacing: 12
             Text { anchors.verticalCenter: parent.verticalCenter; text: "Crossfade " + (player.crossfade > 0 ? player.crossfade + " s" : "off"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
             StyledSlider {
                 objectName: "crossfade"

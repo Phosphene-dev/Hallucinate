@@ -150,6 +150,10 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     meta_editor = MetadataEditor(tmp_path / "library.db", tmp_path / "art")
     lyrics = LyricsController(tmp_path / "library.db", player)
     context.setContextProperty("metaEditor", meta_editor)
+    from hallucinate.replaygain import ReplayGainAnalyzer
+
+    replay_gain = ReplayGainAnalyzer(tmp_path / "library.db")
+    context.setContextProperty("replayGain", replay_gain)
     context.setContextProperty("lyricsCtl", lyrics)
     shell = DesktopShell(qapp, player, QIcon())
     context.setContextProperty("shell", shell)
@@ -285,6 +289,7 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     player.shutdown()
     lyrics.shutdown()
     meta_editor.shutdown()
+    replay_gain.shutdown()
     user_lib.shutdown()
     library.shutdown()
     qapp.setFont(old_font)

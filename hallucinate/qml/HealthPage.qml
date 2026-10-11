@@ -16,18 +16,24 @@ Item {
     function fixLabel(kind, id) {
         if (kind === "folder") return "Remove"
         if (id === "covers") return "Find cover"
+        if (id === "replaygain") return "Analyse"
         if (kind === "album") return "Edit album"
         return "Edit tags"
     }
     function fix(check, item) {
         if (check.kind === "folder") library.removeFolder(item.path)
         else if (check.id === "covers") metaEditor.fetchCover(item.album_key, item.album_artist || "", item.album || "", false)
+        else if (check.id === "replaygain") replayGain.analyseAlbum(item.album_key)
         else if (check.kind === "album") Nav.editAlbum(item.album_key)
         else Nav.editTags(item.path)
     }
     Connections {
         target: metaEditor
         function onChanged() { library.checkHealth() }
+    }
+    Connections {
+        target: replayGain
+        function onFinished() { library.checkHealth() }
     }
 
     Flickable {
@@ -169,6 +175,27 @@ Item {
                                 onClicked: page.expanded = card.open ? "" : card.modelData.id
                             }
                         }
+                        Row {
+                            visible: card.modelData.id === "replaygain" && (card.modelData.count > 0 || replayGain.busy)
+                            spacing: 12
+                            leftPadding: 24
+                            PillButton {
+                                objectName: "analyseAll"
+                                primary: !replayGain.busy
+                                height: 32
+                                text: replayGain.busy ? "Stop" : "Analyse all"
+                                onClicked: replayGain.busy ? replayGain.cancel() : replayGain.analyseMissing()
+                            }
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: replayGain.busy
+                                text: "Measured " + replayGain.done + " of " + replayGain.total + " songs"
+                                      + (replayGain.failed ? "  ·  " + replayGain.failed + " couldn't be read" : "")
+                                color: Theme.textDim
+                                font.family: Theme.fontFamily
+                                font.pixelSize: Theme.fontSize(12)
+                            }
+                        }
                         Column {
                             visible: card.open
                             width: parent.width
@@ -223,6 +250,7 @@ Item {
                                         height: 32
                                         text: page.fixLabel(card.modelData.kind, card.modelData.id)
                                         enabled: !(card.modelData.id === "covers" && metaEditor.busy)
+                                                 && !(card.modelData.id === "replaygain" && replayGain.busy)
                                         onClicked: page.fix(card.modelData, itemRow.modelData)
                                     }
                                 }

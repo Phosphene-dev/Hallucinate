@@ -31,7 +31,9 @@ def describe(track, *, rg_factor=1.0, rg_mode="off", volume=1.0, speed=1.0, eq_e
     rg_db = 20 * math.log10(rg_factor) if rg_factor > 0 else 0.0
     rg_on = rg_mode in ("track", "album") and abs(rg_db) >= 0.05
     if rg_mode in ("track", "album"):
-        detail = f"{rg_mode.capitalize()} gain {rg_db:+.1f} dB" if rg_on else f"{rg_mode.capitalize()} gain: none tagged"
+        measured = " (measured)" if track.get("rg_measured") else ""
+        detail = (f"{rg_mode.capitalize()} gain {rg_db:+.1f} dB{measured}" if rg_on
+                  else f"{rg_mode.capitalize()} gain: none tagged")
     else:
         detail = "Off"
     stages.append({"name": "ReplayGain", "detail": detail, "active": rg_on})
