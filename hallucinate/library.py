@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from PySide6.QtCore import Property, QFileSystemWatcher, QObject, QTimer, QUrl, Signal, Slot
 
 from .core import albums as album_views
+from .core import artists as artist_views
 from .core import health as health_checks
 from .core.db import Database, fold
 from .core.radio import radio_tracks
@@ -679,6 +680,37 @@ class Library(QObject):
         self._debounce.start()
 
     # --- album views: liner notes, colour wall, timeline ------------------------------------
+    @Slot(str, result="QVariantMap")
+    def artistProfile(self, name):
+        """Facts, your listening, most played songs, discography by year and "appears on" for an artist page."""
+        try:
+            data = artist_views.profile(self._db, name)
+            decorate(data["topTracks"])
+            decorate(data["appearsOn"])
+            data["discography"] = artist_views.discography(decorate(self._db.artist_albums(name)))
+            return data
+        except Exception:  # noqa: BLE001
+            logger.exception("Artist profile failed")
+            return {}
+
+    @Slot(str, result="QVariantList")
+    def artistPalette(self, name):
+        """Colours from the artist's picture (their first album cover with art)."""
+        from .themes import art_palette
+
+        art = (self.artistInfo(name) or {}).get("art") or ""
+        return [c.name() for c in art_palette(art)] if art else []
+
+    @Slot(str)
+    def startArtistRadio(self, name):
+        """Play the artist's most played song with radio on, so similar music follows."""
+        if self._player is None:
+            return
+        top = artist_views.profile(self._db, name, top=1)["topTracks"]
+        if top:
+            self._player.setRadio(True)
+            self._player.playList(decorate(top), 0)
+
     @Slot(str, result="QVariantMap")
     def albumNotes(self, key):
         """Liner notes for an album's page (see core.albums.liner_notes)."""
