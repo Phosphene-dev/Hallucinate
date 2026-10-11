@@ -87,6 +87,38 @@ def _rg_lookup(tags, name: str) -> Optional[float]:
     return None
 
 
+def read_rating(tags) -> int:
+    """1–5 stars from the ratings other players write (ID3 POPM, Vorbis/APE RATING, FMPS_RATING), else 0."""
+    if tags is None:
+        return 0
+    try:
+        items = list(tags.items()) if hasattr(tags, "items") else []
+    except Exception:
+        return 0
+    for key, value in items:
+        k = str(key).lower()
+        if k.startswith("popm"):
+            stars = getattr(value, "rating", 0) or 0  # 0–255; Windows Media Player's steps: 1, 64, 128, 196, 255
+            if stars:
+                return 1 if stars < 32 else 2 if stars < 96 else 3 if stars < 160 else 4 if stars < 224 else 5
+    for key, value in items:
+        k = str(key).lower().removeprefix("txxx:")
+        if k not in ("fmps_rating", "rating"):
+            continue
+        strs = _strs(value)
+        v = _rg_value(strs[0]) if strs else None
+        if v is None or v <= 0:
+            continue
+        if k == "fmps_rating" or v <= 1:  # 0.0–1.0
+            return max(1, min(5, round(v * 5)))
+        if v <= 5:
+            return int(round(v))
+        if v <= 10:
+            return max(1, min(5, round(v / 2)))
+        return max(1, min(5, round(v / 20)))  # 0–100
+    return 0
+
+
 def read_replaygain(tags) -> tuple:
     """(track gain dB, album gain dB, track peak) relative to the ReplayGain 2.0 -18 LUFS reference."""
     track = _rg_lookup(tags, "replaygain_track_gain")
@@ -304,6 +336,7 @@ def _read_track(path, art_known):
         "_art": None,
     }
     t["rg_track"], t["rg_album"], t["rg_peak"] = read_replaygain(tags)
+    t["rating"] = read_rating(tags)
     if art_known is None or not art_known(key):
         t["_art"] = extract_embedded_art(f)
     return t

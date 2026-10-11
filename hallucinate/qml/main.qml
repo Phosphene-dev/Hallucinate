@@ -364,6 +364,17 @@ ApplicationWindow {
     Shortcut { sequence: "R"; enabled: !window.typing; onActivated: player.cycleRepeat() }
     Shortcut { sequence: "Q"; enabled: !window.typing; onActivated: { window.queueOpen = !window.queueOpen; if (window.queueOpen) window.lyricsOpen = false } }
     Shortcut { sequence: "Ctrl+M"; onActivated: shell.toggleMini() }
+    Repeater {
+        model: 6  // Ctrl+1…5 rates the playing song, Ctrl+0 clears it
+        Item {
+            required property int index
+            Shortcut {
+                sequence: "Ctrl+" + index
+                enabled: player.hasTrack
+                onActivated: userLib.setRating(player.current.path, index === 0 ? userLib.rating(player.current.path) : index)
+            }
+        }
+    }
     Shortcut { sequence: "F"; enabled: !window.typing; onActivated: nowPlaying.toggle() }
     Shortcut { sequence: "Escape"; enabled: nowPlaying.open; onActivated: nowPlaying.open = false }
     Shortcut { sequence: "F11"; onActivated: nowPlaying.toggleFullScreen() }

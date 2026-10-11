@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS tracks(
 CREATE INDEX IF NOT EXISTS idx_tracks_album ON tracks(album_key);
 CREATE TABLE IF NOT EXISTS folders(path TEXT PRIMARY KEY);
 CREATE TABLE IF NOT EXISTS likes(path TEXT PRIMARY KEY, liked_at REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS ratings(path TEXT PRIMARY KEY, stars INTEGER NOT NULL, rated_at REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS playlists(id INTEGER PRIMARY KEY, name TEXT NOT NULL, created REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS playlist_items(
   id INTEGER PRIMARY KEY, playlist_id INTEGER NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
@@ -161,6 +162,19 @@ class Database:
     # --- user data: likes, playlists, play counts, lyrics cache ----------
     def liked_paths(self) -> set:
         return {r["path"] for r in self.conn.execute("SELECT path FROM likes")}
+
+    def ratings(self) -> dict:
+        return {r["path"]: r["stars"] for r in self.conn.execute("SELECT path, stars FROM ratings")}
+
+    def set_rating(self, path: str, stars: int):
+        """1–5 stars; 0 clears the rating."""
+        stars = max(0, min(5, int(stars)))
+        if stars:
+            self.conn.execute("INSERT OR REPLACE INTO ratings(path, stars, rated_at) VALUES(?,?,?)",
+                              (path, stars, time.time()))
+        else:
+            self.conn.execute("DELETE FROM ratings WHERE path=?", (path,))
+        self.conn.commit()
 
     def set_liked(self, path: str, liked: bool):
         if liked:
@@ -528,6 +542,10 @@ class Database:
                 f"INSERT INTO tracks({cols}) VALUES({vals})", {**params, "added": time.time()}
             )
             tid = cur.lastrowid
+        if t.get("rating"):
+            # A rating written by another player counts until you rate the song here
+            self.conn.execute("INSERT OR IGNORE INTO ratings(path, stars, rated_at) VALUES(?,?,?)",
+                              (t["path"], int(t["rating"]), time.time()))
         if self.has_fts:
             self.conn.execute("DELETE FROM tracks_fts WHERE rowid=?", (tid,))
             self.conn.execute(
