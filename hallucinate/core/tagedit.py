@@ -7,6 +7,8 @@ from mutagen import id3
 from mutagen.flac import FLAC, Picture
 from mutagen.mp4 import MP4, MP4Cover
 
+from . import cue
+
 FIELDS = ("title", "artist", "album_artist", "album", "track_no", "disc_no", "year", "genre")
 
 _ID3 = {
@@ -45,6 +47,8 @@ def _clean(fields):
 
 
 def _writable(path):
+    if cue.is_virtual(path):
+        raise TagWriteError("This song comes from a CUE sheet; edit the .cue file instead")
     if not os.path.isfile(path):
         raise TagWriteError("File not found")
     if not os.access(path, os.W_OK):

@@ -52,7 +52,11 @@ Menu {
             onObjectRemoved: (i, o) => plMenu.removeItem(o)
         }
     }
-    MenuItem { text: "Edit tags…"; onTriggered: Nav.editTags(menu.path) }
+    MenuItem {
+        text: "Edit tags…"
+        enabled: !/\.[A-Za-z0-9]+#\d+$/.test(menu.path)  // CUE sheet songs are edited in the .cue file
+        onTriggered: Nav.editTags(menu.path)
+    }
     MenuItem {
         visible: menu.context === "playlist"
         height: visible ? implicitHeight : 0

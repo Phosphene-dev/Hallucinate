@@ -84,7 +84,7 @@ def missing_replaygain(db):
     return _check("replaygain", "Songs without ReplayGain",
                   "Without it, loud and quiet records jump in volume. Hallucinate can measure them "
                   "(your files aren't changed).", "album",
-                  _albums(db, "SUM(CASE WHEN rg_track IS NULL THEN 1 ELSE 0 END) > 0"))
+                  _albums(db, "SUM(CASE WHEN rg_track IS NULL AND file IS NULL THEN 1 ELSE 0 END) > 0"))
 
 
 def low_bitrate(db):

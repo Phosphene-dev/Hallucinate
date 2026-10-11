@@ -78,8 +78,23 @@ def pick_output_device(devices, key):
     return None
 
 
+def track_file(track):
+    """The audio file a queue entry plays: its own path, or for a CUE sheet song the album's file."""
+    return track.get("file") or track.get("path", "")
+
+
+def track_window(track):
+    """(start, end) of a queue entry in its file, in ms; end 0 means the end of the file."""
+    if not track.get("file"):
+        return 0, 0
+    return int(round((track.get("cue_start") or 0) * 1000)), int(round((track.get("cue_end") or 0) * 1000))
+
+
 class _Voice:
-    """A QMediaPlayer + QAudioOutput pair. Two of them alternate for near-gapless playback."""
+    """A QMediaPlayer + QAudioOutput pair. Two of them alternate for near-gapless playback.
+
+    A voice can play just a stretch of its file (a CUE sheet song): positions and durations it reports are
+    then relative to `start`, and `end` (0: the end of the file) is where the song stops."""
 
     def __init__(self, parent):
         self.audio = _new_audio_output(parent)
@@ -87,7 +102,11 @@ class _Voice:
         self.player.setAudioOutput(self.audio)
         self.visual_output = None
         self.index = -1  # queue index the loaded source belongs to
-        self.path = ""
+        self.path = ""  # the file loaded
+        self.start = 0  # the song's stretch of the file, in ms (see track_window)
+        self.end = 0
+        self.seek_on_load = -1  # where to go once the file is loaded (a CUE song not at the start)
+        self.play_on_load = False
         self.fade = 1.0  # crossfade multiplier
         self.tap = None  # equalizer tap, present while the equalizer is on
         self.tap_visual_connected = False
@@ -100,9 +119,34 @@ class _Voice:
         self.player.setSource(QUrl())
         self.index = -1
         self.path = ""
+        self.start = self.end = 0
+        self.seek_on_load = -1
+        self.play_on_load = False
         self.fade = 1.0
         if self.tap is not None:
             self.tap.reset()
+
+    def load(self, index, track):
+        """Point this voice at a queue entry: its file and, for a CUE song, its stretch of it."""
+        self.index, self.path = index, track_file(track)
+        self.start, self.end = track_window(track)
+        self.seek_on_load = self.start if self.start else -1
+        if self.tap is not None:
+            self.tap.reset()
+        self.player.setSource(QUrl.fromLocalFile(self.path))
+
+    def holds(self, index, track):
+        return self.index == index and self.path == track_file(track) and (self.start, self.end) == track_window(track)
+
+    def position(self):
+        return max(0, self.player.position() - self.start)
+
+    def duration(self):
+        end = self.end or self.player.duration()
+        return max(0, end - self.start) if end > 0 else 0
+
+    def set_position(self, ms):
+        self.player.setPosition(self.start + max(0, int(ms)))
 
 
 def replaygain_factor(track, mode, preamp_db=0.0):
@@ -497,11 +541,12 @@ class Player(QObject):
 
     @Slot()
     def _update_waveform(self):
-        path = self._queue[self._index].get("path", "") if self.hasTrack else ""
+        current = self._queue[self._index] if self.hasTrack else {}
+        path = "" if current.get("file") else current.get("path", "")  # no waveform for a stretch of a file
         peaks = self._waveforms.request(path) if self._waveforms is not None and path else None
         self._set_waveform(peaks or [])
         nxt = self._index + 1
-        if self._waveforms is not None and 0 <= nxt < len(self._queue):
+        if self._waveforms is not None and 0 <= nxt < len(self._queue) and not self._queue[nxt].get("file"):
             self._waveforms.request(self._queue[nxt].get("path", ""), urgent=False)  # ready when it starts
 
     @Slot(str)
@@ -889,11 +934,11 @@ class Player(QObject):
 
     @Property(int, notify=positionChanged)
     def position(self):
-        return self._player.position()
+        return self._voice.position()
 
     @Property(int, notify=durationChanged)
     def duration(self):
-        d = self._player.duration()
+        d = self._voice.duration()
         if d <= 0 and self.hasTrack:
             d = int(self._queue[self._index].get("duration", 0) * 1000)
         return max(d, 0)
@@ -953,7 +998,7 @@ class Player(QObject):
             if self._ended or self._player.mediaStatus() == QMediaPlayer.MediaStatus.EndOfMedia:
                 if self._voice.tap is not None:
                     self._voice.tap.reset()
-                self._player.setPosition(0)
+                self._voice.set_position(0)
             self._ended = False
             self._player.play()
         elif self._queue:
@@ -995,12 +1040,12 @@ class Player(QObject):
             self.stateChanged.emit()
         if self._voice.tap is not None:
             self._voice.tap.reset()
-        self._player.setPosition(ms)
+        self._voice.set_position(ms)
         self.seeked.emit(ms)
 
     @Slot(int)
     def seekBy(self, delta_ms):
-        self.seek(min(self._player.position() + delta_ms, max(self.duration - 1, 0)))
+        self.seek(min(self._voice.position() + delta_ms, max(self.duration - 1, 0)))
 
     @Slot(float)
     def setVolume(self, v):
@@ -1044,7 +1089,7 @@ class Player(QObject):
 
     @Slot()
     def previous(self):
-        if self._player.position() > 3000 or not self.hasTrack:
+        if self._voice.position() > 3000 or not self.hasTrack:
             self.seek(0)
         elif self._history:
             self._load(self._history.pop(), record=False)
@@ -1178,7 +1223,7 @@ class Player(QObject):
 
     def _standby_check(self):
         sb = self._standby
-        if sb.index >= len(self._queue) or (sb.index >= 0 and sb.path != self._queue[sb.index]["path"]):
+        if sb.index >= len(self._queue) or (sb.index >= 0 and not sb.holds(sb.index, self._queue[sb.index])):
             sb.clear()
 
     def _invalidate_next(self):
@@ -1212,7 +1257,8 @@ class Player(QObject):
         if record and self.hasTrack and i != self._index:
             self._history.append(self._index)
             del self._history[:-200]
-        path = self._queue[i].get("path", "")
+        track = self._queue[i]
+        path = track_file(track)
         exists = isinstance(path, str) and os.path.isfile(path)
         if not exists or not is_readable_audio(path):
             self._index = i
@@ -1225,7 +1271,7 @@ class Player(QObject):
             elif self._repeat == REPEAT_ALL:
                 candidates += list(range(0, i))
             for candidate in candidates:
-                candidate_path = self._queue[candidate].get("path", "")
+                candidate_path = track_file(self._queue[candidate])
                 if isinstance(candidate_path, str) and os.path.isfile(candidate_path) and is_readable_audio(candidate_path):
                     self._load(candidate, autoplay=autoplay, record=False)
                     return
@@ -1247,7 +1293,30 @@ class Player(QObject):
         self._play_counted = False
 
         sb = self._standby
-        if autoplay and sb.index == i and sb.path == path and sb.player.source().isValid():
+        cur = self._voice
+        if (track.get("file") and cur.path == path and cur.index >= 0 and cur.player.source().isValid()
+                and not cur.finishing):
+            # Another song of the CUE sheet this voice is playing: carry on in the same file. Straight after
+            # the previous song that needs no seek at all, so the album plays exactly as one piece.
+            start, end = track_window(track)
+            contiguous = drain and cur.end and abs(start - cur.end) <= 5
+            cur.index, cur.start, cur.end = i, start, end
+            if cur.seek_on_load >= 0:  # the file is still loading: go to this song once it has
+                cur.seek_on_load, cur.play_on_load = start, autoplay
+            elif not contiguous:
+                if cur.tap is not None:
+                    cur.tap.reset()
+                cur.set_position(0)
+            self._player.setPlaybackRate(self._speed)
+            if cur.seek_on_load >= 0:
+                pass
+            elif autoplay:
+                self._player.play()
+            else:
+                self._player.pause()
+            if sb.index not in (-1, i):
+                sb.clear()
+        elif autoplay and sb.holds(i, track) and sb.player.source().isValid():
             if drain:
                 self._let_finish(self._voice)  # gapless: the old track plays out while the new one starts
             elif not fade_ms:
@@ -1257,18 +1326,17 @@ class Player(QObject):
             self._cur = 1 - self._cur
             if self._voice.tap is not None:
                 self._voice.tap.reset()
-            self._player.setPosition(0)
+            self._voice.set_position(0)
             self.gapless_swaps += 1
             if fade_ms:
                 self._start_fade(fade_ms)
             self._player.play()
         else:
-            self._voice.index, self._voice.path = i, path
-            if self._voice.tap is not None:
-                self._voice.tap.reset()
-            self._player.setSource(QUrl.fromLocalFile(path))
+            self._voice.load(i, track)
             self._player.setPlaybackRate(self._speed)
-            if autoplay:
+            if autoplay and self._voice.seek_on_load >= 0:
+                self._voice.play_on_load = True  # start where the song starts, not at the top of the file
+            elif autoplay:
                 self._player.play()
             if sb.index not in (-1, i):
                 sb.clear()
@@ -1281,21 +1349,20 @@ class Player(QObject):
     def _maybe_preload(self):
         if not self.hasTrack or not self.playing or self._fading:
             return
-        dur = self._player.duration()
-        if dur <= 0 or dur - self._player.position() > PRELOAD_MS + self._crossfade * 1000:
+        dur = self._voice.duration()
+        if dur <= 0 or dur - self._voice.position() > PRELOAD_MS + self._crossfade * 1000:
             return
         nxt = self._compute_next(auto=True)
         sb = self._standby
         if nxt is None or sb.finishing:
             return
-        path = self._queue[nxt]["path"]
-        if sb.index == nxt and sb.path == path:
+        track = self._queue[nxt]
+        if sb.holds(nxt, track):
             return
+        if track.get("file") and track_file(track) == self._voice.path:
+            return  # the next song of the same CUE sheet: this voice carries on into it
         sb.player.pause()
-        sb.index, sb.path = nxt, path
-        if sb.tap is not None:
-            sb.tap.reset()
-        sb.player.setSource(QUrl.fromLocalFile(path))
+        sb.load(nxt, track)
         sb.player.pause()  # prepare the decoder without taking the audio device
         self._apply_volume()
 
@@ -1304,8 +1371,8 @@ class Player(QObject):
             return
         self.positionChanged.emit()
         self._maybe_preload()
-        pos = self._player.position()
-        dur = self._player.duration()
+        pos = self._voice.position()
+        dur = self._voice.duration()
         self._count_listening(pos, dur)
         if self._try_crossfade(pos, dur):
             return
@@ -1349,7 +1416,7 @@ class Player(QObject):
         if not self.playing:
             self._transitioning = False
             return
-        if self._player.duration() - self._player.position() > HANDOFF_WINDOW_MS:
+        if self._voice.duration() - self._voice.position() > HANDOFF_WINDOW_MS:
             self._transitioning = False  # seeked away from the end while waiting
             return
         self._advance_at_end()
@@ -1369,11 +1436,11 @@ class Player(QObject):
             self.saveSession()
         elif nxt is not None:
             self._load(nxt, drain=True)
-        elif self._player.mediaStatus() == QMediaPlayer.MediaStatus.EndOfMedia:
-            self._finish_queue()
+        elif self._player.mediaStatus() == QMediaPlayer.MediaStatus.EndOfMedia or self._voice.end:
+            self._finish_queue()  # (a CUE song ends mid-file: stop there rather than play into the next one)
         else:
             # Let the last track play out; end-of-media finishes the queue, or the watchdog if it stalls.
-            remaining = max(0, self._player.duration() - self._player.position())
+            remaining = max(0, self._voice.duration() - self._voice.position())
             QTimer.singleShot(remaining + FINISH_GRACE_MS, self._finish_stalled_queue)
         self._transitioning = False
 
@@ -1388,7 +1455,7 @@ class Player(QObject):
 
     def _finish_stalled_queue(self):
         # Still at the end of the last track (not seeked away or replaced): Qt never reported end-of-media.
-        near_end = self._player.duration() - self._player.position() <= HANDOFF_WINDOW_MS
+        near_end = self._voice.duration() - self._voice.position() <= HANDOFF_WINDOW_MS
         if self.hasTrack and near_end and self._compute_next(auto=True) is None:
             self._finish_queue()
 
@@ -1396,10 +1463,11 @@ class Player(QObject):
         if (voice.player.mediaStatus() == QMediaPlayer.MediaStatus.EndOfMedia
                 or voice.player.playbackState() != QMediaPlayer.PlaybackState.PlayingState):
             return  # already over (e.g. the handoff ran from end-of-media)
-        remaining = max(0, voice.player.duration() - voice.player.position())
+        remaining = max(0, voice.duration() - voice.position())
+        grace = 0 if voice.end else FINISH_GRACE_MS  # a CUE song mid-file has no end-of-stream to wait for
         voice.finishing = True
-        voice.finish_by = time.monotonic() + (remaining + FINISH_GRACE_MS) / 1000
-        QTimer.singleShot(remaining + FINISH_GRACE_MS, self._stop_finished)
+        voice.finish_by = time.monotonic() + (remaining + grace) / 1000
+        QTimer.singleShot(remaining + grace, self._stop_finished)
 
     def _stop_finished(self):
         for voice in self._voices:
@@ -1414,6 +1482,13 @@ class Player(QObject):
 
     def _on_media_status(self, n, status):
         S = QMediaPlayer.MediaStatus
+        voice = self._voices[n]
+        if status in (S.LoadedMedia, S.BufferedMedia) and voice.seek_on_load >= 0:
+            voice.player.setPosition(voice.seek_on_load)
+            voice.seek_on_load = -1
+            if voice.play_on_load:
+                voice.play_on_load = False
+                voice.player.play()
         if n != self._cur:
             if status == S.EndOfMedia:
                 self._voices[n].finishing = False
@@ -1429,7 +1504,7 @@ class Player(QObject):
                 self._set_error("")
             if self._restore_pos:
                 pos, self._restore_pos = self._restore_pos, 0
-                self._player.setPosition(pos)
+                self._voice.set_position(pos)
                 self.positionChanged.emit()
 
     def _on_error(self, n, message):
@@ -1479,7 +1554,7 @@ class Player(QObject):
             "version": SESSION_VERSION,
             "queue": queue,
             "index": index,
-            "position": self._player.position() if self.hasTrack else 0,
+            "position": self._voice.position() if self.hasTrack else 0,
             "shuffle": self._shuffle,
             "repeat": self._repeat,
         }
@@ -1501,7 +1576,7 @@ class Player(QObject):
                 return False
             queue = [
                 t for t in data["queue"]
-                if isinstance(t, dict) and isinstance(t.get("path"), str) and os.path.isfile(t["path"])
+                if isinstance(t, dict) and isinstance(t.get("path"), str) and os.path.isfile(track_file(t))
             ]
             index = int(data.get("index", -1))
             pos = int(data.get("position", 0))
@@ -1513,7 +1588,7 @@ class Player(QObject):
             return False
         old = data["queue"]
         if 0 <= index < len(old):
-            keep = [i for i, t in enumerate(old) if isinstance(t, dict) and os.path.isfile(t.get("path", ""))]
+            keep = [i for i, t in enumerate(old) if isinstance(t, dict) and os.path.isfile(track_file(t))]
             index = keep.index(index) if index in keep else min(sum(1 for i in keep if i < index), len(queue) - 1)
         else:
             index, pos = 0, 0

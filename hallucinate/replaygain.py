@@ -90,7 +90,7 @@ class ReplayGainAnalyzer(QObject):
     def analyseAlbum(self, album_key):
         db = self._conn()
         paths = [r[0] for r in db.conn.execute(
-            "SELECT path FROM tracks WHERE album_key=? ORDER BY disc_no, track_no, s_title", (album_key,))]
+            "SELECT path FROM tracks WHERE album_key=? AND file IS NULL ORDER BY disc_no, track_no, s_title", (album_key,))]
         if paths:
             self.analyse([(album_key, paths)])
 
