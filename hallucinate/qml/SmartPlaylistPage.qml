@@ -46,6 +46,7 @@ Item {
                     PillButton { primary: true; text: "Play"; enabled: list.count > 0; onClicked: userLib.playSmartPlaylist(0, false) }
                     PillButton { text: "Shuffle"; enabled: list.count > 0; onClicked: userLib.playSmartPlaylist(0, true) }
                     PillButton { text: "Edit rules"; onClicked: Nav.editSmartPlaylist(page.smartId, page.playlistName) }
+                    PillButton { text: "Export"; enabled: list.count > 0; onClicked: Nav.exportPlaylist("smart", page.playlistName) }
                     PillButton { text: "Delete"; onClicked: { userLib.deleteSmartPlaylist(page.smartId); Nav.goHome() } }
                 }
             }

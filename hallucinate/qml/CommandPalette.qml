@@ -73,6 +73,7 @@ Popup {
             { t: "Rescan library", s: "Library", i: "search", run: () => library.rescan() },
             { t: "New playlist", s: "Playlists", i: "plus", run: () => w.newPlaylist() },
             { t: "New smart playlist", s: "Playlists", i: "sparkle", run: () => Nav.newSmartPlaylist() },
+            { t: "Import playlist file", s: "Playlists  ·  M3U, M3U8, PLS", i: "playlist", run: () => Nav.importPlaylist() },
         ]
         var styles = [["liquid", "Liquid"], ["aurora", "Aurora"], ["nebula", "Nebula"], ["bars", "Bars"]]
         styles.forEach(st => c.push({ t: "Visualizer: " + st[1], s: "Style", i: "wave", run: () => shell.setVisualizerStyle(st[0]) }))

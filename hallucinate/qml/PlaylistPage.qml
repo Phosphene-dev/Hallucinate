@@ -50,6 +50,7 @@ Item {
                     spacing: 10
                     PillButton { primary: true; text: "Play"; enabled: list.count > 0; onClicked: page.liked ? userLib.playLiked(0) : userLib.playPlaylist(0, false) }
                     PillButton { text: "Shuffle"; enabled: list.count > 0; onClicked: page.liked ? (player.setShuffle(true), userLib.playLiked(Math.floor(Math.random() * list.count))) : userLib.playPlaylist(0, true) }
+                    PillButton { objectName: "exportPlaylist"; text: "Export"; enabled: list.count > 0; onClicked: Nav.exportPlaylist(page.liked ? "liked" : "playlist", page.liked ? "Liked Songs" : page.playlistName) }
                     PillButton { visible: !page.liked; text: "Rename"; onClicked: { nameField.text = page.playlistName; renameDlg.open() } }
                     PillButton { visible: !page.liked; text: "Delete"; onClicked: { userLib.deletePlaylist(page.playlistId); Nav.goHome() } }
                 }

@@ -196,6 +196,13 @@ class Player(QObject):
         self._eq_enabled = False
         self._eq_gains = [0.0] * len(eq.BANDS)
         self._eq_preset = "Flat"
+        self._headphone = {"name": "", "curve": None}
+        try:
+            stored = json.loads(str(self._settings.value("eq/headphone", "{}")))
+            if stored.get("name") and stored.get("curve"):
+                self._headphone = {"name": str(stored["name"]), "curve": stored["curve"]}
+        except (TypeError, ValueError):
+            pass
         if eq.available():
             self._eq_enabled = str(self._settings.value("eq/enabled", "false")).lower() == "true"
             try:
@@ -419,11 +426,42 @@ class Player(QObject):
     def _save_eq(self):
         self._settings.setValue("eq/enabled", "true" if self._eq_enabled else "false")
         self._settings.setValue("eq/gains", json.dumps(self._eq_gains))
+        self._settings.setValue("eq/headphone", json.dumps(self._headphone))
         self._eq_preset = self._detect_preset()
         for voice in self._voices:
             if voice.tap is not None:
                 voice.tap.processor.set_gains(self._eq_gains)
+                voice.tap.processor.set_curve(self._headphone["curve"])
         self.eqChanged.emit()
+
+    @Property(str, notify=eqChanged)
+    def headphoneName(self):
+        """The headphone being corrected for (AutoEQ profile), or ""."""
+        return self._headphone["name"]
+
+    @Property("QVariantList", notify=eqChanged)
+    def headphoneCurve(self):
+        return list(self._headphone["curve"] or [])
+
+    @Slot(str, str)
+    def setHeadphoneProfile(self, name, curve_json):
+        """Correct for a headphone: `curve_json` is [[freq, dB], ...] (see headphones.parse). Turns the EQ on."""
+        try:
+            curve = [[float(f), float(g)] for f, g in json.loads(curve_json)]
+        except (TypeError, ValueError):
+            return
+        if len(curve) < 2 or not name.strip():
+            return
+        self._headphone = {"name": name.strip(), "curve": curve}
+        if not self._eq_enabled and eq.available():
+            self._eq_enabled = True
+            self._sync_taps()
+        self._save_eq()
+
+    @Slot()
+    def clearHeadphone(self):
+        self._headphone = {"name": "", "curve": None}
+        self._save_eq()
 
     @Slot(bool)
     def setEqEnabled(self, on):
@@ -574,7 +612,7 @@ class Player(QObject):
             volume=self._volume,
             speed=self._speed,
             eq_enabled=self._eq_enabled,
-            eq_preset=self._eq_preset,
+            eq_preset=self._eq_preset + (f" + {self._headphone['name']}" if self._headphone["name"] else ""),
             crossfade=self._crossfade,
             device_name="" if device.isNull() else device.description(),
             device_rate=0 if device.isNull() else device.preferredFormat().sampleRate(),
@@ -609,6 +647,7 @@ class Player(QObject):
             if self._eq_enabled and voice.tap is None:
                 tap = eq.EqTap(eq.EqProcessor(), self)
                 tap.processor.set_gains(self._eq_gains)
+                tap.processor.set_curve(self._headphone["curve"])
                 tap.setDevice(self._output_audio_device())
                 voice.tap = tap
                 tap.setRunning(voice.player.playbackState() == QMediaPlayer.PlaybackState.PlayingState)

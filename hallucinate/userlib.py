@@ -4,13 +4,15 @@ Everything is keyed by file path so it survives rescans. Database work runs on a
 thread only applies small result sets to models."""
 import json
 import logging
+import os
 import random
 import time
 
-from PySide6.QtCore import Property, QObject, Signal, Slot
+from PySide6.QtCore import Property, QObject, QUrl, Signal, Slot
 
-from .core import history, insights, recap
+from .core import history, insights, playlist_files, recap
 from .core import rules as smart_rules
+from .core.db import fold
 from .library import _Reader, decorate
 from .models import ALBUM_KEYS, ARTIST_KEYS, TRACK_KEYS, DictModel
 
@@ -38,6 +40,8 @@ class UserLibrary(QObject):
     _history_loaded = Signal(object)
     _history_requery = Signal()
     recapChanged = Signal()
+    playlistImported = Signal("QVariantMap")
+    _imported = Signal(object)
     _recap_loaded = Signal(object)
     _smart_loaded = Signal(object)
     _refreshed = Signal(object)
@@ -80,6 +84,7 @@ class UserLibrary(QObject):
         self._recap_period = ""
         self._recap_loading = False
         self._recap_loaded.connect(self._apply_recap)
+        self._imported.connect(self._apply_import)
         self._refreshed.connect(self._apply_refresh)
         self._playlist_loaded.connect(self._apply_playlist)
         self._smart_loaded.connect(self._apply_smart)
@@ -318,6 +323,77 @@ class UserLibrary(QObject):
         pid = self.createPlaylist(name.strip())
         self._write(lambda db, i, ps: db.playlist_add(i, ps), pid, paths, reload_playlist=True)
         return pid
+
+    # --- playlist files ------------------------------------------------------------
+    @staticmethod
+    def _match_entries(db, entries):
+        """Library paths for playlist entries: by path, then by artist and title, then by file name."""
+        by_path, by_tags, by_name = set(), {}, {}
+        for r in db.conn.execute("SELECT path, s_artist, s_title FROM tracks"):
+            by_path.add(r["path"])
+            by_tags.setdefault((r["s_artist"], r["s_title"]), r["path"])
+            by_name.setdefault(os.path.basename(r["path"]).casefold(), r["path"])
+        found, missing = [], []
+        for e in entries:
+            path = e["path"] if e["path"] in by_path else None
+            if path is None and e.get("title"):
+                path = by_tags.get((fold(e.get("artist") or ""), fold(e["title"])))
+            if path is None:
+                path = by_name.get(os.path.basename(e["path"]).casefold())
+            (found if path else missing).append(path or e["path"])
+        return found, missing
+
+    @Slot(str)
+    def importPlaylist(self, url):
+        """Make a playlist from an M3U/M3U8/PLS file; playlistImported({id, name, added, missing}) reports back."""
+        path = QUrl(url).toLocalFile() if url.startswith("file:") else url
+        name = os.path.splitext(os.path.basename(path))[0] or "Imported playlist"
+
+        def work(db):
+            try:
+                entries = playlist_files.read(path)
+                found, missing = self._match_entries(db, entries)
+                pid = db.create_playlist(name) if found else -1
+                if found:
+                    db.playlist_add(pid, found)
+                result = {"id": pid, "name": name, "added": len(found), "missing": len(missing), "error": ""}
+            except (OSError, ValueError) as exc:
+                result = {"id": -1, "name": name, "added": 0, "missing": 0, "error": str(exc)}
+            except Exception:  # noqa: BLE001
+                logger.exception("Playlist import failed")
+                result = {"id": -1, "name": name, "added": 0, "missing": 0, "error": "Couldn't read that playlist"}
+            self._imported.emit(result)
+
+        self._reader.submit(work)
+
+    @Slot(object)
+    def _apply_import(self, result):
+        self.refresh()
+        self.playlistImported.emit(result)
+
+    @Slot(str, str, result=str)
+    def exportPlaylist(self, kind, url):
+        """Write songs as an M3U8 file: kind is "playlist" (the open one), "smart", "liked" or "queue".
+        Returns an error message, or "" on success."""
+        path = QUrl(url).toLocalFile() if url.startswith("file:") else url
+        if not path:
+            return "No file chosen"
+        if not os.path.splitext(path)[1]:
+            path += ".m3u8"
+        if kind == "queue":
+            tracks = self._player.queue if self._player is not None else []
+        else:
+            tracks = self._models.get({"playlist": "playlistTracks", "smart": "smartTracks", "liked": "liked"}.get(kind, ""))
+            tracks = tracks.items() if tracks is not None else []
+        tracks = [t for t in tracks if t.get("path")]
+        if not tracks:
+            return "There are no songs to export"
+        try:
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(playlist_files.write_m3u(tracks, path))
+        except OSError as exc:
+            return f"Couldn't save the playlist: {exc.strerror or exc}"
+        return ""
 
     # --- smart playlists ---------------------------------------------------------
     @Property("QVariantMap", constant=True)
