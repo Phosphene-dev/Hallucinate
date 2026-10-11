@@ -2,7 +2,7 @@
 pkgname=hallucinate
 pkgver=0.3.1
 pkgrel=1
-pkgdesc="Fast, modern desktop music player with Spotify-style search and browsing (PySide6/QML)"
+pkgdesc="Fast desktop music player for the music you own: liquid, cover-coloured, gapless and private (PySide6/QML)"
 arch=('any')
 url="https://github.com/bulmaspanties/Hallucinate"
 license=('MIT')

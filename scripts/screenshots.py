@@ -1,8 +1,15 @@
-"""Render README screenshots offscreen from a synthetic demo library.
+"""Render README screenshots from a synthetic demo library.
 
     QT_QPA_PLATFORM=offscreen python scripts/screenshots.py docs/screenshots [--scale 2]
 
-Needs PySide6, mutagen and numpy; ffmpeg is NOT required (tracks are silent MPEG frames with generated covers).
+Needs PySide6, mutagen and numpy; ffmpeg is optional (tracks get audible tones with it, silent frames without).
+The visualizer and Now Playing use GPU shaders, which Qt's offscreen software renderer can't draw (they fall
+back to bars). For the real thing, render on an X server with OpenGL, e.g. headless with Mesa:
+
+    Xvfb :77 -screen 0 1280x800x24 &
+    DISPLAY=:77 QT_QPA_PLATFORM=xcb QSG_RHI_BACKEND=opengl python scripts/screenshots.py docs/screenshots
+
+The visualizer is fed a made-up spectrum so the shots don't depend on an audio device.
 """
 import argparse
 import os
@@ -62,8 +69,8 @@ def _render_tone(path, seed, seconds):
             f"*(0.35+0.65*abs(sin(PI*t/{slow:.2f})))*(0.55+0.45*abs(sin(2*PI*t/{beat:.2f})))"
             f"*min(1,t/3)*min(1,({seconds}-t)/4)")
     result = subprocess.run(
-        ["ffmpeg", "-loglevel", "error", "-y", "-f", "lavfi", "-i", f"aevalsrc='{expr}':s=22050:d={seconds}",
-         "-ac", "1", "-b:a", "48k", str(path)], capture_output=True)
+        ["ffmpeg", "-loglevel", "error", "-y", "-f", "lavfi", "-i", f"aevalsrc='{expr}':s=44100:d={seconds}",
+         "-ac", "2", "-b:a", "192k", str(path)], capture_output=True)
     return result.returncode == 0
 
 
@@ -172,6 +179,7 @@ def main():
                 user_lib.refresh()
 
             def play():
+                player.setVisualizerEnabled(True)
                 tracks = library.allTracks()
                 player.setRadio(True)
                 player.playList(tracks[4:6], 0)
@@ -193,10 +201,62 @@ def main():
                 return call
 
             state = {}
+            from PySide6.QtCore import QObject
+            shell = ctx.contextProperty("shell")
+
+            def child(name):
+                return win.findChild(QObject, name)
+
+            def fake_spectrum():
+                # Deterministic, music-like levels: a pulsing low end and a slowly wandering mid and top.
+                import math
+                phase = state.setdefault("phase", [0.0])
+                phase[0] += 0.07
+                t = phase[0]
+                levels = [max(0.0, min(1.0, (0.85 - i * 0.026) * (0.55 + 0.45 * math.sin(t * (1.3 + i * 0.21) + i))))
+                          for i in range(24)]
+                player._visualizer_levels = levels
+                player.visualizerChanged.emit()
+
+            timer = QTimer(self)
+            timer.timeout.connect(fake_spectrum)
+            timer.start(33)
+            self._spectrum_timer = timer
+
+            def albums_view(view):
+                return lambda: shell.setUiValue("albumsView", view)
+
+            def open_album():
+                QMetaObject.invokeMethod(win, "openAlbum", Q_ARG("QVariant", library.albums.get(7)["album_key"]))
+
+            def palette_query():
+                QMetaObject.invokeMethod(child("commandPalette"), "show")
+                child("paletteField").setProperty("text", "aur")
+                library.search("aur")
+
+            def palette_refresh():
+                QMetaObject.invokeMethod(child("commandPalette"), "rebuild")
+
+            def wait():
+                return None
+
             todo += [seed, play, pause]
-            for page in ("home", "albums", "songs", "history", "settings"):
+            for page in ("home", "songs", "history", "settings"):
                 todo += [go(page), shot(page)]
-            todo += [go("home"), lambda: win.setProperty("queueOpen", True), shot("queue"),
+            for view in ("grid", "colour", "timeline"):
+                todo += [albums_view(view), go("home"), go("albums"), wait, shot("albums" if view == "grid" else "albums-" + view)]
+            todo += [albums_view("grid"), open_album, wait, shot("album")]
+            todo += [lambda: shell.setVisualizerStyle("nebula"), go("visualizer"), wait, shot("visualizer")]
+            todo += [lambda: shell.setVisualizerStyle("aurora"), lambda: child("nowPlayingView").setProperty("open", True),
+                     wait, wait, shot("now-playing")]
+            todo += [lambda: shell.setNowPlayingVinyl(True), lambda: shell.setVisualizerStyle("liquid"), wait, wait,
+                     shot("now-playing-vinyl"), lambda: shell.setNowPlayingVinyl(False),
+                     lambda: child("nowPlayingView").setProperty("open", False), wait]
+            todo += [go("health"), wait, shot("health")]
+            todo += [go("home"), palette_query, wait, palette_refresh, shot("palette"),
+                     lambda: child("commandPalette").close(), wait]
+            todo += [lambda: child("signalPathPopup").open(), shot("signal-path"), lambda: child("signalPathPopup").close()]
+            todo += [lambda: win.setProperty("queueOpen", True), shot("queue"),
                      lambda: win.setProperty("queueOpen", False)]
             todo += [open_smart, shot("smart-playlist"),
                      editor("openEdit", lambda: state["smart"], "Late-night dreams")]
