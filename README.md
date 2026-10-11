@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>A fast desktop music player for the music you own.</b><br>
-  Type to find any artist, album or song, click to play. Gapless, themeable, and private.
+  Soft, liquid and lit by your album covers. Gapless, private, and built around your own library.
 </p>
 
 <p align="center">
@@ -26,35 +26,64 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/home.png" width="860" alt="Hallucinate home screen with albums, recently played and the now-playing bar">
+  <img src="docs/screenshots/now-playing.png" width="860" alt="Hallucinate's Now Playing view: a large cover over an aurora visualizer tinted by the cover's colours">
 </p>
 
 ## Highlights
-- **Instant search and browsing.** Your whole library, grouped into artists, albums and songs as you type, even with 50,000 tracks.
-- **Plays everything well.** FLAC, MP3, AAC/ALAC, Ogg, Opus, WAV, WavPack, AIFF and more, with true gapless playback, crossfade, ReplayGain and a 10-band equalizer.
-- **Radio mode.** When the queue runs out, similar songs from your own library keep playing, chosen from your listening history, artists, genres and years.
-- **Smart playlists.** Playlists that update themselves from rules, like "liked songs I haven't played in 60 days" or "jazz before 1970".
-- **Feels at home on your desktop.** Media keys and system media controls on Linux (MPRIS) and Windows, a tray icon, a mini player, and an output device picker.
-- **Yours to style.** Live-switchable themes (Catppuccin, Nord, Gruvbox, Tokyo Night, Dracula and more), custom themes, and an album-art accent.
-- **Extras.** Lyrics with synced highlighting, a tag editor and cover art lookup, listening stats, a spectrum visualizer, and optional Last.fm, ListenBrainz and Discord.
-- **No account, no cloud.** Your library, playlists and stats stay on your computer. Scrobbling and Discord are opt-in, cover art is fetched only when you ask, and online lyrics lookup can be turned off.
+- **A look of its own.** Frosted glass over a backdrop that slowly drifts in the colours of the current cover, a floating player, and a waveform seek bar drawn from each song's own loudness.
+- **Now Playing that fills the screen.** Press F: the cover, or the record sliding out of its sleeve, over GPU visualizers (Liquid, Aurora, Nebula) that move with the music in the cover's colours.
+- **Home is about your library.** A random album to play, your listening heatmap and streak, albums to rediscover, what you played on this day in past years, and library facts.
+- **Browse like a record shelf.** Album pages with liner notes, a colour wall that sorts every cover round the colour wheel, and a timeline by decade and year.
+- **Every listen remembered.** A searchable history of everything you played, by day, with a year-long heatmap; import your Last.fm or ListenBrainz history too.
+- **Plays everything well.** FLAC, MP3, AAC/ALAC, Ogg, Opus, WAV, WavPack, AIFF and more, with true gapless playback, crossfade, ReplayGain, a 10-band equalizer and a signal path readout that tells you when the sound is untouched.
+- **Radio mode and smart playlists.** Similar songs from your library keep playing when the queue runs out; playlists update themselves from rules.
+- **Fast to drive.** Instant search across 50,000 tracks, and Ctrl+K for any page, command, album or song.
+- **Looks after your library.** A health check finds missing covers, tags and folders, split albums and duplicates, with a fix next to each.
+- **No account, no cloud.** Your library, playlists and history stay on your computer. Scrobbling and Discord are opt-in, cover art is fetched only when you ask, and online lyrics lookup can be turned off.
 
 ## Screenshots
+| Now Playing | Vinyl mode |
+|---|---|
+| ![Now Playing over the Aurora visualizer](docs/screenshots/now-playing.png) | ![Vinyl mode over the Liquid visualizer](docs/screenshots/now-playing-vinyl.png) |
+| Home | Album page |
+| ![Home](docs/screenshots/home.png) | ![Album page with liner notes](docs/screenshots/album.png) |
+| Colour wall | Timeline |
+| ![Albums ordered by cover colour](docs/screenshots/albums-colour.png) | ![Albums by decade and year](docs/screenshots/albums-timeline.png) |
+| History | Visualizer |
+| ![Listening history](docs/screenshots/history.png) | ![Nebula visualizer](docs/screenshots/visualizer.png) |
+| Library health | Command palette |
+| ![Library health](docs/screenshots/health.png) | ![Command palette](docs/screenshots/palette.png) |
+| Queue with radio mode | Smart playlist rules |
+| ![Queue with radio mode](docs/screenshots/queue.png) | ![Smart playlist editor](docs/screenshots/smart-editor.png) |
+
 ![Themes](docs/screenshots/themes.gif)
 
-| Queue with radio mode | Smart playlist rules |
-|---|---|
-| ![Queue with radio mode](docs/screenshots/queue.png) | ![Smart playlist editor](docs/screenshots/smart-editor.png) |
-| Albums | Songs |
-| ![Albums](docs/screenshots/albums.png) | ![Songs](docs/screenshots/songs.png) |
-| Smart playlist | Settings |
-| ![Smart playlist](docs/screenshots/smart-playlist.png) | ![Settings](docs/screenshots/settings.png) |
+_Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (see its docstring for rendering the GPU visualizers headless)._
 
-_Screenshots are rendered offscreen from a synthetic library: `python scripts/screenshots.py docs/screenshots [--scale 2]`._
+## Keyboard
+| Key | Does |
+|---|---|
+| Ctrl+K | Command palette: any page, command, album, artist or song |
+| / or Ctrl+F | Search |
+| Space · N · P | Play/pause · next · previous |
+| ← → · ↑ ↓ | Seek 5 s · volume |
+| S · R | Shuffle · repeat |
+| F · F11 · Esc | Now Playing · full screen · close |
+| Q · L | Queue · lyrics |
+| Ctrl+M | Mini player |
+| Alt+← | Back |
 
 ## All features
 - Scans folders (mutagen tags + embedded/folder cover art) into SQLite with FTS5 instant search; incremental rescans (mtime/size), background scanning, file watching, and removal of moved/deleted paths.
 - Formats: FLAC, MP3, OGG/Vorbis, Opus, WAV, AAC/M4A, ALAC, WMA, APE, WavPack, AIFF and more (anything Qt's FFmpeg backend decodes). WAV/AIFF RIFF/FORM text tags are read; missing tags fall back to the filename and unknown values.
+- Home: a random album (roll again for another), a 26-week listening heatmap with your streak and this month's top artists, library facts (hours of music, size, lossless share, formats), albums to rediscover, "On this day" from past years, and recently added albums.
+- History: every listen newest first, grouped by day with each day's plays and time; search it, narrow it to a period, a day on the 12-month heatmap, an artist or a source (played here or imported); play a song again or remove a listen (its play count follows).
+- Album pages with liner notes (genre, format and sample rate, discs, size, date added, your plays with first and last listen, liked songs) and tracks split by disc. The Albums page also has a colour wall (covers ordered by measured colour, cached) and a timeline by decade and year.
+- Now Playing (F): full-window view with the visualizer as backdrop, a large cover or a spinning record in its sleeve, a large waveform seek bar, and controls that fade when the pointer rests.
+- Visualizers drawn with GPU shaders and tinted by the cover: Liquid, Aurora and Nebula (bars without hardware graphics), driven by the spectrum, smoothed band energies and a beat detector.
+- Signal path readout: source format, ReplayGain, equalizer, speed, volume, crossfade and output device with its rate, marking which stages change the sound and when the system resamples.
+- Library health: missing folders, untagged songs, split albums, missing covers, track numbers, years and genres, probable duplicates and low-bitrate files, each with a fix.
+- Command palette (Ctrl+K) with fuzzy matching over pages and commands plus albums, artists and songs.
 - Global search grouped into Artists / Albums / Songs; Home, Albums, Artists, Songs browse views; album and artist pages; editable queue; shuffle/repeat; seek; volume. Queue, current position, shuffle, repeat, and volume are restored after restart; missing queue files are discarded.
 - Drag audio files or folders onto the window to play them (onto the queue panel to append); files outside the library play straight from their tags. Save the queue as a playlist from the queue panel.
 - Smart playlists (Playlists → + → New smart playlist) that update live: combine rules on title, artist, album, genre, format, path, year, length, bitrate, play count, date added, last played and liked, matching all or any, with a sort order and optional song limit. Examples: liked songs not played in 60 days; jazz before 1970; the 50 most played songs this year. With radio on, a smart playlist keeps going with more songs that match its rules.
@@ -64,11 +93,11 @@ _Screenshots are rendered offscreen from a synthetic library: `python scripts/sc
 - CLI controls (`hallucinate --next`, `--prev`, `--play-pause`) and JSON playback status (`--status`) through per-user single-instance IPC; optional desktop notifications on track changes.
 - Optional Last.fm account linking, now-playing updates, 50%-or-four-minutes
   scrobbling, secure system-keyring credentials, and a persistent offline retry queue.
-- Liked Songs and user playlists (create, rename, delete, add from any track's "…" menu); Home shows Recently played, Most played, and a listening-based personal mix.
+- Liked Songs and user playlists (create, rename, delete, add from any track's "…" menu); the Stats page shows Recently played and a listening-based personal mix.
 - A Stats page with top artists/albums/tracks and listening time for all time, the last 7 days, 30 days, or 12 months. Listening time is estimated from known track durations.
 - Filter the library by genre, year, and format; find probable duplicate tracks by normalized title, artist, and duration. Manage multiple library folders in Settings.
 - ReplayGain (track/album, preamp, read from tags), optional crossfade (0–12 s), gapless playback that plays every track to its last sample, and a 10-band equalizer with presets (needs numpy).
-- Optional 24-band spectrum visualizer with a dedicated page; FFT analysis runs on a worker thread and the on/off preference persists.
+- The visualizer's FFT analysis runs on a worker thread and can be turned off ("React to the music").
 - Optional compact format/average-bitrate badges in track rows and the now-playing bar (Settings → Appearance); the display is off by default, shows approximate average kb/s, and leaves unavailable bitrates out rather than displaying zero.
 - Tag editor (single track or whole album; MP3, FLAC, Ogg/Opus, M4A, WMA, APE) and cover art: set from an image file, fetch from MusicBrainz / Cover Art Archive, optionally embed in files.
 - Lyrics panel with synced highlighting: embedded tags, sidecar `.lrc`, or LRCLIB (cached locally; can be disabled).

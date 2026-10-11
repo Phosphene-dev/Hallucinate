@@ -5,24 +5,27 @@
   <project_license>MIT</project_license>
 
   <name>Hallucinate</name>
-  <summary>Search and play your local music library</summary>
+  <summary>Play the music you own, lit by its covers</summary>
   <developer id="io.github.bulmaspanties">
     <name>bulmaspanties</name>
   </developer>
 
   <description>
     <p>
-      Hallucinate is a fast desktop music player for your own files, built around instant search and
-      browsing rather than playlists: type to find an artist, album or song, then click to play.
+      Hallucinate is a fast desktop music player for your own files. It looks like nothing else: frosted
+      glass over colours drawn from the album that's playing, a waveform seek bar, and a full-screen Now
+      Playing view with visualizers that move with the music.
     </p>
     <p>Features:</p>
     <ul>
-      <li>Library scanning with instant full-text search across artists, albums and songs</li>
+      <li>Instant search across artists, albums and songs, and a command palette (Ctrl+K)</li>
+      <li>Now Playing with Liquid, Aurora and Nebula visualizers and an optional spinning-record mode</li>
+      <li>Album pages with liner notes, a colour wall of your covers and a timeline by year</li>
+      <li>A searchable history of every listen with a year-long heatmap</li>
       <li>FLAC, MP3, Ogg Vorbis, Opus, AAC, ALAC, WAV, WavPack, AIFF and more</li>
-      <li>Gapless playback, crossfade, ReplayGain and a 10-band equalizer</li>
-      <li>Liked songs, playlists, smart playlists, listening statistics and a personal mix</li>
-      <li>Radio mode that keeps playing similar songs from your library</li>
-      <li>Tag editor, cover art lookup and synced lyrics</li>
+      <li>Gapless playback, crossfade, ReplayGain, a 10-band equalizer and a signal path readout</li>
+      <li>Radio mode, smart playlists, liked songs, playlists and listening statistics</li>
+      <li>A library health check with fixes, a tag editor, cover art lookup and synced lyrics</li>
       <li>Optional Last.fm and ListenBrainz scrobbling and Discord Rich Presence</li>
       <li>Media keys and desktop controls through MPRIS, a mini player and a tray icon</li>
       <li>Live-switchable themes, including Catppuccin, Nord, Gruvbox, Tokyo Night and Dracula</li>
@@ -38,34 +41,38 @@
     <binary>hallucinate</binary>
   </provides>
 
-  <url type="homepage">https://github.com/bulmaspanties/Hallucinate</url>
+  <url type="homepage">https://bulmaspanties.github.io/Hallucinate/</url>
   <url type="bugtracker">https://github.com/bulmaspanties/Hallucinate/issues</url>
   <url type="vcs-browser">https://github.com/bulmaspanties/Hallucinate</url>
 
   <screenshots>
     <screenshot type="default">
-      <caption>Home with recently added and recently played albums</caption>
-      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/v0.4.0/docs/screenshots/home.png</image>
+      <caption>Now Playing over the Aurora visualizer, in the cover's colours</caption>
+      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/2f06ad327c0f0913f3ec62a2a5a2773b573e5882/docs/screenshots/now-playing.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Home: a random album, your listening heatmap and library facts</caption>
+      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/2f06ad327c0f0913f3ec62a2a5a2773b573e5882/docs/screenshots/home.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>An album page with liner notes</caption>
+      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/2f06ad327c0f0913f3ec62a2a5a2773b573e5882/docs/screenshots/album.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Every album cover ordered round the colour wheel</caption>
+      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/2f06ad327c0f0913f3ec62a2a5a2773b573e5882/docs/screenshots/albums-colour.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The history of every listen, by day</caption>
+      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/2f06ad327c0f0913f3ec62a2a5a2773b573e5882/docs/screenshots/history.png</image>
     </screenshot>
     <screenshot>
       <caption>Radio mode keeps the queue going with similar songs</caption>
-      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/v0.4.0/docs/screenshots/queue.png</image>
-    </screenshot>
-    <screenshot>
-      <caption>Smart playlist rules with a live preview</caption>
-      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/v0.4.0/docs/screenshots/smart-editor.png</image>
-    </screenshot>
-    <screenshot>
-      <caption>Album browser</caption>
-      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/v0.4.0/docs/screenshots/albums.png</image>
-    </screenshot>
-    <screenshot>
-      <caption>Song list</caption>
-      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/v0.4.0/docs/screenshots/songs.png</image>
+      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/2f06ad327c0f0913f3ec62a2a5a2773b573e5882/docs/screenshots/queue.png</image>
     </screenshot>
     <screenshot>
       <caption>Settings, themes and output device</caption>
-      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/v0.4.0/docs/screenshots/settings.png</image>
+      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/2f06ad327c0f0913f3ec62a2a5a2773b573e5882/docs/screenshots/settings.png</image>
     </screenshot>
   </screenshots>
 
@@ -85,6 +92,19 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.5.0" date="2026-10-11">
+      <description>
+        <p>A new look and a lot more to explore.</p>
+        <ul>
+          <li>A design of its own: glass panels over colours from the playing cover, a floating player and a waveform seek bar</li>
+          <li>Now Playing with GPU visualizers (Liquid, Aurora, Nebula) and a spinning-record mode</li>
+          <li>Home about your library: a random album, a listening heatmap, albums to rediscover and "On this day"</li>
+          <li>Album pages with liner notes, a colour wall and a timeline</li>
+          <li>A searchable history of every listen</li>
+          <li>Signal path readout, library health check and a command palette (Ctrl+K)</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.4.0" date="2026-10-10">
       <description>
         <ul>

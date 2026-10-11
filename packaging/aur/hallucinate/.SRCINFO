@@ -1,5 +1,5 @@
 pkgbase = hallucinate
-	pkgdesc = Fast, modern desktop music player with Spotify-style search and browsing (PySide6/QML)
+	pkgdesc = Fast desktop music player for the music you own: liquid, cover-coloured, gapless and private (PySide6/QML)
 	pkgver = 0.3.1
 	pkgrel = 1
 	url = https://github.com/bulmaspanties/Hallucinate
