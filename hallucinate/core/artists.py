@@ -28,14 +28,14 @@ def profile(db, name, now=None, top=5, months=12):
                 genres[part] = genres.get(part, 0) + 1
     listens = db.conn.execute(
         """SELECT COUNT(*) AS plays, COALESCE(SUM(duration), 0) AS seconds, MIN(ts) AS first, MAX(ts) AS last
-           FROM play_log WHERE fold(artist) = ?""",
+           FROM play_log WHERE s_artist = ?""",
         (key,),
     ).fetchone()
     # How this artist ranks among everyone you've played (by listens in the log)
     rank = 0
     if listens["plays"]:
         rank = 1 + db.conn.execute(
-            """SELECT COUNT(*) FROM (SELECT fold(artist) AS a, COUNT(*) AS n FROM play_log GROUP BY a)
+            """SELECT COUNT(*) FROM (SELECT COUNT(*) AS n FROM play_log GROUP BY s_artist)
                WHERE n > ?""",
             (listens["plays"],),
         ).fetchone()[0]
@@ -49,7 +49,7 @@ def profile(db, name, now=None, top=5, months=12):
     starts.reverse()
     first_ts = time.mktime(starts[0].timetuple())
     per_month = {s.strftime("%Y-%m"): 0 for s in starts}
-    for (ts,) in db.conn.execute("SELECT ts FROM play_log WHERE fold(artist) = ? AND ts >= ?", (key, first_ts)):
+    for (ts,) in db.conn.execute("SELECT ts FROM play_log WHERE s_artist = ? AND ts >= ?", (key, first_ts)):
         label = datetime.date.fromtimestamp(ts).strftime("%Y-%m")
         if label in per_month:
             per_month[label] += 1

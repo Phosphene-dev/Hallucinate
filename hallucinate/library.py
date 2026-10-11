@@ -760,14 +760,16 @@ class Library(QObject):
             try:
                 albums = decorate(db.albums())
                 cache = album_views.cached_colors(db)
-                measured = {}
+                measured, seen = {}, {}
                 for a in albums:
                     art = a.get("art") or ""
                     known = cache.get(a["album_key"])
                     if known and known[0] == art:
                         a["cover"] = known[1]
                     elif art:
-                        colour = cover_color(art)
+                        if art not in seen:  # several albums can share one cover file
+                            seen[art] = cover_color(art)
+                        colour = seen[art]
                         if colour:
                             a["cover"] = colour
                             measured[a["album_key"]] = (art, colour)

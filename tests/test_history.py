@@ -166,3 +166,25 @@ def test_history_pages_in(qapp, db, monkeypatch):
         assert len(set(ids)) == 7
     finally:
         ul.shutdown()
+
+
+def test_old_play_logs_gain_folded_columns(tmp_path):
+    import sqlite3
+
+    from hallucinate.core.db import Database
+
+    path = tmp_path / "old.db"
+    old = sqlite3.connect(path)
+    old.execute("""CREATE TABLE play_log(id INTEGER PRIMARY KEY, ts REAL NOT NULL, path TEXT,
+                   artist TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '', album TEXT NOT NULL DEFAULT '',
+                   duration REAL NOT NULL DEFAULT 0, source TEXT NOT NULL DEFAULT 'local', UNIQUE(ts, artist, title))""")
+    old.execute("INSERT INTO play_log(ts, artist, title, album) VALUES (1, 'Björk', 'Jóga', 'Homogenic')")
+    old.commit()
+    old.close()
+    db = Database(path)
+    try:
+        row = db.conn.execute("SELECT s_artist, s_title, s_album FROM play_log").fetchone()
+        assert tuple(row) == ("bjork", "joga", "homogenic")
+        assert [r["title"] for r in history.plays(db, artist="BJORK")] == ["Jóga"]
+    finally:
+        db.close()

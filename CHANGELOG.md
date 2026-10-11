@@ -5,6 +5,13 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Added
+- Artist pages: a round picture lit by its own colours, facts (albums, songs, hours, years active, genres), your listening (plays, time, rank among your artists, first listen, plays per month for the last year), most played songs, the discography grouped by year, albums they appear on, and every song on demand. Radio starts from their most played song.
+- `scripts/bench_library.py` times the heavy library queries against a synthetic 50,000-song library.
+
+### Changed
+- Faster with big libraries (measured on 50,000 songs and 200,000 listens): artist pages 660 → 13 ms, "On this day" 950 → 85 ms, the colour wall's first run 4.2 → 1 s, history totals 2 → 0.5 s. The play log keeps accent-folded copies of artist, title and album (added once on upgrade).
+
 ## [0.5.0] - 2026-10-11
 
 ### Changed
