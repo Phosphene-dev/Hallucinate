@@ -38,6 +38,7 @@ ApplicationWindow {
         case "history": return historyPage
         case "health": return healthPage
         case "recap": return recapPage
+        case "folders": return foldersPage
         case "visualizer": return visualizerPage
         case "settings": return settingsPage
         case "liked": return likedPage
@@ -78,6 +79,7 @@ ApplicationWindow {
     Component { id: historyPage; HistoryPage {} }
     Component { id: healthPage; HealthPage {} }
     Component { id: recapPage; RecapPage {} }
+    Component { id: foldersPage; FoldersPage {} }
     Component { id: visualizerPage; VisualizerPage {} }
     Component { id: settingsPage; SettingsPage {} }
     Component { id: likedPage; PlaylistPage { liked: true } }
@@ -137,7 +139,7 @@ ApplicationWindow {
         }
     }
 
-    TrackMenu { id: trackMenu }
+    TrackMenu { id: trackMenu; objectName: "trackMenu" }
     CommandPalette { id: commandPalette; win: window }
 
     // Playlist files
@@ -364,6 +366,17 @@ ApplicationWindow {
     Shortcut { sequence: "R"; enabled: !window.typing; onActivated: player.cycleRepeat() }
     Shortcut { sequence: "Q"; enabled: !window.typing; onActivated: { window.queueOpen = !window.queueOpen; if (window.queueOpen) window.lyricsOpen = false } }
     Shortcut { sequence: "Ctrl+M"; onActivated: shell.toggleMini() }
+    Repeater {
+        model: 6  // Ctrl+1…5 rates the playing song, Ctrl+0 clears it
+        Item {
+            required property int index
+            Shortcut {
+                sequence: "Ctrl+" + index
+                enabled: player.hasTrack
+                onActivated: userLib.setRating(player.current.path, index === 0 ? userLib.rating(player.current.path) : index)
+            }
+        }
+    }
     Shortcut { sequence: "F"; enabled: !window.typing; onActivated: nowPlaying.toggle() }
     Shortcut { sequence: "Escape"; enabled: nowPlaying.open; onActivated: nowPlaying.open = false }
     Shortcut { sequence: "F11"; onActivated: nowPlaying.toggleFullScreen() }
@@ -380,6 +393,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+Q"; onActivated: Qt.quit() }
 
     NowPlayingView { id: nowPlaying; anchors.fill: parent }
+    Welcome { anchors.fill: parent; onFinished: window.go("home") }
 
     Rectangle {
         anchors.fill: parent

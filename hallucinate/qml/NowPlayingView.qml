@@ -267,6 +267,14 @@ Item {
                         font.pixelSize: Theme.fontSize(16)
                     }
                 }
+                StarRating {
+                    objectName: "nowPlayingRating"
+                    Layout.topMargin: 2
+                    path: player.hasTrack ? player.current.path || "" : ""
+                    size: 20
+                    onColor: "white"
+                    offColor: Qt.rgba(1, 1, 1, 0.35)
+                }
                 SignalPath { light: true; Layout.topMargin: 4 }
                 Item { Layout.preferredHeight: 12 }
                 WaveformSeek {

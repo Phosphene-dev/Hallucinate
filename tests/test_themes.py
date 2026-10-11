@@ -207,6 +207,9 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "recap"))
     qapp.processEvents()
     assert window.findChild(QObject, "recapCard") is not None
+    assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "folders"))
+    qapp.processEvents()
+    assert window.findChild(QObject, "folders") is not None
     # Library health and the command palette
     assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "health"))
     qapp.processEvents()
@@ -288,6 +291,23 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     qapp.processEvents()
     assert QMetaObject.invokeMethod(window, "showSearch", Qt.ConnectionType.DirectConnection)
     qapp.processEvents()
+    # First-run welcome: closed unless the app marked this a fresh install; three steps, then home
+    welcome = window.findChild(QObject, "welcome")
+    assert not welcome.property("open")
+    shell.setUiValue("welcome", "1")
+    welcome.setProperty("open", True)
+    welcome_next = window.findChild(QObject, "welcomeNext")
+    for step in (1, 2):
+        welcome_next.clicked.emit()
+        qapp.processEvents()
+        assert welcome.property("step") == step
+    theme_tiles = window.findChild(QObject, "welcomeThemes")
+    assert theme_tiles is not None and theme_tiles.property("columns") == 3
+    welcome_next.clicked.emit()
+    qapp.processEvents()
+    assert not welcome.property("open") and shell.uiValue("welcome", "") == "0"
+    assert window.property("section") == "home"
+    del welcome, welcome_next, theme_tiles
     assert not qml_warnings
 
     window.close()

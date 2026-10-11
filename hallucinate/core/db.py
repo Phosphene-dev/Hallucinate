@@ -34,11 +34,15 @@ CREATE TABLE IF NOT EXISTS tracks(
   s_title TEXT NOT NULL DEFAULT '',
   s_album TEXT NOT NULL DEFAULT '',
   s_aa TEXT NOT NULL DEFAULT '',
-  s_artist TEXT NOT NULL DEFAULT ''
+  s_artist TEXT NOT NULL DEFAULT '',
+  file TEXT,
+  cue_start REAL NOT NULL DEFAULT 0,
+  cue_end REAL NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_tracks_album ON tracks(album_key);
 CREATE TABLE IF NOT EXISTS folders(path TEXT PRIMARY KEY);
 CREATE TABLE IF NOT EXISTS likes(path TEXT PRIMARY KEY, liked_at REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS ratings(path TEXT PRIMARY KEY, stars INTEGER NOT NULL, rated_at REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS playlists(id INTEGER PRIMARY KEY, name TEXT NOT NULL, created REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS playlist_items(
   id INTEGER PRIMARY KEY, playlist_id INTEGER NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
@@ -69,7 +73,7 @@ FTS = (
 
 COLS = (
     "path mtime size title artist album_artist aa_tag album album_key track_no disc_no "
-    "year genre duration fmt codec bitrate sample_rate art rg_track rg_album rg_peak"
+    "year genre duration fmt codec bitrate sample_rate art rg_track rg_album rg_peak file cue_start cue_end"
 ).split()
 
 SEARCH_COLS = ["s_title", "s_album", "s_aa", "s_artist"]
@@ -121,6 +125,11 @@ class Database:
         if "rg_measured" not in cols:
             # 1 when the ReplayGain values came from Hallucinate's own analysis rather than the file's tags
             self.conn.execute("ALTER TABLE tracks ADD COLUMN rg_measured INTEGER NOT NULL DEFAULT 0")
+        if "file" not in cols:
+            # CUE sheet songs: the real audio file and where the song lies in it (cue_end 0: to the end)
+            self.conn.execute("ALTER TABLE tracks ADD COLUMN file TEXT")
+            self.conn.execute("ALTER TABLE tracks ADD COLUMN cue_start REAL NOT NULL DEFAULT 0")
+            self.conn.execute("ALTER TABLE tracks ADD COLUMN cue_end REAL NOT NULL DEFAULT 0")
         if "codec" not in cols:
             self.conn.execute("ALTER TABLE tracks ADD COLUMN codec TEXT NOT NULL DEFAULT ''")
             self.conn.execute(
@@ -161,6 +170,19 @@ class Database:
     # --- user data: likes, playlists, play counts, lyrics cache ----------
     def liked_paths(self) -> set:
         return {r["path"] for r in self.conn.execute("SELECT path FROM likes")}
+
+    def ratings(self) -> dict:
+        return {r["path"]: r["stars"] for r in self.conn.execute("SELECT path, stars FROM ratings")}
+
+    def set_rating(self, path: str, stars: int):
+        """1–5 stars; 0 clears the rating."""
+        stars = max(0, min(5, int(stars)))
+        if stars:
+            self.conn.execute("INSERT OR REPLACE INTO ratings(path, stars, rated_at) VALUES(?,?,?)",
+                              (path, stars, time.time()))
+        else:
+            self.conn.execute("DELETE FROM ratings WHERE path=?", (path,))
+        self.conn.commit()
 
     def set_liked(self, path: str, liked: bool):
         if liked:
@@ -501,6 +523,8 @@ class Database:
     def upsert_track(self, t: dict) -> int:
         params = {c: t.get(c) for c in COLS}
         params["codec"] = t.get("codec") or t.get("fmt", "")
+        params["cue_start"] = t.get("cue_start") or 0.0
+        params["cue_end"] = t.get("cue_end") or 0.0
         params["s_title"] = fold(t["title"])
         params["s_album"] = fold(t["album"])
         params["s_aa"] = fold(t["album_artist"])
@@ -528,6 +552,10 @@ class Database:
                 f"INSERT INTO tracks({cols}) VALUES({vals})", {**params, "added": time.time()}
             )
             tid = cur.lastrowid
+        if t.get("rating"):
+            # A rating written by another player counts until you rate the song here
+            self.conn.execute("INSERT OR IGNORE INTO ratings(path, stars, rated_at) VALUES(?,?,?)",
+                              (t["path"], int(t["rating"]), time.time()))
         if self.has_fts:
             self.conn.execute("DELETE FROM tracks_fts WHERE rowid=?", (tid,))
             self.conn.execute(
@@ -541,13 +569,13 @@ class Database:
         """[(album_key, [paths in album order])] for albums with a song lacking ReplayGain; whole albums are
         returned so album gain covers every song."""
         keys = [r[0] for r in self.conn.execute(
-            "SELECT DISTINCT album_key FROM tracks WHERE rg_track IS NULL ORDER BY album_key"
+            "SELECT DISTINCT album_key FROM tracks WHERE rg_track IS NULL AND file IS NULL ORDER BY album_key"
             + (" LIMIT ?" if limit else ""), (limit,) if limit else ())]
         return [(k, [r[0] for r in self.conn.execute(
-            f"SELECT path FROM tracks WHERE album_key=? ORDER BY {_ORDER}", (k,))]) for k in keys]
+            f"SELECT path FROM tracks WHERE album_key=? AND file IS NULL ORDER BY {_ORDER}", (k,))]) for k in keys]
 
     def tracks_without_gain(self) -> int:
-        return self.conn.execute("SELECT COUNT(*) FROM tracks WHERE rg_track IS NULL").fetchone()[0]
+        return self.conn.execute("SELECT COUNT(*) FROM tracks WHERE rg_track IS NULL AND file IS NULL").fetchone()[0]
 
     def store_loudness(self, results):
         """Save measurements [{path, track_gain, album_gain, peak}] and use them for songs without gain tags."""

@@ -29,6 +29,28 @@ def test_app_launches_offscreen(tmp_path, music):
     assert "media controls unavailable" not in r.stderr  # Windows: SMTC must come up
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="reads the settings file (the registry on Windows)")
+def test_first_run_opens_on_the_welcome(tmp_path):
+    (tmp_path / "Music").mkdir()
+    env = dict(
+        os.environ,
+        QT_QPA_PLATFORM="offscreen",
+        HOME=str(tmp_path),
+        XDG_CONFIG_HOME=str(tmp_path / "config"),
+        HALLUCINATE_DATA=str(tmp_path / "data"),
+        HALLUCINATE_DISABLE_LEGACY_MIGRATION="1",
+        HALLUCINATE_CONTROL_SOCKET="hallucinate-smoke-" + uuid4().hex,
+    )
+    r = subprocess.run([sys.executable, "-m", "hallucinate", "--quit-after", "2500"],
+                       env=env, capture_output=True, text=True, timeout=60)
+    if "ImportError" in r.stderr and "PySide6" in r.stderr:
+        pytest.skip("PySide6 is not usable in this environment")
+    assert r.returncode == 0, r.stderr
+    assert not [l for l in r.stderr.splitlines() if ".qml" in l and "Error decoding" not in l], r.stderr
+    settings = list((tmp_path / "config").rglob("*.conf"))
+    assert settings and any("welcome=1" in f.read_text() for f in settings), settings
+
+
 def test_legacy_module_name_remains_a_working_cli_shim():
     result = subprocess.run(
         [sys.executable, "-m", "musicplayer", "--version"],

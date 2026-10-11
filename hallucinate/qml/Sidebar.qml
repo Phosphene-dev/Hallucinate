@@ -22,6 +22,7 @@ Item {
     readonly property var pages: [
         { id: "home", t: "Home", i: "home" }, { id: "albums", t: "Albums", i: "album" },
         { id: "artists", t: "Artists", i: "artist" }, { id: "songs", t: "Songs", i: "songs" },
+        { id: "folders", t: "Folders", i: "folder" },
         { id: "liked", t: "Liked Songs", i: "heart" }, { id: "stats", t: "Stats", i: "stats" },
         { id: "history", t: "History", i: "history" },
         { id: "recap", t: "Recap", i: "sparkle" }, { id: "visualizer", t: "Visualizer", i: "wave" }

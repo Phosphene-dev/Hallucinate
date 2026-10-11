@@ -95,6 +95,7 @@ Item {
                     formatName: player.hasTrack ? player.current.codec || "" : ""
                     bitrate: player.hasTrack ? player.current.bitrate || 0 : 0
                 }
+                StarRating { anchors.verticalCenter: parent.verticalCenter; path: player.hasTrack ? player.current.path || "" : ""; size: 12 }
                 SignalPath { visible: player.hasTrack && stages.length > 0 }
             }
         }

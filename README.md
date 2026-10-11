@@ -71,6 +71,7 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 | F · F11 · Esc | Now Playing · full screen · close |
 | Q · L | Queue · lyrics |
 | Ctrl+M | Mini player |
+| Ctrl+1…5 · Ctrl+0 | Rate the playing song · clear its rating |
 | Alt+← | Back |
 
 ## All features
@@ -83,6 +84,12 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - Visualizers drawn with GPU shaders and tinted by the cover: Liquid, Aurora and Nebula (bars without hardware graphics), driven by the spectrum, smoothed band energies and a beat detector.
 - Signal path readout: source format, ReplayGain, equalizer, speed, volume, crossfade and output device with its rate, marking which stages change the sound and when the system resamples.
 - Library health: missing folders, untagged songs, split albums, missing covers, track numbers, years and genres, probable duplicates and low-bitrate files, each with a fix.
+- Artist pages: a picture lit by its own colours, facts, your listening (plays, rank, first listen, plays per month), most played songs, the discography by year and albums they appear on; radio from their most played song.
+- Recap: a week, month or year of listening summed up (time, top artists, albums, songs and genres, new artists, the busiest day, longest streak, when you listen), with a highlights card to save as an image.
+- Folder view: browse your folders on disk with breadcrumbs, and play, shuffle or queue a folder with everything below it.
+- Star ratings (1–5, alongside Like) from the track menu, the player or Ctrl+1…5; ratings from other players' tags are read, and smart playlists can use them.
+- CUE sheets: a single-file album with a .cue appears as its separate songs and plays gaplessly.
+- First-run welcome: choose your music folders, a theme and scrobbling on a fresh install.
 - Command palette (Ctrl+K) with fuzzy matching over pages and commands plus albums, artists and songs.
 - Global search grouped into Artists / Albums / Songs; Home, Albums, Artists, Songs browse views; album and artist pages; editable queue; shuffle/repeat; seek; volume. Queue, current position, shuffle, repeat, and volume are restored after restart; missing queue files are discarded.
 - Drag audio files or folders onto the window to play them (onto the queue panel to append); files outside the library play straight from their tags. Save the queue as a playlist from the queue panel.
@@ -96,11 +103,13 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - Liked Songs and user playlists (create, rename, delete, add from any track's "…" menu); the Stats page shows Recently played and a listening-based personal mix.
 - A Stats page with top artists/albums/tracks and listening time for all time, the last 7 days, 30 days, or 12 months. Listening time is estimated from known track durations.
 - Filter the library by genre, year, and format; find probable duplicate tracks by normalized title, artist, and duration. Manage multiple library folders in Settings.
-- ReplayGain (track/album, preamp, read from tags), optional crossfade (0–12 s), gapless playback that plays every track to its last sample, and a 10-band equalizer with presets (needs numpy).
+- ReplayGain (track/album, preamp, read from tags, or measured with EBU R128 for files without tags, which are never modified), optional crossfade (0–12 s), gapless playback that plays every track to its last sample, and a 10-band equalizer with presets (needs numpy).
 - The visualizer's FFT analysis runs on a worker thread and can be turned off ("React to the music").
 - Optional compact format/average-bitrate badges in track rows and the now-playing bar (Settings → Appearance); the display is off by default, shows approximate average kb/s, and leaves unavailable bitrates out rather than displaying zero.
 - Tag editor (single track or whole album; MP3, FLAC, Ogg/Opus, M4A, WMA, APE) and cover art: set from an image file, fetch from MusicBrainz / Cover Art Archive, optionally embed in files.
-- Lyrics panel with synced highlighting: embedded tags, sidecar `.lrc`, or LRCLIB (cached locally; can be disabled).
+- Headphone correction from AutoEQ's profiles (search by model, or import a ParametricEQ / GraphicEQ file), applied under the equalizer bands.
+- Lyrics panel with synced highlighting, and karaoke-style lyrics in Now Playing: embedded tags, sidecar `.lrc`, or LRCLIB (cached locally; can be disabled).
+- Import M3U, M3U8 and PLS playlists (matched by path, then artist and title, then file name) and export any playlist, Liked Songs or the queue as M3U8.
 - Mini player (always-on-top, `Ctrl+M`) and a system tray icon with play/pause/next/previous, optional close-to-tray.
 - Keyboard focus rings and screen-reader names on buttons, rows and cards; renders crisply on HiDPI (tested at 2x).
 - Live-switchable, file-backed themes with album-art accent mode and keyboard-friendly UI.

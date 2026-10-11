@@ -30,6 +30,7 @@ FIELDS = {
     "added": ("date", "t.added", "Date added"),
     "last_played": ("date", "p.last", "Last played"),
     "liked": ("bool", "l.path IS NOT NULL", "Liked"),
+    "rating": ("number", "COALESCE(r.stars, 0)", "Rating (stars)"),
 }
 
 # kind -> {op: label}
@@ -51,11 +52,13 @@ SORTS = {
     "year_asc": ("Oldest first", "t.year, t.s_album, t.disc_no, t.track_no"),
     "added_desc": ("Recently added", "t.added DESC"),
     "plays_desc": ("Most played", "COALESCE(p.count, 0) DESC, t.s_title"),
+    "rating_desc": ("Highest rated", "COALESCE(r.stars, 0) DESC, COALESCE(p.count, 0) DESC, t.s_title"),
     "last_played_desc": ("Recently played", "p.last IS NULL, p.last DESC"),
     "last_played_asc": ("Least recently played", "p.last IS NOT NULL, p.last"),
 }
 
-FROM = "FROM tracks t LEFT JOIN plays p ON p.path = t.path LEFT JOIN likes l ON l.path = t.path"
+FROM = ("FROM tracks t LEFT JOIN plays p ON p.path = t.path LEFT JOIN likes l ON l.path = t.path "
+        "LEFT JOIN ratings r ON r.path = t.path")
 MAX_RULES = 50
 MAX_LIMIT = 100_000
 DAY_S = 86_400

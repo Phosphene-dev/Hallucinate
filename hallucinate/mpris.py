@@ -133,7 +133,7 @@ def metadata(player) -> dict:
         "xesam:title": t.get("title", ""),
         "xesam:artist": [t.get("artist", "")],
         "xesam:album": t.get("album", ""),
-        "xesam:url": QUrl.fromLocalFile(t.get("path", "")).toString(),
+        "xesam:url": QUrl.fromLocalFile(t.get("file") or t.get("path", "")).toString(),
     }
     if t.get("artUrl"):
         md["mpris:artUrl"] = t["artUrl"]

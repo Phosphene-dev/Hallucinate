@@ -221,6 +221,12 @@ class ThemeManager(QObject):
     def availableThemes(self):
         return sorted(self._themes, key=str.casefold)
 
+    @Slot(str, result="QVariantMap")
+    def themeColors(self, name):
+        """A theme's colours by name (for previews such as the welcome's theme picker); {} if unknown."""
+        theme = self._themes.get(name)
+        return dict(theme["colors"]) if theme else {}
+
     @Property(str, notify=themeChanged)
     def currentTheme(self):
         return self._current_name

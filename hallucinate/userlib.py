@@ -53,6 +53,7 @@ class UserLibrary(QObject):
         self._reader = _Reader(str(db_path), "userlib")
         self._player = player
         self._liked = set()
+        self._ratings = {}
         self._likes_revision = 0
         self._playlist_id = -1
         self._playlist_items = []
@@ -141,6 +142,7 @@ class UserLibrary(QObject):
             try:
                 data = {
                     "liked_paths": db.liked_paths(),
+                    "ratings": db.ratings(),
                     "playlists": db.playlists(),
                     "liked": decorate(db.liked_tracks()),
                     "mostPlayed": decorate(db.most_played(10)),
@@ -167,6 +169,7 @@ class UserLibrary(QObject):
     @Slot(object)
     def _apply_refresh(self, data):
         self._liked = data["liked_paths"]
+        self._ratings = data["ratings"]
         m = self._models
         m["playlists"].set_items(data["playlists"])
         m["liked"].set_items(data["liked"])
@@ -267,6 +270,30 @@ class UserLibrary(QObject):
         self._likes_revision += 1
         self.likesChanged.emit()
         self._write(lambda db, p, v: db.set_liked(p, v), path, liked)
+
+    @Slot(str, result=int)
+    def rating(self, path):
+        """0–5 stars (0 = not rated). Bind through likesRevision to update when ratings change."""
+        return self._ratings.get(path, 0)
+
+    @Slot(str, int)
+    def setRating(self, path, stars):
+        """Rate a song 1–5 stars; 0, or the stars it already has, clears the rating."""
+        if not path:
+            return
+        stars = max(0, min(5, int(stars)))
+        if stars == self._ratings.get(path, 0):
+            stars = 0
+        if stars:
+            self._ratings[path] = stars
+        else:
+            self._ratings.pop(path, None)
+        self._likes_revision += 1
+        self.likesChanged.emit()
+        self._write(lambda db, p, s: db.set_rating(p, s), path, stars, refresh=False)
+        if self._smart_id >= 0:  # an open smart playlist may filter or sort by rating
+            sid = self._smart_id
+            self._reader.submit(lambda db: self._load_smart(db, sid))
 
     @Slot(int)
     def playLiked(self, index):

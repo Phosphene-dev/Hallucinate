@@ -9,6 +9,8 @@ import urllib.request
 
 import mutagen
 
+from . import cue
+
 USER_AGENT = "hallucinate (https://github.com/bulmaspanties/Hallucinate)"
 _TS = re.compile(r"\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]")
 
@@ -55,6 +57,8 @@ def _first(v):
 
 def read_embedded(path):
     """Lyrics text from tags (USLT, LYRICS, \xa9lyr) or a sidecar .lrc/.txt file; "" if none."""
+    if cue.is_virtual(path):
+        return ""  # a CUE sheet song: the file's lyrics and sidecars are for the whole album
     stem = os.path.splitext(path)[0]
     for ext in (".lrc", ".LRC", ".txt"):
         side = stem + ext

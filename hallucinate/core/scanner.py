@@ -2,7 +2,7 @@
 import os
 from typing import Callable, Optional
 
-from . import tags
+from . import cue, tags
 from .db import Database
 
 
@@ -54,6 +54,7 @@ class Scanner:
             visited.add(real)
             dirs[:] = sorted(d for d in dirs if not d.startswith("."))
             stats["dirs"].append(root)
+            sheets = self._cue_sheets(root, files)
             for name in sorted(files):
                 if self.should_stop():
                     self.db.commit()
@@ -65,10 +66,13 @@ class Scanner:
                     st = os.stat(path)
                 except OSError:
                     continue
-                seen.add(path)
                 self._seen += 1
                 if self.progress and self._seen % 25 == 0:
                     self.progress(self._seen)
+                if path in sheets:
+                    pending += self._scan_cue(path, st, sheets[path], existing, seen, stats)
+                    continue
+                seen.add(path)
                 old = existing.get(path)
                 if old and old[0] == st.st_mtime and old[1] == st.st_size:
                     stats["unchanged"] += 1
@@ -89,6 +93,48 @@ class Scanner:
             self.db.remove_paths(gone)
             stats["removed"] += len(gone)
         self.db.commit()
+
+    @staticmethod
+    def _cue_sheets(directory, files):
+        """{audio path: (sheet, file entry, sheet mtime)} for the audio files that CUE sheets here split up."""
+        audio = [f for f in files if os.path.splitext(f)[1].lower() in tags.AUDIO_EXTS]
+        out = {}
+        for name in sorted(files):
+            if not name.lower().endswith(".cue") or not audio:
+                continue
+            path = os.path.join(directory, name)
+            try:
+                mtime = os.stat(path).st_mtime
+            except OSError:
+                continue
+            for target, (sheet, entry) in cue.split_files(path, audio).items():
+                out.setdefault(target, (sheet, entry, mtime))
+        return out
+
+    def _scan_cue(self, path, st, found, existing, seen, stats) -> int:
+        """Add the songs a CUE sheet makes of one audio file. Returns how many rows were written."""
+        sheet, entry, cue_mtime = found
+        expected = [cue.virtual_path(path, t["number"]) for t in entry["tracks"]]
+        mtime = max(st.st_mtime, cue_mtime)
+        if all(existing.get(p) == (mtime, st.st_size) for p in expected):
+            seen.update(expected)
+            stats["unchanged"] += len(expected)
+            return 0
+        whole = tags.read_track(path, art_known=lambda k: False)
+        if whole is None:
+            stats["errors"] += 1
+            return 0
+        rows = cue.tracks(whole, sheet, entry, cue_mtime)
+        art = whole.get("_art")
+        for row in rows:
+            if art is not None:
+                row["_art"] = art
+            self._attach_art(row, os.path.dirname(path))
+            old = existing.get(row["path"])
+            self.db.upsert_track(row)
+            seen.add(row["path"])
+            stats["updated" if old else "added"] += 1
+        return len(rows)
 
     def _attach_art(self, t: dict, directory: str):
         key = t["album_key"]

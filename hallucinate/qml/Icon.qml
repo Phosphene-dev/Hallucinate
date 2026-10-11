@@ -124,6 +124,8 @@ Canvas {
             ctx.beginPath(); ctx.arc(w*.5, h*.5, w*.4, 0, Math.PI*2); ctx.stroke()
             ctx.beginPath(); ctx.arc(w*.5, h*.5, w*.24, -0.6, 1.2); ctx.stroke()
             ctx.beginPath(); ctx.arc(w*.5, h*.5, w*.08, 0, Math.PI*2); ctx.fill(); break
+        case "folder":
+            line([.1,.26,.1,.82,.9,.82,.9,.34,.48,.34,.4,.22,.1,.22,.1,.3]); break
         case "history":  // a clock
             ctx.beginPath(); ctx.arc(w*.5, h*.5, w*.38, 0, Math.PI*2); ctx.stroke()
             line([.5,.26,.5,.5]); line([.5,.5,.67,.62]); break

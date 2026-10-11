@@ -11,6 +11,24 @@ Menu {
 
     function show(p, t, c, i) { path = p; trackTitle = t; context = c; index = i; popup() }
 
+    Item {
+        objectName: "menuRating"
+        width: 220; height: 38
+        Text {
+            x: 14
+            anchors.verticalCenter: parent.verticalCenter
+            text: "Rating"
+            color: Theme.textDim
+            font.family: Theme.fontFamily
+            font.pixelSize: Theme.fontSize(13)
+        }
+        StarRating {
+            anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+            path: menu.path
+            size: 17
+        }
+    }
+    MenuSeparator {}
     MenuItem { text: "Play next"; onTriggered: userLib.playNextPath(menu.path) }
     MenuItem { text: "Add to queue"; onTriggered: userLib.enqueuePath(menu.path) }
     MenuItem {
@@ -34,7 +52,11 @@ Menu {
             onObjectRemoved: (i, o) => plMenu.removeItem(o)
         }
     }
-    MenuItem { text: "Edit tags…"; onTriggered: Nav.editTags(menu.path) }
+    MenuItem {
+        text: "Edit tags…"
+        enabled: !/\.[A-Za-z0-9]+#\d+$/.test(menu.path)  // CUE sheet songs are edited in the .cue file
+        onTriggered: Nav.editTags(menu.path)
+    }
     MenuItem {
         visible: menu.context === "playlist"
         height: visible ? implicitHeight : 0
