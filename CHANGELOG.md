@@ -5,6 +5,8 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-10-12
+
 ### Fixed
 - The Stats page's top artists and top albums showed as white rows with unreadable text.
 - The sidebar no longer piles its entries on top of each other in short windows (tiling window managers, fractional scaling): entries tighten up, and whatever still doesn't fit scrolls above Settings.
