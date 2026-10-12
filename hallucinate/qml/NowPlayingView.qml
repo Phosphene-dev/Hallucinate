@@ -267,6 +267,10 @@ Item {
                         font.pixelSize: Theme.fontSize(16)
                     }
                 }
+                LyricsTiming {
+                    visible: view.lyricsMode && lyricsCtl.status === "found" && lyricsCtl.synced
+                    tint: Qt.rgba(1, 1, 1, 0.7)
+                }
                 StarRating {
                     objectName: "nowPlayingRating"
                     Layout.topMargin: 2

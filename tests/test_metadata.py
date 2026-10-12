@@ -318,3 +318,51 @@ def test_find_all_missing_covers(qapp, tmp_path, monkeypatch):
     finally:
         editor.shutdown()
         db.close()
+
+
+def test_lrc_offset_and_formatting():
+    from hallucinate.core import lyrics
+
+    assert lyrics.parse_lrc("[offset:+500]\n[00:01.00]one\n[00:02.50]two") == [(500, "one"), (2000, "two")]
+    assert lyrics.parse_lrc("[offset:-250]\n[00:01.00]one") == [(1250, "one")]
+    text = lyrics.format_lrc([(1000, "one"), (62_500, "two")], offset_ms=500)
+    assert text == "[00:00.50]one\n[01:02.00]two\n"
+    assert lyrics.parse_lrc(text) == [(500, "one"), (62_000, "two")]
+    assert lyrics.sidecar_path("/m/song.flac") == "/m/song.lrc"
+    assert lyrics.sidecar_path("/m/live.flac#03") is None or not lyrics.sidecar_path("/m/live.flac#03")
+
+
+class _LyricsPlayer(QObject):
+    trackChanged = Signal()
+    positionChanged = Signal()
+    hasTrack = True
+
+    def __init__(self, current, position):
+        super().__init__()
+        self.current, self.position = current, position
+
+
+def test_lyrics_offset_is_saved_next_to_the_song(qapp, tmp_path):
+    from conftest import wait_for
+
+    from hallucinate.core.db import Database
+    from hallucinate.lyricsctl import LyricsController
+
+    song = tmp_path / "song.flac"
+    song.write_bytes(b"")
+    (tmp_path / "song.lrc").write_text("[00:01.00]one\n[00:03.00]two\n[00:05.00]three\n", encoding="utf-8")
+    Database(tmp_path / "lib.db").close()
+
+    player = _LyricsPlayer({"path": str(song), "artist": "A", "title": "T", "album": "", "duration": 9}, 2_600)
+    ctl = LyricsController(tmp_path / "lib.db", player)
+    try:
+        ctl.setOnlineLookup(False)
+        assert wait_for(lambda: ctl.status == "found" and ctl.synced)
+        assert ctl.currentLine == 0  # 2.6 s: still on "one"
+        ctl.nudge(250)  # the lyrics were late: show them 0.25 s earlier
+        assert ctl.offset == 250 and ctl.currentLine == 1
+        assert ctl.saveTiming() == "Saved song.lrc"
+        assert (tmp_path / "song.lrc").read_text(encoding="utf-8").splitlines()[:2] == ["[00:00.75]one", "[00:02.75]two"]
+        assert ctl.offset == 0 and ctl.currentLine == 1 and ctl.source == "lrc file"
+    finally:
+        ctl.shutdown()

@@ -1,5 +1,6 @@
 """Lyrics for the playing track: DB cache -> embedded/.lrc -> LRCLIB, with synced line tracking."""
 import logging
+import os
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
@@ -27,6 +28,7 @@ class LyricsController(QObject):
         self._line = -1
         self._token = 0
         self._online = True
+        self._offset = 0  # ms; positive shows lines earlier (as LRC's [offset:])
         self._loaded.connect(self._apply)
         player.trackChanged.connect(self.reload)
         player.positionChanged.connect(self._on_position)
@@ -56,6 +58,48 @@ class LyricsController(QObject):
     def currentLine(self):
         return self._line
 
+    @Property(int, notify=lineChanged)
+    def offset(self):
+        return self._offset
+
+    @Slot(int)
+    def nudge(self, ms):
+        """Shift the synced lines `ms` earlier (negative: later) while listening."""
+        if self._lines:
+            self._offset = max(-60_000, min(60_000, self._offset + int(ms)))
+            self._line = -2  # force an update
+            self._on_position()
+            self.lineChanged.emit()
+
+    @Slot()
+    def resetOffset(self):
+        self.nudge(-self._offset)
+
+    @Slot(result=str)
+    def saveTiming(self):
+        """Write the lines with the current offset to an .lrc file next to the song (and the lyrics cache)."""
+        if not self._lines or not self._path:
+            return "No synced lyrics to save"
+        target = lx.sidecar_path(self._path)
+        if target is None:
+            return "Lyrics for songs from a CUE sheet can't be saved next to the file"
+        text = lx.format_lrc([(ln["t"], ln["text"]) for ln in self._lines], self._offset)
+        try:
+            with open(target, "w", encoding="utf-8") as fh:
+                fh.write(text)
+        except OSError as exc:
+            return f"Couldn't save {os.path.basename(target)}: {exc.strerror or exc}"
+        path, plain = self._path, self._plain
+        self._reader.submit(lambda db: db.set_lyrics(path, text, plain, "lrc file"))
+        parsed = lx.parse_lrc(text)
+        self._times = [t for t, _ in parsed]
+        self._lines = [{"t": t, "text": s} for t, s in parsed]
+        self._offset = 0
+        self._source = "lrc file"
+        self.changed.emit()
+        self.lineChanged.emit()
+        return f"Saved {os.path.basename(target)}"
+
     @Property(bool, notify=changed)
     def onlineLookup(self):
         return self._online
@@ -77,6 +121,7 @@ class LyricsController(QObject):
         self._token += 1
         self._lines, self._times, self._plain, self._source = [], [], "", ""
         self._line = -1
+        self._offset = 0
         self._status = "loading" if path else "idle"
         self.changed.emit()
         self.lineChanged.emit()
@@ -132,7 +177,7 @@ class LyricsController(QObject):
     def _on_position(self):
         if not self._times:
             return
-        line = lx.line_at(self._times, self._player.position)
+        line = lx.line_at(self._times, self._player.position + self._offset)
         if line != self._line:
             self._line = line
             self.lineChanged.emit()

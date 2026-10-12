@@ -40,9 +40,15 @@ Rectangle {
         font.pixelSize: Theme.fontSize(14)
     }
 
+    LyricsTiming {
+        id: timingRow
+        anchors { right: parent.right; rightMargin: 12; bottom: parent.bottom; bottomMargin: 8 }
+    }
+
     ListView {
         id: synced
-        anchors { top: head.bottom; topMargin: 12; left: parent.left; right: parent.right; bottom: parent.bottom }
+        anchors { top: head.bottom; topMargin: 12; left: parent.left; right: parent.right; bottom: parent.bottom
+                  bottomMargin: timingRow.visible ? timingRow.height + 10 : 0 }
         visible: lyricsCtl.status === "found" && lyricsCtl.synced
         clip: true
         model: lyricsCtl.lines
