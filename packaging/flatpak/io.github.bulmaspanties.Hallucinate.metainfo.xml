@@ -94,6 +94,15 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.6.1" date="2026-10-12">
+      <description>
+        <ul>
+          <li>Fixed white, unreadable rows in the Stats page's top artists and albums</li>
+          <li>The sidebar no longer overlaps itself in short windows (tiling window managers, fractional scaling)</li>
+          <li>Accent colours taken from dark album covers stay readable</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.6.0" date="2026-10-11">
       <description>
         <p>More ways into your library, and a better fit for your ears.</p>
