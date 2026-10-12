@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.9.4" date="2026-10-12">
+      <description>
+        <p>Big libraries: tested with a quarter of a million songs. Start-up and rescans are faster, opening albums and the timeline no longer stalls, and memory use is a third lower.</p>
+        <p>The timeline shows two rows of each year, with "Show all" for the rest.</p>
+      </description>
+    </release>
     <release version="0.9.3" date="2026-10-12">
       <description>
         <p>Safety and stability: song tags and lyrics can no longer make the interface go online, the library database is backed up daily and restored automatically if it's ever damaged, a slow memory leak is fixed and the caches stay a sensible size.</p>
