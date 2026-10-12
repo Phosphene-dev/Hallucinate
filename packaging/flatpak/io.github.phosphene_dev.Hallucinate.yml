@@ -36,10 +36,5 @@ modules:
         ${FLATPAK_DEST}/share/icons/hicolor/${s}x${s}/apps/${FLATPAK_ID}.png; done
       - install -Dm644 packaging/flatpak/${FLATPAK_ID}.metainfo.xml -t ${FLATPAK_DEST}/share/metainfo/
     sources:
-      # Flathub submission: replace with
-      #   - type: git
-      #     url: https://github.com/Phosphene-dev/Hallucinate.git
-      #     tag: vX.Y.Z
-      #     commit: <full commit hash of the tag>
-      - type: dir
+      - type: dir # this checkout: CI builds pull requests and releases build their tag
         path: ../..

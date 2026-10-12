@@ -168,10 +168,86 @@ jobs:
           cp "dist/hallucinate-$v-macos-arm64.zip" dist/Hallucinate-macos-arm64.zip  # fixed name for latest-download links
           gh release upload "$TAG" "dist/hallucinate-$v-macos-arm64.zip" dist/Hallucinate-macos-arm64.zip --clobber
 
+  # Our own Flatpak repository, served from the website (packaging/flatpak/README.md). The build is committed on
+  # top of the previous release's repository, so updates download only what changed, then signed with the
+  # FLATPAK_GPG_PRIVATE_KEY secret. Without that secret the job only says so.
+  flatpak:
+    needs: tag
+    if: ${{ !cancelled() && needs.tag.result != 'failure' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+      - name: Signing key
+        id: key
+        env:
+          PRIVATE_KEY: ${{ secrets.FLATPAK_GPG_PRIVATE_KEY }}
+        run: |
+          if [ -z "$PRIVATE_KEY" ] || [ ! -f packaging/flatpak/hallucinate-repo.gpg ]; then
+            echo "::notice::No Flatpak signing key (FLATPAK_GPG_PRIVATE_KEY secret and packaging/flatpak/hallucinate-repo.gpg); skipping the Flatpak repository"
+            exit 0
+          fi
+          export GNUPGHOME="$RUNNER_TEMP/gnupg"
+          mkdir -m 700 "$GNUPGHOME"
+          echo "$PRIVATE_KEY" | gpg --batch --import
+          key=$(gpg --batch --with-colons --list-secret-keys | awk -F: '$1 == "fpr" {print $10; exit}')
+          # the secret must belong to the public key that is published
+          gpg --batch --with-colons --show-keys packaging/flatpak/hallucinate-repo.gpg | grep -q ":$key:" \
+            || { echo "::error::FLATPAK_GPG_PRIVATE_KEY doesn't match packaging/flatpak/hallucinate-repo.gpg"; exit 1; }
+          echo "id=$key" >> "$GITHUB_OUTPUT"
+          echo "home=$GNUPGHOME" >> "$GITHUB_OUTPUT"
+      - name: Install Flatpak and Flathub's builder
+        if: steps.key.outputs.id
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak
+          flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive flathub org.flatpak.Builder
+      - name: Previous release's repository
+        if: steps.key.outputs.id
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          from=$(packaging/flatpak/fetch_repo.sh flatpak-repo "$TAG")
+          echo "Continuing from: ${from:-nothing (a new repository)}"
+      - name: Build
+        if: steps.key.outputs.id
+        run: |
+          dbus-run-session -- flatpak run org.flatpak.Builder --user --force-clean --install-deps-from=flathub \
+            --default-branch=stable --repo=flatpak-repo flatpak-build \
+            packaging/flatpak/io.github.phosphene_dev.Hallucinate.yml
+      - name: Sign, update the repository and make the bundle
+        if: steps.key.outputs.id
+        run: |
+          packaging/flatpak/publish.sh flatpak-repo "${{ steps.key.outputs.id }}" "${{ steps.key.outputs.home }}" \
+            packaging/flatpak/hallucinate-repo.gpg "hallucinate-${TAG#v}-x86_64.flatpak"
+      - name: Smoke test the bundle (offscreen)
+        if: steps.key.outputs.id
+        run: |
+          flatpak install --user -y --noninteractive "hallucinate-${TAG#v}-x86_64.flatpak"
+          dbus-run-session -- flatpak run --env=QT_QPA_PLATFORM=offscreen \
+            --env=HALLUCINATE_DISABLE_LEGACY_MIGRATION=1 \
+            --env=HALLUCINATE_CONTROL_SOCKET=hallucinate-release-flatpak-smoke \
+            io.github.phosphene_dev.Hallucinate --quit-after 3000
+      - name: Attach to release
+        if: steps.key.outputs.id && startsWith(env.TAG, 'v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --generate-notes || gh release view "$TAG" >/dev/null
+          fi
+          cp "hallucinate-${TAG#v}-x86_64.flatpak" Hallucinate-x86_64.flatpak  # fixed name for latest-download links
+          tar -cf flatpak-repo.tar -C flatpak-repo .  # the website serves this; the next release builds on it
+          gh release upload "$TAG" "hallucinate-${TAG#v}-x86_64.flatpak" Hallucinate-x86_64.flatpak flatpak-repo.tar \
+            --clobber
+
   # Redeploy the website once every download is attached. A release created by this workflow's token doesn't
   # trigger other workflows, so call the Pages workflow directly.
   website:
-    needs: [appimage, windows, macos]
+    needs: [appimage, windows, macos, flatpak]
     if: ${{ inputs.version != '' || startsWith(github.ref, 'refs/tags/v') }}
     permissions:
       contents: read

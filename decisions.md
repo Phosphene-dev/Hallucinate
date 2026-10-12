@@ -65,6 +65,9 @@ From testing the app on my own library, on Linux (Hyprland) and Windows:
 - **No paid macOS signing.** I won't pay Apple's $99 a year to sign for a platform I don't use. Windows signing
   is worth doing.
 - **The AUR package waits.** It goes up once AUR account sign-ups reopen.
+- **No Flathub; our own Flatpak repository instead.** I don't want to deal with Flathub's submission process,
+  and I prefer AppImages anyway. Hallucinate ships its Flatpak from its own signed repository on the website,
+  which updates like any other Flatpak, and the AppImage stays the main Linux download.
 
 ## My ideas that changed shape or were set aside
 

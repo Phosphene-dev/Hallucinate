@@ -1,20 +1,27 @@
-"""Build the website into a folder: python scripts/build_site.py [OUT] (default: _site).
+"""Build the website into a folder: python scripts/build_site.py [OUT] [--flatpak-repo DIR] (default: _site).
 
 Fills site/index.html with the current version, its release date and its CHANGELOG entry, and copies the
 README screenshots, logo and social preview next to it. The Pages workflow runs this on every release and
-whenever the site, screenshots or changelog change, so the site always matches the latest release."""
+whenever the site, screenshots or changelog change, so the site always matches the latest release.
+
+With --flatpak-repo (the signed repository from the newest release, see packaging/flatpak/README.md) the site
+also serves it at flatpak/repo/, with the .flatpakref and .flatpakrepo files software centres open, and the
+download section offers it."""
+import argparse
+import base64
 import datetime
 import html
 import os
 import re
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 REPO = "https://github.com/Phosphene-dev/Hallucinate"
 SITE_URL = os.environ.get("SITE_URL", "https://phosphene-dev.github.io/Hallucinate/")
+FLATPAK_KEY = ROOT / "packaging" / "flatpak" / "hallucinate-repo.gpg"
+APP_ID = "io.github.phosphene_dev.Hallucinate"
 WAVE_HEIGHTS = [10, 18, 28, 40, 26, 48, 34, 56, 34, 48, 26, 40, 28, 18, 10]
 
 
@@ -88,7 +95,24 @@ def pretty_date(iso):
     return f"{date:%B} {date.day}, {date.year}"
 
 
-def build(out):
+def flatpak_files(out, repo):
+    """Serve the Flatpak repository and write the files that add it. False when there is none to serve."""
+    if not repo or not (Path(repo) / "config").is_file() or not FLATPAK_KEY.is_file():
+        return False
+    shutil.copytree(repo, out / "flatpak" / "repo")
+    key = base64.b64encode(FLATPAK_KEY.read_bytes()).decode()
+    url = f"{SITE_URL}flatpak/repo/"
+    icon = f"{SITE_URL}img/icon-64.png"
+    common = (f"Title=Hallucinate\nUrl={url}\nHomepage={SITE_URL}\nIcon={icon}\n"
+              f"Comment=A music player for your own library\nGPGKey={key}\n")
+    (out / "flatpak" / "hallucinate.flatpakrepo").write_text("[Flatpak Repo]\n" + common, encoding="utf-8")
+    (out / "hallucinate.flatpakref").write_text(
+        f"[Flatpak Ref]\nName={APP_ID}\nBranch=stable\nIsRuntime=false\nSuggestRemoteName=hallucinate\n"
+        "RuntimeRepo=https://dl.flathub.org/repo/flathub.flatpakrepo\n" + common, encoding="utf-8")
+    return True
+
+
+def build(out, flatpak_repo=None):
     out = Path(out)
     if out.exists():
         shutil.rmtree(out)
@@ -104,6 +128,14 @@ def build(out):
         "VERSION": version, "RELEASE_DATE": pretty_date(date), "CHANGES": render_changes(changes),
         "WAVE": wave, "REPO": REPO, "RELEASES": f"{REPO}/releases", "SITE_URL": SITE_URL,
     }
+    if flatpak_files(out, flatpak_repo):
+        values["LINUX_MORE"] = (
+            'Prefer Flatpak? <a href="hallucinate.flatpakref">Install it from our repository</a> and it updates '
+            f'with your other apps, or get the <a href="{REPO}/releases/latest/download/Hallucinate-x86_64.flatpak">'
+            f'single-file bundle</a>. Arch users can build the <a href="{REPO}#install">AUR package</a>.')
+    else:
+        values["LINUX_MORE"] = f'Flatpak and Arch (AUR) packages can be <a href="{REPO}#install">built from source</a>.'
+
     page = (out / "index.html").read_text(encoding="utf-8")
     page = re.sub(r"\{\{([A-Z_]+)\}\}", lambda m: values[m.group(1)], page)
     (out / "index.html").write_text(page, encoding="utf-8")
@@ -112,4 +144,8 @@ def build(out):
 
 
 if __name__ == "__main__":
-    print(build(sys.argv[1] if len(sys.argv) > 1 else ROOT / "_site"))
+    ap = argparse.ArgumentParser()
+    ap.add_argument("out", nargs="?", default=ROOT / "_site")
+    ap.add_argument("--flatpak-repo")
+    args = ap.parse_args()
+    print(build(args.out, args.flatpak_repo))
