@@ -36,6 +36,7 @@ Rectangle {
             height: parent.height
             spacing: 6
             Text {
+                textFormat: Text.PlainText
                 objectName: "albumSelectionCount"
                 anchors.verticalCenter: parent.verticalCenter
                 rightPadding: 6
@@ -66,7 +67,7 @@ Rectangle {
                     Instantiator {
                         model: userLib.playlists
                         delegate: MenuItem {
-                            text: model.name
+                            text: Theme.plain(model.name)
                             onTriggered: {
                                 var k = bar.keys()
                                 userLib.addPathsToPlaylist(model.id, library.albumPaths(k))

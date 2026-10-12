@@ -220,6 +220,7 @@ Popup {
                     }
                 }
                 Text {
+                    textFormat: Text.PlainText
                     anchors { left: lead.right; leftMargin: 14; right: sub.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                     text: modelData.t
                     color: Theme.text
@@ -229,6 +230,7 @@ Popup {
                     font.weight: index === palette.current ? Font.DemiBold : Font.Normal
                 }
                 Text {
+                    textFormat: Text.PlainText
                     id: sub
                     anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
                     width: Math.min(implicitWidth, parent.width * 0.42)
@@ -248,6 +250,7 @@ Popup {
                 }
             }
             Text {
+                textFormat: Text.PlainText
                 anchors.centerIn: parent
                 visible: palette.results.length === 0
                 text: "Nothing matches"

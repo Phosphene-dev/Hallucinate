@@ -29,7 +29,7 @@ Menu {
             delegate: MenuItem {
                 required property int id
                 required property string name
-                text: name
+                text: Theme.plain(name)
                 onTriggered: { userLib.addPathsToPlaylist(id, menu.paths()); Nav.notify(menu.what + " added to “" + name + "”") }
             }
             onObjectAdded: (i, o) => plMenu.addItem(o)
@@ -46,7 +46,7 @@ Menu {
     MenuItem {
         visible: menu.single && menu.artist.length > 0
         height: visible ? implicitHeight : 0
-        text: "Go to " + menu.artist
+        text: "Go to " + Theme.plain(menu.artist)
         onTriggered: Nav.openArtist(menu.artist)
     }
     MenuItem { objectName: "albumRemove"; text: "Remove from library…"; onTriggered: Nav.removeAlbums(menu.keys, menu.what) }

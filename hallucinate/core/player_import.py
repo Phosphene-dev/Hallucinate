@@ -19,6 +19,7 @@ import sqlite3
 import sys
 import time
 import xml.etree.ElementTree as ET
+import xml.parsers.expat
 from urllib.parse import unquote, urlparse
 
 from .db import fold
@@ -260,16 +261,20 @@ def known_locations():
 
 
 def read(path):
-    """Whatever player library `path` is (by its contents)."""
+    """Whatever player library `path` is (by its contents). A damaged file raises ValueError."""
     with open(path, "rb") as fh:
         head = fh.read(512)
-    if head.startswith(b"SQLite format 3"):
-        return read_sqlite_player(path)
-    text = head.decode("utf-8", "replace")
-    if "<rhythmdb" in text:
-        return read_rhythmbox(path)
-    if "<plist" in text or "<!DOCTYPE plist" in text:
-        return read_itunes_xml(path)
+    try:
+        if head.startswith(b"SQLite format 3"):
+            return read_sqlite_player(path)
+        text = head.decode("utf-8", "replace")
+        if "<rhythmdb" in text:
+            return read_rhythmbox(path)
+        if "<plist" in text or "<!DOCTYPE plist" in text:
+            return read_itunes_xml(path)
+    except (ET.ParseError, xml.parsers.expat.ExpatError, plistlib.InvalidFileException, sqlite3.DatabaseError,
+            AttributeError, TypeError, KeyError) as exc:
+        raise ValueError(f"That file looks damaged ({exc.__class__.__name__})") from exc
     raise ValueError("That isn't a library file Hallucinate can read (Strawberry, Clementine, Rhythmbox, "
                      "MusicBee or iTunes)")
 

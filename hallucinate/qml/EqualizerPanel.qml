@@ -13,6 +13,7 @@ Column {
         onToggled: player.setEqEnabled(checked)
     }
     Text {
+        textFormat: Text.PlainText
         visible: !player.eqAvailable
         text: "The equalizer needs the numpy Python package."
         color: Theme.textDim
@@ -22,7 +23,7 @@ Column {
     Row {
         spacing: 12
         opacity: player.eqEnabled ? 1 : 0.5
-        Text { anchors.verticalCenter: parent.verticalCenter; text: "Preset"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+        Text { anchors.verticalCenter: parent.verticalCenter; text: "Preset"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
         StyledCombo {
             id: presetBox
             model: player.eqPresets.concat(["Custom"])
@@ -40,7 +41,7 @@ Column {
                 required property string modelData
                 spacing: 4
                 width: 44
-                Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; text: (player.eqGains[index] > 0 ? "+" : "") + Math.round(player.eqGains[index]) ; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11) }
+                Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; text: (player.eqGains[index] > 0 ? "+" : "") + Math.round(player.eqGains[index]) ; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); textFormat: Text.PlainText }
                 Slider {
                     id: sl
                     orientation: Qt.Vertical
@@ -63,7 +64,7 @@ Column {
                     }
                     TapHandler { acceptedButtons: Qt.RightButton; onTapped: player.setEqBand(index, 0) }
                 }
-                Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; text: modelData; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11) }
+                Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; text: modelData; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); textFormat: Text.PlainText }
             }
         }
     }
@@ -71,6 +72,7 @@ Column {
     // Headphone correction (AutoEQ): search a model or import a profile file
     Item { width: 1; height: 10 }
     Text {
+        textFormat: Text.PlainText
         text: "Headphone correction"
         color: Theme.text
         font.family: Theme.fontFamily
@@ -78,6 +80,7 @@ Column {
         font.weight: Font.DemiBold
     }
     Text {
+        textFormat: Text.PlainText
         width: 560
         wrapMode: Text.Wrap
         text: "Make your headphones sound neutral with an AutoEQ profile. It's applied under the bands above; the "
@@ -117,6 +120,7 @@ Column {
             anchors.verticalCenter: parent.verticalCenter
             spacing: 6
             Text {
+                textFormat: Text.PlainText
                 objectName: "headphoneName"
                 text: "Correcting for " + player.headphoneName
                 color: Theme.text
@@ -154,6 +158,7 @@ Column {
         PillButton { text: "Import file…"; onClicked: hpFile.open() }
     }
     Text {
+        textFormat: Text.PlainText
         visible: headphones.status.length > 0 || hpError.length > 0
         property string hpError: ""
         id: hpStatus
@@ -179,6 +184,7 @@ Column {
             radius: 10
             color: rowMouse.containsMouse ? Theme.glassHover : "transparent"
             Text {
+                textFormat: Text.PlainText
                 x: 12
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width - sourceText.width - 36
@@ -189,6 +195,7 @@ Column {
                 font.pixelSize: Theme.fontSize(13)
             }
             Text {
+                textFormat: Text.PlainText
                 id: sourceText
                 anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
                 text: "measured by " + modelData.source

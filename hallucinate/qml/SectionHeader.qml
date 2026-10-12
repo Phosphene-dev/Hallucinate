@@ -7,6 +7,7 @@ Column {
     property string subtitle
     spacing: 4
     Text {
+        textFormat: Text.PlainText
         text: parent.title
         color: Theme.text
         font.family: Theme.displayFamily
@@ -14,6 +15,7 @@ Column {
         font.weight: Font.DemiBold
     }
     Text {
+        textFormat: Text.PlainText
         visible: text.length > 0
         text: parent.subtitle
         color: Theme.textDim

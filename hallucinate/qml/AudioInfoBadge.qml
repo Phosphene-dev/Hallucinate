@@ -36,6 +36,7 @@ Item {
         border.color: Theme.border
     }
     Text {
+        textFormat: Text.PlainText
         id: labelText
         anchors.centerIn: parent
         text: badge.label

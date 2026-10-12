@@ -149,6 +149,14 @@ class DesktopShell(QObject):
         self._settings.setValue("ui/sidebarCollapsed", self._sidebar_collapsed)
         self.settingsChanged.emit()
 
+    def setStartupNotice(self, text):
+        self._startup_notice = text or ""
+
+    @Property(str, constant=True)
+    def startupNotice(self):
+        """Something the user should hear about as the window opens (a restored database), or ""."""
+        return getattr(self, "_startup_notice", "")
+
     @Property(bool, notify=settingsChanged)
     def offlineMode(self):
         """No internet at all: lyrics and cover lookups, scrobbling, EQ downloads and update checks stay off,

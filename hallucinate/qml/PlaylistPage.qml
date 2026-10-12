@@ -37,15 +37,16 @@ Item {
             Column {
                 anchors { left: parent.left; leftMargin: 8; bottom: parent.bottom; bottomMargin: 12 }
                 spacing: 8
-                Text { text: page.liked ? "COLLECTION" : "PLAYLIST"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold }
+                Text { text: page.liked ? "COLLECTION" : "PLAYLIST"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold; textFormat: Text.PlainText }
                 Text {
+                    textFormat: Text.PlainText
                     text: page.liked ? "Liked Songs" : page.playlistName
                     color: Theme.text
                     font.family: Theme.displayFamily
                     font.pixelSize: Theme.fontSize(30)
                     font.weight: Font.Bold
                 }
-                Text { text: list.count + " songs"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+                Text { text: list.count + " songs"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 Row {
                     spacing: 10
                     PillButton { primary: true; text: "Play"; enabled: list.count > 0; onClicked: page.liked ? userLib.playLiked(0) : userLib.playPlaylist(0, false) }
@@ -57,6 +58,7 @@ Item {
             }
         }
         footer: Text {
+            textFormat: Text.PlainText
             visible: list.count === 0
             width: list.width
             height: 120

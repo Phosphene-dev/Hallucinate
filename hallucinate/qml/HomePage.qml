@@ -35,6 +35,7 @@ Item {
             Column {
                 spacing: 6
                 Text {
+                    textFormat: Text.PlainText
                     text: "Home"
                     color: Theme.text
                     font.family: Theme.displayFamily
@@ -42,6 +43,7 @@ Item {
                     font.weight: Font.Bold
                 }
                 Text {
+                    textFormat: Text.PlainText
                     objectName: "librarySummary"
                     visible: library.trackCount > 0
                     text: [library.albumCount + " albums", library.trackCount + " songs", library.artistCount + " artists",
@@ -51,6 +53,7 @@ Item {
                     font.pixelSize: Theme.fontSize(14)
                 }
                 Text {
+                    textFormat: Text.PlainText
                     objectName: "homeHealthLink"
                     visible: library.trackCount > 0
                     text: "Library health ›"
@@ -72,6 +75,7 @@ Item {
                     anchors.centerIn: parent
                     spacing: 12
                     Text {
+                        textFormat: Text.PlainText
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: !library.ready ? "Loading your library…"
                             : library.scanning ? "Scanning your music…"
@@ -82,6 +86,7 @@ Item {
                         font.weight: Font.DemiBold
                     }
                     Text {
+                        textFormat: Text.PlainText
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: library.scanning ? "Songs appear here as they are found."
                             : library.missingFolders.length > 0 ? "Folder not found or unreadable: " + library.missingFolders.join(", ")
@@ -132,8 +137,8 @@ Item {
                     Column {
                         anchors { left: parent.left; leftMargin: 20; verticalCenter: parent.verticalCenter }
                         spacing: 4
-                        Text { text: value; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(21); font.weight: Font.Bold }
-                        Text { text: label; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13) }
+                        Text { text: value; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(21); font.weight: Font.Bold; textFormat: Text.PlainText }
+                        Text { text: label; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); textFormat: Text.PlainText }
                     }
                 }
                 Fact { value: page.facts.seconds ? Theme.fmtHours(page.facts.seconds).replace(" ", "\u2009") : "–"; label: "of music" }
@@ -173,7 +178,7 @@ Item {
                                     required property int index
                                     spacing: 5
                                     Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 8; height: 8; radius: 4; color: formatsTile.swatches[index % 5] }
-                                    Text { text: modelData.name + " " + Math.round(modelData.share * 100) + "%"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11) }
+                                    Text { text: modelData.name + " " + Math.round(modelData.share * 100) + "%"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); textFormat: Text.PlainText }
                                 }
                             }
                         }

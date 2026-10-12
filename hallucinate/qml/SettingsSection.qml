@@ -35,6 +35,7 @@ Rectangle {
     Component.onCompleted: searchText = collect(body).join(" ")
 
     Text {
+        textFormat: Text.PlainText
         id: heading
         x: 24; y: 18
         text: section.title

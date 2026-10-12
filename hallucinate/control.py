@@ -6,7 +6,30 @@ import time
 from PySide6.QtCore import QObject, Slot
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 
-SERVER_NAME = os.environ.get("HALLUCINATE_CONTROL_SOCKET", "hallucinate-control")
+
+def default_server_name(env=None, platform=None):
+    """Where the control socket lives. A bare name lands in a shared place (/tmp on Linux, the machine-wide pipe
+    namespace on Windows), where another user could take it first and stop Hallucinate starting; so it goes in
+    the user's private runtime folder when there is one, and is named after the user otherwise."""
+    import getpass
+    import sys
+
+    env = os.environ if env is None else env
+    platform = platform or sys.platform
+    if env.get("HALLUCINATE_CONTROL_SOCKET"):
+        return env["HALLUCINATE_CONTROL_SOCKET"]
+    runtime = env.get("XDG_RUNTIME_DIR", "")
+    if platform.startswith("linux") and runtime and os.path.isdir(runtime) and not env.get("FLATPAK_ID"):
+        return os.path.join(runtime, "hallucinate-control")
+    try:
+        user = getpass.getuser()
+    except Exception:  # noqa: BLE001 - no login name: fall back to the uid where there is one
+        user = str(os.getuid()) if hasattr(os, "getuid") else "user"
+    safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in user)[:40]
+    return f"hallucinate-control-{safe}"
+
+
+SERVER_NAME = default_server_name()
 CONNECT_TIMEOUT_MS = 300
 RESPONSE_TIMEOUT_MS = 1500
 

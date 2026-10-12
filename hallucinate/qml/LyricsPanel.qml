@@ -11,6 +11,7 @@ Rectangle {
     clip: true
 
     Text {
+        textFormat: Text.PlainText
         id: head
         x: 20; y: 16
         text: "Lyrics"
@@ -20,6 +21,7 @@ Rectangle {
         font.weight: Font.DemiBold
     }
     Text {
+        textFormat: Text.PlainText
         anchors { right: parent.right; rightMargin: 20; baseline: head.baseline }
         visible: lyricsCtl.source.length > 0
         text: lyricsCtl.source
@@ -28,6 +30,7 @@ Rectangle {
         font.pixelSize: Theme.fontSize(11)
     }
     Text {
+        textFormat: Text.PlainText
         anchors.centerIn: parent
         width: parent.width - 48
         visible: lyricsCtl.status !== "found"
@@ -61,6 +64,7 @@ Rectangle {
         highlightMoveDuration: 250
         ScrollBar.vertical: ScrollBar {}
         delegate: Text {
+            textFormat: Text.PlainText
             required property var modelData
             required property int index
             width: synced.width - 40
@@ -83,6 +87,7 @@ Rectangle {
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar {}
         Text {
+            textFormat: Text.PlainText
             id: plainText
             x: 20
             width: parent.width - 40

@@ -73,6 +73,7 @@ Item {
         property bool round: false
         spacing: 12
         Text {
+            textFormat: Text.PlainText
             anchors.verticalCenter: parent.verticalCenter
             width: 18
             text: parent.rank
@@ -91,6 +92,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             width: 190
             Text {
+                textFormat: Text.PlainText
                 width: parent.width
                 text: parent.parent.label
                 color: "white"
@@ -100,6 +102,7 @@ Item {
                 font.weight: Font.DemiBold
             }
             Text {
+                textFormat: Text.PlainText
                 width: parent.width
                 text: parent.parent.sub
                 color: Qt.rgba(1, 1, 1, 0.65)
@@ -120,6 +123,7 @@ Item {
         readonly property real maxValue: Math.max(1, ...values)
         spacing: 10
         Text {
+            textFormat: Text.PlainText
             text: bars.title
             color: Theme.text
             font.family: Theme.displayFamily
@@ -127,6 +131,7 @@ Item {
             font.weight: Font.DemiBold
         }
         Text {
+            textFormat: Text.PlainText
             visible: bars.note.length > 0
             text: bars.note
             color: Theme.textDim
@@ -153,6 +158,7 @@ Item {
                         }
                     }
                     Text {
+                        textFormat: Text.PlainText
                         width: Math.max(8, (bars.width - 4 * (bars.values.length - 1)) / bars.values.length)
                         horizontalAlignment: Text.AlignHCenter
                         text: bars.labels[index] || ""
@@ -185,6 +191,7 @@ Item {
                 width: col.width
                 spacing: 16
                 Text {
+                    textFormat: Text.PlainText
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Recap"
                     color: Theme.text
@@ -211,6 +218,7 @@ Item {
                     spacing: 2
                     IconButton { objectName: "recapPrev"; icon: "prev"; size: 14; tip: "Earlier"; onClicked: userLib.stepRecap(-1) }
                     Text {
+                        textFormat: Text.PlainText
                         anchors.verticalCenter: parent.verticalCenter
                         width: 170
                         horizontalAlignment: Text.AlignHCenter
@@ -248,6 +256,7 @@ Item {
                     width: shareCard.width * 0.42
                     spacing: 6
                     Text {
+                        textFormat: Text.PlainText
                         text: (page.rc.title || "").toUpperCase()
                         color: Qt.rgba(1, 1, 1, 0.75)
                         font.family: Theme.fontFamily
@@ -256,6 +265,7 @@ Item {
                         font.letterSpacing: 1.6
                     }
                     Text {
+                        textFormat: Text.PlainText
                         objectName: "recapTime"
                         text: page.empty ? "—" : page.hoursText(page.summary.seconds || 0).n
                         color: "white"
@@ -264,12 +274,14 @@ Item {
                         font.weight: Font.Bold
                     }
                     Text {
+                        textFormat: Text.PlainText
                         text: page.empty ? "Nothing played yet" : page.hoursText(page.summary.seconds || 0).u + " of music"
                         color: "white"
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(17)
                     }
                     Text {
+                        textFormat: Text.PlainText
                         visible: page.rc.change !== null && page.rc.change !== undefined && !page.empty
                         text: (page.rc.change >= 0 ? "▲ " : "▼ ") + Math.abs(Math.round((page.rc.change || 0) * 100)) + "% vs the "
                               + (page.kind === "week" ? "week" : page.kind === "month" ? "month" : "year") + " before"
@@ -291,6 +303,7 @@ Item {
                             Column {
                                 required property var modelData
                                 Text {
+                                    textFormat: Text.PlainText
                                     text: modelData[0]
                                     color: "white"
                                     font.family: Theme.displayFamily
@@ -298,6 +311,7 @@ Item {
                                     font.weight: Font.Bold
                                 }
                                 Text {
+                                    textFormat: Text.PlainText
                                     text: modelData[1]
                                     color: Qt.rgba(1, 1, 1, 0.65)
                                     font.family: Theme.fontFamily
@@ -313,7 +327,7 @@ Item {
                     visible: !page.empty
                     Column {
                         spacing: 10
-                        Text { text: "Top artists"; color: Qt.rgba(1, 1, 1, 0.75); font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold }
+                        Text { text: "Top artists"; color: Qt.rgba(1, 1, 1, 0.75); font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold; textFormat: Text.PlainText }
                         Repeater {
                             model: (page.rc.topArtists || []).slice(0, 5)
                             Ranked {
@@ -327,7 +341,7 @@ Item {
                     Column {
                         spacing: 10
                         visible: shareCard.width > 980
-                        Text { text: "Top songs"; color: Qt.rgba(1, 1, 1, 0.75); font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold }
+                        Text { text: "Top songs"; color: Qt.rgba(1, 1, 1, 0.75); font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold; textFormat: Text.PlainText }
                         Repeater {
                             model: (page.rc.topSongs || []).slice(0, 5)
                             Ranked {
@@ -343,7 +357,7 @@ Item {
                     anchors { right: parent.right; rightMargin: 22; bottom: parent.bottom; bottomMargin: 16 }
                     spacing: 6
                     Image { anchors.verticalCenter: parent.verticalCenter; source: "../assets/hallucinate.png"; sourceSize: Qt.size(32, 32); width: 16; height: 16; smooth: true }
-                    Text { text: "Hallucinate"; color: Qt.rgba(1, 1, 1, 0.6); font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(11) }
+                    Text { text: "Hallucinate"; color: Qt.rgba(1, 1, 1, 0.6); font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(11); textFormat: Text.PlainText }
                 }
             }
 
@@ -351,6 +365,7 @@ Item {
                 spacing: 12
                 PillButton { objectName: "saveRecap"; text: "Save as image"; enabled: !page.empty; onClicked: page.saveImage() }
                 Text {
+                    textFormat: Text.PlainText
                     anchors.verticalCenter: parent.verticalCenter
                     visible: page.savedTo.length > 0
                     text: page.savedTo === "-" ? "Couldn't save the image" : "Saved to " + page.savedTo
@@ -468,8 +483,9 @@ Item {
                             x: 18; y: 16
                             width: parent.width - 36
                             spacing: 4
-                            Text { text: modelData.t; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); font.weight: Font.DemiBold }
+                            Text { text: modelData.t; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); font.weight: Font.DemiBold; textFormat: Text.PlainText }
                             Text {
+                                textFormat: Text.PlainText
                                 width: parent.width
                                 text: modelData.v
                                 color: Theme.text
@@ -479,6 +495,7 @@ Item {
                                 font.weight: Font.Bold
                             }
                             Text {
+                                textFormat: Text.PlainText
                                 width: parent.width
                                 text: modelData.s
                                 color: Theme.textDim

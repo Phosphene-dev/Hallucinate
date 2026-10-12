@@ -27,6 +27,7 @@ Item {
         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
     }
     Text {
+        textFormat: Text.PlainText
         anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
         text: item.text
         color: item.selected || ma.containsMouse ? Theme.text : Theme.textDim

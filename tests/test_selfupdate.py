@@ -29,7 +29,7 @@ class Resp(io.BytesIO):
 
 
 def opener_for(data):
-    return lambda req, timeout: Resp(data)
+    return lambda req, timeout, limit=None: Resp(data)
 
 
 def test_install_kind_only_where_the_app_owns_its_files(tmp_path):

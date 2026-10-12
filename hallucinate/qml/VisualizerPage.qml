@@ -79,6 +79,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 3
                 Text {
+                    textFormat: Text.PlainText
                     text: player.hasTrack ? player.current.title : "Nothing playing"
                     color: "white"
                     font.family: Theme.displayFamily
@@ -86,6 +87,7 @@ Item {
                     font.weight: Font.DemiBold
                 }
                 Text {
+                    textFormat: Text.PlainText
                     text: player.hasTrack ? player.current.artist
                         : (player.visualizerEnabled ? "Play something to see it" : "Turn on “React to the music” to see the sound")
                     color: Qt.rgba(1, 1, 1, 0.7)
@@ -95,6 +97,7 @@ Item {
             }
         }
         Text {
+            textFormat: Text.PlainText
             anchors { right: parent.right; bottom: parent.bottom; margins: 24 }
             visible: !vis.gpu && shell.visualizerStyle !== "bars"
             text: "Liquid, Aurora and Nebula need hardware graphics"

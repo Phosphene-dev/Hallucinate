@@ -52,6 +52,7 @@ Item {
         Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
     }
     Text {
+        textFormat: Text.PlainText
         anchors { left: glyph.right; leftMargin: 12; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
         text: item.text
         opacity: item.collapsed ? 0 : 1
@@ -71,6 +72,6 @@ Item {
         onClicked: item.clicked()
     }
     ToolTip.visible: item.collapsed && ma.containsMouse
-    ToolTip.text: item.text
+    ToolTip.text: Theme.plain(item.text)
     ToolTip.delay: 300
 }

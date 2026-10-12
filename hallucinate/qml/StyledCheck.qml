@@ -5,6 +5,7 @@ import "."
 CheckBox {
     id: box
     contentItem: Text {
+        textFormat: Text.PlainText
         text: box.text
         leftPadding: 30
         color: Theme.text
@@ -21,6 +22,7 @@ CheckBox {
         color: box.checked ? Theme.accent : Theme.surface
         border.color: box.checked ? Theme.accent : Theme.border
         Text {
+            textFormat: Text.PlainText
             anchors.centerIn: parent
             text: box.checked ? "✓" : ""
             color: Theme.onAccent

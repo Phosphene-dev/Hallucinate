@@ -41,11 +41,16 @@ def fetch_latest(timeout=10):
     with net.urlopen(req, timeout=timeout) as resp:
         data = json.loads(resp.read(200_000))
     tag = str(data.get("tag_name") or "")
-    if not version_tuple(tag):
+    numbers = version_tuple(tag)
+    if not numbers:
         raise ValueError("No release version")
     assets = [{"name": a.get("name"), "url": a.get("browser_download_url"), "size": a.get("size"),
                "digest": a.get("digest")} for a in data.get("assets") or [] if isinstance(a, dict)]
-    return {"version": tag.lstrip("v"), "url": str(data.get("html_url") or RELEASES_PAGE), "assets": assets}
+    url = str(data.get("html_url") or "")
+    if not url.startswith("https://github.com/Phosphene-dev/Hallucinate/"):
+        url = RELEASES_PAGE  # only ever open our own release page
+    # just the numbers: nothing else from the response is shown or compared
+    return {"version": ".".join(map(str, numbers)), "url": url, "assets": assets}
 
 
 def system_package(frozen=None, module=__file__):

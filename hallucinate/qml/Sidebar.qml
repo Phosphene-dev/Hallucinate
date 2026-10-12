@@ -77,6 +77,7 @@ Item {
                         Behavior on opacity { NumberAnimation { duration: 140 } }
                     }
                     Text {
+                        textFormat: Text.PlainText
                         anchors { left: logo.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
                         text: "Hallucinate"
                         opacity: side.collapsed ? 0 : 1
@@ -131,6 +132,7 @@ Item {
                         onClicked: playlistMenu.popup(side.railWidth - 10, 0)
                     }
                     Text {
+                        textFormat: Text.PlainText
                         visible: !side.collapsed
                         anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
                         text: "PLAYLISTS"

@@ -69,6 +69,7 @@ Item {
                         }
                     }
                     Text {
+                        textFormat: Text.PlainText
                         objectName: "healthScore"
                         anchors.centerIn: parent
                         text: page.score
@@ -82,6 +83,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 6
                     Text {
+                        textFormat: Text.PlainText
                         text: "Library health"
                         color: Theme.text
                         font.family: Theme.displayFamily
@@ -89,6 +91,7 @@ Item {
                         font.weight: Font.Bold
                     }
                     Text {
+                        textFormat: Text.PlainText
                         objectName: "healthSummary"
                         text: page.report.loading && !page.checks.length ? "Checking your library…"
                             : (page.report.issues || 0) === 0 ? "Nothing to fix. Your library is in great shape."
@@ -134,6 +137,7 @@ Item {
                                 anchors { left: dot.right; leftMargin: 14; right: countText.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                                 spacing: 2
                                 Text {
+                                    textFormat: Text.PlainText
                                     text: card.modelData.title
                                     color: Theme.text
                                     font.family: Theme.fontFamily
@@ -141,6 +145,7 @@ Item {
                                     font.weight: Font.DemiBold
                                 }
                                 Text {
+                                    textFormat: Text.PlainText
                                     width: parent.width
                                     text: card.modelData.detail
                                     color: Theme.textDim
@@ -150,6 +155,7 @@ Item {
                                 }
                             }
                             Text {
+                                textFormat: Text.PlainText
                                 id: countText
                                 anchors { right: chevron.left; rightMargin: 10; verticalCenter: parent.verticalCenter }
                                 text: card.modelData.count === 0 ? "All good" : card.modelData.count
@@ -188,6 +194,7 @@ Item {
                                 onClicked: metaEditor.coversBusy ? metaEditor.cancelCovers() : metaEditor.fetchMissingCovers()
                             }
                             Text {
+                                textFormat: Text.PlainText
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: Math.min(implicitWidth, card.width - 220)
                                 elide: Text.ElideRight
@@ -212,6 +219,7 @@ Item {
                                 onClicked: replayGain.busy ? replayGain.cancel() : replayGain.analyseMissing()
                             }
                             Text {
+                                textFormat: Text.PlainText
                                 anchors.verticalCenter: parent.verticalCenter
                                 visible: replayGain.busy
                                 text: "Measured " + replayGain.done + " of " + replayGain.total + " songs"
@@ -246,6 +254,7 @@ Item {
                                     Column {
                                         anchors { left: thumb.visible ? thumb.right : parent.left; leftMargin: 12; right: fixButton.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                                         Text {
+                                            textFormat: Text.PlainText
                                             width: parent.width
                                             text: card.modelData.kind === "folder" ? itemRow.modelData.path
                                                 : card.modelData.kind === "album" ? itemRow.modelData.album : itemRow.modelData.title
@@ -255,6 +264,7 @@ Item {
                                             font.pixelSize: Theme.fontSize(13)
                                         }
                                         Text {
+                                            textFormat: Text.PlainText
                                             width: parent.width
                                             visible: card.modelData.kind !== "folder"
                                             text: card.modelData.kind === "album"
@@ -281,6 +291,7 @@ Item {
                                 }
                             }
                             Text {
+                                textFormat: Text.PlainText
                                 visible: card.modelData.count > card.modelData.items.length
                                 text: "Showing the first " + card.modelData.items.length + " of " + card.modelData.count
                                 color: Theme.textDim

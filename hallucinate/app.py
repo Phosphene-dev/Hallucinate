@@ -102,7 +102,14 @@ def main(argv=None) -> int:
 
     # A short GIL switch interval keeps the GUI thread responsive while worker threads parse tags.
     sys.setswitchinterval(0.001)
+    from . import dbguard
+    backup_dir = paths.data_dir() / "backups"
+    db_notice = dbguard.check(paths.db_path(), backup_dir)  # a damaged database is set aside and restored
     library = Library(paths.db_path(), paths.art_dir())
+    dbguard.backup_if_due(paths.db_path(), backup_dir)
+    from . import cachetrim
+    cachetrim.trim_in_background({paths.data_dir() / "thumbs": cachetrim.LIMITS["thumbs"],
+                                  paths.cache_dir() / "waveforms": cachetrim.LIMITS["waveforms"]})
     control.setLibrary(library)
     player = Player(session_file=paths.data_dir() / "session.json")
     waveforms = WaveformService(paths.cache_dir() / "waveforms")
@@ -124,6 +131,7 @@ def main(argv=None) -> int:
     discord = DiscordPresence(player)
     shell = DesktopShell(app, player, app.windowIcon())
     shell.setReportSources(library=library, theme_manager=theme_manager)
+    shell.setStartupNotice(db_notice)
 
     if not library.folders and not args.folders:
         # A fresh install: open on the welcome (music folder, theme, scrobbling) until it is finished
@@ -138,6 +146,8 @@ def main(argv=None) -> int:
     player.restoreSession()
 
     engine = QQmlApplicationEngine()
+    from . import qmlnet
+    qmlnet.install(engine)  # the interface never goes online (see qmlnet)
     engine.addImageProvider("art", ArtProvider(paths.data_dir() / "thumbs"))
     ctx = engine.rootContext()
     ctx.setContextProperty("library", library)

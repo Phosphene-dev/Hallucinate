@@ -95,6 +95,11 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.9.3" date="2026-10-12">
+      <description>
+        <p>Safety and stability: song tags and lyrics can no longer make the interface go online, the library database is backed up daily and restored automatically if it's ever damaged, a slow memory leak is fixed and the caches stay a sensible size.</p>
+      </description>
+    </release>
     <release version="0.9.2" date="2026-10-12">
       <description>
         <p>Right-click albums, or select several, to play, queue, add to playlists, remove from the library or move to the trash.</p>

@@ -34,6 +34,7 @@ Item {
             RowLayout {
                 width: parent.width
                 Text {
+                    textFormat: Text.PlainText
                     Layout.fillWidth: true
                     text: "Listening stats"
                     color: Theme.text
@@ -57,8 +58,8 @@ Item {
                     color: Theme.surface
                     Column {
                         anchors.centerIn: parent
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: userLib.statsSummary.listens || 0; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(21); font.weight: Font.Bold }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: "listens"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12) }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: userLib.statsSummary.listens || 0; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(21); font.weight: Font.Bold; textFormat: Text.PlainText }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: "listens"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
                     }
                 }
                 Rectangle {
@@ -67,6 +68,7 @@ Item {
                     Column {
                         anchors.centerIn: parent
                         Text {
+                            textFormat: Text.PlainText
                             anchors.horizontalCenter: parent.horizontalCenter
                             text: {
                                 var seconds = userLib.statsSummary.listeningSeconds || 0
@@ -79,12 +81,13 @@ Item {
                             font.pixelSize: Theme.fontSize(21)
                             font.weight: Font.Bold
                         }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: "estimated listening time"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12) }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: "estimated listening time"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
                     }
                 }
             }
 
             Text {
+                textFormat: Text.PlainText
                 text: userLib.topTracks.count > 0 ? "Top tracks" : "No listening history for this period yet."
                 color: Theme.text
                 font.family: Theme.displayFamily
@@ -116,6 +119,7 @@ Item {
             }
 
             Text {
+                textFormat: Text.PlainText
                 visible: userLib.topArtists.count > 0
                 text: "Top artists"
                 color: Theme.text
@@ -142,15 +146,16 @@ Item {
                             anchors.fill: parent
                             anchors.leftMargin: 12
                             anchors.rightMargin: 12
-                            Text { Layout.fillWidth: true; text: name; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); elide: Text.ElideRight }
-                            Text { text: albums + (albums === 1 ? " album" : " albums"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12) }
-                            Text { text: plays + (plays === 1 ? " listen" : " listens"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12) }
+                            Text { Layout.fillWidth: true; text: name; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); elide: Text.ElideRight; textFormat: Text.PlainText }
+                            Text { text: albums + (albums === 1 ? " album" : " albums"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
+                            Text { text: plays + (plays === 1 ? " listen" : " listens"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
                         }
                     }
                 }
             }
 
             Text {
+                textFormat: Text.PlainText
                 visible: userLib.topAlbums.count > 0
                 text: "Top albums"
                 color: Theme.text
@@ -177,8 +182,8 @@ Item {
                             anchors.fill: parent
                             anchors.leftMargin: 12
                             anchors.rightMargin: 12
-                            Text { Layout.fillWidth: true; text: album + " · " + album_artist; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); elide: Text.ElideRight }
-                            Text { text: plays + (plays === 1 ? " listen" : " listens"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12) }
+                            Text { Layout.fillWidth: true; text: album + " · " + album_artist; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); elide: Text.ElideRight; textFormat: Text.PlainText }
+                            Text { text: plays + (plays === 1 ? " listen" : " listens"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
                         }
                     }
                 }

@@ -105,6 +105,9 @@ def _only_leftovers(folder):
     return True
 
 
+DETAIL_CACHE = 64
+
+
 class _Reader:
     """A single worker thread with its own SQLite connection for read queries.
 
@@ -158,6 +161,7 @@ class Library(QObject):
     scanFinished = Signal(object)
     albumsRemoved = Signal("QVariantMap")  # {"kind": "hidden"|"trashed", "albums", "songs", "failed"}
     hiddenChanged = Signal()
+    detailChanged = Signal()
     _removed = Signal(object)
 
     def __init__(self, db_path, art_dir, parent=None):
@@ -184,7 +188,8 @@ class Library(QObject):
         self._health = {}
         self._health_wanted = False
         self._health_loading = False
-        self._detail = {}
+        self._detail = {}  # insertion order = least recently used first
+        self._detail_revision = 0
         self._counts = {"tracks": 0, "albums": 0, "artists": 0}
         self._scanning = False
         self._pending = False
@@ -393,7 +398,10 @@ class Library(QObject):
         self._counts = data["counts"]
         self._filter_values = data["filterValues"]
         self._artist_index = {fold(a["name"]): a for a in data["artists"]}
+        self._retire(list(self._detail.values()))
         self._detail.clear()
+        self._detail_revision += 1
+        self.detailChanged.emit()  # open album/artist pages fetch fresh models now, before the old ones go
         if not self._ready:
             self._ready = True
             self.readyChanged.emit()
@@ -441,11 +449,29 @@ class Library(QObject):
         self.searchFinished.emit()
 
     def _cached(self, key, keys, loader):
-        if key not in self._detail:
-            model = DictModel(keys, self)
-            model.set_items(decorate(loader()))
-            self._detail[key] = model
-        return self._detail[key]
+        """An album's or artist's songs as a model, kept for the most recent DETAIL_CACHE pages visited."""
+        if key in self._detail:
+            self._detail[key] = self._detail.pop(key)  # most recently used last
+            return self._detail[key]
+        model = DictModel(keys, self)
+        model.set_items(decorate(loader()))
+        self._detail[key] = model
+        while len(self._detail) > DETAIL_CACHE:
+            self._retire([self._detail.pop(next(iter(self._detail)))])
+        return model
+
+    def _retire(self, models):
+        """Free models no page binds to any more. They are children of the library, so dropping them from the
+        cache alone would keep them alive for the whole session; deleting is deferred a moment so anything
+        still finishing with one (a page being popped, a rebinding) is done first."""
+        if models:
+            QTimer.singleShot(2000, lambda ms=models: [m.deleteLater() for m in ms])
+
+    @Property(int, notify=detailChanged)
+    def detailRevision(self):
+        """Bumped when cached album/artist models are replaced (after a reload): pages bind through it to
+        pick up the fresh ones."""
+        return self._detail_revision
 
     @Slot(str, result=QObject)
     def albumTracksModel(self, key):
@@ -771,7 +797,9 @@ class Library(QObject):
     @Slot(object)
     def _apply_removed(self, result):
         for key in result.get("keys", []):
-            self._detail.pop(("at", key), None)
+            gone = self._detail.pop(("at", key), None)
+            if gone is not None:
+                self._retire([gone])
         if "hidden" in result:
             self._hidden_count = result.pop("hidden")
             self.hiddenChanged.emit()

@@ -10,7 +10,7 @@ Item {
     objectName: "album"
     property string albumKey
     readonly property var info: library.albumInfo(albumKey)
-    readonly property var tracks: library.albumTracksModel(albumKey)
+    readonly property var tracks: library.detailRevision >= 0 ? library.albumTracksModel(albumKey) : null
     readonly property var notes: library.albumNotes(albumKey)
     readonly property var coverColors: library.albumPalette(albumKey)
     readonly property color glow0: coverColors.length > 0 ? coverColors[0] : Theme.accent
@@ -62,6 +62,7 @@ Item {
         spacing: 3
         width: Math.min(implicitWidth, 320)
         Text {
+            textFormat: Text.PlainText
             text: parent.label.toUpperCase()
             color: Theme.textDim
             font.family: Theme.fontFamily
@@ -70,6 +71,7 @@ Item {
             font.letterSpacing: 1.2
         }
         Text {
+            textFormat: Text.PlainText
             text: parent.value
             color: Theme.text
             font.family: Theme.fontFamily
@@ -122,6 +124,7 @@ Item {
                 anchors { left: sleeve.right; leftMargin: 30; right: parent.right; rightMargin: 20; bottom: sleeve.bottom }
                 spacing: 8
                 Text {
+                    textFormat: Text.PlainText
                     text: "ALBUM"
                     color: Theme.accent
                     font.family: Theme.fontFamily
@@ -130,6 +133,7 @@ Item {
                     font.letterSpacing: 1.6
                 }
                 Text {
+                    textFormat: Text.PlainText
                     width: parent.width
                     text: page.info.album || ""
                     color: Theme.text
@@ -143,6 +147,7 @@ Item {
                 Row {
                     spacing: 6
                     Text {
+                        textFormat: Text.PlainText
                         text: page.info.album_artist || ""
                         color: Theme.text
                         font.family: Theme.fontFamily
@@ -155,6 +160,7 @@ Item {
                         }
                     }
                     Text {
+                        textFormat: Text.PlainText
                         text: "·  " + (page.info.year > 0 ? page.info.year + "  ·  " : "") + page.info.n
                               + (page.info.n === 1 ? " song" : " songs") + "  ·  " + page.info.durText
                         color: Theme.textDim
@@ -216,6 +222,7 @@ Item {
             width: list.width
             height: 46
             Text {
+                textFormat: Text.PlainText
                 x: 12
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 8

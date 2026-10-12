@@ -16,6 +16,7 @@ Item {
     }
 
     Text {
+        textFormat: Text.PlainText
         id: title
         x: 28; y: 20
         text: "Songs"
@@ -25,6 +26,7 @@ Item {
         font.weight: Font.Bold
     }
     Text {
+        textFormat: Text.PlainText
         anchors { left: title.right; leftMargin: 14; baseline: title.baseline }
         text: duplicatesVisible ? library.duplicates.count + " probable duplicates"
             : library.filtersActive ? library.filteredTracks.count + " filtered tracks"
@@ -114,6 +116,7 @@ Item {
         }
     }
     Text {
+        textFormat: Text.PlainText
         anchors.centerIn: list
         visible: list.count === 0
         text: page.duplicatesVisible

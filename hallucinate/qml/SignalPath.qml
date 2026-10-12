@@ -33,6 +33,7 @@ Item {
                 color: sp.path.untouched ? Theme.accent : (sp.light ? Qt.rgba(1, 1, 1, 0.6) : Theme.textDim)
             }
             Text {
+                textFormat: Text.PlainText
                 text: sp.path.untouched ? "Untouched" : "Processed"
                 color: sp.path.untouched ? (sp.light ? "white" : Theme.accent) : (sp.light ? Qt.rgba(1, 1, 1, 0.75) : Theme.textDim)
                 font.family: Theme.fontFamily
@@ -48,7 +49,7 @@ Item {
             onClicked: popup.opened ? popup.close() : popup.open()
         }
         ToolTip.visible: pillMouse.containsMouse && !popup.opened
-        ToolTip.text: (sp.path.summary || "") + " — click for the signal path"
+        ToolTip.text: Theme.plain(sp.path.summary || "") + " — click for the signal path"
         ToolTip.delay: 500
         Accessible.role: Accessible.Button
         Accessible.name: "Signal path: " + (sp.path.summary || "")
@@ -71,6 +72,7 @@ Item {
         contentItem: Column {
             spacing: 0
             Text {
+                textFormat: Text.PlainText
                 text: "Signal path"
                 color: Theme.text
                 font.family: Theme.displayFamily
@@ -79,6 +81,7 @@ Item {
                 bottomPadding: 4
             }
             Text {
+                textFormat: Text.PlainText
                 width: 294
                 text: sp.path.untouched
                     ? "Nothing between the file and the output changes the sound."
@@ -113,6 +116,7 @@ Item {
                         x: 24; y: 5
                         width: parent.width - 24
                         Text {
+                            textFormat: Text.PlainText
                             text: modelData.name
                             color: Theme.text
                             font.family: Theme.fontFamily
@@ -120,6 +124,7 @@ Item {
                             font.weight: Font.DemiBold
                         }
                         Text {
+                            textFormat: Text.PlainText
                             width: parent.width
                             text: modelData.detail
                             color: modelData.active ? Theme.accent : Theme.textDim

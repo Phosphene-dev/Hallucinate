@@ -61,6 +61,7 @@ Rectangle {
         height: parent.height
         visible: row.number > 0
         Text {
+            textFormat: Text.PlainText
             anchors.centerIn: parent
             visible: !hh.hovered && !row.current
             text: row.number
@@ -91,6 +92,7 @@ Rectangle {
         width: Math.max(80, (row.showAlbum ? (row.width - x - 260) * 0.55 : row.width - x - 190))
         spacing: 2
         Text {
+            textFormat: Text.PlainText
             width: parent.width
             text: row.title
             color: row.current ? Theme.accent : Theme.text
@@ -102,6 +104,7 @@ Rectangle {
             width: parent.width
             spacing: 6
             Text {
+                textFormat: Text.PlainText
                 width: Math.max(24, parent.width - (audioBadge.visible ? audioBadge.width : 0) - parent.spacing)
                 text: row.artist
                 color: Theme.textDim
@@ -118,6 +121,7 @@ Rectangle {
         }
     }
     Text {
+        textFormat: Text.PlainText
         visible: row.showAlbum && row.width > 700
         anchors.verticalCenter: parent.verticalCenter
         x: titles.x + titles.width + 16
@@ -153,6 +157,7 @@ Rectangle {
         onClicked: row.enqueue()
     }
     Text {
+        textFormat: Text.PlainText
         id: dur
         anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
         text: row.durText

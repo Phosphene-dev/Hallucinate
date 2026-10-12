@@ -12,6 +12,7 @@ Row {
 
     IconButton { icon: "minus"; size: 12; tip: "Lyrics later (0.25 s)"; onClicked: lyricsCtl.nudge(-250) }
     Text {
+        textFormat: Text.PlainText
         anchors.verticalCenter: parent.verticalCenter
         width: 64
         horizontalAlignment: Text.AlignHCenter
@@ -23,6 +24,7 @@ Row {
     }
     IconButton { icon: "plus"; size: 12; tip: "Lyrics earlier (0.25 s)"; onClicked: lyricsCtl.nudge(250) }
     Text {
+        textFormat: Text.PlainText
         objectName: "saveLyricsTiming"
         anchors.verticalCenter: parent.verticalCenter
         visible: timing.offset !== 0

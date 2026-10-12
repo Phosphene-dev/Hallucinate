@@ -30,6 +30,7 @@ Item {
     Repeater {
         model: map.showMonths && map.heat.first ? map.weeks : 0
         Text {
+            textFormat: Text.PlainText
             required property int index
             readonly property var monday: map.dateAt(index * 7)
             visible: monday.getDate() <= 7 && index < map.weeks - 1

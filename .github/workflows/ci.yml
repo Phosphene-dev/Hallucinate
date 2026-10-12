@@ -15,6 +15,12 @@ jobs:
           python-version: "3.12"
       - run: pip install ruff
       - run: ruff check .
+      - name: Known vulnerabilities in dependencies (pip-audit)
+        run: |
+          pip install pip-audit
+          python scripts/audit_deps.py audit
+          pip-audit -r audit/deps.txt
+          pip-audit --no-deps --disable-pip -r audit/flatpak.txt
 
   test:
     runs-on: ubuntu-latest

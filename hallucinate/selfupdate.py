@@ -64,7 +64,7 @@ def download(asset, dest, progress=None, cancelled=lambda: False, opener=None):
     digest, got = hashlib.sha256(), 0
     try:
         req = urllib.request.Request(asset["url"], headers={"User-Agent": "Hallucinate updater"})
-        with opener(req, timeout=30) as resp, open(dest, "wb") as out:
+        with opener(req, timeout=30, limit=asset["size"] + 1) as resp, open(dest, "wb") as out:
             while True:
                 if cancelled():
                     raise OSError("Update cancelled")

@@ -109,3 +109,33 @@ def test_hiding_a_cue_song_hides_its_whole_file(tmp_path):
     assert [t["title"] for t in db.album_tracks("k2")] == ["other"]  # LIKE wildcards in the name are literal
     assert db.unhide_all() == 1 and db.hidden_paths() == set()
     db.close()
+
+
+def test_cached_album_models_are_freed_not_leaked(lib, qapp):
+    """Album/artist song models used to stay alive (children of the library) after every reload; now they're
+    replaced, pages are told (detailRevision), and the old ones are deleted. The cache is also capped."""
+    from PySide6.QtCore import QCoreApplication, QEvent
+    from PySide6.QtTest import QTest
+
+    from hallucinate import library as library_module
+
+    library, _root = lib
+    key = album_key(library, "First")
+    destroyed = []
+    first = library.albumTracksModel(key)
+    first.destroyed.connect(lambda *_: destroyed.append(1))
+    revision = library.detailRevision
+    library.reload()
+    assert wait_for(lambda: library.detailRevision > revision, timeout=5)
+    fresh = library.albumTracksModel(key)
+    assert fresh is not first and fresh.count == 2
+    QTest.qWait(2200)
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    assert destroyed  # the replaced model was freed
+
+    library_module.DETAIL_CACHE, old = 1, library_module.DETAIL_CACHE
+    try:
+        library.albumTracksModel(album_key(library, "Second"))
+        assert len(library._detail) == 1  # capped: the least recently used went
+    finally:
+        library_module.DETAIL_CACHE = old

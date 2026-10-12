@@ -27,8 +27,9 @@ Item {
             Column {
                 anchors { left: parent.left; leftMargin: 8; right: parent.right; bottom: parent.bottom; bottomMargin: 12 }
                 spacing: 8
-                Text { text: "SMART PLAYLIST"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold }
+                Text { text: "SMART PLAYLIST"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold; textFormat: Text.PlainText }
                 Text {
+                    textFormat: Text.PlainText
                     text: page.playlistName
                     color: Theme.text
                     font.family: Theme.displayFamily
@@ -36,6 +37,7 @@ Item {
                     font.weight: Font.Bold
                 }
                 Text {
+                    textFormat: Text.PlainText
                     width: parent.width
                     elide: Text.ElideRight
                     text: list.count + " songs · " + page.info.summary
@@ -52,6 +54,7 @@ Item {
             }
         }
         footer: Text {
+            textFormat: Text.PlainText
             visible: list.count === 0
             width: list.width
             height: 120

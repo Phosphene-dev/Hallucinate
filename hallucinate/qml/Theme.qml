@@ -109,6 +109,10 @@ QtObject {
         return (h >= 10 ? Math.round(h) : h.toFixed(1)) + " hours"
     }
 
+    // For text shown by Qt's own controls (tooltips, menu items, dialog titles), which can't be told to draw plain
+    // text: a look-alike for "<" keeps a tag or file name from being read as formatting. Our own Text is plain.
+    function plain(s) { return String(s === undefined || s === null ? "" : s).replace(/</g, "\u2039") }
+
     function fmtTime(ms) {
         var s = Math.max(0, Math.floor(ms / 1000))
         var m = Math.floor(s / 60)

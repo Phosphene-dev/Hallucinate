@@ -12,7 +12,7 @@ Item {
     readonly property var info: library.artistInfo(artistName)
     readonly property var profile: library.artistProfile(artistName)
     readonly property var coverColors: library.artistPalette(artistName)
-    readonly property var tracksModel: library.artistTracksModel(artistName)
+    readonly property var tracksModel: library.detailRevision >= 0 ? library.artistTracksModel(artistName) : null
     readonly property color glow0: coverColors.length > 0 ? coverColors[0] : Theme.accent
     readonly property color glow1: coverColors.length > 1 ? coverColors[1] : Theme.art1
     readonly property var months: profile.months || []
@@ -49,6 +49,7 @@ Item {
         property string label
         spacing: 2
         Text {
+            textFormat: Text.PlainText
             text: parent.value
             color: Theme.text
             font.family: Theme.displayFamily
@@ -56,6 +57,7 @@ Item {
             font.weight: Font.Bold
         }
         Text {
+            textFormat: Text.PlainText
             text: parent.label
             color: Theme.textDim
             font.family: Theme.fontFamily
@@ -110,6 +112,7 @@ Item {
                     width: col.width - 250
                     spacing: 8
                     Text {
+                        textFormat: Text.PlainText
                         text: "ARTIST"
                         color: Theme.accent
                         font.family: Theme.fontFamily
@@ -118,6 +121,7 @@ Item {
                         font.letterSpacing: 1.6
                     }
                     Text {
+                        textFormat: Text.PlainText
                         width: parent.width
                         text: page.artistName
                         color: Theme.text
@@ -129,6 +133,7 @@ Item {
                         elide: Text.ElideRight
                     }
                     Text {
+                        textFormat: Text.PlainText
                         objectName: "artistFacts"
                         width: parent.width
                         text: [page.plural(page.profile.albums || 0, "album", "albums"),
@@ -210,6 +215,7 @@ Item {
                             }
                             }
                             Text {
+                                textFormat: Text.PlainText
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: Qt.formatDate(new Date(modelData.month + "-15"), "MMM").charAt(0)
                                 color: Theme.textDim
@@ -271,6 +277,7 @@ Item {
                             border.width: 3; border.color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.3)
                         }
                         Text {
+                            textFormat: Text.PlainText
                             x: 24; y: 3
                             text: yearRow.modelData.year > 0 ? yearRow.modelData.year : "—"
                             color: Theme.text
@@ -332,6 +339,7 @@ Item {
                     spacing: 14
                     SectionHeader { title: "All songs" }
                     Text {
+                        textFormat: Text.PlainText
                         anchors.verticalCenter: parent.verticalCenter
                         text: page.allSongs ? "Hide" : "Show " + page.tracksModel.count
                         color: Theme.accent

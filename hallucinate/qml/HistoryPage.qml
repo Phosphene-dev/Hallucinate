@@ -70,6 +70,7 @@ Item {
                 spacing: 6
                 width: parent.width
                 Text {
+                    textFormat: Text.PlainText
                     text: "History"
                     color: Theme.text
                     font.family: Theme.displayFamily
@@ -77,6 +78,7 @@ Item {
                     font.weight: Font.Bold
                 }
                 Text {
+                    textFormat: Text.PlainText
                     objectName: "historySummary"
                     width: parent.width
                     wrapMode: Text.Wrap
@@ -100,6 +102,7 @@ Item {
                     Row {
                         width: parent.width
                         Text {
+                            textFormat: Text.PlainText
                             width: parent.width - streakText.width
                             text: "The last 12 months"
                             color: Theme.text
@@ -108,6 +111,7 @@ Item {
                             font.weight: Font.DemiBold
                         }
                         Text {
+                            textFormat: Text.PlainText
                             id: streakText
                             readonly property var heat: page.info.heatmap || ({})
                             text: (heat.streak || 0) > 1 ? heat.streak + "-day streak  ·  " + page.plural(heat.activeDays || 0, "active day", "active days")
@@ -128,6 +132,7 @@ Item {
                         onDayClicked: day => page.period = (page.period === "day:" + day ? "all" : "day:" + day)
                     }
                     Text {
+                        textFormat: Text.PlainText
                         text: "Click a day to see what you played."
                         color: Theme.textDim
                         font.family: Theme.fontFamily
@@ -206,6 +211,7 @@ Item {
             height: 54
             readonly property var totals: (page.info.days || {})[day] || ({})
             Text {
+                textFormat: Text.PlainText
                 x: 28
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 8
@@ -216,6 +222,7 @@ Item {
                 font.weight: Font.DemiBold
             }
             Text {
+                textFormat: Text.PlainText
                 anchors { right: parent.right; rightMargin: 36; bottom: parent.bottom; bottomMargin: 9 }
                 visible: (parent.totals.plays || 0) > 0
                 text: page.plural(parent.totals.plays || 0, "play", "plays") + "  ·  " + page.fmtListening(parent.totals.seconds || 0)
@@ -249,6 +256,7 @@ Item {
                 onClicked: userLib.playHistoryEntry(row.index)
             }
             Text {
+                textFormat: Text.PlainText
                 id: timeText
                 x: 28
                 width: 46
@@ -270,6 +278,7 @@ Item {
                 anchors { left: art.right; leftMargin: 12; right: meta.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
                 spacing: 2
                 Text {
+                    textFormat: Text.PlainText
                     width: parent.width
                     text: row.model.title
                     color: row.current ? Theme.accent : Theme.text
@@ -282,6 +291,7 @@ Item {
                     width: parent.width
                     spacing: 0
                     Text {
+                        textFormat: Text.PlainText
                         id: artistText
                         width: Math.min(implicitWidth, parent.width * 0.5)
                         text: row.model.artist
@@ -298,10 +308,11 @@ Item {
                             onClicked: page.artist = row.model.artist
                         }
                         ToolTip.visible: artistMouse.containsMouse
-                        ToolTip.text: "Only show " + row.model.artist
+                        ToolTip.text: "Only show " + Theme.plain(row.model.artist)
                         ToolTip.delay: 700
                     }
                     Text {
+                        textFormat: Text.PlainText
                         width: parent.width - artistText.width
                         visible: (row.model.album || "").length > 0
                         text: "  ·  " + row.model.album
@@ -332,6 +343,7 @@ Item {
                     border.width: 1
                     border.color: Theme.stroke
                     Text {
+                        textFormat: Text.PlainText
                         id: badge
                         anchors.centerIn: parent
                         text: !row.available ? "Not in library" : page.sourceName(row.model.source)
@@ -345,6 +357,7 @@ Item {
                     MouseArea { id: badgeMouse; anchors.fill: parent; hoverEnabled: true }
                 }
                 Text {
+                    textFormat: Text.PlainText
                     anchors.verticalCenter: parent.verticalCenter
                     width: 44
                     horizontalAlignment: Text.AlignRight
@@ -385,6 +398,7 @@ Item {
                     color: Theme.textDim
                 }
                 Text {
+                    textFormat: Text.PlainText
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: page.filtered ? "No listens match these filters." : "Songs you play show up here."
                     color: Theme.textDim

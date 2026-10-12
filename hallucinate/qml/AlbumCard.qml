@@ -99,6 +99,7 @@ Item {
         anchors { top: parent.top; topMargin: card.cardWidth + 12; left: parent.left; right: parent.right }
         spacing: 2
         Text {
+            textFormat: Text.PlainText
             width: parent.width
             text: card.title
             color: Theme.text
@@ -108,6 +109,7 @@ Item {
             elide: Text.ElideRight
         }
         Text {
+            textFormat: Text.PlainText
             width: parent.width
             text: card.subtitle
             color: Theme.textDim
@@ -116,6 +118,7 @@ Item {
             elide: Text.ElideRight
         }
         Text {
+            textFormat: Text.PlainText
             visible: card.note.length > 0
             width: parent.width
             text: card.note
