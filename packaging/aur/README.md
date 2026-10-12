@@ -9,7 +9,7 @@ CI builds the stable package in an Arch Linux container on every pull request. I
 ## Releasing a new version
 1. Release `vX.Y.Z` as described in `CONTRIBUTING.md` (version bump PR, then the Release workflow).
 2. In `hallucinate/PKGBUILD` set `pkgver`, `pkgrel=1`, then run `updpkgsums` (or put the
-   `sha256sum` of `https://github.com/bulmaspanties/Hallucinate/archive/refs/tags/vX.Y.Z.tar.gz` in
+   `sha256sum` of `https://github.com/Phosphene-dev/Hallucinate/archive/refs/tags/vX.Y.Z.tar.gz` in
    `sha256sums`).
 3. `makepkg --printsrcinfo > .SRCINFO` (in both package directories if `hallucinate-git` changed) and
    test with `makepkg -f` (ideally `extra-x86_64-build` from `devtools`; `namcap PKGBUILD *.pkg.tar.zst`).

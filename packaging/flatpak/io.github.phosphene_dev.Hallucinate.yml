@@ -1,4 +1,4 @@
-app-id: io.github.bulmaspanties.Hallucinate
+app-id: io.github.phosphene_dev.Hallucinate
 runtime: org.kde.Platform
 runtime-version: "6.11"
 sdk: org.kde.Sdk
@@ -38,7 +38,7 @@ modules:
     sources:
       # Flathub submission: replace with
       #   - type: git
-      #     url: https://github.com/bulmaspanties/Hallucinate.git
+      #     url: https://github.com/Phosphene-dev/Hallucinate.git
       #     tag: vX.Y.Z
       #     commit: <full commit hash of the tag>
       - type: dir

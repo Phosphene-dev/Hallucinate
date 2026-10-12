@@ -87,7 +87,7 @@ def test_flathub_manifest_uses_the_tagged_release(tmp_path, monkeypatch):
 def test_update_check_is_off_inside_flatpak(qapp, monkeypatch):
     from hallucinate import updates
 
-    monkeypatch.setenv("FLATPAK_ID", "io.github.bulmaspanties.Hallucinate")
+    monkeypatch.setenv("FLATPAK_ID", "io.github.phosphene_dev.Hallucinate")
     checker = updates.UpdateChecker(fetch=lambda: {"version": "99.0.0", "url": "x"})
     try:
         assert not checker.supported

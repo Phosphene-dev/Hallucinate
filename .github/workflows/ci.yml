@@ -69,15 +69,15 @@ jobs:
           dbus-run-session -- flatpak run org.flatpak.Builder --user --force-clean --install-deps-from=flathub \
             --mirror-screenshots-url=https://dl.flathub.org/media/ \
             --repo=flatpak-repo flatpak-build \
-            packaging/flatpak/io.github.bulmaspanties.Hallucinate.yml
+            packaging/flatpak/io.github.phosphene_dev.Hallucinate.yml
           flatpak remote-add --user --no-gpg-verify --if-not-exists local-build flatpak-repo
-          flatpak install --user -y --noninteractive local-build io.github.bulmaspanties.Hallucinate
+          flatpak install --user -y --noninteractive local-build io.github.phosphene_dev.Hallucinate
       - name: Smoke test (offscreen)
         run: |
           dbus-run-session -- flatpak run --env=QT_QPA_PLATFORM=offscreen \
             --env=HALLUCINATE_DISABLE_LEGACY_MIGRATION=1 \
             --env=HALLUCINATE_CONTROL_SOCKET=hallucinate-flatpak-smoke \
-            io.github.bulmaspanties.Hallucinate --quit-after 3000
+            io.github.phosphene_dev.Hallucinate --quit-after 3000
       - name: Audio decodes inside the Flatpak
         run: |
           clips="$RUNNER_TEMP/clips"
@@ -91,13 +91,13 @@ jobs:
           ffmpeg "${src[@]}" -c:a libopus "$clips/tone.opus"
           cp packaging/flatpak/decode_check.py "$clips/"
           dbus-run-session -- flatpak run --env=QT_QPA_PLATFORM=offscreen --filesystem="$clips":ro \
-            --command=python3 io.github.bulmaspanties.Hallucinate "$clips/decode_check.py" \
+            --command=python3 io.github.phosphene_dev.Hallucinate "$clips/decode_check.py" \
             "$clips/tone.mp3" "$clips/aac.m4a" "$clips/alac.m4a" "$clips/tone.flac" \
             "$clips/tone.ogg" "$clips/tone.opus"
       - name: Flathub linter
         run: |
           flatpak run --command=flatpak-builder-lint org.flatpak.Builder \
-            manifest packaging/flatpak/io.github.bulmaspanties.Hallucinate.yml
+            manifest packaging/flatpak/io.github.phosphene_dev.Hallucinate.yml
           # Only Flathub's publishing pipeline rewrites screenshot and icon URLs to dl.flathub.org/media,
           # so those two checks are excepted for this local repo (packaging/flatpak/lint-exceptions.json).
           flatpak run --command=flatpak-builder-lint org.flatpak.Builder \

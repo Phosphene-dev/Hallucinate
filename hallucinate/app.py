@@ -77,7 +77,7 @@ def main(argv=None) -> int:
     if sys.platform == "win32":
         import ctypes
 
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("io.github.bulmaspanties.Hallucinate")
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("io.github.phosphene_dev.Hallucinate")
     icon = HERE / "assets" / ("hallucinate.ico" if sys.platform == "win32" else "hallucinate.png")
     if icon.exists():
         app.setWindowIcon(QIcon(str(icon)))
