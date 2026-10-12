@@ -5,6 +5,11 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-10-12
+
+### Fixed
+- The Recap card's glows no longer square off its rounded corners; they now follow the card's shape, in the app and in saved images.
+
 ## [0.8.1] - 2026-10-12
 
 ### Changed
