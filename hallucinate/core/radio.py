@@ -28,6 +28,7 @@ W_YEAR_NEAR = 1.0  # within 3 years
 W_YEAR_SAME_ERA = 0.5  # within 8 years
 W_LIKED = 1.0
 W_PLAYS = 0.3  # times log(1 + play count)
+W_SKIPS = 0.8  # taken off per log(1 + skip count beyond plays): songs you keep skipping come up less
 RECENT_PENALTY = 4.0
 
 
@@ -103,6 +104,7 @@ def radio_tracks(db, seeds, exclude=(), limit=10, rng=None, now=None, rules=None
 
     liked = {r["path"] for r in db._rows("SELECT path FROM likes")}
     plays = {r["path"]: (r["count"], r["last"]) for r in db._rows("SELECT path, count, last FROM plays")}
+    skips = db.skip_counts()
 
     scored = []
     for path, row in pool.items():
@@ -121,6 +123,8 @@ def radio_tracks(db, seeds, exclude=(), limit=10, rng=None, now=None, rules=None
             score += W_LIKED
         count, last = plays.get(path, (0, 0.0))
         score += W_PLAYS * math.log1p(count)
+        if path not in liked:
+            score -= W_SKIPS * math.log1p(max(0, skips.get(path, 0) - count))
         if last and now - last < RECENT_S:
             score -= RECENT_PENALTY
         scored.append((score, path))

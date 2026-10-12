@@ -28,6 +28,7 @@ TRANSITION_MS = 250  # seeks stop this far before the end, so the next track sti
 HANDOFF_WINDOW_MS = 400  # positions arrive every ~100 ms; within this window the exact handoff is scheduled
 HANDOFF_LEAD_MS = 20  # start the next track this early to cover its startup (~16 ms measured on Qt 6.11)
 FINISH_GRACE_MS = 1000
+SKIP_MIN_MS = 1500  # moving on sooner than this is browsing the queue, not a skip
 RADIO_LOW_WATER = 2  # ask for more radio tracks once fewer than this many are left to play
 RADIO_SEEDS = 5  # recently played tracks the next radio batch is based on  # stop a track left to finish this long after its expected end, in case it stalls
 SESSION_VERSION = 1
@@ -180,6 +181,7 @@ class Player(QObject):
     sleepChanged = Signal()
     eqChanged = Signal()
     played = Signal("QVariantMap")  # a track was listened to for long enough to count as a play
+    skipped = Signal("QVariantMap")  # the listener moved on from a playing track before it counted as played
     visualizerChanged = Signal()
     outputDevicesChanged = Signal()
     signalPathChanged = Signal()
@@ -1085,7 +1087,14 @@ class Player(QObject):
     def next(self):
         nxt = self._compute_next(auto=False)
         if nxt is not None:
+            self._note_skip(nxt)
             self._load(nxt)
+
+    def _note_skip(self, target):
+        """Moving on by hand from a song that is playing and hasn't counted as a play yet is a skip."""
+        if (self.hasTrack and target != self._index and self.playing and not self._play_counted
+                and self._voice.position() >= SKIP_MIN_MS):
+            self.skipped.emit(dict(self.current))
 
     @Slot()
     def previous(self):
@@ -1142,6 +1151,7 @@ class Player(QObject):
     @Slot(int)
     def playIndex(self, i):
         if 0 <= i < len(self._queue):
+            self._note_skip(i)
             self._load(i)
 
     @Slot(int)

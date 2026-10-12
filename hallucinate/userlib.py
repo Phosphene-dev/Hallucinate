@@ -95,6 +95,7 @@ class UserLibrary(QObject):
         self._stats_loaded.connect(self._apply_stats)
         if player is not None:
             player.played.connect(self.recordPlay)
+            player.skipped.connect(self.recordSkip)
         self.refresh()
         self.refreshStats()
 
@@ -135,6 +136,7 @@ class UserLibrary(QObject):
     def setPlayer(self, player):
         self._player = player
         player.played.connect(self.recordPlay)
+        player.skipped.connect(self.recordSkip)
 
     # --- refresh ------------------------------------------------------------
     def refresh(self):
@@ -621,6 +623,12 @@ class UserLibrary(QObject):
         self._write(lambda db, p: db.record_play(p), path)
         self.refreshStats()
         self._reload_history()
+
+    @Slot("QVariantMap")
+    def recordSkip(self, track):
+        path = track.get("path") if hasattr(track, "get") else None
+        if path:
+            self._write(lambda db, p: db.record_skip(p), path)
 
     def importPlays(self, items, source, done):
         """Merge external listens on the worker thread; call `done(result, error)` when finished."""

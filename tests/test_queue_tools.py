@@ -21,6 +21,7 @@ class FakeDevice:
 
 class FakePlayer(QObject):
     played = Signal(object)
+    skipped = Signal(object)
 
     def __init__(self, queue=()):
         super().__init__()
