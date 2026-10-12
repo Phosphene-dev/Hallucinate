@@ -146,3 +146,27 @@ def test_themes_reject_garbage(tmp_path):
             timed(_validate, value)
         except (ValueError, TypeError, KeyError):
             pass
+
+
+@pytest.mark.parametrize("junk", [b"", b"\x00\xff garbage", b"{", b"[]", b'{"queue": "not a list", "index": "x"}',
+                                  b'{"queue": [{"path": 5}], "index": 99, "volume": "loud"}'])
+def test_damaged_state_files_dont_stop_start_up(qapp, tmp_path, junk):
+    """A corrupt session (queue, position, volume) or scrobble queue is ignored, not fatal."""
+    from hallucinate import scrobbling
+    from hallucinate.listenbrainz import ListenBrainzScrobbler
+    from hallucinate.player import Player
+
+    for name in ("get_password", "set_password", "delete_password"):
+        setattr(scrobbling.keyring, name, lambda *_: None)
+    (tmp_path / "session.json").write_bytes(junk)
+    (tmp_path / "lastfm-scrobbles.json").write_bytes(junk)
+    (tmp_path / "listenbrainz-listens.json").write_bytes(junk)
+    player = Player(session_file=tmp_path / "session.json")
+    lastfm = scrobbling.LastFmScrobbler(player, tmp_path)
+    lb = ListenBrainzScrobbler(player, tmp_path)
+    try:
+        assert isinstance(player.queue, list)
+    finally:
+        for obj in (lb, lastfm, player):
+            if hasattr(obj, "shutdown"):
+                obj.shutdown()

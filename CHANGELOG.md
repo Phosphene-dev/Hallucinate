@@ -5,6 +5,25 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-10-12
+
+A safety and stability release: nothing looks different, but more can go wrong without hurting you.
+
+### Security
+- Song titles, lyrics and online lookup results can no longer format the interface or make it go online. A tag containing an image link used to make the window fetch it (a tracking pixel that also slipped past offline mode). All text is now shown as plain text, and the interface refuses any request that isn't local.
+- Answers from online services are capped in size, so a broken or hostile server can't fill memory.
+- The update check keeps only the version number from a release and only opens this project's own release page.
+- The control socket (`hallucinate --next` and friends) now lives in your private runtime folder, so another user on the same computer can't block Hallucinate from starting.
+- Dependencies are checked against known vulnerabilities in CI (none today).
+
+### Stability
+- The library database (likes, plays, playlists, history) is backed up once a day, keeping five. If it's ever damaged (a crash mid-write, a failing disk), it's set aside and the newest backup restored automatically, with a message saying so; nothing is deleted.
+- A memory leak is fixed: each library reload (after a rescan, a tag edit or a folder change) left the previous album and artist song lists in memory for the rest of the session. The cache of visited pages is also capped.
+- The cover thumbnail (512 MB) and waveform (256 MB) caches are kept to a size limit, dropping the least recently used.
+- A damaged iTunes/MusicBee library file now gives a clear "this file looks damaged" message when importing.
+- Malformed audio files, CUE sheets, playlists, lyrics, library imports, themes and Hallucinate's own state files are now fuzz-tested.
+- Long-running checks on a 12,000-song library (every page, search, theme changes, rescans, queue changes) show memory levelling off with no further growth.
+
 ## [0.9.2] - 2026-10-12
 
 ### Added
