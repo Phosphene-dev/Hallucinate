@@ -14,7 +14,7 @@ dependencies = [
     # PySide6 6.12.0 drops a reference to True on every signal emit; Python 3.12+ is immune (True is immortal),
     # older Pythons eventually free True and crash. Lift this once a fixed PySide6 is released.
     "PySide6>=6.11.2,<6.12; python_version < '3.12'",
-    "PySide6>=6.11.2; python_version >= '3.12'",
+    "PySide6>=6.12.0; python_version >= '3.12'",
     "mutagen>=1.48.1",
     "keyring>=25.7.0",
     "numpy>=1.24",
