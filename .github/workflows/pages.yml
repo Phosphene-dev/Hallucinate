@@ -45,7 +45,7 @@ jobs:
           from=$(packaging/flatpak/fetch_repo.sh flatpak-repo)
           echo "Serving the Flatpak repository from: ${from:-nowhere yet}"
       - run: python scripts/build_site.py _site --flatpak-repo flatpak-repo
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
