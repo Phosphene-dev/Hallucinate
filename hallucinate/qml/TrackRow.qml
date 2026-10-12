@@ -19,7 +19,7 @@ Rectangle {
     property int rowIndex: -1
     property string audioFormat: ""
     property int audioBitrate: 0
-    readonly property bool liked: path.length > 0 && userLib.likesRevision >= 0 && userLib.isLiked(path)
+    readonly property bool liked: path.length > 0 && Rows.liked[path] === true
     // The list this row belongs to (its model, or an array of tracks): Ctrl/Shift+click select within it
     property var selectionSource: null
     readonly property bool selected: path.length > 0 && Selection.count > 0 && Selection.paths.indexOf(path) >= 0
@@ -37,7 +37,7 @@ Rectangle {
     Keys.onEnterPressed: row.activated()
     Accessible.role: Accessible.ListItem
     Accessible.name: title + (artist.length ? ", " + artist : "") +
-                     (player.showTrackInfo && audioFormat.length ? ", " + audioFormat + " audio" : "")
+                     (Rows.showTrackInfo && audioFormat.length ? ", " + audioFormat + " audio" : "")
     Accessible.onPressAction: row.activated()
     Accessible.selected: row.selected
     Rectangle { anchors.fill: parent; anchors.margins: -2; radius: Theme.radiusSmall; color: "transparent"; border.width: 2; border.color: Theme.accent; visible: row.activeFocus }
@@ -113,7 +113,7 @@ Rectangle {
                 id: audioBadge
                 formatName: row.audioFormat
                 bitrate: row.audioBitrate
-                visible: player.showTrackInfo
+                visible: Rows.showTrackInfo
             }
         }
     }

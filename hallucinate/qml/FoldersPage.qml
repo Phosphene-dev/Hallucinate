@@ -190,7 +190,7 @@ Item {
                         showArt: false
                         audioFormat: modelData.codec
                         audioBitrate: modelData.bitrate
-                        current: player.hasTrack && player.current.path === modelData.path
+                        current: Rows.currentPath === modelData.path
                         onActivated: player.playList(page.tracks, index)
                         onEnqueue: player.enqueue(modelData)
                     }

@@ -234,7 +234,7 @@ Item {
             durText: model.durText
             showArt: false
             showAlbum: false
-            current: player.hasTrack && player.current.id === model.id
+            current: Rows.currentId === model.id
             onActivated: player.playList(page.tracks.toList(), index)
             onEnqueue: player.enqueue(page.tracks.get(index))
         }

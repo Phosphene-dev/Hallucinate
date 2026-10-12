@@ -244,7 +244,7 @@ Item {
                         showAlbum: false
                         durText: modelData.durText
                         artUrl: modelData.artUrl || ""
-                        current: player.hasTrack && player.current.path === modelData.path
+                        current: Rows.currentPath === modelData.path
                         onActivated: player.playList(page.profile.topTracks, index)
                         onEnqueue: player.enqueue(modelData)
                     }
@@ -357,7 +357,7 @@ Item {
                         album: model.album
                         durText: model.durText
                         artUrl: model.artUrl
-                        current: player.hasTrack && player.current.id === model.id
+                        current: Rows.currentId === model.id
                         onActivated: player.playList(page.tracksModel.toList(), index)
                         onEnqueue: player.enqueue(page.tracksModel.get(index))
                     }

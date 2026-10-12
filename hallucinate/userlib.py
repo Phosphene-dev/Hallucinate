@@ -269,6 +269,11 @@ class UserLibrary(QObject):
     def isLiked(self, path):
         return path in self._liked
 
+    @Slot(result="QVariantMap")
+    def likedLookup(self):
+        """{path: True} for every liked song, so a list of rows can check likes without a call each."""
+        return dict.fromkeys(self._liked, True)
+
     @Slot(str)
     def toggleLike(self, path):
         if not path:

@@ -95,6 +95,11 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.9.1" date="2026-10-12">
+      <description>
+        <p>Searching a big library no longer freezes the window while you type.</p>
+      </description>
+    </release>
     <release version="0.9.0" date="2026-10-12">
       <description>
         <p>Offline mode: one switch in Settings and Hallucinate makes no internet connections at all. Scrobbles wait and are sent when you turn it off.</p>

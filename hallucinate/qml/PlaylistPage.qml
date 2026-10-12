@@ -81,7 +81,7 @@ Item {
             album: model.album
             durText: model.durText
             artUrl: model.artUrl
-            current: player.hasTrack && player.current.id === model.id
+            current: Rows.currentId === model.id
             onActivated: page.liked ? userLib.playLiked(index) : userLib.playPlaylist(index, false)
             onEnqueue: player.enqueue(page.tracksModel.get(index))
         }
