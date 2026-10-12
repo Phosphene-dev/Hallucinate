@@ -547,12 +547,20 @@ class Player(QObject):
     @Slot()
     def _update_waveform(self):
         current = self._queue[self._index] if self.hasTrack else {}
-        path = "" if current.get("file") else current.get("path", "")  # no waveform for a stretch of a file
-        peaks = self._waveforms.request(path) if self._waveforms is not None and path else None
+        peaks = self._request_waveform(current) if self._waveforms is not None and current else None
         self._set_waveform(peaks or [])
         nxt = self._index + 1
-        if self._waveforms is not None and 0 <= nxt < len(self._queue) and not self._queue[nxt].get("file"):
-            self._waveforms.request(self._queue[nxt].get("path", ""), urgent=False)  # ready when it starts
+        if self._waveforms is not None and 0 <= nxt < len(self._queue):
+            self._request_waveform(self._queue[nxt], urgent=False)  # ready when it starts
+
+    def _request_waveform(self, track, urgent=True):
+        path = track.get("path", "")
+        if not path:
+            return None
+        if track.get("file"):  # a CUE sheet song: its stretch of the album's file
+            return self._waveforms.request_window(path, track["file"], track.get("cue_start") or 0.0,
+                                                  track.get("cue_end") or 0.0, urgent)
+        return self._waveforms.request(path, urgent)
 
     @Slot(str)
     def _on_waveform_ready(self, path):

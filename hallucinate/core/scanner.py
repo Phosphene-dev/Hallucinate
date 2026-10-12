@@ -1,9 +1,12 @@
 """Incremental folder scanner: only new/changed files are parsed."""
 import os
+import re
 from typing import Callable, Optional
 
 from . import cue, tags
 from .db import Database
+
+_CUE_SONG = re.compile(r"^(.*\.[A-Za-z0-9]+)#\d+$")
 
 
 class Scanner:
@@ -43,6 +46,12 @@ class Scanner:
         if not os.path.isdir(folder):
             return  # unmounted/missing: keep existing entries
         existing = self.db.paths_under(folder)
+        # songs of CUE sheets embedded in their file, by file, so an unchanged one isn't read again
+        embedded = {}
+        for p in existing:
+            m = _CUE_SONG.match(p)
+            if m:
+                embedded.setdefault(m.group(1), []).append(p)
         seen = set()
         pending = 0
         visited = set()
@@ -77,10 +86,27 @@ class Scanner:
                 if old and old[0] == st.st_mtime and old[1] == st.st_size:
                     stats["unchanged"] += 1
                     continue
+                songs = embedded.get(path, [])
+                if not old and songs and all(existing[p] == (st.st_mtime, st.st_size) for p in songs):
+                    seen.update(songs)  # a file split by its own CUE sheet, unchanged
+                    stats["unchanged"] += len(songs)
+                    continue
                 t = tags.read_track(path, art_known=lambda k: k in self._art)
                 if t is None:
                     stats["errors"] += 1
                     continue
+                sheet_text = t.pop("_cuesheet", "")
+                if sheet_text:
+                    rows = self._embedded_cue_rows(t, sheet_text)
+                    if rows:
+                        seen.discard(path)
+                        for row in rows:
+                            self._attach_art(row, root)
+                            self.db.upsert_track(row)
+                            seen.add(row["path"])
+                            stats["updated" if row["path"] in existing else "added"] += 1
+                        pending += len(rows)
+                        continue
                 self._attach_art(t, root)
                 self.db.upsert_track(t)
                 stats["updated" if old else "added"] += 1
@@ -135,6 +161,20 @@ class Scanner:
             seen.add(row["path"])
             stats["updated" if old else "added"] += 1
         return len(rows)
+
+    @staticmethod
+    def _embedded_cue_rows(whole, text):
+        """Songs from a CUE sheet stored inside the file (the entry splitting it into the most songs)."""
+        sheet = cue.parse(text)
+        entries = [f for f in sheet["files"] if len(f["tracks"]) >= 2]
+        if not entries:
+            return []
+        entry = max(entries, key=lambda f: len(f["tracks"]))
+        art = whole.get("_art")
+        rows = cue.tracks(whole, sheet, entry)
+        for row in rows:
+            row["_art"] = art
+        return rows
 
     def _attach_art(self, t: dict, directory: str):
         key = t["album_key"]
