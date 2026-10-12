@@ -325,6 +325,7 @@ ApplicationWindow {
                     spacing: 0
                     StackView {
                         id: stack
+                        objectName: "pageStack"
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         clip: true
