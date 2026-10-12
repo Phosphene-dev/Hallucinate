@@ -144,6 +144,8 @@ class MetadataEditor(QObject):
         def work(db, key, art, alb, emb):
             try:
                 data = artfetch.fetch_cover(art, alb)
+            except artfetch.ServiceError as exc:  # their servers, already worded for people
+                return {"kind": "cover", "ok": False, "message": str(exc)}
             except OSError as exc:
                 return {"kind": "cover", "ok": False, "message": f"Network error: {exc}"}
             if not data:

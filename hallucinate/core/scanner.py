@@ -18,9 +18,11 @@ class Scanner:
         self.should_stop = should_stop or (lambda: False)
         self._art = {k: v for k, v in db.album_art_map().items() if v and os.path.exists(v)}
         self._seen = 0
+        self._hidden = set()
 
     def scan(self, folders) -> dict:
         stats = {"added": 0, "updated": 0, "removed": 0, "unchanged": 0, "errors": 0, "dirs": []}
+        self._hidden = self.db.hidden_paths()  # removed from the library on purpose
         for folder in folders:
             if self.should_stop():
                 break
@@ -71,6 +73,8 @@ class Scanner:
                 if os.path.splitext(name)[1].lower() not in tags.AUDIO_EXTS:
                     continue
                 path = os.path.join(root, name)
+                if path in self._hidden:
+                    continue
                 try:
                     st = os.stat(path)
                 except OSError:

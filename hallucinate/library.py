@@ -4,7 +4,7 @@ import random
 import threading
 from concurrent.futures import ThreadPoolExecutor
 
-from PySide6.QtCore import Property, QFileSystemWatcher, QObject, QTimer, QUrl, Signal, Slot
+from PySide6.QtCore import Property, QFile, QFileSystemWatcher, QObject, QTimer, QUrl, Signal, Slot
 
 from .core import albums as album_views
 from .core import artists as artist_views
@@ -93,6 +93,18 @@ def decorate(rows):
     return rows
 
 
+def _only_leftovers(folder):
+    """True when a folder has no subfolders and no music left (just covers, logs, playlists and the like)."""
+    try:
+        with os.scandir(folder) as it:
+            for entry in it:
+                if entry.is_dir() or os.path.splitext(entry.name)[1].lower() in AUDIO_EXTS:
+                    return False
+    except OSError:
+        return False
+    return True
+
+
 class _Reader:
     """A single worker thread with its own SQLite connection for read queries.
 
@@ -144,6 +156,9 @@ class Library(QObject):
     statusChanged = Signal()
     scanProgress = Signal(int)
     scanFinished = Signal(object)
+    albumsRemoved = Signal("QVariantMap")  # {"kind": "hidden"|"trashed", "albums", "songs", "failed"}
+    hiddenChanged = Signal()
+    _removed = Signal(object)
 
     def __init__(self, db_path, art_dir, parent=None):
         super().__init__(parent)
@@ -198,6 +213,8 @@ class Library(QObject):
         self._dropped.connect(self._apply_dropped)
         self._wall_loaded.connect(self._apply_wall)
         self._health_loaded.connect(self._apply_health)
+        self._removed.connect(self._apply_removed)
+        self._hidden_count = len(self._db.hidden_paths())
         self._watcher = QFileSystemWatcher(self)
         self._watcher.directoryChanged.connect(self._on_dir_changed)
         self._debounce = QTimer(self)
@@ -690,6 +707,75 @@ class Library(QObject):
 
     def _on_dir_changed(self, _path):
         self._debounce.start()
+
+    # --- removing albums ---------------------------------------------------------------------
+    @Slot("QVariantList", result="QVariantList")
+    def albumPaths(self, keys):
+        """Every song path of these albums, in album order."""
+        return [t["path"] for k in keys for t in self._db.album_tracks(k)]
+
+    @Property(int, notify=hiddenChanged)
+    def hiddenCount(self):
+        """Files removed from the library with removeAlbums; rescans leave them out until restoreHidden()."""
+        return self._hidden_count
+
+    @Slot("QVariantList")
+    def removeAlbums(self, keys):
+        """Take albums out of the library, leaving their files where they are."""
+        paths, n = self.albumPaths(keys), len(keys)
+
+        def work(db):
+            songs = db.hide_paths(paths)
+            self._removed.emit({"kind": "hidden", "albums": n, "songs": songs, "failed": 0,
+                                "hidden": len(db.hidden_paths()), "keys": list(keys)})
+
+        self._bulk.submit(work)  # same single worker as reload(), so the refresh sees the rows gone
+        self.reload()
+
+    @Slot("QVariantList")
+    def trashAlbums(self, keys):
+        """Move albums' files to the system trash (recoverable from there) and take them out of the library.
+        A folder left with no other music and no subfolders goes to the trash too, with its cover and logs."""
+        paths, n = self.albumPaths(keys), len(keys)
+        roots = {os.path.normpath(f) for f in self._db.folders()}
+
+        def work(db):
+            files = list(dict.fromkeys(db.file_of(p) for p in paths))
+            done, failed, dirs = set(), 0, set()
+            for f in files:
+                if not os.path.exists(f) or QFile.moveToTrash(f):
+                    done.add(f)
+                    dirs.add(os.path.dirname(f))
+                else:
+                    failed += 1
+            for d in dirs:
+                if os.path.normpath(d) not in roots and _only_leftovers(d):
+                    QFile.moveToTrash(d)
+            gone = [p for p in paths if db.file_of(p) in done]
+            db.remove_paths(gone)
+            db.commit()
+            self._removed.emit({"kind": "trashed", "albums": n, "songs": len(gone), "failed": failed,
+                                "keys": list(keys)})
+
+        self._bulk.submit(work)
+        self.reload()
+
+    @Slot()
+    def restoreHidden(self):
+        """Bring back everything removed with removeAlbums (on the next scan, which starts now)."""
+        self._db.unhide_all()
+        self._hidden_count = 0
+        self.hiddenChanged.emit()
+        self.rescan()
+
+    @Slot(object)
+    def _apply_removed(self, result):
+        for key in result.get("keys", []):
+            self._detail.pop(("at", key), None)
+        if "hidden" in result:
+            self._hidden_count = result.pop("hidden")
+            self.hiddenChanged.emit()
+        self.albumsRemoved.emit(result)
 
     # --- album views: liner notes, colour wall, timeline ------------------------------------
     @Slot(str, result="QVariantMap")

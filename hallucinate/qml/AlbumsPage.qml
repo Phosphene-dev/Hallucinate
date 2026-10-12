@@ -71,7 +71,10 @@ Item {
                     albumKey: model.album_key
                     title: model.album
                     subtitle: (model.year > 0 ? model.year + " • " : "") + model.album_artist
+                    artist: model.album_artist
                     artUrl: model.artUrl
+                    selectionSource: library.albums
+                    rowIndex: index
                 }
             }
         }
@@ -100,6 +103,7 @@ Item {
                     required property string album_artist
                     required property string artUrl
                     required property string color
+                    required property int index
                     width: wall.cellWidth; height: wall.cellHeight
                     z: tileMouse.containsMouse ? 2 : 0
                     Rectangle {
@@ -115,12 +119,27 @@ Item {
                         scale: tileMouse.containsMouse ? 1.12 : 1
                         Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                     }
+                    Rectangle {  // selected
+                        anchors { fill: parent; margins: 1 }
+                        radius: 7
+                        color: "transparent"
+                        border.width: 3
+                        border.color: Theme.accent
+                        visible: AlbumSelection.count > 0 && AlbumSelection.has(tile.album_key)
+                    }
                     MouseArea {
                         id: tileMouse
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: Nav.openAlbum(tile.album_key)
+                        acceptedButtons: Qt.LeftButton | Qt.RightButton
+                        onClicked: function (mouse) {
+                            if (mouse.button === Qt.RightButton) Nav.albumMenu([tile.album_key], tile.album, tile.album_artist)
+                            else if (mouse.modifiers & Qt.ControlModifier) AlbumSelection.toggle(library.albumWall, tile.index, tile.album_key)
+                            else if (mouse.modifiers & Qt.ShiftModifier) AlbumSelection.extend(library.albumWall, tile.index, tile.album_key)
+                            else { AlbumSelection.clear(); Nav.openAlbum(tile.album_key) }
+                        }
+                        onPressAndHold: Nav.albumMenu([tile.album_key], tile.album, tile.album_artist)
                     }
                     ToolTip.visible: tileMouse.containsMouse
                     ToolTip.text: tile.album + " — " + tile.album_artist
@@ -258,7 +277,14 @@ Item {
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: Nav.openAlbum(entry.modelData.album_key)
+                                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                    onClicked: function (mouse) {
+                                        if (mouse.button === Qt.RightButton)
+                                            Nav.albumMenu([entry.modelData.album_key], entry.modelData.album, entry.modelData.album_artist || "")
+                                        else
+                                            Nav.openAlbum(entry.modelData.album_key)
+                                    }
+                                    onPressAndHold: Nav.albumMenu([entry.modelData.album_key], entry.modelData.album, entry.modelData.album_artist || "")
                                 }
                             }
                         }

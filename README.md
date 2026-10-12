@@ -119,6 +119,7 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - Star ratings (1–5, alongside Like) from the track menu, the player or Ctrl+1…5; ratings from other players' tags are read, and smart playlists can use them.
 - CUE sheets: a single-file album with a .cue (or a sheet embedded in the file) appears as its separate songs, each with its own waveform, and plays gaplessly.
 - First-run welcome: choose your music folders, a theme and scrobbling on a fresh install.
+- Album menus and multi-select: right-click an album (or Ctrl/Shift+click several) to play, queue, add to a playlist, edit, remove from the library (files kept; Settings → Library brings them back) or move to the trash.
 - Multi-select: Ctrl/Shift+click songs in any list, then play them, play them next, queue them, add them to a playlist, like, rate or edit their tags together.
 - Queue undo (Ctrl+Z, 20 steps) for clearing, removing, moving and replacing the queue.
 - Skip tracking: moving on from a song early counts as a skip; smart playlists can use skip counts and radio plays often-skipped songs less.

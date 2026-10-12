@@ -124,6 +124,13 @@ ApplicationWindow {
         function onNotify(message) { toast.show(message) }
         function onBack() { if (stack.depth > 1) stack.pop() }
         function onInstallUpdate() { updateDlg.open() }
+        function onAlbumMenu(keys, title, artist) {
+            // acting on a selected album acts on the whole selection
+            var k = keys.length === 1 && AlbumSelection.has(keys[0]) ? AlbumSelection.keys.slice() : keys
+            albumMenu.show(k, title, artist)
+        }
+        function onRemoveAlbums(keys, what) { removeDlg.keys = keys; removeDlg.what = what; removeDlg.open() }
+        function onTrashAlbums(keys, what) { trashDlg.keys = keys; trashDlg.what = what; trashDlg.open() }
     }
 
     Timer {
@@ -141,6 +148,7 @@ ApplicationWindow {
     }
 
     TrackMenu { id: trackMenu; objectName: "trackMenu" }
+    AlbumMenu { id: albumMenu }
     CommandPalette { id: commandPalette; win: window }
 
     // Playlist files
@@ -187,9 +195,61 @@ ApplicationWindow {
         anchors { bottom: parent.bottom; bottomMargin: 112 }
         onEditTags: function (paths) { tagEditor.editTracks(paths) }
     }
-    onSectionChanged: Selection.clear()
-    Connections { target: stack; function onCurrentItemChanged() { Selection.clear() } }
+    AlbumBar {
+        z: 59
+        maxWidth: stack.width - 24
+        x: sidebar.width + (stack.width - width) / 2
+        anchors { bottom: parent.bottom; bottomMargin: 112 }
+    }
+    onSectionChanged: { Selection.clear(); AlbumSelection.clear() }
+    Connections { target: stack; function onCurrentItemChanged() { Selection.clear(); AlbumSelection.clear() } }
     Shortcut { sequence: "Escape"; enabled: Selection.count > 0 && !nowPlaying.open; onActivated: Selection.clear() }
+    Shortcut { sequence: "Escape"; enabled: AlbumSelection.count > 0 && !nowPlaying.open; onActivated: AlbumSelection.clear() }
+
+    // Removing albums: from the library only (files stay; Settings → Library brings them back), or to the trash
+    component ConfirmDialog: Dialog {
+        id: dlg
+        property var keys: []
+        property string what: ""
+        property string body: ""
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: 440
+        modal: true
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        Text {
+            width: dlg.availableWidth
+            wrapMode: Text.WordWrap
+            text: dlg.body
+            color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+        }
+    }
+    ConfirmDialog {
+        id: removeDlg
+        objectName: "removeAlbumsDialog"
+        title: "Remove " + what + " from the library?"
+        body: "The music stays on your disk; Hallucinate just stops showing it, and rescans leave it out. "
+              + "Settings → Library can bring it back. Plays, likes and playlists are kept."
+        onAccepted: { library.removeAlbums(keys); AlbumSelection.clear() }
+    }
+    ConfirmDialog {
+        id: trashDlg
+        objectName: "trashAlbumsDialog"
+        title: "Move " + what + " to the trash?"
+        body: "The music files go to your system's trash, where you can restore them from. A folder left with only "
+              + "covers or logs goes too; anything else in it stays."
+        onAccepted: { library.trashAlbums(keys); AlbumSelection.clear() }
+    }
+    Connections {
+        target: library
+        function onAlbumsRemoved(r) {
+            var n = r.albums + (r.albums === 1 ? " album" : " albums")
+            if (r.kind === "hidden") toast.show(n + " removed from the library")
+            else if (r.failed && !r.songs) toast.show("Couldn't move the files to the trash")
+            else toast.show(n + " moved to the trash" + (r.failed ? " (" + r.failed + " files couldn't be moved)" : ""))
+            if (r.songs > 0 && stack.currentItem && r.keys.indexOf(stack.currentItem.albumKey) >= 0) stack.pop()  // its page is gone
+        }
+    }
 
     // A short message at the bottom of the window
     Rectangle {
@@ -198,7 +258,7 @@ ApplicationWindow {
         property string message: ""
         function show(text) { message = text; opacity = 1; toastTimer.restart() }
         z: 60
-        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Selection.count > 0 ? 176 : 118 }
+        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Selection.count > 0 || AlbumSelection.count > 0 ? 176 : 118 }
         width: toastText.implicitWidth + 36
         height: 40
         radius: 20

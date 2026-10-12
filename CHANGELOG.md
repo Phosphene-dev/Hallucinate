@@ -5,6 +5,17 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-10-12
+
+### Added
+- Album menus: right-click an album (or its "…" button, or the "…" on its page) to play it, play it next, queue it, add it to a playlist, edit its info, go to the artist, remove it from the library or move it to the trash. Works on the album grid, the colour wall, the timeline, Home, Search, Stats and artist pages.
+- Select several albums with Ctrl/Shift+click in the album grid, the colour wall or search; a bar then plays, queues, adds to a playlist, removes or trashes them all. Right-clicking a selected album acts on the whole selection.
+- Remove from library: the files stay on disk and rescans leave them out; Settings → Library brings them back. Plays, likes and playlists are kept.
+- Move to trash: the music files go to the system trash (recoverable there), and a folder left with only covers or logs goes too. Nothing is ever deleted outright, and library folders themselves are never trashed.
+
+### Fixed
+- "Find cover online" no longer stops at "Network error: HTTP Error 500" when the Cover Art Archive (archive.org) fails one image: it tries a smaller size, the next matching release and the album's release-group cover, retries MusicBrainz once if it's busy, and says plainly when the servers are having trouble.
+
 ## [0.9.1] - 2026-10-12
 
 ### Fixed

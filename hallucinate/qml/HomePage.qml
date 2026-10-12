@@ -200,6 +200,7 @@ Item {
                         albumKey: model.album_key
                         title: model.album
                         subtitle: model.album_artist
+                        artist: model.album_artist
                         artUrl: model.artUrl
                         note: model.reason || ""
                     }

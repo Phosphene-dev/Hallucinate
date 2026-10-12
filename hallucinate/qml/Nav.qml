@@ -23,4 +23,8 @@ QtObject {
     signal editAlbum(string key)
     signal back()
     signal installUpdate()
+    // keys: album keys; what: how to name them in messages ("“Album”" or "3 albums")
+    signal albumMenu(var keys, string title, string artist)
+    signal removeAlbums(var keys, string what)
+    signal trashAlbums(var keys, string what)
 }
