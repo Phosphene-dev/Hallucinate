@@ -96,6 +96,7 @@ Item {
                 Repeater {
                     model: userLib.topTracks
                     TrackRow {
+                        selectionSource: userLib.topTracks
                         width: parent.width
                         path: model.path
                         audioFormat: model.codec
@@ -215,6 +216,7 @@ Item {
                 Repeater {
                     model: userLib.homeMix
                     TrackRow {
+                        selectionSource: userLib.homeMix
                         width: parent.width
                         path: model.path
                         audioFormat: model.codec

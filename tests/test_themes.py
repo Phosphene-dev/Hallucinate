@@ -296,6 +296,31 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
         assert row is not None, name
         assert row.property("color") == manager.surface, (name, row.property("color"))
     del row, stats_page
+    # Multi-select: Ctrl+click a song, the selection bar appears and acts on it; Esc clears it
+    from PySide6.QtCore import QPoint
+    from PySide6.QtTest import QTest
+
+    assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "songs"))
+    def visible_row(item):
+        if not item.isVisible():
+            return None
+        if item.objectName() == "trackRow" and item.width() > 0:
+            return item
+        return next((found for child in item.childItems() if (found := visible_row(child))), None)
+
+    song_row = wait_for(lambda content=window.contentItem(): visible_row(content))
+    assert song_row is not None
+    selection_bar = window.findChild(QObject, "selectionBar")
+    assert not selection_bar.property("shown")
+    centre = song_row.mapToScene(song_row.boundingRect().center())
+    QTest.mouseClick(window, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.ControlModifier,
+                     QPoint(int(centre.x()), int(centre.y())))
+    assert wait_for(lambda bar=selection_bar: bar.property("shown"))
+    assert song_row.property("selected")
+    assert item_named(selection_bar, "selectionCount").property("text") == "1 song selected"
+    QTest.keyClick(window, Qt.Key.Key_Escape)
+    assert wait_for(lambda bar=selection_bar: not bar.property("shown"))
+    del song_row, selection_bar
     assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "history"))
     qapp.processEvents()
     for name in ("historyList", "historyHeatmap", "historySummary", "historySearch"):

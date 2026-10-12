@@ -231,8 +231,10 @@ Item {
                 Repeater {
                     model: page.profile.topTracks || []
                     TrackRow {
+                        selectionSource: page.profile.topTracks || []
                         required property var modelData
                         required property int index
+                        rowIndex: index
                         width: col.width
                         number: index + 1
                         path: modelData.path
@@ -344,6 +346,7 @@ Item {
                 Repeater {
                     model: page.allSongs ? page.tracksModel : null
                     TrackRow {
+                        selectionSource: page.allSongs ? page.tracksModel : null
                         path: model.path
                         audioFormat: model.codec
                         audioBitrate: model.bitrate

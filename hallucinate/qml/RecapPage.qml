@@ -389,8 +389,10 @@ Item {
                     Repeater {
                         model: page.rc.topSongs || []
                         TrackRow {
+                            selectionSource: page.rc.topSongs || []
                             required property var modelData
                             required property int index
+                            rowIndex: index
                             width: parent.width
                             number: index + 1
                             path: modelData.path || ""

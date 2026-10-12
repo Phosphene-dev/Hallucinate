@@ -222,6 +222,7 @@ Item {
         }
 
         delegate: TrackRow {
+            selectionSource: ListView.view ? ListView.view.model : null
             path: model.path
             audioFormat: model.codec
             audioBitrate: model.bitrate

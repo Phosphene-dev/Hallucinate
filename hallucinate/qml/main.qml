@@ -172,6 +172,16 @@ ApplicationWindow {
         }
     }
 
+    // Acts on songs selected with Ctrl/Shift+click; a selection belongs to one page
+    SelectionBar {
+        z: 59
+        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 112 }
+        onEditTags: function (paths) { tagEditor.editTracks(paths) }
+    }
+    onSectionChanged: Selection.clear()
+    Connections { target: stack; function onCurrentItemChanged() { Selection.clear() } }
+    Shortcut { sequence: "Escape"; enabled: Selection.count > 0 && !nowPlaying.open; onActivated: Selection.clear() }
+
     // A short message at the bottom of the window
     Rectangle {
         id: toast
@@ -179,7 +189,7 @@ ApplicationWindow {
         property string message: ""
         function show(text) { message = text; opacity = 1; toastTimer.restart() }
         z: 60
-        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 118 }
+        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Selection.count > 0 ? 176 : 118 }
         width: toastText.implicitWidth + 36
         height: 40
         radius: 20

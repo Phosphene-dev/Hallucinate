@@ -614,6 +614,80 @@ class UserLibrary(QObject):
         if t and self._player is not None:
             self._player.playNext(t)
 
+    # --- several songs at once (the selection bar) ---------------------------------
+    def _tracks(self, paths):
+        """Library tracks for `paths`, in that order (songs no longer in the library are left out)."""
+        paths = [p for p in paths if p]
+
+        def load(db):
+            return [t for t in (db.track_by_path(p) for p in paths) if t]
+
+        return decorate(self._reader.submit(load).result(timeout=30)) if paths else []
+
+    @Slot("QVariantList")
+    def playPaths(self, paths):
+        tracks = self._tracks(list(paths))
+        if tracks and self._player is not None:
+            self._player.playList(tracks, 0)
+
+    @Slot("QVariantList")
+    def playNextPaths(self, paths):
+        if self._player is not None:
+            for t in reversed(self._tracks(list(paths))):  # each goes in right after the current song
+                self._player.playNext(t)
+
+    @Slot("QVariantList")
+    def enqueuePaths(self, paths):
+        tracks = self._tracks(list(paths))
+        if tracks and self._player is not None:
+            self._player.enqueueAll(tracks)
+
+    @Slot(int, "QVariantList")
+    def addPathsToPlaylist(self, pid, paths):
+        paths = [p for p in paths if p]
+        if paths:
+            self._write(lambda db, i, ps: db.playlist_add(i, ps), pid, paths, reload_playlist=True)
+
+    @Slot(str, "QVariantList", result=int)
+    def addPathsToNewPlaylist(self, name, paths):
+        pid = self.createPlaylist(name)
+        self.addPathsToPlaylist(pid, paths)
+        return pid
+
+    @Slot("QVariantList", result=bool)
+    def allLiked(self, paths):
+        return bool(paths) and all(p in self._liked for p in paths)
+
+    @Slot("QVariantList", bool)
+    def setLikedPaths(self, paths, liked):
+        paths = [p for p in paths if p and (p in self._liked) != liked]
+        if not paths:
+            return
+        for p in paths:
+            (self._liked.add if liked else self._liked.discard)(p)
+        self._likes_revision += 1
+        self.likesChanged.emit()
+        self._write(lambda db, ps, v: [db.set_liked(p, v) for p in ps], paths, liked)
+
+    @Slot("QVariantList", int)
+    def setRatingPaths(self, paths, stars):
+        """Give every song the same rating (0 clears)."""
+        stars = max(0, min(5, int(stars)))
+        paths = [p for p in paths if p]
+        if not paths:
+            return
+        for p in paths:
+            if stars:
+                self._ratings[p] = stars
+            else:
+                self._ratings.pop(p, None)
+        self._likes_revision += 1
+        self.likesChanged.emit()
+        self._write(lambda db, ps, s: [db.set_rating(p, s) for p in ps], paths, stars, refresh=False)
+        if self._smart_id >= 0:
+            sid = self._smart_id
+            self._reader.submit(lambda db: self._load_smart(db, sid))
+
     # --- play statistics -----------------------------------------------------------
     @Slot("QVariantMap")
     def recordPlay(self, track):
