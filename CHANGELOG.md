@@ -5,6 +5,8 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-12
+
 ### Added
 - Pride themes: Pride, Trans Pride (dark and light), Bi Pride, Lesbian Pride, Nonbinary Pride, Pan Pride and Ace Pride. Each is a calm, readable theme built around its flag: the flag's colours drift through the backdrop (very bright stripes are softened, and black, white and grey stripes stay out of it), a slim flag stripe sits under the logo, and the accent comes from the flag. Every text and accent colour meets WCAG AA contrast. Themes can now carry a `palette` of their own colours.
 - The welcome's theme picker scrolls and shows each flag on its tile.
