@@ -5,6 +5,16 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-12
+
+### Added
+- Offline mode (Settings → Internet & sharing): Hallucinate makes no internet connections at all. Lyrics and cover lookups, Last.fm and ListenBrainz, headphone EQ downloads and update checks stay off, and Discord status shows no cover art. Scrobbles wait in their queues and are sent when it's turned off; nothing is remembered as "not found" because of it. Every request goes through one place in the code, and a test fails if new code connects any other way.
+- Update now: with the update check on, the Windows installer build and the AppImage can install a new release themselves. The download is checked against the SHA-256 digest GitHub publishes for it, then the installer runs silently (Windows) or the AppImage is swapped in place, and Hallucinate reopens on the new version.
+
+### Changed
+- "Scrobbling & sharing" in Settings is now "Internet & sharing".
+- Copies installed by a system package manager (AUR and other distribution packages) no longer offer the update check; the package manager updates them.
+
 ## [0.8.1] - 2026-10-12
 
 ### Changed

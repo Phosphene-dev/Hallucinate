@@ -419,7 +419,7 @@ Item {
             Text {
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Hallucinate makes no internet connections at all: no lyrics or cover lookups, scrobbling, headphone EQ downloads or update checks. Scrobbles wait and are sent when you turn it off. Discord status talks only to the Discord app on this computer, so it keeps its own switch below."
+                text: "Hallucinate makes no internet connections at all: no lyrics or cover lookups, scrobbling, headphone EQ downloads or update checks. Scrobbles wait and are sent when you turn it off. Discord status talks only to the Discord app on this computer, so it keeps its own switch below (it shows no cover art while offline)."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             StyledCheck {

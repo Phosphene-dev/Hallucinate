@@ -103,7 +103,9 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - Queue undo (Ctrl+Z, 20 steps) for clearing, removing, moving and replacing the queue.
 - Skip tracking: moving on from a song early counts as a skip; smart playlists can use skip counts and radio plays often-skipped songs less.
 - Import from other players: play counts, skips, ratings and playlists from Strawberry, Clementine, Rhythmbox, MusicBee and iTunes, and foobar2000 play counts written to tags.
-- Settings in searchable sections; Copy debug info for bug reports (no personal paths); an optional, off-by-default update check.
+- Settings in searchable sections; Copy debug info for bug reports (no personal paths).
+- Offline mode (Settings → Internet & sharing): one switch and Hallucinate makes no internet connections at all. Lyrics and cover lookups, scrobbling, headphone EQ downloads and update checks stay off; scrobbles wait and are sent when you switch it off. Every request in the code goes through one gate, and a test fails if anything bypasses it.
+- Updates: an optional, off-by-default check (once a day, against GitHub). The Windows installer build and the AppImage can then update themselves with "Update now": the download is checked against the release's SHA-256 digest before it's installed. The Flatpak, AUR and other packages leave updates to their package manager.
 - Command palette (Ctrl+K) with fuzzy matching over pages and commands plus albums, artists and songs.
 - Global search grouped into Artists / Albums / Songs; Home, Albums, Artists, Songs browse views; album and artist pages; editable queue; shuffle/repeat; seek; volume. Queue, current position, shuffle, repeat, and volume are restored after restart; missing queue files are discarded.
 - Drag audio files or folders onto the window to play them (onto the queue panel to append); files outside the library play straight from their tags. Save the queue as a playlist from the queue panel.

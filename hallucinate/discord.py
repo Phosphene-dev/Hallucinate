@@ -13,7 +13,7 @@ import time
 
 from PySide6.QtCore import Property, QObject, QSettings, QTimer, Signal, Slot
 
-from .core import artfetch
+from .core import artfetch, net
 
 logger = logging.getLogger(__name__)
 
@@ -179,7 +179,7 @@ class _Worker(threading.Thread):
             self._cv.notify()
 
     def _cover(self, query):
-        if not query:
+        if not query or net.is_offline():  # a cover link would have Discord fetch it from the internet
             return None
         if query not in self._covers:
             try:
