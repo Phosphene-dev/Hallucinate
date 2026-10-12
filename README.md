@@ -33,12 +33,12 @@
 - **A look of its own.** Frosted glass over a backdrop that slowly drifts in the colours of the current cover, a floating player, and a waveform seek bar drawn from each song's own loudness.
 - **Now Playing that fills the screen.** Press F: the cover, or the record sliding out of its sleeve, over GPU visualizers (Liquid, Aurora, Nebula) that move with the music in the cover's colours.
 - **Home is about your library.** A random album to play, your listening heatmap and streak, albums to rediscover, what you played on this day in past years, and library facts.
-- **Browse like a record shelf.** Album pages with liner notes, a colour wall that sorts every cover round the colour wheel, and a timeline by decade and year.
-- **Every listen remembered.** A searchable history of everything you played, by day, with a year-long heatmap; import your Last.fm or ListenBrainz history too.
-- **Plays everything well.** FLAC, MP3, AAC/ALAC, Ogg, Opus, WAV, WavPack, AIFF and more, with true gapless playback, crossfade, ReplayGain, a 10-band equalizer and a signal path readout that tells you when the sound is untouched.
-- **Radio mode and smart playlists.** Similar songs from your library keep playing when the queue runs out; playlists update themselves from rules.
-- **Fast to drive.** Instant search across 50,000 tracks, and Ctrl+K for any page, command, album or song.
-- **Looks after your library.** A health check finds missing covers, tags and folders, split albums and duplicates, with a fix next to each.
+- **Browse like a record shelf.** Album and artist pages, a colour wall that sorts every cover round the colour wheel, a timeline by decade and year, and your own folders.
+- **Every listen remembered.** A searchable history of everything you played, recaps of every week, month and year, and your Last.fm, ListenBrainz or old player's history brought over.
+- **Plays everything well.** FLAC, MP3, AAC/ALAC, Ogg, Opus, WAV, WavPack, AIFF and more, CUE sheet albums too, with true gapless playback, ReplayGain (measured where tags are missing), a 10-band equalizer, headphone correction and crossfeed, and a signal path readout that tells you when the sound is untouched.
+- **Radio mode and smart playlists.** Similar songs from your library keep playing when the queue runs out (songs you keep skipping come up less); playlists update themselves from rules, ratings included.
+- **Fast to drive.** Instant search across 50,000 tracks, Ctrl+K for anything, Ctrl/Shift+click to act on many songs at once, and Ctrl+Z when the queue goes wrong.
+- **Looks after your library.** A health check finds missing covers (and fetches them all at once), tags and folders, split albums and duplicates, with a fix next to each.
 - **No account, no cloud.** Your library, playlists and history stay on your computer. Scrobbling and Discord are opt-in, cover art is fetched only when you ask, and online lyrics lookup can be turned off.
 
 ## Screenshots
@@ -55,6 +55,12 @@
 | ![Library health](docs/screenshots/health.png) | ![Command palette](docs/screenshots/palette.png) |
 | Queue with radio mode | Smart playlist rules |
 | ![Queue with radio mode](docs/screenshots/queue.png) | ![Smart playlist editor](docs/screenshots/smart-editor.png) |
+| Artist page | Recap |
+| ![Artist page](docs/screenshots/artist.png) | ![A month of listening summed up](docs/screenshots/recap.png) |
+| Several songs selected | Folders |
+| ![Songs selected with the selection bar](docs/screenshots/selection.png) | ![Folder view](docs/screenshots/folders.png) |
+| Settings | Pride themes |
+| ![Settings in searchable sections](docs/screenshots/settings.png) | ![The Trans Pride theme](docs/screenshots/theme-trans-pride.png) |
 
 ![Themes](docs/screenshots/themes.gif)
 
@@ -72,6 +78,9 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 | Q · L | Queue · lyrics |
 | Ctrl+M | Mini player |
 | Ctrl+1…5 · Ctrl+0 | Rate the playing song · clear its rating |
+| Ctrl+click · Shift+click | Select songs · select a range (then act on them from the bar that appears) |
+| Ctrl+Z | Undo the last queue change |
+| Esc | Clear the selection |
 | Alt+← | Back |
 
 ## All features
@@ -88,8 +97,13 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - Recap: a week, month or year of listening summed up (time, top artists, albums, songs and genres, new artists, the busiest day, longest streak, when you listen), with a highlights card to save as an image.
 - Folder view: browse your folders on disk with breadcrumbs, and play, shuffle or queue a folder with everything below it.
 - Star ratings (1–5, alongside Like) from the track menu, the player or Ctrl+1…5; ratings from other players' tags are read, and smart playlists can use them.
-- CUE sheets: a single-file album with a .cue appears as its separate songs and plays gaplessly.
+- CUE sheets: a single-file album with a .cue (or a sheet embedded in the file) appears as its separate songs, each with its own waveform, and plays gaplessly.
 - First-run welcome: choose your music folders, a theme and scrobbling on a fresh install.
+- Multi-select: Ctrl/Shift+click songs in any list, then play them, play them next, queue them, add them to a playlist, like, rate or edit their tags together.
+- Queue undo (Ctrl+Z, 20 steps) for clearing, removing, moving and replacing the queue.
+- Skip tracking: moving on from a song early counts as a skip; smart playlists can use skip counts and radio plays often-skipped songs less.
+- Import from other players: play counts, skips, ratings and playlists from Strawberry, Clementine, Rhythmbox, MusicBee and iTunes, and foobar2000 play counts written to tags.
+- Settings in searchable sections; Copy debug info for bug reports (no personal paths); an optional, off-by-default update check.
 - Command palette (Ctrl+K) with fuzzy matching over pages and commands plus albums, artists and songs.
 - Global search grouped into Artists / Albums / Songs; Home, Albums, Artists, Songs browse views; album and artist pages; editable queue; shuffle/repeat; seek; volume. Queue, current position, shuffle, repeat, and volume are restored after restart; missing queue files are discarded.
 - Drag audio files or folders onto the window to play them (onto the queue panel to append); files outside the library play straight from their tags. Save the queue as a playlist from the queue panel.
@@ -107,8 +121,8 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - The visualizer's FFT analysis runs on a worker thread and can be turned off ("React to the music").
 - Optional compact format/average-bitrate badges in track rows and the now-playing bar (Settings → Appearance); the display is off by default, shows approximate average kb/s, and leaves unavailable bitrates out rather than displaying zero.
 - Tag editor (single track or whole album; MP3, FLAC, Ogg/Opus, M4A, WMA, APE) and cover art: set from an image file, fetch from MusicBrainz / Cover Art Archive, optionally embed in files.
-- Headphone correction from AutoEQ's profiles (search by model, or import a ParametricEQ / GraphicEQ file), applied under the equalizer bands.
-- Lyrics panel with synced highlighting, and karaoke-style lyrics in Now Playing: embedded tags, sidecar `.lrc`, or LRCLIB (cached locally; can be disabled).
+- Headphone correction from AutoEQ's profiles (search by model, or import a ParametricEQ / GraphicEQ file), applied under the equalizer bands, and headphone crossfeed (light, medium, strong).
+- Lyrics panel with synced highlighting, and karaoke-style lyrics in Now Playing: embedded tags, sidecar `.lrc`, or LRCLIB (cached locally; can be disabled). Nudge synced lyrics that run early or late and save the timing as an `.lrc` next to the song.
 - Import M3U, M3U8 and PLS playlists (matched by path, then artist and title, then file name) and export any playlist, Liked Songs or the queue as M3U8.
 - Mini player (always-on-top, `Ctrl+M`) and a system tray icon with play/pause/next/previous, optional close-to-tray.
 - Keyboard focus rings and screen-reader names on buttons, rows and cards; renders crisply on HiDPI (tested at 2x).

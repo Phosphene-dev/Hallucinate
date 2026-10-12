@@ -177,6 +177,8 @@ def main():
                     '{"match": "any", "rules": [{"field": "genre", "op": "contains", "value": "dream"},'
                     ' {"field": "genre", "op": "contains", "value": "ambient"}], "sort": "year_desc", "limit": 0}'))
                 user_lib.refresh()
+                user_lib.refreshStats()
+                shell.setUiValue("foldersPath", str(work / "Music"))  # the folder view opens inside the music
 
             def play():
                 player.setVisualizerEnabled(True)
@@ -240,9 +242,44 @@ def main():
             def wait():
                 return None
 
+            def open_artist():
+                QMetaObject.invokeMethod(win, "openArtist", Q_ARG("QVariant", "Glass Orchard"))
+
+            def select_songs():
+                # Ctrl+click one song and Shift+click a few rows down, as a user would
+                from PySide6.QtCore import QPoint, Qt
+                from PySide6.QtTest import QTest
+
+                def rows(item, acc):
+                    if item.isVisible():
+                        if item.objectName() == "trackRow" and item.width() > 0:
+                            acc.append(item)
+                        for c in item.childItems():
+                            rows(c, acc)
+                    return acc
+
+                found = rows(win.contentItem(), [])
+                for row, mod in ((found[2], Qt.KeyboardModifier.ControlModifier),
+                                 (found[5], Qt.KeyboardModifier.ShiftModifier)):
+                    c = row.mapToScene(row.boundingRect().center())
+                    QTest.mouseClick(win, Qt.MouseButton.LeftButton, mod, QPoint(int(c.x()), int(c.y())))
+
+            def welcome(step):
+                def show():
+                    w = child("welcome")
+                    w.setProperty("open", step >= 0)
+                    w.setProperty("step", max(step, 0))
+                return show
+
             todo += [seed, play, pause]
-            for page in ("home", "songs", "history", "settings"):
-                todo += [go(page), shot(page)]
+            for page in ("home", "songs", "history", "settings", "folders", "recap", "stats"):
+                todo += [go(page), wait, shot(page)]
+            todo += [go("artists"), open_artist, wait, shot("artist")]
+            todo += [go("songs"), wait, select_songs, wait, shot("selection"), lambda: child("selectionClear").clicked.emit()]
+            todo += [welcome(1), wait, shot("welcome-themes"), welcome(-1), wait]
+            todo += [lambda: managers[0].selectTheme("Trans Pride"), go("home"), wait, wait, shot("theme-trans-pride"),
+                     lambda: managers[0].selectTheme("Bi Pride"), wait, wait, shot("theme-bi-pride"),
+                     lambda: managers[0].selectTheme(themes[0]), wait]
             for view in ("grid", "colour", "timeline"):
                 todo += [albums_view(view), go("home"), go("albums"), wait, shot("albums" if view == "grid" else "albums-" + view)]
             todo += [albums_view("grid"), open_album, wait, shot("album")]

@@ -26,7 +26,8 @@
       <li>Gapless playback, crossfade, ReplayGain, a 10-band equalizer and a signal path readout</li>
       <li>Radio mode, smart playlists, star ratings, liked songs, playlists and listening statistics</li>
       <li>Artist pages, a folder view and weekly, monthly and yearly listening recaps</li>
-      <li>CUE sheet albums, ReplayGain analysis and headphone correction from AutoEQ</li>
+      <li>CUE sheet albums, ReplayGain analysis, headphone correction from AutoEQ and crossfeed</li>
+      <li>Select many songs at once, undo queue changes, and import your history from other players</li>
       <li>A library health check with fixes, a tag editor, cover art lookup and synced lyrics</li>
       <li>Optional Last.fm and ListenBrainz scrobbling and Discord Rich Presence</li>
       <li>Media keys and desktop controls through MPRIS, a mini player and a tray icon</li>
@@ -94,6 +95,20 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.8.0" date="2026-10-12">
+      <description>
+        <p>Do more at once, and bring your history with you.</p>
+        <ul>
+          <li>Select several songs (Ctrl/Shift+click) and play, queue, rate, like, tag or add them to a playlist together</li>
+          <li>Undo queue changes with Ctrl+Z</li>
+          <li>Import play counts, ratings and playlists from Strawberry, Clementine, Rhythmbox, MusicBee and iTunes</li>
+          <li>Skip tracking, used by smart playlists and radio</li>
+          <li>Headphone crossfeed, fixable lyrics timing, and every missing cover fetched at once</li>
+          <li>CUE sheets inside audio files, and waveforms for CUE songs</li>
+          <li>Searchable settings in sections, a better fit for small and tiled windows, and Copy debug info for bug reports</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.7.0" date="2026-10-12">
       <description>
         <ul>
