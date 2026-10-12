@@ -32,6 +32,9 @@ class DesktopShell(QObject):
         self._menu = None
         self._icon = icon
         self._seen_track = False
+        from .updates import UpdateChecker
+
+        self._updates = UpdateChecker(self)
         self._build_tray()
         player.stateChanged.connect(self._refresh)
         player.trackChanged.connect(self._refresh)
@@ -271,6 +274,12 @@ class DesktopShell(QObject):
     def quit(self):
         self._app.quit()
 
+    @Property(QObject, constant=True)
+    def updates(self):
+        """The optional new-version check (see updates.UpdateChecker)."""
+        return self._updates
+
     def shutdown(self):
+        self._updates.shutdown()
         if self._tray is not None:
             self._tray.hide()

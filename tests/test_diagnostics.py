@@ -36,3 +36,32 @@ def test_shell_copies_debug_info(qapp):
     finally:
         shell.shutdown()
         player.shutdown()
+
+
+def test_update_check_is_opt_in_and_compares_versions(qapp):
+    from conftest import wait_for
+    from PySide6.QtCore import QSettings
+
+    from hallucinate import updates
+
+    assert updates.is_newer("v0.9.0", "0.8.0") and updates.is_newer("1.0", "0.9.9")
+    assert not updates.is_newer("0.8.0", "0.8.0") and not updates.is_newer("garbage", "0.8.0")
+    QSettings("hallucinate", "hallucinate").remove("updates")
+    asked = []
+
+    def fake_fetch():
+        asked.append(1)
+        return {"version": "99.0.0", "url": "https://example.invalid/release"}
+
+    checker = updates.UpdateChecker(fetch=fake_fetch)
+    try:
+        assert not checker.enabled and not checker.available and asked == []  # off by default, nothing sent
+        checker.setEnabled(True)  # turning it on checks straight away
+        assert wait_for(lambda: not checker.busy and asked)
+        assert checker.available and checker.latestVersion == "99.0.0"
+        assert checker.status == "Hallucinate 99.0.0 is available"
+        checker.setEnabled(False)
+        assert not checker.enabled
+    finally:
+        checker.shutdown()
+        QSettings("hallucinate", "hallucinate").remove("updates")

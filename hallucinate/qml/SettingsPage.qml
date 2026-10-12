@@ -546,6 +546,34 @@ Item {
                 onClicked: Qt.openUrlExternally("https://github.com/bulmaspanties/Hallucinate/issues/new")
             }
         }
+        Row {
+            spacing: 12
+            StyledCheck {
+                objectName: "updateChecks"
+                text: "Tell me when a new version is out (checks GitHub once a day)"
+                checked: shell.updates.enabled
+                onToggled: shell.updates.setEnabled(checked)
+            }
+            PillButton {
+                anchors.verticalCenter: parent.verticalCenter
+                height: 32
+                text: shell.updates.busy ? "Checking…" : "Check now"
+                enabled: !shell.updates.busy
+                onClicked: shell.updates.checkNow()
+            }
+        }
+        Text {
+            visible: shell.updates.status.length > 0
+            text: shell.updates.status
+            color: shell.updates.available ? Theme.accent : Theme.textDim
+            font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            MouseArea {
+                anchors.fill: parent
+                enabled: shell.updates.available
+                cursorShape: Qt.PointingHandCursor
+                onClicked: Qt.openUrlExternally(shell.updates.releaseUrl)
+            }
+        }
         Text {
             width: parent.width
             wrapMode: Text.WordWrap
