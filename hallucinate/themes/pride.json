@@ -1,0 +1,28 @@
+{
+  "name": "Pride",
+  "colors": {
+    "bg": "#0c0a10",
+    "panel": "#131018",
+    "surface": "#1c1823",
+    "surfaceHi": "#282231",
+    "border": "#342c40",
+    "text": "#f5f1f7",
+    "textDim": "#b0a6b8",
+    "accent": "#ffb36b",
+    "error": "#ff6b7d",
+    "onAccent": "#1d0f00"
+  },
+  "palette": [
+    "#E40303",
+    "#FF8C00",
+    "#FFED00",
+    "#008026",
+    "#24408E",
+    "#732982"
+  ],
+  "radius": 12,
+  "fonts": {
+    "family": "Sans Serif",
+    "scale": 1.0
+  }
+}

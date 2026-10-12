@@ -1,0 +1,26 @@
+{
+  "name": "Nonbinary Pride",
+  "colors": {
+    "bg": "#0c0c0e",
+    "panel": "#131316",
+    "surface": "#1b1b20",
+    "surfaceHi": "#27262e",
+    "border": "#33313c",
+    "text": "#f5f4f8",
+    "textDim": "#adaab8",
+    "accent": "#bb98ea",
+    "error": "#ff6f88",
+    "onAccent": "#16092a"
+  },
+  "palette": [
+    "#FCF434",
+    "#FFFFFF",
+    "#9C59D1",
+    "#2C2C2C"
+  ],
+  "radius": 12,
+  "fonts": {
+    "family": "Sans Serif",
+    "scale": 1.0
+  }
+}

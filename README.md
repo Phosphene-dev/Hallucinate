@@ -217,7 +217,10 @@ Options: hide when paused, hide cover, privacy mode (shows only "Listening to mu
 
 ## Themes
 Choose a theme in Settings. Built-ins are Hallucinate, Dark, Light, Catppuccin Mocha/Latte,
-Nord, Gruvbox, Tokyo Night, and Dracula. The optional album-art accent follows
+Nord, Gruvbox, Tokyo Night, and Dracula, plus pride themes: Pride, Trans (dark and light), Bi,
+Lesbian, Nonbinary, Pan and Ace. These are calm, readable themes in each flag's colours: the
+flag shows in the drifting backdrop, as a slim stripe under the logo and in the accent, never
+behind text. The optional album-art accent follows
 the currently playing track; theme selection and this preference persist across
 restarts.
 
@@ -239,6 +242,9 @@ with a size scale from 0.75 to 1.5:
   "fonts": { "family": "Sans Serif", "scale": 1.0 }
 }
 ```
+
+A theme may also list up to eight `"palette"` colours (as the pride themes list their
+flags' stripes): they tint the backdrop and draw a stripe under the logo.
 
 ## Branding and icons
 The full supplied logo is `assets/logo/hallucinate-logo.png`; the square app

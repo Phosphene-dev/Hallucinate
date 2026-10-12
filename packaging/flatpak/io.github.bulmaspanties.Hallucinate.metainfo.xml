@@ -30,7 +30,7 @@
       <li>A library health check with fixes, a tag editor, cover art lookup and synced lyrics</li>
       <li>Optional Last.fm and ListenBrainz scrobbling and Discord Rich Presence</li>
       <li>Media keys and desktop controls through MPRIS, a mini player and a tray icon</li>
-      <li>Live-switchable themes, including Catppuccin, Nord, Gruvbox, Tokyo Night and Dracula</li>
+      <li>Live-switchable themes, including Catppuccin, Nord, Gruvbox, Tokyo Night, Dracula and pride themes</li>
     </ul>
     <p>
       The Flatpak can read your Music folder; use the folder picker in Settings to add music stored
@@ -94,6 +94,14 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.7.0" date="2026-10-12">
+      <description>
+        <ul>
+          <li>Pride themes: Pride, Trans (dark and light), Bi, Lesbian, Nonbinary, Pan and Ace, calm and readable, with each flag in the backdrop and a slim stripe under the logo</li>
+          <li>The welcome's theme picker scrolls and shows each flag</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.6.1" date="2026-10-12">
       <description>
         <ul>

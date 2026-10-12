@@ -173,51 +173,64 @@ Item {
                     spacing: 14
                     Heading { text: "Pick a look" }
                     Body { text: "Themes change the whole app as you click. There are more options in Settings." }
-                    GridLayout {
-                        objectName: "welcomeThemes"
+                    Flickable {
+                        id: themeScroll
                         Layout.fillWidth: true
-                        columns: 3
-                        rowSpacing: 10
-                        columnSpacing: 10
-                        Repeater {
-                            model: themeManager.availableThemes
-                            Rectangle {
-                                id: swatch
-                                required property string modelData
-                                readonly property var c: themeManager.themeColors(modelData)
-                                readonly property bool current: themeManager.currentTheme === modelData
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 64
-                                radius: Theme.radius
-                                color: c.bg || Theme.bg
-                                border.width: current ? 2 : 1
-                                border.color: current ? Theme.accent : (themeHover.hovered ? Theme.textDim : Theme.border)
+                        Layout.fillHeight: true
+                        clip: true
+                        contentHeight: themeGrid.implicitHeight
+                        boundsBehavior: Flickable.StopAtBounds
+                        ScrollBar.vertical: ScrollBar { policy: themeScroll.contentHeight > themeScroll.height ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff }
+                        GridLayout {
+                            id: themeGrid
+                            objectName: "welcomeThemes"
+                            width: themeScroll.width - 12
+                            columns: 3
+                            rowSpacing: 10
+                            columnSpacing: 10
+                            Repeater {
+                                model: themeManager.availableThemes
                                 Rectangle {
-                                    id: chip
-                                    x: 12; anchors.verticalCenter: parent.verticalCenter
-                                    width: 26; height: 26; radius: 13
-                                    color: swatch.c.accent || Theme.accent
-                                }
-                                Column {
-                                    anchors { left: chip.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                                    spacing: 5
-                                    Text {
-                                        width: parent.width
-                                        text: swatch.modelData
-                                        elide: Text.ElideRight
-                                        color: swatch.c.text || Theme.text
-                                        font.family: Theme.fontFamily
-                                        font.pixelSize: Theme.fontSize(13)
-                                        font.weight: Font.DemiBold
+                                    id: swatch
+                                    required property string modelData
+                                    readonly property var c: themeManager.themeColors(modelData)
+                                    readonly property bool current: themeManager.currentTheme === modelData
+                                    readonly property var flag: themeManager.paletteOf(modelData)
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 58
+                                    radius: Theme.radius
+                                    color: c.bg || Theme.bg
+                                    border.width: current ? 2 : 1
+                                    border.color: current ? Theme.accent : (themeHover.hovered ? Theme.textDim : Theme.border)
+                                    Rectangle {
+                                        id: chip
+                                        x: 12; anchors.verticalCenter: parent.verticalCenter
+                                        width: 26; height: 26; radius: 13
+                                        color: swatch.c.accent || Theme.accent
                                     }
-                                    Row {
-                                        spacing: 4
-                                        Rectangle { width: 30; height: 5; radius: 2.5; color: swatch.c.surface || Theme.surface }
-                                        Rectangle { width: 18; height: 5; radius: 2.5; color: swatch.c.textDim || Theme.textDim; opacity: 0.6 }
+                                    Column {
+                                        anchors { left: chip.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                                        spacing: 5
+                                        Text {
+                                            width: parent.width
+                                            text: swatch.modelData
+                                            elide: Text.ElideRight
+                                            color: swatch.c.text || Theme.text
+                                            font.family: Theme.fontFamily
+                                            font.pixelSize: Theme.fontSize(13)
+                                            font.weight: Font.DemiBold
+                                        }
+                                        FlagStripe { colors: swatch.flag; width: 52 }
+                                        Row {
+                                            visible: swatch.flag.length === 0
+                                            spacing: 4
+                                            Rectangle { width: 30; height: 5; radius: 2.5; color: swatch.c.surface || Theme.surface }
+                                            Rectangle { width: 18; height: 5; radius: 2.5; color: swatch.c.textDim || Theme.textDim; opacity: 0.6 }
+                                        }
                                     }
+                                    HoverHandler { id: themeHover; cursorShape: Qt.PointingHandCursor }
+                                    TapHandler { onTapped: themeManager.selectTheme(swatch.modelData) }
                                 }
-                                HoverHandler { id: themeHover; cursorShape: Qt.PointingHandCursor }
-                                TapHandler { onTapped: themeManager.selectTheme(swatch.modelData) }
                             }
                         }
                     }
@@ -226,7 +239,6 @@ Item {
                         checked: themeManager.albumArtAccent
                         onToggled: themeManager.setAlbumArtAccent(checked)
                     }
-                    Item { Layout.fillHeight: true }
                 }
 
                 // 3. Scrobbling

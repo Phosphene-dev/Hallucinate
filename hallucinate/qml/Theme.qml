@@ -77,6 +77,12 @@ QtObject {
 
     // Colours of the current cover (or of the theme when nothing has art); they melt slowly between tracks.
     readonly property var artColors: themeManager.artColors
+    // The backdrop: a theme's own colours (the flag of a pride theme) when it has them, else the cover's
+    readonly property var ambient: themeManager.ambientColors
+    readonly property color glow0: ambient.length > 0 ? ambient[0] : art0
+    readonly property color glow1: ambient.length > 1 ? ambient[1] : art1
+    readonly property color glow2: ambient.length > 2 ? ambient[2] : art2
+    readonly property var themePalette: themeManager.themePalette
     property color art0: artColors.length > 0 ? artColors[0] : accent
     property color art1: artColors.length > 1 ? artColors[1] : Qt.tint(accent, "#80f2a7d6")
     property color art2: artColors.length > 2 ? artColors[2] : Qt.tint(accent, "#708fb3ff")
