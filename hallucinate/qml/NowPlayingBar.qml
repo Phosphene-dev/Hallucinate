@@ -8,6 +8,8 @@ Item {
     id: bar
     property bool queueOpen: false
     property bool lyricsOpen: false
+    readonly property bool compact: width < 1100   // tiling window managers, small screens
+    readonly property bool narrow: width < 860
     signal toggleQueue()
     signal toggleLyrics()
     height: Theme.playerHeight
@@ -49,8 +51,9 @@ Item {
 
     // Now playing
     Row {
+        id: nowInfo
         anchors { left: parent.left; leftMargin: 16; verticalCenter: parent.verticalCenter }
-        width: Math.max(160, bar.width * 0.27)
+        width: Math.max(160, bar.width * (bar.compact ? 0.24 : 0.27))
         spacing: 12
         Cover {
             id: art
@@ -95,16 +98,16 @@ Item {
                     formatName: player.hasTrack ? player.current.codec || "" : ""
                     bitrate: player.hasTrack ? player.current.bitrate || 0 : 0
                 }
-                StarRating { anchors.verticalCenter: parent.verticalCenter; path: player.hasTrack ? player.current.path || "" : ""; size: 12 }
+                StarRating { visible: !bar.narrow; anchors.verticalCenter: parent.verticalCenter; path: player.hasTrack ? player.current.path || "" : ""; size: 12 }
                 SignalPath { visible: player.hasTrack && stages.length > 0 }
             }
         }
     }
 
-    // Transport
+    // Transport: centred, as wide as the room between the track info and the controls on the right allows
     Column {
         anchors.centerIn: parent
-        width: Math.min(560, bar.width * 0.42)
+        width: Math.max(200, Math.min(560, bar.width * 0.42, bar.width - 2 * Math.max(nowInfo.width + 24, rightControls.width + 16) - 24))
         spacing: 4
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
@@ -156,6 +159,7 @@ Item {
 
     // Volume + queue
     Row {
+        id: rightControls
         anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
         spacing: 6
         IconButton {
@@ -165,13 +169,13 @@ Item {
             PlaybackMenu { id: playbackMenu }
         }
         IconButton { objectName: "openNowPlaying"; icon: "fullscreen"; tip: "Now playing (F)"; onClicked: Nav.toggleNowPlaying() }
-        IconButton { icon: "expand"; tip: "Mini player (Ctrl+M)"; visible: true; onClicked: shell.toggleMini() }
+        IconButton { icon: "expand"; tip: "Mini player (Ctrl+M)"; visible: !bar.compact; onClicked: shell.toggleMini() }
         IconButton { icon: "note"; active: bar.lyricsOpen; tip: "Lyrics"; onClicked: bar.toggleLyrics() }
         IconButton { icon: "queue"; active: bar.queueOpen; onClicked: bar.toggleQueue() }
         Icon { anchors.verticalCenter: parent.verticalCenter; width: 18; height: 18; name: "volume"; color: Theme.textDim }
         StyledSlider {
             anchors.verticalCenter: parent.verticalCenter
-            width: 100
+            width: bar.compact ? 64 : 100
             from: 0; to: 1
             value: player.volume
             onMoved: player.setVolume(value)

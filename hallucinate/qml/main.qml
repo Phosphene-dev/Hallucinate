@@ -180,7 +180,10 @@ ApplicationWindow {
     // Acts on songs selected with Ctrl/Shift+click; a selection belongs to one page
     SelectionBar {
         z: 59
-        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 112 }
+        // over the page area (right of the sidebar), never wider than it
+        maxWidth: stack.width - 24
+        x: sidebar.width + (stack.width - width) / 2
+        anchors { bottom: parent.bottom; bottomMargin: 112 }
         onEditTags: function (paths) { tagEditor.editTracks(paths) }
     }
     onSectionChanged: Selection.clear()

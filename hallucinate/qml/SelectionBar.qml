@@ -9,7 +9,9 @@ Rectangle {
     signal editTags(var paths)
     readonly property bool shown: Selection.count > 0
 
-    width: Math.min(row.implicitWidth + 28, parent ? parent.width - 32 : 900)
+    property real maxWidth: parent ? parent.width - 32 : 900
+    readonly property bool tight: maxWidth < 860  // short labels in small windows
+    width: Math.min(row.implicitWidth + 28, maxWidth)
     height: 52
     radius: 26
     color: Theme.glassStrong
@@ -25,6 +27,7 @@ Rectangle {
     function songs(n) { return n + (n === 1 ? " song" : " songs") }
 
     Flickable {
+        id: scroller
         anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
         contentWidth: row.implicitWidth
         clip: true
@@ -38,7 +41,7 @@ Rectangle {
                 objectName: "selectionCount"
                 anchors.verticalCenter: parent.verticalCenter
                 rightPadding: 6
-                text: bar.songs(Selection.count) + " selected"
+                text: bar.tight ? Selection.count + " selected" : bar.songs(Selection.count) + " selected"
                 color: Theme.text
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(13)
@@ -46,11 +49,11 @@ Rectangle {
             }
             component Action: PillButton { anchors.verticalCenter: parent.verticalCenter; implicitHeight: 34 }
             Action { objectName: "selectionPlay"; primary: true; text: "Play"; onClicked: { userLib.playPaths(bar.paths()); bar.done("") } }
-            Action { text: "Play next"; onClicked: { var p = bar.paths(); userLib.playNextPaths(p); bar.done(bar.songs(p.length) + " will play next") } }
-            Action { objectName: "selectionQueue"; text: "Add to queue"; onClicked: { var p = bar.paths(); userLib.enqueuePaths(p); bar.done(bar.songs(p.length) + " added to the queue") } }
+            Action { text: bar.tight ? "Next" : "Play next"; onClicked: { var p = bar.paths(); userLib.playNextPaths(p); bar.done(bar.songs(p.length) + " will play next") } }
+            Action { objectName: "selectionQueue"; text: bar.tight ? "Queue" : "Add to queue"; onClicked: { var p = bar.paths(); userLib.enqueuePaths(p); bar.done(bar.songs(p.length) + " added to the queue") } }
             Action {
                 id: plButton
-                text: "Add to playlist…"
+                text: bar.tight ? "Playlist…" : "Add to playlist…"
                 onClicked: plMenu.popup(plButton, 0, -plMenu.implicitHeight - 6)
                 Menu {
                     id: plMenu
@@ -77,7 +80,7 @@ Rectangle {
             }
             Action {
                 id: rateButton
-                text: "Rate…"
+                text: bar.tight ? "Rate" : "Rate…"
                 onClicked: rateMenu.popup(rateButton, 0, -rateMenu.implicitHeight - 6)
                 Menu {
                     id: rateMenu
@@ -94,7 +97,7 @@ Rectangle {
                 }
             }
             Action {
-                text: "Edit tags…"
+                text: bar.tight ? "Tags…" : "Edit tags…"
                 enabled: Selection.paths.every(function (p) { return !/\.[A-Za-z0-9]+#\d+$/.test(p) })
                 onClicked: bar.editTags(bar.paths())
             }
@@ -104,6 +107,17 @@ Rectangle {
                 icon: "close"; size: 14; tip: "Clear selection (Esc)"
                 onClicked: Selection.clear()
             }
+        }
+    }
+
+    Rectangle {  // more buttons to the right: scroll (wheel or drag) to reach them
+        anchors { right: parent.right; rightMargin: 1; verticalCenter: parent.verticalCenter }
+        width: 36; height: parent.height - 2; radius: height / 2
+        visible: scroller.contentWidth > scroller.width && !scroller.atXEnd
+        gradient: Gradient {
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0; color: "transparent" }
+            GradientStop { position: 1; color: Theme.glassStrong }
         }
     }
 
