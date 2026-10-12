@@ -5,6 +5,12 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-10-12
+
+### Changed
+- Hallucinate now lives at https://github.com/Phosphene-dev/Hallucinate and its website at https://phosphene-dev.github.io/Hallucinate/. Old links redirect for now. The update check, "Report a bug" and the lyrics lookup's user agent point to the new address.
+- The app ID is now `io.github.phosphene_dev.Hallucinate` (Flatpak, macOS bundle and Windows taskbar), ready for Flathub.
+
 ## [0.8.0] - 2026-10-12
 
 ### Added
@@ -72,7 +78,7 @@ All notable changes to this project are documented here. Format based on
 - Now Playing: press F, or the new button in the player, for a full-window view with the visualizer as a living backdrop in the cover's colours, a large cover, the track, a waveform seek bar and the controls. It melts in, the controls and pointer fade away when the mouse rests, Esc closes it, and F11 makes it full screen. Vinyl mode slides the record out of its sleeve and spins it while the music plays.
 - New visualizer styles drawn with GPU shaders and tinted by the current cover: Liquid (flowing ink), Aurora (curtains of light that rise with the spectrum) and Nebula (a turning cloud of gas and stars that breathes with the bass), plus the bars. The Visualizer page now fills the page. The shader styles need hardware graphics; with Qt's software renderer the bars are shown instead.
 - A History page with every listen, newest first and grouped by day (with each day's plays and listening time). Search it, narrow it to today, 7 or 30 days, this month or this year, pick a day on the 12-month heatmap, filter by artist (click an artist's name) or by source (played here or imported from Last.fm/ListenBrainz), play a song again, or remove a listen that shouldn't count (its song's play count follows). Clicking a day on Home's heatmap opens it here. The queries behind it are built to drive weekly, monthly and yearly summaries later.
-- Project website at https://bulmaspanties.github.io/Hallucinate/ (GitHub Pages), styled after the logo. It detects the visitor's OS for the download button, and is rebuilt automatically after every release and whenever the site, screenshots or changelog change.
+- Project website at https://phosphene-dev.github.io/Hallucinate/ (GitHub Pages), styled after the logo. It detects the visitor's OS for the download button, and is rebuilt automatically after every release and whenever the site, screenshots or changelog change.
 
 ## [0.4.0] - 2026-10-10
 

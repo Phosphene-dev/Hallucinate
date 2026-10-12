@@ -14,8 +14,8 @@ from . import __version__
 
 logger = logging.getLogger(__name__)
 
-LATEST_URL = "https://api.github.com/repos/bulmaspanties/Hallucinate/releases/latest"
-RELEASES_PAGE = "https://github.com/bulmaspanties/Hallucinate/releases/latest"
+LATEST_URL = "https://api.github.com/repos/Phosphene-dev/Hallucinate/releases/latest"
+RELEASES_PAGE = "https://github.com/Phosphene-dev/Hallucinate/releases/latest"
 INTERVAL_S = 24 * 3600
 
 

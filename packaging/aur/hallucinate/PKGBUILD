@@ -1,10 +1,10 @@
-# Maintainer: bulmaspanties <https://github.com/bulmaspanties>
+# Maintainer: Phosphene-dev <https://github.com/Phosphene-dev>
 pkgname=hallucinate
 pkgver=0.3.1
 pkgrel=1
 pkgdesc="Fast desktop music player for the music you own: liquid, cover-coloured, gapless and private (PySide6/QML)"
 arch=('any')
-url="https://github.com/bulmaspanties/Hallucinate"
+url="https://github.com/Phosphene-dev/Hallucinate"
 license=('MIT')
 depends=('python' 'pyside6' 'python-mutagen' 'python-keyring' 'python-numpy' 'qt6-multimedia-ffmpeg' 'qt6-declarative')
 makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')

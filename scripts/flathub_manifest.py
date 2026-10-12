@@ -2,7 +2,7 @@
 
     python scripts/flathub_manifest.py v0.8.0 [out_dir]
 
-Copies packaging/flatpak/io.github.bulmaspanties.Hallucinate.yml and python3-requirements.yaml to out_dir
+Copies packaging/flatpak/io.github.phosphene_dev.Hallucinate.yml and python3-requirements.yaml to out_dir
 (default: flathub-submission/), replacing the local `type: dir` source with the tagged release on GitHub and
 its full commit hash. The result is what goes into a pull request to flathub/flathub's new-pr branch (see
 packaging/flatpak/README.md)."""
@@ -13,8 +13,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-APP_ID = "io.github.bulmaspanties.Hallucinate"
-REPO = "https://github.com/bulmaspanties/Hallucinate.git"
+APP_ID = "io.github.phosphene_dev.Hallucinate"
+REPO = "https://github.com/Phosphene-dev/Hallucinate.git"
 
 
 def main(argv):

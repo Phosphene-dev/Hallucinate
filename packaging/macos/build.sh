@@ -13,7 +13,7 @@ sips -s format icns hallucinate/assets/hallucinate.png --out build/macos/halluci
 python3 -m PyInstaller \
   --noconfirm --clean --windowed --onedir \
   --name Hallucinate \
-  --osx-bundle-identifier io.github.bulmaspanties.Hallucinate \
+  --osx-bundle-identifier io.github.phosphene_dev.Hallucinate \
   --icon build/macos/hallucinate.icns \
   --add-data "hallucinate/qml:hallucinate/qml" \
   --add-data "hallucinate/assets:hallucinate/assets" \

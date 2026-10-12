@@ -10,19 +10,19 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/bulmaspanties/Hallucinate/releases/latest"><img src="https://img.shields.io/github/v/release/bulmaspanties/Hallucinate?label=latest&color=c79cf5" alt="Latest release"></a>
-  <a href="https://github.com/bulmaspanties/Hallucinate/actions/workflows/ci.yml"><img src="https://github.com/bulmaspanties/Hallucinate/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/Phosphene-dev/Hallucinate/releases/latest"><img src="https://img.shields.io/github/v/release/Phosphene-dev/Hallucinate?label=latest&color=c79cf5" alt="Latest release"></a>
+  <a href="https://github.com/Phosphene-dev/Hallucinate/actions/workflows/ci.yml"><img src="https://github.com/Phosphene-dev/Hallucinate/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/platforms-Linux%20%7C%20Windows%20%7C%20macOS-6f5aa8" alt="Linux, Windows and macOS">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
 </p>
 
 <h3 align="center">
-  <a href="https://github.com/bulmaspanties/Hallucinate/releases/latest/download/Hallucinate-windows-x64-setup.exe">⬇ Windows</a> &nbsp;·&nbsp;
-  <a href="https://github.com/bulmaspanties/Hallucinate/releases/latest/download/Hallucinate-x86_64.AppImage">⬇ Linux (AppImage)</a> &nbsp;·&nbsp;
-  <a href="https://github.com/bulmaspanties/Hallucinate/releases/latest/download/Hallucinate-macos-arm64.zip">⬇ macOS (Apple silicon)</a>
+  <a href="https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-windows-x64-setup.exe">⬇ Windows</a> &nbsp;·&nbsp;
+  <a href="https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-x86_64.AppImage">⬇ Linux (AppImage)</a> &nbsp;·&nbsp;
+  <a href="https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-macos-arm64.zip">⬇ macOS (Apple silicon)</a>
 </h3>
 <p align="center">
-  <a href="https://bulmaspanties.github.io/Hallucinate/"><b>Website</b></a> · Flatpak, Arch (AUR) and pip: see <a href="#install">Install</a> · <a href="https://github.com/bulmaspanties/Hallucinate/releases">all releases</a> · <a href="CHANGELOG.md">what's new</a>
+  <a href="https://phosphene-dev.github.io/Hallucinate/"><b>Website</b></a> · Flatpak, Arch (AUR) and pip: see <a href="#install">Install</a> · <a href="https://github.com/Phosphene-dev/Hallucinate/releases">all releases</a> · <a href="CHANGELOG.md">what's new</a>
 </p>
 
 <p align="center">
@@ -138,10 +138,10 @@ cd packaging/aur/hallucinate && makepkg -si       # or packaging/aur/hallucinate
 Maintainer and submission notes: [packaging/aur/README.md](packaging/aur/README.md).
 
 ### Windows
-Download the [installer](https://github.com/bulmaspanties/Hallucinate/releases/latest/download/Hallucinate-windows-x64-setup.exe), or the portable `hallucinate-*-windows-x64.zip` (run `Hallucinate\Hallucinate.exe`) from [Releases](https://github.com/bulmaspanties/Hallucinate/releases). Windows 10 or 11; media keys and the system media overlay work out of the box. Built with PyInstaller (`packaging/windows/build.ps1`). Unsigned, so SmartScreen may warn ("More info" → "Run anyway"). Last.fm credentials use Windows Credential Manager; data lives in `%APPDATA%\hallucinate`.
+Download the [installer](https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-windows-x64-setup.exe), or the portable `hallucinate-*-windows-x64.zip` (run `Hallucinate\Hallucinate.exe`) from [Releases](https://github.com/Phosphene-dev/Hallucinate/releases). Windows 10 or 11; media keys and the system media overlay work out of the box. Built with PyInstaller (`packaging/windows/build.ps1`). Unsigned, so SmartScreen may warn ("More info" → "Run anyway"). Last.fm credentials use Windows Credential Manager; data lives in `%APPDATA%\hallucinate`.
 
 ### AppImage (any x86_64 Linux)
-Download the [AppImage](https://github.com/bulmaspanties/Hallucinate/releases/latest/download/Hallucinate-x86_64.AppImage), then:
+Download the [AppImage](https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-x86_64.AppImage), then:
 ```sh
 chmod +x Hallucinate-x86_64.AppImage && ./Hallucinate-x86_64.AppImage
 ```
@@ -152,9 +152,9 @@ The manifest uses the KDE runtime with Flathub's PySide BaseApp and builds offli
 dependencies. Build and install locally with Flatpak Builder:
 ```sh
 flatpak-builder --user --install --force-clean build-dir \
-  packaging/flatpak/io.github.bulmaspanties.Hallucinate.yml \
+  packaging/flatpak/io.github.phosphene_dev.Hallucinate.yml \
   --install-deps-from=flathub
-flatpak run io.github.bulmaspanties.Hallucinate
+flatpak run io.github.phosphene_dev.Hallucinate
 ```
 The sandbox grants read-only access to `~/Music`; use the folder picker portal
 to grant access to other music directories. Flathub submission steps:
@@ -162,7 +162,7 @@ to grant access to other music directories. Flathub submission steps:
 
 ### macOS
 The release workflow builds a self-contained `.app` zip for the runner's native
-architecture (Apple silicon). Download the [macOS zip](https://github.com/bulmaspanties/Hallucinate/releases/latest/download/Hallucinate-macos-arm64.zip),
+architecture (Apple silicon). Download the [macOS zip](https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-macos-arm64.zip),
 unzip it, and move `Hallucinate.app` to Applications. The build is unsigned and
 not notarized, so Gatekeeper may require explicit approval. Build locally on a
 Mac with `packaging/macos/build.sh`.
@@ -170,7 +170,7 @@ Mac with `packaging/macos/build.sh`.
 ### Arch Linux
 ```sh
 sudo pacman -S pyside6 python-mutagen python-keyring python-numpy qt6-multimedia-ffmpeg
-git clone https://github.com/bulmaspanties/Hallucinate.git && cd Hallucinate
+git clone https://github.com/Phosphene-dev/Hallucinate.git && cd Hallucinate
 cd packaging/aur/hallucinate && makepkg -si      # or run from source (below)
 ```
 ### pip (any OS)

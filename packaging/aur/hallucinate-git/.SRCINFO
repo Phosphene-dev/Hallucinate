@@ -2,7 +2,7 @@ pkgbase = hallucinate-git
 	pkgdesc = Fast desktop music player for the music you own: liquid, cover-coloured, gapless and private (PySide6/QML) - git version
 	pkgver = 0.3.1.r0.gc5f86c8
 	pkgrel = 1
-	url = https://github.com/bulmaspanties/Hallucinate
+	url = https://github.com/Phosphene-dev/Hallucinate
 	arch = any
 	license = MIT
 	makedepends = git
@@ -21,7 +21,7 @@ pkgbase = hallucinate-git
 	optdepends = kwallet: store Last.fm credentials in the system keyring
 	provides = hallucinate
 	conflicts = hallucinate
-	source = git+https://github.com/bulmaspanties/Hallucinate.git
+	source = git+https://github.com/Phosphene-dev/Hallucinate.git
 	sha256sums = SKIP
 
 pkgname = hallucinate-git

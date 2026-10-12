@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>io.github.bulmaspanties.Hallucinate</id>
+  <id>io.github.phosphene_dev.Hallucinate</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
 
   <name>Hallucinate</name>
   <summary>Play the music you own, lit by its covers</summary>
-  <developer id="io.github.bulmaspanties">
-    <name>bulmaspanties</name>
+  <developer id="io.github.phosphene_dev">
+    <name>Phosphene-dev</name>
   </developer>
 
   <description>
@@ -39,43 +39,43 @@
     </p>
   </description>
 
-  <launchable type="desktop-id">io.github.bulmaspanties.Hallucinate.desktop</launchable>
+  <launchable type="desktop-id">io.github.phosphene_dev.Hallucinate.desktop</launchable>
   <provides>
     <binary>hallucinate</binary>
   </provides>
 
-  <url type="homepage">https://bulmaspanties.github.io/Hallucinate/</url>
-  <url type="bugtracker">https://github.com/bulmaspanties/Hallucinate/issues</url>
-  <url type="vcs-browser">https://github.com/bulmaspanties/Hallucinate</url>
+  <url type="homepage">https://phosphene-dev.github.io/Hallucinate/</url>
+  <url type="bugtracker">https://github.com/Phosphene-dev/Hallucinate/issues</url>
+  <url type="vcs-browser">https://github.com/Phosphene-dev/Hallucinate</url>
 
   <screenshots>
     <screenshot type="default">
       <caption>Now Playing over the Aurora visualizer, in the cover's colours</caption>
-      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/2f06ad327c0f0913f3ec62a2a5a2773b573e5882/docs/screenshots/now-playing.png</image>
+      <image>https://raw.githubusercontent.com/Phosphene-dev/Hallucinate/6a159307eb06be49eccff3dd6679fc2fd0bc9e03/docs/screenshots/now-playing.png</image>
     </screenshot>
     <screenshot>
       <caption>Home: a random album, your listening heatmap and library facts</caption>
-      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/2f06ad327c0f0913f3ec62a2a5a2773b573e5882/docs/screenshots/home.png</image>
+      <image>https://raw.githubusercontent.com/Phosphene-dev/Hallucinate/6a159307eb06be49eccff3dd6679fc2fd0bc9e03/docs/screenshots/home.png</image>
     </screenshot>
     <screenshot>
       <caption>An album page with liner notes</caption>
-      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/2f06ad327c0f0913f3ec62a2a5a2773b573e5882/docs/screenshots/album.png</image>
+      <image>https://raw.githubusercontent.com/Phosphene-dev/Hallucinate/6a159307eb06be49eccff3dd6679fc2fd0bc9e03/docs/screenshots/album.png</image>
     </screenshot>
     <screenshot>
       <caption>Every album cover ordered round the colour wheel</caption>
-      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/2f06ad327c0f0913f3ec62a2a5a2773b573e5882/docs/screenshots/albums-colour.png</image>
+      <image>https://raw.githubusercontent.com/Phosphene-dev/Hallucinate/6a159307eb06be49eccff3dd6679fc2fd0bc9e03/docs/screenshots/albums-colour.png</image>
     </screenshot>
     <screenshot>
       <caption>The history of every listen, by day</caption>
-      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/2f06ad327c0f0913f3ec62a2a5a2773b573e5882/docs/screenshots/history.png</image>
+      <image>https://raw.githubusercontent.com/Phosphene-dev/Hallucinate/6a159307eb06be49eccff3dd6679fc2fd0bc9e03/docs/screenshots/history.png</image>
     </screenshot>
     <screenshot>
       <caption>Radio mode keeps the queue going with similar songs</caption>
-      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/2f06ad327c0f0913f3ec62a2a5a2773b573e5882/docs/screenshots/queue.png</image>
+      <image>https://raw.githubusercontent.com/Phosphene-dev/Hallucinate/6a159307eb06be49eccff3dd6679fc2fd0bc9e03/docs/screenshots/queue.png</image>
     </screenshot>
     <screenshot>
       <caption>Settings, themes and output device</caption>
-      <image>https://raw.githubusercontent.com/bulmaspanties/Hallucinate/2f06ad327c0f0913f3ec62a2a5a2773b573e5882/docs/screenshots/settings.png</image>
+      <image>https://raw.githubusercontent.com/Phosphene-dev/Hallucinate/6a159307eb06be49eccff3dd6679fc2fd0bc9e03/docs/screenshots/settings.png</image>
     </screenshot>
   </screenshots>
 
@@ -95,6 +95,11 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.8.1" date="2026-10-12">
+      <description>
+        <p>Hallucinate has moved to the Phosphene-dev organisation on GitHub, with a new app ID and website address.</p>
+      </description>
+    </release>
     <release version="0.8.0" date="2026-10-12">
       <description>
         <p>Do more at once, and bring your history with you.</p>

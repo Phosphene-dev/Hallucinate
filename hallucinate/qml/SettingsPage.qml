@@ -646,7 +646,7 @@ Item {
                 }
                 PillButton {
                     text: "Report a bug"
-                    onClicked: Qt.openUrlExternally("https://github.com/bulmaspanties/Hallucinate/issues/new")
+                    onClicked: Qt.openUrlExternally("https://github.com/Phosphene-dev/Hallucinate/issues/new")
                 }
             }
             Text {

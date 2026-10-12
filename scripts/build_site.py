@@ -13,8 +13,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-REPO = "https://github.com/bulmaspanties/Hallucinate"
-SITE_URL = os.environ.get("SITE_URL", "https://bulmaspanties.github.io/Hallucinate/")
+REPO = "https://github.com/Phosphene-dev/Hallucinate"
+SITE_URL = os.environ.get("SITE_URL", "https://phosphene-dev.github.io/Hallucinate/")
 WAVE_HEIGHTS = [10, 18, 28, 40, 26, 48, 34, 56, 34, 48, 26, 40, 28, 18, 10]
 
 

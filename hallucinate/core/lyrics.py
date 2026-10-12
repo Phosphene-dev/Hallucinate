@@ -11,7 +11,7 @@ import mutagen
 
 from . import cue
 
-USER_AGENT = "hallucinate (https://github.com/bulmaspanties/Hallucinate)"
+USER_AGENT = "hallucinate (https://github.com/Phosphene-dev/Hallucinate)"
 _TS = re.compile(r"\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]")
 _OFFSET = re.compile(r"^\s*\[offset:\s*([+-]?\d+)\s*\]\s*$", re.I | re.M)
 
