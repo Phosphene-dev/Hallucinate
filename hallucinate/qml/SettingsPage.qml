@@ -724,7 +724,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 visible: !shell.updates.supported
-                text: "Updates come through Flathub (your software centre)."
+                text: "Updates come through your software centre or package manager."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Row {

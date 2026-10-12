@@ -70,14 +70,34 @@ jobs:
           flatpak install --user -y --noninteractive flathub org.flatpak.Builder
       - name: Build Flatpak
         run: |
-          # Build like Flathub does; it commits the mirrored screenshots to the repo for the linter.
-          # The sandboxed builder installs dependencies through the host's flatpak over D-Bus.
+          # The sandboxed builder installs dependencies through the host's flatpak over D-Bus. Mirroring the
+          # screenshots into the repo is only for the linter below.
           dbus-run-session -- flatpak run org.flatpak.Builder --user --force-clean --install-deps-from=flathub \
-            --mirror-screenshots-url=https://dl.flathub.org/media/ \
+            --mirror-screenshots-url=https://dl.flathub.org/media/ --default-branch=stable \
             --repo=flatpak-repo flatpak-build \
             packaging/flatpak/io.github.phosphene_dev.Hallucinate.yml
-          flatpak remote-add --user --no-gpg-verify --if-not-exists local-build flatpak-repo
-          flatpak install --user -y --noninteractive local-build io.github.phosphene_dev.Hallucinate
+      - name: Flatpak linter
+        run: |
+          flatpak run --command=flatpak-builder-lint org.flatpak.Builder \
+            manifest packaging/flatpak/io.github.phosphene_dev.Hallucinate.yml
+          # Two checks are about how Flathub's own servers rewrite media URLs, which don't apply here
+          # (packaging/flatpak/lint-exceptions.json).
+          flatpak run --command=flatpak-builder-lint org.flatpak.Builder \
+            --exceptions --user-exceptions packaging/flatpak/lint-exceptions.json repo flatpak-repo
+      - name: Publish with a throwaway key, then install from the bundle
+        run: |
+          # The same steps as a release (release.yml), signed with a key made for this run only.
+          export GNUPGHOME="$RUNNER_TEMP/gnupg"
+          mkdir -m 700 "$GNUPGHOME"
+          gpg --batch --passphrase '' --quick-gen-key "Hallucinate CI throwaway key" rsa4096 sign never
+          key=$(gpg --batch --with-colons --list-secret-keys | awk -F: '$1 == "fpr" {print $10; exit}')
+          gpg --batch --export "$key" > "$RUNNER_TEMP/ci-key.gpg"
+          packaging/flatpak/publish.sh flatpak-repo "$key" "$GNUPGHOME" "$RUNNER_TEMP/ci-key.gpg" hallucinate.flatpak
+          # the signed repository is accepted with the key, as users' Flatpak will see it
+          flatpak remote-add --user --gpg-import="$RUNNER_TEMP/ci-key.gpg" ci-repo "file://$PWD/flatpak-repo"
+          flatpak remote-ls --user ci-repo | grep -q io.github.phosphene_dev.Hallucinate
+          flatpak remote-delete --user ci-repo
+          flatpak install --user -y --noninteractive hallucinate.flatpak
       - name: Smoke test (offscreen)
         run: |
           dbus-run-session -- flatpak run --env=QT_QPA_PLATFORM=offscreen \
@@ -100,14 +120,6 @@ jobs:
             --command=python3 io.github.phosphene_dev.Hallucinate "$clips/decode_check.py" \
             "$clips/tone.mp3" "$clips/aac.m4a" "$clips/alac.m4a" "$clips/tone.flac" \
             "$clips/tone.ogg" "$clips/tone.opus"
-      - name: Flathub linter
-        run: |
-          flatpak run --command=flatpak-builder-lint org.flatpak.Builder \
-            manifest packaging/flatpak/io.github.phosphene_dev.Hallucinate.yml
-          # Only Flathub's publishing pipeline rewrites screenshot and icon URLs to dl.flathub.org/media,
-          # so those two checks are excepted for this local repo (packaging/flatpak/lint-exceptions.json).
-          flatpak run --command=flatpak-builder-lint org.flatpak.Builder \
-            --exceptions --user-exceptions packaging/flatpak/lint-exceptions.json repo flatpak-repo
 
   aur:
     runs-on: ubuntu-latest

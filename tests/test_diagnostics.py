@@ -67,23 +67,6 @@ def test_update_check_is_opt_in_and_compares_versions(qapp):
         QSettings("hallucinate", "hallucinate").remove("updates")
 
 
-def test_flathub_manifest_uses_the_tagged_release(tmp_path, monkeypatch):
-    import importlib.util
-    import subprocess
-    from pathlib import Path
-
-    spec = importlib.util.spec_from_file_location("flathub_manifest", Path(__file__).parents[1] / "scripts" / "flathub_manifest.py")
-    script = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(script)
-    monkeypatch.setattr(subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a, 0, stdout="ab" * 20 + "\n"))
-    assert script.main(["v9.9.9", str(tmp_path)]) == 0
-    text = (tmp_path / f"{script.APP_ID}.yml").read_text(encoding="utf-8")
-    assert "type: dir" not in text and "path: ../.." not in text
-    assert "tag: v9.9.9" in text and "commit: " + "ab" * 20 in text and "url: https://github.com/" in text
-    assert (tmp_path / "python3-requirements.yaml").exists()
-    assert script.main(["latest"]) == 2
-
-
 def test_update_check_is_off_inside_flatpak(qapp, monkeypatch):
     from hallucinate import updates
 

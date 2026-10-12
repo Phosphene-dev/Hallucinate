@@ -57,7 +57,7 @@ hidden. Thoughts, likes and dislikes are just as welcome in
 
 Known rough edges:
 - The Windows and macOS builds aren't code-signed yet, so both systems warn on first launch (see [Install](#install)).
-- Not on Flathub or the AUR yet; use the AppImage, or build those packages yourself from `packaging/`.
+- Not on the AUR yet; use the AppImage or the Flatpak, or build the AUR package yourself from `packaging/aur/`.
 - Hallucinate never sends anything about you or your library anywhere: there's no telemetry, and offline mode
   turns off every connection it does make.
 
@@ -170,17 +170,19 @@ chmod +x Hallucinate-x86_64.AppImage && ./Hallucinate-x86_64.AppImage
 ```
 Bundles Python, PySide6 and the Qt Multimedia FFmpeg backend. Build it yourself with `packaging/appimage/build.sh`.
 
-### Flatpak (Flathub-ready manifest; not yet on Flathub)
-The manifest uses the KDE runtime with Flathub's PySide BaseApp and builds offline with pinned
-dependencies. Build and install locally with Flatpak Builder:
+### Flatpak
+Hallucinate has its own signed Flatpak repository (it isn't on Flathub; the runtime still comes from there).
+Install it once and it updates with your other Flatpak apps:
 ```sh
-flatpak-builder --user --install --force-clean build-dir \
-  packaging/flatpak/io.github.phosphene_dev.Hallucinate.yml \
-  --install-deps-from=flathub
-flatpak run io.github.phosphene_dev.Hallucinate
+flatpak install --user https://phosphene-dev.github.io/Hallucinate/hallucinate.flatpakref
 ```
-The sandbox grants read-only access to `~/Music`; use the folder picker portal
-to grant access to other music directories. Flathub submission steps:
+or open [that link](https://phosphene-dev.github.io/Hallucinate/hallucinate.flatpakref) in GNOME Software or
+KDE Discover. Each release also has a single-file
+[`.flatpak` bundle](https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-x86_64.flatpak)
+(`flatpak install --user ./Hallucinate-x86_64.flatpak`), which sets up the same repository for updates.
+
+The sandbox grants read-only access to `~/Music`; use the folder picker portal to grant access to other music
+directories. To build it yourself, and how the repository is published:
 [packaging/flatpak/README.md](packaging/flatpak/README.md).
 
 ### macOS

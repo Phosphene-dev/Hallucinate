@@ -1,4 +1,5 @@
 """The website build (scripts/build_site.py): every placeholder filled, every local file present."""
+import base64
 import re
 import sys
 from html.parser import HTMLParser
@@ -49,3 +50,31 @@ def test_changelog_rendering():
 def test_released_version_override(monkeypatch):
     monkeypatch.setenv("SITE_VERSION", "9.9.9")
     assert build_site.released_version() == "9.9.9"
+
+
+def test_flatpak_repository_is_served_with_install_files(tmp_path, monkeypatch):
+    monkeypatch.setenv("SITE_VERSION", build_site.project_version())
+    key = tmp_path / "key.gpg"
+    key.write_bytes(b"\x99\x01public key bytes")
+    monkeypatch.setattr(build_site, "FLATPAK_KEY", key)
+    repo = tmp_path / "flatpak-repo"
+    (repo / "objects").mkdir(parents=True)
+    (repo / "config").write_text("[core]\nrepo_version=1\nmode=archive-z2\n")
+    (repo / "summary").write_bytes(b"summary")
+
+    out = build_site.build(tmp_path / "site", repo)
+    page = (out / "index.html").read_text(encoding="utf-8")
+    assert 'href="hallucinate.flatpakref"' in page and "Hallucinate-x86_64.flatpak" in page
+    assert (out / "flatpak" / "repo" / "summary").read_bytes() == b"summary"
+    ref = (out / "hallucinate.flatpakref").read_text()
+    assert ref.startswith("[Flatpak Ref]\n") and "Name=io.github.phosphene_dev.Hallucinate\n" in ref
+    assert "Branch=stable\n" in ref and f"Url={build_site.SITE_URL}flatpak/repo/\n" in ref
+    assert f"GPGKey={base64.b64encode(key.read_bytes()).decode()}\n" in ref
+    assert (out / "flatpak" / "hallucinate.flatpakrepo").read_text().startswith("[Flatpak Repo]\n")
+    assert (out / "img" / "icon-64.png").is_file()
+
+    # without a repository (or before any release has one) the page points at building from source
+    out = build_site.build(tmp_path / "plain", tmp_path / "missing")
+    page = (out / "index.html").read_text(encoding="utf-8")
+    assert "flatpakref" not in page and "built from source" in page
+    assert not (out / "flatpak").exists()

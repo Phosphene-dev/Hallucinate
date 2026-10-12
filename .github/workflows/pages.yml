@@ -4,6 +4,7 @@ name: Website
 # https://phosphene-dev.github.io/Hallucinate/
 # Runs when the site, screenshots, logo or changelog change on main, after every release (called from
 # release.yml, because releases created by a workflow don't trigger other workflows), or by hand.
+# It also serves the Flatpak repository from the newest release that has one (flatpak/repo/).
 on:
   push:
     branches: [main]
@@ -37,7 +38,13 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - run: python scripts/build_site.py _site
+      - name: Flatpak repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          from=$(packaging/flatpak/fetch_repo.sh flatpak-repo)
+          echo "Serving the Flatpak repository from: ${from:-nowhere yet}"
+      - run: python scripts/build_site.py _site --flatpak-repo flatpak-repo
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

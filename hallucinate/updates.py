@@ -86,7 +86,7 @@ class UpdateChecker(QObject):
 
     @Property(bool, constant=True)
     def supported(self):
-        """False in the Flatpak and system packages: Flathub or the package manager delivers updates there."""
+        """False in the Flatpak and system packages: the software centre or package manager updates those."""
         return not os.environ.get("FLATPAK_ID") and not system_package()
 
     @Property(bool, constant=True)
