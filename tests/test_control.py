@@ -185,3 +185,14 @@ def test_cli_controls_live_app_process(tmp_path):
         except subprocess.TimeoutExpired:
             app.kill()
             app.communicate(timeout=5)
+
+
+def test_control_socket_is_private_to_the_user(tmp_path):
+    from hallucinate.control import default_server_name
+
+    assert default_server_name({"XDG_RUNTIME_DIR": str(tmp_path)}, "linux") == str(tmp_path / "hallucinate-control")
+    named = default_server_name({}, "win32")
+    assert named.startswith("hallucinate-control-") and len(named) > len("hallucinate-control-")
+    assert default_server_name({"HALLUCINATE_CONTROL_SOCKET": "x"}, "linux") == "x"
+    assert default_server_name({"XDG_RUNTIME_DIR": str(tmp_path), "FLATPAK_ID": "a"}, "linux").startswith(
+        "hallucinate-control-")
