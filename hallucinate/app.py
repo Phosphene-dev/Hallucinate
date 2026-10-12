@@ -102,7 +102,11 @@ def main(argv=None) -> int:
 
     # A short GIL switch interval keeps the GUI thread responsive while worker threads parse tags.
     sys.setswitchinterval(0.001)
+    from . import dbguard
+    backup_dir = paths.data_dir() / "backups"
+    db_notice = dbguard.check(paths.db_path(), backup_dir)  # a damaged database is set aside and restored
     library = Library(paths.db_path(), paths.art_dir())
+    dbguard.backup_if_due(paths.db_path(), backup_dir)
     control.setLibrary(library)
     player = Player(session_file=paths.data_dir() / "session.json")
     waveforms = WaveformService(paths.cache_dir() / "waveforms")
@@ -124,6 +128,7 @@ def main(argv=None) -> int:
     discord = DiscordPresence(player)
     shell = DesktopShell(app, player, app.windowIcon())
     shell.setReportSources(library=library, theme_manager=theme_manager)
+    shell.setStartupNotice(db_notice)
 
     if not library.folders and not args.folders:
         # A fresh install: open on the welcome (music folder, theme, scrobbling) until it is finished

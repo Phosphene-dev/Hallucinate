@@ -257,11 +257,11 @@ ApplicationWindow {
         id: toast
         objectName: "toast"
         property string message: ""
-        function show(text) { message = text; opacity = 1; toastTimer.restart() }
+        function show(text, ms) { message = text; opacity = 1; toastTimer.interval = ms || 4500; toastTimer.restart() }
         z: 60
         anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Selection.count > 0 || AlbumSelection.count > 0 ? 176 : 118 }
-        width: toastText.implicitWidth + 36
-        height: 40
+        width: toastText.width + 36
+        height: Math.max(40, toastText.height + 22)
         radius: 20
         color: Theme.glassStrong
         border.width: 1
@@ -273,6 +273,9 @@ ApplicationWindow {
             textFormat: Text.PlainText
             id: toastText
             anchors.centerIn: parent
+            width: Math.min(implicitWidth, Math.max(200, window.width - 160))  // long messages wrap
+            wrapMode: Text.WordWrap
+            horizontalAlignment: Text.AlignHCenter
             text: toast.message
             color: Theme.text
             font.family: Theme.fontFamily
@@ -280,6 +283,8 @@ ApplicationWindow {
         }
         Timer { id: toastTimer; interval: 4500; onTriggered: toast.opacity = 0 }
     }
+    // e.g. a damaged library database that was restored from its backup at start-up
+    Timer { interval: 800; running: shell.startupNotice.length > 0; onTriggered: toast.show(shell.startupNotice, 15000) }
     SmartPlaylistEditor {
         id: smartEditor
         onSaved: function (id, name) { window.openSmartPlaylist(id, name) }
