@@ -10,7 +10,7 @@ Item {
     objectName: "album"
     property string albumKey
     readonly property var info: library.albumInfo(albumKey)
-    readonly property var tracks: library.albumTracksModel(albumKey)
+    readonly property var tracks: library.detailRevision >= 0 ? library.albumTracksModel(albumKey) : null
     readonly property var notes: library.albumNotes(albumKey)
     readonly property var coverColors: library.albumPalette(albumKey)
     readonly property color glow0: coverColors.length > 0 ? coverColors[0] : Theme.accent

@@ -12,7 +12,7 @@ Item {
     readonly property var info: library.artistInfo(artistName)
     readonly property var profile: library.artistProfile(artistName)
     readonly property var coverColors: library.artistPalette(artistName)
-    readonly property var tracksModel: library.artistTracksModel(artistName)
+    readonly property var tracksModel: library.detailRevision >= 0 ? library.artistTracksModel(artistName) : null
     readonly property color glow0: coverColors.length > 0 ? coverColors[0] : Theme.accent
     readonly property color glow1: coverColors.length > 1 ? coverColors[1] : Theme.art1
     readonly property var months: profile.months || []
