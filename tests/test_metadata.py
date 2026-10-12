@@ -277,3 +277,44 @@ def test_lyrics_controller_lrclib_cached_and_offline(qapp, lib, monkeypatch):
     pl.trackChanged.emit()
     assert wait_for(lambda: ctl.status == "found") and calls == ["Two"]
     ctl.shutdown()
+
+
+def test_find_all_missing_covers(qapp, tmp_path, monkeypatch):
+    from conftest import wait_for
+
+    from hallucinate import metaedit
+    from hallucinate.core.db import Database
+
+    db = Database(tmp_path / "lib.db")
+    for album, art in (("Has Cover", "/art/x.jpg"), ("First", None), ("Second", None), ("Unknown Album", None)):
+        db.upsert_track({
+            "path": f"/m/{album}.flac", "mtime": 0, "size": 1, "title": album, "artist": "A", "album_artist": "A",
+            "aa_tag": 1, "album": album, "album_key": f"A|{album}", "track_no": 1, "disc_no": 0, "year": 2000,
+            "genre": "", "duration": 60.0, "fmt": "FLAC", "codec": "FLAC", "bitrate": 0, "sample_rate": 44100,
+            "art": art,
+        })
+    db.commit()
+    asked, slept = [], []
+    png = b"\x89PNG\r\n\x1a\n" + b"0" * 32
+
+    def fake_fetch(artist, album):
+        asked.append(album)
+        return png if album == "Second" else None
+
+    monkeypatch.setattr(metaedit.artfetch, "fetch_cover", fake_fetch)
+    monkeypatch.setattr(metaedit.time, "sleep", lambda s: slept.append(s))
+    editor = metaedit.MetadataEditor(tmp_path / "lib.db", tmp_path / "art")
+    results = []
+    editor.coverResult.connect(lambda ok, msg: results.append(msg))
+    try:
+        editor.fetchMissingCovers()
+        assert wait_for(lambda: results, 10)
+        assert asked == ["First", "Second"]  # "Unknown Album" isn't worth asking about
+        assert editor.coversDone == 2 and editor.coversFound == 1 and editor.coversTotal == 2
+        assert not editor.coversBusy and results == ["Found 1 of 2 covers"]
+        assert all(s <= metaedit.MUSICBRAINZ_INTERVAL for s in slept) and len(slept) >= 1  # paced for MusicBrainz
+        art = db.conn.execute("SELECT art FROM tracks WHERE album='Second'").fetchone()[0]
+        assert art and art.endswith(".png")
+    finally:
+        editor.shutdown()
+        db.close()
