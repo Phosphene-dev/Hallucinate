@@ -464,8 +464,27 @@ Item {
             Accessible.name: "Hallucinate logo"
         }
         Text {
-            text: "Hallucinate — a modern music library and player"
+            text: "Hallucinate " + shell.appVersion + " — a modern music library and player"
             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+        }
+        Row {
+            spacing: 10
+            PillButton {
+                objectName: "copyDebugInfo"
+                text: "Copy debug info"
+                onClicked: { shell.copyDebugInfo(); Nav.notify("Debug info copied — paste it into your bug report") }
+            }
+            PillButton {
+                text: "Report a bug"
+                onClicked: Qt.openUrlExternally("https://github.com/bulmaspanties/Hallucinate/issues/new")
+            }
+        }
+        Text {
+            width: parent.width
+            wrapMode: Text.WordWrap
+            text: "Debug info lists versions, your system, display and audio setup and the recent log. It leaves out "
+                + "file paths, your music and account names."
+            color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
         }
     }
     }
