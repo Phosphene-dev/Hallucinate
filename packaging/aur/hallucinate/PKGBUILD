@@ -1,6 +1,6 @@
 # Maintainer: Phosphene-dev <https://github.com/Phosphene-dev>
 pkgname=hallucinate
-pkgver=0.3.1
+pkgver=0.9.0
 pkgrel=1
 pkgdesc="Fast desktop music player for the music you own: liquid, cover-coloured, gapless and private (PySide6/QML)"
 arch=('any')
@@ -11,7 +11,7 @@ makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel
 optdepends=('gnome-keyring: store Last.fm credentials in the system keyring'
             'kwallet: store Last.fm credentials in the system keyring')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('a3aa76f0b7122d8ec722a159e41748f7dfc85d5a376fe948a60f66aa88a03540')
+sha256sums=('7959383b0ade92186234fb571c84ed02d97f3471702f92a99f17c14261f18307')
 
 build() {
   cd "Hallucinate-$pkgver"
