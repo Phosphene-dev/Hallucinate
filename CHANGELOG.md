@@ -13,6 +13,7 @@ All notable changes to this project are documented here. Format based on
 
 ### Changed
 - "Scrobbling & sharing" in Settings is now "Internet & sharing".
+- Closing the window now asks whether to quit, minimize or keep playing in the tray, with "Remember my choice"; Settings → Desktop → "When I close the window" changes it later. Minimize isn't offered on tiling window managers that have none (Hyprland, Sway, i3 and others). Anyone who had "Keep playing in the tray" on keeps it.
 - Copies installed by a system package manager (AUR and other distribution packages) no longer offer the update check; the package manager updates them.
 
 ## [0.8.1] - 2026-10-12

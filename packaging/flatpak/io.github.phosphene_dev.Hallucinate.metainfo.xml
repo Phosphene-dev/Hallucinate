@@ -99,6 +99,7 @@
       <description>
         <p>Offline mode: one switch in Settings and Hallucinate makes no internet connections at all. Scrobbles wait and are sent when you turn it off.</p>
         <p>"Scrobbling &amp; sharing" in Settings is now "Internet &amp; sharing".</p>
+        <p>Closing the window asks whether to quit, minimize or keep playing in the tray, and can remember your choice.</p>
       </description>
     </release>
     <release version="0.8.1" date="2026-10-12">

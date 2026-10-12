@@ -224,7 +224,54 @@ ApplicationWindow {
     }
     TagEditor { id: tagEditor }
     MiniPlayer {}
-    onClosing: function (close) { close.accepted = !shell.handleClose() }
+    onClosing: function (close) {
+        var result = shell.handleClose()
+        close.accepted = result === "quit"
+        if (result === "ask") closeDlg.open()
+    }
+    // Asked on close until a choice is remembered (Settings → Desktop changes it later)
+    Dialog {
+        id: closeDlg
+        objectName: "closeDialog"
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: 440
+        modal: true
+        title: "Close Hallucinate?"
+        function choose(action) {
+            if (rememberClose.checked) shell.setCloseAction(action)
+            closeDlg.close()
+            shell.closeWith(action)
+        }
+        Column {
+            width: closeDlg.availableWidth
+            spacing: 14
+            Text {
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: shell.canMinimize && shell.trayAvailable && shell.trayEnabled
+                      ? "Quit, or keep the music going with the window minimized or tucked away in the tray?"
+                      : shell.canMinimize ? "Quit, or keep the music going with the window minimized?"
+                                          : "Quit, or keep the music going with the window tucked away in the tray?"
+                color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            StyledCheck { id: rememberClose; text: "Remember my choice"; checked: false }
+            Flow {
+                width: parent.width
+                spacing: 8
+                PillButton { objectName: "closeQuit"; text: "Quit"; primary: true; onClicked: closeDlg.choose("quit") }
+                PillButton { objectName: "closeMinimize"; visible: shell.canMinimize; text: "Minimize"; onClicked: closeDlg.choose("minimize") }
+                PillButton {
+                    objectName: "closeTray"
+                    visible: shell.trayAvailable && shell.trayEnabled
+                    text: "Keep playing in the tray"
+                    onClicked: closeDlg.choose("tray")
+                }
+                PillButton { text: "Cancel"; onClicked: closeDlg.close() }
+            }
+        }
+        onOpened: rememberClose.checked = false
+    }
     Dialog {
         id: createDlg
         parent: Overlay.overlay

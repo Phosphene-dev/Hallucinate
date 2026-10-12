@@ -67,20 +67,47 @@ def test_mini_player_toggle_hides_and_restores_main(make_shell):
     assert not shell.miniOpen and win.visible
 
 
-def test_close_without_tray_quits(make_shell):
-    shell, win, player = make_shell()
+def fake_app(quits):
+    return type("A", (), {"quit": lambda self: quits.append(1), "setQuitOnLastWindowClosed": lambda *a: None})()
+
+
+def test_close_asks_by_default_and_does_nothing_yet(make_shell):
+    shell, win, _player = make_shell()
     quits = []
-    shell._app = type("A", (), {"quit": lambda self: quits.append(1), "setQuitOnLastWindowClosed": lambda *a: None})()
-    shell.setCloseToTray(True)
-    assert shell.handleClose() is False and quits  # no tray available offscreen -> plain quit
+    shell._app = fake_app(quits)
+    assert shell.closeAction == "ask"
+    assert shell.handleClose() == "ask" and win.visible and not quits  # the window shows the choice
 
 
-def test_close_to_tray_hides_window(make_shell, monkeypatch):
-    shell, win, player = make_shell()
-    shell.setCloseToTray(True)
+def test_close_choices(make_shell, monkeypatch):
+    shell, win, _player = make_shell()
+    quits = []
+    shell._app = fake_app(quits)
+    win.showMinimized = lambda: win.calls.append("minimize")
+
+    shell.setCloseAction("minimize")
+    assert shell.handleClose() == "kept" and win.calls[-1] == "minimize" and not quits
+
+    shell.setCloseAction("tray")
+    assert shell.handleClose() == "quit" and quits  # no tray icon offscreen: quitting beats vanishing
     monkeypatch.setattr(DesktopShell, "_tray_visible", lambda self: True)
-    assert shell.handleClose() is True and not win.visible
-    assert shell.closeToTray
+    assert shell.handleClose() == "kept" and not win.visible
+
+    shell.setCloseAction("quit")
+    quits.clear()
+    assert shell.handleClose() == "quit" and quits
+    shell.setCloseAction("nonsense")
+    assert shell.closeAction == "quit"
+
+
+def test_close_choice_persists_and_old_tray_setting_carries_over(make_shell):
+    shell, _win, _player = make_shell()
+    shell.setCloseAction("minimize")
+    assert shell._settings.value("shell/closeAction") == "minimize"
+    shell._settings.remove("shell/closeAction")
+    shell._settings.setValue("shell/closeToTray", True)
+    again, _w, _p = make_shell()
+    assert again.closeAction == "tray"
 
 
 def test_desktop_notifications_are_opt_in_and_skip_initial_track(make_shell, monkeypatch):
@@ -147,3 +174,20 @@ def test_offline_mode_persists_and_closes_the_network(make_shell):
         assert not net.is_offline() and not shell.offlineMode
     finally:
         net.set_offline(False)
+
+
+def test_no_minimize_on_tiling_window_managers(make_shell, monkeypatch):
+    from hallucinate.shell import can_minimize
+
+    assert not can_minimize({"HYPRLAND_INSTANCE_SIGNATURE": "x"}, "linux")
+    assert not can_minimize({"XDG_CURRENT_DESKTOP": "sway"}, "linux")
+    assert can_minimize({"XDG_CURRENT_DESKTOP": "KDE"}, "linux") and can_minimize({}, "win32")
+
+    monkeypatch.setattr(DesktopShell, "canMinimize", property(lambda self: False))
+    shell, win, _player = make_shell()
+    quits = []
+    shell._app = fake_app(quits)
+    assert shell.handleClose() == "quit" and quits  # no minimize, no tray: nothing to ask about
+    monkeypatch.setattr(DesktopShell, "_tray_visible", lambda self: True)
+    assert shell.handleClose() == "ask"
+    assert shell.closeWith("minimize") == "kept" and not win.visible  # a remembered minimize falls back to the tray

@@ -607,7 +607,7 @@ Item {
             id: sec_desktop
             objectName: "settings_desktop"
             title: "Desktop"
-            keywords: "tray notifications close mini player"
+            keywords: "tray notifications close quit minimize exit background mini player"
             query: page.query
             StyledCheck {
                 visible: shell.trayAvailable
@@ -615,12 +615,27 @@ Item {
                 checked: shell.trayEnabled
                 onToggled: shell.setTrayEnabled(checked)
             }
-            StyledCheck {
-                visible: shell.trayAvailable
-                enabled: shell.trayEnabled
-                text: "Keep playing in the tray when the window is closed"
-                checked: shell.closeToTray
-                onToggled: shell.setCloseToTray(checked)
+            Row {
+                spacing: 12
+                Text { anchors.verticalCenter: parent.verticalCenter; text: "When I close the window"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+                StyledCombo {
+                    objectName: "closeAction"
+                    width: 250
+                    readonly property var actions: ["ask", "quit"].concat(shell.canMinimize ? ["minimize"] : [])
+                                                                  .concat(shell.trayAvailable ? ["tray"] : [])
+                    readonly property var labels: ({ ask: "Ask every time", quit: "Quit", minimize: "Minimize",
+                                                     tray: "Keep playing in the tray" })
+                    model: actions.map(a => labels[a])
+                    currentIndex: Math.max(0, actions.indexOf(shell.closeAction))
+                    onActivated: shell.setCloseAction(actions[currentIndex])
+                }
+            }
+            Text {
+                visible: !shell.canMinimize
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: "Your window manager has no minimize, so the choices are quitting or keeping it in the tray (when your bar shows tray icons)."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             StyledCheck {
                 visible: Qt.platform.os === "linux" || shell.trayAvailable

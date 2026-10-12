@@ -156,6 +156,12 @@ def test_every_page_in_every_theme(qapp, tmp_path, monkeypatch):
         yield "update dialog"
         QMetaObject.invokeMethod(dialog, "close")
         settle()
+        dialog = window.findChild(QObject, "closeDialog")
+        QMetaObject.invokeMethod(dialog, "open")
+        settle()
+        yield "close dialog"
+        QMetaObject.invokeMethod(dialog, "close")
+        settle()
 
     problems = []
     for theme in manager.availableThemes:
