@@ -59,11 +59,72 @@ def design_fir(gains_db, rate, taps=TAPS, curve=None):
     return h.astype(np.float32)
 
 
+# Crossfeed for headphones: each ear also hears the other channel, a little later and with its highs rolled off,
+# as it would from speakers. (cut-off Hz, feed level dB), after Linkwitz and Meier's designs.
+CROSSFEED = {"light": (650, -9.5), "medium": (700, -6.0), "strong": (700, -4.5)}
+CROSSFEED_DELAY_S = 0.0003  # about the extra path to the far ear
+
+
+class Crossfeed:
+    """Streaming crossfeed for stereo float frames: out = (direct + level * lowpass(delay(other))) / (1 + level)."""
+
+    def __init__(self, preset="medium", rate=44100):
+        self.preset = preset
+        self.rate = rate
+        self._kernel = None
+        self._tail = None
+
+    def configure(self, preset, rate):
+        if (preset, rate) != (self.preset, self.rate):
+            self.preset, self.rate = preset, rate
+            self._kernel = None
+            self._tail = None
+
+    def reset(self):
+        self._tail = None
+
+    @property
+    def level(self):
+        return 10 ** (CROSSFEED.get(self.preset, CROSSFEED["medium"])[1] / 20)
+
+    def _build(self):
+        cutoff = CROSSFEED.get(self.preset, CROSSFEED["medium"])[0]
+        a = float(np.exp(-2 * np.pi * cutoff / self.rate))  # one-pole low-pass as a decaying impulse
+        delay = int(round(CROSSFEED_DELAY_S * self.rate))
+        length = delay + max(8, int(np.ceil(np.log(1e-4) / np.log(a))))
+        k = np.zeros(length, dtype=np.float32)
+        n = np.arange(length - delay)
+        k[delay:] = (1 - a) * a ** n
+        self._kernel = k
+
+    def process(self, samples):
+        """samples: float32 (frames, 2) -> crossfed (frames, 2)."""
+        if samples.ndim != 2 or samples.shape[1] != 2 or samples.shape[0] == 0:
+            return samples
+        if self._kernel is None:
+            self._build()
+        k = self._kernel
+        if self._tail is None:
+            self._tail = np.zeros((len(k) - 1, 2), dtype=np.float32)
+        x = np.concatenate([self._tail, samples], axis=0)
+        self._tail = x[-(len(k) - 1):].copy()
+        frames = samples.shape[0]
+        left = np.convolve(x[:, 1], k, mode="valid")[-frames:]   # right channel, heard on the left
+        right = np.convolve(x[:, 0], k, mode="valid")[-frames:]
+        g = self.level
+        out = np.empty_like(samples)
+        out[:, 0] = (samples[:, 0] + g * left) / (1 + g)
+        out[:, 1] = (samples[:, 1] + g * right) / (1 + g)
+        return out
+
+
 class EqProcessor:
-    """Streaming overlap-save FIR filter for interleaved PCM."""
+    """Streaming overlap-save FIR filter for interleaved PCM, then optional crossfeed."""
 
     def __init__(self):
         self.gains = [0.0] * 10
+        self.eq_on = True
+        self.crossfeed = None  # a Crossfeed, or None
         self.curve = None
         self.rate = 44100
         self.channels = 2
@@ -72,13 +133,29 @@ class EqProcessor:
         self._cache = {}
 
     @property
+    def eq_flat(self):
+        return not self.eq_on or (not self.curve and not any(abs(g) > 0.01 for g in self.gains))
+
+    @property
     def flat(self):
-        return not self.curve and not any(abs(g) > 0.01 for g in self.gains)
+        return self.eq_flat and self.crossfeed is None
+
+    def set_crossfeed(self, preset):
+        """"" or "off" turns it off; otherwise one of CROSSFEED."""
+        if preset in CROSSFEED:
+            if self.crossfeed is None:
+                self.crossfeed = Crossfeed(preset, self.rate)
+            else:
+                self.crossfeed.configure(preset, self.rate)
+        else:
+            self.crossfeed = None
 
     def configure(self, rate, channels):
         if (rate, channels) != (self.rate, self.channels):
             self.rate, self.channels = rate, channels
             self._h = None
+        if self.crossfeed is not None:
+            self.crossfeed.configure(self.crossfeed.preset, rate)
         self.reset()
 
     def set_gains(self, gains):
@@ -91,6 +168,8 @@ class EqProcessor:
 
     def reset(self):
         self._tail = None
+        if self.crossfeed is not None:
+            self.crossfeed.reset()
 
     def _kernel(self, nfft):
         if self._h is None:
@@ -104,6 +183,10 @@ class EqProcessor:
 
     def process(self, samples):
         """samples: float32 array (frames, channels) in [-1, 1] -> filtered array of the same shape."""
+        out = samples if self.eq_flat else self._equalize(samples)
+        return self.crossfeed.process(out) if self.crossfeed is not None else out
+
+    def _equalize(self, samples):
         frames = samples.shape[0]
         if frames == 0:
             return samples

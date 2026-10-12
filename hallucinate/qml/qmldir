@@ -1,2 +1,3 @@
 singleton Theme 1.0 Theme.qml
 singleton Nav 1.0 Nav.qml
+singleton Selection 1.0 Selection.qml

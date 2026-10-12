@@ -232,6 +232,17 @@ Item {
                 compact: true
                 visible: active && !side.collapsed
             }
+            RailButton {  // only with the update check turned on and a newer release out
+                objectName: "updateAvailable"
+                width: parent.width
+                height: side.entryHeight
+                visible: shell.updates.enabled && shell.updates.available
+                text: "Update to " + shell.updates.latestVersion
+                icon: "sparkle"
+                collapsed: side.collapsed
+                selected: true
+                onClicked: Qt.openUrlExternally(shell.updates.releaseUrl)
+            }
             RailButton {
                 width: parent.width
                 height: side.entryHeight

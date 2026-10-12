@@ -293,6 +293,44 @@ def _open(path: str):
     return None
 
 
+def embedded_cuesheet(f, name):
+    """CUE sheet text stored inside an audio file, or "".
+
+    Rips often keep the sheet in a CUESHEET tag (FLAC/Ogg Vorbis comments, APEv2 in WavPack and Monkey's Audio);
+    FLAC can also carry a native CUESHEET block, which has the track starts but no titles."""
+    tags = getattr(f, "tags", None)
+    if tags is not None:
+        try:
+            for key in ("CUESHEET", "cuesheet", "Cuesheet"):
+                value = tags.get(key)
+                if value:
+                    value = value[0] if isinstance(value, list) else value
+                    text = str(value)
+                    if "TRACK" in text.upper() and "INDEX" in text.upper():
+                        return text
+        except Exception:  # noqa: BLE001 - odd tag containers; the file still scans as one song
+            pass
+    native = getattr(f, "cuesheet", None)
+    rate = int(getattr(getattr(f, "info", None), "sample_rate", 0) or 0)
+    if native is not None and rate > 0:
+        lines = [f'FILE "{name}" WAVE']
+        for track in getattr(native, "tracks", []):
+            number = int(getattr(track, "track_number", 0) or 0)
+            if not 1 <= number <= 99:  # 170 is the lead-out
+                continue
+            start = int(getattr(track, "start_offset", 0) or 0)
+            for index in getattr(track, "indexes", []) or []:
+                if int(getattr(index, "index_number", -1)) == 1:
+                    start += int(getattr(index, "index_offset", 0) or 0)
+                    break
+            frames = round(start * 75 / rate)
+            lines.append(f"  TRACK {number:02d} AUDIO")
+            lines.append(f"    INDEX 01 {frames // 4500:02d}:{frames // 75 % 60:02d}:{frames % 75:02d}")
+        if len(lines) > 3:
+            return "\n".join(lines) + "\n"
+    return ""
+
+
 def _read_track(path, art_known):
     f = _open(path)
     if f is None or getattr(f, "info", None) is None:
@@ -337,6 +375,7 @@ def _read_track(path, art_known):
     }
     t["rg_track"], t["rg_album"], t["rg_peak"] = read_replaygain(tags)
     t["rating"] = read_rating(tags)
+    t["_cuesheet"] = embedded_cuesheet(f, os.path.basename(path))
     if art_known is None or not art_known(key):
         t["_art"] = extract_embedded_art(f)
     return t

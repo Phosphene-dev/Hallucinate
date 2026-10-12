@@ -203,3 +203,79 @@ def test_virtual_paths_are_not_edited_or_searched_for_lyrics(tmp_path):
     assert lyrics.read_embedded(song) == ""
     with pytest.raises(tagedit.TagWriteError, match="CUE sheet"):
         tagedit._writable(song)
+
+
+def test_native_flac_cuesheet_block_becomes_a_sheet():
+    from types import SimpleNamespace as NS
+
+    from hallucinate.core.tags import embedded_cuesheet
+
+    def track(n, start, index_offset=0):
+        return NS(track_number=n, start_offset=start, indexes=[NS(index_number=1, index_offset=index_offset)])
+
+    f = NS(tags=None, info=NS(sample_rate=44100),
+           cuesheet=NS(tracks=[track(1, 0), track(2, 44100 * 125), track(3, 44100 * 200, 588), track(170, 44100 * 300)]))
+    sheet = cue.parse(embedded_cuesheet(f, "album.flac"))
+    (entry,) = sheet["files"]
+    assert entry["name"] == "album.flac"
+    assert [t["number"] for t in entry["tracks"]] == [1, 2, 3]  # the lead-out (170) is not a song
+    assert [round(t["start"], 3) for t in entry["tracks"]] == [0, 125, round(200 + 1 / 75, 3)]
+    assert embedded_cuesheet(NS(tags=None, info=NS(sample_rate=44100), cuesheet=None), "x.flac") == ""
+
+
+@needs_ffmpeg
+def test_cue_sheet_embedded_in_the_file(db, tmp_path):
+    import mutagen
+
+    folder = tmp_path / "Music" / "Rip"
+    folder.mkdir(parents=True)
+    audio = str(encode(folder / "rip.flac", "flac", seconds=6, title="whole", artist="Aurora Vale"))
+    f = mutagen.File(audio)
+    f["CUESHEET"] = SHEET.replace("00:04:37", "00:04:00").replace("live.wav", "rip.wav")
+    f.save()
+    art = tmp_path / "art"
+    art.mkdir()
+
+    def scan():
+        return Scanner(db, art).scan([str(folder)])
+
+    assert scan()["added"] == 3
+    rows = {r["path"]: r for r in db._rows("SELECT * FROM tracks")}
+    assert set(rows) == {f"{audio}#01", f"{audio}#02", f"{audio}#03"}
+    assert rows[f"{audio}#02"]["title"] == "Harbour Lights" and rows[f"{audio}#02"]["cue_start"] == 2.0
+    assert scan()["unchanged"] == 3  # an unchanged file isn't read again
+    f = mutagen.File(audio)
+    del f["CUESHEET"]
+    f.save()
+    touch_newer(folder / "rip.flac")
+    stats = scan()
+    assert stats["added"] == 1 and stats["removed"] == 3
+
+
+@needs_ffmpeg
+def test_cue_songs_get_their_own_waveform(qapp, tmp_path):
+    import subprocess
+
+    from hallucinate import waveform as wf
+
+    audio = tmp_path / "steps.flac"  # quiet for 2 s, then loud: the two halves look different
+    subprocess.run([FFMPEG, "-loglevel", "error", "-y", "-f", "lavfi", "-i",
+                    "aevalsrc='if(lt(t,2),0.05,0.9)*sin(2*PI*440*t)':s=44100:d=4", str(audio)], check=True)
+    service = wf.WaveformService(tmp_path / "cache")
+    ready = []
+    service.ready.connect(ready.append)
+    try:
+        assert service.request_window("steps#01", str(audio), 0.0, 2.0) is None
+        assert service.request_window("steps#02", str(audio), 2.0, 0.0) is None
+        assert wait_for(lambda: "steps#01" in ready and "steps#02" in ready, 15)
+        quiet, loud = service.peaks("steps#01"), service.peaks("steps#02")
+        assert len(quiet) == len(loud) == wf.POINTS
+        assert max(quiet) == 1.0 and max(loud) == 1.0  # each is scaled to its own loudest point
+        assert (tmp_path / "cache").glob("*.env.npz")
+    finally:
+        service.shutdown()
+    again = wf.WaveformService(tmp_path / "cache")  # a new session cuts it from the cached envelope
+    try:
+        assert len(again.request_window("steps#02", str(audio), 2.0, 0.0)) == wf.POINTS
+    finally:
+        again.shutdown()

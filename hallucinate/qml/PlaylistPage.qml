@@ -68,6 +68,7 @@ Item {
             font.pixelSize: Theme.fontSize(14)
         }
         delegate: TrackRow {
+            selectionSource: ListView.view ? ListView.view.model : null
             path: model.path
             audioFormat: model.codec
             audioBitrate: model.bitrate

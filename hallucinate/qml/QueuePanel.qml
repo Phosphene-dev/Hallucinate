@@ -34,9 +34,21 @@ Rectangle {
             onClicked: saveDlg.open()
         }
         PillButton {
+            objectName: "undoQueue"
+            height: 30
+            visible: player.canUndoQueue
+            text: "Undo"
+            Accessible.description: player.undoLabel
+            ToolTip.visible: undoHover.hovered
+            ToolTip.text: "Undo: " + player.undoLabel.toLowerCase() + " (Ctrl+Z)"
+            ToolTip.delay: 400
+            HoverHandler { id: undoHover }
+            onClicked: player.undoQueue()
+        }
+        PillButton {
             height: 30
             text: "Clear"
-            onClicked: player.clearQueue()
+            onClicked: { player.clearQueue(); Nav.notify("Queue cleared · Ctrl+Z to undo") }
         }
     }
     Dialog {

@@ -2,11 +2,14 @@
 import hashlib
 import logging
 import os
+import threading
+import time
 from urllib.parse import unquote, urlparse
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
-from .core import artfetch, tagedit
+from .core import artfetch, health, tagedit
+from .core.db import Database
 from .core.scanner import Scanner
 from .core.tags import _image_ext
 from .library import _Reader, decorate
@@ -20,8 +23,13 @@ def _local_path(url):
     return url
 
 
+MUSICBRAINZ_INTERVAL = 1.1  # MusicBrainz asks for at most one request per second
+
+
 class MetadataEditor(QObject):
     busyChanged = Signal()
+    coversChanged = Signal()
+    _covers_progress = Signal(object)
     changed = Signal()  # tracks or art were modified; reload the library
     saved = Signal(int)
     failed = Signal(str)
@@ -34,6 +42,11 @@ class MetadataEditor(QObject):
         self._art_dir = str(art_dir)
         self._busy = 0
         self._done.connect(self._finish)
+        self._db_path = str(db_path)
+        self._covers = {"busy": False, "done": 0, "total": 0, "found": 0, "current": ""}
+        self._covers_stop = threading.Event()
+        self._covers_thread = None
+        self._covers_progress.connect(self._apply_covers_progress)
 
     @Property(bool, notify=busyChanged)
     def busy(self):
@@ -139,5 +152,86 @@ class MetadataEditor(QObject):
 
         self._run(work, album_key, artist, album, embed)
 
+    # --- every missing cover at once ---------------------------------------------------
+    @Property(bool, notify=coversChanged)
+    def coversBusy(self):
+        return self._covers["busy"]
+
+    @Property(int, notify=coversChanged)
+    def coversDone(self):
+        return self._covers["done"]
+
+    @Property(int, notify=coversChanged)
+    def coversTotal(self):
+        return self._covers["total"]
+
+    @Property(int, notify=coversChanged)
+    def coversFound(self):
+        return self._covers["found"]
+
+    @Property(str, notify=coversChanged)
+    def coversCurrent(self):
+        return self._covers["current"]
+
+    @Slot()
+    def fetchMissingCovers(self):
+        """Look up every album without a cover online, one by one (MusicBrainz allows a request a second)."""
+        if self._covers["busy"]:
+            return
+        self._covers_stop.clear()
+        self._covers = {"busy": True, "done": 0, "total": 0, "found": 0, "current": ""}
+        self.coversChanged.emit()
+        self._covers_thread = threading.Thread(target=self._fetch_covers, name="covers", daemon=True)
+        self._covers_thread.start()
+
+    @Slot()
+    def cancelCovers(self):
+        self._covers_stop.set()
+
+    def _fetch_covers(self, sleep=time.sleep):
+        db = Database(self._db_path)
+        found = done = 0
+        try:
+            albums = [a for a in health.missing_covers_all(db)
+                      if (a.get("album") or "").strip() and a.get("album") != health.UNKNOWN_ALBUM]
+            self._covers_progress.emit({"total": len(albums)})
+            last = 0.0
+            for album in albums:
+                if self._covers_stop.is_set():
+                    break
+                self._covers_progress.emit({"current": album["album"]})
+                wait = MUSICBRAINZ_INTERVAL - (time.monotonic() - last)
+                if wait > 0:
+                    sleep(wait)
+                last = time.monotonic()
+                try:
+                    data = artfetch.fetch_cover(album.get("album_artist") or "", album["album"])
+                    if data:
+                        self._store_cover(db, album["album_key"], data, False)
+                        found += 1
+                except (OSError, tagedit.TagWriteError) as exc:
+                    logger.info("No cover for %s: %s", album["album"], exc)
+                done += 1
+                self._covers_progress.emit({"done": done, "found": found, "reload": bool(found) and found % 10 == 0})
+        except Exception:  # noqa: BLE001
+            logger.exception("Fetching covers failed")
+        finally:
+            db.close()
+            self._covers_progress.emit({"busy": False, "current": "", "reload": found > 0, "finished": True})
+
+    @Slot(object)
+    def _apply_covers_progress(self, update):
+        reload_ = update.pop("reload", False)
+        finished = update.pop("finished", False)
+        self._covers.update(update)
+        self.coversChanged.emit()
+        if reload_:
+            self.changed.emit()
+        if finished:
+            self.coverResult.emit(True, f"Found {self._covers['found']} of {self._covers['done']} covers")
+
     def shutdown(self):
+        self._covers_stop.set()
+        if self._covers_thread is not None:
+            self._covers_thread.join(timeout=2)
         self._reader.close()

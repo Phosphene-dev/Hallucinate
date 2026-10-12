@@ -67,6 +67,9 @@ def main(argv=None) -> int:
 
     QQuickStyle.setStyle("Basic")
     app = QApplication([sys.argv[0], *qt_args])
+    from . import diagnostics
+
+    diagnostics.install()
     app.setApplicationName("Hallucinate")
     app.setOrganizationName("hallucinate")
     app.setApplicationDisplayName("Hallucinate")
@@ -117,6 +120,7 @@ def main(argv=None) -> int:
 
     discord = DiscordPresence(player)
     shell = DesktopShell(app, player, app.windowIcon())
+    shell.setReportSources(library=library, theme_manager=theme_manager)
 
     if not library.folders and not args.folders:
         # A fresh install: open on the welcome (music folder, theme, scrobbling) until it is finished

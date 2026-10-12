@@ -32,6 +32,9 @@ class DesktopShell(QObject):
         self._menu = None
         self._icon = icon
         self._seen_track = False
+        from .updates import UpdateChecker
+
+        self._updates = UpdateChecker(self)
         self._build_tray()
         player.stateChanged.connect(self._refresh)
         player.trackChanged.connect(self._refresh)
@@ -147,6 +150,29 @@ class DesktopShell(QObject):
         self._settings.setValue("ui/nowPlayingVinyl", self._now_playing_vinyl)
         self.settingsChanged.emit()
 
+    def setReportSources(self, library=None, theme_manager=None):
+        self._report_sources = {"library": library, "theme_manager": theme_manager}
+
+    @Slot(result=str)
+    def debugInfo(self):
+        """Versions, platform, display, audio and the recent log, for bug reports (no personal paths)."""
+        from . import diagnostics
+
+        return diagnostics.report(player=self._player, window=self._window,
+                                  **getattr(self, "_report_sources", {}))
+
+    @Slot(result=str)
+    def copyDebugInfo(self):
+        text = self.debugInfo()
+        self._app.clipboard().setText(text)
+        return text
+
+    @Property(str, constant=True)
+    def appVersion(self):
+        from . import __version__
+
+        return __version__
+
     @Slot(str, str, result=str)
     def uiValue(self, key, default):
         """A small remembered view choice (e.g. the Albums page layout), stored under ui/<key>."""
@@ -248,6 +274,12 @@ class DesktopShell(QObject):
     def quit(self):
         self._app.quit()
 
+    @Property(QObject, constant=True)
+    def updates(self):
+        """The optional new-version check (see updates.UpdateChecker)."""
+        return self._updates
+
     def shutdown(self):
+        self._updates.shutdown()
         if self._tray is not None:
             self._tray.hide()

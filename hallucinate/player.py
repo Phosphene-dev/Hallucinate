@@ -28,6 +28,8 @@ TRANSITION_MS = 250  # seeks stop this far before the end, so the next track sti
 HANDOFF_WINDOW_MS = 400  # positions arrive every ~100 ms; within this window the exact handoff is scheduled
 HANDOFF_LEAD_MS = 20  # start the next track this early to cover its startup (~16 ms measured on Qt 6.11)
 FINISH_GRACE_MS = 1000
+UNDO_STEPS = 20  # queue changes that can be undone
+SKIP_MIN_MS = 1500  # moving on sooner than this is browsing the queue, not a skip
 RADIO_LOW_WATER = 2  # ask for more radio tracks once fewer than this many are left to play
 RADIO_SEEDS = 5  # recently played tracks the next radio batch is based on  # stop a track left to finish this long after its expected end, in case it stalls
 SESSION_VERSION = 1
@@ -173,6 +175,7 @@ class Player(QObject):
     shuffleChanged = Signal()
     repeatChanged = Signal()
     queueChanged = Signal()
+    undoChanged = Signal()
     errorChanged = Signal()
     seeked = Signal(int)
     audioSettingsChanged = Signal()
@@ -180,6 +183,7 @@ class Player(QObject):
     sleepChanged = Signal()
     eqChanged = Signal()
     played = Signal("QVariantMap")  # a track was listened to for long enough to count as a play
+    skipped = Signal("QVariantMap")  # the listener moved on from a playing track before it counted as played
     visualizerChanged = Signal()
     outputDevicesChanged = Signal()
     signalPathChanged = Signal()
@@ -198,6 +202,7 @@ class Player(QObject):
         self._index = -1
         self._history = []
         self._played = set()
+        self._undo = []  # earlier queues, newest last (see _remember_queue)
         self._shuffle = False
         self._repeat = REPEAT_OFF
         self._error = ""
@@ -241,6 +246,9 @@ class Player(QObject):
         self._eq_gains = [0.0] * len(eq.BANDS)
         self._eq_preset = "Flat"
         self._headphone = {"name": "", "curve": None}
+        self._crossfeed = str(self._settings.value("audio/crossfeed", "off"))
+        if self._crossfeed not in eq.CROSSFEED:
+            self._crossfeed = "off"
         try:
             stored = json.loads(str(self._settings.value("eq/headphone", "{}")))
             if stored.get("name") and stored.get("curve"):
@@ -290,7 +298,7 @@ class Player(QObject):
             p.playbackStateChanged.connect(lambda st, n=n: self._tap_state(n, st))
         self._apply_speed()
         self._apply_output_device()
-        if self._eq_enabled:
+        if self._dsp_on():
             self._sync_taps()
         elif self._visualizer_enabled:
             self._sync_audio_buffer_outputs()
@@ -474,9 +482,38 @@ class Player(QObject):
         self._eq_preset = self._detect_preset()
         for voice in self._voices:
             if voice.tap is not None:
-                voice.tap.processor.set_gains(self._eq_gains)
-                voice.tap.processor.set_curve(self._headphone["curve"])
+                self._configure_processor(voice.tap.processor)
         self.eqChanged.emit()
+        self.signalPathChanged.emit()
+
+    def _configure_processor(self, processor):
+        processor.eq_on = self._eq_enabled
+        processor.set_gains(self._eq_gains)
+        processor.set_curve(self._headphone["curve"])
+        processor.set_crossfeed(self._crossfeed)
+
+    def _dsp_on(self):
+        """Whether the audio runs through our own processing (equalizer and/or crossfeed)."""
+        return eq.available() and (self._eq_enabled or self._crossfeed in eq.CROSSFEED)
+
+    @Property(str, notify=eqChanged)
+    def crossfeed(self):
+        return self._crossfeed
+
+    @Property("QStringList", constant=True)
+    def crossfeedPresets(self):
+        return ["off", *eq.CROSSFEED]
+
+    @Slot(str)
+    def setCrossfeed(self, preset):
+        """Headphone crossfeed: "off", "light", "medium" or "strong"."""
+        preset = preset if preset in eq.CROSSFEED else "off"
+        if preset == "off" or eq.available():
+            if preset != self._crossfeed:
+                self._crossfeed = preset
+                self._settings.setValue("audio/crossfeed", preset)
+                self._sync_taps()
+                self._save_eq()
 
     @Property(str, notify=eqChanged)
     def headphoneName(self):
@@ -542,12 +579,20 @@ class Player(QObject):
     @Slot()
     def _update_waveform(self):
         current = self._queue[self._index] if self.hasTrack else {}
-        path = "" if current.get("file") else current.get("path", "")  # no waveform for a stretch of a file
-        peaks = self._waveforms.request(path) if self._waveforms is not None and path else None
+        peaks = self._request_waveform(current) if self._waveforms is not None and current else None
         self._set_waveform(peaks or [])
         nxt = self._index + 1
-        if self._waveforms is not None and 0 <= nxt < len(self._queue) and not self._queue[nxt].get("file"):
-            self._waveforms.request(self._queue[nxt].get("path", ""), urgent=False)  # ready when it starts
+        if self._waveforms is not None and 0 <= nxt < len(self._queue):
+            self._request_waveform(self._queue[nxt], urgent=False)  # ready when it starts
+
+    def _request_waveform(self, track, urgent=True):
+        path = track.get("path", "")
+        if not path:
+            return None
+        if track.get("file"):  # a CUE sheet song: its stretch of the album's file
+            return self._waveforms.request_window(path, track["file"], track.get("cue_start") or 0.0,
+                                                  track.get("cue_end") or 0.0, urgent)
+        return self._waveforms.request(path, urgent)
 
     @Slot(str)
     def _on_waveform_ready(self, path):
@@ -658,6 +703,7 @@ class Player(QObject):
             speed=self._speed,
             eq_enabled=self._eq_enabled,
             eq_preset=self._eq_preset + (f" + {self._headphone['name']}" if self._headphone["name"] else ""),
+            crossfeed=self._crossfeed if self._crossfeed in eq.CROSSFEED and eq.available() else "",
             crossfade=self._crossfade,
             device_name="" if device.isNull() else device.description(),
             device_rate=0 if device.isNull() else device.preferredFormat().sampleRate(),
@@ -689,14 +735,13 @@ class Player(QObject):
 
     def _sync_taps(self):
         for n, voice in enumerate(self._voices):
-            if self._eq_enabled and voice.tap is None:
+            if self._dsp_on() and voice.tap is None:
                 tap = eq.EqTap(eq.EqProcessor(), self)
-                tap.processor.set_gains(self._eq_gains)
-                tap.processor.set_curve(self._headphone["curve"])
+                self._configure_processor(tap.processor)
                 tap.setDevice(self._output_audio_device())
                 voice.tap = tap
                 tap.setRunning(voice.player.playbackState() == QMediaPlayer.PlaybackState.PlayingState)
-            elif not self._eq_enabled and voice.tap is not None:
+            elif not self._dsp_on() and voice.tap is not None:
                 voice.player.setAudioBufferOutput(None)
                 tap = voice.tap
                 tap.close()
@@ -1085,7 +1130,14 @@ class Player(QObject):
     def next(self):
         nxt = self._compute_next(auto=False)
         if nxt is not None:
+            self._note_skip(nxt)
             self._load(nxt)
+
+    def _note_skip(self, target):
+        """Moving on by hand from a song that is playing and hasn't counted as a play yet is a skip."""
+        if (self.hasTrack and target != self._index and self.playing and not self._play_counted
+                and self._voice.position() >= SKIP_MIN_MS):
+            self.skipped.emit(dict(self.current))
 
     @Slot()
     def previous(self):
@@ -1105,7 +1157,10 @@ class Player(QObject):
 
         `radio_rules` (a smart playlist rule set) keeps radio picks within the playlist's rules."""
         self._radio_rules = radio_rules
-        self._queue = list(tracks)  # queue entries are treated as immutable
+        new = list(tracks)
+        if [t.get("path") for t in new] != [t.get("path") for t in self._queue]:
+            self._remember_queue("Queue replaced")
+        self._queue = new  # queue entries are treated as immutable
         self._history.clear()
         self._played.clear()
         self._standby.clear()
@@ -1142,12 +1197,14 @@ class Player(QObject):
     @Slot(int)
     def playIndex(self, i):
         if 0 <= i < len(self._queue):
+            self._note_skip(i)
             self._load(i)
 
     @Slot(int)
     def removeAt(self, i):
         if not 0 <= i < len(self._queue):
             return
+        self._remember_queue("Song removed")
         del self._queue[i]
         self._history = [h - (h > i) for h in self._history if h != i]
         self._played = {p - (p > i) for p in self._played if p != i}
@@ -1171,6 +1228,7 @@ class Player(QObject):
         n = len(self._queue)
         if not (0 <= src < n and 0 <= dst < n) or src == dst:
             return
+        self._remember_queue("Song moved")
         item = self._queue.pop(src)
         self._queue.insert(dst, item)
 
@@ -1194,12 +1252,70 @@ class Player(QObject):
 
     @Slot()
     def clearQueue(self):
+        if not self._queue:
+            return
+        self._remember_queue("Queue cleared")
         self._queue.clear()
         self._history.clear()
         self._played.clear()
         self._standby.clear()
         self._sync_queue()
         self._reset_empty()
+
+    # --- undo ----------------------------------------------------------------
+    def _remember_queue(self, label):
+        """Keep the queue as it is now, so the change about to happen can be undone."""
+        if not self._queue:
+            return
+        self._undo.append({
+            "label": label, "queue": list(self._queue), "index": self._index, "history": list(self._history),
+            "played": set(self._played), "position": self._voice.position() if self.hasTrack else 0,
+            "playing": self.playing, "radio_rules": self._radio_rules,
+        })
+        del self._undo[:-UNDO_STEPS]
+        self.undoChanged.emit()
+
+    @Property(bool, notify=undoChanged)
+    def canUndoQueue(self):
+        return bool(self._undo)
+
+    @Property(str, notify=undoChanged)
+    def undoLabel(self):
+        return self._undo[-1]["label"] if self._undo else ""
+
+    @Slot(result=str)
+    def undoQueue(self):
+        """Put the queue back as it was before the last change; returns what was undone ("" if nothing)."""
+        if not self._undo:
+            return ""
+        snap = self._undo.pop()
+        current = self._queue[self._index] if self.hasTrack else None
+        target = snap["queue"][snap["index"]] if 0 <= snap["index"] < len(snap["queue"]) else None
+        self._queue = snap["queue"]
+        self._history = snap["history"]
+        self._played = snap["played"]
+        self._radio_rules = snap["radio_rules"]
+        self._standby.clear()
+        self._invalidate_next()
+        self._sync_queue()
+        if target is not None and current is not None and self._voice.holds(self._index, current) \
+                and current.get("path") == target.get("path") and track_window(current) == track_window(target):
+            # the same song is still loaded: carry on without a break
+            self._index = self._voice.index = snap["index"]
+            self.trackChanged.emit()
+        elif target is not None:
+            self._load(snap["index"], autoplay=snap["playing"] and not self.playing, record=False)
+            if snap["position"] > 0:
+                self._restore_pos = snap["position"]
+                if self._player.mediaStatus() in (QMediaPlayer.MediaStatus.LoadedMedia,
+                                                  QMediaPlayer.MediaStatus.BufferedMedia):
+                    self._voice.set_position(snap["position"])
+                    self._restore_pos = 0
+        else:
+            self._reset_empty()
+        self.undoChanged.emit()
+        self.saveSession()
+        return snap["label"]
 
     # --- internals ---------------------------------------------------------
     def _reset_empty(self):

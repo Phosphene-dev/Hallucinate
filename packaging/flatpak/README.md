@@ -38,14 +38,14 @@ Submission happens from your own GitHub account; see the
    `<release>` entry is in `io.github.bulmaspanties.Hallucinate.metainfo.xml`.
 2. Fork [flathub/flathub](https://github.com/flathub/flathub) and create a branch from its
    `new-pr` branch.
-3. Copy `io.github.bulmaspanties.Hallucinate.yml` and `python3-requirements.yaml` into the fork's root.
-4. In the copied manifest, replace the `type: dir` source with the tagged release:
-   ```yaml
-   - type: git
-     url: https://github.com/bulmaspanties/Hallucinate.git
-     tag: v0.3.2
-     commit: <full commit hash of that tag>   # git rev-parse v0.3.2^{commit}
+3. Generate the submission files for the tag:
+   ```sh
+   git fetch --tags
+   python scripts/flathub_manifest.py v0.8.0
    ```
+   This writes `flathub-submission/io.github.bulmaspanties.Hallucinate.yml` (the manifest with its local
+   source replaced by the tagged release and its full commit hash) and `python3-requirements.yaml`.
+4. Copy both files into the root of your flathub/flathub branch.
 5. Open a pull request against `new-pr` titled `Add io.github.bulmaspanties.Hallucinate`. Reviewers
    build it with `bot, build`. Expect questions about `--talk-name=org.freedesktop.Notifications` and the
    Discord socket, which are commented in the manifest.
@@ -54,6 +54,9 @@ Submission happens from your own GitHub account; see the
    change).
 
 The `io.github.bulmaspanties` app ID is verified through the GitHub account that owns this repository.
+
+Inside the Flatpak, Hallucinate's own update check is off (Flathub delivers updates), and libraries of other
+players are imported through the file chooser, since the sandbox can't look in their folders.
 
 ## Updating dependencies
 `python3-requirements.yaml` explains how to regenerate it with

@@ -26,6 +26,11 @@ def _check(id_, title, detail, kind, items):
     return {"id": id_, "title": title, "detail": detail, "kind": kind, "count": len(items), "items": items[:LIMIT]}
 
 
+def missing_covers_all(db):
+    """Every album without a cover (not capped like the check)."""
+    return _albums(db, "MAX(art) IS NULL OR MAX(art) = ''")
+
+
 def missing_covers(db):
     return _check("covers", "Albums without a cover",
                   "No cover in the files or the folder. Find one online or pick an image.",

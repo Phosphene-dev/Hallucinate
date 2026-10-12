@@ -19,6 +19,7 @@ class FakePlayer(QObject):
     trackChanged = Signal()
     stateChanged = Signal()
     played = Signal(object)
+    skipped = Signal(object)
 
     def __init__(self):
         super().__init__()

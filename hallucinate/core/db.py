@@ -51,6 +51,7 @@ CREATE INDEX IF NOT EXISTS idx_pl_items ON playlist_items(playlist_id, pos);
 CREATE TABLE IF NOT EXISTS smart_playlists(id INTEGER PRIMARY KEY, name TEXT NOT NULL, rules TEXT NOT NULL,
   created REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS plays(path TEXT PRIMARY KEY, count INTEGER NOT NULL, last REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS skips(path TEXT PRIMARY KEY, count INTEGER NOT NULL, last REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS play_log(
   id INTEGER PRIMARY KEY, ts REAL NOT NULL, path TEXT, artist TEXT NOT NULL DEFAULT '',
   title TEXT NOT NULL DEFAULT '', album TEXT NOT NULL DEFAULT '', duration REAL NOT NULL DEFAULT 0,
@@ -265,6 +266,17 @@ class Database:
         ids.insert(dst, ids.pop(src))
         self.conn.executemany("UPDATE playlist_items SET pos=? WHERE id=?", [(n, i) for n, i in enumerate(ids)])
         self.conn.commit()
+
+    def record_skip(self, path: str, when: Optional[float] = None):
+        self.conn.execute(
+            "INSERT INTO skips(path, count, last) VALUES(?,1,?) "
+            "ON CONFLICT(path) DO UPDATE SET count=count+1, last=excluded.last",
+            (path, when or time.time()),
+        )
+        self.conn.commit()
+
+    def skip_counts(self) -> dict:
+        return {r[0]: r[1] for r in self.conn.execute("SELECT path, count FROM skips")}
 
     def record_play(self, path: str, when: Optional[float] = None):
         when = when or time.time()

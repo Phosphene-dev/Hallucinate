@@ -85,6 +85,7 @@ Item {
             Repeater {
                 model: library.searchTracks
                 TrackRow {
+                    selectionSource: library.searchTracks
             path: model.path
             audioFormat: model.codec
             audioBitrate: model.bitrate

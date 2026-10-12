@@ -13,10 +13,15 @@ from . import cue
 
 USER_AGENT = "hallucinate (https://github.com/bulmaspanties/Hallucinate)"
 _TS = re.compile(r"\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]")
+_OFFSET = re.compile(r"^\s*\[offset:\s*([+-]?\d+)\s*\]\s*$", re.I | re.M)
 
 
 def parse_lrc(text):
-    """Parse LRC text into [(milliseconds, line)] sorted by time. Returns [] when there are no timestamps."""
+    """Parse LRC text into [(milliseconds, line)] sorted by time. Returns [] when there are no timestamps.
+
+    An [offset:±ms] tag is applied (a positive offset shows the lines that much earlier)."""
+    m = _OFFSET.search(text or "")
+    shift = int(m.group(1)) if m else 0
     out = []
     for raw in (text or "").splitlines():
         stamps = list(_TS.finditer(raw))
@@ -25,9 +30,25 @@ def parse_lrc(text):
         line = raw[stamps[-1].end():].strip()
         for m in stamps:
             frac = (m.group(3) or "0").ljust(3, "0")[:3]
-            out.append((int(m.group(1)) * 60_000 + int(m.group(2)) * 1000 + int(frac), line))
+            out.append((max(0, int(m.group(1)) * 60_000 + int(m.group(2)) * 1000 + int(frac) - shift), line))
     out.sort(key=lambda x: x[0])
     return out
+
+
+def format_lrc(lines, offset_ms=0):
+    """LRC text for [(ms, line)], every line moved `offset_ms` earlier (a positive offset shows lines sooner)."""
+    out = []
+    for t, line in lines:
+        t = max(0, int(t) - int(offset_ms))
+        out.append(f"[{t // 60000:02d}:{t % 60000 / 1000:05.2f}]{line}")
+    return "\n".join(out) + "\n"
+
+
+def sidecar_path(path):
+    """Where a song's .lrc file goes (next to it, same name); None for songs that aren't files of their own."""
+    if not path or cue.is_virtual(path):
+        return None
+    return os.path.splitext(path)[0] + ".lrc"
 
 
 def line_at(times, position_ms):

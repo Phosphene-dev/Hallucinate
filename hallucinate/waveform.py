@@ -86,6 +86,36 @@ def cache_name(path):
     return hashlib.sha1(key).hexdigest() + ".wf"
 
 
+class Envelope:
+    """A whole file's loudness in BLOCK-frame steps, kept for CUE sheet albums so each song's waveform can be cut
+    from it at full detail."""
+
+    def __init__(self, ms, peak, rate):
+        self.ms, self.peak, self.rate = np.asarray(ms, np.float32), np.asarray(peak, np.float32), int(rate)
+
+    def slice(self, start_s, end_s=0.0, points=POINTS):
+        """The waveform of start_s..end_s (end 0: the end of the file)."""
+        a = max(0, int(start_s * self.rate / BLOCK))
+        b = int(end_s * self.rate / BLOCK) if end_s else len(self.ms)
+        b = min(max(b, a + 1), len(self.ms))
+        return peaks_from_blocks(self.ms[a:b], self.peak[a:b], points) if a < len(self.ms) else []
+
+    def save(self, path):
+        try:
+            with open(path, "wb") as fh:  # half precision: about a megabyte for an hour of audio
+                np.savez(fh, ms=self.ms.astype(np.float16), peak=self.peak.astype(np.float16), rate=self.rate)
+        except OSError as exc:
+            logger.debug("Could not cache waveform envelope: %s", exc)
+
+    @classmethod
+    def load(cls, path):
+        try:
+            with np.load(path) as data:
+                return cls(data["ms"], data["peak"], int(data["rate"]))
+        except (OSError, ValueError, KeyError):
+            return None
+
+
 class _Worker(QObject):
     """Decodes one track at a time."""
 
@@ -99,6 +129,11 @@ class _Worker(QObject):
         self._path = ""
         self._ms = []
         self._peak = []
+        self._rate = 0
+        self._envelopes = set()  # files whose whole envelope is wanted too (CUE sheet albums)
+
+    def want_envelope(self, path):
+        self._envelopes.add(path)
 
     @Slot(str, bool)
     def enqueue(self, path, urgent):
@@ -114,7 +149,7 @@ class _Worker(QObject):
         if self._decoder is not None or not self._queue:
             return
         self._path = self._queue.pop(0)
-        self._ms, self._peak = [], []
+        self._ms, self._peak, self._rate = [], [], 0
         # Decode in the file's own format: asking QAudioDecoder to resample stalls on some files (MP3).
         self._decoder = QAudioDecoder(self)
         self._decoder.bufferReady.connect(self._on_buffer)
@@ -128,6 +163,8 @@ class _Worker(QObject):
         if self._decoder is None:
             return
         buf = self._decoder.read()
+        if buf.isValid() and not self._rate:
+            self._rate = buf.format().sampleRate()
         samples = mono_samples(buf) if buf.isValid() else None
         if samples is not None and samples.size:
             ms, peak = blocks_from_samples(samples)
@@ -138,7 +175,9 @@ class _Worker(QObject):
     def _on_finished(self):
         if self._decoder is None:
             return
-        peaks = peaks_from_blocks(np.concatenate(self._ms), np.concatenate(self._peak)) if self._ms else []
+        ms = np.concatenate(self._ms) if self._ms else np.zeros(0, np.float32)
+        peak = np.concatenate(self._peak) if self._peak else np.zeros(0, np.float32)
+        peaks = peaks_from_blocks(ms, peak) if ms.size else []
         name = cache_name(self._path)
         if peaks and name:
             try:
@@ -146,22 +185,29 @@ class _Worker(QObject):
                 (self._cache_dir / name).write_bytes(bytes(int(round(v * 255)) for v in peaks))
             except OSError as exc:
                 logger.debug("Could not cache waveform: %s", exc)
-        self._finish(peaks)
+        envelope = None
+        if self._path in self._envelopes and ms.size and self._rate:
+            self._envelopes.discard(self._path)
+            envelope = Envelope(ms, peak, self._rate)
+            if name:
+                envelope.save(self._cache_dir / (name[:-3] + ".env.npz"))
+        self._finish({"peaks": peaks, "envelope": envelope})
 
     @Slot(QAudioDecoder.Error)
     def _on_error(self, _error):
         if self._decoder is None:
             return
         logger.debug("Waveform unavailable for %s: %s", self._path, self._decoder.errorString())
-        self._finish([])
+        self._envelopes.discard(self._path)
+        self._finish({"peaks": [], "envelope": None})
 
-    def _finish(self, peaks):
+    def _finish(self, result):
         path, decoder = self._path, self._decoder
         self._decoder, self._path, self._ms, self._peak = None, "", [], []
         decoder.blockSignals(True)  # stop() would report "finished" again, synchronously
         decoder.stop()
         decoder.deleteLater()
-        self.done.emit(path, peaks)
+        self.done.emit(path, result)
         self._next()
 
     @Slot()
@@ -174,7 +220,9 @@ class _Worker(QObject):
 
 
 class WaveformService(QObject):
-    """Ask for a track's waveform; `ready(path)` fires when `peaks(path)` has it."""
+    """Ask for a track's waveform; `ready(path)` fires when `peaks(path)` has it.
+
+    A song from a CUE sheet is asked for with `request_window`: its waveform is cut from its file's envelope."""
 
     ready = Signal(str)
 
@@ -182,6 +230,7 @@ class WaveformService(QObject):
         super().__init__(parent)
         self._cache_dir = Path(cache_dir)
         self._memory = OrderedDict()
+        self._windows = {}  # song key -> (file, start s, end s) waiting for the file's envelope
         self._worker = _Worker(cache_dir, self)
         self._worker.done.connect(self._on_done)
 
@@ -209,6 +258,20 @@ class WaveformService(QObject):
             self._worker.enqueue(path, urgent)
         return known
 
+    def request_window(self, key, file, start_s, end_s=0.0, urgent=True):
+        """The waveform of a stretch of `file` (a CUE sheet song), remembered under `key`."""
+        if key in self._memory:
+            self._memory.move_to_end(key)
+            return self._memory[key]
+        name = cache_name(file)
+        envelope = Envelope.load(self._cache_dir / (name[:-3] + ".env.npz")) if name else None
+        if envelope is not None:
+            return self._remember(key, envelope.slice(start_s, end_s))
+        self._windows[key] = (file, start_s, end_s)
+        self._worker.want_envelope(file)
+        self._worker.enqueue(file, urgent)
+        return None
+
     def _remember(self, path, peaks):
         self._memory[path] = peaks
         self._memory.move_to_end(path)
@@ -217,9 +280,15 @@ class WaveformService(QObject):
         return peaks
 
     @Slot(str, object)
-    def _on_done(self, path, peaks):
-        self._remember(path, list(peaks))
+    def _on_done(self, path, result):
+        self._remember(path, list(result["peaks"]))
         self.ready.emit(path)
+        waiting = [k for k, w in self._windows.items() if w[0] == path]
+        for key in waiting:
+            _file, start_s, end_s = self._windows.pop(key)
+            envelope = result["envelope"]
+            self._remember(key, envelope.slice(start_s, end_s) if envelope is not None else [])
+            self.ready.emit(key)
 
     def shutdown(self):
         self._worker.stop()

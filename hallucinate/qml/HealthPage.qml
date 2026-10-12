@@ -176,6 +176,30 @@ Item {
                             }
                         }
                         Row {
+                            visible: card.modelData.id === "covers" && (card.modelData.count > 0 || metaEditor.coversBusy)
+                            spacing: 12
+                            leftPadding: 24
+                            PillButton {
+                                objectName: "findAllCovers"
+                                primary: !metaEditor.coversBusy
+                                height: 32
+                                text: metaEditor.coversBusy ? "Stop" : "Find all online"
+                                onClicked: metaEditor.coversBusy ? metaEditor.cancelCovers() : metaEditor.fetchMissingCovers()
+                            }
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: Math.min(implicitWidth, card.width - 220)
+                                elide: Text.ElideRight
+                                text: metaEditor.coversBusy
+                                      ? "Looked up " + metaEditor.coversDone + " of " + metaEditor.coversTotal + " albums  ·  "
+                                        + metaEditor.coversFound + " found" + (metaEditor.coversCurrent ? "  ·  " + metaEditor.coversCurrent : "")
+                                      : "Searches MusicBrainz and the Cover Art Archive, about one album a second."
+                                color: Theme.textDim
+                                font.family: Theme.fontFamily
+                                font.pixelSize: Theme.fontSize(12)
+                            }
+                        }
+                        Row {
                             visible: card.modelData.id === "replaygain" && (card.modelData.count > 0 || replayGain.busy)
                             spacing: 12
                             leftPadding: 24

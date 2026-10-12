@@ -57,6 +57,7 @@ Canvas {
             ctx.beginPath(); ctx.moveTo(w*.1,h*.38); ctx.lineTo(w*.3,h*.38); ctx.lineTo(w*.52,h*.18); ctx.lineTo(w*.52,h*.82); ctx.lineTo(w*.3,h*.62); ctx.lineTo(w*.1,h*.62); ctx.closePath(); ctx.fill()
             ctx.beginPath(); ctx.arc(w*.5, h*.5, w*.3, -0.9, 0.9); ctx.stroke(); break
         case "plus": line([.5,.18,.5,.82]); line([.18,.5,.82,.5]); break
+        case "minus": line([.18,.5,.82,.5]); break
         case "heart":
             ctx.beginPath()
             ctx.moveTo(w*.5, h*.86)

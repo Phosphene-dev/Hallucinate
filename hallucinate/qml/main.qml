@@ -163,6 +163,11 @@ ApplicationWindow {
     }
     Connections {
         target: userLib
+        function onPlayerImported(result) {
+            if (result.error) { toast.show(result.error); return }
+            toast.show(result.source + ": matched " + result.matched + " of " + result.songs + " songs · "
+                       + result.plays + " plays, " + result.ratings + " ratings, " + result.playlists + " playlists")
+        }
         function onPlaylistImported(result) {
             if (result.error) { toast.show(result.error); return }
             if (result.id < 0) { toast.show("None of those songs are in your library"); return }
@@ -172,6 +177,19 @@ ApplicationWindow {
         }
     }
 
+    // Acts on songs selected with Ctrl/Shift+click; a selection belongs to one page
+    SelectionBar {
+        z: 59
+        // over the page area (right of the sidebar), never wider than it
+        maxWidth: stack.width - 24
+        x: sidebar.width + (stack.width - width) / 2
+        anchors { bottom: parent.bottom; bottomMargin: 112 }
+        onEditTags: function (paths) { tagEditor.editTracks(paths) }
+    }
+    onSectionChanged: Selection.clear()
+    Connections { target: stack; function onCurrentItemChanged() { Selection.clear() } }
+    Shortcut { sequence: "Escape"; enabled: Selection.count > 0 && !nowPlaying.open; onActivated: Selection.clear() }
+
     // A short message at the bottom of the window
     Rectangle {
         id: toast
@@ -179,7 +197,7 @@ ApplicationWindow {
         property string message: ""
         function show(text) { message = text; opacity = 1; toastTimer.restart() }
         z: 60
-        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 118 }
+        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Selection.count > 0 ? 176 : 118 }
         width: toastText.implicitWidth + 36
         height: 40
         radius: 20
@@ -307,6 +325,7 @@ ApplicationWindow {
                     spacing: 0
                     StackView {
                         id: stack
+                        objectName: "pageStack"
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         clip: true
@@ -366,6 +385,11 @@ ApplicationWindow {
     Shortcut { sequence: "R"; enabled: !window.typing; onActivated: player.cycleRepeat() }
     Shortcut { sequence: "Q"; enabled: !window.typing; onActivated: { window.queueOpen = !window.queueOpen; if (window.queueOpen) window.lyricsOpen = false } }
     Shortcut { sequence: "Ctrl+M"; onActivated: shell.toggleMini() }
+    Shortcut {
+        sequence: "Ctrl+Z"
+        enabled: !window.typing && player.canUndoQueue
+        onActivated: { var what = player.undoQueue(); if (what) toast.show("Undone: " + what.toLowerCase()) }
+    }
     Repeater {
         model: 6  // Ctrl+1…5 rates the playing song, Ctrl+0 clears it
         Item {

@@ -5,6 +5,26 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-12
+
+### Added
+- Select several songs at once: Ctrl+click toggles a song and Shift+click selects a range in any song list (songs, albums, artists, playlists, smart playlists, folders, search, stats, recap). A bar above the player then plays them, plays them next, queues them, adds them to a playlist (or a new one), likes or unlikes them, rates them or edits their tags together; fields that differ between them are marked mixed and left alone. Esc or leaving the page clears the selection.
+- Undo queue changes (Ctrl+Z, or Undo in the queue panel, 20 steps): clearing the queue, removing or moving a song, or replacing the queue by playing something else. The playing song carries on when it can.
+- Skip tracking: moving on by hand from a playing song before it counts as a play records a skip. Smart playlists get a Skip count field, and radio plays songs you keep skipping less (unless they're liked).
+- Import from other players (Settings → Library): play counts, skips, last played, ratings and playlists from Strawberry, Clementine, Rhythmbox, MusicBee and iTunes/Apple Music, and foobar2000 play counts written to tags. Libraries in their usual places are found for you; importing again never counts twice, and ratings set here are kept.
+- Find every missing cover at once from Library health (MusicBrainz and the Cover Art Archive, paced to MusicBrainz's one request a second, with progress and Stop).
+- Headphone crossfeed (Settings → Sound): Light, Medium or Strong, so hard-panned stereo is easier on headphones. Shown in the signal path.
+- Lyrics timing: nudge synced lyrics 0.25 s earlier or later in the lyrics panel or Now Playing, and save the corrected timing as an .lrc file next to the song. LRC [offset:] tags are honoured.
+- CUE sheets stored inside the audio file (a CUESHEET tag in FLAC, Ogg, WavPack or Monkey's Audio, or FLAC's native cuesheet block) split it into songs, and CUE songs now get their own waveform seek bar.
+- Copy debug info (Settings → About): versions, system, display and scaling, audio output, playback settings and the recent log for bug reports, with the home folder redacted and no file paths or account names. A Report a bug link sits next to it.
+- An optional update check, off by default: when turned on it asks GitHub for the latest release at most once a day and shows "Update to …" in the sidebar when a newer version is out. It's off inside the Flatpak, where Flathub delivers updates.
+- `scripts/flathub_manifest.py` writes the Flathub submission manifest for a release tag.
+
+### Changed
+- Settings are grouped into Appearance, Playback, Sound, Library, Scrobbling & sharing, Desktop and About, with chips to jump to each and a search box that keeps only the sections matching what you type.
+- Small and tiled windows: the player bar sizes its controls to fit (no more overlap with the seek bar in narrow windows; the mini player button hides below 1100 px, Ctrl+M still works), and the selection bar sits over the page with short labels when space is tight.
+- Every page, the queue, Now Playing and the welcome are now tested in all 17 themes for warnings and unthemed white areas.
+
 ## [0.7.0] - 2026-10-12
 
 ### Added

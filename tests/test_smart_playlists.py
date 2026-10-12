@@ -124,6 +124,7 @@ def test_radio_respects_smart_playlist_rules(lib):
 # --- UserLibrary -----------------------------------------------------------------------------------------
 class FakePlayer(QObject):
     played = Signal(object)
+    skipped = Signal(object)
 
     def __init__(self):
         super().__init__()

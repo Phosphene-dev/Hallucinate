@@ -176,8 +176,10 @@ Item {
                 Repeater {
                     model: page.tracks
                     TrackRow {
+                        selectionSource: page.tracks
                         required property var modelData
                         required property int index
+                        rowIndex: index
                         width: col.width
                         number: modelData.track_no > 0 ? modelData.track_no : index + 1
                         path: modelData.path

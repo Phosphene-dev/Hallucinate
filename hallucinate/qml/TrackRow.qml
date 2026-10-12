@@ -3,6 +3,7 @@ import "."
 
 Rectangle {
     id: row
+    objectName: "trackRow"
     property int number: 0
     property string title
     property string artist
@@ -19,11 +20,15 @@ Rectangle {
     property string audioFormat: ""
     property int audioBitrate: 0
     readonly property bool liked: path.length > 0 && userLib.likesRevision >= 0 && userLib.isLiked(path)
+    // The list this row belongs to (its model, or an array of tracks): Ctrl/Shift+click select within it
+    property var selectionSource: null
+    readonly property bool selected: path.length > 0 && Selection.count > 0 && Selection.paths.indexOf(path) >= 0
     signal enqueue()
 
     height: 52
     radius: Theme.radiusSmall
-    color: hh.hovered ? Theme.surface : "transparent"
+    color: selected ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, hh.hovered ? 0.24 : 0.17)
+                    : hh.hovered ? Theme.surface : "transparent"
 
     HoverHandler { id: hh }
     activeFocusOnTab: true
@@ -34,11 +39,21 @@ Rectangle {
     Accessible.name: title + (artist.length ? ", " + artist : "") +
                      (player.showTrackInfo && audioFormat.length ? ", " + audioFormat + " audio" : "")
     Accessible.onPressAction: row.activated()
+    Accessible.selected: row.selected
     Rectangle { anchors.fill: parent; anchors.margins: -2; radius: Theme.radiusSmall; color: "transparent"; border.width: 2; border.color: Theme.accent; visible: row.activeFocus }
     MouseArea {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
-        onClicked: row.activated()
+        onClicked: function (mouse) {
+            if (row.path.length && (mouse.modifiers & Qt.ControlModifier)) {
+                Selection.toggle(row.selectionSource, row.rowIndex, row.path)
+            } else if (row.path.length && (mouse.modifiers & Qt.ShiftModifier)) {
+                Selection.extend(row.selectionSource, row.rowIndex, row.path)
+            } else {
+                Selection.clear()
+                row.activated()
+            }
+        }
     }
     Item {
         id: numCol

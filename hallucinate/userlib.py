@@ -6,11 +6,12 @@ import json
 import logging
 import os
 import random
+import sqlite3
 import time
 
 from PySide6.QtCore import Property, QObject, QUrl, Signal, Slot
 
-from .core import history, insights, playlist_files, recap
+from .core import history, insights, player_import, playlist_files, recap
 from .core import rules as smart_rules
 from .core.db import fold
 from .library import _Reader, decorate
@@ -41,7 +42,10 @@ class UserLibrary(QObject):
     _history_requery = Signal()
     recapChanged = Signal()
     playlistImported = Signal("QVariantMap")
+    playerImported = Signal("QVariantMap")
+    playerImportBusyChanged = Signal()
     _imported = Signal(object)
+    _player_imported = Signal(object)
     _recap_loaded = Signal(object)
     _smart_loaded = Signal(object)
     _refreshed = Signal(object)
@@ -86,6 +90,8 @@ class UserLibrary(QObject):
         self._recap_loading = False
         self._recap_loaded.connect(self._apply_recap)
         self._imported.connect(self._apply_import)
+        self._player_imported.connect(self._apply_player_import)
+        self._player_import_busy = False
         self._refreshed.connect(self._apply_refresh)
         self._playlist_loaded.connect(self._apply_playlist)
         self._smart_loaded.connect(self._apply_smart)
@@ -95,6 +101,7 @@ class UserLibrary(QObject):
         self._stats_loaded.connect(self._apply_stats)
         if player is not None:
             player.played.connect(self.recordPlay)
+            player.skipped.connect(self.recordSkip)
         self.refresh()
         self.refreshStats()
 
@@ -135,6 +142,7 @@ class UserLibrary(QObject):
     def setPlayer(self, player):
         self._player = player
         player.played.connect(self.recordPlay)
+        player.skipped.connect(self.recordSkip)
 
     # --- refresh ------------------------------------------------------------
     def refresh(self):
@@ -393,6 +401,56 @@ class UserLibrary(QObject):
 
         self._reader.submit(work)
 
+    # --- another player's library ---------------------------------------------------------
+    @Slot(result="QVariantList")
+    def otherPlayerLibraries(self):
+        """Other players' libraries found in their usual places: [{name, path}]."""
+        return player_import.known_locations()
+
+    @Property(bool, notify=playerImportBusyChanged)
+    def playerImportBusy(self):
+        return self._player_import_busy
+
+    def _start_player_import(self, read):
+        if self._player_import_busy:
+            return
+        self._player_import_busy = True
+        self.playerImportBusyChanged.emit()
+
+        def work(db):
+            try:
+                result = player_import.merge(db, read(db))
+                result["error"] = ""
+            except (OSError, ValueError, sqlite3.Error) as exc:
+                result = {"error": f"Couldn't read that library: {exc}"}
+            except Exception:  # noqa: BLE001
+                logger.exception("Importing another player's library failed")
+                result = {"error": "Couldn't import that library"}
+            self._player_imported.emit(result)
+
+        self._reader.submit(work)
+
+    @Slot(str)
+    def importFromPlayer(self, url):
+        """Import play counts, skips, ratings and playlists from Strawberry, Clementine, Rhythmbox, MusicBee or
+        iTunes (the file is recognised by its contents); playerImported reports what came over."""
+        path = QUrl(url).toLocalFile() if url.startswith("file:") else url
+        self._start_player_import(lambda db: player_import.read(path))
+
+    @Slot()
+    def importTagStatistics(self):
+        """Play counts written into the files' tags (foobar2000's foo_playcount and others)."""
+        self._start_player_import(lambda db: player_import.read_tag_statistics(
+            [r[0] for r in db.conn.execute("SELECT path FROM tracks WHERE file IS NULL")]))
+
+    @Slot(object)
+    def _apply_player_import(self, result):
+        self._player_import_busy = False
+        self.playerImportBusyChanged.emit()
+        self.refresh()
+        self.refreshStats()
+        self.playerImported.emit(result)
+
     @Slot(object)
     def _apply_import(self, result):
         self.refresh()
@@ -612,6 +670,80 @@ class UserLibrary(QObject):
         if t and self._player is not None:
             self._player.playNext(t)
 
+    # --- several songs at once (the selection bar) ---------------------------------
+    def _tracks(self, paths):
+        """Library tracks for `paths`, in that order (songs no longer in the library are left out)."""
+        paths = [p for p in paths if p]
+
+        def load(db):
+            return [t for t in (db.track_by_path(p) for p in paths) if t]
+
+        return decorate(self._reader.submit(load).result(timeout=30)) if paths else []
+
+    @Slot("QVariantList")
+    def playPaths(self, paths):
+        tracks = self._tracks(list(paths))
+        if tracks and self._player is not None:
+            self._player.playList(tracks, 0)
+
+    @Slot("QVariantList")
+    def playNextPaths(self, paths):
+        if self._player is not None:
+            for t in reversed(self._tracks(list(paths))):  # each goes in right after the current song
+                self._player.playNext(t)
+
+    @Slot("QVariantList")
+    def enqueuePaths(self, paths):
+        tracks = self._tracks(list(paths))
+        if tracks and self._player is not None:
+            self._player.enqueueAll(tracks)
+
+    @Slot(int, "QVariantList")
+    def addPathsToPlaylist(self, pid, paths):
+        paths = [p for p in paths if p]
+        if paths:
+            self._write(lambda db, i, ps: db.playlist_add(i, ps), pid, paths, reload_playlist=True)
+
+    @Slot(str, "QVariantList", result=int)
+    def addPathsToNewPlaylist(self, name, paths):
+        pid = self.createPlaylist(name)
+        self.addPathsToPlaylist(pid, paths)
+        return pid
+
+    @Slot("QVariantList", result=bool)
+    def allLiked(self, paths):
+        return bool(paths) and all(p in self._liked for p in paths)
+
+    @Slot("QVariantList", bool)
+    def setLikedPaths(self, paths, liked):
+        paths = [p for p in paths if p and (p in self._liked) != liked]
+        if not paths:
+            return
+        for p in paths:
+            (self._liked.add if liked else self._liked.discard)(p)
+        self._likes_revision += 1
+        self.likesChanged.emit()
+        self._write(lambda db, ps, v: [db.set_liked(p, v) for p in ps], paths, liked)
+
+    @Slot("QVariantList", int)
+    def setRatingPaths(self, paths, stars):
+        """Give every song the same rating (0 clears)."""
+        stars = max(0, min(5, int(stars)))
+        paths = [p for p in paths if p]
+        if not paths:
+            return
+        for p in paths:
+            if stars:
+                self._ratings[p] = stars
+            else:
+                self._ratings.pop(p, None)
+        self._likes_revision += 1
+        self.likesChanged.emit()
+        self._write(lambda db, ps, s: [db.set_rating(p, s) for p in ps], paths, stars, refresh=False)
+        if self._smart_id >= 0:
+            sid = self._smart_id
+            self._reader.submit(lambda db: self._load_smart(db, sid))
+
     # --- play statistics -----------------------------------------------------------
     @Slot("QVariantMap")
     def recordPlay(self, track):
@@ -621,6 +753,12 @@ class UserLibrary(QObject):
         self._write(lambda db, p: db.record_play(p), path)
         self.refreshStats()
         self._reload_history()
+
+    @Slot("QVariantMap")
+    def recordSkip(self, track):
+        path = track.get("path") if hasattr(track, "get") else None
+        if path:
+            self._write(lambda db, p: db.record_skip(p), path)
 
     def importPlays(self, items, source, done):
         """Merge external listens on the worker thread; call `done(result, error)` when finished."""
