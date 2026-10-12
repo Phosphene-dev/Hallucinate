@@ -6,10 +6,12 @@ import time
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
 import keyring
 from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
+
+from .core import net
 
 DEFAULT_URL = "https://api.listenbrainz.org"
 KEYRING_SERVICE = "Hallucinate ListenBrainz"
@@ -27,7 +29,7 @@ def lb_request(base, path, token=None, payload=None, params=None):
         data = json.dumps(payload).encode("utf-8")
         headers["Content-Type"] = "application/json"
     try:
-        with urlopen(Request(url, data=data, headers=headers), timeout=20) as r:
+        with net.urlopen(Request(url, data=data, headers=headers), timeout=20) as r:
             body = r.read().decode("utf-8")
             return json.loads(body) if body else {}
     except HTTPError as exc:
@@ -106,7 +108,7 @@ def fetch_lastfm_history(user, api_key, progress=None, max_pages=500):
         url = API_URL + "?" + urlencode({"method": "user.getrecenttracks", "user": user, "api_key": api_key,
                                          "format": "json", "limit": 200, "page": page})
         try:
-            with urlopen(Request(url, headers={"User-Agent": "Hallucinate/0.3"}), timeout=20) as r:
+            with net.urlopen(Request(url, headers={"User-Agent": "Hallucinate/0.3"}), timeout=20) as r:
                 data = json.loads(r.read().decode("utf-8"))
         except (HTTPError, URLError, TimeoutError, OSError, ValueError) as exc:
             raise RuntimeError(f"Last.fm request failed: {exc}") from exc
@@ -329,7 +331,7 @@ class ListenBrainzScrobbler(QObject):
         track = dict(self.player.current or {})
         key = f"{track.get('path')}"
         if (not (self.connected and self.player.playing and track and key != self._now_key)
-                or self._busy or time.monotonic() < self._retry_at):
+                or self._busy or net.is_offline() or time.monotonic() < self._retry_at):
             return
         try:
             meta = track_metadata(track)
@@ -355,7 +357,8 @@ class ListenBrainzScrobbler(QObject):
         self._flush()
 
     def _flush(self):
-        if not self.connected or self._busy or not self._pending or time.monotonic() < self._retry_at:
+        if (not self.connected or self._busy or not self._pending or net.is_offline()
+                or time.monotonic() < self._retry_at):
             return
         item = dict(self._pending[0])
         payload = {"listen_type": "single", "payload": [item]}

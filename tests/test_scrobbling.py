@@ -94,7 +94,7 @@ def test_api_request_posts_signed_utf8_form(monkeypatch):
         captured["timeout"] = timeout
         return Response()
 
-    monkeypatch.setattr(scrobbling, "urlopen", fake_urlopen)
+    monkeypatch.setattr(scrobbling.net, "urlopen", fake_urlopen)
     assert scrobbling.api_request(
         "track.updateNowPlaying", {"track": "Café", "artist": "Björk"},
         "public-key", "private-secret", "session",
@@ -119,7 +119,7 @@ def test_api_errors_are_not_success_shaped(monkeypatch):
         def read(self):
             return b'{"error": 9, "message": "Invalid session key"}'
 
-    monkeypatch.setattr(scrobbling, "urlopen", lambda *_args, **_kwargs: Response())
+    monkeypatch.setattr(scrobbling.net, "urlopen", lambda *_args, **_kwargs: Response())
     with pytest.raises(RuntimeError, match="Invalid session key"):
         scrobbling.api_request("track.scrobble", {}, "key", "secret", "bad-session")
 

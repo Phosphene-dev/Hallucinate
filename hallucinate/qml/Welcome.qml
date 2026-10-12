@@ -313,7 +313,7 @@ Item {
                     Body {
                         text: scrobbler.connected ? scrobbler.status
                             : scrobbler.configured ? scrobbler.status
-                            : "Last.fm asks each app user for an API key of their own. Add yours in Settings → Scrobbling whenever you like."
+                            : "Last.fm asks each app user for an API key of their own. Add yours in Settings → Internet & sharing whenever you like."
                         color: scrobbler.connected ? Theme.accent : Theme.textDim
                     }
                     Item { Layout.fillHeight: true }

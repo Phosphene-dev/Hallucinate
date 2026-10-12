@@ -130,3 +130,20 @@ def test_visualizer_style_and_vinyl_preferences_persist(make_shell):
     stored = QSettings("hallucinate", "hallucinate")
     assert stored.value("ui/visualizerStyle") == "aurora"
     assert stored.value("ui/nowPlayingVinyl", type=bool) is True
+
+
+def test_offline_mode_persists_and_closes_the_network(make_shell):
+    from PySide6.QtCore import QSettings
+
+    from hallucinate.core import net
+
+    shell, _win, _player = make_shell()
+    try:
+        assert not shell.offlineMode
+        shell.setOfflineMode(True)
+        assert net.is_offline() and shell.offlineMode
+        assert QSettings("hallucinate", "hallucinate").value("privacy/offline", False, bool)
+        shell.setOfflineMode(False)
+        assert not net.is_offline() and not shell.offlineMode
+    finally:
+        net.set_offline(False)

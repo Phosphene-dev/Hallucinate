@@ -19,6 +19,8 @@ from pathlib import Path
 
 from PySide6.QtCore import Property, QObject, QUrl, Signal, Slot
 
+from .core import net
+
 logger = logging.getLogger(__name__)
 
 RAW = "https://raw.githubusercontent.com/jaakkopasanen/AutoEq/master/results/"
@@ -119,7 +121,7 @@ def profile_url(entry, kind="ParametricEQ"):
 
 def _fetch(url, timeout=20):
     req = urllib.request.Request(url, headers={"User-Agent": "Hallucinate music player"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 - fixed https host
+    with net.urlopen(req, timeout=timeout) as resp:
         return resp.read().decode("utf-8", "replace")
 
 

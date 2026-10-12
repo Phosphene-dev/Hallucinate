@@ -8,7 +8,7 @@ from urllib.parse import unquote, urlparse
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
-from .core import artfetch, health, tagedit
+from .core import artfetch, health, net, tagedit
 from .core.db import Database
 from .core.scanner import Scanner
 from .core.tags import _image_ext
@@ -197,7 +197,7 @@ class MetadataEditor(QObject):
             self._covers_progress.emit({"total": len(albums)})
             last = 0.0
             for album in albums:
-                if self._covers_stop.is_set():
+                if self._covers_stop.is_set() or net.is_offline():
                     break
                 self._covers_progress.emit({"current": album["album"]})
                 wait = MUSICBRAINZ_INTERVAL - (time.monotonic() - last)

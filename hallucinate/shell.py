@@ -5,6 +5,8 @@ from PySide6.QtCore import Property, QObject, QSettings, Signal, Slot
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import QMenu, QSystemTrayIcon
 
+from .core import net
+
 VISUALIZER_STYLES = ("liquid", "aurora", "nebula", "bars")
 
 
@@ -115,6 +117,19 @@ class DesktopShell(QObject):
         self._sidebar_collapsed = bool(on)
         self._settings.setValue("ui/sidebarCollapsed", self._sidebar_collapsed)
         self.settingsChanged.emit()
+
+    @Property(bool, notify=settingsChanged)
+    def offlineMode(self):
+        """No internet at all: lyrics and cover lookups, scrobbling, EQ downloads and update checks stay off,
+        and scrobbles wait in their queues until it's turned off again."""
+        return net.is_offline()
+
+    @Slot(bool)
+    def setOfflineMode(self, on):
+        net.set_offline(on)
+        self._settings.setValue("privacy/offline", bool(on))
+        self.settingsChanged.emit()
+        self._updates.changed.emit()
 
     @Property(bool, notify=settingsChanged)
     def ambientMotion(self):

@@ -184,6 +184,7 @@ Item {
                                 primary: !metaEditor.coversBusy
                                 height: 32
                                 text: metaEditor.coversBusy ? "Stop" : "Find all online"
+                                enabled: metaEditor.coversBusy || !shell.offlineMode
                                 onClicked: metaEditor.coversBusy ? metaEditor.cancelCovers() : metaEditor.fetchMissingCovers()
                             }
                             Text {

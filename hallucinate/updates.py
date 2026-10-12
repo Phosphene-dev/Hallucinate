@@ -11,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from PySide6.QtCore import Property, QObject, QSettings, QTimer, Signal, Slot
 
 from . import __version__
+from .core import net
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ def fetch_latest(timeout=10):
     """{"version", "url"} of the latest published release. Raises OSError/ValueError on trouble."""
     req = urllib.request.Request(LATEST_URL, headers={"User-Agent": f"Hallucinate/{__version__}",
                                                       "Accept": "application/vnd.github+json"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 - fixed https endpoint
+    with net.urlopen(req, timeout=timeout) as resp:
         data = json.loads(resp.read(200_000))
     tag = str(data.get("tag_name") or "")
     if not version_tuple(tag):
@@ -97,12 +98,20 @@ class UpdateChecker(QObject):
 
     def _maybe_check(self):
         last = float(self._settings.value("updates/lastCheck", 0) or 0)
-        if self.enabled and time.time() - last >= INTERVAL_S:
+        if self.enabled and not net.is_offline() and time.time() - last >= INTERVAL_S:
             self.checkNow()
+
+    @Property(bool, notify=changed)
+    def offline(self):
+        return net.is_offline()
 
     @Slot()
     def checkNow(self):
         if self._busy or not self.supported:
+            return
+        if net.is_offline():
+            self._status = "Offline mode is on"
+            self.changed.emit()
             return
         self._busy = True
         self._status = "Checking…"
