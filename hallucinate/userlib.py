@@ -6,11 +6,12 @@ import json
 import logging
 import os
 import random
+import sqlite3
 import time
 
 from PySide6.QtCore import Property, QObject, QUrl, Signal, Slot
 
-from .core import history, insights, playlist_files, recap
+from .core import history, insights, player_import, playlist_files, recap
 from .core import rules as smart_rules
 from .core.db import fold
 from .library import _Reader, decorate
@@ -41,7 +42,10 @@ class UserLibrary(QObject):
     _history_requery = Signal()
     recapChanged = Signal()
     playlistImported = Signal("QVariantMap")
+    playerImported = Signal("QVariantMap")
+    playerImportBusyChanged = Signal()
     _imported = Signal(object)
+    _player_imported = Signal(object)
     _recap_loaded = Signal(object)
     _smart_loaded = Signal(object)
     _refreshed = Signal(object)
@@ -86,6 +90,8 @@ class UserLibrary(QObject):
         self._recap_loading = False
         self._recap_loaded.connect(self._apply_recap)
         self._imported.connect(self._apply_import)
+        self._player_imported.connect(self._apply_player_import)
+        self._player_import_busy = False
         self._refreshed.connect(self._apply_refresh)
         self._playlist_loaded.connect(self._apply_playlist)
         self._smart_loaded.connect(self._apply_smart)
@@ -394,6 +400,56 @@ class UserLibrary(QObject):
             self._imported.emit(result)
 
         self._reader.submit(work)
+
+    # --- another player's library ---------------------------------------------------------
+    @Slot(result="QVariantList")
+    def otherPlayerLibraries(self):
+        """Other players' libraries found in their usual places: [{name, path}]."""
+        return player_import.known_locations()
+
+    @Property(bool, notify=playerImportBusyChanged)
+    def playerImportBusy(self):
+        return self._player_import_busy
+
+    def _start_player_import(self, read):
+        if self._player_import_busy:
+            return
+        self._player_import_busy = True
+        self.playerImportBusyChanged.emit()
+
+        def work(db):
+            try:
+                result = player_import.merge(db, read(db))
+                result["error"] = ""
+            except (OSError, ValueError, sqlite3.Error) as exc:
+                result = {"error": f"Couldn't read that library: {exc}"}
+            except Exception:  # noqa: BLE001
+                logger.exception("Importing another player's library failed")
+                result = {"error": "Couldn't import that library"}
+            self._player_imported.emit(result)
+
+        self._reader.submit(work)
+
+    @Slot(str)
+    def importFromPlayer(self, url):
+        """Import play counts, skips, ratings and playlists from Strawberry, Clementine, Rhythmbox, MusicBee or
+        iTunes (the file is recognised by its contents); playerImported reports what came over."""
+        path = QUrl(url).toLocalFile() if url.startswith("file:") else url
+        self._start_player_import(lambda db: player_import.read(path))
+
+    @Slot()
+    def importTagStatistics(self):
+        """Play counts written into the files' tags (foobar2000's foo_playcount and others)."""
+        self._start_player_import(lambda db: player_import.read_tag_statistics(
+            [r[0] for r in db.conn.execute("SELECT path FROM tracks WHERE file IS NULL")]))
+
+    @Slot(object)
+    def _apply_player_import(self, result):
+        self._player_import_busy = False
+        self.playerImportBusyChanged.emit()
+        self.refresh()
+        self.refreshStats()
+        self.playerImported.emit(result)
 
     @Slot(object)
     def _apply_import(self, result):

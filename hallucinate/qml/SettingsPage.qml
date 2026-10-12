@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import "."
 
 Item {
@@ -470,6 +471,54 @@ Item {
             width: parent.width
             text: listenbrainz.importStatus
             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); wrapMode: Text.WordWrap
+        }
+        Text { text: "From another player"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold }
+        Text {
+            width: parent.width
+            wrapMode: Text.WordWrap
+            text: "Bring over play counts, skips, ratings and playlists from Strawberry, Clementine, Rhythmbox, MusicBee "
+                + "or iTunes. Songs are matched to your library; importing again never counts anything twice, and "
+                + "ratings you set here are kept."
+            color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+        }
+        Flow {
+            width: parent.width
+            spacing: 10
+            Repeater {
+                id: foundPlayers
+                model: userLib.otherPlayerLibraries()
+                PillButton {
+                    required property var modelData
+                    text: "Import from " + modelData.name
+                    enabled: !userLib.playerImportBusy
+                    onClicked: userLib.importFromPlayer(modelData.path)
+                }
+            }
+            PillButton {
+                objectName: "importPlayerFile"
+                text: foundPlayers.count ? "Choose another library file…" : "Choose a library file…"
+                enabled: !userLib.playerImportBusy
+                onClicked: playerFile.open()
+            }
+            PillButton {
+                text: userLib.playerImportBusy ? "Importing…" : "foobar2000: play counts from tags"
+                enabled: !userLib.playerImportBusy
+                onClicked: userLib.importTagStatistics()
+            }
+        }
+        Text {
+            width: parent.width
+            wrapMode: Text.WordWrap
+            text: "MusicBee: turn on Preferences → Library → “make library and playlists accessible to other "
+                + "applications”, then choose its iTunes Music Library.xml. foobar2000 keeps its statistics to "
+                + "itself, so write them to the files with foo_playcount first; its playlists come over as M3U files."
+            color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+        }
+        FileDialog {
+            id: playerFile
+            title: "Choose another player's library"
+            nameFilters: ["Player libraries (*.db *.xml)", "All files (*)"]
+            onAccepted: userLib.importFromPlayer(selectedFile.toString())
         }
         Text { text: "About Hallucinate"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold }
         Image {

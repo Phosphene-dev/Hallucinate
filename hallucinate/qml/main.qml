@@ -163,6 +163,11 @@ ApplicationWindow {
     }
     Connections {
         target: userLib
+        function onPlayerImported(result) {
+            if (result.error) { toast.show(result.error); return }
+            toast.show(result.source + ": matched " + result.matched + " of " + result.songs + " songs · "
+                       + result.plays + " plays, " + result.ratings + " ratings, " + result.playlists + " playlists")
+        }
         function onPlaylistImported(result) {
             if (result.error) { toast.show(result.error); return }
             if (result.id < 0) { toast.show("None of those songs are in your library"); return }
