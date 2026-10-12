@@ -104,7 +104,7 @@ Item {
             album: model.album
             durText: model.durText
             artUrl: model.artUrl
-            current: player.hasTrack && player.current.id === model.id
+            current: Rows.currentId === model.id
             onActivated: {
                 if (page.duplicatesVisible) library.playDuplicate(index)
                 else if (library.filtersActive) library.playFilteredSongs(index)

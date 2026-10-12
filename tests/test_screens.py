@@ -3,6 +3,7 @@
 This catches bugs like the Stats rows that fell back to white when their colour binding failed. Rendering uses
 Qt's software renderer, so shader effects are left out, but every control, colour and layout is drawn."""
 import numpy as np
+import pytest
 from PySide6.QtCore import Q_ARG, QMetaObject, QObject, Qt, QUrl
 from PySide6.QtGui import QIcon, QImage
 from PySide6.QtQml import QQmlApplicationEngine
@@ -53,7 +54,9 @@ def seed(tmp_path):
     db.close()
 
 
-def test_every_page_in_every_theme(qapp, tmp_path, monkeypatch):
+@pytest.fixture
+def app_window(qapp, tmp_path, monkeypatch):
+    """The whole window over the seeded library, with page transitions off."""
     from conftest import wait_for
 
     from hallucinate import scrobbling
@@ -105,10 +108,22 @@ def test_every_page_in_every_theme(qapp, tmp_path, monkeypatch):
     stack = window.findChild(QObject, "pageStack")
     for transition in ("pushEnter", "pushExit", "popEnter", "popExit", "replaceEnter", "replaceExit"):
         stack.setProperty(transition, None)  # pages appear at once, so each is drawn settled
-    manager = objects["themeManager"]
     assert wait_for(lambda: library.trackCount == 8 and user_lib.topArtists.count > 0)
     player.playList(library.allTracks()[:3], 0)
     player.pause()
+
+    yield window, objects, warnings
+    window.close()
+    del stack
+    qapp.processEvents()
+    for obj in objects.values():
+        if hasattr(obj, "shutdown"):
+            obj.shutdown()
+
+
+def test_every_page_in_every_theme(qapp, app_window):
+    window, objects, warnings = app_window
+    manager = objects["themeManager"]
 
     def invoke(method, *args):
         assert QMetaObject.invokeMethod(window, method, Qt.ConnectionType.DirectConnection,
@@ -181,9 +196,40 @@ def test_every_page_in_every_theme(qapp, tmp_path, monkeypatch):
                 warnings.clear()
     assert not problems, "\n".join(problems[:20])
 
-    window.close()
-    del stack
-    qapp.processEvents()
-    for obj in objects.values():
-        if hasattr(obj, "shutdown"):
-            obj.shutdown()
+
+def test_search_results_draw_without_per_row_python_reads(qapp, app_window, monkeypatch):
+    """Each read from Python while drawing waits for any worker thread busy in Python, so search results (rebuilt
+    on every keystroke) must come over as one plain list, with likes and the playing song looked up once."""
+    from conftest import wait_for
+
+    from hallucinate.models import DictModel
+
+    window, objects, warnings = app_window
+    library = objects["library"]
+    reads = []
+    original = DictModel.data
+    monkeypatch.setattr(DictModel, "data", lambda self, index, role=0: reads.append(role) or original(self, index, role))
+
+    def items():  # every item in the window, walked without a recursive closure (cycles hold QObjects)
+        stack = [window.contentItem()]
+        while stack:
+            item = stack.pop()
+            yield item
+            stack.extend(item.childItems())
+
+    def visible_rows():
+        return [i for i in items() if i.objectName() == "trackRow" and i.isVisible()]
+
+    field = next(i for i in items() if "Search" in str(i.property("placeholderText") or ""))
+    field.setProperty("text", "song")
+    assert wait_for(lambda: len(library.searchResults["tracks"]) == 8 and len(visible_rows()) == 8)
+    for _ in range(5):
+        qapp.processEvents()
+    assert reads == []  # nothing per row from the Python models
+    liked = {r.property("title"): r.property("liked") for r in visible_rows()}
+    assert liked["Song 00"] and not liked["Song 01"]  # likes still shown (seed() likes Song 00)
+    player = objects["player"]
+    playing = player.current.get("path") if player.hasTrack else None
+    assert [r.property("path") for r in visible_rows() if r.property("current")] == ([playing] if playing else [])
+    assert not warnings, warnings[:3]
+    del field

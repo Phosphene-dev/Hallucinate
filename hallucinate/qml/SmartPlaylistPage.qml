@@ -76,7 +76,7 @@ Item {
             album: model.album
             durText: model.durText
             artUrl: model.artUrl
-            current: player.hasTrack && player.current.path === model.path
+            current: Rows.currentPath === model.path
             onActivated: userLib.playSmartPlaylist(index, false)
             onEnqueue: player.enqueue(userLib.smartTracks.get(index))
         }

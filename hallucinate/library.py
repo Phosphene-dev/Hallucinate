@@ -188,6 +188,7 @@ class Library(QObject):
         self._duplicates_loading = False
         self._load_gen = 0
         self._search_gen = 0
+        self._search_results = {"tracks": [], "albums": [], "artists": []}
         self._bulk = _Reader(self._db_path, "lib-bulk")
         self._quick = _Reader(self._db_path, "lib-search")
         self._loaded.connect(self._apply_load)
@@ -219,6 +220,12 @@ class Library(QObject):
     searchTracks = _model_prop("sTracks")
     searchAlbums = _model_prop("sAlbums")
     searchArtists = _model_prop("sArtists")
+
+    @Property("QVariantMap", notify=searchFinished)
+    def searchResults(self):
+        """The latest results as plain lists ({"tracks", "albums", "artists"}), handed to QML in one go so
+        drawing them needs no further calls into Python (see Rows.qml for why that matters)."""
+        return self._search_results
     filteredTracks = _model_prop("filteredTracks")
     duplicates = _model_prop("duplicates")
 
@@ -388,10 +395,13 @@ class Library(QObject):
         if not query.strip():
             for n in ("sTracks", "sAlbums", "sArtists"):
                 self._models[n].set_items([])
+            self._search_results = {"tracks": [], "albums": [], "artists": []}
             self.searchFinished.emit()
             return
 
         def work(db):
+            if gen != self._search_gen:  # typing moved on while this waited in the queue: skip it
+                return
             try:
                 r = db.search(query)
                 r = {k: decorate(v) for k, v in r.items()}
@@ -410,6 +420,7 @@ class Library(QObject):
         self._models["sTracks"].set_items(r["tracks"])
         self._models["sAlbums"].set_items(r["albums"])
         self._models["sArtists"].set_items(r["artists"])
+        self._search_results = r
         self.searchFinished.emit()
 
     def _cached(self, key, keys, loader):

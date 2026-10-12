@@ -230,7 +230,7 @@ Item {
             required property int index
             required property var model
             readonly property bool available: model.available === 1
-            readonly property bool current: available && player.hasTrack && player.current.path === model.path
+            readonly property bool current: available && Rows.currentPath === model.path
             width: list.width
             height: 56
             Rectangle {

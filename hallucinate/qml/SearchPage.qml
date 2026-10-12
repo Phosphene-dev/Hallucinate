@@ -6,6 +6,11 @@ Item {
     id: page
     objectName: "search"
     property string query: ""
+    // One read per result set; rows below use these plain lists instead of the Python models
+    readonly property var results: library.searchResults
+    readonly property var tracks: results.tracks || []
+    readonly property var albums: results.albums || []
+    readonly property var artists: results.artists || []
 
     Flickable {
         id: fl
@@ -30,8 +35,8 @@ Item {
                 font.pixelSize: Theme.fontSize(18)
             }
             Text {
-                visible: page.query.length > 0 && library.searchTracks.count === 0
-                         && library.searchAlbums.count === 0 && library.searchArtists.count === 0
+                visible: page.query.length > 0 && page.tracks.length === 0
+                         && page.albums.length === 0 && page.artists.length === 0
                 text: "No results for “" + page.query + "”"
                 color: Theme.textDim
                 font.family: Theme.fontFamily
@@ -39,66 +44,70 @@ Item {
             }
 
             Text {
-                visible: library.searchArtists.count > 0
+                visible: page.artists.length > 0
                 text: "Artists"
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
             }
             ListView {
-                visible: library.searchArtists.count > 0
+                visible: page.artists.length > 0
                 width: parent.width; height: 210
                 orientation: ListView.Horizontal
                 spacing: 18; clip: true
                 boundsBehavior: Flickable.StopAtBounds
-                model: library.searchArtists
+                model: page.artists
                 delegate: ArtistCard {
-                    name: model.name
-                    subtitle: model.albums + (model.albums === 1 ? " album" : " albums")
-                    artUrl: model.artUrl
+                    required property var modelData
+                    name: modelData.name
+                    subtitle: modelData.albums + (modelData.albums === 1 ? " album" : " albums")
+                    artUrl: modelData.artUrl
                 }
             }
 
             Text {
-                visible: library.searchAlbums.count > 0
+                visible: page.albums.length > 0
                 text: "Albums"
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
             }
             ListView {
-                visible: library.searchAlbums.count > 0
+                visible: page.albums.length > 0
                 width: parent.width; height: 240
                 orientation: ListView.Horizontal
                 spacing: 18; clip: true
                 boundsBehavior: Flickable.StopAtBounds
-                model: library.searchAlbums
+                model: page.albums
                 delegate: AlbumCard {
-                    albumKey: model.album_key
-                    title: model.album
-                    subtitle: model.album_artist
-                    artUrl: model.artUrl
+                    required property var modelData
+                    albumKey: modelData.album_key
+                    title: modelData.album
+                    subtitle: modelData.album_artist || ""
+                    artUrl: modelData.artUrl
                 }
             }
 
             Text {
-                visible: library.searchTracks.count > 0
+                visible: page.tracks.length > 0
                 text: "Songs"
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
             }
             Repeater {
-                model: library.searchTracks
+                model: page.tracks
                 TrackRow {
-                    selectionSource: library.searchTracks
-            path: model.path
-            audioFormat: model.codec
-            audioBitrate: model.bitrate
-            rowIndex: index
+                    required property var modelData
+                    required property int index
+                    selectionSource: page.tracks
+                    path: modelData.path
+                    audioFormat: modelData.codec || ""
+                    audioBitrate: modelData.bitrate || 0
+                    rowIndex: index
                     width: col.width
-                    title: model.title
-                    artist: model.artist
-                    album: model.album
-                    durText: model.durText
-                    artUrl: model.artUrl
-                    current: player.hasTrack && player.current.id === model.id
+                    title: modelData.title || ""
+                    artist: modelData.artist || ""
+                    album: modelData.album || ""
+                    durText: modelData.durText || ""
+                    artUrl: modelData.artUrl || ""
+                    current: Rows.currentId === modelData.id
                     onActivated: library.playSearchTracks(index)
-                    onEnqueue: player.enqueue(library.searchTracks.get(index))
+                    onEnqueue: player.enqueue(modelData)
                 }
             }
         }

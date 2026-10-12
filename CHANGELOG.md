@@ -5,6 +5,12 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-10-12
+
+### Fixed
+- Typing a search in a big library no longer freezes the window. Results came over one value at a time, and each value had to wait for any background work in Python (a rescan, cover thumbnails, the equalizer), so a page of results could stall for most of a second on every keystroke. They now come over as one list, and song rows look up likes, the playing song and the format setting once per page instead of once per row (every song list benefits).
+- Searches typed slowly no longer queue up behind each other: a search that's already been overtaken by more typing is skipped, so the latest results arrive straight away.
+
 ## [0.9.0] - 2026-10-12
 
 ### Added

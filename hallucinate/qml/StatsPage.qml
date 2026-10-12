@@ -108,7 +108,7 @@ Item {
                         album: model.album
                         durText: model.durText
                         artUrl: model.artUrl
-                        current: player.hasTrack && player.current.id === model.id
+                        current: Rows.currentId === model.id
                         onActivated: userLib.playTopTrack(index)
                         onEnqueue: player.enqueue(userLib.topTracks.get(index))
                     }
@@ -228,7 +228,7 @@ Item {
                         album: model.album
                         durText: model.durText
                         artUrl: model.artUrl
-                        current: player.hasTrack && player.current.id === model.id
+                        current: Rows.currentId === model.id
                         onActivated: userLib.playHomeMix(index)
                         onEnqueue: player.enqueue(userLib.homeMix.get(index))
                     }
