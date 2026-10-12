@@ -1,0 +1,25 @@
+{
+  "name": "Pan Pride",
+  "colors": {
+    "bg": "#0c0b12",
+    "panel": "#13111b",
+    "surface": "#1c1926",
+    "surfaceHi": "#282435",
+    "border": "#342f45",
+    "text": "#f5f3fa",
+    "textDim": "#aea8c0",
+    "accent": "#ff79b5",
+    "error": "#ff6b6b",
+    "onAccent": "#22030f"
+  },
+  "palette": [
+    "#FF218C",
+    "#FFD800",
+    "#21B1FF"
+  ],
+  "radius": 12,
+  "fonts": {
+    "family": "Sans Serif",
+    "scale": 1.0
+  }
+}

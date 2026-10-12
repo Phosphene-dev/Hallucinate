@@ -43,19 +43,19 @@ Item {
     }
 
     Bloom {
-        tint: Theme.art0
+        tint: Theme.glow0
         size: Math.max(amb.width, amb.height) * 0.95
         baseX: amb.width * 0.12; baseY: amb.height * 0.05
         period: 47000
     }
     Bloom {
-        tint: Theme.art1
+        tint: Theme.glow1
         size: Math.max(amb.width, amb.height) * 0.8
         baseX: amb.width * 0.95; baseY: amb.height * 0.45
         driftX: 110; driftY: 70; period: 61000; phase: 1.7
     }
     Bloom {
-        tint: Theme.art2
+        tint: Theme.glow2
         size: Math.max(amb.width, amb.height) * 0.7
         baseX: amb.width * 0.45; baseY: amb.height * 1.05
         driftX: 140; driftY: 50; period: 73000; phase: 3.1

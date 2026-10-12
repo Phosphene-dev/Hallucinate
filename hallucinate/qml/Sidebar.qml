@@ -68,6 +68,14 @@ Item {
                         source: "../assets/hallucinate.png"; sourceSize: Qt.size(64, 64); smooth: true
                         Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                     }
+                    FlagStripe {  // a pride theme's flag, quietly under the name
+                        anchors { left: logo.right; leftMargin: 11; top: parent.verticalCenter; topMargin: 12 }
+                        width: 44; height: 3
+                        colors: Theme.themePalette
+                        opacity: side.collapsed ? 0 : 0.85
+                        visible: colors.length > 0 && opacity > 0
+                        Behavior on opacity { NumberAnimation { duration: 140 } }
+                    }
                     Text {
                         anchors { left: logo.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
                         text: "Hallucinate"

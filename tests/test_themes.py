@@ -51,8 +51,9 @@ def manager_factory(qapp, tmp_path):
 def test_builtin_themes_are_complete_and_switch_live(manager_factory):
     manager = manager_factory()
     assert manager.availableThemes == [
-        "Catppuccin Latte", "Catppuccin Mocha", "Dark", "Dracula", "Gruvbox",
-        "Hallucinate", "Light", "Nord", "Tokyo Night",
+        "Ace Pride", "Bi Pride", "Catppuccin Latte", "Catppuccin Mocha", "Dark", "Dracula", "Gruvbox",
+        "Hallucinate", "Lesbian Pride", "Light", "Nonbinary Pride", "Nord", "Pan Pride", "Pride", "Tokyo Night",
+        "Trans Pride", "Trans Pride Light",
     ]
     original = manager.bg
     assert manager.selectTheme("Nord")
@@ -119,6 +120,58 @@ def test_album_art_accent_tracks_current_cover(manager_factory, tmp_path):
     player.set_art("")
     manager.setAlbumArtAccent(True)
     assert manager.accent == base_accent
+
+
+PRIDE_THEMES = ("Pride", "Trans Pride", "Trans Pride Light", "Bi Pride", "Lesbian Pride", "Nonbinary Pride",
+                "Pan Pride", "Ace Pride")
+
+
+def test_pride_themes_are_readable(manager_factory):
+    from hallucinate.themes import contrast
+
+    manager = manager_factory()
+    for name in PRIDE_THEMES:
+        assert name in manager.availableThemes, name
+        assert manager.selectTheme(name)
+        assert len(manager.themePalette) >= 3, name
+        assert contrast(manager.text, manager.bg) >= 7, name
+        for colour in (manager.textDim, manager.accent, manager.error):
+            assert contrast(colour, manager.bg) >= 4.5, (name, colour.name())
+        assert contrast(manager.textDim, manager.surface) >= 4.5, name
+        assert contrast(manager.accent, manager.surface) >= 4.5, name
+        assert contrast(manager.onAccent, manager.accent) >= 4.5, name
+
+
+def test_flag_colours_drive_the_backdrop(manager_factory):
+    from hallucinate.themes import contrast
+
+    manager = manager_factory()
+    assert manager.selectTheme("Trans Pride")
+    def hues():
+        return [round(c.hslHueF() * 360) for c in manager.ambientColors]
+
+    assert hues() == [197, 348, 197]  # blue, pink, blue: the white stripe doesn't glow on a dark backdrop
+    assert all(contrast(c, QColor("#000000")) < 8.5 for c in manager.ambientColors)  # toned, not glaring
+    assert manager.selectTheme("Nonbinary Pride")
+    assert hues() == [274, 58, 274]  # purple twice, the bright yellow once
+    assert manager.selectTheme("Ace Pride")
+    assert {c.name() for c in manager.ambientColors} == {"#800080"}  # black, grey and white are left out
+    assert manager.paletteOf("Lesbian Pride")[0] == "#D52D00"
+    manager.setAlbumArtAccent(True)  # album colours: the backdrop follows the cover again
+    assert manager.ambientColors == []
+    manager.setAlbumArtAccent(False)
+    assert manager.selectTheme("Dark")
+    assert manager.themePalette == [] and manager.ambientColors == []
+
+
+def test_invalid_palettes_are_rejected(manager_factory, tmp_path):
+    from hallucinate.themes import ThemeManager
+
+    base = json.loads((BUILTIN_THEME_DIR / "dark.json").read_text(encoding="utf-8"))
+    assert ThemeManager._validate({**base, "palette": ["#ff0000", "#00ff00"]})[1]
+    assert not ThemeManager._validate({**base, "palette": "#ff0000"})[1]
+    assert not ThemeManager._validate({**base, "palette": ["not a colour"]})[1]
+    assert not ThemeManager._validate({**base, "palette": ["#fff"] * 9})[1]
 
 
 def test_accent_from_a_dark_cover_stays_readable(manager_factory, tmp_path):

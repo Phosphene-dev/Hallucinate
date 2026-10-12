@@ -1,0 +1,27 @@
+{
+  "name": "Trans Pride Light",
+  "colors": {
+    "bg": "#fbf8fa",
+    "panel": "#f4eef3",
+    "surface": "#ece4ec",
+    "surfaceHi": "#e2d6e2",
+    "border": "#d6c6d6",
+    "text": "#1d1620",
+    "textDim": "#5e5463",
+    "accent": "#a43c61",
+    "error": "#c0283f",
+    "onAccent": "#ffffff"
+  },
+  "palette": [
+    "#5BCEFA",
+    "#F5A9B8",
+    "#FFFFFF",
+    "#F5A9B8",
+    "#5BCEFA"
+  ],
+  "radius": 12,
+  "fonts": {
+    "family": "Sans Serif",
+    "scale": 1.0
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "Trans Pride",
+  "colors": {
+    "bg": "#0a0d14",
+    "panel": "#10141e",
+    "surface": "#181d2b",
+    "surfaceHi": "#232a3d",
+    "border": "#2d3550",
+    "text": "#f2f6fb",
+    "textDim": "#a9b5ca",
+    "accent": "#7fd0f5",
+    "error": "#ff7d93",
+    "onAccent": "#06131c"
+  },
+  "palette": [
+    "#5BCEFA",
+    "#F5A9B8",
+    "#FFFFFF",
+    "#F5A9B8",
+    "#5BCEFA"
+  ],
+  "radius": 12,
+  "fonts": {
+    "family": "Sans Serif",
+    "scale": 1.0
+  }
+}

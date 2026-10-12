@@ -1,0 +1,27 @@
+{
+  "name": "Bi Pride",
+  "colors": {
+    "bg": "#0d0a14",
+    "panel": "#14101d",
+    "surface": "#1d1729",
+    "surfaceHi": "#2a2139",
+    "border": "#362b4a",
+    "text": "#f4f0fa",
+    "textDim": "#b1a7c4",
+    "accent": "#d48ae6",
+    "error": "#ff6f8e",
+    "onAccent": "#1b0821"
+  },
+  "palette": [
+    "#D60270",
+    "#D60270",
+    "#9B4F96",
+    "#0038A8",
+    "#0038A8"
+  ],
+  "radius": 12,
+  "fonts": {
+    "family": "Sans Serif",
+    "scale": 1.0
+  }
+}

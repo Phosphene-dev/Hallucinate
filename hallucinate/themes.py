@@ -178,6 +178,10 @@ class ThemeManager(QObject):
         if (not isinstance(family, str) or not family.strip() or isinstance(scale, bool)
                 or not isinstance(scale, (int, float)) or not math.isfinite(scale) or not 0.75 <= scale <= 1.5):
             return data["name"].strip(), False
+        palette = data.get("palette", [])  # optional: the colours a theme is about, e.g. a pride flag's
+        if (not isinstance(palette, list) or len(palette) > 8
+                or any(not isinstance(c, str) or not QColor(c).isValid() for c in palette)):
+            return data["name"].strip(), False
         return data["name"].strip(), True
 
     def _load_preferences(self):
@@ -252,6 +256,40 @@ class ThemeManager(QObject):
         """A theme's colours by name (for previews such as the welcome's theme picker); {} if unknown."""
         theme = self._themes.get(name)
         return dict(theme["colors"]) if theme else {}
+
+    @Slot(str, result="QStringList")
+    def paletteOf(self, name):
+        """A theme's own colours (its flag, for the pride themes) in order; [] for themes without one."""
+        theme = self._themes.get(name)
+        return list(theme.get("palette", [])) if theme else []
+
+    @Property("QStringList", notify=themeChanged)
+    def themePalette(self):
+        return self.paletteOf(self._current_name)
+
+    @Property("QVariantList", notify=themeChanged)
+    def ambientColors(self):
+        """Three colours for the drifting backdrop when a theme brings its own (a flag theme): the first, middle
+        and last of its colours that read as colour on the background (black, white and grey stripes don't glow).
+        Empty when the theme has none, or when album colours are on, so the backdrop follows the cover."""
+        if self._album_art_accent:
+            return []
+        vivid = [QColor(c) for c in self.themePalette
+                 if 0.12 <= QColor(c).lightnessF() <= 0.9 and QColor(c).hslSaturationF() >= 0.2]
+        if not vivid:
+            return []
+        picks = [vivid[0], vivid[len(vivid) // 2], vivid[-1]]
+        if len(vivid) == 2:  # the deeper colour takes two of the three glows, so a bright one doesn't flood it
+            deep, bright = sorted(vivid, key=_luminance)
+            picks = [deep, bright, deep]
+        toned = []
+        for color in picks:  # very bright flag colours (yellow, pastel pink) glow a little softer
+            for _ in range(12):
+                if _luminance(color) <= 0.35:
+                    break
+                color = color.darker(108)
+            toned.append(color)
+        return toned
 
     @Property(str, notify=themeChanged)
     def currentTheme(self):

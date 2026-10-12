@@ -1,0 +1,27 @@
+{
+  "name": "Lesbian Pride",
+  "colors": {
+    "bg": "#110b0d",
+    "panel": "#181013",
+    "surface": "#22171b",
+    "surfaceHi": "#302027",
+    "border": "#3d2a32",
+    "text": "#fbf3f4",
+    "textDim": "#c2adb3",
+    "accent": "#f59b78",
+    "error": "#ff6b81",
+    "onAccent": "#200c03"
+  },
+  "palette": [
+    "#D52D00",
+    "#FF9A56",
+    "#FFFFFF",
+    "#D362A4",
+    "#A30262"
+  ],
+  "radius": 12,
+  "fonts": {
+    "family": "Sans Serif",
+    "scale": 1.0
+  }
+}
