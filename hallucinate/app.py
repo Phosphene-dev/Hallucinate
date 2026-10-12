@@ -138,6 +138,8 @@ def main(argv=None) -> int:
     player.restoreSession()
 
     engine = QQmlApplicationEngine()
+    from . import qmlnet
+    qmlnet.install(engine)  # the interface never goes online (see qmlnet)
     engine.addImageProvider("art", ArtProvider(paths.data_dir() / "thumbs"))
     ctx = engine.rootContext()
     ctx.setContextProperty("library", library)

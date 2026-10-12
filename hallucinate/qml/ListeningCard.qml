@@ -17,6 +17,7 @@ GlassPanel {
         Row {
             width: parent.width
             Text {
+                textFormat: Text.PlainText
                 width: parent.width - streak.width
                 text: "Listening"
                 color: Theme.text
@@ -26,6 +27,7 @@ GlassPanel {
                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Nav.openHistory("") }
             }
             Text {
+                textFormat: Text.PlainText
                 id: streak
                 text: (card.heat.streak || 0) > 1 ? card.heat.streak + "-day streak"
                     : (card.heat.activeDays || 0) + ((card.heat.activeDays || 0) === 1 ? " active day" : " active days")
@@ -43,6 +45,7 @@ GlassPanel {
             onDayClicked: day => Nav.openHistory(day)
         }
         Text {
+            textFormat: Text.PlainText
             text: card.artists.length ? "Top artists this month" : "Play some music and your listening shows up here."
             color: Theme.textDim
             font.family: Theme.fontFamily
@@ -61,6 +64,7 @@ GlassPanel {
                         fallback: (modelData.name || "?").charAt(0)
                     }
                     Text {
+                        textFormat: Text.PlainText
                         anchors.verticalCenter: parent.verticalCenter
                         text: modelData.name
                         color: Theme.text

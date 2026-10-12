@@ -14,8 +14,8 @@ Rectangle {
         id: head
         x: 18; y: 16
         spacing: 12
-        Text { text: "Queue"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
-        Text { text: player.queueModel.count + " tracks"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); anchors.verticalCenter: parent.verticalCenter }
+        Text { text: "Queue"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter; textFormat: Text.PlainText }
+        Text { text: player.queueModel.count + " tracks"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); anchors.verticalCenter: parent.verticalCenter; textFormat: Text.PlainText }
     }
     Row {
         anchors { right: parent.right; rightMargin: 14; verticalCenter: head.verticalCenter }
@@ -83,6 +83,7 @@ Rectangle {
             border.color: Theme.accent
             border.width: 2
             Text {
+                textFormat: Text.PlainText
                 anchors.centerIn: parent
                 text: "Drop to add to queue"
                 color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
@@ -90,6 +91,7 @@ Rectangle {
         }
     }
     Text {
+        textFormat: Text.PlainText
         visible: player.queueModel.count === 0
         anchors.centerIn: parent
         text: "Queue is empty"
@@ -158,17 +160,18 @@ Rectangle {
                     if (from >= 0 && to >= 0 && from !== to) player.moveItem(from, to)
                 }
                 onCanceled: { list.dragFrom = -1; list.dragTo = -1 }
-                Text { anchors.centerIn: parent; text: "⋮⋮"; color: Theme.textDim; opacity: hh.hovered || grip.pressed ? 1 : 0.35; font.pixelSize: 14 }
+                Text { anchors.centerIn: parent; text: "⋮⋮"; color: Theme.textDim; opacity: hh.hovered || grip.pressed ? 1 : 0.35; font.pixelSize: 14; textFormat: Text.PlainText }
             }
             Cover { id: art; x: 6; anchors.verticalCenter: parent.verticalCenter; width: 38; height: 38; radius: Theme.radiusSmall; source: model.artUrl }
             Column {
                 anchors { left: art.right; leftMargin: 10; right: grip.left; rightMargin: 2; verticalCenter: parent.verticalCenter }
                 spacing: 2
                 Text {
+                    textFormat: Text.PlainText
                     width: parent.width; text: model.title; elide: Text.ElideRight; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                     color: index === player.currentIndex ? Theme.accent : Theme.text
                 }
-                Text { width: parent.width; text: model.artist; elide: Text.ElideRight; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); color: Theme.textDim }
+                Text { width: parent.width; text: model.artist; elide: Text.ElideRight; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); color: Theme.textDim; textFormat: Text.PlainText }
             }
             IconButton {
                 id: rm

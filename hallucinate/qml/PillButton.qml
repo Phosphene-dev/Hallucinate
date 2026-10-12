@@ -24,6 +24,7 @@ Rectangle {
     Rectangle { anchors.fill: parent; anchors.margins: -2; radius: height / 2; color: "transparent"; border.width: 2; border.color: Theme.accent; visible: btn.activeFocus }
 
     Text {
+        textFormat: Text.PlainText
         id: label
         anchors.centerIn: parent
         text: btn.text

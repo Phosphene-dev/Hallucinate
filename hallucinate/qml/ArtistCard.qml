@@ -23,6 +23,7 @@ Item {
         anchors { top: art.bottom; topMargin: 10; left: parent.left; right: parent.right }
         spacing: 2
         Text {
+            textFormat: Text.PlainText
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             text: card.name
@@ -33,6 +34,7 @@ Item {
             elide: Text.ElideRight
         }
         Text {
+            textFormat: Text.PlainText
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             text: card.subtitle

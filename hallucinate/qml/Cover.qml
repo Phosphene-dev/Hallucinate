@@ -23,6 +23,7 @@ Rectangle {
         color: Theme.surface
     }
     Text {
+        textFormat: Text.PlainText
         anchors.centerIn: parent
         text: cover.fallback
         color: Theme.surfaceHi

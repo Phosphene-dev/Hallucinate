@@ -71,12 +71,14 @@ Item {
             width: parent.width - art.width - 12
             spacing: 3
             Text {
+                textFormat: Text.PlainText
                 width: parent.width
                 text: player.hasTrack ? player.current.title : "Nothing playing"
                 color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
                 elide: Text.ElideRight
             }
             Text {
+                textFormat: Text.PlainText
                 width: parent.width
                 text: player.error.length > 0 ? player.error : (player.hasTrack ? player.current.artist : "")
                 color: player.error.length > 0 ? Theme.error : Theme.textDim
@@ -148,12 +150,12 @@ Item {
         RowLayout {
             width: parent.width
             spacing: 10
-            Text { text: Theme.fmtTime(player.position); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); Layout.preferredWidth: 38; horizontalAlignment: Text.AlignRight }
+            Text { text: Theme.fmtTime(player.position); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); Layout.preferredWidth: 38; horizontalAlignment: Text.AlignRight; textFormat: Text.PlainText }
             WaveformSeek {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 26
             }
-            Text { text: Theme.fmtTime(player.duration); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); Layout.preferredWidth: 38 }
+            Text { text: Theme.fmtTime(player.duration); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); Layout.preferredWidth: 38; textFormat: Text.PlainText }
         }
     }
 

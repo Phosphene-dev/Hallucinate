@@ -103,6 +103,7 @@ Dialog {
     contentItem: ColumnLayout {
         spacing: 10
         Text {
+            textFormat: Text.PlainText
             visible: dlg.albumMode || dlg.manyMode
             Layout.fillWidth: true
             text: dlg.paths.length + " tracks. Only changed fields are written to every track."
@@ -121,7 +122,7 @@ Dialog {
                 property string key: modelData
                 property alias value: field.text
                 Layout.fillWidth: true
-                Text { Layout.preferredWidth: 96; text: dlg.labels[rowItem.key]; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13) }
+                Text { Layout.preferredWidth: 96; text: dlg.labels[rowItem.key]; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); textFormat: Text.PlainText }
                 TextField {
                     id: field
                     Layout.fillWidth: true
@@ -155,6 +156,7 @@ Dialog {
             }
         }
         Text {
+            textFormat: Text.PlainText
             Layout.fillWidth: true
             visible: dlg.message.length > 0
             text: dlg.message

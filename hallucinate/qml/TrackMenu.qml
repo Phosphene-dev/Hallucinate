@@ -15,6 +15,7 @@ Menu {
         objectName: "menuRating"
         width: 220; height: 38
         Text {
+            textFormat: Text.PlainText
             x: 14
             anchors.verticalCenter: parent.verticalCenter
             text: "Rating"
@@ -45,7 +46,7 @@ Menu {
             delegate: MenuItem {
                 required property int id
                 required property string name
-                text: name
+                text: Theme.plain(name)
                 onTriggered: userLib.addToPlaylist(id, menu.path)
             }
             onObjectAdded: (i, o) => plMenu.addItem(o)

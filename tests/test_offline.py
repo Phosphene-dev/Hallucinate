@@ -21,7 +21,7 @@ def test_every_internet_request_goes_through_the_gate():
     would slip past offline mode, so it fails here. (discord.py's AF_UNIX socket is local IPC and allowed.)"""
     offenders = []
     for path in PACKAGE.rglob("*.py"):
-        if path == PACKAGE / "core" / "net.py":
+        if path in (PACKAGE / "core" / "net.py", PACKAGE / "qmlnet.py"):  # the gate, and the interface's blocker
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):

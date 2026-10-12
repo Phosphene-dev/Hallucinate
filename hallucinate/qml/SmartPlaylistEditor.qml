@@ -96,7 +96,7 @@ Dialog {
         }
         Row {
             spacing: 8
-            Text { anchors.verticalCenter: parent.verticalCenter; text: "Songs matching"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+            Text { anchors.verticalCenter: parent.verticalCenter; text: "Songs matching"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
             StyledCombo {
                 width: 110
                 model: [{ k: "all", t: "all" }, { k: "any", t: "any" }]
@@ -104,7 +104,7 @@ Dialog {
                 currentIndex: dlg.matchMode === "any" ? 1 : 0
                 onActivated: { dlg.matchMode = currentIndex === 1 ? "any" : "all"; dlg.update() }
             }
-            Text { anchors.verticalCenter: parent.verticalCenter; text: "of these rules:"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+            Text { anchors.verticalCenter: parent.verticalCenter; text: "of these rules:"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
         }
         Repeater {
             model: rulesModel
@@ -148,7 +148,7 @@ Dialog {
                     inputMethodHints: dlg.fieldKind(ruleRow.field) === "text" ? Qt.ImhNone : Qt.ImhFormattedNumbersOnly
                     onTextEdited: { rulesModel.setProperty(ruleRow.index, "value", text); dlg.update() }
                 }
-                Text { visible: ruleRow.op === "between"; anchors.verticalCenter: parent.verticalCenter; text: "and"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+                Text { visible: ruleRow.op === "between"; anchors.verticalCenter: parent.verticalCenter; text: "and"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 TextField {
                     visible: ruleRow.op === "between"
                     width: 90
@@ -168,7 +168,7 @@ Dialog {
         PillButton { text: "Add rule"; height: 32; onClicked: dlg.addRule() }
         Row {
             spacing: 8
-            Text { anchors.verticalCenter: parent.verticalCenter; text: "Order"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+            Text { anchors.verticalCenter: parent.verticalCenter; text: "Order"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
             StyledCombo {
                 width: 200
                 model: dlg.schema.sorts
@@ -176,7 +176,7 @@ Dialog {
                 currentIndex: dlg.schema.sorts.findIndex(s => s.key === dlg.sortKey)
                 onActivated: { dlg.sortKey = dlg.schema.sorts[currentIndex].key; dlg.update() }
             }
-            Text { anchors.verticalCenter: parent.verticalCenter; text: "Limit to"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+            Text { anchors.verticalCenter: parent.verticalCenter; text: "Limit to"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
             TextField {
                 id: limitField
                 width: 80
@@ -186,9 +186,10 @@ Dialog {
                 validator: IntValidator { bottom: 0; top: 100000 }
                 onTextEdited: dlg.update()
             }
-            Text { anchors.verticalCenter: parent.verticalCenter; text: "songs"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+            Text { anchors.verticalCenter: parent.verticalCenter; text: "songs"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
         }
         Text {
+            textFormat: Text.PlainText
             objectName: "smartPreview"
             width: parent.width
             wrapMode: Text.WordWrap

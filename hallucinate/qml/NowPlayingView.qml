@@ -165,6 +165,7 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
                 spacing: 10
                 Text {
+                    textFormat: Text.PlainText
                     Layout.fillWidth: true
                     text: player.hasTrack ? player.current.title : "Nothing playing"
                     color: "white"
@@ -176,6 +177,7 @@ Item {
                     elide: Text.ElideRight
                 }
                 Text {
+                    textFormat: Text.PlainText
                     Layout.fillWidth: true
                     visible: player.hasTrack
                     text: player.hasTrack ? player.current.artist : ""
@@ -190,6 +192,7 @@ Item {
                     }
                 }
                 Text {
+                    textFormat: Text.PlainText
                     Layout.fillWidth: true
                     visible: player.hasTrack && (player.current.album || "").length > 0 && !view.lyricsMode
                     text: player.hasTrack ? player.current.album + (player.current.year > 0 ? "  ·  " + player.current.year : "") : ""
@@ -226,6 +229,7 @@ Item {
                         currentIndex: Math.max(0, lyricsCtl.currentLine)
                         highlightMoveDuration: 380
                         delegate: Text {
+                            textFormat: Text.PlainText
                             required property var modelData
                             required property int index
                             readonly property int distance: Math.abs(index - lyricsCtl.currentLine)
@@ -248,6 +252,7 @@ Item {
                         contentHeight: plainLyrics.implicitHeight
                         boundsBehavior: Flickable.StopAtBounds
                         Text {
+                            textFormat: Text.PlainText
                             id: plainLyrics
                             width: parent.width
                             text: lyricsCtl.plain
@@ -259,6 +264,7 @@ Item {
                         }
                     }
                     Text {
+                        textFormat: Text.PlainText
                         anchors.verticalCenter: parent.verticalCenter
                         visible: lyricsCtl.status !== "found"
                         text: lyricsCtl.status === "loading" ? "Looking for lyrics…" : "No lyrics for this song"
@@ -289,9 +295,9 @@ Item {
                 RowLayout {
                     Layout.fillWidth: true
                     Layout.maximumWidth: 640
-                    Text { text: Theme.fmtTime(player.position); color: Qt.rgba(1, 1, 1, 0.65); font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12) }
+                    Text { text: Theme.fmtTime(player.position); color: Qt.rgba(1, 1, 1, 0.65); font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
                     Item { Layout.fillWidth: true }
-                    Text { text: Theme.fmtTime(player.duration); color: Qt.rgba(1, 1, 1, 0.65); font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12) }
+                    Text { text: Theme.fmtTime(player.duration); color: Qt.rgba(1, 1, 1, 0.65); font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
                 }
                 Row {
                     spacing: 14
@@ -383,6 +389,7 @@ Item {
         }
     }
     Text {
+        textFormat: Text.PlainText
         anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 22 }
         visible: !player.visualizerEnabled && player.visualizerAvailable && shell.visualizerStyle !== "bars"
         opacity: view.idle ? 0 : 0.6

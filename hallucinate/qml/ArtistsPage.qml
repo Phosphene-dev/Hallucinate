@@ -8,6 +8,7 @@ Item {
     readonly property int cols: Math.max(2, Math.floor((width - 40) / 170))
 
     Text {
+        textFormat: Text.PlainText
         id: title
         x: 28; y: 20
         text: "Artists"

@@ -38,6 +38,7 @@ Rectangle {
             height: parent.height
             spacing: 6
             Text {
+                textFormat: Text.PlainText
                 objectName: "selectionCount"
                 anchors.verticalCenter: parent.verticalCenter
                 rightPadding: 6
@@ -62,7 +63,7 @@ Rectangle {
                     Instantiator {
                         model: userLib.playlists
                         delegate: MenuItem {
-                            text: model.name
+                            text: Theme.plain(model.name)
                             onTriggered: { var p = bar.paths(); userLib.addPathsToPlaylist(model.id, p); bar.done(bar.songs(p.length) + " added to “" + model.name + "”") }
                         }
                         onObjectAdded: (index, object) => plMenu.insertItem(index + 2, object)

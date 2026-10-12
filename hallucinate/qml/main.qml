@@ -218,6 +218,7 @@ ApplicationWindow {
         modal: true
         standardButtons: Dialog.Ok | Dialog.Cancel
         Text {
+            textFormat: Text.PlainText
             width: dlg.availableWidth
             wrapMode: Text.WordWrap
             text: dlg.body
@@ -227,16 +228,16 @@ ApplicationWindow {
     ConfirmDialog {
         id: removeDlg
         objectName: "removeAlbumsDialog"
-        title: "Remove " + what + " from the library?"
-        body: "The music stays on your disk; Hallucinate just stops showing it, and rescans leave it out. "
+        title: "Remove from the library?"
+        body: what + ": the music stays on your disk; Hallucinate just stops showing it, and rescans leave it out. "
               + "Settings → Library can bring it back. Plays, likes and playlists are kept."
         onAccepted: { library.removeAlbums(keys); AlbumSelection.clear() }
     }
     ConfirmDialog {
         id: trashDlg
         objectName: "trashAlbumsDialog"
-        title: "Move " + what + " to the trash?"
-        body: "The music files go to your system's trash, where you can restore them from. A folder left with only "
+        title: "Move to the trash?"
+        body: what + ": the music files go to your system's trash, where you can restore them from. A folder left with only "
               + "covers or logs goes too; anything else in it stays."
         onAccepted: { library.trashAlbums(keys); AlbumSelection.clear() }
     }
@@ -269,6 +270,7 @@ ApplicationWindow {
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 220 } }
         Text {
+            textFormat: Text.PlainText
             id: toastText
             anchors.centerIn: parent
             text: toast.message
@@ -307,6 +309,7 @@ ApplicationWindow {
             width: closeDlg.availableWidth
             spacing: 14
             Text {
+                textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
                 text: shell.canMinimize && shell.trayAvailable && shell.trayEnabled
@@ -351,10 +354,11 @@ ApplicationWindow {
         anchors.centerIn: parent
         width: 420
         modal: true
-        title: "Update to Hallucinate " + shell.updates.latestVersion + "?"
+        title: "Update to Hallucinate " + Theme.plain(shell.updates.latestVersion) + "?"
         standardButtons: Dialog.Ok | Dialog.Cancel
         onAccepted: shell.updates.installNow()
         Text {
+            textFormat: Text.PlainText
             width: updateDlg.availableWidth
             wrapMode: Text.WordWrap
             text: "Hallucinate downloads the new version from GitHub, checks it against the release's checksum, "
@@ -554,6 +558,7 @@ ApplicationWindow {
         border.color: Theme.accent
         border.width: 3
         Text {
+            textFormat: Text.PlainText
             anchors.centerIn: parent
             text: "Drop to play"
             color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(21); font.weight: Font.DemiBold

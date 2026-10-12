@@ -76,6 +76,7 @@ Item {
                     smooth: true
                 }
                 Text {
+                    textFormat: Text.PlainText
                     text: "Hallucinate"
                     color: Theme.text
                     font.family: Theme.displayFamily
@@ -128,6 +129,7 @@ Item {
                                 name: "folder"; width: 16; height: 16; color: Theme.accent
                             }
                             Text {
+                                textFormat: Text.PlainText
                                 anchors { left: folderIcon.right; leftMargin: 10; right: rm.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
                                 text: modelData
                                 color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
@@ -152,6 +154,7 @@ Item {
                         FolderPicker { id: picker }
                     }
                     Text {
+                        textFormat: Text.PlainText
                         objectName: "welcomeFound"
                         Layout.fillWidth: true
                         visible: !library.scanning && library.folders.length > 0
@@ -212,6 +215,7 @@ Item {
                                         anchors { left: chip.right; leftMargin: 10; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                                         spacing: 5
                                         Text {
+                                            textFormat: Text.PlainText
                                             width: parent.width
                                             text: swatch.modelData
                                             elide: Text.ElideRight
@@ -250,6 +254,7 @@ Item {
                             + "sends it to ListenBrainz or Last.fm. It's optional, and you can set it up later in Settings."
                     }
                     Text {
+                        textFormat: Text.PlainText
                         text: "ListenBrainz"
                         color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold
                     }
@@ -284,6 +289,7 @@ Item {
                         color: listenbrainz.connected ? Theme.accent : Theme.textDim
                     }
                     Text {
+                        textFormat: Text.PlainText
                         Layout.topMargin: 6
                         text: "Last.fm"
                         color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold
@@ -324,6 +330,7 @@ Item {
                 Layout.fillWidth: true
                 spacing: 10
                 Text {
+                    textFormat: Text.PlainText
                     objectName: "welcomeSkip"
                     text: "Skip setup"
                     color: skipMouse.containsMouse ? Theme.text : Theme.textDim

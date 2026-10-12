@@ -46,6 +46,7 @@ GlassPanel {
         anchors { left: cover.right; leftMargin: 26; right: parent.right; rightMargin: 24; verticalCenter: parent.verticalCenter }
         spacing: 8
         Text {
+            textFormat: Text.PlainText
             text: "RANDOM ALBUM"
             color: Theme.accent
             font.family: Theme.fontFamily
@@ -54,6 +55,7 @@ GlassPanel {
             font.letterSpacing: 1.6
         }
         Text {
+            textFormat: Text.PlainText
             width: parent.width
             text: card.hasAlbum ? card.album.album : "Your albums will appear here"
             color: Theme.text
@@ -65,6 +67,7 @@ GlassPanel {
             elide: Text.ElideRight
         }
         Text {
+            textFormat: Text.PlainText
             width: parent.width
             visible: card.hasAlbum
             text: card.hasAlbum ? card.album.album_artist : ""
@@ -75,6 +78,7 @@ GlassPanel {
             elide: Text.ElideRight
         }
         Text {
+            textFormat: Text.PlainText
             visible: card.hasAlbum
             text: card.hasAlbum ? [card.album.year > 0 ? card.album.year : "", card.album.n + (card.album.n === 1 ? " song" : " songs"),
                                     card.album.durText].filter(s => s !== "").join("  ·  ") : ""

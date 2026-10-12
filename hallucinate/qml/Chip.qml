@@ -18,6 +18,7 @@ Rectangle {
     Accessible.role: Accessible.Button
     Accessible.name: text
     Text {
+        textFormat: Text.PlainText
         id: chipLabel
         x: 15
         anchors.verticalCenter: parent.verticalCenter

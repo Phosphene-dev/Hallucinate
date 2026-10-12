@@ -22,6 +22,7 @@ Item {
         width: parent.width - 56
         spacing: 18
         Text {
+            textFormat: Text.PlainText
             id: title
             anchors.verticalCenter: parent.verticalCenter
             text: "Albums"
@@ -142,7 +143,7 @@ Item {
                         onPressAndHold: Nav.albumMenu([tile.album_key], tile.album, tile.album_artist)
                     }
                     ToolTip.visible: tileMouse.containsMouse
-                    ToolTip.text: tile.album + " — " + tile.album_artist
+                    ToolTip.text: Theme.plain(tile.album + " — " + tile.album_artist)
                     ToolTip.delay: 300
                 }
             }
@@ -152,6 +153,7 @@ Item {
                 visible: running
             }
             Text {
+                textFormat: Text.PlainText
                 anchors.centerIn: parent
                 visible: library.wallLoading && wall.count === 0
                 anchors.verticalCenterOffset: 44
@@ -188,6 +190,7 @@ Item {
                     readonly property var row: parent ? parent.row : ({})
                     height: 70
                     Text {
+                        textFormat: Text.PlainText
                         id: decadeLabel
                         anchors { left: parent.left; bottom: parent.bottom; bottomMargin: 10 }
                         text: parent.row.label
@@ -197,6 +200,7 @@ Item {
                         font.weight: Font.Bold
                     }
                     Text {
+                        textFormat: Text.PlainText
                         anchors { left: decadeLabel.right; leftMargin: 14; baseline: decadeLabel.baseline }
                         text: parent.row.count + (parent.row.count === 1 ? " album" : " albums")
                         color: Theme.textDim
@@ -224,6 +228,7 @@ Item {
                         border.width: 3; border.color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.3)
                     }
                     Text {
+                        textFormat: Text.PlainText
                         x: 52; y: 16
                         width: 64
                         text: yearItem.row.year > 0 ? yearItem.row.year : "—"
@@ -254,6 +259,7 @@ Item {
                                     Behavior on y { NumberAnimation { duration: 140 } }
                                 }
                                 Text {
+                                    textFormat: Text.PlainText
                                     anchors { top: tlCover.bottom; topMargin: 6 }
                                     width: parent.width
                                     text: entry.modelData.album
@@ -264,6 +270,7 @@ Item {
                                     font.weight: Font.Medium
                                 }
                                 Text {
+                                    textFormat: Text.PlainText
                                     anchors { top: tlCover.bottom; topMargin: 22 }
                                     width: parent.width
                                     text: entry.modelData.album_artist

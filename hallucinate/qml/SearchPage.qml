@@ -28,6 +28,7 @@ Item {
             spacing: 14
 
             Text {
+                textFormat: Text.PlainText
                 visible: page.query.length === 0
                 text: "Search your library"
                 color: Theme.textDim
@@ -35,6 +36,7 @@ Item {
                 font.pixelSize: Theme.fontSize(18)
             }
             Text {
+                textFormat: Text.PlainText
                 visible: page.query.length > 0 && page.tracks.length === 0
                          && page.albums.length === 0 && page.artists.length === 0
                 text: "No results for “" + page.query + "”"
@@ -44,6 +46,7 @@ Item {
             }
 
             Text {
+                textFormat: Text.PlainText
                 visible: page.artists.length > 0
                 text: "Artists"
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
@@ -64,6 +67,7 @@ Item {
             }
 
             Text {
+                textFormat: Text.PlainText
                 visible: page.albums.length > 0
                 text: "Albums"
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
@@ -89,6 +93,7 @@ Item {
             }
 
             Text {
+                textFormat: Text.PlainText
                 visible: page.tracks.length > 0
                 text: "Songs"
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold

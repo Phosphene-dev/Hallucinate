@@ -40,6 +40,7 @@ Item {
                 width: col.width
                 spacing: 6
                 Text {
+                    textFormat: Text.PlainText
                     text: "Folders"
                     color: page.path.length ? Theme.textDim : Theme.text
                     font.family: Theme.displayFamily
@@ -54,6 +55,7 @@ Item {
                         required property int index
                         spacing: 6
                         Text {
+                            textFormat: Text.PlainText
                             anchors.baseline: crumb.baseline
                             text: "›"
                             color: Theme.textDim
@@ -61,6 +63,7 @@ Item {
                             font.pixelSize: Theme.fontSize(18)
                         }
                         Text {
+                            textFormat: Text.PlainText
                             id: crumb
                             readonly property bool last: index === (page.listing.crumbs || []).length - 1
                             text: modelData.name
@@ -89,6 +92,7 @@ Item {
             }
 
             Text {
+                textFormat: Text.PlainText
                 visible: page.folders.length === 0 && page.tracks.length === 0
                 text: library.folders.length ? "Nothing here yet." : "Add a music folder in Settings to browse it here."
                 color: Theme.textDim
@@ -132,6 +136,7 @@ Item {
                             anchors { left: folderArt.right; leftMargin: 12; right: playButton.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
                             spacing: 2
                             Text {
+                                textFormat: Text.PlainText
                                 width: parent.width
                                 text: tile.modelData.name
                                 color: Theme.text
@@ -141,6 +146,7 @@ Item {
                                 font.weight: Font.DemiBold
                             }
                             Text {
+                                textFormat: Text.PlainText
                                 width: parent.width
                                 text: tile.modelData.songs + (tile.modelData.songs === 1 ? " song" : " songs") + "  ·  " + tile.modelData.durText
                                 color: Theme.textDim

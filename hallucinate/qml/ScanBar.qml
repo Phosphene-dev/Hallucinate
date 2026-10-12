@@ -10,6 +10,7 @@ Item {
     visible: active
 
     Text {
+        textFormat: Text.PlainText
         id: label
         anchors { left: parent.left; right: parent.right; top: parent.top }
         elide: Text.ElideRight

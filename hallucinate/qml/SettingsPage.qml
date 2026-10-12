@@ -26,7 +26,7 @@ Item {
         Row {
             width: parent.width
             spacing: 16
-            Text { id: pageTitle; text: "Settings"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(25); font.weight: Font.Bold }
+            Text { id: pageTitle; text: "Settings"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(25); font.weight: Font.Bold; textFormat: Text.PlainText }
             TextField {
                 id: search
                 objectName: "settingsSearch"
@@ -60,6 +60,7 @@ Item {
             }
         }
         Text {
+            textFormat: Text.PlainText
             visible: page.query.length > 0
             text: noMatches ? "No settings match “" + page.query + "”" : "Showing settings that match “" + page.query + "”"
             readonly property bool noMatches: !(sec_appearance.matches || sec_playback.matches || sec_sound.matches || sec_library.matches || sec_sharing.matches || sec_desktop.matches || sec_about.matches)
@@ -95,6 +96,7 @@ Item {
                 Accessible.name: "Show track audio format and average bitrate"
             }
             Text {
+                textFormat: Text.PlainText
                 text: "Shows compact format and approximate average bitrate badges in song rows and the now-playing bar."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 wrapMode: Text.WordWrap
@@ -102,6 +104,7 @@ Item {
             Row {
                 spacing: 12
                 Text {
+                    textFormat: Text.PlainText
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Theme"
                     color: Theme.textDim
@@ -116,6 +119,7 @@ Item {
                     currentIndex: Math.max(0, themeManager.availableThemes.indexOf(themeManager.currentTheme))
                     onActivated: themeManager.selectTheme(currentText)
                     contentItem: Text {
+                        textFormat: Text.PlainText
                         objectName: "themePickerText"
                         leftPadding: 12
                         rightPadding: 28
@@ -146,6 +150,7 @@ Item {
                 checked: themeManager.albumArtAccent
                 onToggled: themeManager.setAlbumArtAccent(checked)
                 contentItem: Text {
+                    textFormat: Text.PlainText
                     text: albumAccentToggle.text
                     leftPadding: 30
                     color: Theme.text
@@ -162,6 +167,7 @@ Item {
                     color: albumAccentToggle.checked ? Theme.accent : Theme.surface
                     border.color: albumAccentToggle.checked ? Theme.accent : Theme.border
                     Text {
+                        textFormat: Text.PlainText
                         anchors.centerIn: parent
                         text: albumAccentToggle.checked ? "✓" : ""
                         color: Theme.onAccent
@@ -171,6 +177,7 @@ Item {
                 }
             }
             Text {
+                textFormat: Text.PlainText
                 text: "Custom themes: " + themeManager.userThemeDirectory + "/*.json"
                 color: Theme.textDim
                 font.family: Theme.fontFamily
@@ -190,7 +197,7 @@ Item {
             query: page.query
             Row {
                 spacing: 12
-                Text { anchors.verticalCenter: parent.verticalCenter; text: "Output device"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+                Text { anchors.verticalCenter: parent.verticalCenter; text: "Output device"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledCombo {
                     id: deviceCombo
                     objectName: "outputDevice"
@@ -210,14 +217,14 @@ Item {
             }
             Row {
                 spacing: 12
-                Text { anchors.verticalCenter: parent.verticalCenter; text: "ReplayGain"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+                Text { anchors.verticalCenter: parent.verticalCenter; text: "ReplayGain"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledCombo {
                     objectName: "rgMode"
                     model: ["Off", "Track", "Album"]
                     currentIndex: ["off", "track", "album"].indexOf(player.replayGainMode)
                     onActivated: player.setReplayGainMode(["off", "track", "album"][currentIndex])
                 }
-                Text { anchors.verticalCenter: parent.verticalCenter; text: "Preamp " + player.replayGainPreamp.toFixed(1) + " dB"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+                Text { anchors.verticalCenter: parent.verticalCenter; text: "Preamp " + player.replayGainPreamp.toFixed(1) + " dB"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledSlider {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 140
@@ -234,6 +241,7 @@ Item {
                     onClicked: replayGain.busy ? replayGain.cancel() : replayGain.analyseMissing()
                 }
                 Text {
+                    textFormat: Text.PlainText
                     anchors.verticalCenter: parent.verticalCenter
                     text: replayGain.busy ? "Measured " + replayGain.done + " of " + replayGain.total + " songs…"
                         : "Measures loudness (EBU R128) for songs whose files have no ReplayGain tags. Files aren't changed."
@@ -244,7 +252,7 @@ Item {
             }
             Row {
                 spacing: 12
-                Text { anchors.verticalCenter: parent.verticalCenter; text: "Crossfade " + (player.crossfade > 0 ? player.crossfade + " s" : "off"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+                Text { anchors.verticalCenter: parent.verticalCenter; text: "Crossfade " + (player.crossfade > 0 ? player.crossfade + " s" : "off"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledSlider {
                     objectName: "crossfade"
                     anchors.verticalCenter: parent.verticalCenter
@@ -254,7 +262,7 @@ Item {
                     onMoved: player.setCrossfade(value)
                 }
             }
-            Text { text: "Gapless playback is always on; with crossfade off, consecutive tracks play back to back."; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12) }
+            Text { text: "Gapless playback is always on; with crossfade off, consecutive tracks play back to back."; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
         }
         SettingsSection {
             id: sec_sound
@@ -265,7 +273,7 @@ Item {
             EqualizerPanel {}
             Row {
                 spacing: 12
-                Text { anchors.verticalCenter: parent.verticalCenter; text: "Headphone crossfeed"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+                Text { anchors.verticalCenter: parent.verticalCenter; text: "Headphone crossfeed"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledCombo {
                     objectName: "crossfeed"
                     enabled: player.eqAvailable
@@ -275,6 +283,7 @@ Item {
                 }
             }
             Text {
+                textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
                 text: "Lets each ear hear a little of the other channel, as from speakers. Old stereo recordings with "
@@ -290,6 +299,7 @@ Item {
             keywords: "music folders scan rescan health import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums"
             query: page.query
             Text {
+                textFormat: Text.PlainText
                 text: "Folders are scanned in the background and watched for changes."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
@@ -297,6 +307,7 @@ Item {
                 visible: library.hiddenCount > 0
                 spacing: 12
                 Text {
+                    textFormat: Text.PlainText
                     objectName: "hiddenCount"
                     anchors.verticalCenter: parent.verticalCenter
                     text: library.hiddenCount + (library.hiddenCount === 1 ? " file" : " files")
@@ -318,6 +329,7 @@ Item {
                     width: parent.width; height: 48; radius: Theme.radius
                     color: Theme.surface
                     Text {
+                        textFormat: Text.PlainText
                         anchors { left: parent.left; leftMargin: 16; right: rm.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
                         text: modelData
                         color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); elide: Text.ElideMiddle
@@ -356,11 +368,13 @@ Item {
             }
             ScanBar { width: parent.width }
             Text {
+                textFormat: Text.PlainText
                 visible: !library.scanning && library.status.length > 0
                 text: library.status
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Text {
+                textFormat: Text.PlainText
                 width: parent.width
                 visible: library.missingFolders.length > 0
                 wrapMode: Text.WordWrap
@@ -368,6 +382,7 @@ Item {
                 color: Theme.error; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Text {
+                textFormat: Text.PlainText
                 visible: library.unreadableFiles > 0 && !library.scanning
                 text: library.unreadableFiles + " files could not be read and were skipped."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
@@ -377,8 +392,9 @@ Item {
 
             Rectangle { width: parent.width; height: 1; color: Theme.border }
             Rectangle { width: parent.width; height: 1; color: Theme.border }
-            Text { text: "From another player"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold }
+            Text { text: "From another player"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {
+                textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
                 text: "Bring over play counts, skips, ratings and playlists from Strawberry, Clementine, Rhythmbox, MusicBee "
@@ -412,6 +428,7 @@ Item {
                 }
             }
             Text {
+                textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
                 text: "MusicBee: turn on Preferences → Library → “make library and playlists accessible to other "
@@ -432,8 +449,9 @@ Item {
             title: "Internet & sharing"
             keywords: "offline mode internet network privacy connection last.fm lastfm listenbrainz scrobble discord rich presence history import account"
             query: page.query
-            Text { text: "Offline mode"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold }
+            Text { text: "Offline mode"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {
+                textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
                 text: "Hallucinate makes no internet connections at all: no lyrics or cover lookups, scrobbling, headphone EQ downloads or update checks. Scrobbles wait and are sent when you turn it off. Discord status talks only to the Discord app on this computer, so it keeps its own switch below (it shows no cover art while offline)."
@@ -445,14 +463,16 @@ Item {
                 checked: shell.offlineMode
                 onToggled: shell.setOfflineMode(checked)
             }
-            Text { text: "Last.fm"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold }
+            Text { text: "Last.fm"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {
+                textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
                 text: "Connect your Last.fm account to send now-playing updates and scrobbles after listening to half a track or four minutes, whichever comes first. API credentials are stored in the system keyring."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Text {
+                textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
                 text: "Register an API application, then enter its key and secret. Last.fm account authorization opens in your browser."
@@ -520,6 +540,7 @@ Item {
                 }
             }
             Text {
+                textFormat: Text.PlainText
                 width: parent.width
                 text: scrobbler.status + (scrobbler.pendingCount > 0 ? " · " + scrobbler.pendingCount + " queued scrobbles" : "")
                 color: scrobbler.connected ? Theme.accent : Theme.textDim
@@ -527,8 +548,9 @@ Item {
                 font.pixelSize: Theme.fontSize(13)
                 wrapMode: Text.WordWrap
             }
-            Text { text: "ListenBrainz"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold }
+            Text { text: "ListenBrainz"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {
+                textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
                 text: "Connect with a ListenBrainz user token to send now-playing updates and listens. Tokens stay in the system keyring; failed submissions remain queued for retry."
@@ -561,12 +583,13 @@ Item {
                 }
             }
             Text {
+                textFormat: Text.PlainText
                 width: parent.width
                 text: listenbrainz.status + (listenbrainz.pendingCount > 0 ? " · " + listenbrainz.pendingCount + " queued listens" : "")
                 color: listenbrainz.connected ? Theme.accent : Theme.textDim
                 font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); wrapMode: Text.WordWrap
             }
-            Text { text: "Import listening history"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold }
+            Text { text: "Import listening history"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Row {
                 spacing: 10
                 StyledCombo {
@@ -591,13 +614,15 @@ Item {
                 }
             }
             Text {
+                textFormat: Text.PlainText
                 visible: listenbrainz.importStatus.length > 0
                 width: parent.width
                 text: listenbrainz.importStatus
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); wrapMode: Text.WordWrap
             }
-            Text { text: "Discord Rich Presence"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold }
+            Text { text: "Discord Rich Presence"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {
+                textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
                 text: "Show what you're listening to on your Discord profile. Create an application at discord.com/developers, paste its Application ID below and upload your icon as an art asset named “hallucinate”. Status: " + discord.status
@@ -634,7 +659,7 @@ Item {
             }
             Row {
                 spacing: 12
-                Text { anchors.verticalCenter: parent.verticalCenter; text: "When I close the window"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+                Text { anchors.verticalCenter: parent.verticalCenter; text: "When I close the window"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledCombo {
                     objectName: "closeAction"
                     width: 250
@@ -648,6 +673,7 @@ Item {
                 }
             }
             Text {
+                textFormat: Text.PlainText
                 visible: !shell.canMinimize
                 width: parent.width
                 wrapMode: Text.WordWrap
@@ -679,6 +705,7 @@ Item {
                 Accessible.name: "Hallucinate logo"
             }
             Text {
+                textFormat: Text.PlainText
                 text: "Hallucinate " + shell.appVersion + " — a modern music library and player"
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
@@ -695,6 +722,7 @@ Item {
                 }
             }
             Text {
+                textFormat: Text.PlainText
                 visible: !shell.updates.supported
                 text: "Updates come through Flathub (your software centre)."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
@@ -727,6 +755,7 @@ Item {
                 }
             }
             Text {
+                textFormat: Text.PlainText
                 visible: shell.updates.status.length > 0
                 text: shell.updates.status
                 color: shell.updates.available ? Theme.accent : Theme.textDim
@@ -739,6 +768,7 @@ Item {
                 }
             }
             Text {
+                textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
                 text: "Debug info lists versions, your system, display and audio setup and the recent log. It leaves out "
