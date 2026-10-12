@@ -180,6 +180,12 @@ Item {
                     }
                     PillButton { text: "Add to queue"; onClicked: player.enqueueAll(page.tracks.toList()) }
                     PillButton { text: "Edit"; onClicked: Nav.editAlbum(page.albumKey) }
+                    IconButton {
+                        objectName: "albumPageMore"
+                        anchors.verticalCenter: parent.verticalCenter
+                        icon: "more"; size: 18; tip: "More: playlists, remove from library…"
+                        onClicked: Nav.albumMenu([page.albumKey], page.info.album || "", page.info.album_artist || "")
+                    }
                 }
             }
 

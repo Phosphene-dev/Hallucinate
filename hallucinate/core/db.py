@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS tracks(
 );
 CREATE INDEX IF NOT EXISTS idx_tracks_album ON tracks(album_key);
 CREATE TABLE IF NOT EXISTS folders(path TEXT PRIMARY KEY);
+-- files removed from the library on purpose: rescans leave them out until they're restored
+CREATE TABLE IF NOT EXISTS hidden(path TEXT PRIMARY KEY, hidden_at REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS likes(path TEXT PRIMARY KEY, liked_at REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS ratings(path TEXT PRIMARY KEY, stars INTEGER NOT NULL, rated_at REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS playlists(id INTEGER PRIMARY KEY, name TEXT NOT NULL, created REAL NOT NULL);
@@ -84,6 +86,11 @@ _ORDER = "disc_no, track_no, s_title"
 
 def _like(token: str) -> str:
     return "%" + token.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+
+
+def _like_prefix(text: str) -> str:
+    """`text` escaped for use at the start of a LIKE pattern (with ESCAPE '\\')."""
+    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 def fold(s: str) -> str:
@@ -616,6 +623,35 @@ class Database:
             if self.has_fts:
                 self.conn.execute("DELETE FROM tracks_fts WHERE rowid=?", (row["id"],))
             self.conn.execute("DELETE FROM tracks WHERE id=?", (row["id"],))
+
+    @staticmethod
+    def file_of(path: str) -> str:
+        """The file a library path lives in: CUE sheet songs are "file.flac#3"."""
+        m = re.match(r"^(.*\.[A-Za-z0-9]+)#\d+$", path)
+        return m.group(1) if m else path
+
+    def hide_paths(self, paths: Iterable[str]) -> int:
+        """Take songs out of the library and keep later scans from adding their files back."""
+        paths = list(paths)
+        now = time.time()
+        files = {self.file_of(p) for p in paths}
+        self.conn.executemany("INSERT OR IGNORE INTO hidden(path, hidden_at) VALUES(?, ?)", [(f, now) for f in files])
+        # every song of a hidden file goes, so a CUE album doesn't leave stragglers
+        doomed = set(paths)
+        for f in files:
+            doomed.update(r[0] for r in self.conn.execute(
+                "SELECT path FROM tracks WHERE path=? OR path LIKE ? ESCAPE '\\'", (f, _like_prefix(f) + "#%")))
+        self.remove_paths(doomed)
+        self.conn.commit()
+        return len(doomed)
+
+    def hidden_paths(self) -> set:
+        return {r[0] for r in self.conn.execute("SELECT path FROM hidden")}
+
+    def unhide_all(self) -> int:
+        n = self.conn.execute("DELETE FROM hidden").rowcount
+        self.conn.commit()
+        return n
 
     def set_album_art(self, key: str, art: str):
         self.conn.execute("UPDATE tracks SET art=? WHERE album_key=?", (art, key))

@@ -233,3 +233,54 @@ def test_search_results_draw_without_per_row_python_reads(qapp, app_window, monk
     assert [r.property("path") for r in visible_rows() if r.property("current")] == ([playing] if playing else [])
     assert not warnings, warnings[:3]
     del field
+
+
+def test_albums_select_menu_and_remove(qapp, app_window):
+    """Ctrl+click selects albums, the bar counts them, right-click opens the album menu, and removing goes
+    through its confirmation."""
+    from conftest import wait_for
+    from PySide6.QtCore import QPoint
+    from PySide6.QtTest import QTest
+
+    window, objects, warnings = app_window
+    library = objects["library"]
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "albums"))
+
+    def items():
+        stack = [window.contentItem()]
+        while stack:
+            item = stack.pop()
+            yield item
+            stack.extend(item.childItems())
+
+    def named(name):
+        return [i for i in items() if i.objectName() == name and i.isVisible()]
+
+    assert wait_for(lambda: len(named("albumCard")) == 2)
+    cards = sorted(named("albumCard"), key=lambda c: c.mapToScene(c.position()).x())
+
+    def click(card, button=Qt.MouseButton.LeftButton, mods=Qt.KeyboardModifier.NoModifier):
+        p = card.mapToScene(card.position())
+        QTest.mouseClick(window, button, mods, QPoint(int(p.x() + 40), int(p.y() + 40)))
+
+    for card in cards:
+        click(card, mods=Qt.KeyboardModifier.ControlModifier)
+    bar = named("albumBar")
+    assert wait_for(lambda b=bar[0]: b.property("shown"))
+    assert next(i for i in items() if i.objectName() == "albumSelectionCount").property("text") == "2 albums selected"
+
+    click(cards[0], Qt.MouseButton.RightButton)
+    menu = window.findChild(QObject, "albumMenu")
+    assert wait_for(lambda m=menu: m.property("visible"))
+    keys = menu.property("keys").toVariant()
+    assert len(keys) == 2  # right-clicking a selected album acts on the whole selection
+    QMetaObject.invokeMethod(menu, "close")
+
+    dialog = window.findChild(QObject, "removeAlbumsDialog")
+    dialog.setProperty("keys", keys)
+    QMetaObject.invokeMethod(dialog, "accept")
+    assert wait_for(lambda: library.trackCount == 0 and library.hiddenCount == 8, timeout=5)
+    for _ in range(5):
+        qapp.processEvents()
+    assert not warnings, warnings[:3]
+    del bar, cards, menu, dialog

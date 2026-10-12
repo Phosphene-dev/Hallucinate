@@ -4,17 +4,25 @@ import "."
 
 Item {
     id: card
+    objectName: "albumCard"
     property string albumKey
     property string title
     property string subtitle
     property url artUrl
     property string note: ""
+    property string artist: ""      // for the menu's "Go to artist"
+    // The grid this card is in (its model, or an array of albums) and its place there: Ctrl/Shift+click select
+    property var selectionSource: null
+    property int rowIndex: -1
+    readonly property bool selected: AlbumSelection.count > 0 && AlbumSelection.has(albumKey)
+    function openMenu() { Nav.albumMenu([albumKey], title, artist) }
     property real cardWidth: 170
     width: cardWidth
     height: cardWidth + (note.length ? 80 : 62)
     activeFocusOnTab: true
     Keys.onReturnPressed: Nav.openAlbum(card.albumKey)
     Keys.onSpacePressed: Nav.openAlbum(card.albumKey)
+    Keys.onMenuPressed: card.openMenu()
     Accessible.role: Accessible.Button
     Accessible.name: title + (subtitle.length ? ", " + subtitle : "")
     Accessible.onPressAction: Nav.openAlbum(card.albumKey)
@@ -48,6 +56,28 @@ Item {
         source: card.artUrl
         y: hh.hovered ? -4 : 0
         Behavior on y { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+    }
+    Rectangle {  // selected: an accent ring around the cover
+        anchors.fill: art
+        anchors.margins: -3
+        radius: art.radius + 3
+        color: "transparent"
+        border.width: 3
+        border.color: Theme.accent
+        visible: card.selected
+    }
+    Rectangle {
+        objectName: "albumMore"
+        width: 30; height: 30; radius: 15
+        color: Theme.glassStrong
+        anchors { right: art.right; top: art.top; margins: 8 }
+        opacity: hh.hovered ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 140 } }
+        Icon { anchors.centerIn: parent; width: 16; height: 16; name: "more"; color: Theme.text }
+        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: card.openMenu() }
+        Accessible.role: Accessible.Button
+        Accessible.name: "More actions for " + card.title
     }
     Rectangle {
         id: playBtn
@@ -102,6 +132,19 @@ Item {
         anchors.margins: -6
         z: -1
         cursorShape: Qt.PointingHandCursor
-        onClicked: Nav.openAlbum(card.albumKey)
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onClicked: function (mouse) {
+            if (mouse.button === Qt.RightButton) {
+                card.openMenu()
+            } else if (card.selectionSource && (mouse.modifiers & Qt.ControlModifier)) {
+                AlbumSelection.toggle(card.selectionSource, card.rowIndex, card.albumKey)
+            } else if (card.selectionSource && (mouse.modifiers & Qt.ShiftModifier)) {
+                AlbumSelection.extend(card.selectionSource, card.rowIndex, card.albumKey)
+            } else {
+                AlbumSelection.clear()
+                Nav.openAlbum(card.albumKey)
+            }
+        }
+        onPressAndHold: card.openMenu()  // touch screens
     }
 }

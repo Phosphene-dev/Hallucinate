@@ -287,11 +287,28 @@ Item {
             id: sec_library
             objectName: "settings_library"
             title: "Library"
-            keywords: "music folders scan rescan health import strawberry clementine rhythmbox musicbee itunes foobar playlists"
+            keywords: "music folders scan rescan health import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums"
             query: page.query
             Text {
                 text: "Folders are scanned in the background and watched for changes."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            Row {
+                visible: library.hiddenCount > 0
+                spacing: 12
+                Text {
+                    objectName: "hiddenCount"
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: library.hiddenCount + (library.hiddenCount === 1 ? " file" : " files")
+                          + " removed from the library (still on disk)"
+                    color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                }
+                PillButton {
+                    objectName: "restoreHidden"
+                    height: 32
+                    text: "Bring them back"
+                    onClicked: { library.restoreHidden(); Nav.notify("Rescanning to bring them back…") }
+                }
             }
 
             Repeater {

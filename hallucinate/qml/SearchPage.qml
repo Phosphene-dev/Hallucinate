@@ -77,10 +77,14 @@ Item {
                 model: page.albums
                 delegate: AlbumCard {
                     required property var modelData
+                    required property int index
                     albumKey: modelData.album_key
                     title: modelData.album
                     subtitle: modelData.album_artist || ""
+                    artist: modelData.album_artist || ""
                     artUrl: modelData.artUrl
+                    selectionSource: page.albums
+                    rowIndex: index
                 }
             }
 

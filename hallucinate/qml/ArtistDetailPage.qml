@@ -290,6 +290,7 @@ Item {
                                     cardWidth: 160
                                     albumKey: modelData.album_key
                                     title: modelData.album
+                                    artist: page.artistName
                                     subtitle: modelData.n + (modelData.n === 1 ? " song" : " songs") + "  ·  " + modelData.durText
                                     artUrl: modelData.artUrl
                                 }
@@ -315,6 +316,7 @@ Item {
                             cardWidth: 160
                             albumKey: modelData.album_key
                             title: modelData.album
+                            artist: page.artistName
                             subtitle: (modelData.year > 0 ? modelData.year + "  ·  " : "") + modelData.album_artist
                             artUrl: modelData.artUrl
                         }

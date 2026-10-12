@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.9.2" date="2026-10-12">
+      <description>
+        <p>Right-click albums, or select several, to play, queue, add to playlists, remove from the library or move to the trash.</p>
+        <p>Finding covers online copes with the cover servers failing an image.</p>
+      </description>
+    </release>
     <release version="0.9.1" date="2026-10-12">
       <description>
         <p>Searching a big library no longer freezes the window while you type.</p>
