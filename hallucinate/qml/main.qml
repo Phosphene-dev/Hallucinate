@@ -123,6 +123,7 @@ ApplicationWindow {
         }
         function onNotify(message) { toast.show(message) }
         function onBack() { if (stack.depth > 1) stack.pop() }
+        function onInstallUpdate() { updateDlg.open() }
     }
 
     Timer {
@@ -234,6 +235,26 @@ ApplicationWindow {
         onOpened: { createField.text = ""; createField.forceActiveFocus() }
         onAccepted: if (createField.text.trim().length) window.openPlaylist(userLib.createPlaylist(createField.text.trim()), createField.text.trim())
         TextField { id: createField; width: 280; placeholderText: "Playlist name"; selectByMouse: true; onAccepted: createDlg.accept() }
+    }
+
+    Dialog {
+        id: updateDlg
+        objectName: "updateDialog"
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: 420
+        modal: true
+        title: "Update to Hallucinate " + shell.updates.latestVersion + "?"
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        onAccepted: shell.updates.installNow()
+        Text {
+            width: updateDlg.availableWidth
+            wrapMode: Text.WordWrap
+            text: "Hallucinate downloads the new version from GitHub, checks it against the release's checksum, "
+                  + "then closes and reopens to finish. Your library, playlists and settings stay as they are."
+                  + (Qt.platform.os === "windows" ? " Windows may ask for permission to install." : "")
+            color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+        }
     }
 
     // Drop audio files or folders anywhere to play them (the queue panel, above it, appends instead)

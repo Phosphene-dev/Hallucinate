@@ -150,6 +150,12 @@ def test_every_page_in_every_theme(qapp, tmp_path, monkeypatch):
             yield f"welcome {step + 1}"
         welcome.setProperty("open", False)
         settle()
+        dialog = window.findChild(QObject, "updateDialog")
+        QMetaObject.invokeMethod(dialog, "open")
+        settle()
+        yield "update dialog"
+        QMetaObject.invokeMethod(dialog, "close")
+        settle()
 
     problems = []
     for theme in manager.availableThemes:

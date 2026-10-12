@@ -22,4 +22,5 @@ QtObject {
     signal editTags(string path)
     signal editAlbum(string key)
     signal back()
+    signal installUpdate()
 }

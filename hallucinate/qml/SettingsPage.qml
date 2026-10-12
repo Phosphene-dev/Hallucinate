@@ -683,6 +683,16 @@ Item {
                     enabled: !shell.updates.busy && !shell.offlineMode
                     onClicked: shell.updates.checkNow()
                 }
+                PillButton {
+                    objectName: "updateNow"
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: 32
+                    primary: true
+                    visible: shell.updates.canInstall && (shell.updates.available || shell.updates.installing)
+                    text: shell.updates.installing ? "Cancel" : "Update now"
+                    enabled: shell.updates.installing || !shell.offlineMode
+                    onClicked: shell.updates.installing ? shell.updates.cancelInstall() : Nav.installUpdate()
+                }
             }
             Text {
                 visible: shell.updates.status.length > 0

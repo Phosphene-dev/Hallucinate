@@ -34,3 +34,5 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; Flags: unchecked
 
 [Run]
 Filename: "{app}\Hallucinate.exe"; Description: "Launch Hallucinate"; Flags: nowait postinstall skipifsilent
+; An update started from inside the app runs this installer silently; open the app again afterwards.
+Filename: "{app}\Hallucinate.exe"; Flags: nowait runasoriginaluser; Check: WizardSilent
