@@ -35,7 +35,7 @@ Changelog = "https://github.com/bulmaspanties/Hallucinate/blob/main/CHANGELOG.md
 
 [project.optional-dependencies]
 test = ["pytest>=9.1.1"]
-icons = ["Pillow>=9"]
+icons = ["Pillow>=12.3.0"]
 
 [project.gui-scripts]
 hallucinate = "hallucinate.app:main"
