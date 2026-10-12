@@ -124,22 +124,28 @@ def normalize(rules):
     return {"match": match, "rules": clean, "sort": sort, "limit": max(0, min(limit, MAX_LIMIT))}
 
 
+# Text fields with a folded copy in the table (compare that, not fold() per row: see db.SEARCH_COLS)
+FOLDED = {"t.title": "t.s_title", "t.artist": "t.s_artist", "t.album": "t.s_album", "t.album_artist": "t.s_aa",
+          "t.genre": "t.s_genre"}
+
+
 def _condition(rule, now):
     kind, expr, _label = FIELDS[rule["field"]]
     op, value = rule["op"], rule["value"]
     if kind == "text":
         folded = fold(value)
+        col = FOLDED.get(expr, f"fold({expr})")
         if op == "contains":
-            return f"fold({expr}) LIKE ? ESCAPE '\\'", [_like(folded)]
+            return f"{col} LIKE ? ESCAPE '\\'", [_like(folded)]
         if op == "not_contains":
-            return f"fold({expr}) NOT LIKE ? ESCAPE '\\'", [_like(folded)]
+            return f"{col} NOT LIKE ? ESCAPE '\\'", [_like(folded)]
         if op == "is":
-            return f"fold({expr}) = ?", [folded]
+            return f"{col} = ?", [folded]
         if op == "is_not":
-            return f"fold({expr}) != ?", [folded]
+            return f"{col} != ?", [folded]
         if op == "starts_with":
-            return f"fold({expr}) LIKE ? ESCAPE '\\'", [_like(folded)[1:]]
-        return f"fold({expr}) LIKE ? ESCAPE '\\'", [_like(folded)[:-1]]
+            return f"{col} LIKE ? ESCAPE '\\'", [_like(folded)[1:]]
+        return f"{col} LIKE ? ESCAPE '\\'", [_like(folded)[:-1]]
     if kind == "number":
         if op == "between":
             return f"{expr} BETWEEN ? AND ?", list(value)

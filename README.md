@@ -37,7 +37,7 @@
 - **Every listen remembered.** A searchable history of everything you played, recaps of every week, month and year, and your Last.fm, ListenBrainz or old player's history brought over.
 - **Plays everything well.** FLAC, MP3, AAC/ALAC, Ogg, Opus, WAV, WavPack, AIFF and more, CUE sheet albums too, with true gapless playback, ReplayGain (measured where tags are missing), a 10-band equalizer, headphone correction and crossfeed, and a signal path readout that tells you when the sound is untouched.
 - **Radio mode and smart playlists.** Similar songs from your library keep playing when the queue runs out (songs you keep skipping come up less); playlists update themselves from rules, ratings included.
-- **Fast to drive.** Instant search across 50,000 tracks, Ctrl+K for anything, Ctrl/Shift+click to act on many songs at once, and Ctrl+Z when the queue goes wrong.
+- **Fast to drive.** Instant search even across a quarter of a million songs, Ctrl+K for anything, Ctrl/Shift+click to act on many songs at once, and Ctrl+Z when the queue goes wrong.
 - **Looks after your library.** A health check finds missing covers (and fetches them all at once), tags and folders, split albums and duplicates, with a fix next to each.
 - **No account, no cloud.** Your library, playlists and history stay on your computer. Scrobbling and Discord are opt-in, cover art is fetched only when you ask, and online lyrics lookup can be turned off.
 
@@ -226,7 +226,9 @@ keyring credentials are migrated without replacing data already at the new path.
 
 Scanning, database reads/writes, search and cover decoding all run off the GUI thread; lists and grids are
 virtualized and thumbnails are cached under the data directory. `tests/test_performance.py` exercises a 50k-track
-library and asserts the UI thread is never blocked for long.
+library and asserts the UI thread is never blocked for long. For bigger collections, `scripts/scale_check.py` runs
+the whole app against a synthetic library (250,000 songs by default) and reports the worst stall for every page and
+action, and `scripts/bench_library.py` times the queries behind them.
 
 ## Last.fm
 In Settings, enter the API key and secret for a Last.fm API application (create

@@ -284,3 +284,46 @@ def test_albums_select_menu_and_remove(qapp, app_window):
         qapp.processEvents()
     assert not warnings, warnings[:3]
     del bar, cards, menu, dialog
+
+
+def test_timeline_year_shows_two_lines_until_asked(qapp, app_window, tmp_path):
+    """A year with many albums shows two lines of covers and a "Show all" button for the rest."""
+    from conftest import wait_for
+    from PySide6.QtCore import QPointF
+    from PySide6.QtTest import QTest
+
+    window, objects, warnings = app_window
+    library = objects["library"]
+    db = Database(tmp_path / "library.db")
+    for i in range(40):
+        db.upsert_track({
+            "path": str(tmp_path / "Music" / "Busy" / f"{i}.flac"), "mtime": 0, "size": 1, "title": f"B{i}",
+            "artist": "Busy", "album_artist": "Busy", "aa_tag": 1, "album": f"Busy {i:02d}", "album_key": f"busy{i}",
+            "track_no": 1, "disc_no": 0, "year": 2001, "genre": "", "duration": 100.0, "fmt": "FLAC",
+            "codec": "FLAC", "bitrate": 900_000, "sample_rate": 44100,
+        })
+    db.commit()
+    db.close()
+    library.reload()
+    assert wait_for(lambda: library.albumCount == 42)
+
+    def visible(name):
+        stack, found = [window.contentItem()], []
+        while stack:
+            item = stack.pop()
+            if item.objectName() == name and item.isVisible():
+                found.append(item)
+            stack.extend(item.childItems())
+        return found
+
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "albums"))
+    assert wait_for(lambda: len(visible("albumCard")) > 2)  # the grid has finished building before switching
+    window.findChild(QObject, "pageStack").property("currentItem").setProperty("view", "timeline")
+    assert wait_for(lambda: len(visible("timelineMore")) == 1)  # 2001 (41 albums) is busy; 2000 (one) isn't
+    button = visible("timelineMore")[0]
+    assert button.property("text") == "Show all 41"
+    p = button.mapToScene(QPointF(button.width() / 2, button.height() / 2))
+    QTest.mouseClick(window, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, p.toPoint())
+    assert wait_for(lambda: not visible("timelineMore"))
+    assert not warnings, warnings[:3]
+    del button

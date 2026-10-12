@@ -5,6 +5,17 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-10-12
+
+Big libraries: Hallucinate is now tested with a quarter of a million songs (and a 300,000-listen history), and stays smooth at that size.
+
+### Improved
+- Faster with large libraries. On a 250,000-song test library: ready 8.7 → 5.5 s after start-up, a rescan or tag edit applies in 6.7 s instead of 12.7, and memory use is a third lower (1.5 → 1.1 GB).
+- No more stalls on big libraries: opening Albums (half a second → under 0.1), the timeline (a third of a second → under 0.1) and applying a rescan (two-thirds of a second → a quarter or less) no longer hold the window up. A rescan that changes nothing no longer redraws anything.
+- The timeline shows two rows of each year with "Show all" for the rest, so a year with hundreds of albums doesn't make you scroll past it.
+- Search's album and artist results, smart playlists, radio and Home's mix no longer slow down as a library grows.
+- An album's page opens without scanning the whole listening history.
+
 ## [0.9.3] - 2026-10-12
 
 A safety and stability release: nothing looks different, but more can go wrong without hurting you.

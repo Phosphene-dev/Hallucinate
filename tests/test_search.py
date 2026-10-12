@@ -1,3 +1,6 @@
+import pytest
+
+
 def test_prefix_and_multi_token(db, scan, music):
     scan(music)
     assert [t["title"] for t in db.search("mid")["tracks"]] == ["Midnight Rain"]
@@ -33,3 +36,21 @@ def test_artist_pages(db, scan, music):
     assert [a["album"] for a in db.artist_albums("aurora vale")] == ["Northern Lights"]
     assert len(db.artist_tracks("Aurora Vale")) == 2
     assert [a["name"] for a in db.artists()][:2] == ["Aurora Vale", "Blue Harbor"]
+
+
+@pytest.mark.parametrize("q", ["s", "so", "album 9", "artist 12", "caf", "zzz", "album 1 artist", "123", "ä"])
+def test_in_memory_album_and_artist_search_matches_the_database(tmp_path, q):
+    """Library searches albums and artists in memory (fast on huge libraries); it must find the same ones, in
+    the same order, as the database query it replaces."""
+    from test_library_robust import _bulk
+
+    from hallucinate.core.db import Database, group_index, search_groups
+
+    db = Database(tmp_path / "s.db")
+    _bulk(db, 3000)
+    db.finalize()
+    want = db.search(q)
+    albums, artists = search_groups(group_index(db.albums(), db.artists()), q)
+    assert [a["album_key"] for a in albums] == [a["album_key"] for a in want["albums"]]
+    assert [a["name"] for a in artists] == [a["name"] for a in want["artists"]]
+    db.close()

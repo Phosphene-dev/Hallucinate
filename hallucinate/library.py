@@ -1,3 +1,4 @@
+import gc
 import logging
 import os
 import random
@@ -10,7 +11,7 @@ from .core import albums as album_views
 from .core import artists as artist_views
 from .core import folders as folder_views
 from .core import health as health_checks
-from .core.db import Database, fold
+from .core.db import Database, fold, group_index, search_groups
 from .core.radio import radio_tracks
 from .core.scanner import Scanner
 from .core.tags import AUDIO_EXTS, find_folder_art, read_track
@@ -86,11 +87,54 @@ def fmt_duration(seconds) -> str:
 
 
 def decorate(rows):
+    """Add the cover URL and duration label QML shows. Each is worked out once per distinct cover or length, and
+    the result shared between rows: a big library has far fewer covers and lengths than songs."""
+    urls, labels = {}, {}
     for r in rows:
         art = r.get("art")
-        r["artUrl"] = QUrl.fromLocalFile(art).toString() if art else ""
-        r["durText"] = fmt_duration(r.get("duration"))
+        if art:
+            url = urls.get(art)
+            if url is None:
+                url = urls[art] = QUrl.fromLocalFile(art).toString()
+            r["artUrl"] = url
+        else:
+            r["artUrl"] = ""
+        d = int(round(r.get("duration") or 0))
+        label = labels.get(d)
+        if label is None:
+            label = labels[d] = fmt_duration(d)
+        r["durText"] = label
     return rows
+
+
+# Text fields that repeat across a library's songs (every song of an album shares its album, artist, genre and
+# cover); one shared copy each instead of one per song keeps a quarter-million-song list to a sensible size.
+SHARED_FIELDS = ("artist", "album", "album_artist", "album_key", "genre", "fmt", "codec", "art", "file")
+
+
+def share_strings(rows):
+    pool = {}
+    for r in rows:
+        for f in SHARED_FIELDS:
+            v = r.get(f)
+            if v.__class__ is str:
+                r[f] = pool.setdefault(v, v)
+    return rows
+
+
+def _differs(old, new, chunk=2000):
+    """old != new, a slice at a time: comparing a quarter-million rows in one go holds the GIL (and so the
+    interface) for a fifth of a second."""
+    if len(old) != len(new):
+        return True
+    return any(old[i:i + chunk] != new[i:i + chunk] for i in range(0, len(new), chunk))
+
+
+def _free(lists, chunk=5000):
+    """Let go of big row lists a slice at a time, so freeing them never holds the interface up for long."""
+    for rows in lists:
+        while rows:
+            del rows[-chunk:]
 
 
 def _only_leftovers(folder):
@@ -180,13 +224,13 @@ class Library(QObject):
             "filteredTracks": DictModel(TRACK_KEYS, self, "id"),
             "duplicates": DictModel(DUPLICATE_KEYS, self, "id"),
             "wall": DictModel(WALL_KEYS, self, "album_key"),
+            # decade and year rows; a year's albums are handed over only when its row is on screen
+            "timeline": DictModel(["kind", "label", "count", "year", "albums"], self),
         }
         self._timeline = []
-        self._wall_wanted = False
         self._wall_loading = False
         self._wall_gen = 0
         self._health = {}
-        self._health_wanted = False
         self._health_loading = False
         self._detail = {}  # insertion order = least recently used first
         self._detail_revision = 0
@@ -208,6 +252,7 @@ class Library(QObject):
         self._duplicates_loading = False
         self._load_gen = 0
         self._search_gen = 0
+        self._search_index = None  # folded album/artist names, built with each load
         self._search_results = {"tracks": [], "albums": [], "artists": []}
         self._bulk = _Reader(self._db_path, "lib-bulk")
         self._quick = _Reader(self._db_path, "lib-search")
@@ -349,11 +394,13 @@ class Library(QObject):
             "albums": decorate(db.albums()),
             "recent": decorate(db.recent_albums()),
             "artists": decorate(db.artists()),
-            "songs": decorate(db.tracks()),
+            "songs": share_strings(decorate(db.song_list())),
             "counts": db.counts(),
             "filterValues": db.filter_values(),
         }
         data["timeline"] = Library._timeline_rows(data["albums"])
+        data["artistIndex"] = {fold(a["name"]): a for a in data["artists"]}
+        data["searchIndex"] = group_index(data["albums"], data["artists"])
         data["ops"] = {}
         for name, snap in snapshots.items():
             if snap is None:
@@ -368,10 +415,15 @@ class Library(QObject):
         self._load_gen += 1
         gen = self._load_gen
         snapshots = {n: self._models[n].snapshot_keys() for n in ("albums", "artists", "songs")}
+        # shallow copies (cheap) so the worker can tell what changed; rows themselves are never edited in place
+        current = {n: list(self._models[n].items()) for n in ("albums", "artists", "songs")}
+        state = {"timeline": self._timeline, "filterValues": self._filter_values, "counts": dict(self._counts)}
 
         def work(db):
             try:
                 data = self._load_all(db, snapshots)
+                data["changed"] = {n: _differs(current[n], data[n]) for n in current}
+                data["changed"].update({k: state[k] != data[k] for k in state})
             except Exception:  # noqa: BLE001
                 logger.exception("Library load failed")
                 data = None
@@ -385,19 +437,28 @@ class Library(QObject):
         if data is None or gen != self._load_gen:
             return
         m = self._models
+        changed = data["changed"]
+        garbage = []
         for name in ("albums", "artists", "songs"):
             revision, ops = data["ops"].get(name, (None, None))
-            m[name].update_items(data[name], ops, revision)
-        m["recent"].set_items(data["recent"])
+            garbage.append(m[name].update_items(data.pop(name), ops, revision, changed[name]))
+        self._bulk.submit(lambda _db, g=garbage: _free(g))
+        # The library is millions of long-lived objects that hold no reference cycles. Moving them out of the
+        # collector's view stops every later full collection from walking all of them while holding the GIL,
+        # which froze the window for a fifth of a second at a time on big libraries. They are still freed
+        # normally (by reference count) when a reload replaces them. (Collecting first would cost as much as
+        # the pauses this avoids; the most it strands is a few stray cycles per reload.)
+        gc.freeze()
+        if m["recent"].items() != data["recent"]:
+            m["recent"].set_items(data["recent"])
         self._timeline = data["timeline"]
-        self.timelineChanged.emit()
-        if self._wall_wanted:
-            self.loadAlbumWall()
-        if self._health_wanted:
-            self.checkHealth()
+        if changed["timeline"]:
+            self._models["timeline"].set_items(data["timeline"])
+            self.timelineChanged.emit()
         self._counts = data["counts"]
         self._filter_values = data["filterValues"]
-        self._artist_index = {fold(a["name"]): a for a in data["artists"]}
+        self._artist_index = data["artistIndex"]
+        self._search_index = data["searchIndex"]
         self._retire(list(self._detail.values()))
         self._detail.clear()
         self._detail_revision += 1
@@ -405,8 +466,10 @@ class Library(QObject):
         if not self._ready:
             self._ready = True
             self.readyChanged.emit()
-        self.changed.emit()
-        self.filtersChanged.emit()
+        if changed["counts"] or changed["albums"] or changed["artists"] or changed["songs"]:
+            self.changed.emit()
+        if changed["filterValues"]:
+            self.filtersChanged.emit()
         self.reloaded.emit()
         if any(self._filters):
             self.filterTracks(*self._filters)
@@ -424,12 +487,20 @@ class Library(QObject):
             self.searchFinished.emit()
             return
 
+        index = self._search_index
+
         def work(db):
             if gen != self._search_gen:  # typing moved on while this waited in the queue: skip it
                 return
             try:
-                r = db.search(query)
-                r = {k: decorate(v) for k, v in r.items()}
+                if index is None:  # before the first load
+                    r = db.search(query)
+                    r = {k: decorate(v) for k, v in r.items()}
+                else:
+                    r = db.search(query, groups=False)
+                    r["tracks"] = decorate(r["tracks"])
+                    albums, artists = search_groups(index, query)  # rows already decorated
+                    r["albums"], r["artists"] = [dict(a) for a in albums], [dict(a) for a in artists]
             except Exception:  # noqa: BLE001
                 logger.exception("Search failed")
                 r = {"tracks": [], "albums": [], "artists": []}
@@ -881,10 +952,12 @@ class Library(QObject):
         info = self._db.album(key)
         return [c.name() for c in art_palette(info["art"])] if info and info.get("art") else []
 
-    @Property("QVariantList", notify=timelineChanged)
+    @Property(QObject, constant=True)
     def timeline(self):
-        """Rows for the timeline view: {"kind": "decade", "label", "count"} then {"kind": "year", "year", "albums"}."""
-        return self._timeline
+        """A model of rows for the timeline view: {"kind": "decade", "label", "count"} then
+        {"kind": "year", "year", "albums"}. A model rather than one big list, so opening the view doesn't convert
+        every album of a large library at once."""
+        return self._models["timeline"]
 
     @staticmethod
     def _timeline_rows(albums):
@@ -903,7 +976,6 @@ class Library(QObject):
         """Order the albums by cover colour; covers not seen before are measured once and cached."""
         from .themes import cover_color
 
-        self._wall_wanted = True
         self._wall_gen += 1
         gen = self._wall_gen
         self._wall_loading = True
@@ -955,7 +1027,6 @@ class Library(QObject):
 
     @Slot()
     def checkHealth(self):
-        self._health_wanted = True
         self._health_loading = True
         self.healthChanged.emit()
 

@@ -75,12 +75,18 @@ class DictModel(QAbstractListModel):
         f = self._key_field
         return self.revision, [i[f] for i in self._items]
 
-    def update_items(self, items, ops=None, revision=None):
-        """Apply `items` using precomputed `ops` when they still match this model, else reset."""
+    def update_items(self, items, ops=None, revision=None, changed=None):
+        """Apply `items` using precomputed `ops` when they still match this model, else reset. `changed` (whether
+        any row differs from the current ones) can be worked out off the GUI thread; comparing 100k rows here
+        takes a tenth of a second. Returns the list of rows no longer used, for the caller to let go of where it
+        won't stall the interface (freeing a quarter-million rows takes as long as comparing them)."""
         items = list(items)
         if ops is None or revision != self.revision:
+            old = self._items
             self.set_items(items)
-            return
+            return old
+        if not ops and changed is False:
+            return items  # identical: keep the rows QML already has
         for tag, i1, i2, j1, j2 in reversed(ops):
             if tag in ("delete", "replace") and i2 > i1:
                 self.beginRemoveRows(QModelIndex(), i1, i2 - 1)
@@ -90,12 +96,14 @@ class DictModel(QAbstractListModel):
                 self.beginInsertRows(QModelIndex(), i1, i1 + (j2 - j1) - 1)
                 self._items[i1:i1] = items[j1:j2]
                 self.endInsertRows()
-        changed = self._items != items
-        self._items = items
+        if changed is None:
+            changed = self._items != items
+        old, self._items = self._items, items
         self.revision += 1
         if changed and items:
             self.dataChanged.emit(self.index(0), self.index(len(items) - 1))
         self.countChanged.emit()
+        return old
 
     def append_items(self, items):
         items = list(items)

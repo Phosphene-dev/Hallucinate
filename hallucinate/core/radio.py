@@ -93,7 +93,7 @@ def radio_tracks(db, seeds, exclude=(), limit=10, rng=None, now=None, rules=None
         (*where_params, *artists, POOL_PER_SOURCE),
     ))
     if seed_genres:
-        clauses = " OR ".join("fold(t.genre) LIKE ?" for _ in seed_genres)
+        clauses = " OR ".join("t.s_genre LIKE ?" for _ in seed_genres)
         add(db._rows(
             f"{base} ({clauses}) ORDER BY random() LIMIT ?",
             (*where_params, *(f"%{g}%" for g in seed_genres), POOL_PER_SOURCE),
