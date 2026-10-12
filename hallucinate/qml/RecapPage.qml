@@ -43,21 +43,25 @@ Item {
     }
     Timer { id: savedTimer; interval: 5000; onTriggered: page.savedTo = "" }
 
+    // A soft glow inside the card. It is drawn as the card's own rounded shape, filled with a radial gradient
+    // centred at (cx, cy), so it can't spill past the rounded corners (clip only cuts to the square bounds).
     component Bloom: Shape {
         id: bloom
         property color tint
         property real size: 600
-        width: size; height: size
+        property real cx
+        property real cy
+        anchors.fill: parent
         preferredRendererType: Shape.CurveRenderer
         ShapePath {
             strokeWidth: 0; strokeColor: "transparent"
             fillGradient: RadialGradient {
-                centerX: bloom.size / 2; centerY: bloom.size / 2; centerRadius: bloom.size / 2
-                focalX: bloom.size / 2; focalY: bloom.size / 2
+                centerX: bloom.cx; centerY: bloom.cy; centerRadius: bloom.size / 2
+                focalX: bloom.cx; focalY: bloom.cy
                 GradientStop { position: 0; color: Qt.rgba(bloom.tint.r, bloom.tint.g, bloom.tint.b, 0.45) }
                 GradientStop { position: 1; color: Qt.rgba(bloom.tint.r, bloom.tint.g, bloom.tint.b, 0) }
             }
-            PathRectangle { x: 0; y: 0; width: bloom.size; height: bloom.size }
+            PathRectangle { x: 0; y: 0; width: bloom.width; height: bloom.height; radius: shareCard.radius }
         }
     }
 
@@ -234,9 +238,9 @@ Item {
                 radius: 26
                 clip: true
                 color: "#120c1c"
-                Bloom { tint: page.tint[0]; x: -180; y: -260 }
-                Bloom { tint: page.tint[1]; size: 520; x: shareCard.width - 380; y: 60 }
-                Bloom { tint: page.tint[2]; size: 420; x: shareCard.width * 0.35; y: 180 }
+                Bloom { tint: page.tint[0]; cx: 120; cy: 40 }
+                Bloom { tint: page.tint[1]; size: 520; cx: shareCard.width - 120; cy: 320 }
+                Bloom { tint: page.tint[2]; size: 420; cx: shareCard.width * 0.35 + 210; cy: 390 }
 
                 Column {
                     id: hero
