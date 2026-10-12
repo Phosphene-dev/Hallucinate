@@ -76,5 +76,5 @@ def test_flatpak_repository_is_served_with_install_files(tmp_path, monkeypatch):
     # without a repository (or before any release has one) the page points at building from source
     out = build_site.build(tmp_path / "plain", tmp_path / "missing")
     page = (out / "index.html").read_text(encoding="utf-8")
-    assert "flatpakref" not in page and "built from source" in page
+    assert 'href="hallucinate.flatpakref"' not in page and "built from source" in page
     assert not (out / "flatpak").exists()

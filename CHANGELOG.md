@@ -5,6 +5,8 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.5] - 2026-10-12
+
 ### Added
 - Hallucinate has its own Flatpak repository: install it from the website (or with `flatpak install --user https://phosphene-dev.github.io/Hallucinate/hallucinate.flatpakref`) and it updates with your other Flatpak apps, through your software centre or `flatpak update`. Updates download only what changed. Every release also has a single-file `.flatpak` bundle that sets up the same repository. Everything is signed with the project's key. Hallucinate won't be submitted to Flathub; the runtime still comes from there.
 

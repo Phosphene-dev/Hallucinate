@@ -95,6 +95,11 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.9.5" date="2026-10-12">
+      <description>
+        <p>Hallucinate now has its own signed Flatpak repository: install it from the website and it updates with your other apps.</p>
+      </description>
+    </release>
     <release version="0.9.4" date="2026-10-12">
       <description>
         <p>Big libraries: tested with a quarter of a million songs. Start-up and rescans are faster, opening albums and the timeline no longer stalls, and memory use is a third lower.</p>
