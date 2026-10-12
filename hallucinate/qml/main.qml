@@ -376,6 +376,11 @@ ApplicationWindow {
     Shortcut { sequence: "R"; enabled: !window.typing; onActivated: player.cycleRepeat() }
     Shortcut { sequence: "Q"; enabled: !window.typing; onActivated: { window.queueOpen = !window.queueOpen; if (window.queueOpen) window.lyricsOpen = false } }
     Shortcut { sequence: "Ctrl+M"; onActivated: shell.toggleMini() }
+    Shortcut {
+        sequence: "Ctrl+Z"
+        enabled: !window.typing && player.canUndoQueue
+        onActivated: { var what = player.undoQueue(); if (what) toast.show("Undone: " + what.toLowerCase()) }
+    }
     Repeater {
         model: 6  // Ctrl+1…5 rates the playing song, Ctrl+0 clears it
         Item {

@@ -28,6 +28,7 @@ TRANSITION_MS = 250  # seeks stop this far before the end, so the next track sti
 HANDOFF_WINDOW_MS = 400  # positions arrive every ~100 ms; within this window the exact handoff is scheduled
 HANDOFF_LEAD_MS = 20  # start the next track this early to cover its startup (~16 ms measured on Qt 6.11)
 FINISH_GRACE_MS = 1000
+UNDO_STEPS = 20  # queue changes that can be undone
 SKIP_MIN_MS = 1500  # moving on sooner than this is browsing the queue, not a skip
 RADIO_LOW_WATER = 2  # ask for more radio tracks once fewer than this many are left to play
 RADIO_SEEDS = 5  # recently played tracks the next radio batch is based on  # stop a track left to finish this long after its expected end, in case it stalls
@@ -174,6 +175,7 @@ class Player(QObject):
     shuffleChanged = Signal()
     repeatChanged = Signal()
     queueChanged = Signal()
+    undoChanged = Signal()
     errorChanged = Signal()
     seeked = Signal(int)
     audioSettingsChanged = Signal()
@@ -200,6 +202,7 @@ class Player(QObject):
         self._index = -1
         self._history = []
         self._played = set()
+        self._undo = []  # earlier queues, newest last (see _remember_queue)
         self._shuffle = False
         self._repeat = REPEAT_OFF
         self._error = ""
@@ -1114,7 +1117,10 @@ class Player(QObject):
 
         `radio_rules` (a smart playlist rule set) keeps radio picks within the playlist's rules."""
         self._radio_rules = radio_rules
-        self._queue = list(tracks)  # queue entries are treated as immutable
+        new = list(tracks)
+        if [t.get("path") for t in new] != [t.get("path") for t in self._queue]:
+            self._remember_queue("Queue replaced")
+        self._queue = new  # queue entries are treated as immutable
         self._history.clear()
         self._played.clear()
         self._standby.clear()
@@ -1158,6 +1164,7 @@ class Player(QObject):
     def removeAt(self, i):
         if not 0 <= i < len(self._queue):
             return
+        self._remember_queue("Song removed")
         del self._queue[i]
         self._history = [h - (h > i) for h in self._history if h != i]
         self._played = {p - (p > i) for p in self._played if p != i}
@@ -1181,6 +1188,7 @@ class Player(QObject):
         n = len(self._queue)
         if not (0 <= src < n and 0 <= dst < n) or src == dst:
             return
+        self._remember_queue("Song moved")
         item = self._queue.pop(src)
         self._queue.insert(dst, item)
 
@@ -1204,12 +1212,70 @@ class Player(QObject):
 
     @Slot()
     def clearQueue(self):
+        if not self._queue:
+            return
+        self._remember_queue("Queue cleared")
         self._queue.clear()
         self._history.clear()
         self._played.clear()
         self._standby.clear()
         self._sync_queue()
         self._reset_empty()
+
+    # --- undo ----------------------------------------------------------------
+    def _remember_queue(self, label):
+        """Keep the queue as it is now, so the change about to happen can be undone."""
+        if not self._queue:
+            return
+        self._undo.append({
+            "label": label, "queue": list(self._queue), "index": self._index, "history": list(self._history),
+            "played": set(self._played), "position": self._voice.position() if self.hasTrack else 0,
+            "playing": self.playing, "radio_rules": self._radio_rules,
+        })
+        del self._undo[:-UNDO_STEPS]
+        self.undoChanged.emit()
+
+    @Property(bool, notify=undoChanged)
+    def canUndoQueue(self):
+        return bool(self._undo)
+
+    @Property(str, notify=undoChanged)
+    def undoLabel(self):
+        return self._undo[-1]["label"] if self._undo else ""
+
+    @Slot(result=str)
+    def undoQueue(self):
+        """Put the queue back as it was before the last change; returns what was undone ("" if nothing)."""
+        if not self._undo:
+            return ""
+        snap = self._undo.pop()
+        current = self._queue[self._index] if self.hasTrack else None
+        target = snap["queue"][snap["index"]] if 0 <= snap["index"] < len(snap["queue"]) else None
+        self._queue = snap["queue"]
+        self._history = snap["history"]
+        self._played = snap["played"]
+        self._radio_rules = snap["radio_rules"]
+        self._standby.clear()
+        self._invalidate_next()
+        self._sync_queue()
+        if target is not None and current is not None and self._voice.holds(self._index, current) \
+                and current.get("path") == target.get("path") and track_window(current) == track_window(target):
+            # the same song is still loaded: carry on without a break
+            self._index = self._voice.index = snap["index"]
+            self.trackChanged.emit()
+        elif target is not None:
+            self._load(snap["index"], autoplay=snap["playing"] and not self.playing, record=False)
+            if snap["position"] > 0:
+                self._restore_pos = snap["position"]
+                if self._player.mediaStatus() in (QMediaPlayer.MediaStatus.LoadedMedia,
+                                                  QMediaPlayer.MediaStatus.BufferedMedia):
+                    self._voice.set_position(snap["position"])
+                    self._restore_pos = 0
+        else:
+            self._reset_empty()
+        self.undoChanged.emit()
+        self.saveSession()
+        return snap["label"]
 
     # --- internals ---------------------------------------------------------
     def _reset_empty(self):

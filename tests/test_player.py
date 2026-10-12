@@ -443,3 +443,33 @@ def test_transition_plays_whole_track_and_joins_without_gap(make_player, clips):
     gap = second[0][0] - (last_at + last_duration)
     assert -50 <= gap <= 50, f"{gap:+.0f} ms between tracks"
     assert p.gapless_swaps == 1
+
+
+def test_queue_changes_can_be_undone(make_player, clips):
+    p = make_player(session=False)
+    p.playList(clips[:4], 1)
+    assert wait_for(lambda: is_playing(p))
+    assert not p.canUndoQueue  # nothing was there before
+    titles = lambda: [t["title"] for t in p.queue]  # noqa: E731
+
+    p.moveItem(3, 0)
+    assert titles() == ["T3", "T0", "T1", "T2"] and p.undoLabel == "Song moved"
+    p.removeAt(3)
+    assert titles() == ["T3", "T0", "T1"]
+    assert p.undoQueue() == "Song removed"
+    assert titles() == ["T3", "T0", "T1", "T2"]
+    assert p.undoQueue() == "Song moved"
+    assert titles() == ["T0", "T1", "T2", "T3"]
+    assert p.currentIndex == 1 and p.current["title"] == "T1" and is_playing(p)  # the song carried on
+    assert not p.canUndoQueue and p.undoQueue() == ""
+
+    p.clearQueue()
+    assert p.queue == [] and not p.hasTrack
+    assert p.undoQueue() == "Queue cleared"
+    assert titles() == ["T0", "T1", "T2", "T3"] and p.currentIndex == 1
+    assert wait_for(lambda: is_playing(p))  # it was playing when cleared, so it plays again
+
+    p.playList(clips[4:6], 0)  # playing something else replaces the queue: also undoable
+    assert p.undoLabel == "Queue replaced"
+    p.undoQueue()
+    assert titles() == ["T0", "T1", "T2", "T3"] and p.current["title"] == "T1"
