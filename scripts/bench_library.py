@@ -57,8 +57,9 @@ def build(db_path, n_tracks, n_plays, art_dir):
     now = time.time()
     for _ in range(n_plays):
         db.conn.execute(
-            "INSERT OR IGNORE INTO play_log(ts, path, artist, title, album, duration, source) "
-            "SELECT ?, path, artist, title, album, duration, 'local' FROM tracks WHERE path = ?",
+            "INSERT OR IGNORE INTO play_log(ts, path, artist, title, album, duration, source, s_artist, s_title, "
+            "s_album) SELECT ?, path, artist, title, album, duration, 'local', s_artist, s_title, s_album "
+            "FROM tracks WHERE path = ?",
             (now - rnd.random() * 3 * 365 * 86400, rnd.choice(paths)))
     db.conn.execute(
         "INSERT OR REPLACE INTO plays(path, count, last) SELECT path, COUNT(*), MAX(ts) FROM play_log GROUP BY path")

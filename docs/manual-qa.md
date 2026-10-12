@@ -69,6 +69,7 @@ codec decodes.
 - [ ] Run against a 50,000+ track library; search, browse, open an album, and
   compare first display latency to the automated query thresholds in
   `tests/test_library_robust.py`.
+- [ ] Run `python scripts/scale_check.py` (250,000 songs); nothing should be marked slow.
 - [ ] Restart with the large library; verify startup does not reparse unchanged files.
 
 ## Linux desktop integration
