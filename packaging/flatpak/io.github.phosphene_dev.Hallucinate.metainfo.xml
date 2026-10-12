@@ -102,6 +102,11 @@
         <p>Closing the window asks whether to quit, minimize or keep playing in the tray, and can remember your choice.</p>
       </description>
     </release>
+    <release version="0.8.2" date="2026-10-12">
+      <description>
+        <p>The Recap card's glows now follow its rounded corners.</p>
+      </description>
+    </release>
     <release version="0.8.1" date="2026-10-12">
       <description>
         <p>Hallucinate has moved to the Phosphene-dev organisation on GitHub, with a new app ID and website address.</p>
