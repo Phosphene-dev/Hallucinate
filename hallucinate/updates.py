@@ -2,6 +2,7 @@
 the latest release at most once a day (nothing else is sent) and offers a link to it."""
 import json
 import logging
+import os
 import re
 import time
 import urllib.request
@@ -55,8 +56,13 @@ class UpdateChecker(QObject):
         self._url = str(self._settings.value("updates/url", RELEASES_PAGE))
         self._status = ""
         self._done.connect(self._apply)
-        if self.enabled:
+        if self.enabled and self.supported:
             QTimer.singleShot(8000, self._maybe_check)  # quietly, a little after start-up
+
+    @Property(bool, constant=True)
+    def supported(self):
+        """False in the Flatpak: Flathub (or the software centre) delivers updates there."""
+        return not os.environ.get("FLATPAK_ID")
 
     @Property(bool, notify=changed)
     def enabled(self):
@@ -71,7 +77,7 @@ class UpdateChecker(QObject):
 
     @Property(bool, notify=changed)
     def available(self):
-        return is_newer(self._latest)
+        return self.supported and is_newer(self._latest)
 
     @Property(str, notify=changed)
     def latestVersion(self):
@@ -96,7 +102,7 @@ class UpdateChecker(QObject):
 
     @Slot()
     def checkNow(self):
-        if self._busy:
+        if self._busy or not self.supported:
             return
         self._busy = True
         self._status = "Checking…"

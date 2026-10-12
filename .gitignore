@@ -25,3 +25,4 @@ packaging/aur/*/Hallucinate/
 packaging/appimage/build/
 *.AppImage
 _site/
+flathub-submission/

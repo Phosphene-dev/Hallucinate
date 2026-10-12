@@ -649,7 +649,13 @@ Item {
                     onClicked: Qt.openUrlExternally("https://github.com/bulmaspanties/Hallucinate/issues/new")
                 }
             }
+            Text {
+                visible: !shell.updates.supported
+                text: "Updates come through Flathub (your software centre)."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
             Row {
+                visible: shell.updates.supported
                 spacing: 12
                 StyledCheck {
                     objectName: "updateChecks"
