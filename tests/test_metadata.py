@@ -146,18 +146,72 @@ def test_fetch_lrclib(monkeypatch):
         lyrics.fetch_lrclib("a", "t")
 
 
+def http_error(url, code):
+    return urllib.error.HTTPError(url, code, "err", {}, None)
+
+
 def test_fetch_cover(monkeypatch):
-    monkeypatch.setattr(artfetch, "find_release_ids", lambda a, b: ["x", "y"])
+    monkeypatch.setattr(artfetch, "find_releases", lambda a, b, sleep=None: [("x", "gx"), ("y", "gy")])
 
     def get(url, timeout=10):
         if "/x/" in url:
-            raise urllib.error.HTTPError(url, 404, "nf", {}, None)
+            raise http_error(url, 404)
         return PNG
 
     monkeypatch.setattr(artfetch, "_get", get)
     assert artfetch.fetch_cover("a", "b") == PNG
-    monkeypatch.setattr(artfetch, "find_release_ids", lambda a, b: [])
+    monkeypatch.setattr(artfetch, "find_releases", lambda a, b, sleep=None: [])
     assert artfetch.fetch_cover("a", "b") is None
+
+
+def test_fetch_cover_gets_past_a_failing_image(monkeypatch):
+    """archive.org failing one image (HTTP 500) moves on to a smaller size, the next release and the release
+    group's cover, instead of ending the search."""
+    monkeypatch.setattr(artfetch, "find_releases", lambda a, b, sleep=None: [("x", "g"), ("y", "g")])
+    asked = []
+
+    def get(url, timeout=10):
+        asked.append(url.removeprefix(artfetch.CAA))
+        if url.endswith("release-group/g/front-500"):
+            return PNG
+        raise http_error(url, 500 if "/x/" in url else 404)
+
+    monkeypatch.setattr(artfetch, "_get", get)
+    assert artfetch.fetch_cover("a", "b") == PNG
+    assert asked == ["release/x/front-500", "release/x/front-250", "release/y/front-500", "release/y/front-250",
+                     "release-group/g/front-500"]
+
+
+def test_fetch_cover_explains_server_trouble(monkeypatch):
+    monkeypatch.setattr(artfetch, "find_releases", lambda a, b, sleep=None: [("x", "")])
+    monkeypatch.setattr(artfetch, "_get", lambda url, timeout=10: (_ for _ in ()).throw(http_error(url, 500)))
+    with pytest.raises(artfetch.ServiceError, match="Cover Art Archive is having trouble"):
+        artfetch.fetch_cover("a", "b")
+    # a mix of "no art" and server errors still says it was the server, since a cover may exist
+    monkeypatch.setattr(artfetch, "find_releases", lambda a, b, sleep=None: [("x", ""), ("y", "")])
+    monkeypatch.setattr(artfetch, "_get", lambda url, timeout=10: (_ for _ in ()).throw(
+        http_error(url, 503 if "/x/" in url else 404)))
+    with pytest.raises(artfetch.ServiceError):
+        artfetch.fetch_cover("a", "b")
+
+
+def test_musicbrainz_server_error_is_retried_once(monkeypatch):
+    calls, slept = [], []
+    body = json.dumps({"releases": [{"id": "r1", "release-group": {"id": "g1"}}]}).encode()
+
+    def get(url, timeout=10):
+        calls.append(url)
+        if len(calls) == 1:
+            raise http_error(url, 503)
+        return body
+
+    monkeypatch.setattr(artfetch, "_get", get)
+    assert artfetch.find_releases("Artist", "Album", sleep=slept.append) == [("r1", "g1")]
+    assert len(calls) == 2 and slept == [1.1]
+    calls.clear()
+    monkeypatch.setattr(artfetch, "_get", lambda url, timeout=10: (_ for _ in ()).throw(http_error(url, 500)))
+    with pytest.raises(artfetch.ServiceError, match="MusicBrainz is having trouble"):
+        artfetch.find_releases("Artist", "Album", sleep=lambda s: None)
 
 
 @pytest.fixture
