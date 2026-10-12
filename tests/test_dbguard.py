@@ -59,3 +59,17 @@ def test_damaged_database_without_backup_starts_fresh(tmp_path):
     message = dbguard.check(db_path, tmp_path / "backups")
     assert "no backup" in message and not db_path.exists()
     Database(db_path).close()  # a fresh one opens fine
+
+
+def test_caches_are_trimmed_oldest_first(tmp_path):
+    from hallucinate import cachetrim
+
+    now = time.time()
+    for i in range(10):
+        f = tmp_path / f"{i}.jpg"
+        f.write_bytes(b"x" * 1000)
+        os.utime(f, (now - 1000 + i, now - 1000 + i))  # 0 is the least recently used
+    cachetrim.touch_if_stale(tmp_path / "0.jpg")  # not a week old: left as is
+    assert cachetrim.trim(tmp_path, 4500) == 6000
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["6.jpg", "7.jpg", "8.jpg", "9.jpg"]
+    assert cachetrim.trim(tmp_path, 4500) == 0

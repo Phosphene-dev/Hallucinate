@@ -15,6 +15,8 @@ import numpy as np
 from PySide6.QtCore import QObject, QUrl, Signal, Slot
 from PySide6.QtMultimedia import QAudioDecoder, QAudioFormat
 
+from .cachetrim import touch_if_stale
+
 logger = logging.getLogger(__name__)
 POINTS = 600
 MEMORY_ITEMS = 64
@@ -246,6 +248,7 @@ class WaveformService(QObject):
             except OSError:
                 data = b""
             if len(data) == POINTS:
+                touch_if_stale(self._cache_dir / name)  # recently used waveforms survive cache trimming
                 return self._remember(path, [b / 255 for b in data])
         return None
 

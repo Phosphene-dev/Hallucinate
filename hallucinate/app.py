@@ -107,6 +107,9 @@ def main(argv=None) -> int:
     db_notice = dbguard.check(paths.db_path(), backup_dir)  # a damaged database is set aside and restored
     library = Library(paths.db_path(), paths.art_dir())
     dbguard.backup_if_due(paths.db_path(), backup_dir)
+    from . import cachetrim
+    cachetrim.trim_in_background({paths.data_dir() / "thumbs": cachetrim.LIMITS["thumbs"],
+                                  paths.cache_dir() / "waveforms": cachetrim.LIMITS["waveforms"]})
     control.setLibrary(library)
     player = Player(session_file=paths.data_dir() / "session.json")
     waveforms = WaveformService(paths.cache_dir() / "waveforms")

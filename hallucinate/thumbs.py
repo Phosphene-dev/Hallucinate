@@ -11,6 +11,8 @@ from PySide6.QtCore import QSize, Qt, QUrl
 from PySide6.QtGui import QImage, QImageReader
 from PySide6.QtQuick import QQuickImageProvider
 
+from .cachetrim import touch_if_stale
+
 BUCKETS = (64, 128, 256, 512)
 
 
@@ -65,6 +67,7 @@ class ArtProvider(QQuickImageProvider):
         if cached.exists():
             image = QImage(str(cached))
             if not image.isNull():
+                touch_if_stale(cached)  # recently used thumbnails survive cache trimming
                 return image
         reader = QImageReader(path)
         reader.setAutoTransform(True)
