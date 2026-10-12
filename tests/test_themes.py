@@ -266,6 +266,20 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     assert device_picker is not None
     assert device_picker.property("count") == len(player.outputDevices)
     assert device_picker.property("currentIndex") == 0
+    # Settings search: only sections with a match stay
+    settings_search = window.findChild(QObject, "settingsSearch")
+    sound, appearance = window.findChild(QObject, "settings_sound"), window.findChild(QObject, "settings_appearance")
+    assert sound.property("visible") and appearance.property("visible")
+    settings_search.setProperty("text", "crossfeed")
+    qapp.processEvents()
+    assert sound.property("visible") and not appearance.property("visible")
+    settings_search.setProperty("text", "musicbee")  # matched by the text of a control, not just keywords
+    qapp.processEvents()
+    assert window.findChild(QObject, "settings_library").property("visible") and not sound.property("visible")
+    settings_search.setProperty("text", "")
+    qapp.processEvents()
+    assert sound.property("visible") and appearance.property("visible")
+    del settings_search, sound, appearance
 
     assert manager.selectTheme("Font Test")
     from PySide6.QtTest import QTest
