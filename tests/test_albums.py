@@ -79,8 +79,8 @@ def test_library_wall_timeline_and_notes(qapp, tmp_path, db, scan, music):
         assert red.save(art, "PNG")
     lib = Library(tmp_path / "lib.db", tmp_path / "art")
     try:
-        assert wait_for(lambda: lib.albumCount >= 2 and lib.timeline)
-        kinds = [r["kind"] for r in lib.timeline]
+        assert wait_for(lambda: lib.albumCount >= 2 and lib.timeline.count)
+        kinds = [r["kind"] for r in lib.timeline.items()]
         assert kinds[0] == "decade" and "year" in kinds
         lib.loadAlbumWall()
         assert wait_for(lambda: lib.albumWall.count == lib.albums.count and not lib.wallLoading)

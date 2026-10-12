@@ -15,6 +15,11 @@ Item {
         if (view === "colour") library.loadAlbumWall()
     }
     Component.onCompleted: if (view === "colour") library.loadAlbumWall()
+    // the wall is only worked out while it's on screen: refresh it when the library changes under it
+    Connections {
+        target: library
+        function onChanged() { if (page.view === "colour") library.loadAlbumWall() }
+    }
 
     Row {
         id: header
@@ -179,10 +184,10 @@ Item {
             ScrollBar.vertical: ScrollBar {}
             readonly property real coverSize: Math.max(96, Math.min(150, (width - 160) / 7))
             delegate: Loader {
-                required property var modelData
+                required property var model
                 width: timeline.width - 40
-                sourceComponent: modelData.kind === "decade" ? decadeRow : yearRow
-                property var row: modelData
+                sourceComponent: model.kind === "decade" ? decadeRow : yearRow
+                property var row: model
             }
             Component {
                 id: decadeRow
@@ -219,7 +224,13 @@ Item {
                 Item {
                     id: yearItem
                     readonly property var row: parent ? parent.row : ({})
-                    height: Math.max(yearFlow.height, 40) + 24
+                    readonly property var albums: row && row.albums ? row.albums : []
+                    // A busy year (hundreds of albums in a big library) shows two lines until asked for the rest,
+                    // so scrolling the timeline never has to draw them all.
+                    readonly property int perLine: Math.max(1, Math.floor((yearFlow.width + 14) / (timeline.coverSize + 14)))
+                    property bool expanded: false
+                    readonly property int shown: expanded ? albums.length : Math.min(albums.length, perLine * 2)
+                    height: Math.max(yearFlow.height, 40) + (moreButton.visible ? moreButton.height + 10 : 0) + 24
                     // the year on a thread down the left, a dot for each year
                     Rectangle { x: 34; width: 2; height: parent.height; color: Theme.stroke }
                     Rectangle {
@@ -243,10 +254,11 @@ Item {
                         width: parent.width - x
                         spacing: 14
                         Repeater {
-                            model: yearItem.row.albums
+                            model: yearItem.shown  // a count, so "Show all" adds covers instead of rebuilding them
                             Item {
                                 id: entry
-                                required property var modelData
+                                required property int index
+                                readonly property var modelData: yearItem.albums[index] || ({})
                                 width: timeline.coverSize
                                 height: timeline.coverSize + 40
                                 Cover {
@@ -295,6 +307,16 @@ Item {
                                 }
                             }
                         }
+                    }
+                    PillButton {
+                        id: moreButton
+                        objectName: "timelineMore"
+                        x: 124
+                        anchors { top: yearFlow.bottom; topMargin: 10 }
+                        height: 30
+                        visible: yearItem.shown < yearItem.albums.length
+                        text: "Show all " + yearItem.albums.length
+                        onClicked: yearItem.expanded = true
                     }
                 }
             }

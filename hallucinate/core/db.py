@@ -79,7 +79,9 @@ COLS = (
     "year genre duration fmt codec bitrate sample_rate art rg_track rg_album rg_peak file cue_start cue_end"
 ).split()
 
-SEARCH_COLS = ["s_title", "s_album", "s_aa", "s_artist"]
+# Folded copies (see fold) kept beside the originals, so queries never call the Python fold() per row: from
+# inside SQLite each call must take the GIL, which crawls whenever another thread is busy (a big library).
+SEARCH_COLS = ["s_title", "s_album", "s_aa", "s_artist", "s_genre"]
 
 _ORDER = "disc_no, track_no, s_title"
 
@@ -103,6 +105,30 @@ def _tokens(q: str) -> list:
     return re.findall(r"\w+", fold(q))
 
 
+def group_index(albums, artists):
+    """Folded names for searching albums and artists in memory (see search_groups)."""
+    return ([(fold(a.get("album") or ""), fold(a.get("album_artist") or ""), a) for a in albums],
+            [(fold(a.get("name") or ""), a) for a in artists])
+
+
+def search_groups(index, query, album_limit=20, artist_limit=12):
+    """Albums and artists matching `query`, from group_index(): the same rules as Database.search (every word
+    in the album title or its artist; every word in the artist's name; names starting with the first word
+    first), but over the few thousand albums and artists instead of every song: milliseconds rather than a
+    scan of a quarter-million rows."""
+    toks = _tokens(query)
+    if not toks:
+        return [], []
+    albums_idx, artists_idx = index
+    first = toks[0]
+    albums = [(not album.startswith(first), album, row) for album, aa, row in albums_idx
+              if all(t in album or t in aa for t in toks)]
+    albums.sort(key=lambda x: (x[0], x[1]))
+    artists = [(not name.startswith(first), name, row) for name, row in artists_idx if all(t in name for t in toks)]
+    artists.sort(key=lambda x: (x[0], x[1]))
+    return [r for *_, r in albums[:album_limit]], [r for *_, r in artists[:artist_limit]]
+
+
 class Database:
     def __init__(self, path):
         self.conn = sqlite3.connect(str(path), timeout=30, check_same_thread=False)
@@ -116,6 +142,8 @@ class Database:
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_saa ON tracks(s_aa)")
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_sartist ON tracks(s_artist)")
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_play_log_sartist ON play_log(s_artist)")
+        # a song's or album's own listens (album page "first played", radio, history edits) without a full scan
+        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_play_log_path ON play_log(path)")
         try:
             self.conn.execute(FTS)
             self.has_fts = True
@@ -149,14 +177,20 @@ class Database:
             self.conn.execute(
                 "UPDATE tracks SET mtime=0 WHERE UPPER(fmt) IN ('M4A', 'M4B', 'MP4', 'OGG', 'OGA', 'MKA')"
             )
+        if "s_genre" not in cols and "s_title" in cols:
+            self.conn.execute("ALTER TABLE tracks ADD COLUMN s_genre TEXT NOT NULL DEFAULT ''")
+            genres = [r[0] for r in self.conn.execute("SELECT DISTINCT genre FROM tracks WHERE genre != ''")]
+            self.conn.executemany("UPDATE tracks SET s_genre=? WHERE genre=?", [(fold(g), g) for g in genres])
+            cols.add("s_genre")
         missing = [c for c in SEARCH_COLS if c not in cols]
         if missing:
             for c in missing:
                 self.conn.execute(f"ALTER TABLE tracks ADD COLUMN {c} TEXT NOT NULL DEFAULT ''")
-            rows = self.conn.execute("SELECT id, title, artist, album, album_artist FROM tracks").fetchall()
+            rows = self.conn.execute("SELECT id, title, artist, album, album_artist, genre FROM tracks").fetchall()
             self.conn.executemany(
-                "UPDATE tracks SET s_title=?, s_album=?, s_aa=?, s_artist=? WHERE id=?",
-                [(fold(r["title"]), fold(r["album"]), fold(r["album_artist"]), fold(r["artist"]), r["id"]) for r in rows],
+                "UPDATE tracks SET s_title=?, s_album=?, s_aa=?, s_artist=?, s_genre=? WHERE id=?",
+                [(fold(r["title"]), fold(r["album"]), fold(r["album_artist"]), fold(r["artist"]), fold(r["genre"]),
+                  r["id"]) for r in rows],
             )
         log_cols = {r["name"] for r in self.conn.execute("PRAGMA table_info(play_log)")}
         if "duration" not in log_cols:
@@ -414,7 +448,7 @@ class Database:
                  SELECT t.*, COALESCE(p.count,0) AS plays, p.last AS last,
                         CASE WHEN l.path IS NULL THEN 0 ELSE 1 END AS liked,
                         ROW_NUMBER() OVER (
-                          PARTITION BY fold(CASE WHEN t.album_artist != '' THEN t.album_artist ELSE t.artist END)
+                          PARTITION BY CASE WHEN t.album_artist != '' THEN t.s_aa ELSE t.s_artist END
                           ORDER BY COALESCE(p.count,0) DESC,
                                    CASE WHEN l.path IS NULL THEN 0 ELSE 1 END DESC,
                                    p.last DESC, t.s_title
@@ -548,6 +582,7 @@ class Database:
         params["s_album"] = fold(t["album"])
         params["s_aa"] = fold(t["album_artist"])
         params["s_artist"] = fold(t["artist"])
+        params["s_genre"] = fold(t.get("genre") or "")
         params["rg_measured"] = 0
         if params.get("rg_track") is None and params.get("rg_album") is None:
             # No ReplayGain tags: use our own measurement if it is for this very file
@@ -671,7 +706,16 @@ class Database:
                  FROM tracks t2 WHERE t2.album_key = tracks.album_key)
                WHERE aa_tag = 0"""
         )
-        self.conn.execute("UPDATE tracks SET s_aa = fold(album_artist) WHERE aa_tag = 0 AND s_aa != fold(album_artist)")
+        # each distinct name folded once, in Python, and only rows that differ written
+        names = {}
+        stale = []
+        for tid, aa, s_aa in self.conn.execute("SELECT id, album_artist, s_aa FROM tracks WHERE aa_tag = 0"):
+            folded = names.get(aa)
+            if folded is None:
+                folded = names[aa] = fold(aa)
+            if folded != s_aa:
+                stale.append((folded, tid))
+        self.conn.executemany("UPDATE tracks SET s_aa=? WHERE id=?", stale)
         self.conn.commit()
 
     # --- reads ---------------------------------------------------------
@@ -689,6 +733,19 @@ class Database:
         return self._rows(
             "SELECT * FROM tracks ORDER BY s_title, artist COLLATE NOCASE"
         )
+
+    # Columns the all-songs list doesn't carry: search-only folded copies and housekeeping. Everything that
+    # playback, the signal path or the song rows read stays.
+    SONG_LIST_SKIP = ("s_title", "s_artist", "s_album", "s_aa", "aa_tag", "added", "mtime", "size")
+
+    def song_list(self) -> list:
+        """Every song, title order, as the Songs page needs them: tuples straight into dicts (faster than
+        sqlite3.Row) and without the columns in SONG_LIST_SKIP (a quarter less memory per song)."""
+        cols = [r[1] for r in self.conn.execute("PRAGMA table_info(tracks)") if r[1] not in self.SONG_LIST_SKIP]
+        cur = self.conn.cursor()
+        cur.row_factory = None
+        cur.execute(f"SELECT {', '.join(cols)} FROM tracks ORDER BY s_title, artist COLLATE NOCASE")
+        return [dict(zip(cols, row)) for row in cur]
 
     _ALBUM_SQL = """SELECT album_key, MIN(album) AS album, MIN(album_artist) AS album_artist,
                     MAX(year) AS year, COUNT(*) AS n, SUM(duration) AS duration,
@@ -732,7 +789,10 @@ class Database:
             (fold(name), fold(name), limit),
         )
 
-    def search(self, query: str, track_limit: int = 30, album_limit: int = 20, artist_limit: int = 12) -> dict:
+    def search(self, query: str, track_limit: int = 30, album_limit: int = 20, artist_limit: int = 12,
+               groups: bool = True) -> dict:
+        """Songs, albums and artists matching `query`. With groups=False only songs are looked up (the library
+        finds albums and artists in memory with search_groups)."""
         toks = _tokens(query)
         if not toks:
             return {"tracks": [], "albums": [], "artists": []}
@@ -754,6 +814,8 @@ class Database:
                 (*params, track_limit),
             )
 
+        if not groups:
+            return {"tracks": tracks, "albums": [], "artists": []}
         album_clause = " AND ".join(
             "(s_album LIKE ? ESCAPE '\\' OR s_aa LIKE ? ESCAPE '\\')" for _ in toks
         )
