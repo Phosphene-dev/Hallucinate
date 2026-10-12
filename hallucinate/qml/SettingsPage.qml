@@ -206,6 +206,24 @@ Item {
         Text { text: "Gapless playback is always on; with crossfade off, consecutive tracks play back to back."; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12) }
         Text { text: "Equalizer"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold }
         EqualizerPanel {}
+        Row {
+            spacing: 12
+            Text { anchors.verticalCenter: parent.verticalCenter; text: "Headphone crossfeed"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+            StyledCombo {
+                objectName: "crossfeed"
+                enabled: player.eqAvailable
+                model: ["Off", "Light", "Medium", "Strong"]
+                currentIndex: Math.max(0, player.crossfeedPresets.indexOf(player.crossfeed))
+                onActivated: player.setCrossfeed(player.crossfeedPresets[currentIndex])
+            }
+        }
+        Text {
+            width: parent.width
+            wrapMode: Text.WordWrap
+            text: "Lets each ear hear a little of the other channel, as from speakers. Old stereo recordings with "
+                + "instruments hard left or right get much easier on the ears over headphones."
+            color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+        }
 
         Text { text: "Music folders"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold }
         Text {

@@ -246,6 +246,9 @@ class Player(QObject):
         self._eq_gains = [0.0] * len(eq.BANDS)
         self._eq_preset = "Flat"
         self._headphone = {"name": "", "curve": None}
+        self._crossfeed = str(self._settings.value("audio/crossfeed", "off"))
+        if self._crossfeed not in eq.CROSSFEED:
+            self._crossfeed = "off"
         try:
             stored = json.loads(str(self._settings.value("eq/headphone", "{}")))
             if stored.get("name") and stored.get("curve"):
@@ -295,7 +298,7 @@ class Player(QObject):
             p.playbackStateChanged.connect(lambda st, n=n: self._tap_state(n, st))
         self._apply_speed()
         self._apply_output_device()
-        if self._eq_enabled:
+        if self._dsp_on():
             self._sync_taps()
         elif self._visualizer_enabled:
             self._sync_audio_buffer_outputs()
@@ -479,9 +482,38 @@ class Player(QObject):
         self._eq_preset = self._detect_preset()
         for voice in self._voices:
             if voice.tap is not None:
-                voice.tap.processor.set_gains(self._eq_gains)
-                voice.tap.processor.set_curve(self._headphone["curve"])
+                self._configure_processor(voice.tap.processor)
         self.eqChanged.emit()
+        self.signalPathChanged.emit()
+
+    def _configure_processor(self, processor):
+        processor.eq_on = self._eq_enabled
+        processor.set_gains(self._eq_gains)
+        processor.set_curve(self._headphone["curve"])
+        processor.set_crossfeed(self._crossfeed)
+
+    def _dsp_on(self):
+        """Whether the audio runs through our own processing (equalizer and/or crossfeed)."""
+        return eq.available() and (self._eq_enabled or self._crossfeed in eq.CROSSFEED)
+
+    @Property(str, notify=eqChanged)
+    def crossfeed(self):
+        return self._crossfeed
+
+    @Property("QStringList", constant=True)
+    def crossfeedPresets(self):
+        return ["off", *eq.CROSSFEED]
+
+    @Slot(str)
+    def setCrossfeed(self, preset):
+        """Headphone crossfeed: "off", "light", "medium" or "strong"."""
+        preset = preset if preset in eq.CROSSFEED else "off"
+        if preset == "off" or eq.available():
+            if preset != self._crossfeed:
+                self._crossfeed = preset
+                self._settings.setValue("audio/crossfeed", preset)
+                self._sync_taps()
+                self._save_eq()
 
     @Property(str, notify=eqChanged)
     def headphoneName(self):
@@ -671,6 +703,7 @@ class Player(QObject):
             speed=self._speed,
             eq_enabled=self._eq_enabled,
             eq_preset=self._eq_preset + (f" + {self._headphone['name']}" if self._headphone["name"] else ""),
+            crossfeed=self._crossfeed if self._crossfeed in eq.CROSSFEED and eq.available() else "",
             crossfade=self._crossfade,
             device_name="" if device.isNull() else device.description(),
             device_rate=0 if device.isNull() else device.preferredFormat().sampleRate(),
@@ -702,14 +735,13 @@ class Player(QObject):
 
     def _sync_taps(self):
         for n, voice in enumerate(self._voices):
-            if self._eq_enabled and voice.tap is None:
+            if self._dsp_on() and voice.tap is None:
                 tap = eq.EqTap(eq.EqProcessor(), self)
-                tap.processor.set_gains(self._eq_gains)
-                tap.processor.set_curve(self._headphone["curve"])
+                self._configure_processor(tap.processor)
                 tap.setDevice(self._output_audio_device())
                 voice.tap = tap
                 tap.setRunning(voice.player.playbackState() == QMediaPlayer.PlaybackState.PlayingState)
-            elif not self._eq_enabled and voice.tap is not None:
+            elif not self._dsp_on() and voice.tap is not None:
                 voice.player.setAudioBufferOutput(None)
                 tap = voice.tap
                 tap.close()

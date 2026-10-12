@@ -10,7 +10,7 @@ def _rate(hz):
     return f"{hz / 1000:.1f}".rstrip("0").rstrip(".") + " kHz" if hz else ""
 
 
-def describe(track, *, rg_factor=1.0, rg_mode="off", volume=1.0, speed=1.0, eq_enabled=False, eq_preset="",
+def describe(track, *, rg_factor=1.0, rg_mode="off", volume=1.0, speed=1.0, eq_enabled=False, eq_preset="", crossfeed="",
              crossfade=0, device_name="", device_rate=0):
     """Stages from the file to the output, each {"name", "detail", "active"} where active means it changes the
     sound, and whether the path is untouched: nothing between file and device alters the samples (the system
@@ -40,6 +40,8 @@ def describe(track, *, rg_factor=1.0, rg_mode="off", volume=1.0, speed=1.0, eq_e
 
     eq_on = bool(eq_enabled)
     stages.append({"name": "Equalizer", "detail": (eq_preset or "Custom") if eq_on else "Off", "active": eq_on})
+    if crossfeed:
+        stages.append({"name": "Crossfeed", "detail": crossfeed.capitalize() + " (headphones)", "active": True})
 
     speed_on = abs(speed - 1.0) > 1e-3
     stages.append({"name": "Speed", "detail": f"{speed:g}×" if speed_on else "Normal", "active": speed_on})
