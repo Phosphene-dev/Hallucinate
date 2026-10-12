@@ -97,6 +97,9 @@ def main(argv=None) -> int:
     except Exception:  # noqa: BLE001
         logging.getLogger(__name__).exception("Legacy data migration failed")
 
+    from .core import net
+    net.set_offline(QSettings("hallucinate", "hallucinate").value("privacy/offline", False, bool))
+
     # A short GIL switch interval keeps the GUI thread responsive while worker threads parse tags.
     sys.setswitchinterval(0.001)
     library = Library(paths.db_path(), paths.art_dir())

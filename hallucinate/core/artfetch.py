@@ -4,6 +4,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from . import net
 from .lyrics import USER_AGENT
 
 MAX_BYTES = 8_000_000
@@ -11,7 +12,7 @@ MAX_BYTES = 8_000_000
 
 def _get(url, timeout=10):
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "*/*"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 - fixed https endpoints
+    with net.urlopen(req, timeout=timeout) as resp:
         return resp.read(MAX_BYTES)
 
 

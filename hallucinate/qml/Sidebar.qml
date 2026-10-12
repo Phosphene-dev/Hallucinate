@@ -237,11 +237,16 @@ Item {
                 width: parent.width
                 height: side.entryHeight
                 visible: shell.updates.enabled && shell.updates.available
-                text: "Update to " + shell.updates.latestVersion
+                text: shell.updates.installing ? "Updating… " + Math.round(shell.updates.installProgress * 100) + "%"
+                                               : "Update to " + shell.updates.latestVersion
                 icon: "sparkle"
                 collapsed: side.collapsed
                 selected: true
-                onClicked: Qt.openUrlExternally(shell.updates.releaseUrl)
+                onClicked: {
+                    if (shell.updates.installing) Nav.openSettings()
+                    else if (shell.updates.canInstall) Nav.installUpdate()
+                    else Qt.openUrlExternally(shell.updates.releaseUrl)
+                }
             }
             RailButton {
                 width: parent.width

@@ -1,11 +1,28 @@
 """Desktop integration: system tray icon, close-to-tray and the mini player window."""
+import os
 import sys
 
 from PySide6.QtCore import Property, QObject, QSettings, Signal, Slot
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import QMenu, QSystemTrayIcon
 
+from .core import net
+
 VISUALIZER_STYLES = ("liquid", "aurora", "nebula", "bars")
+# What closing the main window does. "tray" needs a visible tray icon; without one it quits.
+CLOSE_ACTIONS = ("ask", "quit", "minimize", "tray")
+# Tiling compositors and window managers that have no minimize: offering it there would do nothing.
+NO_MINIMIZE = ("hyprland", "sway", "i3", "niri", "river", "dwm", "bspwm", "qtile", "awesome")
+
+
+def can_minimize(env=None, platform=None):
+    env = os.environ if env is None else env
+    if not (platform or sys.platform).startswith("linux"):
+        return True
+    if env.get("HYPRLAND_INSTANCE_SIGNATURE") or env.get("SWAYSOCK") or env.get("I3SOCK") or env.get("NIRI_SOCKET"):
+        return False
+    desktops = env.get("XDG_CURRENT_DESKTOP", "").lower().replace(";", ":").split(":")
+    return not any(d in NO_MINIMIZE for d in desktops)
 
 
 class DesktopShell(QObject):
@@ -20,7 +37,11 @@ class DesktopShell(QObject):
         self._mini = False
         self._settings = QSettings("hallucinate", "hallucinate")
         self._tray_pref = self._settings.value("shell/tray", True, bool)
-        self._close_to_tray = self._settings.value("shell/closeToTray", False, bool)
+        # Before 0.9 there was only "keep playing in the tray"; anyone who turned it on keeps it.
+        legacy = "tray" if self._settings.value("shell/closeToTray", False, bool) else "ask"
+        self._close_action = str(self._settings.value("shell/closeAction", legacy))
+        if self._close_action not in CLOSE_ACTIONS:
+            self._close_action = "ask"
         self._desktop_notifications = self._settings.value("shell/desktopNotifications", False, bool)
         self._sidebar_collapsed = self._settings.value("ui/sidebarCollapsed", False, bool)
         self._ambient_motion = self._settings.value("ui/ambientMotion", True, bool)
@@ -98,9 +119,21 @@ class DesktopShell(QObject):
     def trayEnabled(self):
         return self._tray_pref
 
-    @Property(bool, notify=settingsChanged)
-    def closeToTray(self):
-        return self._close_to_tray
+    @Property(str, notify=settingsChanged)
+    def closeAction(self):
+        return self._close_action
+
+    @Property(bool, constant=True)
+    def canMinimize(self):
+        """False under tiling window managers that have no minimize (Hyprland, Sway, i3…)."""
+        return can_minimize()
+
+    @Slot(str)
+    def setCloseAction(self, action):
+        if action in CLOSE_ACTIONS:
+            self._close_action = action
+            self._settings.setValue("shell/closeAction", action)
+            self.settingsChanged.emit()
 
     @Property(bool, notify=settingsChanged)
     def desktopNotifications(self):
@@ -115,6 +148,19 @@ class DesktopShell(QObject):
         self._sidebar_collapsed = bool(on)
         self._settings.setValue("ui/sidebarCollapsed", self._sidebar_collapsed)
         self.settingsChanged.emit()
+
+    @Property(bool, notify=settingsChanged)
+    def offlineMode(self):
+        """No internet at all: lyrics and cover lookups, scrobbling, EQ downloads and update checks stay off,
+        and scrobbles wait in their queues until it's turned off again."""
+        return net.is_offline()
+
+    @Slot(bool)
+    def setOfflineMode(self, on):
+        net.set_offline(on)
+        self._settings.setValue("privacy/offline", bool(on))
+        self.settingsChanged.emit()
+        self._updates.changed.emit()
 
     @Property(bool, notify=settingsChanged)
     def ambientMotion(self):
@@ -196,12 +242,6 @@ class DesktopShell(QObject):
         self.settingsChanged.emit()
 
     @Slot(bool)
-    def setCloseToTray(self, on):
-        self._close_to_tray = on
-        self._settings.setValue("shell/closeToTray", on)
-        self.settingsChanged.emit()
-
-    @Slot(bool)
     def setDesktopNotifications(self, on):
         self._desktop_notifications = on
         self._settings.setValue("shell/desktopNotifications", on)
@@ -261,14 +301,30 @@ class DesktopShell(QObject):
             self._window.hide()
 
     @Slot(result=bool)
+    @Slot(result=str)
     def handleClose(self):
-        """Called when the main window is closed; True when the window should only be hidden."""
-        if self._close_to_tray and self._tray_visible():
+        """Called when the main window is closed. Returns "ask" (the window shows the choice and stays open),
+        "quit", or "kept" (the window was minimized or hidden to the tray)."""
+        if self._close_action == "ask":
+            if self.canMinimize or self._tray_visible():
+                return "ask"
+            return self.closeWith("quit")  # nothing to choose between
+        return self.closeWith(self._close_action)
+
+    @Slot(str, result=str)
+    def closeWith(self, action):
+        """Carry out a close choice: "minimize", "tray" (falls back to quitting without a tray icon) or "quit"."""
+        if action == "minimize" and not self.canMinimize:
+            action = "tray"  # chosen on another desktop; the tray is the nearest thing here
+        if action == "minimize" and self._window is not None:
+            self._window.showMinimized()
+            return "kept"
+        if action == "tray" and self._tray_visible():
             if self._window is not None:
                 self._window.hide()
-            return True
+            return "kept"
         self._app.quit()
-        return False
+        return "quit"
 
     @Slot()
     def quit(self):

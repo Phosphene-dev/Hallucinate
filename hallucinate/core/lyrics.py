@@ -9,7 +9,7 @@ import urllib.request
 
 import mutagen
 
-from . import cue
+from . import cue, net
 
 USER_AGENT = "hallucinate (https://github.com/Phosphene-dev/Hallucinate)"
 _TS = re.compile(r"\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]")
@@ -131,7 +131,7 @@ def fetch_lrclib(artist, title, album="", duration=0, timeout=8):
     url = "https://lrclib.net/api/get?" + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 - fixed https endpoint
+        with net.urlopen(req, timeout=timeout) as resp:
             data = json.load(resp)
     except urllib.error.HTTPError as exc:
         if exc.code == 404:

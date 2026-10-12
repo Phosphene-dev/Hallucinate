@@ -68,7 +68,7 @@ def test_token_validation_uses_authorization_header(monkeypatch):
         assert timeout == 20
         return Response()
 
-    monkeypatch.setattr(listenbrainz, "urlopen", open_url)
+    monkeypatch.setattr(listenbrainz.net, "urlopen", open_url)
 
     result = lb_request("https://api.listenbrainz.org", "/1/validate-token", "secret-token")
 

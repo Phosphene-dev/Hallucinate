@@ -41,6 +41,26 @@
 - **Looks after your library.** A health check finds missing covers (and fetches them all at once), tags and folders, split albums and duplicates, with a fix next to each.
 - **No account, no cloud.** Your library, playlists and history stay on your computer. Scrobbling and Discord are opt-in, cover art is fetched only when you ask, and online lyrics lookup can be turned off.
 
+## Help test it
+Hallucinate is young and mostly tested by one person, so reports from other machines are the most useful thing
+right now. Things worth trying:
+- **Your real library,** especially a big one, odd tags, CUE albums and formats beyond FLAC and MP3.
+- **Your desktop:** tiling window managers (Hyprland, Sway, i3), small windows, fractional scaling, Windows 10 and 11.
+- **Gapless albums** on your audio device (live albums, classical, DJ mixes).
+- **Imports** from Strawberry, Clementine, Rhythmbox, MusicBee, iTunes or foobar2000.
+- **New in 0.9:** offline mode, and Update now in the AppImage and Windows installer.
+
+Found something? [Open a bug report](https://github.com/Phosphene-dev/Hallucinate/issues/new/choose).
+**Settings → About → Copy debug info** gives us everything about your setup in one paste, with your home folder
+hidden. Thoughts, likes and dislikes are just as welcome in
+[Discussions](https://github.com/Phosphene-dev/Hallucinate/discussions).
+
+Known rough edges:
+- The Windows and macOS builds aren't code-signed yet, so both systems warn on first launch (see [Install](#install)).
+- Not on Flathub or the AUR yet; use the AppImage, or build those packages yourself from `packaging/`.
+- Hallucinate never sends anything about you or your library anywhere: there's no telemetry, and offline mode
+  turns off every connection it does make.
+
 ## Screenshots
 | Now Playing | Vinyl mode |
 |---|---|
@@ -103,7 +123,9 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - Queue undo (Ctrl+Z, 20 steps) for clearing, removing, moving and replacing the queue.
 - Skip tracking: moving on from a song early counts as a skip; smart playlists can use skip counts and radio plays often-skipped songs less.
 - Import from other players: play counts, skips, ratings and playlists from Strawberry, Clementine, Rhythmbox, MusicBee and iTunes, and foobar2000 play counts written to tags.
-- Settings in searchable sections; Copy debug info for bug reports (no personal paths); an optional, off-by-default update check.
+- Settings in searchable sections; Copy debug info for bug reports (no personal paths).
+- Offline mode (Settings → Internet & sharing): one switch and Hallucinate makes no internet connections at all. Lyrics and cover lookups, scrobbling, headphone EQ downloads and update checks stay off; scrobbles wait and are sent when you switch it off. Every request in the code goes through one gate, and a test fails if anything bypasses it.
+- Updates: an optional, off-by-default check (once a day, against GitHub). The Windows installer build and the AppImage can then update themselves with "Update now": the download is checked against the release's SHA-256 digest before it's installed. The Flatpak, AUR and other packages leave updates to their package manager.
 - Command palette (Ctrl+K) with fuzzy matching over pages and commands plus albums, artists and songs.
 - Global search grouped into Artists / Albums / Songs; Home, Albums, Artists, Songs browse views; album and artist pages; editable queue; shuffle/repeat; seek; volume. Queue, current position, shuffle, repeat, and volume are restored after restart; missing queue files are discarded.
 - Drag audio files or folders onto the window to play them (onto the queue panel to append); files outside the library play straight from their tags. Save the queue as a playlist from the queue panel.
@@ -138,7 +160,7 @@ cd packaging/aur/hallucinate && makepkg -si       # or packaging/aur/hallucinate
 Maintainer and submission notes: [packaging/aur/README.md](packaging/aur/README.md).
 
 ### Windows
-Download the [installer](https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-windows-x64-setup.exe), or the portable `hallucinate-*-windows-x64.zip` (run `Hallucinate\Hallucinate.exe`) from [Releases](https://github.com/Phosphene-dev/Hallucinate/releases). Windows 10 or 11; media keys and the system media overlay work out of the box. Built with PyInstaller (`packaging/windows/build.ps1`). Unsigned, so SmartScreen may warn ("More info" → "Run anyway"). Last.fm credentials use Windows Credential Manager; data lives in `%APPDATA%\hallucinate`.
+Download the [installer](https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-windows-x64-setup.exe), or the portable `hallucinate-*-windows-x64.zip` (run `Hallucinate\Hallucinate.exe`) from [Releases](https://github.com/Phosphene-dev/Hallucinate/releases). Windows 10 or 11; media keys and the system media overlay work out of the box. Built with PyInstaller (`packaging/windows/build.ps1`). The installer isn't code-signed yet, so the first time you run it Windows SmartScreen says "Windows protected your PC": choose **More info → Run anyway**. You can check the download against the SHA-256 shown on the release page. Last.fm credentials use Windows Credential Manager; data lives in `%APPDATA%\hallucinate`.
 
 ### AppImage (any x86_64 Linux)
 Download the [AppImage](https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-x86_64.AppImage), then:
@@ -163,9 +185,13 @@ to grant access to other music directories. Flathub submission steps:
 ### macOS
 The release workflow builds a self-contained `.app` zip for the runner's native
 architecture (Apple silicon). Download the [macOS zip](https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-macos-arm64.zip),
-unzip it, and move `Hallucinate.app` to Applications. The build is unsigned and
-not notarized, so Gatekeeper may require explicit approval. Build locally on a
-Mac with `packaging/macos/build.sh`.
+unzip it, and move `Hallucinate.app` to Applications. The build isn't signed or
+notarized by Apple, so the first launch is blocked ("Apple could not verify…"). Open it once anyway in
+**System Settings → Privacy & Security → Open Anyway**, or from a terminal:
+```sh
+xattr -dr com.apple.quarantine /Applications/Hallucinate.app
+```
+Build locally on a Mac with `packaging/macos/build.sh`.
 
 ### Arch Linux
 ```sh

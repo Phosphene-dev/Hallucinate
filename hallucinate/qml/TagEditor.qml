@@ -147,7 +147,7 @@ Dialog {
                     PillButton { text: "Choose cover…"; onClicked: imagePicker.open() }
                     PillButton {
                         text: metaEditor.busy ? "Working…" : "Find cover online"
-                        enabled: !metaEditor.busy
+                        enabled: !metaEditor.busy && !shell.offlineMode
                         onClicked: metaEditor.fetchCover(dlg.albumKey, dlg.original.album_artist || dlg.original.artist || "", dlg.original.album || "", embedBox.checked)
                     }
                 }

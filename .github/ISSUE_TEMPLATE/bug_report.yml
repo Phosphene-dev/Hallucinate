@@ -1,30 +1,54 @@
 name: Bug report
-description: Something isn't working
+description: Something isn't working, looks wrong, or crashed
 labels: [bug]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing Hallucinate! The quickest way to give us everything we need is
+        **Settings → About → Copy debug info**, then paste it below. It lists versions, your OS, display scaling,
+        audio output and recent log messages, with your home folder hidden.
   - type: textarea
     id: what
     attributes:
       label: What happened?
-      description: Include what you expected instead.
+      description: What you saw, and what you expected instead. Screenshots help a lot for anything visual.
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
       label: Steps to reproduce
+      placeholder: |
+        1. Open Albums
+        2. Click …
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install it?
+      options:
+        - AppImage
+        - Windows installer
+        - Windows portable zip
+        - Flatpak
+        - AUR / Arch package
+        - macOS zip
+        - pip / from source
+    validations:
+      required: true
+  - type: input
+    id: desktop
+    attributes:
+      label: Desktop or window manager
+      description: For example GNOME, KDE Plasma, Hyprland, Sway, Windows 11. Tiling layouts and scaling matter for visual bugs.
   - type: input
     id: format
     attributes:
-      label: Audio format / file type (if relevant)
-  - type: input
-    id: env
-    attributes:
-      label: Environment
-      description: Distro, desktop, Python, PySide6 and Qt versions
+      label: Audio format (if it's about playback or tags)
+      placeholder: FLAC 24/96, MP3, a CUE album…
   - type: textarea
-    id: logs
+    id: debug
     attributes:
-      label: Logs
-      description: Output of running `hallucinate` from a terminal. Remove any personal data.
-      render: shell
+      label: Debug info
+      description: Paste from Settings → About → Copy debug info. If the app won't start, run it from a terminal and paste the output instead.
+      render: text

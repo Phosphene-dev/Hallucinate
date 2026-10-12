@@ -8,11 +8,13 @@ import time
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
 import keyring
 from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices
+
+from .core import net
 
 API_URL = "https://ws.audioscrobbler.com/2.0/"
 AUTH_URL = "https://www.last.fm/api/auth/"
@@ -43,7 +45,7 @@ def api_request(method, params, api_key, api_secret, session_key=None, signed=Tr
         "Content-Type": "application/x-www-form-urlencoded",
     })
     try:
-        with urlopen(req, timeout=15) as response:
+        with net.urlopen(req, timeout=15) as response:
             data = json.loads(response.read().decode("utf-8"))
     except (HTTPError, URLError, TimeoutError, OSError, ValueError) as exc:
         raise RuntimeError(f"Last.fm request failed: {exc}") from exc
@@ -357,7 +359,7 @@ class LastFmScrobbler(QObject):
 
     def _send_nowplaying(self):
         track = self._pending_nowplaying
-        if not self.connected or not track or self._busy or time.monotonic() < self._retry_at:
+        if not self.connected or not track or self._busy or net.is_offline() or time.monotonic() < self._retry_at:
             return
         key = self._track_key(track)
         self._attempted_nowplaying_key = key
@@ -428,7 +430,8 @@ class LastFmScrobbler(QObject):
             self._send_pending()
 
     def _send_pending(self):
-        if not self.connected or self._busy or not self._pending or time.monotonic() < self._retry_at:
+        if (not self.connected or self._busy or not self._pending or net.is_offline()
+                or time.monotonic() < self._retry_at):
             return
         item = dict(self._pending[0])
 

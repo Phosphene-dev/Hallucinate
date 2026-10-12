@@ -8,7 +8,7 @@ Item {
     objectName: "settings"
     property string query: ""
     readonly property var sectionIds: ["appearance", "playback", "sound", "library", "sharing", "desktop", "about"]
-    readonly property var sectionTitles: ["Appearance", "Playback", "Sound", "Library", "Scrobbling & sharing", "Desktop", "About"]
+    readonly property var sectionTitles: ["Appearance", "Playback", "Sound", "Library", "Internet & sharing", "Desktop", "About"]
 
     function sectionItem(i) { return [sec_appearance, sec_playback, sec_sound, sec_library, sec_sharing, sec_desktop, sec_about][i] }
     function jumpTo(i) {
@@ -412,9 +412,22 @@ Item {
         SettingsSection {
             id: sec_sharing
             objectName: "settings_sharing"
-            title: "Scrobbling & sharing"
-            keywords: "last.fm lastfm listenbrainz scrobble discord rich presence history import account"
+            title: "Internet & sharing"
+            keywords: "offline mode internet network privacy connection last.fm lastfm listenbrainz scrobble discord rich presence history import account"
             query: page.query
+            Text { text: "Offline mode"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold }
+            Text {
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: "Hallucinate makes no internet connections at all: no lyrics or cover lookups, scrobbling, headphone EQ downloads or update checks. Scrobbles wait and are sent when you turn it off. Discord status talks only to the Discord app on this computer, so it keeps its own switch below (it shows no cover art while offline)."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            StyledCheck {
+                objectName: "offlineMode"
+                text: "Offline mode"
+                checked: shell.offlineMode
+                onToggled: shell.setOfflineMode(checked)
+            }
             Text { text: "Last.fm"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold }
             Text {
                 width: parent.width
@@ -467,7 +480,7 @@ Item {
                     visible: !scrobbler.connected
                     primary: true
                     text: scrobbler.busy ? "Connecting…" : "Connect Last.fm"
-                    enabled: scrobbler.configured && !scrobbler.busy
+                    enabled: scrobbler.configured && !scrobbler.busy && !shell.offlineMode
                     onClicked: scrobbler.connectAccount()
                 }
                 PillButton {
@@ -555,8 +568,8 @@ Item {
                 PillButton {
                     primary: true
                     text: listenbrainz.importing ? "Importing…" : "Import history"
-                    enabled: !listenbrainz.importing && historyUser.text.length > 0
-                             || (!listenbrainz.importing && historySource.currentIndex === 0 && listenbrainz.connected)
+                    enabled: !shell.offlineMode && !listenbrainz.importing
+                             && (historyUser.text.length > 0 || (historySource.currentIndex === 0 && listenbrainz.connected))
                     onClicked: listenbrainz.importHistory(historySource.currentIndex === 0 ? "listenbrainz" : "lastfm", historyUser.text)
                 }
             }
@@ -594,7 +607,7 @@ Item {
             id: sec_desktop
             objectName: "settings_desktop"
             title: "Desktop"
-            keywords: "tray notifications close mini player"
+            keywords: "tray notifications close quit minimize exit background mini player"
             query: page.query
             StyledCheck {
                 visible: shell.trayAvailable
@@ -602,12 +615,27 @@ Item {
                 checked: shell.trayEnabled
                 onToggled: shell.setTrayEnabled(checked)
             }
-            StyledCheck {
-                visible: shell.trayAvailable
-                enabled: shell.trayEnabled
-                text: "Keep playing in the tray when the window is closed"
-                checked: shell.closeToTray
-                onToggled: shell.setCloseToTray(checked)
+            Row {
+                spacing: 12
+                Text { anchors.verticalCenter: parent.verticalCenter; text: "When I close the window"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+                StyledCombo {
+                    objectName: "closeAction"
+                    width: 250
+                    readonly property var actions: ["ask", "quit"].concat(shell.canMinimize ? ["minimize"] : [])
+                                                                  .concat(shell.trayAvailable ? ["tray"] : [])
+                    readonly property var labels: ({ ask: "Ask every time", quit: "Quit", minimize: "Minimize",
+                                                     tray: "Keep playing in the tray" })
+                    model: actions.map(a => labels[a])
+                    currentIndex: Math.max(0, actions.indexOf(shell.closeAction))
+                    onActivated: shell.setCloseAction(actions[currentIndex])
+                }
+            }
+            Text {
+                visible: !shell.canMinimize
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: "Your window manager has no minimize, so the choices are quitting or keeping it in the tray (when your bar shows tray icons)."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             StyledCheck {
                 visible: Qt.platform.os === "linux" || shell.trayAvailable
@@ -667,8 +695,18 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     height: 32
                     text: shell.updates.busy ? "Checking…" : "Check now"
-                    enabled: !shell.updates.busy
+                    enabled: !shell.updates.busy && !shell.offlineMode
                     onClicked: shell.updates.checkNow()
+                }
+                PillButton {
+                    objectName: "updateNow"
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: 32
+                    primary: true
+                    visible: shell.updates.canInstall && (shell.updates.available || shell.updates.installing)
+                    text: shell.updates.installing ? "Cancel" : "Update now"
+                    enabled: shell.updates.installing || !shell.offlineMode
+                    onClicked: shell.updates.installing ? shell.updates.cancelInstall() : Nav.installUpdate()
                 }
             }
             Text {

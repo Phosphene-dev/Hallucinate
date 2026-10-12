@@ -123,6 +123,7 @@ ApplicationWindow {
         }
         function onNotify(message) { toast.show(message) }
         function onBack() { if (stack.depth > 1) stack.pop() }
+        function onInstallUpdate() { updateDlg.open() }
     }
 
     Timer {
@@ -223,7 +224,54 @@ ApplicationWindow {
     }
     TagEditor { id: tagEditor }
     MiniPlayer {}
-    onClosing: function (close) { close.accepted = !shell.handleClose() }
+    onClosing: function (close) {
+        var result = shell.handleClose()
+        close.accepted = result === "quit"
+        if (result === "ask") closeDlg.open()
+    }
+    // Asked on close until a choice is remembered (Settings → Desktop changes it later)
+    Dialog {
+        id: closeDlg
+        objectName: "closeDialog"
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: 440
+        modal: true
+        title: "Close Hallucinate?"
+        function choose(action) {
+            if (rememberClose.checked) shell.setCloseAction(action)
+            closeDlg.close()
+            shell.closeWith(action)
+        }
+        Column {
+            width: closeDlg.availableWidth
+            spacing: 14
+            Text {
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: shell.canMinimize && shell.trayAvailable && shell.trayEnabled
+                      ? "Quit, or keep the music going with the window minimized or tucked away in the tray?"
+                      : shell.canMinimize ? "Quit, or keep the music going with the window minimized?"
+                                          : "Quit, or keep the music going with the window tucked away in the tray?"
+                color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            StyledCheck { id: rememberClose; text: "Remember my choice"; checked: false }
+            Flow {
+                width: parent.width
+                spacing: 8
+                PillButton { objectName: "closeQuit"; text: "Quit"; primary: true; onClicked: closeDlg.choose("quit") }
+                PillButton { objectName: "closeMinimize"; visible: shell.canMinimize; text: "Minimize"; onClicked: closeDlg.choose("minimize") }
+                PillButton {
+                    objectName: "closeTray"
+                    visible: shell.trayAvailable && shell.trayEnabled
+                    text: "Keep playing in the tray"
+                    onClicked: closeDlg.choose("tray")
+                }
+                PillButton { text: "Cancel"; onClicked: closeDlg.close() }
+            }
+        }
+        onOpened: rememberClose.checked = false
+    }
     Dialog {
         id: createDlg
         parent: Overlay.overlay
@@ -234,6 +282,26 @@ ApplicationWindow {
         onOpened: { createField.text = ""; createField.forceActiveFocus() }
         onAccepted: if (createField.text.trim().length) window.openPlaylist(userLib.createPlaylist(createField.text.trim()), createField.text.trim())
         TextField { id: createField; width: 280; placeholderText: "Playlist name"; selectByMouse: true; onAccepted: createDlg.accept() }
+    }
+
+    Dialog {
+        id: updateDlg
+        objectName: "updateDialog"
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: 420
+        modal: true
+        title: "Update to Hallucinate " + shell.updates.latestVersion + "?"
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        onAccepted: shell.updates.installNow()
+        Text {
+            width: updateDlg.availableWidth
+            wrapMode: Text.WordWrap
+            text: "Hallucinate downloads the new version from GitHub, checks it against the release's checksum, "
+                  + "then closes and reopens to finish. Your library, playlists and settings stay as they are."
+                  + (Qt.platform.os === "windows" ? " Windows may ask for permission to install." : "")
+            color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+        }
     }
 
     // Drop audio files or folders anywhere to play them (the queue panel, above it, appends instead)
