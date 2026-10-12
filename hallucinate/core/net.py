@@ -29,7 +29,43 @@ def is_offline():
     return _offline
 
 
-def urlopen(request, timeout=10):
+# No answer Hallucinate expects is anywhere near this; a server sending more is broken or hostile.
+MAX_RESPONSE = 32 * 1024 * 1024
+
+
+class ResponseTooLarge(OSError, ValueError):
+    """The server sent more than allowed. Both an OSError and a ValueError, so every caller's existing "bad
+    answer" handling catches it."""
+
+
+class _Limited:
+    """A response that refuses to read past `limit` bytes in total."""
+
+    def __init__(self, resp, limit):
+        self._resp, self._left = resp, limit
+
+    def read(self, amt=-1):
+        want = self._left + 1 if amt is None or amt < 0 else min(amt, self._left + 1)
+        data = self._resp.read(want)
+        self._left -= len(data)
+        if self._left < 0:
+            raise ResponseTooLarge("The server's answer was too large")
+        return data
+
+    def __getattr__(self, name):
+        return getattr(self._resp, name)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self._resp.close()
+        return False
+
+
+def urlopen(request, timeout=10, limit=MAX_RESPONSE):
+    """Open a URL unless offline mode is on. Reading more than `limit` bytes raises ResponseTooLarge."""
     if _offline:
         raise OfflineError()
-    return urllib.request.urlopen(request, timeout=timeout)  # noqa: S310 - callers pass fixed https endpoints
+    resp = urllib.request.urlopen(request, timeout=timeout)  # noqa: S310 - callers pass fixed https endpoints
+    return _Limited(resp, limit)

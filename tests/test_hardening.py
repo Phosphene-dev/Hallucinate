@@ -76,3 +76,34 @@ def test_update_check_only_keeps_a_version_number(monkeypatch):
     monkeypatch.setattr(updates.net, "urlopen", lambda req, timeout=0: Resp(body.encode()))
     latest = updates.fetch_latest()
     assert latest["version"] == "1.2.3" and latest["url"] == updates.RELEASES_PAGE
+
+
+def test_network_answers_are_size_capped(monkeypatch):
+    import io
+    import json
+
+    import pytest
+
+    from hallucinate.core import lyrics, net
+
+    class Resp(io.BytesIO):
+        def close(self):
+            pass
+
+    def fake(data):
+        return lambda request, timeout=10: Resp(data)
+
+    monkeypatch.setattr(net.urllib.request, "urlopen", fake(b"x" * 101))
+    with net.urlopen("https://example.invalid", limit=100) as r:
+        with pytest.raises(net.ResponseTooLarge):
+            r.read()
+    with net.urlopen("https://example.invalid", limit=100) as r:
+        assert len(r.read(50)) == 50 and len(r.read(50)) == 50
+        with pytest.raises(net.ResponseTooLarge):
+            r.read(10)
+    # an endless answer from a lookup ends as an ordinary "no network" error, not a memory blow-up
+    monkeypatch.setattr(net, "MAX_RESPONSE", 1000)
+    monkeypatch.setattr(net.urlopen, "__defaults__", (10, 1000))
+    monkeypatch.setattr(net.urllib.request, "urlopen", fake(json.dumps({"plainLyrics": "la" * 5000}).encode()))
+    with pytest.raises(OSError):
+        lyrics.fetch_lrclib("Artist", "Title")
