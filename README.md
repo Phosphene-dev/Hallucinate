@@ -26,7 +26,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/demo.webp" width="860" alt="A tour of Hallucinate: Home, the colour wall, an album page and its menu, Now Playing over a visualizer, the timeline and the Trans Pride theme">
+  <img src="docs/screenshots/demo.webp" width="860" alt="A tour of Hallucinate: Home, the colour wall, an album page and its menu, Now Playing, the timeline, the Trans Pride theme and the Nebula visualizer">
 </p>
 
 ## Highlights
@@ -48,7 +48,8 @@ right now. Things worth trying:
 - **Your desktop:** tiling window managers (Hyprland, Sway, i3), small windows, fractional scaling, Windows 10 and 11.
 - **Gapless albums** on your audio device (live albums, classical, DJ mixes).
 - **Imports** from Strawberry, Clementine, Rhythmbox, MusicBee, iTunes or foobar2000.
-- **New in 0.9:** offline mode, and Update now in the AppImage and Windows installer.
+- **New in 0.9:** offline mode, Update now in the AppImage and Windows installer, the Flatpak repository,
+  and the restyled menus and dialogs.
 
 Found something? [Open a bug report](https://github.com/Phosphene-dev/Hallucinate/issues/new/choose).
 **Settings → About → Copy debug info** gives us everything about your setup in one paste, with your home folder
@@ -91,7 +92,7 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 ## Keyboard
 | Key | Does |
 |---|---|
-| Ctrl+K | Command palette: any page, command, album, artist or song |
+| Ctrl+K or Ctrl+P | Command palette: any page, command, album, artist or song |
 | / or Ctrl+F | Search |
 | Space · N · P | Play/pause · next · previous |
 | ← → · ↑ ↓ | Seek 5 s · volume |
@@ -104,6 +105,7 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 | Ctrl+Z | Undo the last queue change |
 | Esc | Clear the selection |
 | Alt+← | Back |
+| Ctrl+Q | Quit |
 
 ## All features
 - Scans folders (mutagen tags + embedded/folder cover art) into SQLite with FTS5 instant search; incremental rescans (mtime/size), background scanning, file watching, and removal of moved/deleted paths.
@@ -212,8 +214,7 @@ pip install -e '.[test]'
 Note: a distro `pyside6` must match the installed Qt version; if you see
 `undefined symbol` import errors, use an isolated venv (no system site packages)
 so pip installs the PySide6 wheel.
-Hallucinate requires PySide6/Qt 6.11.2 or newer (6.8 added the audio-buffer processing used
-by the equalizer and spectrum visualizer).
+Hallucinate requires Python 3.10 or newer and PySide6/Qt 6.11.2 or newer.
 
 ## Run
 ```sh
@@ -305,10 +306,6 @@ screenshot by `python scripts/make_social.py`; rerun it after new screenshots. T
 on GitHub, use the repository's **Settings → General → Social preview** controls. The Windows installer uses
 the generated setup wizard image.
 
-## Shortcuts
-Space play/pause · ←/→ seek · ↑/↓ volume · N/P next/previous · S shuffle · R repeat ·
-Q queue · L lyrics · Ctrl+M mini player · `/`, Ctrl+F or Ctrl+K search · Alt+← back · Ctrl+Q quit.
-
 ## Command-line controls
 Start Hallucinate normally, then control that running instance from a terminal:
 ```sh
@@ -352,10 +349,12 @@ FLAC, MP3, OGG/Vorbis, Opus, WAV, AAC/M4A, ALAC, WMA, WavPack, AIFF and APE
 
 ## Roadmap
 - Signed Windows builds
+- The AUR packages, once AUR account sign-ups reopen
 - Real-device verification of APE playback and desktop media keys
 
 ## Contributing
-See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). The calls that shape what
+Hallucinate is and isn't are in [decisions.md](decisions.md).
 Report vulnerabilities per [SECURITY.md](SECURITY.md). Changes are tracked in
 [CHANGELOG.md](CHANGELOG.md).
 
