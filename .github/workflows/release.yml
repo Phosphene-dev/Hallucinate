@@ -16,6 +16,8 @@ permissions:
 env:
   # The tag being released: the pushed tag, or v<version> for a manual release.
   TAG: ${{ inputs.version && format('v{0}', inputs.version) || github.ref_name }}
+  # What file names carry: the version for a release, dev-<run> for a build-only run (a branch name can hold "/").
+  LABEL: ${{ inputs.version || (startsWith(github.ref, 'refs/tags/v') && github.ref_name) || format('dev-{0}', github.run_number) }}
 
 jobs:
   tag:
@@ -55,7 +57,7 @@ jobs:
           python-version: "3.12"
       - name: Build AppImage
         run: |
-          OUT="hallucinate-${TAG#v}-x86_64.AppImage" packaging/appimage/build.sh
+          OUT="hallucinate-${LABEL#v}-x86_64.AppImage" packaging/appimage/build.sh
       - name: Smoke test (offscreen)
         env:
           QT_QPA_PLATFORM: offscreen
@@ -79,12 +81,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           # A fixed-name copy keeps releases/latest/download/... links (README, website) valid across versions.
-          cp "hallucinate-${TAG#v}-x86_64.AppImage" Hallucinate-x86_64.AppImage
-          sha256sum "hallucinate-${TAG#v}-x86_64.AppImage" Hallucinate-x86_64.AppImage > SHA256SUMS
+          cp "hallucinate-${LABEL#v}-x86_64.AppImage" Hallucinate-x86_64.AppImage
+          sha256sum "hallucinate-${LABEL#v}-x86_64.AppImage" Hallucinate-x86_64.AppImage > SHA256SUMS
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --generate-notes || gh release view "$TAG" >/dev/null
           fi
-          gh release upload "$TAG" "hallucinate-${TAG#v}-x86_64.AppImage" Hallucinate-x86_64.AppImage SHA256SUMS --clobber
+          gh release upload "$TAG" "hallucinate-${LABEL#v}-x86_64.AppImage" Hallucinate-x86_64.AppImage SHA256SUMS --clobber
 
   windows:
     needs: tag
@@ -131,7 +133,7 @@ jobs:
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --generate-notes || gh release view "$TAG" >/dev/null
           fi
-          v="${TAG#v}"
+          v="${LABEL#v}"
           cp "dist/hallucinate-$v-windows-x64-setup.exe" dist/Hallucinate-windows-x64-setup.exe  # fixed name for latest-download links
           gh release upload "$TAG" "dist/hallucinate-$v-windows-x64.zip" "dist/hallucinate-$v-windows-x64-setup.exe" \
             dist/Hallucinate-windows-x64-setup.exe --clobber
@@ -148,7 +150,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Build macOS app bundle
-        run: packaging/macos/build.sh "${TAG#v}"
+        run: packaging/macos/build.sh "${LABEL#v}"
       - name: Smoke test (offscreen)
         env:
           QT_QPA_PLATFORM: offscreen
@@ -174,7 +176,7 @@ jobs:
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --generate-notes || gh release view "$TAG" >/dev/null
           fi
-          v="${TAG#v}"
+          v="${LABEL#v}"
           cp "dist/hallucinate-$v-macos-arm64.zip" dist/Hallucinate-macos-arm64.zip  # fixed name for latest-download links
           gh release upload "$TAG" "dist/hallucinate-$v-macos-arm64.zip" dist/Hallucinate-macos-arm64.zip --clobber
 
@@ -232,11 +234,11 @@ jobs:
         if: steps.key.outputs.id
         run: |
           packaging/flatpak/publish.sh flatpak-repo "${{ steps.key.outputs.id }}" "${{ steps.key.outputs.home }}" \
-            packaging/flatpak/hallucinate-repo.gpg "hallucinate-${TAG#v}-x86_64.flatpak"
+            packaging/flatpak/hallucinate-repo.gpg "hallucinate-${LABEL#v}-x86_64.flatpak"
       - name: Smoke test the bundle (offscreen)
         if: steps.key.outputs.id
         run: |
-          flatpak install --user -y --noninteractive "hallucinate-${TAG#v}-x86_64.flatpak"
+          flatpak install --user -y --noninteractive "hallucinate-${LABEL#v}-x86_64.flatpak"
           dbus-run-session -- flatpak run --env=QT_QPA_PLATFORM=offscreen \
             --env=HALLUCINATE_DISABLE_LEGACY_MIGRATION=1 \
             --env=HALLUCINATE_CONTROL_SOCKET=hallucinate-release-flatpak-smoke \
@@ -249,9 +251,9 @@ jobs:
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --generate-notes || gh release view "$TAG" >/dev/null
           fi
-          cp "hallucinate-${TAG#v}-x86_64.flatpak" Hallucinate-x86_64.flatpak  # fixed name for latest-download links
+          cp "hallucinate-${LABEL#v}-x86_64.flatpak" Hallucinate-x86_64.flatpak  # fixed name for latest-download links
           tar -cf flatpak-repo.tar -C flatpak-repo .  # the website serves this; the next release builds on it
-          gh release upload "$TAG" "hallucinate-${TAG#v}-x86_64.flatpak" Hallucinate-x86_64.flatpak flatpak-repo.tar \
+          gh release upload "$TAG" "hallucinate-${LABEL#v}-x86_64.flatpak" Hallucinate-x86_64.flatpak flatpak-repo.tar \
             --clobber
 
   # Redeploy the website once every download is attached. A release created by this workflow's token doesn't
