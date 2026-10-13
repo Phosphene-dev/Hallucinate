@@ -50,5 +50,5 @@ body:
     id: debug
     attributes:
       label: Debug info
-      description: Paste from Settings → About → Copy debug info. If the app won't start, run it from a terminal and paste the output instead.
+      description: Paste from Settings → About → Copy debug info, or, after a crash, the report Hallucinate offers to copy when it next starts. If the app won't start, run it from a terminal and paste the output instead.
       render: text

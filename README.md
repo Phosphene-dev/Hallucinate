@@ -49,9 +49,10 @@ right now. Things worth trying:
 - **Gapless albums** on your audio device (live albums, classical, DJ mixes).
 - **Imports** from Strawberry, Clementine, Rhythmbox, MusicBee, iTunes or foobar2000.
 - **New in 0.9:** offline mode, Update now in the AppImage and Windows installer, the Flatpak repository,
-  and the restyled menus and dialogs.
+  the restyled menus and dialogs, and crash reports.
 
 Found something? [Open a bug report](https://github.com/Phosphene-dev/Hallucinate/issues/new/choose).
+If Hallucinate crashed, it offers a report to copy the next time it starts: paste that in.
 **Settings → About → Copy debug info** gives us everything about your setup in one paste, with your home folder
 hidden. Thoughts, likes and dislikes are just as welcome in
 [Discussions](https://github.com/Phosphene-dev/Hallucinate/discussions).

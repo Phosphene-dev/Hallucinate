@@ -5,6 +5,20 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.8] - 2026-10-13
+
+Getting ready for testers: crashes leave a report, downloads are less than half the size, and the app starts
+faster, uses less power while it waits and works better with screen readers.
+
+### Added
+- If Hallucinate crashes or runs into an error it can't handle, the next start offers a report to copy into a bug report: what went wrong, with the same setup details as Copy debug info. It never includes file paths, names or anything from your library.
+
+### Changed
+- Much smaller downloads: the AppImage is 108 MB instead of 270 MB, the macOS app 66 MB instead of 179 MB, and the Windows downloads less than half their size. They used to carry all of Qt, including a web browser engine Hallucinate never uses. Every build is now checked to play MP3, AAC, ALAC, FLAC, Ogg, Opus and WAV before release.
+- Faster start: with a big library the window opens in under a second on later starts (the full database check now runs only after a crash, or weekly).
+- Less power while idle: the backdrop drifts at a gentler frame rate, the seek bar stops redrawing the window ten times a second while another window has the focus, and a paused Now Playing stops drawing altogether instead of running the visualizer.
+- Screen readers: every button, link, card, slider and field now has a spoken name and role, including the main Play/Pause button, album tiles, links on artist and album names, the listening heatmaps and the equalizer bands. Icon buttons say what they do ("Previous track") and toggles say whether they're on.
+
 ## [0.9.7.1] - 2026-10-13
 
 ### Changed
