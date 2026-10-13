@@ -105,33 +105,52 @@ DEMO_SHOTS = ["home", "albums-colour", "album", "album-menu", "now-playing", "al
 
 
 def make_demo(out, names, hold=2.2, fade=0.6):
-    """Cross-fade shots into a seamless loop: demo.mp4 (website) and demo.webp (README). Needs ffmpeg."""
+    """Cross-fade shots into a seamless loop: demo.mp4 (website, needs ffmpeg) and demo.webp (README, needs Pillow).
+
+    The WebP is built from the screenshots themselves, not from the video: each held shot is one frame and only
+    the fades add frames, so it can use a high quality. Re-encoding the video at low quality turned the dark
+    backdrop into blocks."""
     import shutil
     import subprocess
 
-    if not shutil.which("ffmpeg"):
-        print("ffmpeg not found; skipping the demo clip")
+    if shutil.which("ffmpeg"):
+        files = [out / f"{n}.png" for n in names] + [out / f"{names[0]}.png"]
+        inputs = []
+        for f in files:
+            inputs += ["-loop", "1", "-t", f"{hold + fade:.2f}", "-i", str(f)]
+        chain, last = [], "0:v"
+        for i in range(1, len(files)):
+            label = f"v{i}"
+            chain.append(f"[{last}][{i}:v]xfade=transition=fade:duration={fade}:offset={i * hold:.2f}[{label}]")
+            last = label
+        # the first shot comes back at the end: cut as soon as it has fully faded in, where the loop starts again
+        total = (len(files) - 1) * hold + fade
+        graph = ";".join(chain) + f";[{last}]trim=duration={total:.2f},fps=25,format=yuv420p[out]"
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", *inputs, "-filter_complex", graph, "-map", "[out]",
+                        "-c:v", "libx264", "-crf", "20", "-preset", "slow", "-tune", "stillimage",
+                        "-movflags", "+faststart", str(out / "demo.mp4")], check=True)
+        print("demo.mp4", f"{(out / 'demo.mp4').stat().st_size / 1e6:.1f} MB")
+    else:
+        print("ffmpeg not found; skipping demo.mp4")
+    try:
+        from PIL import Image
+    except ImportError:
+        print("Pillow not installed; skipping demo.webp")
         return
-    files = [out / f"{n}.png" for n in names] + [out / f"{names[0]}.png"]
-    inputs = []
-    for f in files:
-        inputs += ["-loop", "1", "-t", f"{hold + fade:.2f}", "-i", str(f)]
-    chain, last = [], "0:v"
-    for i in range(1, len(files)):
-        label = f"v{i}"
-        chain.append(f"[{last}][{i}:v]xfade=transition=fade:duration={fade}:offset={i * hold:.2f}[{label}]")
-        last = label
-    # the first shot comes back at the end: cut as soon as it has fully faded in, where the loop starts again
-    total = (len(files) - 1) * hold + fade
-    graph = ";".join(chain) + f";[{last}]trim=duration={total:.2f},fps=25,format=yuv420p[out]"
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", *inputs, "-filter_complex", graph, "-map", "[out]",
-                    "-c:v", "libx264", "-crf", "24", "-preset", "slow", "-movflags", "+faststart",
-                    str(out / "demo.mp4")], check=True)
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(out / "demo.mp4"),
-                    "-vf", "fps=12,scale=860:-1:flags=lanczos", "-c:v", "libwebp_anim", "-loop", "0",
-                    "-quality", "70", "-compression_level", "6", str(out / "demo.webp")], check=True)
-    for f in ("demo.mp4", "demo.webp"):
-        print(f, f"{(out / f).stat().st_size / 1e6:.1f} MB")
+    shots = [Image.open(out / f"{n}.png").convert("RGB") for n in names]
+    shots = [s.resize((860, round(s.height * 860 / s.width)), Image.LANCZOS) for s in shots]
+    steps = 8
+    frames, durations = [], []
+    for i, a in enumerate(shots):
+        b = shots[(i + 1) % len(shots)]
+        frames.append(a)
+        durations.append(round(hold * 1000))
+        for k in range(1, steps):
+            frames.append(Image.blend(a, b, k / steps))
+            durations.append(round(fade * 1000 / steps))
+    frames[0].save(out / "demo.webp", save_all=True, append_images=frames[1:], duration=durations, loop=0,
+                   quality=90, method=6)
+    print("demo.webp", f"{(out / 'demo.webp').stat().st_size / 1e6:.1f} MB")
 
 
 def make_gif(out, frames, target):
