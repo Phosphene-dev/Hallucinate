@@ -20,8 +20,8 @@ import time
 from pathlib import Path
 
 from mutagen.id3 import APIC, ID3, TALB, TCON, TDRC, TIT2, TPE1, TPE2, TRCK
-from PySide6.QtCore import Q_ARG, QBuffer, QByteArray, QIODevice, QMetaObject, Qt, QTimer
-from PySide6.QtGui import QBrush, QColor, QImage, QLinearGradient, QPainter
+from PySide6.QtCore import Q_ARG, QBuffer, QByteArray, QIODevice, QMetaObject, QPoint, Qt, QTimer
+from PySide6.QtGui import QBrush, QColor, QCursor, QImage, QLinearGradient, QPainter
 
 GENRES = ["Dream Pop", "Indie Folk", "Synthwave", "Ambient", "Folk", "Chamber Jazz", "Indie Folk", "Post-Rock"]
 YEARS = [2019, 2014, 1986, 2021, 2009, 1998, 2016, 2023]
@@ -231,6 +231,25 @@ def main():
             def open_album():
                 QMetaObject.invokeMethod(win, "openAlbum", Q_ARG("QVariant", library.albums.get(7)["album_key"]))
 
+            def album_menu():
+                a = library.albums.get(7)
+                menu = child("albumMenu")
+                QMetaObject.invokeMethod(menu, "show", Q_ARG("QVariant", [a["album_key"]]),
+                                         Q_ARG("QVariant", a["album"]), Q_ARG("QVariant", a["album_artist"]))
+                menu.setProperty("x", 560)
+                menu.setProperty("y", 230)
+                QCursor.setPos(win.mapToGlobal(QPoint(1200, 40)))  # keep the pointer off the menu
+                menu.setProperty("currentIndex", 1)  # one row hovered
+
+            def edit_album():
+                QMetaObject.invokeMethod(child("tagEditor"), "editAlbum", Q_ARG("QVariant", library.albums.get(7)["album_key"]))
+
+            def confirm_trash():
+                a = library.albums.get(7)
+                dlg = child("trashAlbumsDialog")
+                dlg.setProperty("what", "“" + a["album"] + "”")
+                dlg.open()
+
             def palette_query():
                 QMetaObject.invokeMethod(child("commandPalette"), "show")
                 child("paletteField").setProperty("text", "aur")
@@ -283,6 +302,9 @@ def main():
             for view in ("grid", "colour", "timeline"):
                 todo += [albums_view(view), go("home"), go("albums"), wait, shot("albums" if view == "grid" else "albums-" + view)]
             todo += [albums_view("grid"), open_album, wait, shot("album")]
+            todo += [album_menu, wait, shot("album-menu"), lambda: child("albumMenu").close(), wait]
+            todo += [edit_album, wait, shot("edit-album"), lambda: child("tagEditor").reject(), wait]
+            todo += [confirm_trash, wait, shot("confirm-trash"), lambda: child("trashAlbumsDialog").reject(), wait]
             todo += [lambda: shell.setVisualizerStyle("nebula"), go("visualizer"), wait, shot("visualizer")]
             todo += [lambda: shell.setVisualizerStyle("aurora"), lambda: child("nowPlayingView").setProperty("open", True),
                      wait, wait, shot("now-playing")]

@@ -12,6 +12,16 @@ Item {
 
     Component.onCompleted: userLib.openSmartPlaylist(smartId)
 
+    ConfirmDialog {
+        id: deleteDlg
+        objectName: "deleteSmartPlaylistDialog"
+        title: "Delete this smart playlist?"
+        body: "“" + page.playlistName + "” and its rules go away for good. No songs are touched."
+        confirmText: "Delete playlist"
+        destructive: true
+        onAccepted: { userLib.deleteSmartPlaylist(page.smartId); Nav.goHome() }
+    }
+
     ListView {
         id: list
         anchors.fill: parent
@@ -49,7 +59,7 @@ Item {
                     PillButton { text: "Shuffle"; enabled: list.count > 0; onClicked: userLib.playSmartPlaylist(0, true) }
                     PillButton { text: "Edit rules"; onClicked: Nav.editSmartPlaylist(page.smartId, page.playlistName) }
                     PillButton { text: "Export"; enabled: list.count > 0; onClicked: Nav.exportPlaylist("smart", page.playlistName) }
-                    PillButton { text: "Delete"; onClicked: { userLib.deleteSmartPlaylist(page.smartId); Nav.goHome() } }
+                    PillButton { objectName: "deleteSmartPlaylist"; text: "Delete"; onClicked: deleteDlg.open() }
                 }
             }
         }

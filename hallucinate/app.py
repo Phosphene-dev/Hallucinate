@@ -31,6 +31,9 @@ from .userlib import UserLibrary
 from .waveform import WaveformService
 
 HERE = Path(__file__).resolve().parent
+# Our Qt Quick Controls style (qml/HallucinateStyle): the app's look for menus, dialogs, tooltips and text fields,
+# with Qt's Basic style for everything else. Found through the qml/ import path.
+QML_STYLE = "HallucinateStyle"
 
 
 def main(argv=None) -> int:
@@ -65,7 +68,7 @@ def main(argv=None) -> int:
     if existing is not None and existing.get("ok"):
         return 0
 
-    QQuickStyle.setStyle("Basic")
+    QQuickStyle.setStyle(QML_STYLE)
     app = QApplication([sys.argv[0], *qt_args])
     from . import diagnostics
 

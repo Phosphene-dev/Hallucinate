@@ -250,6 +250,8 @@ Item {
                         showAlbum: false
                         durText: modelData.durText
                         artUrl: modelData.artUrl || ""
+                        audioFormat: modelData.codec || modelData.fmt || ""
+                        audioBitrate: modelData.bitrate || 0
                         current: Rows.currentPath === modelData.path
                         onActivated: player.playList(page.profile.topTracks, index)
                         onEnqueue: player.enqueue(modelData)

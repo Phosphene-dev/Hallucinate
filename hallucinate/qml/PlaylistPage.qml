@@ -21,6 +21,15 @@ Item {
         onAccepted: if (nameField.text.trim().length) { userLib.renamePlaylist(page.playlistId, nameField.text.trim()); page.playlistName = nameField.text.trim() }
         TextField { id: nameField; width: 280; text: page.playlistName; selectByMouse: true; onAccepted: renameDlg.accept() }
     }
+    ConfirmDialog {
+        id: deleteDlg
+        objectName: "deletePlaylistDialog"
+        title: "Delete this playlist?"
+        body: "“" + page.playlistName + "” goes away for good. The songs in it stay in your library."
+        confirmText: "Delete playlist"
+        destructive: true
+        onAccepted: { userLib.deletePlaylist(page.playlistId); Nav.goHome() }
+    }
 
     ListView {
         id: list
@@ -53,7 +62,7 @@ Item {
                     PillButton { text: "Shuffle"; enabled: list.count > 0; onClicked: page.liked ? (player.setShuffle(true), userLib.playLiked(Math.floor(Math.random() * list.count))) : userLib.playPlaylist(0, true) }
                     PillButton { objectName: "exportPlaylist"; text: "Export"; enabled: list.count > 0; onClicked: Nav.exportPlaylist(page.liked ? "liked" : "playlist", page.liked ? "Liked Songs" : page.playlistName) }
                     PillButton { visible: !page.liked; text: "Rename"; onClicked: { nameField.text = page.playlistName; renameDlg.open() } }
-                    PillButton { visible: !page.liked; text: "Delete"; onClicked: { userLib.deletePlaylist(page.playlistId); Nav.goHome() } }
+                    PillButton { visible: !page.liked; objectName: "deletePlaylist"; text: "Delete"; onClicked: deleteDlg.open() }
                 }
             }
         }

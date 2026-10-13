@@ -42,21 +42,21 @@ Item {
         width: parent.width - 56
         height: 40
         spacing: 10
-        ComboBox {
+        StyledCombo {
             id: genreFilter
             width: 180
             height: 38
             model: ["All genres"].concat(library.genres)
             onActivated: page.applyFilters()
         }
-        ComboBox {
+        StyledCombo {
             id: yearFilter
             width: 110
             height: 38
             model: ["All years"].concat(library.years.map(function(value) { return String(value) }))
             onActivated: page.applyFilters()
         }
-        ComboBox {
+        StyledCombo {
             id: formatFilter
             width: 130
             height: 38

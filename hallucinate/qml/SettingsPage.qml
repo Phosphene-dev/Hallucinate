@@ -111,7 +111,7 @@ Item {
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(14)
                 }
-                ComboBox {
+                StyledCombo {
                     id: themePicker
                     objectName: "themePicker"
                     width: 260

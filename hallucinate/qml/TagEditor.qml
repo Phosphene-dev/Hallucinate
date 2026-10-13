@@ -21,7 +21,6 @@ Dialog {
     width: Math.min(560, parent ? parent.width - 40 : 560)
     title: albumMode ? "Edit album" : manyMode ? "Edit " + paths.length + " songs" : "Edit tags"
     standardButtons: Dialog.Save | Dialog.Cancel
-    background: Rectangle { radius: Theme.radius; color: Theme.panel; border.color: Theme.border }
 
     readonly property var keys: albumMode || manyMode
         ? ["album", "album_artist", "artist", "year", "genre"]

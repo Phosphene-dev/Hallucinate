@@ -6,6 +6,7 @@ import "."
 Menu {
     id: menu
     Menu {
+        icon.name: "wave"
         title: "Playback speed" + (player.speed !== 1 ? " (" + player.speed + "×)" : "")
         Repeater {
             model: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
@@ -19,6 +20,7 @@ Menu {
         }
     }
     Menu {
+        icon.name: "history"
         title: "Sleep timer" + (player.sleepRemaining >= 0 ? " (" + Math.ceil(player.sleepRemaining / 60) + " min)" : player.sleepAfterTrack ? " (end of track)" : "")
         MenuItem { text: "Off"; onTriggered: player.setSleepMinutes(0) }
         Repeater {

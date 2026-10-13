@@ -74,6 +74,11 @@ QtObject {
     readonly property color glassHover: Qt.rgba(surfaceHi.r, surfaceHi.g, surfaceHi.b, 0.55)
     readonly property color stroke: Qt.rgba(text.r, text.g, text.b, light ? 0.10 : 0.08)
     readonly property color strokeHi: Qt.rgba(accent.r, accent.g, accent.b, 0.45)
+    // Menus, dialogs and tooltips: nearly opaque glass above the page, a soft accent tint for the item under the
+    // pointer (text stays the normal text colour, readable in every theme), and the dim laid over the page
+    readonly property color popup: Qt.rgba(panel.r, panel.g, panel.b, light ? 0.97 : 0.94)
+    readonly property color hoverTint: Qt.rgba(accent.r, accent.g, accent.b, light ? 0.14 : 0.22)
+    readonly property color scrim: Qt.rgba(bg.r * 0.35, bg.g * 0.35, bg.b * 0.35, light ? 0.38 : 0.58)
 
     // Colours of the current cover (or of the theme when nothing has art); they melt slowly between tracks.
     readonly property var artColors: themeManager.artColors

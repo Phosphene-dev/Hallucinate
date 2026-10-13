@@ -116,7 +116,8 @@ Rectangle {
                 id: audioBadge
                 formatName: row.audioFormat
                 bitrate: row.audioBitrate
-                visible: Rows.showTrackInfo
+                // only with something to say: lists that don't know a song's format draw no empty pill
+                visible: Rows.showTrackInfo && label.length > 0
             }
         }
     }

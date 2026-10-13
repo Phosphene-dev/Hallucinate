@@ -8,6 +8,7 @@ from PySide6.QtGui import QColor, QIcon, QImage
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
 
+from hallucinate.app import QML_STYLE
 from hallucinate.core.db import Database
 from hallucinate.discord import DiscordPresence
 from hallucinate.library import Library
@@ -198,7 +199,7 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     monkeypatch.setattr(scrobbling.keyring, "get_password", lambda *_: None)
     monkeypatch.setattr(scrobbling.keyring, "set_password", lambda *_: None)
     monkeypatch.setattr(scrobbling.keyring, "delete_password", lambda *_: None)
-    QQuickStyle.setStyle("Basic")
+    QQuickStyle.setStyle(QML_STYLE)
     old_font = qapp.font()
     config_dir = tmp_path / "config"
     user_themes = config_dir / "themes"

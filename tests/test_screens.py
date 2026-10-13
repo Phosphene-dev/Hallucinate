@@ -9,6 +9,7 @@ from PySide6.QtGui import QIcon, QImage
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
 
+from hallucinate.app import QML_STYLE
 from hallucinate.core.db import Database
 
 PAGES = ("home", "albums", "artists", "songs", "folders", "liked", "stats", "history", "recap", "health",
@@ -75,7 +76,7 @@ def app_window(qapp, tmp_path, monkeypatch):
 
     for name in ("get_password", "set_password", "delete_password"):
         monkeypatch.setattr(scrobbling.keyring, name, lambda *_: None)
-    QQuickStyle.setStyle("Basic")
+    QQuickStyle.setStyle(QML_STYLE)
     seed(tmp_path)
     db_path = tmp_path / "library.db"
     library = Library(db_path, tmp_path / "art")
@@ -175,6 +176,30 @@ def test_every_page_in_every_theme(qapp, app_window):
         QMetaObject.invokeMethod(dialog, "open")
         settle()
         yield "close dialog"
+        QMetaObject.invokeMethod(dialog, "close")
+        settle()
+        # a menu with a row under the pointer: that row was drawn white on white in dark themes
+        menu = window.findChild(QObject, "albumMenu")
+        QMetaObject.invokeMethod(menu, "show", Q_ARG("QVariant", ["k0"]), Q_ARG("QVariant", "Northern Lights"),
+                                 Q_ARG("QVariant", "Aurora Vale"))
+        menu.setProperty("x", 300)
+        menu.setProperty("y", 120)
+        menu.setProperty("currentIndex", 1)
+        settle()
+        yield "album menu"
+        QMetaObject.invokeMethod(menu, "close")
+        settle()
+        editor = window.findChild(QObject, "tagEditor")
+        QMetaObject.invokeMethod(editor, "editAlbum", Q_ARG("QVariant", "k0"))
+        settle()
+        yield "edit album"
+        QMetaObject.invokeMethod(editor, "reject")
+        settle()
+        dialog = window.findChild(QObject, "trashAlbumsDialog")
+        dialog.setProperty("what", "“Northern Lights”")
+        QMetaObject.invokeMethod(dialog, "open")
+        settle()
+        yield "trash dialog"
         QMetaObject.invokeMethod(dialog, "close")
         settle()
 
@@ -327,3 +352,33 @@ def test_timeline_year_shows_two_lines_until_asked(qapp, app_window, tmp_path):
     assert wait_for(lambda: not visible("timelineMore"))
     assert not warnings, warnings[:3]
     del button
+
+
+def test_track_info_badges_never_draw_empty(qapp, app_window):
+    """With "Show track info" on, a list that doesn't know a song's format (the artist page's Most played did
+    not) must not draw an empty pill after the title."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    player = objects["player"]
+    player.setShowTrackInfo(True)
+    try:
+        QMetaObject.invokeMethod(window, "openArtist", Qt.ConnectionType.DirectConnection,
+                                 Q_ARG("QVariant", "Aurora Vale"))
+
+        def badges():
+            stack, found = [window.contentItem()], []
+            while stack:
+                item = stack.pop()
+                if item.property("formatName") is not None and item.property("spokenLabel") is not None \
+                        and item.isVisible():
+                    found.append(item)
+                stack.extend(item.childItems())
+            return found
+
+        assert wait_for(lambda: len(badges()) >= 4)
+        assert all(b.property("label") for b in badges()), [b.property("label") for b in badges()]
+        assert any("FLAC" in b.property("label") for b in badges())
+        assert not warnings, warnings[:3]
+    finally:
+        player.setShowTrackInfo(False)

@@ -420,6 +420,8 @@ Item {
                             showAlbum: false
                             durText: modelData.durText || ""
                             artUrl: modelData.artUrl || ""
+                            audioFormat: modelData.codec || modelData.fmt || ""
+                            audioBitrate: modelData.bitrate || 0
                             onActivated: userLib.playRecapSong(index)
                         }
                     }

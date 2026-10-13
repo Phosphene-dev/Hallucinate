@@ -207,28 +207,11 @@ ApplicationWindow {
     Shortcut { sequence: "Escape"; enabled: AlbumSelection.count > 0 && !nowPlaying.open; onActivated: AlbumSelection.clear() }
 
     // Removing albums: from the library only (files stay; Settings → Library brings them back), or to the trash
-    component ConfirmDialog: Dialog {
-        id: dlg
-        property var keys: []
-        property string what: ""
-        property string body: ""
-        parent: Overlay.overlay
-        anchors.centerIn: parent
-        width: 440
-        modal: true
-        standardButtons: Dialog.Ok | Dialog.Cancel
-        Text {
-            textFormat: Text.PlainText
-            width: dlg.availableWidth
-            wrapMode: Text.WordWrap
-            text: dlg.body
-            color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
-        }
-    }
     ConfirmDialog {
         id: removeDlg
         objectName: "removeAlbumsDialog"
         title: "Remove from the library?"
+        confirmText: "Remove"
         body: what + ": the music stays on your disk; Hallucinate just stops showing it, and rescans leave it out. "
               + "Settings → Library can bring it back. Plays, likes and playlists are kept."
         onAccepted: { library.removeAlbums(keys); AlbumSelection.clear() }
@@ -237,6 +220,8 @@ ApplicationWindow {
         id: trashDlg
         objectName: "trashAlbumsDialog"
         title: "Move to the trash?"
+        confirmText: "Move to trash"
+        destructive: true
         body: what + ": the music files go to your system's trash, where you can restore them from. A folder left with only "
               + "covers or logs goes too; anything else in it stays."
         onAccepted: { library.trashAlbums(keys); AlbumSelection.clear() }
@@ -289,7 +274,7 @@ ApplicationWindow {
         id: smartEditor
         onSaved: function (id, name) { window.openSmartPlaylist(id, name) }
     }
-    TagEditor { id: tagEditor }
+    TagEditor { id: tagEditor; objectName: "tagEditor" }
     MiniPlayer {}
     onClosing: function (close) {
         var result = shell.handleClose()
@@ -361,6 +346,7 @@ ApplicationWindow {
         modal: true
         title: "Update to Hallucinate " + Theme.plain(shell.updates.latestVersion) + "?"
         standardButtons: Dialog.Ok | Dialog.Cancel
+        Component.onCompleted: { var b = standardButton(Dialog.Ok); if (b) b.text = "Update now" }
         onAccepted: shell.updates.installNow()
         Text {
             textFormat: Text.PlainText

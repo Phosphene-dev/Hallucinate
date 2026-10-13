@@ -16,13 +16,14 @@ Menu {
     function show(k, title, art) { keys = k; albumTitle = title; artist = art; popup() }
     function paths() { return library.albumPaths(menu.keys) }
 
-    MenuItem { text: "Play"; onTriggered: menu.single ? library.playAlbum(menu.keys[0], 0) : userLib.playPaths(menu.paths()) }
-    MenuItem { text: "Play next"; onTriggered: { userLib.playNextPaths(menu.paths()); Nav.notify(menu.what + " will play next") } }
-    MenuItem { text: "Add to queue"; onTriggered: { userLib.enqueuePaths(menu.paths()); Nav.notify(menu.what + " added to the queue") } }
+    MenuItem { text: "Play"; icon.name: "play"; onTriggered: menu.single ? library.playAlbum(menu.keys[0], 0) : userLib.playPaths(menu.paths()) }
+    MenuItem { text: "Play next"; icon.name: "next"; onTriggered: { userLib.playNextPaths(menu.paths()); Nav.notify(menu.what + " will play next") } }
+    MenuItem { text: "Add to queue"; icon.name: "queue"; onTriggered: { userLib.enqueuePaths(menu.paths()); Nav.notify(menu.what + " added to the queue") } }
     Menu {
         id: plMenu
         title: "Add to playlist"
-        MenuItem { text: "New playlist…"; onTriggered: newDlg.open() }
+        icon.name: "playlist"
+        MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: newDlg.open() }
         MenuSeparator {}
         Instantiator {
             model: userLib.playlists
@@ -41,16 +42,19 @@ Menu {
         visible: menu.single
         height: visible ? implicitHeight : 0
         text: "Edit album info…"
+        icon.name: "edit"
         onTriggered: Nav.editAlbum(menu.keys[0])
     }
     MenuItem {
         visible: menu.single && menu.artist.length > 0
         height: visible ? implicitHeight : 0
         text: "Go to " + Theme.plain(menu.artist)
+        icon.name: "artist"
         onTriggered: Nav.openArtist(menu.artist)
     }
-    MenuItem { objectName: "albumRemove"; text: "Remove from library…"; onTriggered: Nav.removeAlbums(menu.keys, menu.what) }
-    MenuItem { objectName: "albumTrash"; text: "Move to trash…"; onTriggered: Nav.trashAlbums(menu.keys, menu.what) }
+    MenuSeparator {}
+    MenuItem { objectName: "albumRemove"; text: "Remove from library…"; icon.name: "remove"; icon.color: Theme.error; onTriggered: Nav.removeAlbums(menu.keys, menu.what) }
+    MenuItem { objectName: "albumTrash"; text: "Move to trash…"; icon.name: "trash"; icon.color: Theme.error; onTriggered: Nav.trashAlbums(menu.keys, menu.what) }
 
     Dialog {
         id: newDlg
