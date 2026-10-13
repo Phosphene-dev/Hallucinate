@@ -417,3 +417,19 @@ def test_first_start_pages_explain_themselves(qapp, app_window):
                 assert found, page
                 assert found[0].property("actionText") == "Open Settings"
     assert not warnings, warnings[:3]
+
+
+def test_a_crash_last_time_is_offered_as_a_report(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    shell.setCrashReport("Crash:\nFatal Python error: Segmentation fault\n  File \"player.py\", line 1", True)
+    dlg = window.findChild(QObject, "crashDialog")
+    assert wait_for(lambda: dlg.property("opened"))
+    assert dlg.property("title") == "Hallucinate closed unexpectedly"
+    QMetaObject.invokeMethod(dlg, "accept")
+    assert wait_for(lambda: shell.crashReport == "")
+    copied = qapp.clipboard().text()
+    assert copied.startswith("Hallucinate ") and "Previous run" in copied and "Segmentation fault" in copied
+    assert not [w for w in warnings if "ConfirmDialog" in w or "main.qml" in w], warnings

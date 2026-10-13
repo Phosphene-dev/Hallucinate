@@ -204,6 +204,35 @@ class DesktopShell(QObject):
         self._settings.setValue("ui/nowPlayingVinyl", self._now_playing_vinyl)
         self.settingsChanged.emit()
 
+    crashReportChanged = Signal()
+
+    def setCrashReport(self, text, crashed):
+        self._crash_report, self._crashed = text or "", bool(crashed)
+        self.crashReportChanged.emit()
+
+    @Property(str, notify=crashReportChanged)
+    def crashReport(self):
+        """What went wrong in the previous run (see crashlog), until it's copied or dismissed; "" if nothing."""
+        return getattr(self, "_crash_report", "")
+
+    @Property(bool, notify=crashReportChanged)
+    def lastRunCrashed(self):
+        """Whether the previous run crashed, rather than only hitting an error it carried on from."""
+        return getattr(self, "_crashed", False)
+
+    @Slot(result=str)
+    def copyCrashReport(self):
+        """The debug info followed by the previous run's crash record, on the clipboard."""
+        text = self.debugInfo() + "\n\nPrevious run\n" + self.crashReport
+        self._app.clipboard().setText(text)
+        self.dismissCrashReport()
+        return text
+
+    @Slot()
+    def dismissCrashReport(self):
+        self._crash_report = ""
+        self.crashReportChanged.emit()
+
     def setReportSources(self, library=None, theme_manager=None):
         self._report_sources = {"library": library, "theme_manager": theme_manager}
 

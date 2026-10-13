@@ -88,6 +88,11 @@ def main(argv=None) -> int:
     control = ControlServer()
     if not control.listen():
         return 0
+    from . import crashlog
+
+    crash_dir = paths.data_dir() / "crash"
+    last_crash, last_crashed = crashlog.take_previous(crash_dir)
+    crashlog.install(crash_dir)
 
     from PySide6.QtCore import QSettings
 
@@ -135,6 +140,7 @@ def main(argv=None) -> int:
     shell = DesktopShell(app, player, app.windowIcon())
     shell.setReportSources(library=library, theme_manager=theme_manager)
     shell.setStartupNotice(db_notice)
+    shell.setCrashReport(last_crash, last_crashed)
 
     if not library.folders and not args.folders:
         # A fresh install: open on the welcome (music folder, theme, scrobbling) until it is finished
@@ -219,6 +225,7 @@ def main(argv=None) -> int:
     library.shutdown()
     del scrobbler, listenbrainz
     del mpris
+    crashlog.finish()
     return code
 
 

@@ -270,6 +270,20 @@ ApplicationWindow {
     }
     // e.g. a damaged library database that was restored from its backup at start-up
     Timer { interval: 800; running: shell.startupNotice.length > 0; onTriggered: toast.show(shell.startupNotice, 15000) }
+    // The previous run crashed or hit an error: offer its report once, for a bug report
+    ConfirmDialog {
+        id: crashDlg
+        objectName: "crashDialog"
+        title: shell.lastRunCrashed ? "Hallucinate closed unexpectedly" : "Hallucinate ran into an error"
+        confirmText: "Copy report"
+        body: (shell.lastRunCrashed ? "Last time, Hallucinate closed unexpectedly." : "Last time, Hallucinate hit an error it couldn't handle.")
+              + " A report of what happened is ready: paste it into a bug report so it can be fixed. It describes your setup"
+              + " and the error, without file paths, names or anything from your library."
+        Component.onCompleted: { var b = standardButton(Dialog.Cancel); if (b) b.text = "Not now" }
+        onAccepted: { shell.copyCrashReport(); toast.show("Report copied — paste it into a bug report", 6000) }
+        onRejected: shell.dismissCrashReport()
+    }
+    Timer { interval: 900; running: shell.crashReport.length > 0 && !crashDlg.opened; onTriggered: crashDlg.open() }
     SmartPlaylistEditor {
         id: smartEditor
         onSaved: function (id, name) { window.openSmartPlaylist(id, name) }
