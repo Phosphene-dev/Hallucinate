@@ -28,13 +28,11 @@ def main():
         d.mkdir(parents=True, exist_ok=True)
         icon.resize((size, size), Image.LANCZOS).save(d / "hallucinate.png", optimize=True)
     icon.save(ASSETS / "hallucinate.ico", sizes=[(s, s) for s in (16, 24, 32, 48, 64, 128, 256)])
-    # Full logo (with wordmark) for the README header, About page and social preview.
+    # Full logo (with wordmark) for the README header and About page. The social preview is
+    # scripts/make_social.py, since it also needs a current screenshot.
     src.resize((1024, 1024), Image.LANCZOS).save(ASSETS / "logo.png", optimize=True)
     wizard = src.crop((0, 0, src.width, 800)).resize((164, 314), Image.LANCZOS)
     wizard.save(ASSETS / "setup-wizard.bmp")
-    social = Image.new("RGB", (1280, 640), (0, 0, 0))
-    social.paste(src.resize((640, 640), Image.LANCZOS), (320, 0))
-    social.save(ROOT / "assets" / "logo" / "social-preview.png", optimize=True)
     print("icons generated")
 
 
