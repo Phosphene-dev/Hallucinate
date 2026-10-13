@@ -42,19 +42,27 @@ Rectangle {
         Behavior on opacity { NumberAnimation { duration: 160 } }
         visible: !cover.useMask
         layer.enabled: cover.useMask
+        layer.smooth: true
     }
     Rectangle {
         id: mask
         anchors.fill: parent
         radius: cover.radius
         visible: false
+        antialiasing: true
+        // A hard-edged, screen-sized mask turns small circles into octagons and stair-steps the corners.
+        // Render it at twice the size and let its edge fade over the threshold below.
         layer.enabled: cover.useMask
+        layer.smooth: true
+        layer.textureSize: Qt.size(Math.ceil(width * 2 * Screen.devicePixelRatio), Math.ceil(height * 2 * Screen.devicePixelRatio))
     }
     MultiEffect {
         anchors.fill: parent
         source: img
         maskEnabled: true
         maskSource: mask
+        maskThresholdMin: 0.5
+        maskSpreadAtMin: 1.0
         visible: cover.useMask && img.status === Image.Ready
     }
 }

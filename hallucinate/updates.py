@@ -24,8 +24,8 @@ INTERVAL_S = 24 * 3600
 
 
 def version_tuple(text):
-    """(major, minor, patch) from "v0.8.1" or "0.8.1"; () when it isn't a version."""
-    m = re.match(r"^\s*v?(\d+)\.(\d+)(?:\.(\d+))?", text or "")
+    """(major, minor, patch, fix) from "v0.8.1", "0.8.1" or "0.9.6.1"; () when it isn't a version."""
+    m = re.match(r"^\s*v?(\d+)\.(\d+)(?:\.(\d+))?(?:\.(\d+))?", text or "")
     return tuple(int(x or 0) for x in m.groups()) if m else ()
 
 
@@ -49,8 +49,9 @@ def fetch_latest(timeout=10):
     url = str(data.get("html_url") or "")
     if not url.startswith("https://github.com/Phosphene-dev/Hallucinate/"):
         url = RELEASES_PAGE  # only ever open our own release page
-    # just the numbers: nothing else from the response is shown or compared
-    return {"version": ".".join(map(str, numbers)), "url": url, "assets": assets}
+    # just the numbers: nothing else from the response is shown or compared ("0.9.6", not "0.9.6.0")
+    version = ".".join(map(str, numbers[:3] if numbers[3:] == (0,) else numbers))
+    return {"version": version, "url": url, "assets": assets}
 
 
 def system_package(frozen=None, module=__file__):

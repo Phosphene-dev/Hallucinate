@@ -95,6 +95,11 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.9.7" date="2026-10-13">
+      <description>
+        <p>Album covers and artist pictures have smooth rounded corners and circles instead of jagged edges.</p>
+      </description>
+    </release>
     <release version="0.9.6" date="2026-10-13">
       <description>
         <p>Menus, dialogs and empty pages now match the rest of Hallucinate, and the menu item under the pointer is readable in dark themes again.</p>

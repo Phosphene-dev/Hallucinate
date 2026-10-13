@@ -5,6 +5,12 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.7] - 2026-10-13
+
+### Fixed
+- Album covers and artist pictures had jagged, stair-stepped rounded corners, and small round pictures (such as the top artists on Home and Stats) came out as octagons. Their edges are now smooth at every size.
+- The update check reads four-part version numbers (such as 1.2.3.4), in case a release ever uses one.
+
 ## [0.9.6] - 2026-10-13
 
 A polish release: menus, dialogs and empty pages now look like the rest of Hallucinate.
