@@ -39,4 +39,15 @@ Item {
             }
         }
     }
+    EmptyState {
+        objectName: "noMusic"
+        anchors.centerIn: parent
+        visible: library.ready && library.trackCount === 0
+        icon: "folder"
+        title: "No music yet"
+        hint: library.folders.length ? "Hallucinate is looking through your music folders; songs appear as they're found."
+                                     : "Add the folder where you keep your music and it shows up here."
+        actionText: library.folders.length ? "" : "Open Settings"
+        onAction: Nav.openSettings()
+    }
 }

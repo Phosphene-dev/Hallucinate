@@ -62,7 +62,7 @@ Rectangle {
                 onClicked: plMenu.popup(plButton, 0, -plMenu.implicitHeight - 6)
                 Menu {
                     id: plMenu
-                    MenuItem { text: "New playlist…"; onTriggered: newPl.open() }
+                    MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: newPl.open() }
                     MenuSeparator {}
                     Instantiator {
                         model: userLib.playlists

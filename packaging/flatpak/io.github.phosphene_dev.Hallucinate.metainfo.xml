@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.9.6" date="2026-10-13">
+      <description>
+        <p>Menus, dialogs and empty pages now match the rest of Hallucinate, and the menu item under the pointer is readable in dark themes again.</p>
+        <p>Deleting a playlist asks first.</p>
+      </description>
+    </release>
     <release version="0.9.5" date="2026-10-12">
       <description>
         <p>Hallucinate now has its own signed Flatpak repository: install it from the website and it updates with your other apps.</p>

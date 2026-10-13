@@ -17,8 +17,12 @@ Rectangle {
         Text { text: "Queue"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter; textFormat: Text.PlainText }
         Text { text: player.queueModel.count + " tracks"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); anchors.verticalCenter: parent.verticalCenter; textFormat: Text.PlainText }
     }
+    // the buttons share the title's line when they fit, else they get a line of their own below it
+    readonly property bool stacked: head.width + actions.width + 18 + 14 + 16 > panel.width
     Row {
-        anchors { right: parent.right; rightMargin: 14; verticalCenter: head.verticalCenter }
+        id: actions
+        anchors { right: parent.right; rightMargin: 14 }
+        y: panel.stacked ? head.y + head.height + 10 : head.y + (head.height - height) / 2
         spacing: 8
         PillButton {
             height: 30
@@ -90,16 +94,16 @@ Rectangle {
             }
         }
     }
-    Text {
-        textFormat: Text.PlainText
+    EmptyState {
         visible: player.queueModel.count === 0
         anchors.centerIn: parent
-        text: "Queue is empty"
-        color: Theme.textDim
+        icon: "queue"
+        title: "The queue is empty"
+        hint: "Play an album or a song, or turn on radio to keep the music going."
     }
     ListView {
         id: list
-        anchors { top: head.bottom; topMargin: 14; left: parent.left; right: parent.right; bottom: parent.bottom }
+        anchors { top: panel.stacked ? actions.bottom : head.bottom; topMargin: 14; left: parent.left; right: parent.right; bottom: parent.bottom }
         anchors.leftMargin: 8; anchors.rightMargin: 4
         clip: true
         boundsBehavior: Flickable.StopAtBounds

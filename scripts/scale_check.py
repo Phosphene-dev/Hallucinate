@@ -54,6 +54,7 @@ def main():
         bench_library.build(db_path, args.tracks, args.plays, work / "covers")
 
     from hallucinate import scrobbling
+    from hallucinate.app import QML_STYLE
     from hallucinate.discord import DiscordPresence
     from hallucinate.headphones import HeadphoneFinder
     from hallucinate.library import Library
@@ -70,7 +71,7 @@ def main():
 
     for name in ("get_password", "set_password", "delete_password"):  # keep the probe off the real keyring
         setattr(scrobbling.keyring, name, lambda *_: None)
-    QQuickStyle.setStyle("Basic")
+    QQuickStyle.setStyle(QML_STYLE)
 
     def wait(ms):
         """Like QTest.qWait, but through QEventLoop.exec, which (like app.exec) lets worker threads run."""

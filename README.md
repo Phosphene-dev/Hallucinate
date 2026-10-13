@@ -26,7 +26,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/now-playing.png" width="860" alt="Hallucinate's Now Playing view: a large cover over an aurora visualizer tinted by the cover's colours">
+  <img src="docs/screenshots/demo.webp" width="860" alt="A tour of Hallucinate: Home, the colour wall, an album page and its menu, Now Playing over a visualizer, the timeline and the Trans Pride theme">
 </p>
 
 ## Highlights
@@ -73,6 +73,8 @@ Known rough edges:
 | ![Listening history](docs/screenshots/history.png) | ![Nebula visualizer](docs/screenshots/visualizer.png) |
 | Library health | Command palette |
 | ![Library health](docs/screenshots/health.png) | ![Command palette](docs/screenshots/palette.png) |
+| Right-click an album | Edit album |
+| ![An album's right-click menu](docs/screenshots/album-menu.png) | ![The Edit album dialog](docs/screenshots/edit-album.png) |
 | Queue with radio mode | Smart playlist rules |
 | ![Queue with radio mode](docs/screenshots/queue.png) | ![Smart playlist editor](docs/screenshots/smart-editor.png) |
 | Artist page | Recap |

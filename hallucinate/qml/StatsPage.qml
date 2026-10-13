@@ -42,7 +42,7 @@ Item {
                     font.pixelSize: Theme.fontSize(25)
                     font.weight: Font.Bold
                 }
-                ComboBox {
+                StyledCombo {
                     id: period
                     Layout.preferredWidth: 170
                     model: ["All time", "Last 7 days", "Last 30 days", "Last 12 months"]

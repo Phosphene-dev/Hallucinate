@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hallucinate"
-version = "0.9.5"
+version = "0.9.6"
 description = "A fast desktop music player for the music you own: liquid, cover-coloured, gapless and private"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -45,7 +45,7 @@ musicplayer = "hallucinate.app:main"
 packages = ["hallucinate", "hallucinate.core", "musicplayer"]
 
 [tool.setuptools.package-data]
-hallucinate = ["qml/*", "qml/shaders/*", "assets/*", "assets/fonts/*", "themes/*.json"]
+hallucinate = ["qml/*", "qml/shaders/*", "qml/HallucinateStyle/*", "assets/*", "assets/fonts/*", "themes/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

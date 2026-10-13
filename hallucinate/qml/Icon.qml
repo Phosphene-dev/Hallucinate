@@ -75,6 +75,13 @@ Canvas {
             ctx.beginPath(); ctx.arc(w*.3, h*.75, w*.14, 0, Math.PI*2); ctx.fill(); line([.44,.75,.44,.15,.8,.25])
             break
         case "close": line([.22,.22,.78,.78]); line([.78,.22,.22,.78]); break
+        case "trash":  // a bin with a lid
+            line([.16,.26,.84,.26]); line([.4,.26,.4,.14,.6,.14,.6,.26])
+            line([.24,.26,.3,.86,.7,.86,.76,.26]); line([.43,.42,.43,.7]); line([.57,.42,.57,.7]); break
+        case "edit":  // a pencil
+            line([.18,.82,.22,.64,.66,.2,.8,.34,.36,.78,.18,.82]); line([.58,.28,.72,.42]); break
+        case "remove":  // a circled minus
+            ctx.beginPath(); ctx.arc(w*.5, h*.5, w*.36, 0, Math.PI*2); ctx.stroke(); line([.32,.5,.68,.5]); break
         case "back": line([.62,.15,.3,.5,.62,.85]); break
         case "home":
             line([.12,.48,.5,.14,.88,.48]); line([.22,.4,.22,.86,.78,.86,.78,.4]); line([.42,.86,.42,.62,.58,.62,.58,.86]); break

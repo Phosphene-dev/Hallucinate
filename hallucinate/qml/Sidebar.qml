@@ -151,20 +151,21 @@ Item {
                     }
                     Menu {
                         id: newPlMenu
-                        MenuItem { text: "New playlist"; onTriggered: side.newPlaylist() }
-                        MenuItem { text: "New smart playlist"; onTriggered: side.newSmartPlaylist() }
-                        MenuItem { text: "Import playlist file…"; onTriggered: Nav.importPlaylist() }
+                        MenuItem { text: "New playlist"; icon.name: "playlist"; onTriggered: side.newPlaylist() }
+                        MenuItem { text: "New smart playlist"; icon.name: "sparkle"; onTriggered: side.newSmartPlaylist() }
+                        MenuItem { text: "Import playlist file…"; icon.name: "folder"; onTriggered: Nav.importPlaylist() }
                     }
                     Menu {
                         id: playlistMenu
-                        MenuItem { text: "New playlist…"; onTriggered: side.newPlaylist() }
-                        MenuItem { text: "New smart playlist…"; onTriggered: side.newSmartPlaylist() }
-                        MenuItem { text: "Import playlist file…"; onTriggered: Nav.importPlaylist() }
+                        MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: side.newPlaylist() }
+                        MenuItem { text: "New smart playlist…"; icon.name: "sparkle"; onTriggered: side.newSmartPlaylist() }
+                        MenuItem { text: "Import playlist file…"; icon.name: "folder"; onTriggered: Nav.importPlaylist() }
                         MenuSeparator {}
                         Instantiator {
                             model: userLib.playlists
                             delegate: MenuItem {
                                 text: model.name
+                                icon.name: "playlist"
                                 onTriggered: side.openPlaylist(model.id, model.name)
                             }
                             onObjectAdded: (index, object) => playlistMenu.insertItem(index + 3, object)
@@ -173,7 +174,8 @@ Item {
                         Instantiator {
                             model: userLib.smartPlaylists
                             delegate: MenuItem {
-                                text: "✦ " + model.name
+                                text: model.name
+                                icon.name: "sparkle"
                                 onTriggered: side.openSmartPlaylist(model.id, model.name)
                             }
                             onObjectAdded: (index, object) => playlistMenu.addItem(object)

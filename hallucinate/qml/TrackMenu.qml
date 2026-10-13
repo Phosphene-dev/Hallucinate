@@ -30,16 +30,18 @@ Menu {
         }
     }
     MenuSeparator {}
-    MenuItem { text: "Play next"; onTriggered: userLib.playNextPath(menu.path) }
-    MenuItem { text: "Add to queue"; onTriggered: userLib.enqueuePath(menu.path) }
+    MenuItem { text: "Play next"; icon.name: "next"; onTriggered: userLib.playNextPath(menu.path) }
+    MenuItem { text: "Add to queue"; icon.name: "queue"; onTriggered: userLib.enqueuePath(menu.path) }
     MenuItem {
         text: userLib.likesRevision >= 0 && userLib.isLiked(menu.path) ? "Remove from Liked Songs" : "Add to Liked Songs"
+        icon.name: "heart"
         onTriggered: userLib.toggleLike(menu.path)
     }
     Menu {
         id: plMenu
         title: "Add to playlist"
-        MenuItem { text: "New playlist…"; onTriggered: newDlg.open() }
+        icon.name: "playlist"
+        MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: newDlg.open() }
         MenuSeparator {}
         Instantiator {
             model: userLib.playlists
@@ -55,6 +57,7 @@ Menu {
     }
     MenuItem {
         text: "Edit tags…"
+        icon.name: "edit"
         enabled: !/\.[A-Za-z0-9]+#\d+$/.test(menu.path)  // CUE sheet songs are edited in the .cue file
         onTriggered: Nav.editTags(menu.path)
     }
@@ -62,6 +65,8 @@ Menu {
         visible: menu.context === "playlist"
         height: visible ? implicitHeight : 0
         text: "Remove from this playlist"
+        icon.name: "remove"
+        icon.color: Theme.error
         onTriggered: userLib.removeFromPlaylist(menu.index)
     }
 

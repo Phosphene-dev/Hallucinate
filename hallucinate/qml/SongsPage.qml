@@ -42,21 +42,21 @@ Item {
         width: parent.width - 56
         height: 40
         spacing: 10
-        ComboBox {
+        StyledCombo {
             id: genreFilter
             width: 180
             height: 38
             model: ["All genres"].concat(library.genres)
             onActivated: page.applyFilters()
         }
-        ComboBox {
+        StyledCombo {
             id: yearFilter
-            width: 110
+            width: 128
             height: 38
             model: ["All years"].concat(library.years.map(function(value) { return String(value) }))
             onActivated: page.applyFilters()
         }
-        ComboBox {
+        StyledCombo {
             id: formatFilter
             width: 130
             height: 38
@@ -115,15 +115,32 @@ Item {
             onEnqueue: player.enqueue(list.model.get(index))
         }
     }
-    Text {
-        textFormat: Text.PlainText
+    EmptyState {
         anchors.centerIn: list
-        visible: list.count === 0
-        text: page.duplicatesVisible
-            ? library.duplicatesLoading ? "Checking for duplicates…" : "No probable duplicates found."
-            : library.filtersActive ? "No tracks match these filters." : ""
-        color: Theme.textDim
-        font.family: Theme.fontFamily
-        font.pixelSize: Theme.fontSize(14)
+        visible: list.count === 0 && (page.duplicatesVisible || library.filtersActive)
+        busy: page.duplicatesVisible && library.duplicatesLoading
+        icon: page.duplicatesVisible ? "sparkle" : "search"
+        title: page.duplicatesVisible ? (library.duplicatesLoading ? "Checking for duplicates…" : "No probable duplicates")
+                                      : "No songs match these filters"
+        hint: page.duplicatesVisible ? (library.duplicatesLoading ? "" : "No two songs share a title, artist and length.")
+                                     : "Try another genre, year or format."
+        actionText: !page.duplicatesVisible && library.filtersActive ? "Clear filters" : ""
+        onAction: {
+            genreFilter.currentIndex = 0
+            yearFilter.currentIndex = 0
+            formatFilter.currentIndex = 0
+            library.filterTracks("", 0, "")
+        }
+    }
+    EmptyState {
+        objectName: "noMusic"
+        anchors.centerIn: parent
+        visible: library.ready && library.trackCount === 0
+        icon: "folder"
+        title: "No music yet"
+        hint: library.folders.length ? "Hallucinate is looking through your music folders; songs appear as they're found."
+                                     : "Add the folder where you keep your music and it shows up here."
+        actionText: library.folders.length ? "" : "Open Settings"
+        onAction: Nav.openSettings()
     }
 }
