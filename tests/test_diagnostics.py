@@ -46,6 +46,8 @@ def test_update_check_is_opt_in_and_compares_versions(qapp):
 
     assert updates.is_newer("v0.9.0", "0.8.0") and updates.is_newer("1.0", "0.9.9")
     assert not updates.is_newer("0.8.0", "0.8.0") and not updates.is_newer("garbage", "0.8.0")
+    assert updates.is_newer("v0.9.6.1", "0.9.6") and updates.is_newer("0.9.7", "0.9.6.1")
+    assert not updates.is_newer("0.9.6", "0.9.6.1") and not updates.is_newer("0.9.6.0", "0.9.6")
     QSettings("hallucinate", "hallucinate").remove("updates")
     asked = []
 
