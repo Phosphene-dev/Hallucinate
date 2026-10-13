@@ -71,7 +71,7 @@ jobs:
           timeout 45 ./hallucinate-*-x86_64.AppImage --appimage-extract-and-run --quit-after 3000
           timeout 90 ./hallucinate-*-x86_64.AppImage --appimage-extract-and-run --decode-check packaging/testclips/*
           ls -lh ./hallucinate-*-x86_64.AppImage
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: AppImage
           path: hallucinate-*.AppImage
@@ -118,7 +118,7 @@ jobs:
           if (-not $p.WaitForExit(90000)) { $p.Kill(); throw 'decode check did not finish' }
           if ($p.ExitCode -ne 0) { throw "some audio formats don't decode in the build" }
           Get-ChildItem dist\*.zip, dist\*-setup.exe | Format-Table Name, @{n='MB'; e={[math]::Round($_.Length / 1MB)}}
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: Windows
           path: |
@@ -164,7 +164,7 @@ jobs:
           python3 -c 'import glob, subprocess; subprocess.run(["dist/Hallucinate.app/Contents/MacOS/Hallucinate", "--decode-check", *sorted(glob.glob("packaging/testclips/*"))], timeout=90, check=True)'
           codesign --verify --deep --strict dist/Hallucinate.app
           ls -lh dist/*-macos-*.zip
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: macOS
           path: dist/*-macos-*.zip
