@@ -5,6 +5,12 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.7.1] - 2026-10-13
+
+### Changed
+- New icons in place of the four-point sparkle, each saying what it's for: a calendar with a small chart for Recap, a list with a filter for smart playlists, a pulse line for Library health, overlapping pages for duplicates, and a download arrow for an available update.
+- Screenshots and the tour clip show the new icons.
+
 ## [0.9.7] - 2026-10-13
 
 ### Fixed

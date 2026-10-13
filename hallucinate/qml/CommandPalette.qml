@@ -53,10 +53,10 @@ Popup {
             { t: "Liked Songs", s: "Go to", i: "heart", run: () => w.go("liked") },
             { t: "Stats", s: "Go to", i: "stats", run: () => w.go("stats") },
             { t: "History", s: "Go to", i: "history", run: () => w.go("history") },
-            { t: "Recap", s: "Go to  ·  your week, month or year", i: "sparkle", run: () => w.go("recap") },
+            { t: "Recap", s: "Go to  ·  your week, month or year", i: "recap", run: () => w.go("recap") },
             { t: "Visualizer", s: "Go to", i: "wave", run: () => w.go("visualizer") },
             { t: "Settings", s: "Go to", i: "settings", run: () => w.go("settings") },
-            { t: "Library health", s: "Go to", i: "sparkle", run: () => w.go("health") },
+            { t: "Library health", s: "Go to", i: "health", run: () => w.go("health") },
             { t: "Colour wall", s: "Albums", i: "album", run: () => { shell.setUiValue("albumsView", "colour"); w.go("albums") } },
             { t: "Timeline", s: "Albums", i: "album", run: () => { shell.setUiValue("albumsView", "timeline"); w.go("albums") } },
             { t: player.playing ? "Pause" : "Play", s: "Playback  ·  Space", i: player.playing ? "pause" : "play", run: () => player.toggle() },
@@ -73,7 +73,7 @@ Popup {
             { t: "Play a random album", s: "Library", i: "dice", run: () => { var a = library.randomAlbum(""); if (a.album_key) library.playAlbum(a.album_key, 0) } },
             { t: "Rescan library", s: "Library", i: "search", run: () => library.rescan() },
             { t: "New playlist", s: "Playlists", i: "plus", run: () => w.newPlaylist() },
-            { t: "New smart playlist", s: "Playlists", i: "sparkle", run: () => Nav.newSmartPlaylist() },
+            { t: "New smart playlist", s: "Playlists", i: "smartlist", run: () => Nav.newSmartPlaylist() },
             { t: "Import playlist file", s: "Playlists  ·  M3U, M3U8, PLS", i: "playlist", run: () => Nav.importPlaylist() },
         ]
         var styles = [["liquid", "Liquid"], ["aurora", "Aurora"], ["nebula", "Nebula"], ["bars", "Bars"]]
