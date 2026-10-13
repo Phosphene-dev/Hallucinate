@@ -1,8 +1,11 @@
 """Keeps the library database (likes, plays, playlists, history: things a rescan can't rebuild) safe.
 
-At start-up the database gets a quick integrity check. A damaged one is moved aside, never deleted, and the newest
-daily backup takes its place; with no backup, Hallucinate starts a fresh one and rescans. Once a day a backup is
+At start-up the database gets a quick integrity check, unless the last run closed it cleanly and it hasn't changed
+since (damage comes from a crash or power loss mid-write, and the check reads the whole file: most of a second
+for a quarter of a million songs); it still gets one at least weekly. A damaged one is moved aside, never deleted,
+and the newest daily backup takes its place; with no backup, Hallucinate starts a fresh one and rescans. Once a day a backup is
 taken (SQLite's online backup, so it is consistent even while the app writes) and the last few are kept."""
+import json
 import logging
 import os
 import shutil
@@ -15,6 +18,35 @@ logger = logging.getLogger(__name__)
 
 KEEP = 5
 EVERY_S = 24 * 3600
+FULL_CHECK_EVERY_S = 7 * 24 * 3600
+
+
+_last_full_check = {}  # db path -> when its last full integrity check passed (carried in the marker)
+
+
+def _marker(db) -> Path:
+    return Path(str(db) + ".clean")
+
+
+def _fingerprint(db):
+    st = Path(db).stat()
+    return {"size": st.st_size, "mtime_ns": st.st_mtime_ns}
+
+
+def _closed_cleanly(db) -> bool:
+    """Whether the last run closed `db` cleanly, nothing has touched it since, and it was fully checked this
+    week. The marker is used up either way, so a crash during this run means a check at the next start."""
+    try:
+        marker = json.loads(_marker(db).read_text())
+        _marker(db).unlink()
+    except (OSError, ValueError):
+        return False
+    _last_full_check[str(db)] = marker.get("checked", 0)
+    try:
+        same = {k: marker.get(k) for k in ("size", "mtime_ns")} == _fingerprint(db)
+    except OSError:
+        return False
+    return same and time.time() - marker.get("checked", 0) < FULL_CHECK_EVERY_S
 
 
 def _healthy(path) -> bool:
@@ -28,6 +60,20 @@ def _healthy(path) -> bool:
         return False
 
 
+def mark_clean(db_path):
+    """Call after the last connection closed on a clean exit: the next start may skip the integrity check
+    while the file stays exactly as it is now."""
+    db = Path(db_path)
+    wal = Path(str(db) + "-wal")
+    try:
+        if not db.exists() or (wal.exists() and wal.stat().st_size):
+            return  # writes not merged into the file yet: check it next time
+        checked = _last_full_check.get(str(db), 0)
+        _marker(db).write_text(json.dumps({**_fingerprint(db), "checked": checked}))
+    except OSError:
+        pass
+
+
 def backups(backup_dir) -> list:
     """Backups, newest first."""
     d = Path(backup_dir)
@@ -38,7 +84,10 @@ def check(db_path, backup_dir) -> str:
     """Make sure db_path is a healthy database before anything opens it. Returns a message for the user when
     something had to be done, else ""."""
     db = Path(db_path)
-    if not db.exists() or _healthy(db):
+    if not db.exists() or _closed_cleanly(db):
+        return ""
+    if _healthy(db):
+        _last_full_check[str(db)] = time.time()
         return ""
     stamp = time.strftime("%Y%m%d-%H%M%S")
     aside = db.with_name(f"{db.name}.damaged-{stamp}")

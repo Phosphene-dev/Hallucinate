@@ -233,7 +233,9 @@ Scanning, database reads/writes, search and cover decoding all run off the GUI t
 virtualized and thumbnails are cached under the data directory. `tests/test_performance.py` exercises a 50k-track
 library and asserts the UI thread is never blocked for long. For bigger collections, `scripts/scale_check.py` runs
 the whole app against a synthetic library (250,000 songs by default) and reports the worst stall for every page and
-action, and `scripts/bench_library.py` times the queries behind them.
+action, `scripts/startup_check.py` times each step of starting up on it and measures memory, and
+`scripts/bench_library.py` times the queries behind them. With 250,000 songs the window is up about 0.8 s after
+launch and the library has loaded in the background a few seconds later.
 
 ## Last.fm
 In Settings, enter the API key and secret for a Last.fm API application (create
