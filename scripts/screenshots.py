@@ -10,6 +10,9 @@ back to bars). For the real thing, render on an X server with OpenGL, e.g. headl
     DISPLAY=:77 QT_QPA_PLATFORM=xcb QSG_RHI_BACKEND=opengl python scripts/screenshots.py docs/screenshots
 
 The visualizer is fed a made-up spectrum so the shots don't depend on an audio device.
+
+With ffmpeg it also cross-fades a few of the shots into a looping tour: demo.mp4 for the website and demo.webp
+for the README.
 """
 import argparse
 import os
@@ -94,6 +97,41 @@ def build_library(root: Path):
             t.add(TDRC(encoding=3, text=str(YEARS[n])))
             t.add(APIC(encoding=3, mime="image/png", type=3, desc="", data=art))
             t.save(f)
+
+
+# The tour, in order; it loops back to the first shot.
+DEMO_SHOTS = ["home", "albums-colour", "album", "album-menu", "now-playing", "albums-timeline", "theme-trans-pride",
+              "visualizer"]
+
+
+def make_demo(out, names, hold=2.2, fade=0.6):
+    """Cross-fade shots into a seamless loop: demo.mp4 (website) and demo.webp (README). Needs ffmpeg."""
+    import shutil
+    import subprocess
+
+    if not shutil.which("ffmpeg"):
+        print("ffmpeg not found; skipping the demo clip")
+        return
+    files = [out / f"{n}.png" for n in names] + [out / f"{names[0]}.png"]
+    inputs = []
+    for f in files:
+        inputs += ["-loop", "1", "-t", f"{hold + fade:.2f}", "-i", str(f)]
+    chain, last = [], "0:v"
+    for i in range(1, len(files)):
+        label = f"v{i}"
+        chain.append(f"[{last}][{i}:v]xfade=transition=fade:duration={fade}:offset={i * hold:.2f}[{label}]")
+        last = label
+    # the first shot comes back at the end: cut as soon as it has fully faded in, where the loop starts again
+    total = (len(files) - 1) * hold + fade
+    graph = ";".join(chain) + f";[{last}]trim=duration={total:.2f},fps=25,format=yuv420p[out]"
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", *inputs, "-filter_complex", graph, "-map", "[out]",
+                    "-c:v", "libx264", "-crf", "24", "-preset", "slow", "-movflags", "+faststart",
+                    str(out / "demo.mp4")], check=True)
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(out / "demo.mp4"),
+                    "-vf", "fps=12,scale=860:-1:flags=lanczos", "-c:v", "libwebp_anim", "-loop", "0",
+                    "-quality", "70", "-compression_level", "6", str(out / "demo.webp")], check=True)
+    for f in ("demo.mp4", "demo.webp"):
+        print(f, f"{(out / f).stat().st_size / 1e6:.1f} MB")
 
 
 def make_gif(out, frames, target):
@@ -327,6 +365,8 @@ def main():
             todo.append(lambda: player.setRadio(False))
             todo.append(lambda: make_gif(out, [f"theme-{t.lower().replace(' ', '-')}{suffix}.png" for t in themes],
                                          out / f"themes{suffix}.gif"))
+            if not suffix:
+                todo.append(lambda: make_demo(out, DEMO_SHOTS))
 
             def next_step():
                 if todo:

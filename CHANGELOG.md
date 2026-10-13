@@ -5,6 +5,25 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.6] - 2026-10-13
+
+A polish release: menus, dialogs and empty pages now look like the rest of Hallucinate.
+
+### Changed
+- Menus, dialogs, dropdowns, tooltips and text fields share the app's look: glass panels with soft shadows, rounded corners, the display font for dialog titles, pill buttons (the confirming one in the accent colour) and a short fade as they open. The page behind a dialog dims.
+- Menu items have icons, and "Remove from library" and "Move to trash" are in the warning colour.
+- Confirmations name their action ("Move to trash", "Remove", "Update now") instead of a bare "OK", and the trash confirmation's button is red.
+- Pages with nothing to show explain what to do, with a button where there's an obvious next step: Songs, Albums and Artists before any music is added ("Open Settings"), Liked Songs and empty playlists, smart playlists with no matches ("Edit rules"), the queue, Search, Folders and History.
+- New screenshots throughout, and a looping tour of the app at the top of the README and the website.
+
+### Added
+- Deleting a playlist or smart playlist asks first.
+
+### Fixed
+- The menu item under the pointer was white on white in dark themes, so it couldn't be read. It's now tinted with the theme's accent and stays readable in every theme.
+- With "Show track info" on, artist pages and Recap drew an empty dark pill after each song in their lists. They now show the song's format, or nothing when it isn't known.
+- Dropdowns cut their text short ("All ye…"), and the queue panel's buttons ran into its title when the panel was narrow.
+
 ## [0.9.5] - 2026-10-12
 
 ### Added

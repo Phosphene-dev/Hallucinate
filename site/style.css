@@ -121,6 +121,7 @@ h1 { font-size: clamp(38px, 5.4vw, 64px); line-height: 1.05; letter-spacing: -0.
   border: 1px solid var(--border); background: var(--bg-raised);
   box-shadow: 0 40px 120px -30px rgba(109, 91, 208, 0.55), 0 0 0 1px rgba(199, 156, 245, 0.08);
 }
+.window video { display: block; width: 100%; height: auto; }
 .window-bar { display: flex; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: #0b0913; }
 .window-bar i { width: 11px; height: 11px; border-radius: 50%; background: #2c2442; }
 .window-bar i:first-child { background: #f2a7d6; }

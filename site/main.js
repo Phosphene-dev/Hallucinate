@@ -13,6 +13,13 @@
     return null;
   }
 
+  // The tour in the hero stays on its first frame for visitors who asked their system for less motion
+  var tour = document.querySelector(".window video");
+  if (tour && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    tour.removeAttribute("autoplay");
+    tour.pause();
+  }
+
   var labels = { windows: "Download for Windows", mac: "Download for Mac", linux: "Download for Linux" };
   var os = detectOS();
   var card = os && document.querySelector('.dl[data-os="' + os + '"]');
