@@ -91,13 +91,17 @@ Item {
                 }
             }
 
-            Text {
-                textFormat: Text.PlainText
+            Item { width: 1; height: 30; visible: noFolders.visible }
+            EmptyState {
+                id: noFolders
+                anchors.horizontalCenter: parent.horizontalCenter
                 visible: page.folders.length === 0 && page.tracks.length === 0
-                text: library.folders.length ? "Nothing here yet." : "Add a music folder in Settings to browse it here."
-                color: Theme.textDim
-                font.family: Theme.fontFamily
-                font.pixelSize: Theme.fontSize(14)
+                icon: "folder"
+                title: library.folders.length ? "Nothing here yet" : "No music folders yet"
+                hint: library.folders.length ? "No music in this folder."
+                                             : "Add the folder where you keep your music to browse it here."
+                actionText: library.folders.length ? "" : "Open Settings"
+                onAction: Nav.openSettings()
             }
 
             // Subfolders

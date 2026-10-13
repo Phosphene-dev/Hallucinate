@@ -122,7 +122,7 @@ Item {
                         textFormat: Text.PlainText
                         objectName: "themePickerText"
                         leftPadding: 12
-                        rightPadding: 28
+                        rightPadding: 2
                         text: themePicker.displayText
                         color: Theme.text
                         font.family: Theme.fontFamily

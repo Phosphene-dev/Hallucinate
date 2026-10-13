@@ -380,37 +380,22 @@ Item {
 
         footer: Item {
             width: list.width
-            height: list.count === 0 ? 220 : 60
+            height: list.count === 0 ? 300 : 60
             BusyIndicator {
                 anchors.centerIn: parent
                 running: page.info.loading && list.count > 0
                 visible: running
                 width: 28; height: 28
             }
-            Column {
+            EmptyState {
                 anchors.centerIn: parent
                 visible: list.count === 0 && !page.info.loading
-                spacing: 8
-                Icon {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: 34; height: 34
-                    name: "history"
-                    color: Theme.textDim
-                }
-                Text {
-                    textFormat: Text.PlainText
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: page.filtered ? "No listens match these filters." : "Songs you play show up here."
-                    color: Theme.textDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: Theme.fontSize(14)
-                }
-                PillButton {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    visible: page.filtered
-                    text: "Clear filters"
-                    onClicked: { page.query = ""; page.artist = ""; page.source = ""; page.period = "all"; page.reload() }
-                }
+                icon: "history"
+                title: page.filtered ? "No listens match" : "Nothing played yet"
+                hint: page.filtered ? "Try a longer period, or clear the search and filters."
+                                    : "Every song you play shows up here, grouped by day."
+                actionText: page.filtered ? "Clear filters" : ""
+                onAction: { page.query = ""; page.artist = ""; page.source = ""; page.period = "all"; page.reload() }
             }
         }
     }

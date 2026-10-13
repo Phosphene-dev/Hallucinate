@@ -27,22 +27,16 @@ Item {
             width: fl.width - 56
             spacing: 14
 
-            Text {
-                textFormat: Text.PlainText
-                visible: page.query.length === 0
-                text: "Search your library"
-                color: Theme.textDim
-                font.family: Theme.fontFamily
-                font.pixelSize: Theme.fontSize(18)
-            }
-            Text {
-                textFormat: Text.PlainText
-                visible: page.query.length > 0 && page.tracks.length === 0
-                         && page.albums.length === 0 && page.artists.length === 0
-                text: "No results for “" + page.query + "”"
-                color: Theme.textDim
-                font.family: Theme.fontFamily
-                font.pixelSize: Theme.fontSize(18)
+            Item { width: 1; height: 40; visible: noResults.visible }
+            EmptyState {
+                id: noResults
+                anchors.horizontalCenter: parent.horizontalCenter
+                visible: page.query.length === 0 || (page.tracks.length === 0 && page.albums.length === 0
+                                                      && page.artists.length === 0)
+                icon: "search"
+                title: page.query.length === 0 ? "Search your library" : "No results for “" + page.query + "”"
+                hint: page.query.length === 0 ? "Songs, albums and artists. Ctrl+K also finds pages and commands."
+                                              : "Check the spelling, or try fewer words."
             }
 
             Text {

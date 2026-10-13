@@ -56,9 +56,12 @@ def seed(tmp_path):
 
 
 @pytest.fixture
-def app_window(qapp, tmp_path, monkeypatch):
-    """The whole window over the seeded library, with page transitions off."""
+def app_window(qapp, tmp_path, monkeypatch, request):
+    """The whole window over the seeded library (or, parametrized with "empty", none: a first start), with page
+    transitions off."""
     from conftest import wait_for
+
+    empty = getattr(request, "param", None) == "empty"
 
     from hallucinate import scrobbling
     from hallucinate.discord import DiscordPresence
@@ -77,7 +80,8 @@ def app_window(qapp, tmp_path, monkeypatch):
     for name in ("get_password", "set_password", "delete_password"):
         monkeypatch.setattr(scrobbling.keyring, name, lambda *_: None)
     QQuickStyle.setStyle(QML_STYLE)
-    seed(tmp_path)
+    if not empty:
+        seed(tmp_path)
     db_path = tmp_path / "library.db"
     library = Library(db_path, tmp_path / "art")
     player = Player(session_file=tmp_path / "session.json")
@@ -109,9 +113,12 @@ def app_window(qapp, tmp_path, monkeypatch):
     stack = window.findChild(QObject, "pageStack")
     for transition in ("pushEnter", "pushExit", "popEnter", "popExit", "replaceEnter", "replaceExit"):
         stack.setProperty(transition, None)  # pages appear at once, so each is drawn settled
-    assert wait_for(lambda: library.trackCount == 8 and user_lib.topArtists.count > 0)
-    player.playList(library.allTracks()[:3], 0)
-    player.pause()
+    if empty:
+        assert wait_for(lambda: library.ready)
+    else:
+        assert wait_for(lambda: library.trackCount == 8 and user_lib.topArtists.count > 0)
+        player.playList(library.allTracks()[:3], 0)
+        player.pause()
 
     yield window, objects, warnings
     window.close()
@@ -382,3 +389,31 @@ def test_track_info_badges_never_draw_empty(qapp, app_window):
         assert not warnings, warnings[:3]
     finally:
         player.setShowTrackInfo(False)
+
+
+@pytest.mark.parametrize("app_window", ["empty"], indirect=True)
+def test_first_start_pages_explain_themselves(qapp, app_window):
+    """With no music yet, every page still draws cleanly, and the library pages say what to do."""
+    window, objects, warnings = app_window
+    manager = objects["themeManager"]
+
+    def visible_named(name):
+        stack, found = [window.contentItem()], []
+        while stack:
+            item = stack.pop()
+            if item.objectName() == name and item.isVisible():
+                found.append(item)
+            stack.extend(item.childItems())
+        return found
+
+    for theme in ("Hallucinate", "Light"):
+        assert manager.selectTheme(theme)
+        for page in PAGES:
+            QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", page))
+            for _ in range(3):
+                qapp.processEvents()
+            if page in ("albums", "artists", "songs"):
+                found = visible_named("noMusic")
+                assert found, page
+                assert found[0].property("actionText") == "Open Settings"
+    assert not warnings, warnings[:3]

@@ -63,17 +63,18 @@ Item {
                 }
             }
         }
-        footer: Text {
-            textFormat: Text.PlainText
-            visible: list.count === 0
+        footer: Item {
             width: list.width
-            height: 120
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            text: "No songs match these rules yet."
-            color: Theme.textDim
-            font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSize(14)
+            height: list.count === 0 ? 300 : 0
+            EmptyState {
+                anchors.centerIn: parent
+                visible: list.count === 0
+                icon: "sparkle"
+                title: "Nothing matches yet"
+                hint: "Songs appear here as soon as they match the rules. It updates as you play, like and add music."
+                actionText: "Edit rules"
+                onAction: Nav.editSmartPlaylist(page.smartId, page.playlistName)
+            }
         }
         delegate: TrackRow {
             selectionSource: ListView.view ? ListView.view.model : null

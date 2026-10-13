@@ -66,17 +66,17 @@ Item {
                 }
             }
         }
-        footer: Text {
-            textFormat: Text.PlainText
-            visible: list.count === 0
+        footer: Item {
             width: list.width
-            height: 120
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            text: page.liked ? "Tap the heart on any song to add it here." : "Empty playlist. Use “…” on a song to add it."
-            color: Theme.textDim
-            font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSize(14)
+            height: list.count === 0 ? 300 : 0
+            EmptyState {
+                anchors.centerIn: parent
+                visible: list.count === 0
+                icon: page.liked ? "heart" : "playlist"
+                title: page.liked ? "No liked songs yet" : "This playlist is empty"
+                hint: page.liked ? "Tap the heart on any song and it's kept here."
+                                 : "Use “…” on a song, or select a few and choose Add to playlist."
+            }
         }
         delegate: TrackRow {
             selectionSource: ListView.view ? ListView.view.model : null

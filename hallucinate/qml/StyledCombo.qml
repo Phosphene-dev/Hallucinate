@@ -8,7 +8,7 @@ ComboBox {
     contentItem: Text {
         textFormat: Text.PlainText
         leftPadding: 12
-        rightPadding: 28
+        rightPadding: 2  // the arrow's space is already reserved by the control's own padding
         text: combo.displayText
         color: Theme.text
         font.family: Theme.fontFamily
