@@ -45,9 +45,14 @@ def main(argv=None) -> int:
     controls.add_argument("--play-pause", dest="control", action="store_const", const="play-pause", help="toggle playback")
     controls.add_argument("--status", dest="control", action="store_const", const="status", help="print current playback status as JSON")
     ap.add_argument("--quit-after", type=int, metavar="MS", help=argparse.SUPPRESS)
+    ap.add_argument("--decode-check", nargs="+", metavar="FILE", help=argparse.SUPPRESS)  # packaging CI
     ap.add_argument("--version", action="version", version=__version__)
     args, qt_args = ap.parse_known_args(argv if argv is not None else sys.argv[1:])
 
+    if args.decode_check:
+        from . import decodecheck
+
+        return decodecheck.main(args.decode_check)
     if args.control:
         response = send_control(args.control)
         if response is None:

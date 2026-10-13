@@ -67,6 +67,8 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libdbus-1-3 libpulse0 libxcb-cursor0
           timeout 45 ./hallucinate-*-x86_64.AppImage --appimage-extract-and-run --quit-after 3000
+          timeout 90 ./hallucinate-*-x86_64.AppImage --appimage-extract-and-run --decode-check packaging/testclips/*
+          ls -lh ./hallucinate-*-x86_64.AppImage
       - uses: actions/upload-artifact@v6
         with:
           name: AppImage
@@ -109,6 +111,11 @@ jobs:
           $p = Start-Process dist\Hallucinate\Hallucinate.exe -ArgumentList '--quit-after','4000' -PassThru
           if (-not $p.WaitForExit(60000)) { $p.Kill(); throw 'exe did not exit' }
           if ($p.ExitCode -ne 0) { throw "exe exited with $($p.ExitCode)" }
+          $clips = (Get-ChildItem packaging\testclips).FullName
+          $p = Start-Process dist\Hallucinate\Hallucinate.exe -ArgumentList (@('--decode-check') + $clips) -PassThru
+          if (-not $p.WaitForExit(90000)) { $p.Kill(); throw 'decode check did not finish' }
+          if ($p.ExitCode -ne 0) { throw "some audio formats don't decode in the build" }
+          Get-ChildItem dist\*.zip, dist\*-setup.exe | Format-Table Name, @{n='MB'; e={[math]::Round($_.Length / 1MB)}}
       - uses: actions/upload-artifact@v6
         with:
           name: Windows
@@ -152,6 +159,9 @@ jobs:
           XDG_CACHE_HOME: ${{ runner.temp }}/hallucinate-cache
         run: |
           python3 -c 'import os, subprocess; subprocess.run(["dist/Hallucinate.app/Contents/MacOS/Hallucinate", "--quit-after", "3000"], env=os.environ.copy(), timeout=45, check=True)'
+          python3 -c 'import glob, subprocess; subprocess.run(["dist/Hallucinate.app/Contents/MacOS/Hallucinate", "--decode-check", *sorted(glob.glob("packaging/testclips/*"))], timeout=90, check=True)'
+          codesign --verify --deep --strict dist/Hallucinate.app
+          ls -lh dist/*-macos-*.zip
       - uses: actions/upload-artifact@v6
         with:
           name: macOS

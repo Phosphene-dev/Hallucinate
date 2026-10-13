@@ -8,6 +8,8 @@ if (-not $Version) { $Version = (Select-String -Path pyproject.toml -Pattern '^v
 python -m pip install --upgrade pip
 python -m pip install . pyinstaller
 python -m PyInstaller --noconfirm --distpath dist --workpath build\pyinstaller packaging\windows\hallucinate.spec
+python packaging\qt_prune.py dist\Hallucinate  # drop the parts of Qt the app never uses
+if ($LASTEXITCODE -ne 0) { throw "qt_prune failed" }
 
 Compress-Archive -Path dist\Hallucinate -DestinationPath "dist\hallucinate-$Version-windows-x64.zip" -Force
 if (Get-Command iscc -ErrorAction SilentlyContinue) {
