@@ -386,14 +386,17 @@ ApplicationWindow {
     }
 
     Ambience {
+        objectName: "ambience"
         anchors.fill: parent
         z: -1
-        animated: shell.ambientMotion && window.active
+        animated: shell.ambientMotion && window.active && !nowPlaying.covering
+        visible: !nowPlaying.covering
     }
 
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
+        visible: !nowPlaying.covering  // nothing to draw under Now Playing
 
         RowLayout {
             Layout.fillWidth: true

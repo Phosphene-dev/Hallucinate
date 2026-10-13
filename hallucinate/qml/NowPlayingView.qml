@@ -12,6 +12,8 @@ Item {
     objectName: "nowPlayingView"
     property bool open: false
     readonly property bool shown: open || melt.running
+    // Fully faded in: the window underneath can't be seen, so it needn't be drawn (main.qml)
+    readonly property bool covering: open && !melt.running && opacity === 1
     readonly property bool vinyl: shell.nowPlayingVinyl
     property bool idle: false
     property bool lyricsMode: shell.uiValue("nowPlayingLyrics", "0") === "1"

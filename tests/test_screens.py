@@ -433,3 +433,21 @@ def test_a_crash_last_time_is_offered_as_a_report(qapp, app_window):
     copied = qapp.clipboard().text()
     assert copied.startswith("Hallucinate ") and "Previous run" in copied and "Segmentation fault" in copied
     assert not [w for w in warnings if "ConfirmDialog" in w or "main.qml" in w], warnings
+
+
+def test_nothing_is_drawn_under_now_playing(qapp, app_window):
+    """Once Now Playing has faded in, the window under it is hidden and the backdrop stops drifting, so an
+    open Now Playing costs only itself (and nothing at all while paused)."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    view = window.findChild(QObject, "nowPlayingView")
+    ambience = window.findChild(QObject, "ambience")
+    page = window.findChild(QObject, "pageStack")
+    assert ambience.property("visible") and page.property("visible")
+    view.setProperty("open", True)
+    assert wait_for(lambda: view.property("covering"))
+    assert not ambience.property("visible") and not ambience.property("animated")
+    assert not page.property("visible")
+    view.setProperty("open", False)
+    assert wait_for(lambda: page.property("visible") and ambience.property("visible"))

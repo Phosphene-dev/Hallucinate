@@ -9,6 +9,10 @@ Item {
     property bool animated: true
     property real strength: Theme.light ? 0.26 : 0.55
     clip: true
+    // Milliseconds of drift so far. The blooms move a few pixels a second under a heavy blur, so twenty steps a
+    // second look the same as an animation and draw a third as many frames (the window is otherwise still).
+    property real clock: 0
+    Timer { interval: 50; repeat: true; running: amb.animated && amb.visible; onTriggered: amb.clock += interval }
 
     Rectangle { anchors.fill: parent; color: Theme.bg }
 
@@ -25,8 +29,7 @@ Item {
         width: size; height: size
         x: baseX - size / 2 + driftX * Math.sin(t * 2 * Math.PI + phase)
         y: baseY - size / 2 + driftY * Math.cos(t * 2 * Math.PI * 0.7 + phase)
-        property real t: 0
-        NumberAnimation on t { from: 0; to: 1; duration: bloom.period; loops: Animation.Infinite; running: amb.animated && amb.visible }
+        property real t: (amb.clock % period) / period
         preferredRendererType: Shape.CurveRenderer
         ShapePath {
             strokeWidth: 0

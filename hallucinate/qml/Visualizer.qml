@@ -33,8 +33,9 @@ Item {
         return current + (target - current) * Math.min(1, rate * dt)
     }
 
+    // Paused, it settles and then stops drawing until the music starts again.
     FrameAnimation {
-        running: vis.active && vis.shaderStyle
+        running: vis.active && vis.shaderStyle && (player.playing || vis.energy > 0.01 || vis.beat > 0.01)
         onTriggered: {
             var dt = Math.min(0.1, frameTime)
             var b = vis.avg(0, 4), m = vis.avg(4, 14), tr = vis.avg(14, 24)

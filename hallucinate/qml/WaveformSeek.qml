@@ -8,7 +8,10 @@ Item {
     id: seek
     objectName: "waveformSeek"
     property var peaks: player.waveform
-    property real position: player.position
+    // While another window has the focus, the bar moves once a second: each step redraws the whole window, and
+    // nobody follows a bar in a window they aren't looking at (the time beside it changes once a second anyway).
+    property real position: Window.window && !Window.window.active ? player.position - player.position % 1000
+                                                                    : player.position
     property real duration: Math.max(1, player.duration)
     property bool interactive: player.hasTrack
     readonly property int barWidth: 3
