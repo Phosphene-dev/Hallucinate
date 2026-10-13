@@ -152,7 +152,7 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - Lyrics panel with synced highlighting, and karaoke-style lyrics in Now Playing: embedded tags, sidecar `.lrc`, or LRCLIB (cached locally; can be disabled). Nudge synced lyrics that run early or late and save the timing as an `.lrc` next to the song.
 - Import M3U, M3U8 and PLS playlists (matched by path, then artist and title, then file name) and export any playlist, Liked Songs or the queue as M3U8.
 - Mini player (always-on-top, `Ctrl+M`) and a system tray icon with play/pause/next/previous, optional close-to-tray.
-- Keyboard focus rings and screen-reader names on buttons, rows and cards; renders crisply on HiDPI (tested at 2x).
+- Keyboard focus rings, and a spoken name and role for everything you can click, type into or slide (a test walks every page as a screen reader sees it); renders crisply on HiDPI (tested at 2x).
 - Live-switchable, file-backed themes with album-art accent mode and keyboard-friendly UI.
 
 ## Install

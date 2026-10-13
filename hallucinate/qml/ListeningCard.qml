@@ -24,7 +24,7 @@ GlassPanel {
                 font.family: Theme.displayFamily
                 font.pixelSize: Theme.fontSize(16)
                 font.weight: Font.DemiBold
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Nav.openHistory("") }
+                LinkArea { name: "Listening history"; onClicked: Nav.openHistory("") }
             }
             Text {
                 textFormat: Text.PlainText
@@ -72,7 +72,7 @@ GlassPanel {
                         font.pixelSize: Theme.fontSize(13)
                         width: Math.min(implicitWidth, 110)
                         elide: Text.ElideRight
-                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Nav.openArtist(modelData.name) }
+                        LinkArea { onClicked: Nav.openArtist(modelData.name) }
                     }
                 }
             }

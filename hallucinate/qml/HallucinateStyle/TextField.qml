@@ -7,6 +7,9 @@ import ".."
 // Text fields: rounded, on the theme's surface, with an accent ring while typing.
 T.TextField {
     id: control
+    // A field without a label of its own is announced by what it asks for ("Search settings", "Last.fm API key")
+    Accessible.name: placeholderText
+    Accessible.description: echoMode === TextInput.Password ? placeholderText : ""  // Qt withholds a password field's name
 
     implicitWidth: implicitBackgroundWidth + leftInset + rightInset
                    || Math.max(contentWidth, placeholder.implicitWidth) + leftPadding + rightPadding

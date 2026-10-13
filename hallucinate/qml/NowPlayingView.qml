@@ -187,6 +187,9 @@ Item {
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(view.lyricsMode ? 16 : 20)
                     elide: Text.ElideRight
+                    Accessible.role: Accessible.Link
+                    Accessible.name: text
+                    Accessible.onPressAction: { view.open = false; Nav.openArtist(player.current.album_artist || player.current.artist) }
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
@@ -202,6 +205,9 @@ Item {
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(15)
                     elide: Text.ElideRight
+                    Accessible.role: Accessible.Link
+                    Accessible.name: text
+                    Accessible.onPressAction: { view.open = false; Nav.openAlbum(player.current.album_key) }
                     MouseArea {
                         anchors.fill: parent
                         enabled: player.hasTrack && (player.current.album_key || "").length > 0
@@ -244,6 +250,10 @@ Item {
                             font.pixelSize: Theme.fontSize(distance === 0 ? 26 : 20)
                             font.weight: distance === 0 ? Font.Bold : Font.DemiBold
                             Behavior on opacity { NumberAnimation { duration: 260 } }
+                            Accessible.role: Accessible.Button
+                            Accessible.name: text
+                            Accessible.description: "Play from this line"
+                            Accessible.onPressAction: player.seek(modelData.t)
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: player.seek(modelData.t) }
                         }
                     }
@@ -415,5 +425,6 @@ Item {
         onPointChanged: { view.idle = false; idleTimer.restart() }
     }
     // swallow clicks and wheel so nothing underneath reacts
-    MouseArea { anchors.fill: parent; z: -2; onWheel: wheel => wheel.accepted = true }
+    MouseArea { anchors.fill: parent; z: -2; onWheel: wheel => wheel.accepted = true
+                Accessible.role: Accessible.Pane; Accessible.name: "Now Playing" }
 }

@@ -46,7 +46,7 @@ Item {
                     font.family: Theme.displayFamily
                     font.pixelSize: Theme.fontSize(page.path.length ? 18 : 25)
                     font.weight: Font.Bold
-                    MouseArea { anchors.fill: parent; enabled: page.path.length > 0; cursorShape: Qt.PointingHandCursor; onClicked: page.path = "" }
+                    LinkArea { enabled: page.path.length > 0; onClicked: page.path = "" }
                 }
                 Repeater {
                     model: page.listing.crumbs || []
@@ -71,7 +71,7 @@ Item {
                             font.family: Theme.displayFamily
                             font.pixelSize: Theme.fontSize(last ? 25 : 18)
                             font.weight: Font.Bold
-                            MouseArea { anchors.fill: parent; enabled: !crumb.last; cursorShape: Qt.PointingHandCursor; onClicked: page.path = modelData.path }
+                            LinkArea { enabled: !crumb.last; onClicked: page.path = modelData.path }
                         }
                     }
                 }
@@ -162,6 +162,10 @@ Item {
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
+                            Accessible.role: Accessible.Button
+                            Accessible.name: "Open " + tile.modelData.name + ", " + tile.modelData.songs
+                                             + (tile.modelData.songs === 1 ? " song" : " songs")
+                            Accessible.onPressAction: page.path = tile.modelData.path
                             onClicked: page.path = tile.modelData.path
                         }
                         IconButton {

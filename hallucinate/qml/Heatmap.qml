@@ -60,6 +60,10 @@ Item {
             visible: index <= map.heat.today
             scale: cellMouse.containsMouse && count > 0 ? 1.25 : 1
             Behavior on scale { NumberAnimation { duration: 90 } }
+            Accessible.role: count > 0 ? Accessible.Button : Accessible.StaticText
+            Accessible.name: Qt.formatDate(map.dateAt(index), "dddd d MMMM yyyy") + ": "
+                             + (count === 1 ? "1 play" : count + " plays")
+            Accessible.onPressAction: if (count > 0) map.dayClicked(iso)
             MouseArea {
                 id: cellMouse
                 anchors.fill: parent

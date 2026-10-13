@@ -451,3 +451,77 @@ def test_nothing_is_drawn_under_now_playing(qapp, app_window):
     assert not page.property("visible")
     view.setProperty("open", False)
     assert wait_for(lambda: page.property("visible") and ambience.property("visible"))
+
+
+def test_everything_clickable_has_a_name_for_screen_readers(qapp, app_window):
+    """Walk every page the way a screen reader sees it: anything that can be clicked, typed into or slid must
+    be (or sit within three levels of) an element with a role and a spoken name."""
+    from PySide6.QtGui import QAccessible
+    from PySide6.QtQml import QQmlEngine
+
+    window, objects, warnings = app_window
+    QAccessible.setActive(True)
+    role = QAccessible.Role
+    spoken = {role.Button, role.CheckBox, role.RadioButton, role.ComboBox, role.Slider, role.EditableText,
+              role.Link, role.ListItem, role.Cell, role.MenuItem, role.PageTab, role.Row, role.SpinBox,
+              role.ProgressBar, role.ScrollBar, role.StaticText, role.Graphic, role.Pane, role.Grouping, role.List}
+
+    def named(item):
+        for _ in range(4):
+            if item is None:
+                return False
+            iface = QAccessible.queryAccessibleInterface(item)
+            if iface and iface.role() in spoken and (
+                    iface.text(QAccessible.Text.Name) or iface.text(QAccessible.Text.Description)):
+                return True  # (Qt withholds a password field's name, so those carry it as the description)
+            item = item.parentItem()
+        return False
+
+    missing = set()
+
+    def walk(item, where):
+        for child in item.childItems():
+            if not child.isVisible():
+                continue
+            cls = child.metaObject().className()
+            interactive = (cls.startswith("QQuickMouseArea") and child.isEnabled()) or child.property("activeFocusOnTab") \
+                or any(k in cls for k in ("TextField", "Slider", "ComboBox", "Switch", "CheckBox"))
+            if interactive and not named(child):
+                ctx = QQmlEngine.contextForObject(child) or QQmlEngine.contextForObject(child.parentItem())
+                parent = child.parentItem()
+                missing.add(f"{where}: {ctx.baseUrl().fileName() if ctx else '?'} "
+                            f"{cls.split('_QML')[0]} in {parent.metaObject().className().split('_QML')[0]}")
+            walk(child, where)
+
+    def invoke(method, *args):
+        QMetaObject.invokeMethod(window, method, Qt.ConnectionType.DirectConnection,
+                                 *[Q_ARG("QVariant", a) for a in args])
+
+    def visit(where):
+        for _ in range(4):
+            qapp.processEvents()
+        walk(window.contentItem(), where)
+
+    for page in PAGES:
+        invoke("go", page)
+        visit(page)
+    invoke("go", "albums")
+    albums = window.findChild(QObject, "pageStack").property("currentItem")
+    for view in ("grid", "colour", "timeline"):
+        albums.setProperty("view", view)
+        visit(f"albums ({view})")
+    albums.setProperty("view", "grid")
+    invoke("openAlbum", "k0")
+    visit("album")
+    invoke("openArtist", "Aurora Vale")
+    visit("artist")
+    window.setProperty("queueOpen", True)
+    visit("queue")
+    window.setProperty("queueOpen", False)
+    from conftest import wait_for
+
+    now_playing = window.findChild(QObject, "nowPlayingView")
+    now_playing.setProperty("open", True)
+    assert wait_for(lambda: now_playing.property("covering"))
+    visit("now playing")
+    assert not missing, "\n".join(sorted(missing))

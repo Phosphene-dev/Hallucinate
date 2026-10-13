@@ -139,6 +139,9 @@ Item {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         acceptedButtons: Qt.LeftButton | Qt.RightButton
+                        Accessible.role: Accessible.Button
+                        Accessible.name: tile.album + (tile.album_artist ? ", " + tile.album_artist : "")
+                        Accessible.onPressAction: Nav.openAlbum(tile.album_key)
                         onClicked: function (mouse) {
                             if (mouse.button === Qt.RightButton) Nav.albumMenu([tile.album_key], tile.album, tile.album_artist)
                             else if (mouse.modifiers & Qt.ControlModifier) AlbumSelection.toggle(library.albumWall, tile.index, tile.album_key)
@@ -297,6 +300,9 @@ Item {
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
                                     acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                    Accessible.role: Accessible.Button
+                                    Accessible.name: entry.modelData.album + (entry.modelData.album_artist ? ", " + entry.modelData.album_artist : "")
+                                    Accessible.onPressAction: Nav.openAlbum(entry.modelData.album_key)
                                     onClicked: function (mouse) {
                                         if (mouse.button === Qt.RightButton)
                                             Nav.albumMenu([entry.modelData.album_key], entry.modelData.album, entry.modelData.album_artist || "")

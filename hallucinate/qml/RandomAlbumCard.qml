@@ -35,6 +35,9 @@ GlassPanel {
         width: 200; height: 200
         radius: 18
         source: card.hasAlbum ? card.album.artUrl : ""
+        Accessible.role: Accessible.Button
+        Accessible.name: card.hasAlbum ? "Open " + card.album.album : ""
+        Accessible.onPressAction: if (card.hasAlbum) Nav.openAlbum(card.album.album_key)
         MouseArea {
             anchors.fill: parent
             enabled: card.hasAlbum
