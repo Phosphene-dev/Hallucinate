@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.9.8" date="2026-10-13">
+      <description>
+        <p>If Hallucinate crashes, the next start offers a report to copy into a bug report.</p>
+        <p>It starts faster with big libraries, uses less power while paused or in the background, and every control now has a name for screen readers.</p>
+      </description>
+    </release>
     <release version="0.9.7.1" date="2026-10-13">
       <description>
         <p>Recap, smart playlists, Library health and the update button have new icons that say what they're for.</p>

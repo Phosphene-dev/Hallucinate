@@ -300,11 +300,10 @@ Item {
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(12)
                         font.underline: artistMouse.containsMouse
-                        MouseArea {
+                        LinkArea {
                             id: artistMouse
-                            anchors.fill: parent
+                            name: "Only show " + row.model.artist
                             hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
                             onClicked: page.artist = row.model.artist
                         }
                         ToolTip.visible: artistMouse.containsMouse
@@ -320,12 +319,11 @@ Item {
                         elide: Text.ElideRight
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(12)
-                        MouseArea {
+                        LinkArea {
                             id: albumMouse
-                            anchors.fill: parent
+                            name: row.model.album || ""
                             hoverEnabled: true
                             enabled: row.model.album_key.length > 0
-                            cursorShape: Qt.PointingHandCursor
                             onClicked: Nav.openAlbum(row.model.album_key)
                         }
                     }

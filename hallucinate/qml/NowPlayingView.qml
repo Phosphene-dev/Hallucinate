@@ -12,6 +12,8 @@ Item {
     objectName: "nowPlayingView"
     property bool open: false
     readonly property bool shown: open || melt.running
+    // Fully faded in: the window underneath can't be seen, so it needn't be drawn (main.qml)
+    readonly property bool covering: open && !melt.running && opacity === 1
     readonly property bool vinyl: shell.nowPlayingVinyl
     property bool idle: false
     property bool lyricsMode: shell.uiValue("nowPlayingLyrics", "0") === "1"
@@ -185,6 +187,9 @@ Item {
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(view.lyricsMode ? 16 : 20)
                     elide: Text.ElideRight
+                    Accessible.role: Accessible.Link
+                    Accessible.name: text
+                    Accessible.onPressAction: { view.open = false; Nav.openArtist(player.current.album_artist || player.current.artist) }
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
@@ -200,6 +205,9 @@ Item {
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(15)
                     elide: Text.ElideRight
+                    Accessible.role: Accessible.Link
+                    Accessible.name: text
+                    Accessible.onPressAction: { view.open = false; Nav.openAlbum(player.current.album_key) }
                     MouseArea {
                         anchors.fill: parent
                         enabled: player.hasTrack && (player.current.album_key || "").length > 0
@@ -242,6 +250,10 @@ Item {
                             font.pixelSize: Theme.fontSize(distance === 0 ? 26 : 20)
                             font.weight: distance === 0 ? Font.Bold : Font.DemiBold
                             Behavior on opacity { NumberAnimation { duration: 260 } }
+                            Accessible.role: Accessible.Button
+                            Accessible.name: text
+                            Accessible.description: "Play from this line"
+                            Accessible.onPressAction: player.seek(modelData.t)
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: player.seek(modelData.t) }
                         }
                     }
@@ -413,5 +425,6 @@ Item {
         onPointChanged: { view.idle = false; idleTimer.restart() }
     }
     // swallow clicks and wheel so nothing underneath reacts
-    MouseArea { anchors.fill: parent; z: -2; onWheel: wheel => wheel.accepted = true }
+    MouseArea { anchors.fill: parent; z: -2; onWheel: wheel => wheel.accepted = true
+                Accessible.role: Accessible.Pane; Accessible.name: "Now Playing" }
 }

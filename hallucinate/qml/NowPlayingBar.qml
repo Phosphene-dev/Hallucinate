@@ -57,8 +57,12 @@ Item {
         spacing: 12
         Cover {
             id: art
+            objectName: "barCover"
             width: 60; height: 60; radius: 14
             source: player.hasTrack ? player.current.artUrl : ""
+            Accessible.role: player.hasTrack ? Accessible.Button : Accessible.Graphic
+            Accessible.name: player.hasTrack ? "Open the album " + (player.current.album || "") : "Nothing playing"
+            Accessible.onPressAction: if (player.hasTrack && player.current.album_key) Nav.openAlbum(player.current.album_key)
             MouseArea {
                 anchors.fill: parent
                 enabled: player.hasTrack && player.current.album_key
@@ -85,6 +89,9 @@ Item {
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(12)
                 elide: Text.ElideRight
+                Accessible.role: player.error.length > 0 ? Accessible.StaticText : Accessible.Link
+                Accessible.name: text
+                Accessible.onPressAction: if (!player.error && player.hasTrack) Nav.openArtist(player.current.album_artist)
                 MouseArea {
                     anchors.fill: parent
                     enabled: !player.error && player.hasTrack
@@ -118,6 +125,9 @@ Item {
             IconButton { icon: "prev"; onClicked: player.previous() }
             Rectangle {
                 width: 44; height: 44; radius: 22
+                Accessible.role: Accessible.Button
+                Accessible.name: player.playing ? "Pause" : "Play"
+                Accessible.onPressAction: player.toggle()
                 scale: pp.pressed ? 0.94 : (pp.containsMouse ? 1.06 : 1)
                 Behavior on scale { NumberAnimation { duration: 120 } }
                 gradient: Gradient {

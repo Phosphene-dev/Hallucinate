@@ -49,9 +49,10 @@ right now. Things worth trying:
 - **Gapless albums** on your audio device (live albums, classical, DJ mixes).
 - **Imports** from Strawberry, Clementine, Rhythmbox, MusicBee, iTunes or foobar2000.
 - **New in 0.9:** offline mode, Update now in the AppImage and Windows installer, the Flatpak repository,
-  and the restyled menus and dialogs.
+  the restyled menus and dialogs, and crash reports.
 
 Found something? [Open a bug report](https://github.com/Phosphene-dev/Hallucinate/issues/new/choose).
+If Hallucinate crashed, it offers a report to copy the next time it starts: paste that in.
 **Settings → About → Copy debug info** gives us everything about your setup in one paste, with your home folder
 hidden. Thoughts, likes and dislikes are just as welcome in
 [Discussions](https://github.com/Phosphene-dev/Hallucinate/discussions).
@@ -152,7 +153,7 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - Lyrics panel with synced highlighting, and karaoke-style lyrics in Now Playing: embedded tags, sidecar `.lrc`, or LRCLIB (cached locally; can be disabled). Nudge synced lyrics that run early or late and save the timing as an `.lrc` next to the song.
 - Import M3U, M3U8 and PLS playlists (matched by path, then artist and title, then file name) and export any playlist, Liked Songs or the queue as M3U8.
 - Mini player (always-on-top, `Ctrl+M`) and a system tray icon with play/pause/next/previous, optional close-to-tray.
-- Keyboard focus rings and screen-reader names on buttons, rows and cards; renders crisply on HiDPI (tested at 2x).
+- Keyboard focus rings, and a spoken name and role for everything you can click, type into or slide (a test walks every page as a screen reader sees it); renders crisply on HiDPI (tested at 2x).
 - Live-switchable, file-backed themes with album-art accent mode and keyboard-friendly UI.
 
 ## Install
@@ -233,7 +234,9 @@ Scanning, database reads/writes, search and cover decoding all run off the GUI t
 virtualized and thumbnails are cached under the data directory. `tests/test_performance.py` exercises a 50k-track
 library and asserts the UI thread is never blocked for long. For bigger collections, `scripts/scale_check.py` runs
 the whole app against a synthetic library (250,000 songs by default) and reports the worst stall for every page and
-action, and `scripts/bench_library.py` times the queries behind them.
+action, `scripts/startup_check.py` times each step of starting up on it and measures memory, and
+`scripts/bench_library.py` times the queries behind them. With 250,000 songs the window is up about 0.8 s after
+launch and the library has loaded in the background a few seconds later.
 
 ## Last.fm
 In Settings, enter the API key and secret for a Last.fm API application (create

@@ -27,5 +27,6 @@ chmod +x "$work/appimagetool"
 (cd "$work" && "$work/venv/bin/python-appimage" build app -p "${PYTHON_VERSION:-3.12}" --no-packaging appdir)
 # python-appimage names the AppDir after the desktop entry's Name field.
 mv "$work"/Hallucinate*-"$(uname -m)" "$work/AppDir"
+python3 "$repo/packaging/qt_prune.py" "$work/AppDir"  # drop the parts of Qt the app never uses
 ARCH="$(uname -m)" "$work/appimagetool" --appimage-extract-and-run --no-appstream "$work/AppDir" "$out"
 ls -lh "$out"

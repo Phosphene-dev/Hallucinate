@@ -29,6 +29,11 @@ python3 -m PyInstaller \
   --exclude-module PySide6.QtDBus \
   packaging/windows/run_hallucinate.py
 
+# Drop the parts of Qt the app never uses, then sign the bundle again (ad hoc, as PyInstaller did): Apple
+# silicon refuses to run a bundle whose signature no longer matches its files.
+python3 packaging/qt_prune.py dist/Hallucinate.app
+codesign --force --deep --sign - dist/Hallucinate.app
+
 arch="$(uname -m)"
 archive="$repo/dist/hallucinate-${version}-macos-${arch}.zip"
 ditto -c -k --sequesterRsrc --keepParent dist/Hallucinate.app "$archive"

@@ -178,6 +178,10 @@ Item {
                                 anchors.fill: parent
                                 enabled: card.modelData.count > 0
                                 cursorShape: Qt.PointingHandCursor
+                                Accessible.role: Accessible.Button
+                                Accessible.name: card.modelData.title + ": " + countText.text
+                                Accessible.description: card.modelData.detail
+                                Accessible.onPressAction: page.expanded = card.open ? "" : card.modelData.id
                                 onClicked: page.expanded = card.open ? "" : card.modelData.id
                             }
                         }

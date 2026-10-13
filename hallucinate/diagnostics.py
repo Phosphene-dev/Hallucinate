@@ -49,6 +49,10 @@ def install():
     def on_qt_message(kind, _context, message):
         if kind != QtMsgType.QtDebugMsg:
             _log.append(f"{time.strftime('%H:%M:%S')} {levels.get(kind, '?')} qt: {message}")
+        if kind == QtMsgType.QtFatalMsg:
+            from . import crashlog
+
+            crashlog.record_fatal(message)
         if sys.stderr is not None:  # keep Qt's own output on the console
             print(message, file=sys.stderr)
 

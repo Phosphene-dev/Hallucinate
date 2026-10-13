@@ -4,9 +4,10 @@ import logging
 import os
 import signal
 import sys
+import time
 from pathlib import Path
 
-from PySide6.QtCore import QTimer, QUrl
+from PySide6.QtCore import Qt, QTimer, QUrl
 from PySide6.QtGui import QIcon
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
@@ -31,6 +32,13 @@ from .userlib import UserLibrary
 from .waveform import WaveformService
 
 HERE = Path(__file__).resolve().parent
+_TRACE = bool(os.environ.get("HALLUCINATE_STARTUP_TRACE"))
+
+
+def _mark(step):
+    """With HALLUCINATE_STARTUP_TRACE set, print when each start-up step is reached (scripts/startup_check.py)."""
+    if _TRACE and sys.stderr is not None:
+        print(f"startup-trace {step} {time.time():.4f}", file=sys.stderr, flush=True)
 # Our Qt Quick Controls style (qml/HallucinateStyle): the app's look for menus, dialogs, tooltips and text fields,
 # with Qt's Basic style for everything else. Found through the qml/ import path.
 QML_STYLE = "HallucinateStyle"
@@ -45,9 +53,14 @@ def main(argv=None) -> int:
     controls.add_argument("--play-pause", dest="control", action="store_const", const="play-pause", help="toggle playback")
     controls.add_argument("--status", dest="control", action="store_const", const="status", help="print current playback status as JSON")
     ap.add_argument("--quit-after", type=int, metavar="MS", help=argparse.SUPPRESS)
+    ap.add_argument("--decode-check", nargs="+", metavar="FILE", help=argparse.SUPPRESS)  # packaging CI
     ap.add_argument("--version", action="version", version=__version__)
     args, qt_args = ap.parse_known_args(argv if argv is not None else sys.argv[1:])
 
+    if args.decode_check:
+        from . import decodecheck
+
+        return decodecheck.main(args.decode_check)
     if args.control:
         response = send_control(args.control)
         if response is None:
@@ -68,6 +81,7 @@ def main(argv=None) -> int:
     if existing is not None and existing.get("ok"):
         return 0
 
+    _mark("imports")
     QQuickStyle.setStyle(QML_STYLE)
     app = QApplication([sys.argv[0], *qt_args])
     from . import diagnostics
@@ -88,6 +102,11 @@ def main(argv=None) -> int:
     control = ControlServer()
     if not control.listen():
         return 0
+    from . import crashlog
+
+    crash_dir = paths.data_dir() / "crash"
+    last_crash, last_crashed = crashlog.take_previous(crash_dir)
+    crashlog.install(crash_dir)
 
     from PySide6.QtCore import QSettings
 
@@ -108,7 +127,9 @@ def main(argv=None) -> int:
     from . import dbguard
     backup_dir = paths.data_dir() / "backups"
     db_notice = dbguard.check(paths.db_path(), backup_dir)  # a damaged database is set aside and restored
+    _mark("application")
     library = Library(paths.db_path(), paths.art_dir())
+    _mark("library-opened")
     dbguard.backup_if_due(paths.db_path(), backup_dir)
     from . import cachetrim
     cachetrim.trim_in_background({paths.data_dir() / "thumbs": cachetrim.LIMITS["thumbs"],
@@ -135,6 +156,7 @@ def main(argv=None) -> int:
     shell = DesktopShell(app, player, app.windowIcon())
     shell.setReportSources(library=library, theme_manager=theme_manager)
     shell.setStartupNotice(db_notice)
+    shell.setCrashReport(last_crash, last_crashed)
 
     if not library.folders and not args.folders:
         # A fresh install: open on the welcome (music folder, theme, scrobbling) until it is finished
@@ -148,6 +170,7 @@ def main(argv=None) -> int:
     QTimer.singleShot(0, library.rescan)
     player.restoreSession()
 
+    _mark("services")
     engine = QQmlApplicationEngine()
     from . import qmlnet
     qmlnet.install(engine)  # the interface never goes online (see qmlnet)
@@ -171,6 +194,11 @@ def main(argv=None) -> int:
         control.close()
         return 1
 
+    _mark("window-loaded")
+    if _TRACE:
+        window = engine.rootObjects()[0]
+        window.frameSwapped.connect(lambda: _mark("first-frame"), Qt.ConnectionType.SingleShotConnection)
+        library.readyChanged.connect(lambda: library.ready and _mark("library-ready"))
     shell.setWindow(engine.rootObjects()[0])
     control.setRaiseCallback(shell.showMain)
     mpris = None
@@ -217,8 +245,10 @@ def main(argv=None) -> int:
     meta_editor.shutdown()
     user_lib.shutdown()
     library.shutdown()
+    dbguard.mark_clean(paths.db_path())  # every connection is closed now
     del scrobbler, listenbrainz
     del mpris
+    crashlog.finish()
     return code
 
 

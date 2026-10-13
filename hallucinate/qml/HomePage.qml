@@ -61,7 +61,7 @@ Item {
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(13)
                     font.weight: Font.DemiBold
-                    MouseArea { id: healthLinkMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Nav.openHealth() }
+                    LinkArea { id: healthLinkMouse; name: "Library health"; hoverEnabled: true; onClicked: Nav.openHealth() }
                 }
             }
 

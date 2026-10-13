@@ -153,9 +153,7 @@ Item {
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(16)
                         font.weight: Font.DemiBold
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
+                        LinkArea {
                             onClicked: Nav.openArtist(page.info.album_artist)
                         }
                     }

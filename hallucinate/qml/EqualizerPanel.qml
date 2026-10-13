@@ -48,6 +48,7 @@ Column {
                     height: 120
                     anchors.horizontalCenter: parent.horizontalCenter
                     from: -12; to: 12; stepSize: 1
+                    Accessible.name: modelData + "Hz band"
                     value: player.eqGains[index]
                     onMoved: player.setEqBand(index, value)
                     background: Rectangle {

@@ -1,5 +1,7 @@
 """The library database: daily backups, and a damaged one set aside and restored rather than failing to start."""
+import json
 import os
+import sqlite3
 import time
 
 from hallucinate import dbguard
@@ -73,3 +75,41 @@ def test_caches_are_trimmed_oldest_first(tmp_path):
     assert cachetrim.trim(tmp_path, 4500) == 6000
     assert sorted(p.name for p in tmp_path.iterdir()) == ["6.jpg", "7.jpg", "8.jpg", "9.jpg"]
     assert cachetrim.trim(tmp_path, 4500) == 0
+
+
+def test_a_cleanly_closed_database_skips_the_full_check(tmp_path, monkeypatch):
+    """The integrity check reads the whole file, which takes most of a second for a big library: after a clean
+    exit with nothing changed since, it is skipped (but not for more than a week)."""
+    db = tmp_path / "library.db"
+    sqlite3.connect(db).execute("CREATE TABLE t (x)").connection.close()
+    checks = []
+    real = dbguard._healthy
+    monkeypatch.setattr(dbguard, "_healthy", lambda p: checks.append(p) or real(p))
+    backups = tmp_path / "backups"
+
+    assert dbguard.check(db, backups) == "" and len(checks) == 1  # no marker yet: checked
+    dbguard.mark_clean(db)
+    assert dbguard.check(db, backups) == "" and len(checks) == 1  # clean exit, unchanged: skipped
+    assert dbguard.check(db, backups) == "" and len(checks) == 2  # the marker is used up: this run "crashed"
+
+    dbguard.mark_clean(db)
+    con = sqlite3.connect(db)
+    con.execute("INSERT INTO t VALUES (1)")
+    con.commit()
+    con.close()
+    assert dbguard.check(db, backups) == "" and len(checks) == 3  # changed since the clean exit: checked
+
+    dbguard.mark_clean(db)
+    marker = json.loads((tmp_path / "library.db.clean").read_text())
+    marker["checked"] -= 8 * 24 * 3600
+    (tmp_path / "library.db.clean").write_text(json.dumps(marker))
+    assert dbguard.check(db, backups) == "" and len(checks) == 4  # a week since the last full check
+
+
+def test_a_skipped_check_still_finds_damage_after_a_crash(tmp_path):
+    db = tmp_path / "library.db"
+    sqlite3.connect(db).execute("CREATE TABLE t (x)").connection.close()
+    assert dbguard.check(db, tmp_path / "backups") == ""
+    dbguard.mark_clean(db)
+    db.write_bytes(b"not a database" * 100)  # changed (and damaged) after the clean exit
+    assert "damaged" in dbguard.check(db, tmp_path / "backups")

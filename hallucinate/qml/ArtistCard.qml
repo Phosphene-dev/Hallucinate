@@ -9,6 +9,9 @@ Item {
     property real cardWidth: 150
     width: cardWidth
     height: cardWidth + 56
+    Accessible.role: Accessible.Button
+    Accessible.name: name + (subtitle.length ? ", " + subtitle : "")
+    Accessible.onPressAction: Nav.openArtist(card.name)
 
     Cover {
         id: art

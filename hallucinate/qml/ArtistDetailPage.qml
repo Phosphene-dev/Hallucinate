@@ -348,9 +348,8 @@ Item {
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(13)
                         font.weight: Font.DemiBold
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
+                        LinkArea {
+                            name: page.allSongs ? "Hide all songs" : "Show all " + page.tracksModel.count + " songs"
                             onClicked: page.allSongs = !page.allSongs
                         }
                     }
