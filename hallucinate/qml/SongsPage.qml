@@ -119,7 +119,7 @@ Item {
         anchors.centerIn: list
         visible: list.count === 0 && (page.duplicatesVisible || library.filtersActive)
         busy: page.duplicatesVisible && library.duplicatesLoading
-        icon: page.duplicatesVisible ? "sparkle" : "search"
+        icon: page.duplicatesVisible ? "duplicates" : "search"
         title: page.duplicatesVisible ? (library.duplicatesLoading ? "Checking for duplicates…" : "No probable duplicates")
                                       : "No songs match these filters"
         hint: page.duplicatesVisible ? (library.duplicatesLoading ? "" : "No two songs share a title, artist and length.")

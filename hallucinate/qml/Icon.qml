@@ -115,9 +115,18 @@ Canvas {
             line([.1,.24,.62,.24]); line([.1,.46,.62,.46]); line([.1,.68,.42,.68]); tri(w*.6,h*.56,w*.6,h*.88,w*.9,h*.72); break
         case "sidebar":
             ctx.strokeRect(w*.12, h*.18, w*.76, h*.64); line([.38,.18,.38,.82]); break
-        case "sparkle":
-            ctx.beginPath(); ctx.moveTo(w*.5,h*.08); ctx.quadraticCurveTo(w*.56,h*.44,w*.92,h*.5); ctx.quadraticCurveTo(w*.56,h*.56,w*.5,h*.92)
-            ctx.quadraticCurveTo(w*.44,h*.56,w*.08,h*.5); ctx.quadraticCurveTo(w*.44,h*.44,w*.5,h*.08); ctx.closePath(); ctx.fill(); break
+        case "recap":  // a calendar with a small bar chart: a period summed up
+            ctx.strokeRect(w*.14, h*.2, w*.72, h*.66); line([.14,.38,.86,.38]); line([.34,.12,.34,.26]); line([.66,.12,.66,.26])
+            ctx.fillRect(w*.28, h*.6, w*.1, h*.16); ctx.fillRect(w*.45, h*.5, w*.1, h*.26); ctx.fillRect(w*.62, h*.56, w*.1, h*.2); break
+        case "smartlist":  // a list beside a filter funnel: a playlist made from rules
+            line([.08,.24,.44,.24]); line([.08,.46,.38,.46]); line([.08,.68,.32,.68])
+            line([.52,.2,.92,.2,.76,.48,.76,.8,.68,.74,.68,.48,.52,.2]); break
+        case "health":  // a pulse line
+            line([.06,.54,.28,.54,.4,.22,.58,.82,.7,.54,.94,.54]); break
+        case "duplicates":  // two overlapping pages
+            ctx.strokeRect(w*.14, h*.14, w*.48, h*.56); ctx.strokeRect(w*.38, h*.32, w*.48, h*.56); break
+        case "download":  // an arrow into a tray
+            line([.5,.12,.5,.62]); line([.3,.44,.5,.64,.7,.44]); line([.14,.66,.14,.86,.86,.86,.86,.66]); break
         case "dice":
             ctx.strokeRect(w*.16, h*.16, w*.68, h*.68)
             var pips = [[.34,.34],[.66,.66],[.5,.5],[.66,.34],[.34,.66]]

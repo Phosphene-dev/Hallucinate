@@ -29,7 +29,7 @@ Item {
         { id: "folders", t: "Folders", i: "folder" },
         { id: "liked", t: "Liked Songs", i: "heart" }, { id: "stats", t: "Stats", i: "stats" },
         { id: "history", t: "History", i: "history" },
-        { id: "recap", t: "Recap", i: "sparkle" }, { id: "visualizer", t: "Visualizer", i: "wave" }
+        { id: "recap", t: "Recap", i: "recap" }, { id: "visualizer", t: "Visualizer", i: "wave" }
     ]
 
     Rectangle {
@@ -152,13 +152,13 @@ Item {
                     Menu {
                         id: newPlMenu
                         MenuItem { text: "New playlist"; icon.name: "playlist"; onTriggered: side.newPlaylist() }
-                        MenuItem { text: "New smart playlist"; icon.name: "sparkle"; onTriggered: side.newSmartPlaylist() }
+                        MenuItem { text: "New smart playlist"; icon.name: "smartlist"; onTriggered: side.newSmartPlaylist() }
                         MenuItem { text: "Import playlist file…"; icon.name: "folder"; onTriggered: Nav.importPlaylist() }
                     }
                     Menu {
                         id: playlistMenu
                         MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: side.newPlaylist() }
-                        MenuItem { text: "New smart playlist…"; icon.name: "sparkle"; onTriggered: side.newSmartPlaylist() }
+                        MenuItem { text: "New smart playlist…"; icon.name: "smartlist"; onTriggered: side.newSmartPlaylist() }
                         MenuItem { text: "Import playlist file…"; icon.name: "folder"; onTriggered: Nav.importPlaylist() }
                         MenuSeparator {}
                         Instantiator {
@@ -175,7 +175,7 @@ Item {
                             model: userLib.smartPlaylists
                             delegate: MenuItem {
                                 text: model.name
-                                icon.name: "sparkle"
+                                icon.name: "smartlist"
                                 onTriggered: side.openSmartPlaylist(model.id, model.name)
                             }
                             onObjectAdded: (index, object) => playlistMenu.addItem(object)
@@ -205,7 +205,7 @@ Item {
                             width: plList.width
                             height: side.compact ? 32 : 36
                             text: model.name
-                            icon: "sparkle"
+                            icon: "smartlist"
                             selected: side.section === "smart" + model.id && side.atRoot
                             onClicked: side.openSmartPlaylist(model.id, model.name)
                         }
@@ -243,7 +243,7 @@ Item {
                 visible: shell.updates.enabled && shell.updates.available
                 text: shell.updates.installing ? "Updating… " + Math.round(shell.updates.installProgress * 100) + "%"
                                                : "Update to " + shell.updates.latestVersion
-                icon: "sparkle"
+                icon: "download"
                 collapsed: side.collapsed
                 selected: true
                 onClicked: {

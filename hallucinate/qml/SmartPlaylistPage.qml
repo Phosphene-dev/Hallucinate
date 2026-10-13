@@ -69,7 +69,7 @@ Item {
             EmptyState {
                 anchors.centerIn: parent
                 visible: list.count === 0
-                icon: "sparkle"
+                icon: "smartlist"
                 title: "Nothing matches yet"
                 hint: "Songs appear here as soon as they match the rules. It updates as you play, like and add music."
                 actionText: "Edit rules"
