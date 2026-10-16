@@ -10,6 +10,7 @@ Item {
     property bool lyricsOpen: false
     readonly property bool compact: width < 1100   // tiling window managers, small screens
     readonly property bool narrow: width < 860
+    readonly property bool episode: player.hasTrack && player.current.kind === "episode"
     signal toggleQueue()
     signal toggleLyrics()
     height: Theme.playerHeight
@@ -124,7 +125,7 @@ Item {
                     formatName: player.hasTrack ? player.current.codec || "" : ""
                     bitrate: player.hasTrack ? player.current.bitrate || 0 : 0
                 }
-                StarRating { visible: !bar.narrow; anchors.verticalCenter: parent.verticalCenter; path: player.hasTrack ? player.current.path || "" : ""; size: 12 }
+                StarRating { visible: !bar.narrow && !(player.current.kind || "").length; anchors.verticalCenter: parent.verticalCenter; path: player.hasTrack ? player.current.path || "" : ""; size: 12 }
                 SignalPath { visible: player.hasTrack && stages.length > 0 }
             }
         }
@@ -138,7 +139,8 @@ Item {
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 6
-            IconButton { icon: "shuffle"; active: player.shuffle; onClicked: player.toggleShuffle() }
+            IconButton { visible: !bar.episode; icon: "shuffle"; active: player.shuffle; onClicked: player.toggleShuffle() }
+            IconButton { objectName: "skipBack"; visible: bar.episode; icon: "skipback"; tip: "Back 15 seconds"; onClicked: player.seekBy(-15000) }
             IconButton { icon: "prev"; onClicked: player.previous() }
             Rectangle {
                 width: 44; height: 44; radius: 22
@@ -161,13 +163,16 @@ Item {
                 MouseArea { id: pp; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: player.toggle() }
             }
             IconButton { icon: "next"; onClicked: player.next() }
+            IconButton { objectName: "skipForward"; visible: bar.episode; icon: "skipfwd"; tip: "Forward 30 seconds"; onClicked: player.seekBy(30000) }
             IconButton {
+                visible: !bar.episode
                 icon: player.repeat === 2 ? "repeat1" : "repeat"
                 active: player.repeat !== 0
                 onClicked: player.cycleRepeat()
             }
             IconButton {
                 objectName: "radioButton"
+                visible: !bar.episode
                 icon: "radio"
                 active: player.radio
                 tip: player.radio ? "Radio on: similar songs keep playing after the queue" : "Radio: keep playing similar songs when the queue ends"
@@ -182,7 +187,14 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 26
             }
-            Text { text: Theme.fmtTime(player.duration); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); Layout.preferredWidth: 38; textFormat: Text.PlainText }
+            Text {
+                objectName: "barDuration"
+                readonly property bool live: player.hasTrack && player.current.kind === "station"
+                text: live ? "LIVE" : Theme.fmtTime(player.duration)
+                color: live ? Theme.accent : Theme.textDim
+                font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); font.weight: live ? Font.Bold : Font.Normal
+                Layout.preferredWidth: 38; textFormat: Text.PlainText
+            }
         }
     }
 
@@ -197,9 +209,34 @@ Item {
             onClicked: playbackMenu.popup()
             PlaybackMenu { id: playbackMenu }
         }
+        IconButton {
+            id: chaptersButton
+            objectName: "chaptersButton"
+            visible: bar.episode && podcasts.chapters.length > 0
+            icon: "playlist"; tip: "Chapters"
+            onClicked: chaptersMenu.popup(chaptersButton, 0, -chaptersMenu.implicitHeight - 6)
+            Menu {
+                id: chaptersMenu
+                Instantiator {
+                    model: podcasts.chapters
+                    delegate: MenuItem {
+                        required property var modelData
+                        required property int index
+                        readonly property bool current: player.position >= modelData.start
+                                                        && (index + 1 >= podcasts.chapters.length || player.position < podcasts.chapters[index + 1].start)
+                        text: Theme.fmtTime(modelData.start) + "   " + modelData.title
+                        checkable: true
+                        checked: current
+                        onTriggered: podcasts.seekChapter(index)
+                    }
+                    onObjectAdded: (i, o) => chaptersMenu.insertItem(i, o)
+                    onObjectRemoved: (i, o) => chaptersMenu.removeItem(o)
+                }
+            }
+        }
         IconButton { objectName: "openNowPlaying"; icon: "fullscreen"; tip: "Now playing (F)"; onClicked: Nav.toggleNowPlaying() }
         IconButton { icon: "expand"; tip: "Mini player (Ctrl+M)"; visible: !bar.compact; onClicked: shell.toggleMini() }
-        IconButton { icon: "note"; active: bar.lyricsOpen; tip: "Lyrics"; onClicked: bar.toggleLyrics() }
+        IconButton { visible: shell.features.lyrics !== false; icon: "note"; active: bar.lyricsOpen; tip: "Lyrics"; onClicked: bar.toggleLyrics() }
         IconButton { icon: "queue"; active: bar.queueOpen; onClicked: bar.toggleQueue() }
         Icon { anchors.verticalCenter: parent.verticalCenter; width: 18; height: 18; name: "volume"; color: Theme.textDim }
         StyledSlider {

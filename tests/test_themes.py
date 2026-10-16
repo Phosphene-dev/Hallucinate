@@ -250,6 +250,14 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     context.setContextProperty("player", player)
     context.setContextProperty("scrobbler", scrobbler)
     context.setContextProperty("themeManager", manager)
+    from hallucinate.stations import Stations
+
+    stations = Stations(tmp_path / "streams.db", tmp_path / "cache", player)
+    context.setContextProperty("stations", stations)
+    from hallucinate.podcasts import Podcasts
+
+    podcasts = Podcasts(tmp_path / "streams.db", tmp_path / "data", tmp_path / "cache", player)
+    context.setContextProperty("podcasts", podcasts)
     qml_dir = Path(__file__).parents[1] / "hallucinate" / "qml"
     engine.addImportPath(str(qml_dir))
     qml_warnings = []
@@ -456,6 +464,8 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     listenbrainz.shutdown()
     player.shutdown()
     lyrics.shutdown()
+    stations.shutdown()
+    podcasts.shutdown()
     meta_editor.shutdown()
     replay_gain.shutdown()
     headphone_finder.shutdown()

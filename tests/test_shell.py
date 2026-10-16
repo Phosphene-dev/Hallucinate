@@ -191,3 +191,17 @@ def test_no_minimize_on_tiling_window_managers(make_shell, monkeypatch):
     monkeypatch.setattr(DesktopShell, "_tray_visible", lambda self: True)
     assert shell.handleClose() == "ask"
     assert shell.closeWith("minimize") == "kept" and not win.visible  # a remembered minimize falls back to the tray
+
+
+def test_features_are_remembered_and_new_kinds_start_off(make_shell):
+    shell, _, _ = make_shell()
+    assert shell.features["stats"] is True
+    assert shell.features["stations"] is False and shell.features["podcasts"] is False
+    seen = []
+    shell.featuresChanged.connect(lambda: seen.append(1))
+    shell.setFeature("stats", False)
+    shell.setFeature("stats", False)
+    shell.setFeature("nonsense", True)
+    assert seen == [1] and not shell.featureOn("stats") and "nonsense" not in shell.features
+    assert shell._settings.value("features/stats", True, bool) is False
+    shell.setFeature("stats", True)  # the settings are shared by the whole test run

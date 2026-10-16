@@ -55,7 +55,7 @@ Item {
                 Text {
                     textFormat: Text.PlainText
                     objectName: "homeHealthLink"
-                    visible: library.trackCount > 0
+                    visible: library.trackCount > 0 && shell.features.health !== false
                     text: "Library health ›"
                     color: healthLinkMouse.containsMouse ? Theme.accentHi : Theme.accent
                     font.family: Theme.fontFamily
@@ -110,23 +110,27 @@ Item {
 
             // Something to play, and when you listen
             Flow {
-                visible: library.trackCount > 0
+                id: topCards
+                readonly property bool both: shell.features.homeRandom !== false && shell.features.homeListening !== false
+                visible: library.trackCount > 0 && (shell.features.homeRandom !== false || shell.features.homeListening !== false)
                 width: parent.width
                 spacing: 18
                 RandomAlbumCard {
-                    width: col.width >= 860 ? (col.width - 18) * 0.5 : col.width
+                    visible: shell.features.homeRandom !== false
+                    width: topCards.both && col.width >= 860 ? (col.width - 18) * 0.5 : col.width
                     album: page.pick
                     onReroll: page.reroll()
                 }
                 ListeningCard {
-                    width: col.width >= 860 ? (col.width - 18) * 0.5 : col.width
+                    visible: shell.features.homeListening !== false
+                    width: topCards.both && col.width >= 860 ? (col.width - 18) * 0.5 : col.width
                 }
             }
 
             // What your collection holds: four across, or two by two when the window is narrow
             Grid {
                 id: factRow
-                visible: library.trackCount > 0
+                visible: library.trackCount > 0 && shell.features.homeFacts !== false
                 width: parent.width
                 columns: width >= 760 ? 4 : 2
                 spacing: 14
@@ -221,19 +225,19 @@ Item {
 
             AlbumShelf {
                 objectName: "rediscoverShelf"
-                visible: userLib.rediscover.count > 0
+                visible: userLib.rediscover.count > 0 && shell.features.homeShelves !== false
                 title: "Rediscover"
                 subtitle: "Albums you haven't played in a while, or ever"
                 model: userLib.rediscover
             }
             AlbumShelf {
-                visible: userLib.onThisDay.count > 0
+                visible: userLib.onThisDay.count > 0 && shell.features.homeShelves !== false
                 title: "On this day"
                 subtitle: "What you were listening to around this date in past years"
                 model: userLib.onThisDay
             }
             AlbumShelf {
-                visible: library.recentAlbums.count > 0
+                visible: library.recentAlbums.count > 0 && shell.features.homeShelves !== false
                 title: "Recently added"
                 subtitle: "New on your shelves"
                 model: library.recentAlbums

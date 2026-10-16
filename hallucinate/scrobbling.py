@@ -15,6 +15,7 @@ from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices
 
 from .core import net
+from .core.kinds import counts_for_scrobbling, track_kind
 
 API_URL = "https://ws.audioscrobbler.com/2.0/"
 AUTH_URL = "https://www.last.fm/api/auth/"
@@ -349,7 +350,8 @@ class LastFmScrobbler(QObject):
         return "\x1f".join(str(track.get(k, "")) for k in ("path", "title", "artist", "album"))
 
     def _ensure_nowplaying(self):
-        if not self.connected or not self.player.playing or not self._current_track:
+        if (not self.connected or not self.player.playing or not self._current_track
+                or not counts_for_scrobbling(self._current_track)):
             return
         key = self._track_key(self._current_track)
         if key == self._sent_nowplaying_key or key == self._attempted_nowplaying_key:
@@ -388,8 +390,11 @@ class LastFmScrobbler(QObject):
                 self._listened_ms += min(int(elapsed * 1000), 1500)
             duration = int(self.player.duration or float(self._current_track.get("duration", 0)) * 1000)
             threshold = scrobble_threshold(duration)
+            if track_kind(self._current_track) == "station":
+                threshold = 60_000  # a song on the radio: its length is unknown, a minute of it counts
             key = self._track_key(self._current_track)
-            if key != self._scrobbled_key and threshold > 0 and self._listened_ms >= threshold:
+            if (key != self._scrobbled_key and threshold > 0 and self._listened_ms >= threshold
+                    and counts_for_scrobbling(self._current_track)):
                 self._scrobbled_key = key
                 self._queue_scrobble(self._current_track, self._started_at)
         self._last_tick = now

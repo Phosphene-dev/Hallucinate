@@ -11,6 +11,13 @@ from .core import net
 VISUALIZER_STYLES = ("liquid", "aurora", "nebula", "bars")
 # What closing the main window does. "tray" needs a visible tray icon; without one it quits.
 CLOSE_ACTIONS = ("ask", "quit", "minimize", "tray")
+# Parts of the app that can be switched off in Settings → Features, and whether they're on to begin with. A
+# feature that's off is gone everywhere: the sidebar, Ctrl+K, menus, Home and its shortcuts.
+FEATURES = {
+    "liked": True, "folders": True, "stats": True, "history": True, "recap": True, "visualizer": True,
+    "health": True, "lyrics": True, "stations": False, "podcasts": False,
+    "homeRandom": True, "homeListening": True, "homeFacts": True, "homeShelves": True,
+}
 # Tiling compositors and window managers that have no minimize: offering it there would do nothing.
 NO_MINIMIZE = ("hyprland", "sway", "i3", "niri", "river", "dwm", "bspwm", "qtile", "awesome")
 
@@ -47,6 +54,7 @@ class DesktopShell(QObject):
         self._ambient_motion = self._settings.value("ui/ambientMotion", True, bool)
         self._visualizer_style = str(self._settings.value("ui/visualizerStyle", "liquid"))
         self._now_playing_vinyl = self._settings.value("ui/nowPlayingVinyl", False, bool)
+        self._features = {name: self._settings.value(f"features/{name}", on, bool) for name, on in FEATURES.items()}
         if self._visualizer_style not in VISUALIZER_STYLES:
             self._visualizer_style = "liquid"
         self._tray = None
@@ -148,6 +156,23 @@ class DesktopShell(QObject):
         self._sidebar_collapsed = bool(on)
         self._settings.setValue("ui/sidebarCollapsed", self._sidebar_collapsed)
         self.settingsChanged.emit()
+
+    featuresChanged = Signal()
+
+    @Property("QVariantMap", notify=featuresChanged)
+    def features(self):
+        """Which optional parts of the app are on, by name (see FEATURES)."""
+        return dict(self._features)
+
+    @Slot(str, bool)
+    def setFeature(self, name, on):
+        if name in FEATURES and self._features[name] != bool(on):
+            self._features[name] = bool(on)
+            self._settings.setValue(f"features/{name}", bool(on))
+            self.featuresChanged.emit()
+
+    def featureOn(self, name):
+        return self._features.get(name, False)
 
     def setStartupNotice(self, text):
         self._startup_notice = text or ""

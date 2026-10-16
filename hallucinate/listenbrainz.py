@@ -12,6 +12,7 @@ import keyring
 from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
 
 from .core import net
+from .core.kinds import counts_for_scrobbling
 
 DEFAULT_URL = "https://api.listenbrainz.org"
 KEYRING_SERVICE = "Hallucinate ListenBrainz"
@@ -329,7 +330,9 @@ class ListenBrainzScrobbler(QObject):
 
     def _send_now_playing(self):
         track = dict(self.player.current or {})
-        key = f"{track.get('path')}"
+        if not counts_for_scrobbling(track):
+            return
+        key = f"{track.get('path')}\x1f{track.get('stream_title', '')}"
         if (not (self.connected and self.player.playing and track and key != self._now_key)
                 or self._busy or net.is_offline() or time.monotonic() < self._retry_at):
             return
@@ -347,6 +350,8 @@ class ListenBrainzScrobbler(QObject):
         self._flush()
 
     def _on_played(self, track):
+        if not counts_for_scrobbling(dict(track)):
+            return
         try:
             meta = track_metadata(dict(track))
         except ValueError:

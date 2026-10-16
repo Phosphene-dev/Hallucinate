@@ -4,6 +4,7 @@ import QtQuick
 QtObject {
     signal openAlbum(string key)
     signal openArtist(string name)
+    signal openPodcast(int id)
     signal openSettings()
     signal openLiked()
     signal goHome()

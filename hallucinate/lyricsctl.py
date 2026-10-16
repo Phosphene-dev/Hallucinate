@@ -28,6 +28,7 @@ class LyricsController(QObject):
         self._line = -1
         self._token = 0
         self._online = True
+        self._enabled = True  # Settings → Features; off, nothing is read or looked up
         self._offset = 0  # ms; positive shows lines earlier (as LRC's [offset:])
         self._loaded.connect(self._apply)
         player.trackChanged.connect(self.reload)
@@ -111,9 +112,18 @@ class LyricsController(QObject):
             self.changed.emit()
             self.reload()
 
+    @Slot(bool)
+    def setEnabled(self, on):
+        if bool(on) != self._enabled:
+            self._enabled = bool(on)
+            self._path = ""
+            self.reload()
+
     @Slot()
     def reload(self):
-        track = self._player.current if self._player.hasTrack else {}
+        track = self._player.current if self._player.hasTrack and self._enabled else {}
+        if (track.get("kind") or "music") != "music":
+            track = {}  # radio and podcasts have no lyrics to find
         path = track.get("path", "")
         if path == self._path and self._status in ("found", "loading"):
             return

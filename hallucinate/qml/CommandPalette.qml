@@ -49,14 +49,16 @@ Popup {
             { t: "Albums", s: "Go to", i: "album", run: () => w.go("albums") },
             { t: "Artists", s: "Go to", i: "artist", run: () => w.go("artists") },
             { t: "Songs", s: "Go to", i: "songs", run: () => w.go("songs") },
-            { t: "Folders", s: "Go to  ·  browse by folder", i: "folder", run: () => w.go("folders") },
-            { t: "Liked Songs", s: "Go to", i: "heart", run: () => w.go("liked") },
-            { t: "Stats", s: "Go to", i: "stats", run: () => w.go("stats") },
-            { t: "History", s: "Go to", i: "history", run: () => w.go("history") },
-            { t: "Recap", s: "Go to  ·  your week, month or year", i: "recap", run: () => w.go("recap") },
-            { t: "Visualizer", s: "Go to", i: "wave", run: () => w.go("visualizer") },
+            { f: "folders", t: "Folders", s: "Go to  ·  browse by folder", i: "folder", run: () => w.go("folders") },
+            { f: "liked", t: "Liked Songs", s: "Go to", i: "heart", run: () => w.go("liked") },
+            { f: "stats", t: "Stats", s: "Go to", i: "stats", run: () => w.go("stats") },
+            { f: "history", t: "History", s: "Go to", i: "history", run: () => w.go("history") },
+            { f: "recap", t: "Recap", s: "Go to  ·  your week, month or year", i: "recap", run: () => w.go("recap") },
+            { f: "podcasts", t: "Podcasts", s: "Go to  ·  your shows", i: "podcast", run: () => w.go("podcasts") },
+            { f: "stations", t: "Internet radio", s: "Go to  ·  your stations", i: "station", run: () => w.go("stations") },
+            { f: "visualizer", t: "Visualizer", s: "Go to", i: "wave", run: () => w.go("visualizer") },
             { t: "Settings", s: "Go to", i: "settings", run: () => w.go("settings") },
-            { t: "Library health", s: "Go to", i: "health", run: () => w.go("health") },
+            { f: "health", t: "Library health", s: "Go to", i: "health", run: () => w.go("health") },
             { t: "Colour wall", s: "Albums", i: "album", run: () => { shell.setUiValue("albumsView", "colour"); w.go("albums") } },
             { t: "Timeline", s: "Albums", i: "album", run: () => { shell.setUiValue("albumsView", "timeline"); w.go("albums") } },
             { t: player.playing ? "Pause" : "Play", s: "Playback  ·  Space", i: player.playing ? "pause" : "play", run: () => player.toggle() },
@@ -67,7 +69,7 @@ Popup {
             { t: player.radio ? "Radio off" : "Radio on", s: "Keep playing similar songs", i: "radio", run: () => player.setRadio(!player.radio) },
             { t: "Now playing", s: "View  ·  F", i: "fullscreen", run: () => Nav.toggleNowPlaying() },
             { t: "Queue", s: "View  ·  Q", i: "queue", run: () => { w.queueOpen = !w.queueOpen; if (w.queueOpen) w.lyricsOpen = false } },
-            { t: "Lyrics", s: "View  ·  L", i: "note", run: () => { w.lyricsOpen = !w.lyricsOpen; if (w.lyricsOpen) w.queueOpen = false } },
+            { f: "lyrics", t: "Lyrics", s: "View  ·  L", i: "note", run: () => { w.lyricsOpen = !w.lyricsOpen; if (w.lyricsOpen) w.queueOpen = false } },
             { t: "Mini player", s: "View  ·  Ctrl+M", i: "expand", run: () => shell.toggleMini() },
             { t: shell.sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar", s: "View", i: "sidebar", run: () => shell.setSidebarCollapsed(!shell.sidebarCollapsed) },
             { t: "Play a random album", s: "Library", i: "dice", run: () => { var a = library.randomAlbum(""); if (a.album_key) library.playAlbum(a.album_key, 0) } },
@@ -83,7 +85,7 @@ Popup {
             var pl = userLib.playlists.get(p)
             c.push({ t: pl.name, s: "Playlist", i: "playlist", run: ((id) => () => Nav.openPlaylist(id))(pl.id) })
         }
-        return c
+        return c.filter(x => !x.f || shell.features[x.f] !== false)
     }
 
     // Letters of the query in order; word starts and consecutive letters score higher. -1 when no match.

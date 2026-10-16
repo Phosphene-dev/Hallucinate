@@ -5,6 +5,18 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.9.1] - 2026-10-16
+
+Turn off what you don't use, and turn on internet radio and podcasts if you want them.
+
+### Added
+- Settings → Features: switch off what you don't use (Liked Songs, Folders, Stats, History, Recap, Visualizer, Library health, lyrics, and each card on Home). It disappears everywhere: the sidebar, Ctrl+K, links and shortcuts. Switch it back on and everything is still there.
+- Internet radio (off until you switch it on in Settings → Features). Save stations by their stream link (.pls and .m3u links work too), import or export them as playlist files, or find them in the Radio Browser directory. The song a station is playing shows as the artist and title everywhere, including the tray, media keys and Discord. Dropped streams reconnect by themselves. Radio never counts toward your stats, history or recap; songs heard on the radio can count on Last.fm and ListenBrainz if you choose to (Settings → Internet & sharing). Offline mode stops it all.
+- Podcasts (off until you switch them on in Settings → Features). Follow shows by their feed link, find them in the Apple Podcasts directory, bring your list from another app (OPML import and export), or add a folder of episode files. Episodes pick up where you stopped, show how much is left, and are marked played when you finish them; Podcasts shows what you were listening to and what's new. Download episodes to listen offline, by hand or automatically for a show, and have them removed once played. Chapters, skip back 15 s and forward 30 s, and a playback speed of their own (up to 3×) that doesn't change the music's. Episodes never count toward your stats, history or recap.
+
+### Fixed
+- The right-click menu in text fields uses the app's theme (it was a native menu with a white highlight that was hard to read).
+
 ## [0.9.9] - 2026-10-16
 
 Right-click menus everywhere, back and forward like a browser, and fixes for narrow windows.

@@ -1,0 +1,248 @@
+"""Podcasts: feeds, OPML, following, resuming where you stopped, played episodes, downloads and folders."""
+import time
+
+import pytest
+from audio import FFMPEG, encode
+from conftest import wait_for
+from streamserver import StreamServer
+
+from hallucinate.core import podcasts as pc
+
+pytestmark = pytest.mark.skipif(not FFMPEG, reason="needs ffmpeg")
+
+FEED = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
+     xmlns:podcast="https://podcastindex.org/namespace/1.0">
+<channel>
+  <title>Test Talk</title>
+  <itunes:author>Host Person</itunes:author>
+  <description>&lt;p&gt;A show &amp;amp; more.&lt;/p&gt;</description>
+  <itunes:image href="{base}/cover.png"/>
+  <item>
+    <title>Episode Two</title><guid>ep2</guid>
+    <pubDate>Tue, 13 Oct 2026 08:00:00 +0000</pubDate>
+    <itunes:duration>0:20</itunes:duration>
+    <enclosure url="{base}/ep2.mp3" type="audio/mpeg" length="{size}"/>
+    <podcast:chapters url="{base}/ch2.json" type="application/json+chapters"/>
+    <description>&lt;p&gt;Second&lt;br/&gt;notes&lt;/p&gt;</description>
+  </item>
+  <item>
+    <title>Episode One</title><guid>ep1</guid>
+    <pubDate>Mon, 12 Oct 2026 08:00:00 +0000</pubDate>
+    <itunes:duration>20</itunes:duration>
+    <enclosure url="{base}/ep1.mp3" type="audio/mpeg" length="{size}"/>
+  </item>
+  <item><title>Just a blog post</title><guid>post</guid></item>
+</channel>
+</rss>"""
+CHAPTERS = b'{"version":"1.2.0","chapters":[{"startTime":0,"title":"Intro"},{"startTime":8.5,"title":"Main"}]}'
+
+
+@pytest.fixture(scope="module")
+def clip(tmp_path_factory):
+    return encode(tmp_path_factory.mktemp("ep") / "ep.mp3", "mp3", seconds=20).read_bytes()
+
+
+@pytest.fixture
+def server(clip):
+    srv = StreamServer()
+    srv.files.update({
+        "/ep1.mp3": ("audio/mpeg", clip), "/ep2.mp3": ("audio/mpeg", clip), "/ch2.json": ("application/json", CHAPTERS),
+        "/cover.png": ("image/png", b"\x89PNG\r\n\x1a\n" + b"\0" * 64),
+    })
+    srv.files["/feed.xml"] = ("application/rss+xml", FEED.format(base=srv.base, size=len(clip)).encode())
+    yield srv
+    srv.close()
+
+
+def test_reading_a_feed(server, clip):
+    podcast, episodes = pc.parse_feed(server.files["/feed.xml"][1], server.url("/feed.xml"))
+    assert podcast["title"] == "Test Talk" and podcast["author"] == "Host Person"
+    assert podcast["description"] == "A show & more." and podcast["image"].endswith("/cover.png")
+    assert [e["title"] for e in episodes] == ["Episode Two", "Episode One"]  # the post without audio is left out
+    two = episodes[0]
+    assert two["guid"] == "ep2" and two["duration"] == 20 and two["size"] == len(clip)
+    assert two["description"] == "Second\nnotes" and two["chapters_url"].endswith("/ch2.json")
+    assert time.gmtime(two["published"]).tm_mday == 13
+    with pytest.raises(ValueError):
+        pc.parse_feed(b"<html>not a feed</html>")
+    assert pc.parse_duration("1:02:03") == 3723 and pc.parse_duration("62:03") == 3723 and pc.parse_duration("x") == 0
+
+
+def test_chapters_and_opml():
+    assert pc.parse_chapters_json(CHAPTERS) == [{"start": 0.0, "title": "Intro"}, {"start": 8.5, "title": "Main"}]
+    assert pc.parse_chapters_json(b"nonsense") == []
+    opml = pc.make_opml([{"title": "A & B", "feed_url": "https://a/feed"}, {"title": "Folder", "folder": "/x"}])
+    assert pc.parse_opml(opml) == [{"title": "A & B", "feed_url": "https://a/feed"}]
+    nested = '<opml><body><outline text="Group"><outline text="One" xmlUrl="https://1/f"/></outline></body></opml>'
+    assert pc.parse_opml(nested) == [{"title": "One", "feed_url": "https://1/f"}]
+
+
+@pytest.fixture
+def shows(qapp, tmp_path):
+    from hallucinate.player import Player
+    from hallucinate.podcasts import Podcasts
+
+    player = Player(session_file=tmp_path / "session.json")
+    podcasts = Podcasts(tmp_path / "streams.db", tmp_path / "data", tmp_path / "cache", player)
+    messages = []
+    podcasts.message.connect(messages.append)
+    yield podcasts, player, messages
+    podcasts.shutdown()
+    player.shutdown()
+
+
+def follow(podcasts, server, messages):
+    podcasts.follow(server.url("/feed.xml"))
+    assert wait_for(lambda: podcasts.count == 1 and not podcasts.busy), messages
+    show = podcasts.shows._items[0]
+    podcasts.openShow(show["id"])
+    return show
+
+
+def test_following_playing_and_resuming(shows, server):
+    podcasts, player, messages = shows
+    show = follow(podcasts, server, messages)
+    assert show["title"] == "Test Talk" and show["unplayed"] == 2 and "2 new" in show["detail"]
+    assert [e["title"] for e in podcasts.episodes._items] == ["Episode Two", "Episode One"]
+    assert podcasts.latest.count == 2
+    podcasts.follow(server.url("/feed.xml"))
+    assert any("already follow" in m for m in messages)
+
+    played = []
+    player.played.connect(played.append)
+    one = next(e for e in podcasts.episodes._items if e["title"] == "Episode One")
+    podcasts.play(one["id"])
+    assert wait_for(lambda: player.playing and player.position > 300, timeout=15), player.error
+    assert player.current["kind"] == "episode" and player.queueLength == 2  # the newer episode follows
+    player.seek(6000)
+    assert wait_for(lambda: player.position >= 6000)
+    player.pause()
+    assert wait_for(lambda: podcasts._db.episode(one["id"])["position"] >= 5.5)
+    podcasts.reload()
+    assert podcasts.inProgress.count == 1 and "left" in podcasts.inProgress._items[0]["detail"]
+
+    # picking it up again starts where it was left
+    player.stop()
+    podcasts.play(one["id"])
+    assert player.current["resume_ms"] >= 5500
+    assert wait_for(lambda: player.playing and player.position >= 5500, timeout=15), (player.position, player.error)
+    # heard to the end: played, and nothing counted as a music play
+    player.seek(19_000)
+    assert wait_for(lambda: podcasts._db.episode(one["id"])["played"] == 1, timeout=15)
+    assert not played
+    assert wait_for(lambda: player.current.get("title") == "Episode Two", timeout=15)
+
+
+def test_podcasts_keep_their_own_speed(shows, server, tmp_path):
+    podcasts, player, messages = shows
+    follow(podcasts, server, messages)
+    song = {"id": 1, "path": str(encode(tmp_path / "song.flac", "flac", seconds=3)), "title": "Song",
+            "artist": "A", "album": "B", "duration": 3, "artUrl": ""}
+    player.playList([song], 0)
+    player.setSpeed(1.25)
+    podcasts.play(podcasts.episodes._items[0]["id"])
+    assert player.speed == 1.0
+    player.setSpeed(2.5)
+    assert player.speed == 2.5
+    player.playList([song], 0)
+    assert player.speed == 1.25
+    player.setSpeed(1.0)
+    podcasts.play(podcasts.episodes._items[0]["id"])
+    player.setSpeed(1.0)
+
+
+def test_downloads_and_offline_listening(shows, server, clip):
+    from hallucinate.core import net
+
+    podcasts, player, messages = shows
+    follow(podcasts, server, messages)
+    two = podcasts.episodes._items[0]
+    podcasts.download(two["id"])
+    assert wait_for(lambda: podcasts._db.episode(two["id"])["local_path"], timeout=15), messages
+    path = podcasts._db.episode(two["id"])["local_path"]
+    assert open(path, "rb").read() == clip
+    assert wait_for(lambda: podcasts.episodes._items[0]["status"] == "Downloaded")
+    net.set_offline(True)
+    try:
+        podcasts.play(two["id"])
+        assert player.current["path"] == path  # the file, not the stream
+        assert wait_for(lambda: player.playing, timeout=10), player.error
+        one = podcasts.episodes._items[1]
+        player.stop()
+        podcasts.play(one["id"])
+        assert any("download episodes" in m for m in messages)
+    finally:
+        net.set_offline(False)
+    # once played, a downloaded episode's file goes (Settings: remove downloads once played)
+    player.stop()
+    podcasts.markPlayed(two["id"], True)
+    assert not podcasts._db.episode(two["id"])["local_path"]
+    import os
+
+    assert not os.path.exists(path)
+
+
+def test_chapters_of_the_playing_episode(shows, server):
+    podcasts, player, messages = shows
+    follow(podcasts, server, messages)
+    podcasts.play(podcasts.episodes._items[0]["id"])
+    assert wait_for(lambda: len(podcasts.chapters) == 2, timeout=10)
+    assert podcasts.chapters[1] == {"start": 8500, "title": "Main"}
+    assert wait_for(lambda: player.playing, timeout=15), player.error
+    podcasts.seekChapter(1)
+    assert wait_for(lambda: player.position >= 8400)
+
+
+def test_new_episodes_on_refresh_and_opml(shows, server, tmp_path, clip):
+    podcasts, player, messages = shows
+    show = follow(podcasts, server, messages)
+    feed = server.files["/feed.xml"][1].decode()
+    extra = f"""<item><title>Episode Three</title><guid>ep3</guid><pubDate>Wed, 14 Oct 2026 08:00:00 +0000</pubDate>
+    <enclosure url="{server.base}/ep1.mp3" type="audio/mpeg" length="{len(clip)}"/></item>"""
+    server.files["/feed.xml"] = ("application/rss+xml", feed.replace("<item>", extra + "<item>", 1).encode())
+    podcasts.refresh(show["id"])
+    assert wait_for(lambda: any(m == "1 new episode" for m in messages), timeout=10), messages
+    assert podcasts.episodes._items[0]["title"] == "Episode Three"
+    assert podcasts.exportOpml(str(tmp_path / "subs")) == "Saved 1 show to subs.opml"
+    podcasts.unfollow(show["id"], True)
+    assert podcasts.count == 0
+    assert podcasts.importOpml(str(tmp_path / "subs.opml")) == "Following 1 new show"
+    assert wait_for(lambda: podcasts.count == 1 and podcasts.shows._items[0]["episodes"] == 3, timeout=10)
+
+
+def test_a_folder_of_episodes(shows, tmp_path):
+    podcasts, player, messages = shows
+    folder = tmp_path / "My Show"
+    folder.mkdir()
+    encode(folder / "01.mp3", "mp3", seconds=2, title="First", album="Local Show", artist="Me", date="2025-01-01")
+    encode(folder / "02.mp3", "mp3", seconds=2, title="Second", album="Local Show", artist="Me", date="2025-02-01")
+    podcasts.addFolder(str(folder))
+    assert wait_for(lambda: podcasts.count == 1 and not podcasts.busy), messages
+    show = podcasts.shows._items[0]
+    assert show["title"] == "Local Show" and show["author"] == "Me"
+    podcasts.openShow(show["id"])
+    assert [e["title"] for e in podcasts.episodes._items] == ["Second", "First"]
+    assert all(e["local"] and not e["downloaded"] for e in podcasts.episodes._items)
+    first = podcasts.episodes._items[1]
+    podcasts.markPlayed(first["id"], True)
+    assert (folder / "01.mp3").exists()  # your own files are never deleted
+    podcasts.unfollow(show["id"], True)
+    assert (folder / "02.mp3").exists()
+
+
+def test_directory_results(shows, monkeypatch):
+    podcasts, player, messages = shows
+    monkeypatch.setattr(pc, "search_directory", lambda q: [
+        {"title": "Found Show", "author": "Someone", "feed_url": "https://f/feed", "image": "", "genre": "News"}])
+    podcasts.search("news")
+    assert wait_for(lambda: not podcasts.searching)
+    assert podcasts.results.count == 1 and podcasts.results._items[0]["followed"] is False
+    from hallucinate.core import net
+
+    net.set_offline(True)
+    try:
+        podcasts.search("news")
+        assert "Offline" in podcasts.status
+    finally:
+        net.set_offline(False)
