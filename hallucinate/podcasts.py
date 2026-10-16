@@ -37,11 +37,12 @@ DEFAULTS = {
     "keepCount": 3,
     "playedWindow": PLAYED_REMAINING_S,  # seconds before the end of a long episode that count as the end
     "afterEpisode": "next",  # "next": the show's next unplayed episode follows; "stop": just the one
+    "notifyNew": 0,  # 1: a desktop notification when a show you follow has a new episode
 }
 CHOICES = {"skipBack": (5, 10, 15, 30, 45, 60), "skipForward": (10, 15, 30, 45, 60, 90),
            "refreshHours": (0, 1, 2, 4, 8, 12, 24), "newShowDownloads": (0, 1, 2, 3, 5),
            "keep": ("played", "latest", "forever"), "keepCount": (1, 2, 3, 5, 10),
-           "playedWindow": (10, 30, 45, 60, 120, 300), "afterEpisode": ("next", "stop")}
+           "playedWindow": (10, 30, 45, 60, 120, 300), "afterEpisode": ("next", "stop"), "notifyNew": (0, 1)}
 
 
 def near_end(pos, dur, window=PLAYED_REMAINING_S):
@@ -50,7 +51,8 @@ SHOW_KEYS = ["id", "title", "author", "artUrl", "unplayed", "episodes", "latest"
              "newest_first", "hide_played", "speed", "skip_intro", "skip_outro",
              "auto_download", "description", "link", "detail"]
 EPISODE_KEYS = ["id", "podcast_id", "title", "podcast", "description", "published", "duration", "position",
-                "played", "downloaded", "progress", "artUrl", "detail", "url", "local", "downloading", "status"]
+                "played", "downloaded", "progress", "artUrl", "detail", "url", "local", "downloading", "status",
+                "up_next"]
 RESULT_KEYS = ["row", "title", "author", "genre", "artUrl", "followed", "feed_url"]
 MAX_IMAGE_BYTES = 4_000_000
 
@@ -84,6 +86,7 @@ class Podcasts(QObject):
     resultsChanged = Signal()
     chaptersChanged = Signal()
     message = Signal(str)
+    newEpisodes = Signal(str, str)  # (show, latest episode title) when a check finds something new, if asked to tell
     undoable = Signal(str)  # a toast with an Undo button that calls undo()
     _done = Signal(object)
 
@@ -109,6 +112,7 @@ class Podcasts(QObject):
         self._episodes = DictModel(EPISODE_KEYS, self, key_field="id")
         self._latest = DictModel(EPISODE_KEYS, self, key_field="id")
         self._continue = DictModel(EPISODE_KEYS, self, key_field="id")
+        self._up_next = DictModel(EPISODE_KEYS, self, key_field="id")
         self._results_model = DictModel(RESULT_KEYS, self)
         self._results = []
         self._searching = False
@@ -204,6 +208,7 @@ class Podcasts(QObject):
         self._shows.set_items([self._show_row(p) for p in shows])
         self._latest.set_items([self._episode_row(e) for e in self._db.episodes(unplayed_only=True, limit=12)])
         self._continue.set_items([self._episode_row(e) for e in self._db.in_progress(8)])
+        self._up_next.set_items([self._episode_row(e) for e in self._db.up_next()])
         self._reload_episodes()
         missing = [p["image"] for p in shows if p.get("image", "").startswith("http") and not self._image_file(p["image"]).exists()]
         if missing and not net.is_offline() and self._enabled:
@@ -257,6 +262,37 @@ class Podcasts(QObject):
     def inProgress(self):
         """Episodes started and not finished: "Continue listening"."""
         return self._continue
+
+    @Property(QObject, constant=True)
+    def upNext(self):
+        """Episodes lined up to hear next, across shows, in order."""
+        return self._up_next
+
+    @Slot(int, bool)
+    def addUpNext(self, episode_id, first=False):
+        e = self._db.episode(episode_id)
+        if e:
+            self._db.set_up_next(episode_id, True, first)
+            self.reload()
+            self.message.emit(f"“{e['title']}” is {'first in' if first else 'in'} Up next")
+
+    @Slot(int)
+    def removeUpNext(self, episode_id):
+        self._db.set_up_next(episode_id, False)
+        self.reload()
+
+    @Slot(int)
+    def playUpNext(self, episode_id):
+        """Play Up next from this episode on, in its order."""
+        items = self._db.up_next()
+        start = next((i for i, e in enumerate(items) if e["id"] == episode_id), 0)
+        items = items[start:]
+        if not items:
+            return
+        if not (items[0].get("local_path") and os.path.isfile(items[0]["local_path"])) and net.is_offline():
+            self.message.emit("Offline mode is on: download episodes to listen to them offline")
+            return
+        self._player.playList([self._entry(e) for e in items], 0)
 
     @Property(int, notify=changed)
     def count(self):
@@ -863,6 +899,11 @@ class Podcasts(QObject):
             new = self._db.merge_episodes(podcast_id, episodes)
             self._db.update_podcast(podcast_id, checked=time.time(), error="")
             self.reload()
+            if new and self._options["notifyNew"]:
+                show = self._db.podcast(podcast_id) or {}
+                latest = self._db.episode(new[0]) or {}
+                more = f" and {len(new) - 1} more" if len(new) > 1 else ""
+                self.newEpisodes.emit(show.get("title", "A show you follow"), (latest.get("title") or "New episode") + more)
             if new:
                 self._download_new(podcast_id, min(len(new), 3))
             if not quiet:

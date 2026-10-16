@@ -170,6 +170,7 @@ def main(argv=None) -> int:
 
     apply_features()
     shell.featuresChanged.connect(apply_features)
+    podcasts.newEpisodes.connect(lambda show, title: shell.notify(f"New from {show}", title))
 
     if not library.folders and not args.folders:
         # A fresh install: open on the welcome (music folder, theme, scrobbling) until it is finished

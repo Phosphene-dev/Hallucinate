@@ -19,6 +19,18 @@ Menu {
     MenuItem { text: "Play"; icon.name: "play"; onTriggered: podcasts.play(menu.episode.id) }
     MenuItem { text: "Play next"; icon.name: "next"; onTriggered: podcasts.playNext(menu.episode.id) }
     MenuItem { text: "Add to queue"; icon.name: "queue"; onTriggered: podcasts.enqueue(menu.episode.id) }
+    MenuItem {
+        objectName: "episodeUpNext"
+        text: menu.episode.up_next > 0 ? "Remove from Up next" : "Add to Up next"
+        icon.name: menu.episode.up_next > 0 ? "remove" : "plus"
+        onTriggered: menu.episode.up_next > 0 ? podcasts.removeUpNext(menu.episode.id) : podcasts.addUpNext(menu.episode.id, false)
+    }
+    MenuItem {
+        visible: !(menu.episode.up_next > 0)
+        height: visible ? implicitHeight : 0
+        text: "Put first in Up next"; icon.name: "next"
+        onTriggered: podcasts.addUpNext(menu.episode.id, true)
+    }
     MenuSeparator {}
     MenuItem {
         objectName: "episodePlayed"

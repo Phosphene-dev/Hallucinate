@@ -336,6 +336,11 @@ class DesktopShell(QObject):
         title, artist = track.get("title", "Unknown track"), track.get("artist", "")
         self._send_notification(title, artist)
 
+    @Slot(str, str)
+    def notify(self, title, body):
+        """A desktop notification (new podcast episodes); shown whatever the now-playing setting says."""
+        self._send_notification(title, body)
+
     def _send_notification(self, title, artist):
         if sys.platform.startswith("linux"):
             from PySide6.QtDBus import QDBusConnection, QDBusMessage

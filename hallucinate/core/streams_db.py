@@ -76,6 +76,9 @@ class StreamsDB:
         self.conn.commit()
 
     def _migrate(self):
+        ecols = {r["name"] for r in self.conn.execute("PRAGMA table_info(episodes)")}
+        if "up_next" not in ecols:  # its place in Up next (0: not in it)
+            self.conn.execute("ALTER TABLE episodes ADD COLUMN up_next REAL NOT NULL DEFAULT 0")
         cols = {r["name"] for r in self.conn.execute("PRAGMA table_info(podcasts)")}
         for name, kind in (("newest_first", "INTEGER NOT NULL DEFAULT 1"), ("hide_played", "INTEGER NOT NULL DEFAULT 0"),
                            ("speed", "REAL NOT NULL DEFAULT 0"), ("skip_intro", "INTEGER NOT NULL DEFAULT 0"),
@@ -239,8 +242,22 @@ class StreamsDB:
         if not ids:
             return
         marks = ",".join("?" * len(ids))
-        self.conn.execute(f"UPDATE episodes SET played=?, position=0, played_at=? WHERE id IN ({marks})",
-                          (1 if played else 0, time.time(), *ids))
+        self.conn.execute(f"UPDATE episodes SET played=?, position=0, played_at=?{', up_next=0' if played else ''} "
+                          f"WHERE id IN ({marks})", (1 if played else 0, time.time(), *ids))
+        self.conn.commit()
+
+    def up_next(self):
+        return [dict(r) for r in self.conn.execute(
+            "SELECT e.*, p.title AS podcast, p.image AS podcast_image FROM episodes e "
+            "JOIN podcasts p ON p.id=e.podcast_id WHERE e.up_next>0 ORDER BY e.up_next")]
+
+    def set_up_next(self, episode_id, on, first=False):
+        if not on:
+            self.conn.execute("UPDATE episodes SET up_next=0 WHERE id=?", (episode_id,))
+        else:
+            row = self.conn.execute("SELECT MIN(up_next), MAX(up_next) FROM episodes WHERE up_next>0").fetchone()
+            lo, hi = row[0] or 1.0, row[1] or 0.0
+            self.conn.execute("UPDATE episodes SET up_next=? WHERE id=?", (lo / 2 if first else hi + 1, episode_id))
         self.conn.commit()
 
     def set_local_path(self, episode_id, path):

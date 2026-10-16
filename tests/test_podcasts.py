@@ -308,3 +308,31 @@ def test_podcast_settings(shows, server, monkeypatch):
     assert podcasts.downloadsSize == 0 and not podcasts._db.downloaded(show["id"])
     podcasts.setOption("keep", "played")
     podcasts.setOption("keepCount", 3)
+
+
+def test_up_next_and_new_episode_notifications(shows, server, clip):
+    podcasts, player, messages = shows
+    follow(podcasts, server, messages)
+    one, two = podcasts.episodes._items[1], podcasts.episodes._items[0]
+    podcasts.addUpNext(one["id"])
+    podcasts.addUpNext(two["id"], True)  # first
+    assert [e["title"] for e in podcasts.upNext._items] == ["Episode Two", "Episode One"]
+    podcasts.playUpNext(two["id"])
+    assert [t["title"] for t in player.queue] == ["Episode Two", "Episode One"]
+    player.stop()
+    podcasts.markPlayed(two["id"], True)  # heard: off the list
+    assert [e["title"] for e in podcasts.upNext._items] == ["Episode One"]
+    podcasts.removeUpNext(one["id"])
+    assert podcasts.upNext.count == 0
+
+    told = []
+    podcasts.newEpisodes.connect(lambda show, title: told.append((show, title)))
+    podcasts.setOption("notifyNew", 1)
+    feed = server.files["/feed.xml"][1].decode()
+    extra = f"""<item><title>Brand New</title><guid>new</guid><pubDate>Wed, 14 Oct 2026 08:00:00 +0000</pubDate>
+    <enclosure url="{server.base}/ep1.mp3" type="audio/mpeg" length="{len(clip)}"/></item>"""
+    server.files["/feed.xml"] = ("application/rss+xml", feed.replace("<item>", extra + "<item>", 1).encode())
+    podcasts.refreshAll()
+    assert wait_for(lambda: told, timeout=10)
+    assert told[0] == ("Test Talk", "Brand New")
+    podcasts.setOption("notifyNew", 0)

@@ -370,6 +370,12 @@ Item {
                 current: sec_podcasts.o.playedWindow
                 onPicked: function (v) { podcasts.setOption("playedWindow", v) }
             }
+            StyledCheck {
+                objectName: "notifyNewEpisodes"
+                text: "Tell me when a show I follow has a new episode (a desktop notification)"
+                checked: sec_podcasts.o.notifyNew === 1
+                onToggled: podcasts.setOption("notifyNew", checked ? 1 : 0)
+            }
             Text { textFormat: Text.PlainText; text: "Downloads"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold }
             OptionCombo {
                 label: "A show you follow downloads"
