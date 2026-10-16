@@ -117,7 +117,7 @@ class MetadataEditor(QObject):
                 found = musicbrainz.search_releases(artist, album)
                 self._mb_done.emit(("results", found, "" if found else "MusicBrainz has no album by that name"))
             except (OSError, ValueError, KeyError) as exc:
-                self._mb_done.emit(("results", [], f"Couldn't reach MusicBrainz: {exc}"))
+                self._mb_done.emit(("results", [], f"Couldn't reach MusicBrainz: {net.describe(exc)}"))
 
         threading.Thread(target=work, name="musicbrainz", daemon=True).start()
 
@@ -133,7 +133,7 @@ class MetadataEditor(QObject):
             try:
                 rel = musicbrainz.release(release_id)
             except (OSError, ValueError, KeyError) as exc:
-                self._mb_done.emit(("release", {"error": f"Couldn't fetch that release: {exc}"}, ""))
+                self._mb_done.emit(("release", {"error": f"Couldn't fetch that release: {net.describe(exc)}"}, ""))
                 return
             pairs = musicbrainz.match_tracks([dict(s) for s in songs], rel["tracks"])
             self._mb_done.emit(("release", {
@@ -222,7 +222,7 @@ class MetadataEditor(QObject):
             except artfetch.ServiceError as exc:  # their servers, already worded for people
                 return {"kind": "cover", "ok": False, "message": str(exc)}
             except OSError as exc:
-                return {"kind": "cover", "ok": False, "message": f"Network error: {exc}"}
+                return {"kind": "cover", "ok": False, "message": f"Couldn't fetch the cover: {net.describe(exc)}"}
             if not data:
                 return {"kind": "cover", "ok": False, "message": "No cover found online"}
             return self._store_cover(db, key, data, emb)

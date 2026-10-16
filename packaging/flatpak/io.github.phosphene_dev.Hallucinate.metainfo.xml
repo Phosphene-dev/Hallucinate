@@ -95,6 +95,13 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.9.9.2" date="2026-10-16">
+      <description>
+        <p>Podcasts get their own settings, per-show options, episode search, show notes, an Up next list and new-episode notifications. Search covers stations and podcasts too.</p>
+        <p>A new Ribbon theme, Halo and Waves visualizer styles, custom accent colours, following the system's light or dark mode, your own themes, and a reduce motion setting.</p>
+        <p>Backup and restore, an equalizer for each output device, Last.fm loves kept in step with Liked Songs, MusicBrainz album lookup in the tag editor, automatic ReplayGain for new music, undo on toasts, and keyboard navigation in song lists.</p>
+      </description>
+    </release>
     <release version="0.9.9.1" date="2026-10-16">
       <description>
         <p>Settings now has a Features section for switching off any part of the app you don't use.</p>

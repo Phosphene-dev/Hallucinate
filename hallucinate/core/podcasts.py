@@ -94,7 +94,7 @@ def parse_feed(data, feed_url=""):
     try:
         root = ET.fromstring(data)
     except ET.ParseError as exc:
-        raise ValueError(f"That isn't a podcast feed ({exc})") from exc
+        raise ValueError("That isn't a podcast feed") from exc
     tag = root.tag.split("}")[-1]
     if tag == "rss":
         channel = root.find("channel")
@@ -183,7 +183,7 @@ def parse_opml(text):
     try:
         root = ET.fromstring(text.encode("utf-8") if isinstance(text, str) else text)
     except ET.ParseError as exc:
-        raise ValueError(f"That isn't an OPML file ({exc})") from exc
+        raise ValueError("That isn't an OPML file") from exc
     feeds, seen = [], set()
     for outline in root.iter("outline"):
         url = (outline.get("xmlUrl") or outline.get("xmlurl") or "").strip()

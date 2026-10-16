@@ -142,7 +142,7 @@ class Stations(QObject):
             try:
                 info = st.resolve(url)
             except (OSError, ValueError) as exc:
-                return ("added", None, f"Couldn't add that station: {exc}")
+                return ("added", None, f"Couldn't add that station: {net.describe(exc)}")
             info["name"] = (name or "").strip() or info.get("name") or urlname(info["url"])
             return ("added", info, "")
 

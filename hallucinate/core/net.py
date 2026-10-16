@@ -19,6 +19,46 @@ class OfflineError(urllib.error.URLError):
         return "Offline mode is on"
 
 
+def describe(exc):
+    """A network or feed error in plain words, for showing to people instead of urllib's text
+    ("<urlopen error [Errno -2] Name or service not known>")."""
+    import http.client
+    import socket
+    import ssl
+
+    if isinstance(exc, OfflineError):
+        return "offline mode is on"
+    if isinstance(exc, ResponseTooLarge):
+        return "the server sent far more than expected"
+    if isinstance(exc, urllib.error.HTTPError):
+        return {401: "it needs a login", 403: "the server refused", 404: "nothing was found at that link",
+                410: "it's gone from that link", 429: "the server is busy; try again later"}.get(
+            exc.code, f"the server answered with an error ({exc.code})" if exc.code < 500
+            else "the server is having trouble; try again later")
+    reason = exc.reason if isinstance(exc, urllib.error.URLError) else exc
+    if isinstance(reason, (socket.timeout, TimeoutError)):
+        return "the server took too long to answer"
+    if isinstance(reason, ssl.SSLError):
+        return "the secure connection couldn't be set up"
+    if isinstance(reason, socket.gaierror):
+        return "the server couldn't be found (check the link and your connection)"
+    if isinstance(reason, ConnectionRefusedError):
+        return "the server refused the connection"
+    if isinstance(reason, (ConnectionError, http.client.HTTPException)):
+        return "the connection dropped"
+    if type(exc) is OSError and len(exc.args) == 1 and isinstance(exc.args[0], str):
+        text = exc.args[0]  # one of ours, already in words
+        return text[:1].lower() + text[1:]
+    if isinstance(exc, urllib.error.URLError) or isinstance(reason, OSError):
+        if "tunnel" in str(reason).lower() or "proxy" in str(reason).lower():
+            return "the proxy wouldn't connect"
+        return "the server couldn't be reached"
+    if isinstance(exc, ValueError):
+        text = str(exc).strip()
+        return text[:1].lower() + text[1:] if text else "that doesn't look like what was expected"
+    return str(exc)
+
+
 def set_offline(on):
     global _offline
     with _lock:

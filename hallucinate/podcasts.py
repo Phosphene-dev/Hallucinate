@@ -453,7 +453,7 @@ class Podcasts(QObject):
             try:
                 podcast, episodes, final = pc.fetch_feed(url)
             except (OSError, ValueError) as exc:
-                return ("followed", None, f"Couldn't follow that: {exc}")
+                return ("followed", None, f"Couldn't follow that: {net.describe(exc)}")
             return ("followed", (podcast, episodes, final), "")
 
         self._pool.submit(lambda: self._done.emit(work()))
@@ -517,7 +517,7 @@ class Podcasts(QObject):
                 info["feed_url"] = final
                 return ("refreshed", (p["id"], info, episodes, quiet), "")
             except (OSError, ValueError) as exc:
-                return ("refreshed", (p["id"], None, None, quiet), str(exc))
+                return ("refreshed", (p["id"], None, None, quiet), net.describe(exc))
 
         self._pool.submit(lambda: self._done.emit(work()))
 

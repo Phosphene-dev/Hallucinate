@@ -1123,3 +1123,25 @@ def test_search_finds_stations_and_shows_and_pages_remember_their_scroll(qapp, a
     assert wait_for(scrolled, timeout=3)
     window.resize(1100, 1600)
     assert not warnings, warnings[:3]
+
+
+def test_whats_new_fits_a_short_window(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    old = shell._settings.value("ui/lastVersion", "")
+    shell._settings.setValue("ui/lastVersion", "0.0.1")
+    try:
+        window.resize(900, 520)
+        shell.whatsNewChanged.emit()
+        dlg = window.findChild(QObject, "whatsNewDialog")
+        QMetaObject.invokeMethod(dlg, "open")
+        assert wait_for(lambda: dlg.property("opened"))
+        assert dlg.property("height") <= window.height()
+        QMetaObject.invokeMethod(dlg, "close")
+        assert wait_for(lambda: shell.whatsNew == [])
+    finally:
+        shell._settings.setValue("ui/lastVersion", old)
+        shell._whats_new_dismissed = False
+    assert not [w for w in warnings if "main.qml" in w], warnings

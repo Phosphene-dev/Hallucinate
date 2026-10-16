@@ -497,30 +497,39 @@ ApplicationWindow {
         title: "New in Hallucinate " + shell.appVersion
         standardButtons: Dialog.Ok
         onClosed: shell.dismissWhatsNew()
-        Column {
+        Flickable {
+            implicitHeight: Math.min(whatsNewCol.height, window.height - 200)
             width: whatsNewDlg.availableWidth
-            spacing: 10
-            Repeater {
-                model: shell.whatsNew
-                Row {
-                    required property string modelData
-                    width: parent.width
-                    spacing: 10
-                    Rectangle { width: 6; height: 6; radius: 3; color: Theme.accent; y: 7 }
-                    Text {
-                        textFormat: Text.PlainText
-                        width: parent.width - 16
-                        wrapMode: Text.WordWrap
-                        text: modelData
-                        color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            contentHeight: whatsNewCol.height
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: ScrollBar {}
+            Column {
+                id: whatsNewCol
+                width: whatsNewDlg.availableWidth - 10
+                spacing: 10
+                Repeater {
+                    model: shell.whatsNew
+                    Row {
+                        required property string modelData
+                        width: parent.width
+                        spacing: 10
+                        Rectangle { width: 6; height: 6; radius: 3; color: Theme.accent; y: 7 }
+                        Text {
+                            textFormat: Text.PlainText
+                            width: parent.width - 16
+                            wrapMode: Text.WordWrap
+                            text: modelData
+                            color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                        }
                     }
                 }
-            }
-            Text {
-                textFormat: Text.PlainText
-                text: "Everything that changed"
-                color: Theme.accent; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); font.weight: Font.DemiBold
-                LinkArea { onClicked: Qt.openUrlExternally("https://github.com/Phosphene-dev/Hallucinate/releases") }
+                Text {
+                    textFormat: Text.PlainText
+                    text: "Everything that changed"
+                    color: Theme.accent; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); font.weight: Font.DemiBold
+                    LinkArea { onClicked: Qt.openUrlExternally("https://github.com/Phosphene-dev/Hallucinate/releases") }
+                }
             }
         }
     }

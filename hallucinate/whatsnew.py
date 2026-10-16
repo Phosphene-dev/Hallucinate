@@ -11,6 +11,10 @@ HIGHLIGHTS = {
         "Your own accent colour, themes that follow the system's light or dark mode, making your own theme, "
         "and the new Ribbon theme.",
         "Two new visualizer styles, Halo and Waves, and a Reduce motion setting.",
+        "Back up and restore your likes, ratings, playlists, history, stations and podcasts (Settings → Library).",
+        "Search covers stations and podcasts too, and pages remember where you'd scrolled to.",
+        "An equalizer for each output device, Liked Songs in step with Last.fm loves, MusicBrainz lookup in the "
+        "album tag editor, and ReplayGain measured for new music by itself (each is optional).",
     ],
 }
 

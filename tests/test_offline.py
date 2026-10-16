@@ -86,3 +86,22 @@ def test_update_check_does_nothing_offline(qapp, offline):
         assert asked == [] and checker.status == "Offline mode is on" and not checker.busy
     finally:
         checker.shutdown()
+
+
+def test_network_errors_are_described_in_plain_words():
+    import socket
+    import urllib.error
+
+    from hallucinate.core import net
+
+    proxy = urllib.error.URLError(OSError("Tunnel connection failed: 403 Forbidden"))
+    assert net.describe(proxy) == "the proxy wouldn't connect"
+    assert net.describe(urllib.error.URLError(socket.gaierror(-2, "Name or service not known"))).startswith(
+        "the server couldn't be found")
+    assert net.describe(urllib.error.HTTPError("u", 404, "nf", {}, None)) == "nothing was found at that link"
+    assert net.describe(urllib.error.HTTPError("u", 503, "x", {}, None)).startswith("the server is having trouble")
+    assert net.describe(urllib.error.URLError(socket.timeout("timed out"))) == "the server took too long to answer"
+    assert net.describe(net.OfflineError()) == "offline mode is on"
+    assert net.describe(OSError("A feed link starts with http:// or https://")).startswith("a feed link")
+    assert net.describe(ValueError("That isn't a podcast feed")) == "that isn't a podcast feed"
+    assert "<" not in net.describe(urllib.error.URLError("weird"))
