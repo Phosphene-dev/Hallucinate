@@ -180,6 +180,8 @@ def main(argv=None) -> int:
         podcasts.reload()
         library.rescan()  # folders and hidden songs from the backup take effect
 
+    user_lib.likeChanged.connect(scrobbler.love)
+    scrobbler.lovesImported.connect(user_lib.likeLoved)
     shell.setBackupSources(paths.db_path(), paths.data_dir() / "streams.db", after_restore)
 
     if not library.folders and not args.folders:

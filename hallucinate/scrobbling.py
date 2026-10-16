@@ -57,6 +57,27 @@ def api_request(method, params, api_key, api_secret, session_key=None, signed=Tr
     return data
 
 
+def loved_tracks(api_key, api_secret, session_key, limit=5000):
+    """(artist, title) of every track you've loved on Last.fm, newest first (up to `limit`)."""
+    user = api_request("user.getInfo", {}, api_key, api_secret, session_key)["user"]["name"]
+    out, page = [], 1
+    while len(out) < limit:
+        data = api_request("user.getLovedTracks", {"user": user, "limit": "200", "page": str(page)},
+                           api_key, api_secret, session_key)
+        block = data.get("lovedtracks", {})
+        items = block.get("track", [])
+        if isinstance(items, dict):
+            items = [items]
+        for t in items:
+            artist = t.get("artist", {})
+            out.append(((artist.get("name") if isinstance(artist, dict) else str(artist)) or "", t.get("name") or ""))
+        pages = int(block.get("@attr", {}).get("totalPages", 1) or 1)
+        if page >= pages or not items:
+            break
+        page += 1
+    return out[:limit]
+
+
 class LastFmScrobbler(QObject):
     statusChanged = Signal()
     connectionChanged = Signal()
@@ -64,6 +85,9 @@ class LastFmScrobbler(QObject):
     pendingCountChanged = Signal()
     busyChanged = Signal()
     _jobFinished = Signal(str, object, str)
+    syncChanged = Signal()
+    lovesImported = Signal(object)  # [(artist, title)] loved on Last.fm, for the library to like
+    _loves_done = Signal(object)
 
     def __init__(self, player, data_dir, parent=None):
         super().__init__(parent)
@@ -96,6 +120,12 @@ class LastFmScrobbler(QObject):
         self._load_queue()
 
         self._jobFinished.connect(self._on_job_finished)
+        from PySide6.QtCore import QSettings
+
+        self._qsettings = QSettings("hallucinate", "hallucinate")
+        self._sync_loves = self._qsettings.value("lastfm/syncLoves", False, bool)
+        self._loves_busy = False
+        self._loves_done.connect(self._on_loves_done)
         self._timer = QTimer(self)
         self._timer.setInterval(1000)
         self._timer.timeout.connect(self._tick)
@@ -464,6 +494,69 @@ class LastFmScrobbler(QObject):
         except (OSError, TypeError, ValueError) as exc:
             logger.warning("Could not persist Last.fm offline queue to %s: %s", self._queue_path, exc)
             self._set_status(f"Could not persist offline scrobbles: {exc}")
+
+    # --- loves ⇄ Liked Songs ---------------------------------------------------------------------------
+    @Property(bool, notify=syncChanged)
+    def syncLoves(self):
+        """Liking a song loves it on Last.fm, and unliking unloves it."""
+        return self._sync_loves
+
+    @Slot(bool)
+    def setSyncLoves(self, on):
+        self._sync_loves = bool(on)
+        self._qsettings.setValue("lastfm/syncLoves", self._sync_loves)
+        self.syncChanged.emit()
+
+    @Property(bool, notify=syncChanged)
+    def lovesBusy(self):
+        return self._loves_busy
+
+    def love(self, tracks, loved):
+        """Love (or unlove) these [(artist, title)] on Last.fm, in the background. Nothing while offline or
+        without the sync switched on; a failure is reported in the status, not retried."""
+        if not (self._sync_loves and self.connected) or net.is_offline():
+            return
+        method = "track.love" if loved else "track.unlove"
+        key, secret, sk = self._api_key, self._api_secret, self._session_key
+
+        def run():
+            for artist, title in tracks[:200]:
+                if artist and title:
+                    try:
+                        api_request(method, {"artist": artist, "track": title}, key, secret, sk)
+                    except RuntimeError as exc:
+                        logger.info("Last.fm %s failed: %s", method, exc)
+
+        threading.Thread(target=run, name="lastfm-love", daemon=True).start()
+
+    @Slot()
+    def importLoves(self):
+        """Fetch the tracks you've loved on Last.fm; lovesImported() hands them over to be liked."""
+        if self._loves_busy or not self.connected:
+            return
+        if net.is_offline():
+            self._set_status("Offline mode is on, so your Last.fm loves can't be fetched.")
+            return
+        self._loves_busy = True
+        self.syncChanged.emit()
+        key, secret, sk = self._api_key, self._api_secret, self._session_key
+
+        def run():
+            try:
+                self._loves_done.emit(loved_tracks(key, secret, sk))
+            except (RuntimeError, KeyError, TypeError, ValueError) as exc:
+                self._loves_done.emit(str(exc))
+
+        threading.Thread(target=run, name="lastfm-loves", daemon=True).start()
+
+    @Slot(object)
+    def _on_loves_done(self, result):
+        self._loves_busy = False
+        self.syncChanged.emit()
+        if isinstance(result, str):
+            self._set_status(f"Couldn't fetch your Last.fm loves: {result}")
+            return
+        self.lovesImported.emit(result)
 
     @Slot()
     def shutdown(self):

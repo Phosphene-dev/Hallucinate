@@ -400,6 +400,10 @@ ApplicationWindow {
     }
 
     Connections {
+        target: userLib
+        function onLovesMatched(n) { toast.show(n ? "Liked " + n + (n === 1 ? " song" : " songs") + " you'd loved on Last.fm" : "No new songs to like from your Last.fm loves") }
+    }
+    Connections {
         target: stations
         function onUndoable(text) { toast.show(text, 0, "Undo", function () { stations.undo() }) }
     }

@@ -32,6 +32,9 @@ HISTORY_WEEKS = 53
 
 class UserLibrary(QObject):
     likesChanged = Signal()
+    likeChanged = Signal(object, bool)  # [(artist, title)] liked or unliked by you (Last.fm loves follow it)
+    lovesMatched = Signal(int)  # how many songs a Last.fm loves import liked
+    _matched_loves = Signal(object)
     playlistsChanged = Signal()
     statsChanged = Signal()
     playlistOpened = Signal(int)
@@ -99,6 +102,7 @@ class UserLibrary(QObject):
         self._smart_rules = None
         self._smart_revision = 0
         self._stats_loaded.connect(self._apply_stats)
+        self._matched_loves.connect(self._apply_matched_loves)
         if player is not None:
             player.played.connect(self.recordPlay)
             player.skipped.connect(self.recordSkip)
@@ -274,6 +278,15 @@ class UserLibrary(QObject):
         """{path: True} for every liked song, so a list of rows can check likes without a call each."""
         return dict.fromkeys(self._liked, True)
 
+    def _announce_likes(self, db, paths, liked):
+        pairs = []
+        for p in paths:
+            row = db.track_by_path(p)
+            if row and row.get("artist") and row.get("title"):
+                pairs.append((row["artist"], row["title"]))
+        if pairs:
+            self.likeChanged.emit(pairs, liked)
+
     @Slot(str)
     def toggleLike(self, path):
         if not path:
@@ -282,7 +295,7 @@ class UserLibrary(QObject):
         (self._liked.add if liked else self._liked.discard)(path)
         self._likes_revision += 1
         self.likesChanged.emit()
-        self._write(lambda db, p, v: db.set_liked(p, v), path, liked)
+        self._write(lambda db, p, v: (db.set_liked(p, v), self._announce_likes(db, [p], v)), path, liked)
 
     @Slot(str, result=int)
     def rating(self, path):
@@ -720,7 +733,7 @@ class UserLibrary(QObject):
         return bool(paths) and all(p in self._liked for p in paths)
 
     @Slot("QVariantList", bool)
-    def setLikedPaths(self, paths, liked):
+    def setLikedPaths(self, paths, liked, announce=True):
         paths = [p for p in paths if p and (p in self._liked) != liked]
         if not paths:
             return
@@ -728,7 +741,35 @@ class UserLibrary(QObject):
             (self._liked.add if liked else self._liked.discard)(p)
         self._likes_revision += 1
         self.likesChanged.emit()
-        self._write(lambda db, ps, v: [db.set_liked(p, v) for p in ps], paths, liked)
+
+        def write(db, ps, v):
+            for p in ps:
+                db.set_liked(p, v)
+            if announce:
+                self._announce_likes(db, ps, v)
+
+        self._write(write, paths, liked)
+
+    @Slot(object)
+    def _apply_matched_loves(self, paths):
+        new = [p for p in dict.fromkeys(paths) if p not in self._liked]
+        self.setLikedPaths(new, True, announce=False)  # they're loved already: nothing to send back
+        self.lovesMatched.emit(len(new))
+
+    def likeLoved(self, pairs):
+        """Like every library song matching these [(artist, title)] (Last.fm loves, say); lovesMatched(n)
+        reports how many were newly liked."""
+        from .core.db import fold
+
+        def work(db):
+            found = []
+            for artist, title in pairs:
+                for row in db.conn.execute("SELECT path FROM tracks WHERE s_artist=? AND s_title=?",
+                                           (fold(artist), fold(title))):
+                    found.append(row[0])
+            self._matched_loves.emit(found)
+
+        self._reader.submit(work)
 
     @Slot("QVariantList", int)
     def setRatingPaths(self, paths, stars):

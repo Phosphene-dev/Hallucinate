@@ -12,6 +12,15 @@ Column {
         checked: player.eqEnabled
         onToggled: player.setEqEnabled(checked)
     }
+    StyledCheck {
+        objectName: "eqPerDevice"
+        enabled: player.eqAvailable
+        text: player.eqPerDevice && player.eqDeviceName.length
+              ? "Separate settings for each output (now: " + player.eqDeviceName + ")"
+              : "Separate settings for each output (headphones, speakers…)"
+        checked: player.eqPerDevice
+        onToggled: player.setEqPerDevice(checked)
+    }
     Text {
         textFormat: Text.PlainText
         visible: !player.eqAvailable

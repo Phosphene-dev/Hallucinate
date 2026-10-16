@@ -727,6 +727,20 @@ Item {
                 onToggled: stations.setScrobble(checked)
             }
             StyledCheck {
+                objectName: "syncLoves"
+                visible: scrobbler.connected
+                text: "Liking a song loves it on Last.fm (and unliking unloves it)"
+                checked: scrobbler.syncLoves
+                onToggled: scrobbler.setSyncLoves(checked)
+            }
+            PillButton {
+                objectName: "importLoves"
+                visible: scrobbler.connected
+                text: scrobbler.lovesBusy ? "Fetching your loves…" : "Like the songs I've loved on Last.fm"
+                enabled: !scrobbler.lovesBusy
+                onClicked: scrobbler.importLoves()
+            }
+            StyledCheck {
                 objectName: "offlineMode"
                 text: "Offline mode"
                 checked: shell.offlineMode

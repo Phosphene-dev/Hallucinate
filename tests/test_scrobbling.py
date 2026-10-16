@@ -267,3 +267,55 @@ def test_api_credentials_and_session_never_enter_queue_file(make_scrobbler, memo
     s._queue_scrobble({"title": "Song", "artist": "Artist"}, 1)
     content = (tmp_path / "lastfm-scrobbles.json").read_text()
     assert "secret-app" not in content and "session" not in content
+
+
+def test_loves_follow_likes_and_come_back_as_likes(make_scrobbler, memory_keyring, monkeypatch, qapp, tmp_path):
+    memory_keyring.update(api_key="k", api_secret="s", session="sk")
+    calls = []
+
+    def fake(method, params, *args, **kwargs):
+        calls.append((method, dict(params)))
+        if method == "user.getInfo":
+            return {"user": {"name": "me"}}
+        if method == "user.getLovedTracks":
+            return {"lovedtracks": {"track": [{"name": "Song A", "artist": {"name": "Band"}}],
+                                    "@attr": {"totalPages": "1"}}}
+        return {}
+
+    monkeypatch.setattr(scrobbling, "api_request", fake)
+    _player, make = make_scrobbler
+    s = make()
+    s.love([("Band", "Song A")], True)  # sync is off: nothing goes out
+    assert not calls
+    s.setSyncLoves(True)
+    s.love([("Band", "Song A")], True)
+    s.love([("Band", "Song A")], False)
+    assert wait_for(lambda: [c[0] for c in calls] == ["track.love", "track.unlove"])
+    got = []
+    s.lovesImported.connect(got.append)
+    s.importLoves()
+    assert wait_for(lambda: got)
+    assert got[0] == [("Band", "Song A")]
+    s.setSyncLoves(False)
+
+    # the library likes what matches
+    from hallucinate.core.db import Database
+    from hallucinate.userlib import UserLibrary
+
+    db = Database(tmp_path / "lib.db")
+    db.upsert_track({"path": "/m/a.flac", "mtime": 0, "size": 1, "title": "Song A", "artist": "Band",
+                     "album_artist": "Band", "aa_tag": 1, "album": "X", "album_key": "x", "track_no": 1, "disc_no": 0,
+                     "year": 0, "genre": "", "duration": 100.0, "fmt": "FLAC", "codec": "FLAC", "bitrate": 0,
+                     "sample_rate": 0})
+    db.commit()
+    db.close()
+    user = UserLibrary(tmp_path / "lib.db", None)
+    announced, matched = [], []
+    user.likeChanged.connect(lambda pairs, liked: announced.append((pairs, liked)))
+    user.lovesMatched.connect(matched.append)
+    user.likeLoved([("band", "song a")])
+    assert wait_for(lambda: matched == [1])
+    assert user.isLiked("/m/a.flac") and not announced  # loved already: not sent back
+    user.toggleLike("/m/a.flac")
+    assert wait_for(lambda: announced == [([("Band", "Song A")], False)])
+    user.shutdown()
