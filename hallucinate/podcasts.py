@@ -69,6 +69,7 @@ class Podcasts(QObject):
     resultsChanged = Signal()
     chaptersChanged = Signal()
     message = Signal(str)
+    undoable = Signal(str)  # a toast with an Undo button that calls undo()
     _done = Signal(object)
 
     def __init__(self, db_path, data_dir, cache_dir, player, parent=None):
@@ -416,13 +417,27 @@ class Podcasts(QObject):
 
     @Slot(int)
     def markAllPlayed(self, podcast_id):
-        ids = [e["id"] for e in self._db.episodes(podcast_id, unplayed_only=True)]
+        episodes = self._db.episodes(podcast_id, unplayed_only=True)
+        ids = [e["id"] for e in episodes]
+        self._undo = [(e["id"], e["position"]) for e in episodes]
         self._db.set_played(ids, True)
         for i in ids:
             self._after_played(i)
         self.reload()
         if ids:
-            self.message.emit(f"Marked {len(ids)} episode{'s' if len(ids) != 1 else ''} played")
+            self.undoable.emit(f"Marked {len(ids)} episode{'s' if len(ids) != 1 else ''} played")
+
+    @Slot()
+    def undo(self):
+        """Mark the episodes marked played by "Mark all played" unplayed again, where you'd got to included.
+        (Downloads already removed stay removed.)"""
+        marks, self._undo = getattr(self, "_undo", None), None
+        if marks:
+            self._db.set_played([i for i, _ in marks], False)
+            for episode_id, pos in marks:
+                if pos:
+                    self._db.set_position(episode_id, pos)
+            self.reload()
 
     def _after_played(self, episode_id):
         if not self._delete_played:

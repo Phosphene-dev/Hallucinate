@@ -45,6 +45,7 @@ class Stations(QObject):
     changed = Signal()
     resultsChanged = Signal()
     message = Signal(str)  # something to tell the user (shown as a toast)
+    undoable = Signal(str)  # the same, with an Undo button that calls undo()
     _done = Signal(object)
 
     def __init__(self, db_path, cache_dir, player, parent=None):
@@ -158,8 +159,20 @@ class Stations(QObject):
         station = self._db.station(station_id)
         if station:
             self._db.remove_station(station_id)
+            self._undo = station
             self.refresh()
-            self.message.emit(f"Removed “{station['name']}”")
+            self.undoable.emit(f"Removed “{station['name']}”")
+
+    @Slot()
+    def undo(self):
+        """Put back the station removed last."""
+        station, self._undo = getattr(self, "_undo", None), None
+        if station:
+            new_id = self._db.add_station(station)
+            self._db.conn.execute("UPDATE stations SET added=?, last_played=?, plays=? WHERE id=?",
+                                  (station["added"], station["last_played"], station["plays"], new_id))
+            self._db.conn.commit()
+            self.refresh()
 
     @Slot(int, result="QVariantMap")
     def station(self, station_id):

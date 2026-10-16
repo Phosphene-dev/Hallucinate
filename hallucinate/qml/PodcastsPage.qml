@@ -183,7 +183,7 @@ Item {
                         PillButton {
                             id: followBtn
                             anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                            text: model.followed ? "Following" : "Follow"
+                            text: model.followed ? "✓ Following" : "Follow"
                             enabled: !model.followed && !podcasts.busy
                             onClicked: podcasts.followResult(model.row)
                         }

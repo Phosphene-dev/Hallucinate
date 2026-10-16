@@ -123,6 +123,7 @@ Item {
                         }
                     }
                     Heatmap {
+                        id: historyHeatmap
                         objectName: "historyHeatmap"
                         width: parent.width
                         heat: page.info.heatmap || ({})
@@ -130,6 +131,13 @@ Item {
                         maxCell: 18
                         selected: page.dayPicked ? page.period.slice(4) : ""
                         onDayClicked: day => page.period = (page.period === "day:" + day ? "all" : "day:" + day)
+                    }
+                    Text {
+                        textFormat: Text.PlainText
+                        objectName: "heatmapTrimmed"
+                        visible: historyHeatmap.firstWeek > 0
+                        text: "The last " + historyHeatmap.shownWeeks + " weeks: widen the window for the whole year"
+                        color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11)
                     }
                     Text {
                         textFormat: Text.PlainText

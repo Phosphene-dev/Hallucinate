@@ -52,7 +52,7 @@ Rectangle {
         PillButton {
             height: 30
             text: "Clear"
-            onClicked: { player.clearQueue(); Nav.notify("Queue cleared · Ctrl+Z to undo") }
+            onClicked: { player.clearQueue(); Nav.notifyAction("Queue cleared", "Undo", function () { player.undoQueue() }) }
         }
     }
     Dialog {
@@ -111,6 +111,7 @@ Rectangle {
         currentIndex: player.currentIndex
         ScrollBar.vertical: ScrollBar {}
         onCurrentIndexChanged: if (dragFrom < 0) positionViewAtIndex(currentIndex, ListView.Contain)
+        onVisibleChanged: if (visible && currentIndex >= 0) positionViewAtIndex(currentIndex, ListView.Center)  // opens on what's playing
         property int dragFrom: -1
         property int dragTo: -1
         property real dragY: 0
@@ -191,7 +192,7 @@ Rectangle {
                 anchors { right: parent.right; rightMargin: 2; verticalCenter: parent.verticalCenter }
                 icon: "close"; size: 12
                 opacity: hh.hovered ? 1 : 0
-                onClicked: player.removeAt(index)
+                onClicked: { player.removeAt(index); Nav.notifyAction("Removed from the queue", "Undo", function () { player.undoQueue() }) }
             }
         }
     }

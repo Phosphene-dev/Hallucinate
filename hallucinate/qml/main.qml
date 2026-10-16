@@ -191,6 +191,13 @@ ApplicationWindow {
         function onOpenAlbum(key) { window.openAlbum(key) }
         function onOpenArtist(name) { window.openArtist(name) }
         function onOpenPodcast(id) { window.openPodcast(id) }
+        function onGoToPlaying() {
+            if (!player.hasTrack) return
+            var c = player.current
+            if (c.kind === "station") window.go("stations")
+            else if (c.kind === "episode") window.openPodcast(c.podcast_id)
+            else if (c.album_key) window.openAlbum(c.album_key)
+        }
         function onOpenSettings() { window.go("settings") }
         function onOpenLiked() { window.go("liked") }
         function onGoHome() { window.go("home") }
@@ -228,6 +235,7 @@ ApplicationWindow {
             exportDialog.open()
         }
         function onNotify(message) { toast.show(message) }
+        function onNotifyAction(message, actionText, action) { toast.show(message, 0, actionText, action) }
         function onBack() { window.goBack() }
         function onInstallUpdate() { updateDlg.open() }
         function onAlbumMenu(keys, title, artist) {
@@ -354,7 +362,8 @@ ApplicationWindow {
         function onAlbumsRemoved(r) {
             var n = r.albums > 0 ? r.albums + (r.albums === 1 ? " album" : " albums")
                                  : r.songs + (r.songs === 1 ? " song" : " songs")
-            if (r.kind === "hidden") toast.show(n + " removed from the library")
+            if (r.kind === "hidden") toast.show(n + " removed from the library", 0, "Undo",
+                                                function () { library.unhidePaths(r.paths || []) })
             else if (r.failed && !r.songs) toast.show("Couldn't move the files to the trash")
             else toast.show(n + " moved to the trash" + (r.failed ? " (" + r.failed + " files couldn't be moved)" : ""))
             if (r.songs > 0 && stack.currentItem && r.keys.indexOf(stack.currentItem.albumKey) >= 0) {
@@ -364,15 +373,33 @@ ApplicationWindow {
         }
     }
 
+    Connections {
+        target: stations
+        function onUndoable(text) { toast.show(text, 0, "Undo", function () { stations.undo() }) }
+    }
+    Connections {
+        target: podcasts
+        function onUndoable(text) { toast.show(text, 0, "Undo", function () { podcasts.undo() }) }
+    }
     // A short message at the bottom of the window
     Rectangle {
         id: toast
         objectName: "toast"
         property string message: ""
-        function show(text, ms) { message = text; opacity = 1; toastTimer.interval = ms || 4500; toastTimer.restart() }
+        property string actionText: ""
+        property var action: null
+        // `actionText` and `action` (a function) add a button, such as Undo; the toast then stays a little longer
+        function show(text, ms, actionText, action) {
+            message = text
+            toast.actionText = action ? (actionText || "Undo") : ""
+            toast.action = action || null
+            opacity = 1
+            toastTimer.interval = ms || (action ? 8000 : 4500)
+            toastTimer.restart()
+        }
         z: 60
         anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Selection.count > 0 || AlbumSelection.count > 0 ? 176 : 118 }
-        width: toastText.width + 36
+        width: toastText.width + 36 + (toastAction.visible ? toastAction.width + 14 : 0)
         height: Math.max(40, toastText.height + 22)
         radius: 20
         color: Theme.glassStrong
@@ -383,9 +410,27 @@ ApplicationWindow {
         Behavior on opacity { NumberAnimation { duration: 220 } }
         Text {
             textFormat: Text.PlainText
+            id: toastAction
+            objectName: "toastAction"
+            visible: toast.actionText.length > 0
+            anchors { right: parent.right; rightMargin: 18; verticalCenter: parent.verticalCenter }
+            text: toast.actionText
+            color: actionMouse.containsMouse ? Theme.accentHi : Theme.accent
+            font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); font.weight: Font.Bold
+            LinkArea {
+                id: actionMouse
+                name: toast.actionText
+                hoverEnabled: true
+                onClicked: { var f = toast.action; toast.action = null; toast.actionText = ""; toast.opacity = 0; if (f) f() }
+            }
+        }
+        Text {
+            textFormat: Text.PlainText
             id: toastText
-            anchors.centerIn: parent
-            width: Math.min(implicitWidth, Math.max(200, window.width - 160))  // long messages wrap
+            anchors.centerIn: toastAction.visible ? undefined : parent
+            x: toastAction.visible ? 18 : (parent.width - width) / 2
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.min(implicitWidth, Math.max(200, window.width - 260))  // long messages wrap
             wrapMode: Text.WordWrap
             horizontalAlignment: Text.AlignHCenter
             text: toast.message

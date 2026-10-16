@@ -13,6 +13,7 @@ Rectangle {
                    : (ma.containsMouse ? Theme.surfaceHi : Theme.surface)
     border.color: Theme.border
     border.width: primary ? 0 : 1
+    opacity: enabled ? 1 : 0.5  // a button that can't be pressed right now looks it
     Behavior on color { ColorAnimation { duration: 120 } }
     activeFocusOnTab: true
     Keys.onSpacePressed: btn.clicked()

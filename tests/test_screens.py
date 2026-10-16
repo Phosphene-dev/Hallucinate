@@ -995,3 +995,85 @@ def test_podcast_pages(qapp, app_window):
         assert not warnings, warnings[:3]
     finally:
         shell.setFeature("podcasts", False)
+
+
+def test_song_lists_work_from_the_keyboard(qapp, app_window):
+    """Up and Down move between songs (not the volume), Enter plays, the Menu key opens the song's menu."""
+    from conftest import wait_for
+    from PySide6.QtTest import QTest
+
+    window, objects, warnings = app_window
+    player = objects["player"]
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "songs"))
+    for _ in range(4):
+        qapp.processEvents()
+    window.show()
+    window.requestActivate()
+    QTest.qWait(50)
+    page = window.findChild(QObject, "pageStack").property("currentItem")
+    first = find_item(window, "trackRow")
+    assert first is not None
+    QMetaObject.invokeMethod(first, "forceActiveFocus")
+    start = first.property("rowIndex")
+    volume = player.volume
+    QTest.keyClick(window, Qt.Key.Key_Down)
+    QTest.keyClick(window, Qt.Key.Key_Down)
+    assert window.property("activeFocusItem").property("rowIndex") == start + 2
+    assert player.volume == volume
+    QTest.keyClick(window, Qt.Key.Key_Up)
+    assert window.property("activeFocusItem").property("rowIndex") == start + 1
+    QTest.keyClick(window, Qt.Key.Key_Menu)
+    menu = window.findChild(QObject, "trackMenu")
+    assert wait_for(lambda: menu.property("opened"), timeout=2)
+    QMetaObject.invokeMethod(menu, "close")
+    QTest.qWait(50)
+    del page
+    assert not warnings, warnings[:3]
+
+
+def test_toast_undo_playlist_names_and_going_to_whats_playing(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    player, user_lib = objects["player"], objects["userLib"]
+
+    def invoke(method, *args):
+        QMetaObject.invokeMethod(window, method, Qt.ConnectionType.DirectConnection,
+                                 *[Q_ARG("QVariant", a) for a in args])
+        for _ in range(3):
+            qapp.processEvents()
+
+    # a toast with Undo: clearing the queue can be taken back from it
+    toast = window.findChild(QObject, "toast")
+    length = player.queueLength
+    player.clearQueue()
+    QMetaObject.invokeMethod(toast, "show", Q_ARG("QVariant", "Queue cleared"), Q_ARG("QVariant", 0),
+                             Q_ARG("QVariant", "Undo"), Q_ARG("QVariant", None))
+    assert player.queueLength == 0
+    assert player.undoQueue() and player.queueLength == length
+
+    # the open playlist's heading follows a rename made elsewhere
+    pid = user_lib.playlists.get(0)["id"]
+    invoke("openPlaylist", pid, user_lib.playlists.get(0)["name"])
+    page = window.findChild(QObject, "pageStack").property("currentItem")
+    user_lib.renamePlaylist(pid, "Late Evening")
+    assert wait_for(lambda: page.property("playlistName") == "Late Evening")
+    user_lib.renamePlaylist(pid, "Evening")
+
+    # the playing bar's cover leads to what's playing: here a station, to the radio page
+    from PySide6.QtCore import QPoint, QPointF
+    from PySide6.QtTest import QTest
+
+    with listening_extras(objects):
+        invoke("go", "home")
+        stations = objects["stations"]
+        player.playList([stations._entry(stations._db.stations()[0])], 0)
+        title = find_item(window, "barCover")
+        centre = title.mapToScene(QPointF(title.width() / 2, title.height() / 2))
+        QTest.mouseClick(window, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier,
+                         QPoint(int(centre.x()), int(centre.y())))
+        assert wait_for(lambda: window.property("section") == "stations")
+        player.stop()
+        player.clearQueue()
+    del title
+    assert not warnings, warnings[:3]

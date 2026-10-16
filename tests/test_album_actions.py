@@ -178,3 +178,15 @@ def test_track_info_for_a_songs_menu(lib):
     assert info["album"] == "Second" and info["album_artist"] == "Band" and info["album_key"]
     assert info["exists"] is True and info["cue"] is False
     assert library.trackInfo("/nowhere/missing.flac")["exists"] is False
+
+
+def test_undoing_a_removal_brings_the_songs_back(lib):
+    library, _root = lib
+    removed = []
+    library.albumsRemoved.connect(removed.append)
+    library.removeAlbums([album_key(library, "First")])
+    assert wait_for(lambda: library.trackCount == 2 and removed, timeout=5)
+    assert len(removed[0]["paths"]) == 2
+    library.unhidePaths(removed[0]["paths"])
+    assert wait_for(lambda: library.trackCount == 4 and not library.scanning, timeout=10)
+    assert library.hiddenCount == 0

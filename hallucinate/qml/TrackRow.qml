@@ -32,6 +32,9 @@ Rectangle {
 
     HoverHandler { id: hh }
     activeFocusOnTab: true
+    ListKeys { id: listKeys; row: row; onMenu: if (row.path.length) Nav.trackMenu(row.path, row.title, row.context, row.rowIndex) }
+    Keys.onShortcutOverride: function (event) { event.accepted = listKeys.handles(event) }
+    Keys.onPressed: function (event) { if (listKeys.handles(event)) listKeys.press(event, row.rowIndex) }
     Keys.onSpacePressed: row.activated()
     Keys.onReturnPressed: row.activated()
     Keys.onEnterPressed: row.activated()

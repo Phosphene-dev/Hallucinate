@@ -5,6 +5,17 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Added
+- Undo on the toasts that follow removing songs from the library, clearing the queue or taking a song out of it, removing a station, and marking a whole show played.
+- Click the playing song's cover or title to go to it: its album, the station's page or the episode's show. The queue opens scrolled to what's playing.
+- Song and episode lists work from the keyboard: Up and Down (and Page Up/Down, Home, End) move between rows without changing the volume, Enter plays, and the Menu key or Shift+F10 opens the row's menu.
+
+### Fixed
+- Renaming a playlist from the sidebar updates its page's heading straight away.
+- Buttons that can't be pressed right now look it (dimmed), so "Saved" and "Following" no longer look like buttons to press.
+- A station that stops answering says so in plain words instead of showing Qt's error text.
+- In a narrow window, History says when its heatmap is showing only the last few weeks.
+
 ## [0.9.9.1] - 2026-10-16
 
 Turn off what you don't use, and turn on internet radio and podcasts if you want them.

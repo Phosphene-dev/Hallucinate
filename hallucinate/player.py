@@ -1707,11 +1707,13 @@ class Player(QObject):
         if not self.hasTrack or track_kind(self.current) != "station" or net.is_offline():
             return False
         if self._stream_retries >= STREAM_RETRIES:
-            self._set_error(f"The station isn't answering: {message or 'no sound'}")
+            logger.info("Station gave up after %d tries: %s", self._stream_retries, message)
+            self._set_error("The station isn't answering. Try again later, or check its link.")
             return True
         self._stream_retries += 1
         delay = 1000 * 2 ** self._stream_retries
-        self._set_error(f"Reconnecting to the station… ({message or 'it stopped'})")
+        logger.info("Station dropped (%s); reconnecting", message)
+        self._set_error("Lost the station, reconnecting…")
         index = self._index
         QTimer.singleShot(delay, lambda: self._retry_stream(index))
         return True
