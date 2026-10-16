@@ -7,10 +7,10 @@ Item {
     id: page
     objectName: "settings"
     property string query: ""
-    readonly property var sectionIds: ["appearance", "playback", "sound", "library", "sharing", "desktop", "about"]
-    readonly property var sectionTitles: ["Appearance", "Playback", "Sound", "Library", "Internet & sharing", "Desktop", "About"]
+    readonly property var sectionIds: ["appearance", "features", "playback", "sound", "library", "sharing", "desktop", "about"]
+    readonly property var sectionTitles: ["Appearance", "Features", "Playback", "Sound", "Library", "Internet & sharing", "Desktop", "About"]
 
-    function sectionItem(i) { return [sec_appearance, sec_playback, sec_sound, sec_library, sec_sharing, sec_desktop, sec_about][i] }
+    function sectionItem(i) { return [sec_appearance, sec_features, sec_playback, sec_sound, sec_library, sec_sharing, sec_desktop, sec_about][i] }
     function jumpTo(i) {
         page.query = ""
         search.text = ""
@@ -63,7 +63,7 @@ Item {
             textFormat: Text.PlainText
             visible: page.query.length > 0
             text: noMatches ? "No settings match “" + page.query + "”" : "Showing settings that match “" + page.query + "”"
-            readonly property bool noMatches: !(sec_appearance.matches || sec_playback.matches || sec_sound.matches || sec_library.matches || sec_sharing.matches || sec_desktop.matches || sec_about.matches)
+            readonly property bool noMatches: !(sec_appearance.matches || sec_features.matches || sec_playback.matches || sec_sound.matches || sec_library.matches || sec_sharing.matches || sec_desktop.matches || sec_about.matches)
             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
         }
     }
@@ -189,6 +189,62 @@ Item {
             }
 
         }
+        SettingsSection {
+            id: sec_features
+            objectName: "settings_features"
+            title: "Features"
+            keywords: "hide show turn off sidebar pages home cards internet radio stations podcasts lyrics stats recap history visualizer health folders liked"
+            query: page.query
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                text: "Turn off what you don't use. It disappears everywhere (the sidebar, Ctrl+K, menus and shortcuts) and nothing is lost: switch it back on and it's all still there."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                wrapMode: Text.WordWrap
+            }
+            component FeatureGroup: Column {
+                property string heading
+                property var items: []
+                width: parent ? parent.width : 400
+                spacing: 6
+                Text {
+                    textFormat: Text.PlainText
+                    text: parent.heading
+                    color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
+                }
+                Flow {
+                    width: parent.width
+                    spacing: 4
+                    Repeater {
+                        model: parent.parent.items
+                        StyledCheck {
+                            required property var modelData
+                            objectName: "feature_" + modelData[0]
+                            width: Math.max(220, implicitWidth + 12)
+                            text: modelData[1]
+                            checked: shell.features[modelData[0]] !== false
+                            onToggled: shell.setFeature(modelData[0], checked)
+                        }
+                    }
+                }
+            }
+            FeatureGroup {
+                heading: "Listening"
+                items: [["stations", "Internet radio"], ["podcasts", "Podcasts"], ["lyrics", "Lyrics"],
+                        ["visualizer", "Visualizer"]]
+            }
+            FeatureGroup {
+                heading: "Pages"
+                items: [["liked", "Liked Songs"], ["folders", "Folders"], ["stats", "Stats"], ["history", "History"],
+                        ["recap", "Recap"], ["health", "Library health"]]
+            }
+            FeatureGroup {
+                heading: "Home"
+                items: [["homeRandom", "Random album"], ["homeListening", "Listening card"],
+                        ["homeFacts", "Library facts"], ["homeShelves", "Album shelves"]]
+            }
+        }
+
         SettingsSection {
             id: sec_playback
             objectName: "settings_playback"
@@ -364,7 +420,7 @@ Item {
                     onClicked: { library.addFolder(pathField.text); pathField.text = "" }
                 }
                 PillButton { text: "Rescan now"; onClicked: library.rescan() }
-                PillButton { objectName: "openHealth"; text: "Library health"; onClicked: Nav.openHealth() }
+                PillButton { objectName: "openHealth"; visible: shell.features.health !== false; text: "Library health"; onClicked: Nav.openHealth() }
             }
             ScanBar { width: parent.width }
             Text {

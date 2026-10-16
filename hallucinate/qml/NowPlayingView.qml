@@ -389,6 +389,7 @@ Item {
             Item { width: 6; height: 1 }
             IconButton {
                 objectName: "lyricsToggle"
+                visible: shell.features.lyrics !== false
                 anchors.verticalCenter: parent.verticalCenter
                 icon: "note"; active: view.lyricsMode
                 tip: view.lyricsMode ? "Hide lyrics" : "Show lyrics (L)"

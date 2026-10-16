@@ -96,7 +96,7 @@ Item {
                     anchors { left: parent.left; right: parent.right; top: brand.bottom; topMargin: side.compact ? 8 : 14; leftMargin: 10; rightMargin: 10 }
                     spacing: side.compact ? 2 : 4
                     Repeater {
-                        model: side.pages
+                        model: side.pages.filter(function (p) { return shell.features[p.id] !== false })
                         RailButton {
                             required property var modelData
                             width: navCol.width

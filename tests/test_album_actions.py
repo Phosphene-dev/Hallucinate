@@ -21,7 +21,7 @@ def lib(qapp, tmp_path):
         (folder / "cover.jpg").write_bytes(b"\xff\xd8\xff not really")
     library = Library(tmp_path / "library.db", tmp_path / "art")
     library.addFolder(str(root))
-    assert wait_for(lambda: library.trackCount == 4 and not library.scanning, timeout=10)
+    assert wait_for(lambda: library.trackCount == 4 and library.albums.count == 2 and not library.scanning, timeout=10)
     yield library, root
     assert wait_for(lambda: not library.scanning, timeout=10)
     library.shutdown()

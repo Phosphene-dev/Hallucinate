@@ -4,7 +4,7 @@ This catches bugs like the Stats rows that fell back to white when their colour 
 Qt's software renderer, so shader effects are left out, but every control, colour and layout is drawn."""
 import numpy as np
 import pytest
-from PySide6.QtCore import Q_ARG, QMetaObject, QObject, Qt, QUrl
+from PySide6.QtCore import Q_ARG, Q_RETURN_ARG, QMetaObject, QObject, Qt, QUrl
 from PySide6.QtGui import QIcon, QImage
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
@@ -794,3 +794,66 @@ def test_nothing_runs_off_a_narrow_window(qapp, app_window, width):
             qapp.processEvents()
         problems += [f"{screen}: {p}" for p in past_the_edge(window)]
     assert not problems, "\n".join(problems[:25])
+
+
+def test_features_switched_off_disappear_everywhere(qapp, app_window):
+    """Settings → Features: a page that's off leaves the sidebar and Ctrl+K, can't be reached, and is left if
+    it was showing; Home's cards and the lyrics button go too. Radio and podcasts start off."""
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    assert shell.features["stations"] is False and shell.features["podcasts"] is False
+
+    def invoke(method, *args):
+        assert QMetaObject.invokeMethod(window, method, Qt.ConnectionType.DirectConnection,
+                                        *[Q_ARG("QVariant", a) for a in args]), method
+        for _ in range(3):
+            qapp.processEvents()
+
+    def rail_labels():
+        found, todo = set(), [window.contentItem()]
+        while todo:
+            item = todo.pop()
+            if not item.isVisible():
+                continue
+            if item.metaObject().className().startswith("RailButton"):
+                found.add(item.property("text"))
+            todo += item.childItems()
+        return found
+
+    palette = window.findChild(QObject, "commandPalette")
+
+    def palette_titles():
+        out = QMetaObject.invokeMethod(palette, "commands", Qt.ConnectionType.DirectConnection,
+                                       Q_RETURN_ARG("QVariant"))
+        return {c["t"] for c in plain(out)}
+
+    turned_off = ("stats", "recap", "lyrics", "homeListening", "health")
+    try:
+        invoke("go", "stats")
+        assert "Stats" in rail_labels() and "Stats" in palette_titles()
+        for name in turned_off:
+            shell.setFeature(name, False)
+        for _ in range(3):
+            qapp.processEvents()
+        assert window.property("section") == "home", "the page being shown was switched off"
+        assert not {"Stats", "Recap"} & rail_labels()
+        assert not {"Stats", "Recap", "Lyrics", "Library health"} & palette_titles()
+        invoke("go", "recap")
+        assert window.property("section") == "home"
+        assert not window.findChild(QObject, "listeningCard").property("visible")
+        assert not window.findChild(QObject, "homeHealthLink").property("visible")
+        assert not window.findChild(QObject, "lyricsToggle").property("visible")
+        invoke("go", "settings")
+        todo, check = [window.contentItem()], None
+        while todo and check is None:
+            item = todo.pop()
+            check = item if item.objectName() == "feature_stats" else None
+            todo += item.childItems()
+        assert check is not None and check.property("checked") is False
+    finally:
+        for name in turned_off:
+            shell.setFeature(name, True)
+    for _ in range(3):
+        qapp.processEvents()
+    assert "Stats" in rail_labels()
+    assert not warnings, warnings[:3]

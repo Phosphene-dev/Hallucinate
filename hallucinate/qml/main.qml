@@ -28,6 +28,14 @@ ApplicationWindow {
     property string section: "home"
     property bool queueOpen: false
     property bool lyricsOpen: false
+    // A feature switched off while it's showing: leave its page and close its panels
+    Connections {
+        target: shell
+        function onFeaturesChanged() {
+            if (!window.featureOn(window.section)) window.go("home")
+            if (!window.featureOn("lyrics")) { window.lyricsOpen = false; nowPlaying.lyricsMode = false }
+        }
+    }
 
     function pageFor(name) {
         switch (name) {
@@ -95,7 +103,9 @@ ApplicationWindow {
         visit(target)
     }
 
+    function featureOn(name) { return shell.features[name] !== false }  // pages that aren't features are always on
     function go(name) {
+        if (!featureOn(name)) name = "home"
         remember({ kind: "section", name: name })
         route0 = route
         section = name
@@ -153,6 +163,7 @@ ApplicationWindow {
         function onOpenLiked() { window.go("liked") }
         function onGoHome() { window.go("home") }
         function onOpenHistory(day) {
+            if (!window.featureOn("history")) return
             window.go("history")
             if (day.length && stack.currentItem) stack.currentItem.period = "day:" + day
         }
@@ -174,7 +185,7 @@ ApplicationWindow {
             else trackMenu.show(path, title, context, index)
         }
         function onToggleNowPlaying() { nowPlaying.toggle() }
-        function onOpenHealth() { window.go("health") }
+        function onOpenHealth() { if (window.featureOn("health")) window.go("health") }
         function onOpenPalette() { commandPalette.show() }
         function onNewSmartPlaylist() { smartEditor.openNew() }
         function onImportPlaylist() { importDialog.open() }
@@ -630,7 +641,7 @@ ApplicationWindow {
     Shortcut { sequence: "Escape"; enabled: nowPlaying.open; onActivated: nowPlaying.open = false }
     Shortcut { sequence: "F11"; onActivated: nowPlaying.toggleFullScreen() }
     Shortcut {
-        sequence: "L"; enabled: !window.typing
+        sequence: "L"; enabled: !window.typing && window.featureOn("lyrics")
         onActivated: {
             if (nowPlaying.open) { nowPlaying.lyricsMode = !nowPlaying.lyricsMode; return }
             window.lyricsOpen = !window.lyricsOpen; if (window.lyricsOpen) window.queueOpen = false

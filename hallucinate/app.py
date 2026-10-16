@@ -157,6 +157,8 @@ def main(argv=None) -> int:
     shell.setReportSources(library=library, theme_manager=theme_manager)
     shell.setStartupNotice(db_notice)
     shell.setCrashReport(last_crash, last_crashed)
+    lyrics.setEnabled(shell.featureOn("lyrics"))
+    shell.featuresChanged.connect(lambda: lyrics.setEnabled(shell.featureOn("lyrics")))
 
     if not library.folders and not args.folders:
         # A fresh install: open on the welcome (music folder, theme, scrobbling) until it is finished

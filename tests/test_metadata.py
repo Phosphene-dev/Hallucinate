@@ -307,6 +307,22 @@ def test_lyrics_controller_sidecar_and_sync(qapp, lib):
     ctl.shutdown()
 
 
+def test_lyrics_switched_off_reads_nothing(qapp, lib):
+    """Settings → Features → Lyrics off: no file is read and nothing is looked up; back on, it loads again."""
+    tmp, root = lib
+    (root / "01.lrc").write_text("[00:01.00]first", encoding="utf-8")
+    pl = FakePlayer()
+    ctl = LyricsController(tmp / "lib.db", pl)
+    ctl.setOnlineLookup(False)
+    ctl.setEnabled(False)
+    pl.current = {"path": str(root / "01.mp3"), "artist": "Band", "title": "One", "album": "Disc", "duration": 3}
+    pl.trackChanged.emit()
+    assert ctl.status == "idle" and not ctl.lines
+    ctl.setEnabled(True)
+    assert wait_for(lambda: ctl.status == "found")
+    ctl.shutdown()
+
+
 def test_lyrics_controller_lrclib_cached_and_offline(qapp, lib, monkeypatch):
     tmp, root = lib
     calls = []
