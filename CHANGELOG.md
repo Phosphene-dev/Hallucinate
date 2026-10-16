@@ -5,6 +5,10 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.9] - 2026-10-16
+
+Right-click menus everywhere, back and forward like a browser, and fixes for narrow windows.
+
 ### Added
 - Right-click works on everything you'd expect: songs everywhere (lists, queue, history, the playing song, Now Playing's cover), artists, folders, playlists in the sidebar, top artists and albums on Stats, and the random album on Home. The menus match the rest of the app.
 - Songs can be removed from the library or moved to the trash, one at a time or as a selection ("More…" on the selection bar). The song menu also has Go to album, Go to artist, Show in folder, and Remove from the queue.
