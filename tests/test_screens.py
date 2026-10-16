@@ -31,6 +31,11 @@ def white_blocks(image, threshold=0.92, share=0.95):
     return [(int(x) * BLOCK, int(y) * BLOCK) for y, x in zip(ys, xs)]
 
 
+def plain(value):
+    """A QML `var` property as Python data: older PySide6 hands back a QJSValue."""
+    return value.toVariant() if hasattr(value, "toVariant") else value
+
+
 def seed(tmp_path):
     """A small library: two albums with plays, a like, a rating, a playlist and a smart playlist."""
     music = tmp_path / "Music"
@@ -55,6 +60,28 @@ def seed(tmp_path):
     db.close()
 
 
+def seed_varied(tmp_path):
+    """More of a real collection on top of seed(): five formats and artists with long names, all played this
+    month, so legends and rows have something to wrap and crowd."""
+    music = tmp_path / "Music"
+    db = Database(tmp_path / "library.db")
+    names = ("The Extraordinarily Long Named Orchestra", "Midnight Cathedral Choir", "Sunset Boulevard Ensemble",
+             "Quiet Static", "Lowercase Afternoon Radio")
+    for n, (artist, fmt) in enumerate(zip(names, ("MP3", "M4A", "AAC", "OGG", "OPUS"))):
+        for i in range(3):
+            path = str(music / artist / "Album" / f"{i + 1:02d}.{fmt.lower()}")
+            db.upsert_track({
+                "path": path, "mtime": 0, "size": 1, "title": f"Track {n}{i}", "artist": artist,
+                "album_artist": artist, "aa_tag": 1, "album": f"Album of {artist}", "album_key": f"v{n}",
+                "track_no": i + 1, "disc_no": 0, "year": 2010 + n, "genre": "Ambient", "duration": 200.0 + i,
+                "fmt": fmt, "codec": fmt, "bitrate": 256_000, "sample_rate": 44100,
+            })
+            for _ in range(5 + n):
+                db.record_play(path)
+    db.commit()
+    db.close()
+
+
 @pytest.fixture
 def app_window(qapp, tmp_path, monkeypatch, request):
     """The whole window over the seeded library (or, parametrized with "empty", none: a first start), with page
@@ -62,6 +89,7 @@ def app_window(qapp, tmp_path, monkeypatch, request):
     from conftest import wait_for
 
     empty = getattr(request, "param", None) == "empty"
+    varied = getattr(request, "param", None) == "varied"
 
     from hallucinate import scrobbling
     from hallucinate.discord import DiscordPresence
@@ -82,6 +110,8 @@ def app_window(qapp, tmp_path, monkeypatch, request):
     QQuickStyle.setStyle(QML_STYLE)
     if not empty:
         seed(tmp_path)
+    if varied:
+        seed_varied(tmp_path)
     db_path = tmp_path / "library.db"
     library = Library(db_path, tmp_path / "art")
     player = Player(session_file=tmp_path / "session.json")
@@ -116,7 +146,7 @@ def app_window(qapp, tmp_path, monkeypatch, request):
     if empty:
         assert wait_for(lambda: library.ready)
     else:
-        assert wait_for(lambda: library.trackCount == 8 and user_lib.topArtists.count > 0)
+        assert wait_for(lambda: library.trackCount == (23 if varied else 8) and user_lib.topArtists.count > 0)
         player.playList(library.allTracks()[:3], 0)
         player.pause()
 
@@ -525,3 +555,242 @@ def test_everything_clickable_has_a_name_for_screen_readers(qapp, app_window):
     assert wait_for(lambda: now_playing.property("covering"))
     visit("now playing")
     assert not missing, "\n".join(sorted(missing))
+
+
+def test_library_health_items_open_their_usual_menus(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "health"))
+    qapp.processEvents()
+    page = window.findChild(QObject, "pageStack").property("currentItem")
+    album_menu = window.findChild(QObject, "albumMenu")
+    track_menu = window.findChild(QObject, "trackMenu")
+    track = objects["library"].allTracks()[0]
+
+    QMetaObject.invokeMethod(page, "menuFor", Qt.ConnectionType.DirectConnection,
+                             Q_ARG("QVariant", {"kind": "album"}),
+                             Q_ARG("QVariant", {"album_key": track["album_key"], "album": track["album"],
+                                                "album_artist": track["album_artist"]}))
+    assert wait_for(lambda: album_menu.property("opened"))
+    assert plain(album_menu.property("keys")) == [track["album_key"]]
+    QMetaObject.invokeMethod(album_menu, "close")
+    assert wait_for(lambda: not album_menu.property("opened"))
+
+    QMetaObject.invokeMethod(page, "menuFor", Qt.ConnectionType.DirectConnection,
+                             Q_ARG("QVariant", {"kind": "track"}),
+                             Q_ARG("QVariant", {"path": track["path"], "title": track["title"]}))
+    assert wait_for(lambda: track_menu.property("opened"))
+    assert track_menu.property("path") == track["path"]
+    assert plain(track_menu.property("info"))["album_key"] == track["album_key"]
+    remove = window.findChild(QObject, "trackRemove")
+    assert remove.property("enabled")
+    QMetaObject.invokeMethod(track_menu, "close")
+    assert not [w for w in warnings if "HealthPage" in w or "TrackMenu" in w], warnings
+
+
+def test_an_artists_menu_removes_their_songs_after_asking(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    library = objects["library"]
+    track = library.allTracks()[0]
+    artist = track["album_artist"]
+    theirs = library.artistPaths(artist)
+    before = library.trackCount
+    assert theirs and track["path"] in theirs and len(theirs) < before
+
+    menu = window.findChild(QObject, "collectionMenu")
+    QMetaObject.invokeMethod(menu, "showArtist", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", artist))
+    assert wait_for(lambda: menu.property("opened"))
+    QMetaObject.invokeMethod(window.findChild(QObject, "collectionRemove"), "triggered")
+    dialog = window.findChild(QObject, "removeAlbumsDialog")
+    assert wait_for(lambda: dialog.property("opened"))
+    assert dialog.property("songs") is True and artist in dialog.property("what")
+    QMetaObject.invokeMethod(dialog, "accept")
+    assert wait_for(lambda: library.trackCount == before - len(theirs), timeout=10)
+    assert library.hiddenCount == len(theirs)
+    assert not [w for w in warnings if "CollectionMenu" in w or "main.qml" in w], warnings
+
+
+def test_back_and_forward_like_a_browser(qapp, app_window):
+    """Back and Forward walk the pages visited, across sections too; Back reuses the page underneath."""
+
+    window, objects, warnings = app_window
+    stack = window.findChild(QObject, "pageStack")
+    track = objects["library"].allTracks()[0]
+
+    def call(name, *args):
+        QMetaObject.invokeMethod(window, name, Qt.ConnectionType.DirectConnection,
+                                 *[Q_ARG("QVariant", a) for a in args])
+        for _ in range(3):
+            qapp.processEvents()
+
+    def where():
+        item = stack.property("currentItem")
+        return item.property("albumKey") or item.property("artistName") or window.property("section")
+
+    call("go", "albums")
+    call("openAlbum", track["album_key"])
+    call("go", "stats")
+    call("openArtist", track["album_artist"])
+    assert where() == track["album_artist"]
+    call("goBack")
+    assert where() == "stats"
+    call("goBack")
+    assert where() == track["album_key"]
+    album_page = stack.property("currentItem")
+    call("goBack")
+    assert where() == "albums"
+    call("goForward")
+    assert where() == track["album_key"]
+    call("goForward")
+    call("goForward")
+    assert where() == track["album_artist"]
+    call("goForward")  # nothing further: stays
+    assert where() == track["album_artist"]
+    call("openAlbum", track["album_key"])  # a new visit drops what was ahead
+    assert window.property("forwardRoutes").toVariant() == []
+    assert album_page is not None
+    assert not [w for w in warnings if "main.qml" in w], warnings
+
+
+def test_mouse_side_buttons_navigate_and_other_clicks_pass_through(qapp, app_window):
+    from PySide6.QtCore import QPoint, QPointF
+    from PySide6.QtGui import QMouseEvent
+    from PySide6.QtTest import QTest
+
+    window, objects, warnings = app_window
+    stack = window.findChild(QObject, "pageStack")
+    track = objects["library"].allTracks()[0]
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "home"))
+    QMetaObject.invokeMethod(window, "openAlbum", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", track["album_key"]))
+    qapp.processEvents()
+
+    def side_button(button):
+        pos = QPointF(window.width() / 2, window.height() / 2)
+        for kind in (QMouseEvent.Type.MouseButtonPress, QMouseEvent.Type.MouseButtonRelease):
+            qapp.sendEvent(window, QMouseEvent(kind, pos, pos, button, button if kind == QMouseEvent.Type.MouseButtonPress
+                                               else Qt.MouseButton.NoButton, Qt.KeyboardModifier.NoModifier))
+        for _ in range(3):
+            qapp.processEvents()
+
+    side_button(Qt.MouseButton.BackButton)
+    assert window.property("section") == "home" and stack.property("depth") == 1
+    side_button(Qt.MouseButton.ForwardButton)
+    assert stack.property("currentItem").property("albumKey") == track["album_key"]
+
+    # an ordinary click still reaches the page: the sidebar's Settings entry opens Settings
+    settings = next(o for o in window.findChildren(QObject) if o.property("text") == "Settings"
+                    and o.metaObject().className().startswith("RailButton"))
+    centre = settings.mapToScene(QPointF(settings.width() / 2, settings.height() / 2))
+    QTest.mouseClick(window, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QPoint(int(centre.x()), int(centre.y())))
+    for _ in range(3):
+        qapp.processEvents()
+    assert window.property("section") == "settings"
+
+
+def overflowing(root):
+    """What spills out of a card: visible things inside a GlassPanel that reach past its edges, unless something
+    between them clips (a scrolling list, say) or they belong to a popup."""
+    from PySide6.QtCore import QRectF
+    from PySide6.QtQuick import QQuickItem
+
+    found = []
+
+    def name(item):
+        return item.objectName() or item.metaObject().className().split("_QML")[0]
+
+    def walk(item, panel, clipped):
+        if not item.isVisible() or item.opacity() == 0:
+            return
+        cls = item.metaObject().className()
+        if cls.startswith("GlassPanel"):
+            panel, clipped = item, False
+        elif panel is not None and not clipped and item.width() > 0 and item.height() > 0 \
+                and not cls.startswith(("QQuickItem", "QQuickRepeater")):
+            box = item.mapRectToItem(panel, QRectF(0, 0, item.width(), item.height()))
+            if box.left() < -1 or box.top() < -1 or box.right() > panel.width() + 1 \
+                    or box.bottom() > panel.height() + 1:
+                text = item.property("text")
+                found.append(f"{name(item)}{' “' + text + '”' if isinstance(text, str) and text else ''}"
+                             f" spills out of {name(panel)} ({box.left():.0f},{box.top():.0f} "
+                             f"{box.width():.0f}×{box.height():.0f} in {panel.width():.0f}×{panel.height():.0f})")
+        if item.clip() or cls.startswith(("QQuickListView", "QQuickGridView", "QQuickFlickable", "QQuickPopupItem")):
+            clipped = True
+        for child in item.childItems():
+            walk(child, panel, clipped)
+
+    walk(root if isinstance(root, QQuickItem) else root.contentItem(), None, False)
+    return found
+
+
+@pytest.mark.parametrize("app_window", ["varied"], indirect=True)
+@pytest.mark.parametrize("width", [760, 900, 1100, 1500])
+def test_nothing_spills_out_of_its_card_at_any_width(qapp, app_window, width):
+    """Tiled and half-screen windows: every card's contents stay inside the card on every page."""
+    window, objects, warnings = app_window
+    window.resize(width, 900)
+    problems = []
+    for page in PAGES:
+        assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", page))
+        for _ in range(4):
+            qapp.processEvents()
+        problems += [f"{page}: {p}" for p in overflowing(window)]
+    assert not problems, "\n".join(problems[:25])
+
+
+def past_the_edge(window):
+    """Visible, unclipped things that reach past the window's right edge."""
+    from PySide6.QtCore import QRectF
+
+    found = []
+
+    def walk(item, clipped):
+        if not item.isVisible() or item.opacity() == 0:
+            return
+        cls = item.metaObject().className()
+        if not clipped and item.width() > 0 and item.height() > 0 and not cls.startswith(("QQuickItem", "QQuickRepeater")):
+            box = item.mapRectToScene(QRectF(0, 0, item.width(), item.height()))
+            if box.right() > window.width() + 3 and box.left() < window.width():  # 2 px: the window outline
+                text = item.property("text")
+                found.append(f"{item.objectName() or cls.split('_QML')[0]}"
+                             f"{' “' + text + '”' if isinstance(text, str) and text else ''} reaches x={box.right():.0f}")
+        if item.clip() or cls.startswith(("QQuickListView", "QQuickGridView", "QQuickFlickable", "QQuickPopupItem")):
+            clipped = True
+        for child in item.childItems():
+            walk(child, clipped)
+
+    walk(window.contentItem(), False)
+    return found
+
+
+@pytest.mark.parametrize("app_window", ["varied"], indirect=True)
+@pytest.mark.parametrize("width", [760, 900])
+def test_nothing_runs_off_a_narrow_window(qapp, app_window, width):
+    window, objects, warnings = app_window
+    window.resize(width, 700)
+
+    def invoke(method, *args):
+        assert QMetaObject.invokeMethod(window, method, Qt.ConnectionType.DirectConnection,
+                                        *[Q_ARG("QVariant", a) for a in args]), method
+
+    def screens():
+        for page in PAGES:
+            invoke("go", page)
+            yield page
+        invoke("openAlbum", "v0")
+        yield "album"
+        invoke("openArtist", "The Extraordinarily Long Named Orchestra")
+        yield "artist"
+        invoke("go", "home")
+        window.setProperty("queueOpen", True)
+        yield "queue"
+        window.setProperty("queueOpen", False)
+
+    problems = []
+    for screen in screens():
+        for _ in range(4):
+            qapp.processEvents()
+        problems += [f"{screen}: {p}" for p in past_the_edge(window)]
+    assert not problems, "\n".join(problems[:25])

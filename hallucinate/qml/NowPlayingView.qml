@@ -157,6 +157,15 @@ Item {
                         radius: view.vinyl ? 6 : 22
                         source: player.hasTrack ? player.current.artUrl || "" : ""
                         fallback: player.hasTrack ? (player.current.title || "?").charAt(0) : ""
+                        Accessible.role: Accessible.Graphic
+                        Accessible.name: player.hasTrack ? "Cover of " + (player.current.album || player.current.title || "") : "No cover"
+                        MouseArea {  // right-click the cover for the song's menu
+                            anchors.fill: parent
+                            enabled: player.hasTrack
+                            acceptedButtons: Qt.RightButton
+                            onPressAndHold: Nav.trackMenu(player.current.path, player.current.title, "playing", -1)
+                            onClicked: Nav.trackMenu(player.current.path, player.current.title, "playing", -1)
+                        }
                     }
                 }
             }

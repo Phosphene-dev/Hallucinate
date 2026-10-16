@@ -196,6 +196,8 @@ Item {
                             text: model.name
                             icon: "playlist"
                             selected: side.section === "pl" + model.id && side.atRoot
+                            hasMenu: true
+                            onMenuRequested: plItemMenu.show(model.id, model.name, false)
                             onClicked: side.openPlaylist(model.id, model.name)
                         }
                     }
@@ -207,6 +209,8 @@ Item {
                             text: model.name
                             icon: "smartlist"
                             selected: side.section === "smart" + model.id && side.atRoot
+                            hasMenu: true
+                            onMenuRequested: plItemMenu.show(model.id, model.name, true)
                             onClicked: side.openSmartPlaylist(model.id, model.name)
                         }
                     }
@@ -270,6 +274,61 @@ Item {
                 collapsed: side.collapsed
                 onClicked: shell.setSidebarCollapsed(!side.collapsed)
             }
+        }
+    }
+
+    // Right-click on a playlist in the list: open, rename or edit its rules, delete
+    Menu {
+        id: plItemMenu
+        objectName: "playlistItemMenu"
+        property int pid: -1
+        property string name: ""
+        property bool smart: false
+        function show(id, n, isSmart) { pid = id; name = n; smart = isSmart; popup() }
+        MenuItem {
+            text: "Open"; icon.name: plItemMenu.smart ? "smartlist" : "playlist"
+            onTriggered: plItemMenu.smart ? side.openSmartPlaylist(plItemMenu.pid, plItemMenu.name) : side.openPlaylist(plItemMenu.pid, plItemMenu.name)
+        }
+        MenuItem {
+            visible: !plItemMenu.smart
+            height: visible ? implicitHeight : 0
+            text: "Rename…"; icon.name: "edit"
+            onTriggered: { renameField.text = plItemMenu.name; renamePl.open() }
+        }
+        MenuItem {
+            visible: plItemMenu.smart
+            height: visible ? implicitHeight : 0
+            text: "Edit rules…"; icon.name: "edit"
+            onTriggered: Nav.editSmartPlaylist(plItemMenu.pid, plItemMenu.name)
+        }
+        MenuSeparator {}
+        MenuItem {
+            text: "Delete…"; icon.name: "trash"; icon.color: Theme.error
+            onTriggered: { deletePl.what = "“" + plItemMenu.name + "”"; deletePl.open() }
+        }
+    }
+    Dialog {
+        id: renamePl
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        modal: true
+        title: "Rename playlist"
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        onOpened: { renameField.forceActiveFocus(); renameField.selectAll() }
+        onAccepted: if (renameField.text.trim().length) userLib.renamePlaylist(plItemMenu.pid, renameField.text.trim())
+        TextField { id: renameField; width: 280; selectByMouse: true; onAccepted: renamePl.accept() }
+    }
+    ConfirmDialog {
+        id: deletePl
+        title: plItemMenu.smart ? "Delete this smart playlist?" : "Delete this playlist?"
+        confirmText: "Delete playlist"
+        destructive: true
+        body: what + " is deleted. The songs in it stay in your library."
+        onAccepted: {
+            var open = side.section === (plItemMenu.smart ? "smart" : "pl") + plItemMenu.pid
+            if (plItemMenu.smart) userLib.deleteSmartPlaylist(plItemMenu.pid)
+            else userLib.deletePlaylist(plItemMenu.pid)
+            if (open) Nav.goHome()
         }
     }
 }

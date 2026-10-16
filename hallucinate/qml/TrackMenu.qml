@@ -2,18 +2,37 @@ import QtQuick
 import QtQuick.Controls
 import "."
 
+// Right-click (or "…") on a song anywhere: play and queue it, playlists, its album, artist and folder, tags,
+// and taking it out of the library or moving it to the trash. Opened on a song that is part of a selection, it
+// acts on the whole selection (and leaves out what only makes sense for one song).
 Menu {
     id: menu
+    objectName: "trackMenu"
     property string path: ""
     property string trackTitle: ""
     property string context: ""
     property int index: -1
+    property var info: ({})
+    property var paths: []
+    readonly property bool single: paths.length <= 1
+    readonly property string what: single ? "“" + trackTitle + "”" : paths.length + " songs"
 
-    function show(p, t, c, i) { path = p; trackTitle = t; context = c; index = i; popup() }
+    function show(p, t, c, i) {
+        path = p; trackTitle = t; context = c; index = i; paths = [p]
+        info = library.trackInfo(p)
+        popup()
+    }
+    function showMany(list) {
+        paths = list.slice(); path = list[0]; trackTitle = ""; context = ""; index = -1
+        info = ({})
+        popup()
+    }
+    function done(message) { if (!single) Selection.clear(); if (message) Nav.notify(message) }
 
     Item {
         objectName: "menuRating"
-        width: 220; height: 38
+        visible: menu.single
+        width: 220; height: visible ? 38 : 0
         Text {
             textFormat: Text.PlainText
             x: 14
@@ -29,13 +48,21 @@ Menu {
             size: 17
         }
     }
-    MenuSeparator {}
-    MenuItem { text: "Play next"; icon.name: "next"; onTriggered: userLib.playNextPath(menu.path) }
-    MenuItem { text: "Add to queue"; icon.name: "queue"; onTriggered: userLib.enqueuePath(menu.path) }
+    MenuSeparator { visible: menu.single; height: visible ? implicitHeight : 0 }
+    MenuItem { text: "Play"; icon.name: "play"; onTriggered: { userLib.playPaths(menu.paths); menu.done("") } }
     MenuItem {
-        text: userLib.likesRevision >= 0 && userLib.isLiked(menu.path) ? "Remove from Liked Songs" : "Add to Liked Songs"
+        text: "Play next"; icon.name: "next"
+        onTriggered: { userLib.playNextPaths(menu.paths); menu.done(menu.single ? "" : menu.what + " will play next") }
+    }
+    MenuItem {
+        text: "Add to queue"; icon.name: "queue"
+        onTriggered: { userLib.enqueuePaths(menu.paths); menu.done(menu.what + " added to the queue") }
+    }
+    MenuItem {
+        readonly property bool liked: userLib.likesRevision >= 0 && userLib.allLiked(menu.paths)
+        text: liked ? "Remove from Liked Songs" : "Add to Liked Songs"
         icon.name: "heart"
-        onTriggered: userLib.toggleLike(menu.path)
+        onTriggered: { userLib.setLikedPaths(menu.paths, !liked); menu.done("") }
     }
     Menu {
         id: plMenu
@@ -49,25 +76,70 @@ Menu {
                 required property int id
                 required property string name
                 text: Theme.plain(name)
-                onTriggered: userLib.addToPlaylist(id, menu.path)
+                onTriggered: { userLib.addPathsToPlaylist(id, menu.paths); menu.done(menu.what + " added to “" + name + "”") }
             }
             onObjectAdded: (i, o) => plMenu.addItem(o)
             onObjectRemoved: (i, o) => plMenu.removeItem(o)
         }
     }
+    MenuSeparator {}
+    MenuItem {
+        visible: menu.single && (menu.info.album_key || "").length > 0 && menu.context !== "album"
+        height: visible ? implicitHeight : 0
+        text: "Go to album"
+        icon.name: "album"
+        onTriggered: Nav.openAlbum(menu.info.album_key)
+    }
+    MenuItem {
+        visible: menu.single && (menu.info.album_artist || menu.info.artist || "").length > 0 && menu.context !== "artist"
+        height: visible ? implicitHeight : 0
+        text: "Go to " + Theme.plain(menu.info.album_artist || menu.info.artist || "")
+        icon.name: "artist"
+        onTriggered: Nav.openArtist(menu.info.album_artist || menu.info.artist)
+    }
+    MenuItem {
+        objectName: "trackShowInFolder"
+        visible: menu.single
+        height: visible ? implicitHeight : 0
+        enabled: menu.info.exists === true
+        text: "Show in folder"
+        icon.name: "folder"
+        onTriggered: library.showInFolder(menu.path)
+    }
     MenuItem {
         text: "Edit tags…"
         icon.name: "edit"
-        enabled: !/\.[A-Za-z0-9]+#\d+$/.test(menu.path)  // CUE sheet songs are edited in the .cue file
-        onTriggered: Nav.editTags(menu.path)
+        // CUE sheet songs are edited in the .cue file
+        enabled: menu.paths.every(function (p) { return !/\.[A-Za-z0-9]+#\d+$/.test(p) })
+        onTriggered: menu.single ? Nav.editTags(menu.path) : Nav.editTagsMany(menu.paths)
     }
     MenuItem {
-        visible: menu.context === "playlist"
+        objectName: "trackRemoveFromQueue"
+        visible: menu.single && menu.context === "queue"
+        height: visible ? implicitHeight : 0
+        text: "Remove from the queue"
+        icon.name: "close"
+        onTriggered: player.removeAt(menu.index)
+    }
+    MenuItem {
+        visible: menu.single && menu.context === "playlist"
         height: visible ? implicitHeight : 0
         text: "Remove from this playlist"
         icon.name: "remove"
         icon.color: Theme.error
         onTriggered: userLib.removeFromPlaylist(menu.index)
+    }
+    MenuSeparator {}
+    MenuItem {
+        objectName: "trackRemove"
+        text: "Remove from library…"; icon.name: "remove"; icon.color: Theme.error
+        onTriggered: Nav.removeSongs(menu.paths, menu.what)
+    }
+    MenuItem {
+        objectName: "trackTrash"
+        text: "Move to trash…"; icon.name: "trash"; icon.color: Theme.error
+        enabled: !menu.single || menu.info.exists === true
+        onTriggered: Nav.trashSongs(menu.paths, menu.what)
     }
 
     Dialog {
@@ -78,7 +150,7 @@ Menu {
         title: "New playlist"
         standardButtons: Dialog.Ok | Dialog.Cancel
         onOpened: { nf.text = ""; nf.forceActiveFocus() }
-        onAccepted: if (nf.text.trim().length) { var id = userLib.addToNewPlaylist(nf.text.trim(), menu.path); Nav.openPlaylist(id) }
+        onAccepted: if (nf.text.trim().length) { Nav.openPlaylist(userLib.addPathsToNewPlaylist(nf.text.trim(), menu.paths)); menu.done("") }
         TextField { id: nf; width: 280; placeholderText: "Playlist name"; selectByMouse: true; onAccepted: newDlg.accept() }
     }
 }

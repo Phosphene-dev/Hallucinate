@@ -10,6 +10,8 @@ Item {
     property bool selected: false
     property bool collapsed: false
     signal clicked()
+    property bool hasMenu: false  // right-click (or press and hold) asks for a menu
+    signal menuRequested()
     height: 42
     activeFocusOnTab: true
     Keys.onSpacePressed: item.clicked()
@@ -69,7 +71,9 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: item.clicked()
+        acceptedButtons: item.hasMenu ? Qt.LeftButton | Qt.RightButton : Qt.LeftButton
+        onPressAndHold: if (item.hasMenu) item.menuRequested()
+        onClicked: function (mouse) { mouse.button === Qt.RightButton ? item.menuRequested() : item.clicked() }
     }
     ToolTip.visible: item.collapsed && ma.containsMouse
     ToolTip.text: Theme.plain(item.text)

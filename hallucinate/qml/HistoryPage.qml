@@ -253,7 +253,12 @@ Item {
                 anchors.fill: parent
                 enabled: row.available
                 cursorShape: row.available ? Qt.PointingHandCursor : Qt.ArrowCursor
-                onClicked: userLib.playHistoryEntry(row.index)
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                onPressAndHold: Nav.trackMenu(row.model.path, row.model.title, "history", -1)
+                onClicked: function (mouse) {
+                    if (mouse.button === Qt.RightButton) Nav.trackMenu(row.model.path, row.model.title, "history", -1)
+                    else userLib.playHistoryEntry(row.index)
+                }
             }
             Text {
                 textFormat: Text.PlainText
@@ -304,7 +309,11 @@ Item {
                             id: artistMouse
                             name: "Only show " + row.model.artist
                             hoverEnabled: true
-                            onClicked: page.artist = row.model.artist
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                            onClicked: function (mouse) {
+                                if (mouse && mouse.button === Qt.RightButton) Nav.artistMenu(row.model.artist)
+                                else page.artist = row.model.artist
+                            }
                         }
                         ToolTip.visible: artistMouse.containsMouse
                         ToolTip.text: "Only show " + Theme.plain(row.model.artist)
@@ -324,7 +333,11 @@ Item {
                             name: row.model.album || ""
                             hoverEnabled: true
                             enabled: row.model.album_key.length > 0
-                            onClicked: Nav.openAlbum(row.model.album_key)
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                            onClicked: function (mouse) {
+                                if (mouse && mouse.button === Qt.RightButton) Nav.albumMenu([row.model.album_key], row.model.album, row.model.artist)
+                                else Nav.openAlbum(row.model.album_key)
+                            }
                         }
                     }
                 }

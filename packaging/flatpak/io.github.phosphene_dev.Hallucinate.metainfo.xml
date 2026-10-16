@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.9.9" date="2026-10-16">
+      <description>
+        <p>Right-click menus on songs, artists, folders, playlists and Library health items, and songs can be removed from the library or moved to the trash.</p>
+        <p>The mouse's back and forward buttons move between pages like in a browser, and Home and History fit narrow windows.</p>
+      </description>
+    </release>
     <release version="0.9.8" date="2026-10-13">
       <description>
         <p>If Hallucinate crashes, the next start offers a report to copy into a bug report.</p>

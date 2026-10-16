@@ -35,6 +35,43 @@ Item {
         target: replayGain
         function onFinished() { library.checkHealth() }
     }
+    Connections {
+        target: library
+        function onReloaded() { library.checkHealth() }  // e.g. after songs or albums were removed from a list here
+    }
+    // Every listed item acts like it does elsewhere: click opens the album (or plays the song), right-click
+    // brings up its usual menu.
+    function activate(check, item) {
+        if (check.kind === "album") Nav.openAlbum(item.album_key)
+        else if (check.kind === "track") userLib.playPaths([item.path])
+    }
+    function menuFor(check, item) {
+        if (check.kind === "album") Nav.albumMenu([item.album_key], item.album || "", item.album_artist || "")
+        else if (check.kind === "track") Nav.trackMenu(item.path, item.title || "", "health", -1)
+        else { folderMenu.path = item.path; folderMenu.popup() }
+    }
+    Menu {
+        id: folderMenu
+        objectName: "healthFolderMenu"
+        property string path: ""
+        MenuItem { text: "Copy path"; icon.name: "folder"; onTriggered: shell.copyText(folderMenu.path) }
+        MenuSeparator {}
+        MenuItem {
+            text: "Remove from the library"; icon.name: "remove"; icon.color: Theme.error
+            onTriggered: library.removeFolder(folderMenu.path)
+        }
+    }
+    ConfirmDialog {
+        id: extraDlg
+        objectName: "removeExtraCopiesDialog"
+        title: "Keep only the best copies?"
+        confirmText: "Remove " + what
+        body: "Of each set of probable duplicates, the best copy stays: lossless first, then the higher bitrate. "
+              + "The other " + what + " are taken out of the library; the files stay on your disk, and Settings → "
+              + "Library can bring them back. Check the list first if some are on purpose, like a song on both an album "
+              + "and a compilation: right-click one to keep or remove it on its own."
+        onAccepted: library.removeExtraCopies()
+    }
 
     Flickable {
         anchors.fill: parent
@@ -212,6 +249,33 @@ Item {
                             }
                         }
                         Row {
+                            visible: card.modelData.id === "duplicates" && (card.modelData.extra || 0) > 0
+                            spacing: 12
+                            leftPadding: 24
+                            PillButton {
+                                objectName: "removeExtraCopies"
+                                primary: true
+                                height: 32
+                                text: "Keep the best copies"
+                                onClicked: {
+                                    var n = card.modelData.extra
+                                    extraDlg.what = n + (n === 1 ? " copy" : " copies")
+                                    extraDlg.open()
+                                }
+                            }
+                            Text {
+                                textFormat: Text.PlainText
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: Math.min(implicitWidth, card.width - 260)
+                                elide: Text.ElideRight
+                                text: "Takes the " + card.modelData.extra + " extra " + (card.modelData.extra === 1 ? "copy" : "copies")
+                                      + " out of the library and keeps the best of each. Right-click a song for more."
+                                color: Theme.textDim
+                                font.family: Theme.fontFamily
+                                font.pixelSize: Theme.fontSize(12)
+                            }
+                        }
+                        Row {
                             visible: card.modelData.id === "replaygain" && (card.modelData.count > 0 || replayGain.busy)
                             spacing: 12
                             leftPadding: 24
@@ -247,6 +311,20 @@ Item {
                                     radius: 10
                                     color: rowHover.hovered ? Theme.glassHover : "transparent"
                                     HoverHandler { id: rowHover }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                        cursorShape: card.modelData.kind === "folder" ? Qt.ArrowCursor : Qt.PointingHandCursor
+                                        Accessible.role: Accessible.Button
+                                        Accessible.name: (card.modelData.kind === "folder" ? itemRow.modelData.path
+                                            : card.modelData.kind === "album" ? itemRow.modelData.album : itemRow.modelData.title) || ""
+                                        Accessible.onPressAction: page.activate(card.modelData, itemRow.modelData)
+                                        onPressAndHold: page.menuFor(card.modelData, itemRow.modelData)
+                                        onClicked: function (mouse) {
+                                            if (mouse.button === Qt.RightButton) page.menuFor(card.modelData, itemRow.modelData)
+                                            else page.activate(card.modelData, itemRow.modelData)
+                                        }
+                                    }
                                     Cover {
                                         id: thumb
                                         visible: card.modelData.kind !== "folder"

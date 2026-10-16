@@ -52,9 +52,16 @@ GlassPanel {
             font.pixelSize: Theme.fontSize(12)
         }
         Row {
+            id: topArtists
+            objectName: "topArtists"
+            width: parent.width
             spacing: 14
+            clip: true
+            // as many as fit at about 96 px each (up to five), sharing the width so none spills past the card
+            readonly property int shown: Math.max(1, Math.min(5, card.artists.length, Math.floor((width + spacing) / (96 + spacing))))
+            readonly property real slot: (width - spacing * (shown - 1)) / shown
             Repeater {
-                model: card.artists.slice(0, 5)
+                model: card.artists.slice(0, topArtists.shown)
                 Row {
                     required property var modelData
                     spacing: 8
@@ -70,9 +77,13 @@ GlassPanel {
                         color: Theme.text
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(13)
-                        width: Math.min(implicitWidth, 110)
+                        width: Math.max(0, Math.min(implicitWidth, 110, topArtists.slot - 36))
                         elide: Text.ElideRight
-                        LinkArea { onClicked: Nav.openArtist(modelData.name) }
+                        LinkArea {
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                            onPressAndHold: Nav.artistMenu(modelData.name)
+                            onClicked: function (mouse) { mouse && mouse.button === Qt.RightButton ? Nav.artistMenu(modelData.name) : Nav.openArtist(modelData.name) }
+                        }
                     }
                 }
             }

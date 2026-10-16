@@ -20,6 +20,7 @@ QtObject {
     signal editSmartPlaylist(int id, string name)
     signal trackMenu(string path, string title, string context, int index)
     signal editTags(string path)
+    signal editTagsMany(var paths)
     signal editAlbum(string key)
     signal back()
     signal installUpdate()
@@ -27,4 +28,9 @@ QtObject {
     signal albumMenu(var keys, string title, string artist)
     signal removeAlbums(var keys, string what)
     signal trashAlbums(var keys, string what)
+    // songs by path (paths: one song, or a selection); `what` names them in the confirmation
+    signal artistMenu(string name)
+    signal folderMenu(string path, string name)
+    signal removeSongs(var paths, string what)
+    signal trashSongs(var paths, string what)
 }

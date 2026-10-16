@@ -26,7 +26,7 @@ Rectangle {
         textFormat: Text.PlainText
         anchors.centerIn: parent
         text: cover.fallback
-        color: Theme.surfaceHi
+        color: Theme.textDim  // readable on the placeholder in every theme
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSize(Math.max(12, cover.width * 0.4))
         visible: img.status !== Image.Ready

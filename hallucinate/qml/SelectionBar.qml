@@ -102,6 +102,23 @@ Rectangle {
                 enabled: Selection.paths.every(function (p) { return !/\.[A-Za-z0-9]+#\d+$/.test(p) })
                 onClicked: bar.editTags(bar.paths())
             }
+            Action {
+                id: moreButton
+                objectName: "selectionMore"
+                text: bar.tight ? "More" : "More…"
+                onClicked: moreMenu.popup(moreButton, 0, -moreMenu.implicitHeight - 6)
+                Menu {
+                    id: moreMenu
+                    MenuItem {
+                        text: "Remove from library…"; icon.name: "remove"; icon.color: Theme.error
+                        onTriggered: Nav.removeSongs(bar.paths(), bar.songs(Selection.count))
+                    }
+                    MenuItem {
+                        text: "Move to trash…"; icon.name: "trash"; icon.color: Theme.error
+                        onTriggered: Nav.trashSongs(bar.paths(), bar.songs(Selection.count))
+                    }
+                }
+            }
             IconButton {
                 objectName: "selectionClear"
                 anchors.verticalCenter: parent.verticalCenter

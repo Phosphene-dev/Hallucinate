@@ -44,8 +44,12 @@ Rectangle {
     MouseArea {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onPressAndHold: if (row.path.length) Nav.trackMenu(row.path, row.title, row.context, row.rowIndex)
         onClicked: function (mouse) {
-            if (row.path.length && (mouse.modifiers & Qt.ControlModifier)) {
+            if (mouse.button === Qt.RightButton) {
+                if (row.path.length) Nav.trackMenu(row.path, row.title, row.context, row.rowIndex)
+            } else if (row.path.length && (mouse.modifiers & Qt.ControlModifier)) {
                 Selection.toggle(row.selectionSource, row.rowIndex, row.path)
             } else if (row.path.length && (mouse.modifiers & Qt.ShiftModifier)) {
                 Selection.extend(row.selectionSource, row.rowIndex, row.path)

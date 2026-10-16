@@ -162,11 +162,16 @@ Item {
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                            onPressAndHold: Nav.folderMenu(tile.modelData.path, tile.modelData.name)
                             Accessible.role: Accessible.Button
                             Accessible.name: "Open " + tile.modelData.name + ", " + tile.modelData.songs
                                              + (tile.modelData.songs === 1 ? " song" : " songs")
                             Accessible.onPressAction: page.path = tile.modelData.path
-                            onClicked: page.path = tile.modelData.path
+                            onClicked: function (mouse) {
+                                if (mouse.button === Qt.RightButton) Nav.folderMenu(tile.modelData.path, tile.modelData.name)
+                                else page.path = tile.modelData.path
+                            }
                         }
                         IconButton {
                             id: playButton

@@ -5,6 +5,21 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.9] - 2026-10-16
+
+Right-click menus everywhere, back and forward like a browser, and fixes for narrow windows.
+
+### Added
+- Right-click works on everything you'd expect: songs everywhere (lists, queue, history, the playing song, Now Playing's cover), artists, folders, playlists in the sidebar, top artists and albums on Stats, and the random album on Home. The menus match the rest of the app.
+- Songs can be removed from the library or moved to the trash, one at a time or as a selection ("More…" on the selection bar). The song menu also has Go to album, Go to artist, Show in folder, and Remove from the queue.
+- Library health: every listed item opens its usual menu on right-click or long press, and clicking it opens the album or plays the song. Duplicates gets "Keep the best copies", which hides every copy but the best one of each song (lossless first, then bitrate and sample rate). Nothing is deleted.
+- Back and forward like a browser: the mouse's back and forward buttons, plus Alt+← and Alt+→, step through the pages you've visited, across sections too.
+
+### Fixed
+- Home at narrow window sizes: the format breakdown no longer spills out of its card (the four facts go two by two when space is short), and this month's top artists stay inside the Listening card.
+- The 12-month heatmap on History shows the most recent weeks that fit instead of running past its card in a narrow window.
+- Letters on covers without art (artist avatars, Library health rows) are readable in every theme.
+
 ## [0.9.8] - 2026-10-13
 
 Getting ready for testers: crashes leave a report, downloads are less than half the size, and the app starts

@@ -105,7 +105,7 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 | Ctrl+click · Shift+click | Select songs · select a range (then act on them from the bar that appears) |
 | Ctrl+Z | Undo the last queue change |
 | Esc | Clear the selection |
-| Alt+← | Back |
+| Alt+← · Alt+→ · mouse back/forward buttons | Back · forward, like a browser |
 | Ctrl+Q | Quit |
 
 ## All features

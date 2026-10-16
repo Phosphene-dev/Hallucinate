@@ -42,7 +42,12 @@ GlassPanel {
             anchors.fill: parent
             enabled: card.hasAlbum
             cursorShape: Qt.PointingHandCursor
-            onClicked: Nav.openAlbum(card.album.album_key)
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onPressAndHold: Nav.albumMenu([card.album.album_key], card.album.album, card.album.album_artist || "")
+            onClicked: function (mouse) {
+                if (mouse.button === Qt.RightButton) Nav.albumMenu([card.album.album_key], card.album.album, card.album.album_artist || "")
+                else Nav.openAlbum(card.album.album_key)
+            }
         }
     }
     Column {

@@ -139,3 +139,42 @@ def test_cached_album_models_are_freed_not_leaked(lib, qapp):
         assert len(library._detail) == 1  # capped: the least recently used went
     finally:
         library_module.DETAIL_CACHE = old
+
+
+def test_remove_and_trash_single_songs(lib, monkeypatch, tmp_path):
+    """Songs (from a song's menu, Library health or a selection) go the same two ways as albums."""
+    from hallucinate import library as library_module
+
+    library, root = lib
+    removed = []
+    library.albumsRemoved.connect(removed.append)
+    first = library.albumPaths([album_key(library, "First")])
+    library.removeSongs([first[0]])
+    assert wait_for(lambda: library.trackCount == 3 and removed, timeout=5)
+    assert {k: removed[0][k] for k in ("kind", "albums", "songs")} == {"kind": "hidden", "albums": 0, "songs": 1}
+    assert os.path.exists(first[0]) and library.hiddenCount == 1
+
+    trash = tmp_path / "Trash"
+    trash.mkdir()
+
+    class FakeQFile:
+        @staticmethod
+        def moveToTrash(path):
+            shutil.move(path, trash / os.path.basename(path))
+            return True
+
+    monkeypatch.setattr(library_module, "QFile", FakeQFile)
+    library.trashSongs([first[1]])
+    assert wait_for(lambda: library.trackCount == 2 and len(removed) == 2, timeout=5)
+    assert {k: removed[1][k] for k in ("kind", "songs", "failed")} == {"kind": "trashed", "songs": 1, "failed": 0}
+    assert not os.path.exists(first[1]) and (trash / os.path.basename(first[1])).exists()
+    assert os.path.exists(first[0])  # the hidden one is still on disk, so the folder stays
+
+
+def test_track_info_for_a_songs_menu(lib):
+    library, _root = lib
+    path = library.albumPaths([album_key(library, "Second")])[0]
+    info = library.trackInfo(path)
+    assert info["album"] == "Second" and info["album_artist"] == "Band" and info["album_key"]
+    assert info["exists"] is True and info["cue"] is False
+    assert library.trackInfo("/nowhere/missing.flac")["exists"] is False

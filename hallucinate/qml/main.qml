@@ -45,27 +45,83 @@ ApplicationWindow {
         default: return homePage
         }
     }
+    // Browser-style history across every page: Back (the back button, Alt+Left, the mouse's back button) and
+    // Forward (Alt+Right, the mouse's forward button) walk through the pages visited, sections included.
+    property var route: ({ kind: "section", name: "home" })
+    property var backRoutes: []
+    property var forwardRoutes: []
+    property bool replaying: false
+    function sameRoute(a, b) { return a && b && JSON.stringify(a) === JSON.stringify(b) }
+    function remember(next) {
+        if (!replaying && !sameRoute(route, next)) {
+            backRoutes = backRoutes.concat([route]).slice(-100)
+            forwardRoutes = []
+        }
+        route = next
+    }
+    function routeOf(item, depth) {
+        if (!item) return null
+        if (item.albumKey !== undefined && item.objectName !== "search" && item.albumKey) return { kind: "album", key: item.albumKey }
+        if (item.artistName !== undefined && item.artistName) return { kind: "artist", name: item.artistName }
+        return depth === 0 ? route0 : null
+    }
+    property var route0: ({ kind: "section", name: "home" })  // what sits at the bottom of the page stack
+    function visit(r) {
+        replaying = true
+        if (r.kind === "section") go(r.name)
+        else if (r.kind === "playlist") openPlaylist(r.id, r.name)
+        else if (r.kind === "smart") openSmartPlaylist(r.id, r.name)
+        else if (r.kind === "album") openAlbum(r.key)
+        else if (r.kind === "artist") openArtist(r.name)
+        route = r
+        replaying = false
+    }
+    function goBack() {
+        if (stack.currentItem && stack.currentItem.objectName === "search") { searchField.text = ""; return }
+        if (!backRoutes.length) return
+        var target = backRoutes[backRoutes.length - 1]
+        backRoutes = backRoutes.slice(0, -1)
+        forwardRoutes = forwardRoutes.concat([route])
+        if (stack.depth > 1 && sameRoute(routeOf(stack.get(stack.depth - 2), stack.depth - 2), target)) {
+            stack.pop()  // the page is still there underneath, scrolled where it was
+            route = target
+        } else visit(target)
+    }
+    function goForward() {
+        if (!forwardRoutes.length) return
+        var target = forwardRoutes[forwardRoutes.length - 1]
+        forwardRoutes = forwardRoutes.slice(0, -1)
+        backRoutes = backRoutes.concat([route])
+        visit(target)
+    }
+
     function go(name) {
+        remember({ kind: "section", name: name })
+        route0 = route
         section = name
         stack.clear()
         stack.push(pageFor(name))
         if (searchField.text.length > 0) searchField.text = ""
     }
     function openPlaylist(id, name) {
+        remember({ kind: "playlist", id: id, name: name })
+        route0 = route
         section = "pl" + id
         stack.clear()
         stack.push(playlistPage, { playlistId: id, playlistName: name })
         if (searchField.text.length > 0) searchField.text = ""
     }
     function openSmartPlaylist(id, name) {
+        remember({ kind: "smart", id: id, name: name })
+        route0 = route
         section = "smart" + id
         stack.clear()
         stack.push(smartPlaylistPage, { smartId: id, playlistName: name })
         if (searchField.text.length > 0) searchField.text = ""
     }
     function newPlaylist() { createDlg.open() }
-    function openAlbum(key) { stack.push(albumDetail, { albumKey: key }) }
-    function openArtist(name) { stack.push(artistDetail, { artistName: name }) }
+    function openAlbum(key) { remember({ kind: "album", key: key }); stack.push(albumDetail, { albumKey: key }) }
+    function openArtist(name) { remember({ kind: "artist", name: name }); stack.push(artistDetail, { artistName: name }) }
     function showSearch() {
         if (stack.currentItem && stack.currentItem.objectName === "search") return
         stack.push(searchPage, { query: searchField.text })
@@ -109,7 +165,14 @@ ApplicationWindow {
         function onEditSmartPlaylist(id, name) { smartEditor.openEdit(id, name) }
         function onEditTags(path) { tagEditor.editTrack(path) }
         function onEditAlbum(key) { tagEditor.editAlbum(key) }
-        function onTrackMenu(path, title, context, index) { trackMenu.show(path, title, context, index) }
+        function onEditTagsMany(paths) { tagEditor.editTracks(paths) }
+        function onArtistMenu(name) { if (name) collectionMenu.showArtist(name) }
+        function onFolderMenu(path, name) { if (path) collectionMenu.showFolder(path, name) }
+        function onTrackMenu(path, title, context, index) {
+            // on a song that's part of a selection, the menu acts on the whole selection
+            if (Selection.count > 1 && Selection.paths.indexOf(path) >= 0) trackMenu.showMany(Selection.paths)
+            else trackMenu.show(path, title, context, index)
+        }
         function onToggleNowPlaying() { nowPlaying.toggle() }
         function onOpenHealth() { window.go("health") }
         function onOpenPalette() { commandPalette.show() }
@@ -122,15 +185,21 @@ ApplicationWindow {
             exportDialog.open()
         }
         function onNotify(message) { toast.show(message) }
-        function onBack() { if (stack.depth > 1) stack.pop() }
+        function onBack() { window.goBack() }
         function onInstallUpdate() { updateDlg.open() }
         function onAlbumMenu(keys, title, artist) {
             // acting on a selected album acts on the whole selection
             var k = keys.length === 1 && AlbumSelection.has(keys[0]) ? AlbumSelection.keys.slice() : keys
             albumMenu.show(k, title, artist)
         }
-        function onRemoveAlbums(keys, what) { removeDlg.keys = keys; removeDlg.what = what; removeDlg.open() }
-        function onTrashAlbums(keys, what) { trashDlg.keys = keys; trashDlg.what = what; trashDlg.open() }
+        function onRemoveAlbums(keys, what) { removeDlg.songs = false; removeDlg.keys = keys; removeDlg.what = what; removeDlg.open() }
+        function onTrashAlbums(keys, what) { trashDlg.songs = false; trashDlg.keys = keys; trashDlg.what = what; trashDlg.open() }
+        function onRemoveSongs(paths, what) { removeDlg.songs = true; removeDlg.keys = paths; removeDlg.what = what; removeDlg.open() }
+        function onTrashSongs(paths, what) {
+            trashDlg.songs = true; trashDlg.keys = paths; trashDlg.what = what
+            trashDlg.cue = paths.some(p => /\.[A-Za-z0-9]+#\d+$/.test(p))
+            trashDlg.open()
+        }
     }
 
     Timer {
@@ -142,13 +211,14 @@ ApplicationWindow {
                 window.showSearch()
                 if (stack.currentItem) stack.currentItem.query = searchField.text
             } else if (stack.currentItem && stack.currentItem.objectName === "search") {
-                window.go(window.section)
+                stack.pop()  // back to the page the search was typed over
             }
         }
     }
 
     TrackMenu { id: trackMenu; objectName: "trackMenu" }
     AlbumMenu { id: albumMenu }
+    CollectionMenu { id: collectionMenu }
     CommandPalette { id: commandPalette; win: window }
 
     // Playlist files
@@ -214,7 +284,11 @@ ApplicationWindow {
         confirmText: "Remove"
         body: what + ": the music stays on your disk; Hallucinate just stops showing it, and rescans leave it out. "
               + "Settings → Library can bring it back. Plays, likes and playlists are kept."
-        onAccepted: { library.removeAlbums(keys); AlbumSelection.clear() }
+        property bool songs: false  // keys are song paths rather than album keys
+        onAccepted: {
+            if (songs) { library.removeSongs(keys); Selection.clear() }
+            else { library.removeAlbums(keys); AlbumSelection.clear() }
+        }
     }
     ConfirmDialog {
         id: trashDlg
@@ -224,16 +298,26 @@ ApplicationWindow {
         destructive: true
         body: what + ": the music files go to your system's trash, where you can restore them from. A folder left with only "
               + "covers or logs goes too; anything else in it stays."
-        onAccepted: { library.trashAlbums(keys); AlbumSelection.clear() }
+              + (cue ? " Songs from a CUE sheet share one audio file with the rest of their album, so that whole file goes." : "")
+        property bool songs: false
+        property bool cue: false  // a CUE sheet's songs share one file: trashing one trashes the whole sheet's audio
+        onAccepted: {
+            if (songs) { library.trashSongs(keys); Selection.clear() }
+            else { library.trashAlbums(keys); AlbumSelection.clear() }
+        }
     }
     Connections {
         target: library
         function onAlbumsRemoved(r) {
-            var n = r.albums + (r.albums === 1 ? " album" : " albums")
+            var n = r.albums > 0 ? r.albums + (r.albums === 1 ? " album" : " albums")
+                                 : r.songs + (r.songs === 1 ? " song" : " songs")
             if (r.kind === "hidden") toast.show(n + " removed from the library")
             else if (r.failed && !r.songs) toast.show("Couldn't move the files to the trash")
             else toast.show(n + " moved to the trash" + (r.failed ? " (" + r.failed + " files couldn't be moved)" : ""))
-            if (r.songs > 0 && stack.currentItem && r.keys.indexOf(stack.currentItem.albumKey) >= 0) stack.pop()  // its page is gone
+            if (r.songs > 0 && stack.currentItem && r.keys.indexOf(stack.currentItem.albumKey) >= 0) {
+                window.goBack()  // its page is gone, so it can't be gone forward to either
+                window.forwardRoutes = window.forwardRoutes.slice(0, -1)
+            }
         }
     }
 
@@ -429,7 +513,8 @@ ApplicationWindow {
                         id: backBtn
                         anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
                         icon: "back"
-                        visible: stack.depth > 1
+                        visible: window.backRoutes.length > 0 || (stack.currentItem && stack.currentItem.objectName === "search")
+                        tip: "Back (Alt+Left)"
                         onClicked: Nav.back()
                     }
                     TextField {
@@ -552,6 +637,16 @@ ApplicationWindow {
         }
     }
     Shortcut { sequence: "Alt+Left"; onActivated: Nav.back() }
+    Shortcut { sequence: "Alt+Right"; onActivated: window.goForward() }
+    // The mouse's back and forward side buttons, anywhere in the window; other buttons pass straight through
+    MouseArea {
+        anchors.fill: parent
+        z: 1000
+        acceptedButtons: Qt.BackButton | Qt.ForwardButton
+        Accessible.role: Accessible.Pane
+        Accessible.name: "Hallucinate"
+        onClicked: function (mouse) { mouse.button === Qt.BackButton ? Nav.back() : window.goForward() }
+    }
     Shortcut { sequences: ["Ctrl+K", "Ctrl+P"]; onActivated: commandPalette.opened ? commandPalette.close() : commandPalette.show() }
     Shortcut { sequences: ["/", "Ctrl+F"]; enabled: !window.typing; onActivated: { searchField.forceActiveFocus(); searchField.selectAll() } }
     Shortcut { sequence: "Ctrl+Q"; onActivated: Qt.quit() }
