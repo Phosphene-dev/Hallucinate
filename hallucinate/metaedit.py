@@ -34,6 +34,9 @@ class MetadataEditor(QObject):
     saved = Signal(int)
     failed = Signal(str)
     coverResult = Signal(bool, str)
+    lookupResults = Signal("QVariantList", str)  # MusicBrainz releases matching an album, or [] and why
+    releaseReady = Signal("QVariantMap")  # a chosen release: {fields, tracks, matched, error}
+    _mb_done = Signal(object)
     _done = Signal(object)
 
     def __init__(self, db_path, art_dir, parent=None):
@@ -45,6 +48,7 @@ class MetadataEditor(QObject):
         self._db_path = str(db_path)
         self._covers = {"busy": False, "done": 0, "total": 0, "found": 0, "current": ""}
         self._covers_stop = threading.Event()
+        self._mb_done.connect(self._on_mb_done)
         self._covers_thread = None
         self._covers_progress.connect(self._apply_covers_progress)
 
@@ -94,6 +98,77 @@ class MetadataEditor(QObject):
     def trackInfo(self, path):
         row = self._reader.submit(lambda db: db.track_by_path(path)).result(timeout=10)
         return decorate([row])[0] if row else {}
+
+    # --- MusicBrainz -------------------------------------------------------------------------------------
+    @Slot(str, str)
+    def lookupAlbum(self, artist, album):
+        """Find releases matching an album on MusicBrainz; lookupResults() reports back."""
+        from .core import musicbrainz, net
+
+        if net.is_offline():
+            self.lookupResults.emit([], "Offline mode is on, so MusicBrainz can't be searched")
+            return
+        if not (album or "").strip():
+            self.lookupResults.emit([], "The album needs a name to look it up")
+            return
+
+        def work():
+            try:
+                found = musicbrainz.search_releases(artist, album)
+                self._mb_done.emit(("results", found, "" if found else "MusicBrainz has no album by that name"))
+            except (OSError, ValueError, KeyError) as exc:
+                self._mb_done.emit(("results", [], f"Couldn't reach MusicBrainz: {exc}"))
+
+        threading.Thread(target=work, name="musicbrainz", daemon=True).start()
+
+    @Slot(str, str)
+    def chooseRelease(self, release_id, album_key):
+        """Fetch a release and pair its tracks with the album's songs (by disc and track order, when the
+        counts agree); releaseReady() hands over what to fill in."""
+        from .core import musicbrainz
+
+        songs = self._reader.submit(lambda db: db.album_tracks(album_key)).result(timeout=10) if album_key else []
+
+        def work():
+            try:
+                rel = musicbrainz.release(release_id)
+            except (OSError, ValueError, KeyError) as exc:
+                self._mb_done.emit(("release", {"error": f"Couldn't fetch that release: {exc}"}, ""))
+                return
+            pairs = musicbrainz.match_tracks([dict(s) for s in songs], rel["tracks"])
+            self._mb_done.emit(("release", {
+                "fields": {"album": rel["title"], "album_artist": rel["artist"], "year": rel["year"], "genre": rel["genre"]},
+                "tracks": [{"path": p, "title": t["title"], "track_no": t["number"],
+                            "disc_no": t["disc"] if rel["discs"] > 1 else 0, "artist": t["artist"]} for p, t in pairs],
+                "matched": len(pairs), "songs": len(songs), "releaseTracks": len(rel["tracks"]), "error": "",
+            }, ""))
+
+        threading.Thread(target=work, name="musicbrainz", daemon=True).start()
+
+    @Slot(object)
+    def _on_mb_done(self, result):
+        kind, value, message = result
+        if kind == "results":
+            self.lookupResults.emit(value, message)
+        else:
+            self.releaseReady.emit(value)
+
+    @Slot("QVariantList")
+    def saveTrackTags(self, items):
+        """Write each song its own tags: [{path, title, track_no, disc_no, artist}] (from a MusicBrainz match)."""
+        items = [dict(i) for i in items]
+
+        def save_each(db, rows):
+            total = {"kind": "tags", "saved": 0, "errors": []}
+            for row in rows:
+                path = row.pop("path")
+                fields = {k: str(v) for k, v in row.items() if v not in (None, "", 0)}
+                result = self._save_tags(db, [path], fields)
+                total["saved"] += result["saved"]
+                total["errors"] += result["errors"]
+            return total
+
+        self._run(save_each, items)
 
     @Slot("QVariantList", "QVariantMap")
     def saveTags(self, paths, fields):

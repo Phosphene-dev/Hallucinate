@@ -1088,3 +1088,38 @@ def test_toast_undo_playlist_names_and_going_to_whats_playing(qapp, app_window):
         player.clearQueue()
     del title
     assert not warnings, warnings[:3]
+
+
+def test_search_finds_stations_and_shows_and_pages_remember_their_scroll(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    with listening_extras(objects):
+        search = find_item(window, "searchField")
+        search.setProperty("text", "Exceedingly")
+        assert wait_for(lambda: window.findChild(QObject, "pageStack").property("currentItem").objectName() == "search")
+        page = window.findChild(QObject, "pageStack").property("currentItem")
+        assert wait_for(lambda: len(plain(page.property("stationHits"))) == 1)
+        search.setProperty("text", "Quite Some Time")
+        assert wait_for(lambda: len(plain(page.property("podcastHits"))["shows"]) == 1)
+        search.setProperty("text", "")
+    # scroll memory: back on a page, it's where it was
+    window.resize(1100, 520)
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "settings"))
+    for _ in range(4):
+        qapp.processEvents()
+    flick = QMetaObject.invokeMethod(window, "flickOf", Qt.ConnectionType.DirectConnection, Q_RETURN_ARG("QVariant"),
+                                     Q_ARG("QVariant", window.findChild(QObject, "pageStack").property("currentItem")),
+                                     Q_ARG("QVariant", 0))
+    flick.setProperty("contentY", 400)
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "home"))
+    QMetaObject.invokeMethod(window, "goBack", Qt.ConnectionType.DirectConnection)
+
+    def scrolled():
+        f = QMetaObject.invokeMethod(window, "flickOf", Qt.ConnectionType.DirectConnection, Q_RETURN_ARG("QVariant"),
+                                     Q_ARG("QVariant", window.findChild(QObject, "pageStack").property("currentItem")),
+                                     Q_ARG("QVariant", 0))
+        return f is not None and abs(f.property("contentY") - 400) < 2
+    assert wait_for(scrolled, timeout=3)
+    window.resize(1100, 1600)
+    assert not warnings, warnings[:3]

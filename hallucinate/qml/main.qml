@@ -680,6 +680,7 @@ ApplicationWindow {
                     }
                     TextField {
                         id: searchField
+                        objectName: "searchField"
                         anchors { left: backBtn.visible ? backBtn.right : parent.left; leftMargin: backBtn.visible ? 8 : 24; verticalCenter: parent.verticalCenter }
                         width: Math.min(520, parent.width - 120)
                         height: 42
