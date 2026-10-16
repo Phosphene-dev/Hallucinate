@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.9.9.1" date="2026-10-16">
+      <description>
+        <p>Settings now has a Features section for switching off any part of the app you don't use.</p>
+        <p>Internet radio and podcasts are there for anyone who wants them, off until switched on: stations from their links or a directory, podcasts from feeds, OPML or a folder, with resume, downloads, chapters and their own speed.</p>
+      </description>
+    </release>
     <release version="0.9.9" date="2026-10-16">
       <description>
         <p>Right-click menus on songs, artists, folders, playlists and Library health items, and songs can be removed from the library or moved to the trash.</p>

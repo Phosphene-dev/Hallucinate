@@ -5,6 +5,10 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.9.1] - 2026-10-16
+
+Turn off what you don't use, and turn on internet radio and podcasts if you want them.
+
 ### Added
 - Settings → Features: switch off what you don't use (Liked Songs, Folders, Stats, History, Recap, Visualizer, Library health, lyrics, and each card on Home). It disappears everywhere: the sidebar, Ctrl+K, links and shortcuts. Switch it back on and everything is still there.
 - Internet radio (off until you switch it on in Settings → Features). Save stations by their stream link (.pls and .m3u links work too), import or export them as playlist files, or find them in the Radio Browser directory. The song a station is playing shows as the artist and title everywhere, including the tray, media keys and Discord. Dropped streams reconnect by themselves. Radio never counts toward your stats, history or recap; songs heard on the radio can count on Last.fm and ListenBrainz if you choose to (Settings → Internet & sharing). Offline mode stops it all.
