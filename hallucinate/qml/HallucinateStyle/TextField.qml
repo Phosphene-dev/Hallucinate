@@ -29,7 +29,7 @@ T.TextField {
     font.family: Theme.fontFamily
     font.pixelSize: Theme.fontSize(14)
 
-    ContextMenu.menu: TextEditingContextMenu {
+    ContextMenu.menu: TextEditMenu {
         editor: control
     }
 
