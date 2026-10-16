@@ -31,6 +31,11 @@ def white_blocks(image, threshold=0.92, share=0.95):
     return [(int(x) * BLOCK, int(y) * BLOCK) for y, x in zip(ys, xs)]
 
 
+def plain(value):
+    """A QML `var` property as Python data: older PySide6 hands back a QJSValue."""
+    return value.toVariant() if hasattr(value, "toVariant") else value
+
+
 def seed(tmp_path):
     """A small library: two albums with plays, a like, a rating, a playlist and a smart playlist."""
     music = tmp_path / "Music"
@@ -568,7 +573,7 @@ def test_library_health_items_open_their_usual_menus(qapp, app_window):
                              Q_ARG("QVariant", {"album_key": track["album_key"], "album": track["album"],
                                                 "album_artist": track["album_artist"]}))
     assert wait_for(lambda: album_menu.property("opened"))
-    assert album_menu.property("keys") == [track["album_key"]]
+    assert plain(album_menu.property("keys")) == [track["album_key"]]
     QMetaObject.invokeMethod(album_menu, "close")
     assert wait_for(lambda: not album_menu.property("opened"))
 
@@ -577,7 +582,7 @@ def test_library_health_items_open_their_usual_menus(qapp, app_window):
                              Q_ARG("QVariant", {"path": track["path"], "title": track["title"]}))
     assert wait_for(lambda: track_menu.property("opened"))
     assert track_menu.property("path") == track["path"]
-    assert track_menu.property("info")["album_key"] == track["album_key"]
+    assert plain(track_menu.property("info"))["album_key"] == track["album_key"]
     remove = window.findChild(QObject, "trackRemove")
     assert remove.property("enabled")
     QMetaObject.invokeMethod(track_menu, "close")
