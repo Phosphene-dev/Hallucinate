@@ -22,9 +22,10 @@ Item {
     opacity: open ? 1 : 0
     enabled: open
     focus: open
-    Behavior on opacity { NumberAnimation { id: melt; duration: 520; easing.type: Easing.InOutCubic } }
+    Behavior on opacity { NumberAnimation { id: melt; duration: Theme.reduceMotion ? 0 : 520; easing.type: Easing.InOutCubic } }
     readonly property var styles: [
-        { id: "liquid", t: "Liquid" }, { id: "aurora", t: "Aurora" }, { id: "nebula", t: "Nebula" }, { id: "bars", t: "Bars" }
+        { id: "liquid", t: "Liquid" }, { id: "aurora", t: "Aurora" }, { id: "nebula", t: "Nebula" },
+        { id: "halo", t: "Halo" }, { id: "waves", t: "Waves" }, { id: "bars", t: "Bars" }
     ]
 
     function toggle() { open = !open }
@@ -37,7 +38,7 @@ Item {
         id: stage
         anchors.fill: parent
         // the melt: the scene settles from a slight zoom as it fades in
-        scale: view.open ? 1 : 1.06
+        scale: view.open || Theme.reduceMotion ? 1 : 1.06
         Behavior on scale { NumberAnimation { duration: 700; easing.type: Easing.OutCubic } }
 
         Visualizer {
@@ -85,7 +86,7 @@ Item {
                     RotationAnimator on rotation {
                         from: 0; to: 360; duration: 1800 * 2  // 33⅓ rpm is too dizzy on screen; a calm half speed
                         loops: Animation.Infinite
-                        running: view.vinyl && view.shown && player.playing
+                        running: view.vinyl && view.shown && player.playing && !Theme.reduceMotion
                     }
                     Rectangle {
                         anchors.fill: parent
@@ -335,7 +336,7 @@ Item {
                     IconButton { anchors.verticalCenter: parent.verticalCenter; icon: "prev"; size: 24; onClicked: player.previous() }
                     Rectangle {
                         width: 64; height: 64; radius: 32
-                        scale: bigPlay.pressed ? 0.94 : (bigPlay.containsMouse ? 1.06 : 1)
+                        scale: Theme.reduceMotion ? 1 : (bigPlay.pressed ? 0.94 : (bigPlay.containsMouse ? 1.06 : 1))
                         Behavior on scale { NumberAnimation { duration: 120 } }
                         color: "white"
                         Icon {

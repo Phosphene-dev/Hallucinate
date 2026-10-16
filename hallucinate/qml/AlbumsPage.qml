@@ -122,7 +122,7 @@ Item {
                         radius: 6
                         source: tile.artUrl
                         fallback: tile.album.charAt(0)
-                        scale: tileMouse.containsMouse ? 1.12 : 1
+                        scale: Theme.reduceMotion ? 1 : (tileMouse.containsMouse ? 1.12 : 1)
                         Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                     }
                     Rectangle {  // selected

@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QMenu, QSystemTrayIcon
 
 from .core import net
 
-VISUALIZER_STYLES = ("liquid", "aurora", "nebula", "bars")
+VISUALIZER_STYLES = ("liquid", "aurora", "nebula", "halo", "waves", "bars")
 # What closing the main window does. "tray" needs a visible tray icon; without one it quits.
 CLOSE_ACTIONS = ("ask", "quit", "minimize", "tray")
 # Parts of the app that can be switched off in Settings → Features, and whether they're on to begin with. A
@@ -52,6 +52,7 @@ class DesktopShell(QObject):
         self._desktop_notifications = self._settings.value("shell/desktopNotifications", False, bool)
         self._sidebar_collapsed = self._settings.value("ui/sidebarCollapsed", False, bool)
         self._ambient_motion = self._settings.value("ui/ambientMotion", True, bool)
+        self._reduce_motion = self._settings.value("ui/reduceMotion", False, bool)
         self._visualizer_style = str(self._settings.value("ui/visualizerStyle", "liquid"))
         self._now_playing_vinyl = self._settings.value("ui/nowPlayingVinyl", False, bool)
         self._features = {name: self._settings.value(f"features/{name}", on, bool) for name, on in FEATURES.items()}
@@ -204,6 +205,18 @@ class DesktopShell(QObject):
     def setAmbientMotion(self, on):
         self._ambient_motion = bool(on)
         self._settings.setValue("ui/ambientMotion", self._ambient_motion)
+        self.settingsChanged.emit()
+
+    @Property(bool, notify=settingsChanged)
+    def reduceMotion(self):
+        """Keep movement to a minimum: no page transitions, zooms, spinning record, hover growth or drifting
+        backdrop (for motion sensitivity, or just a calmer window)."""
+        return self._reduce_motion
+
+    @Slot(bool)
+    def setReduceMotion(self, on):
+        self._reduce_motion = bool(on)
+        self._settings.setValue("ui/reduceMotion", self._reduce_motion)
         self.settingsChanged.emit()
 
     @Property(str, notify=settingsChanged)

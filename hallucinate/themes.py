@@ -121,12 +121,19 @@ class ThemeManager(QObject):
         self._album_accent = None
         self._art_colors = []
         self._current_art_url = ""
+        self._accent_override = ""  # a colour of your own for the accent, over any theme ("" = the theme's)
+        self._follow_system = False  # switch between a light and a dark theme with the system's setting
+        self._light_theme, self._dark_theme = "Light", "Hallucinate"
         self._player = player
         app = QGuiApplication.instance()
         self._base_font_size = app.font().pointSizeF() if app is not None else 10.0
         self._load_themes()
         self._load_preferences()
         self._apply_global_font()
+        hints = app.styleHints() if app is not None else None
+        if hints is not None and hasattr(hints, "colorSchemeChanged"):
+            hints.colorSchemeChanged.connect(lambda *_: self._apply_system_scheme())
+        self._apply_system_scheme(save=False)
         if player is not None:
             player.trackChanged.connect(self._on_track_changed)
             self._on_track_changed()
@@ -193,6 +200,12 @@ class ThemeManager(QObject):
             if isinstance(name, str) and name in self._themes:
                 self._current_name = name
             self._album_art_accent = preferences.get("album_art_accent") is True
+            accent = preferences.get("accent")
+            self._accent_override = accent if isinstance(accent, str) and QColor(accent).isValid() else ""
+            self._follow_system = preferences.get("follow_system") is True
+            for key, attr in (("light_theme", "_light_theme"), ("dark_theme", "_dark_theme")):
+                if isinstance(preferences.get(key), str) and preferences[key] in self._themes:
+                    setattr(self, attr, preferences[key])
         except FileNotFoundError:
             return
         except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
@@ -205,6 +218,10 @@ class ThemeManager(QObject):
             temporary.write_text(json.dumps({
                 "theme": self._current_name,
                 "album_art_accent": self._album_art_accent,
+                "accent": self._accent_override,
+                "follow_system": self._follow_system,
+                "light_theme": self._light_theme,
+                "dark_theme": self._dark_theme,
             }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             os.replace(temporary, self._preferences_path)
         except OSError:
@@ -246,6 +263,13 @@ class ThemeManager(QObject):
     def artColors(self):
         """Dominant colours of the current track's cover (empty without art); drives the ambient backdrop."""
         return list(self._art_colors)
+
+    @Slot(str, result="QVariantList")
+    def imagePalette(self, url):
+        """Up to three colours from a picture (a podcast's cover, say), for tinting its page."""
+        u = QUrl(url)
+        path = u.toLocalFile() if u.isLocalFile() else url
+        return [c.name() for c in art_palette(path)] if path and not path.startswith(("http:", "https:")) else []
 
     @Property("QStringList", notify=themesChanged)
     def availableThemes(self):
@@ -323,14 +347,23 @@ class ThemeManager(QObject):
     def playerHeight(self):
         return 92
 
-    def _color(self, name):
-        if name == "accent" and self._album_accent is not None:
+    def _own_accent(self):
+        """The accent that replaces the theme's, if any: the album cover's, else the one you picked (made
+        readable on the theme's background)."""
+        if self._album_accent is not None:
             return self._album_accent
+        if self._accent_override:
+            return readable_on(self._accent_override, QColor(self._theme()["colors"]["bg"]))
+        return None
+
+    def _color(self, name):
+        own = self._own_accent()
+        if name == "accent" and own is not None:
+            return own
         if name == "accentHi":
             return self._color("accent").lighter(115)
-        if name == "onAccent" and self._album_accent is not None:
-            color = self._album_accent
-            luminance = 0.2126 * color.redF() + 0.7152 * color.greenF() + 0.0722 * color.blueF()
+        if name == "onAccent" and own is not None:
+            luminance = 0.2126 * own.redF() + 0.7152 * own.greenF() + 0.0722 * own.blueF()
             return QColor("#101014" if luminance > 0.48 else "#ffffff")
         return QColor(self._theme()["colors"][name])
 
@@ -370,6 +403,117 @@ class ThemeManager(QObject):
         self._update_album_accent()
         self._save_preferences()
         self.themeChanged.emit()
+
+    # --- your own touches ---------------------------------------------------------------------------------
+    @Property(str, notify=themeChanged)
+    def accentOverride(self):
+        """The accent colour you picked ("#rrggbb"), or "" for the theme's own."""
+        return self._accent_override
+
+    @Slot(str)
+    def setAccentOverride(self, color):
+        color = color.strip() if isinstance(color, str) else ""
+        if color and not QColor(color).isValid():
+            return
+        color = QColor(color).name() if color else ""
+        if color != self._accent_override:
+            self._accent_override = color
+            self._save_preferences()
+            self.themeChanged.emit()
+
+    @Property(bool, notify=themeChanged)
+    def followSystem(self):
+        """Use lightTheme while the system is in light mode and darkTheme while it's dark."""
+        return self._follow_system
+
+    @Property(str, notify=themeChanged)
+    def lightTheme(self):
+        return self._light_theme
+
+    @Property(str, notify=themeChanged)
+    def darkTheme(self):
+        return self._dark_theme
+
+    @Slot(bool)
+    def setFollowSystem(self, on):
+        self._follow_system = bool(on)
+        self._save_preferences()
+        self._apply_system_scheme()
+        self.themeChanged.emit()
+
+    @Slot(str, str)
+    def setSystemThemes(self, light, dark):
+        if light in self._themes:
+            self._light_theme = light
+        if dark in self._themes:
+            self._dark_theme = dark
+        self._save_preferences()
+        self._apply_system_scheme()
+        self.themeChanged.emit()
+
+    def system_is_dark(self):
+        app = QGuiApplication.instance()
+        hints = app.styleHints() if app is not None else None
+        if hints is None or not hasattr(hints, "colorScheme"):
+            return None
+        from PySide6.QtCore import Qt
+
+        scheme = hints.colorScheme()
+        if scheme == Qt.ColorScheme.Dark:
+            return True
+        if scheme == Qt.ColorScheme.Light:
+            return False
+        return None  # the system doesn't say
+
+    def _apply_system_scheme(self, save=True):
+        if not self._follow_system:
+            return
+        dark = self.system_is_dark()
+        if dark is None:
+            return
+        name = self._dark_theme if dark else self._light_theme
+        if name in self._themes and name != self._current_name:
+            if save:
+                self.selectTheme(name)
+            else:
+                self._current_name = name
+
+    @Slot(str, "QVariantMap", result=str)
+    def saveCustomTheme(self, name, colors):
+        """Save a theme of your own (in the user theme folder), built on the current one with `colors`
+        changed, and switch to it. Returns "" or what went wrong."""
+        name = (name or "").strip()
+        if not name:
+            return "Give the theme a name"
+        builtin = {p.stem for p in BUILTIN_THEME_DIR.glob("*.json")}
+        base = json.loads(json.dumps(self._theme()))
+        base["name"] = name
+        for key, value in (colors or {}).items():
+            if key in COLOR_KEYS and QColor(str(value)).isValid():
+                base["colors"][key] = QColor(str(value)).name()
+        _, valid = self._validate(base)
+        if not valid:
+            return "Those colours don't make a valid theme"
+        slug = "".join(c if c.isalnum() else "-" for c in name.lower()).strip("-") or "my-theme"
+        if slug in builtin or (name in self._themes and self._is_builtin(name)):
+            return f"“{name}” is a built-in theme's name; pick another"
+        try:
+            self._user_theme_dir.mkdir(parents=True, exist_ok=True)
+            (self._user_theme_dir / f"{slug}.json").write_text(json.dumps(base, indent=2) + "\n", encoding="utf-8")
+        except OSError as exc:
+            return f"Couldn't save the theme: {exc.strerror or exc}"
+        self._load_themes()
+        self.selectTheme(name)
+        return ""
+
+    def _is_builtin(self, name):
+        for path in BUILTIN_THEME_DIR.glob("*.json"):
+            try:
+                if json.loads(path.read_text(encoding="utf-8")).get("name") == name:
+                    return True
+            except (OSError, ValueError):
+                continue
+        return False
 
     @Slot()
     def reloadThemes(self):

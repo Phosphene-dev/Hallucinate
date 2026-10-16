@@ -6,6 +6,11 @@ All notable changes to this project are documented here. Format based on
 ## [Unreleased]
 
 ### Added
+- Ribbon, a new theme in deep red.
+- Two new visualizer styles: Halo (a ring of light that swells with the spectrum and sends out ripples on the beat) and Waves (layered waves of light whose heights follow the music).
+- Pick an accent colour of your own for any theme (it's kept readable), follow the system's light or dark mode with a theme for each, or make your own theme from the current one (Settings → Appearance).
+- Reduce motion (Settings → Appearance): no page transitions, zooms, spinning record, growing buttons or drifting backdrop.
+- A show's page glows in its cover's colours, like an album's.
 - Undo on the toasts that follow removing songs from the library, clearing the queue or taking a song out of it, removing a station, and marking a whole show played.
 - Click the playing song's cover or title to go to it: its album, the station's page or the episode's show. The queue opens scrolled to what's playing.
 - Song and episode lists work from the keyboard: Up and Down (and Page Up/Down, Home, End) move between rows without changing the volume, Enter plays, and the Menu key or Shift+F10 opens the row's menu.

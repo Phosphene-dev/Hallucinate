@@ -1,7 +1,7 @@
 import QtQuick
 import "."
 
-// The music drawn as light, tinted with the current cover's colours. `style` is "liquid", "aurora", "nebula" or
+// The music drawn as light, tinted with the current cover's colours. `style` is "liquid", "aurora", "nebula", "halo", "waves" or
 // "bars". Shader styles need a GPU renderer; with Qt's software renderer they fall back to the bars.
 // The spectrum comes from player.visualizerLevels (24 bands); without it the shaders keep drifting quietly.
 Item {

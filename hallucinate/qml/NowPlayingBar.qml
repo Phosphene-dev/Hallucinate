@@ -151,7 +151,7 @@ Item {
                 Accessible.role: Accessible.Button
                 Accessible.name: player.playing ? "Pause" : "Play"
                 Accessible.onPressAction: player.toggle()
-                scale: pp.pressed ? 0.94 : (pp.containsMouse ? 1.06 : 1)
+                scale: Theme.reduceMotion ? 1 : (pp.pressed ? 0.94 : (pp.containsMouse ? 1.06 : 1))
                 Behavior on scale { NumberAnimation { duration: 120 } }
                 gradient: Gradient {
                     orientation: Gradient.Horizontal

@@ -67,6 +67,7 @@ QtObject {
     readonly property string displayFamily: displayBold.status === FontLoader.Ready ? displayBold.font.family : fontFamily
 
     // Light themes get softer glass and ambience
+    readonly property bool reduceMotion: shell.reduceMotion
     readonly property bool light: (0.2126 * bg.r + 0.7152 * bg.g + 0.0722 * bg.b) > 0.5
     // Translucent surfaces that let the ambient backdrop glow through ("frosted glass")
     readonly property color glass: Qt.rgba(panel.r, panel.g, panel.b, light ? 0.72 : 0.62)

@@ -19,7 +19,7 @@ Item {
         radius: width / 2
         source: card.artUrl
         fallback: "♫"
-        scale: ma.containsMouse ? 1.03 : 1
+        scale: Theme.reduceMotion ? 1 : (ma.containsMouse ? 1.03 : 1)
         Behavior on scale { NumberAnimation { duration: 140 } }
     }
     Column {

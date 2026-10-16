@@ -87,7 +87,7 @@ Item {
             id: sec_appearance
             objectName: "settings_appearance"
             title: "Appearance"
-            keywords: "theme colours font accent album art ambient motion visualizer vinyl dark light pride"
+            keywords: "theme colours font accent album art ambient motion reduce animation visualizer vinyl dark light system pride ribbon custom"
             query: page.query
             StyledCheck {
                 text: "Show audio format and average bitrate on tracks"
@@ -138,11 +138,94 @@ Item {
                     }
                 }
             }
+            // Your own touches on the theme: an accent colour, light and dark following the system, a theme of your own
+            Column {
+                width: parent.width
+                spacing: 8
+                Text { textFormat: Text.PlainText; text: "Accent colour"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+                Flow {
+                    objectName: "accentSwatches"
+                    width: parent.width
+                    spacing: 8
+                    Repeater {
+                        model: ["", "#8f7bff", "#c08bff", "#ff7ab6", "#ff6b6b", "#ff9f43", "#ffd166", "#5fd38d",
+                                "#2ec4b6", "#4cc9f0", "#5b8cff", "#e8e8f0"]
+                        Rectangle {
+                            required property string modelData
+                            readonly property bool chosen: themeManager.accentOverride === modelData
+                            width: 30; height: 30; radius: 15
+                            color: modelData.length ? modelData : "transparent"
+                            border.width: chosen ? 3 : 1
+                            border.color: chosen ? Theme.text : Theme.border
+                            Text {
+                                visible: !modelData.length
+                                anchors.centerIn: parent
+                                text: "A"; textFormat: Text.PlainText
+                                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.Bold
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: themeManager.setAccentOverride(modelData)
+                                Accessible.role: Accessible.RadioButton
+                                Accessible.name: modelData.length ? "Accent " + modelData : "The theme's own accent"
+                                Accessible.checked: chosen
+                                Accessible.onPressAction: themeManager.setAccentOverride(modelData)
+                            }
+                        }
+                    }
+                    TextField {
+                        id: accentHex
+                        objectName: "accentHex"
+                        width: 120; height: 30
+                        placeholderText: "#hex"
+                        text: themeManager.accentOverride
+                        selectByMouse: true
+                        Accessible.name: "Accent colour as a hex code"
+                        onAccepted: themeManager.setAccentOverride(text)
+                    }
+                }
+                StyledCheck {
+                    objectName: "followSystemTheme"
+                    text: "Follow the system's light or dark mode"
+                    checked: themeManager.followSystem
+                    onToggled: themeManager.setFollowSystem(checked)
+                }
+                Flow {
+                    visible: themeManager.followSystem
+                    width: parent.width
+                    spacing: 10
+                    Text { textFormat: Text.PlainText; text: "Light"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                    StyledCombo {
+                        width: 200
+                        model: themeManager.availableThemes
+                        currentIndex: Math.max(0, themeManager.availableThemes.indexOf(themeManager.lightTheme))
+                        onActivated: themeManager.setSystemThemes(currentText, themeManager.darkTheme)
+                        Accessible.name: "Theme in light mode"
+                    }
+                    Text { textFormat: Text.PlainText; text: "Dark"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                    StyledCombo {
+                        width: 200
+                        model: themeManager.availableThemes
+                        currentIndex: Math.max(0, themeManager.availableThemes.indexOf(themeManager.darkTheme))
+                        onActivated: themeManager.setSystemThemes(themeManager.lightTheme, currentText)
+                        Accessible.name: "Theme in dark mode"
+                    }
+                }
+                PillButton { objectName: "makeTheme"; text: "Make my own theme…"; onClicked: themeEditor.open() }
+            }
+            ThemeEditor { id: themeEditor }
             StyledCheck {
                 objectName: "ambientMotion"
                 text: "Animated background (slowly drifting colours from the current cover)"
                 checked: shell.ambientMotion
                 onToggled: shell.setAmbientMotion(checked)
+            }
+            StyledCheck {
+                objectName: "reduceMotion"
+                text: "Reduce motion (no page transitions, zooms, spinning record or growing buttons)"
+                checked: shell.reduceMotion
+                onToggled: shell.setReduceMotion(checked)
             }
             CheckBox {
                 id: albumAccentToggle

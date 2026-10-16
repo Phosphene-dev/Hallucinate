@@ -561,7 +561,7 @@ ApplicationWindow {
         objectName: "ambience"
         anchors.fill: parent
         z: -1
-        animated: shell.ambientMotion && window.active && !nowPlaying.covering
+        animated: shell.ambientMotion && !shell.reduceMotion && window.active && !nowPlaying.covering
         visible: !nowPlaying.covering
     }
 
@@ -643,13 +643,16 @@ ApplicationWindow {
                         Layout.fillHeight: true
                         clip: true
                         // Pages dissolve in with a slight rise: soft, not a hard cut
-                        pushEnter: Transition {
+                        pushEnter: Theme.reduceMotion ? null : fadeIn
+                        pushExit: Theme.reduceMotion ? null : fadeOut
+                        Transition {
+                            id: fadeIn
                             ParallelAnimation {
                                 NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 220; easing.type: Easing.OutCubic }
                                 NumberAnimation { property: "y"; from: 14; to: 0; duration: 260; easing.type: Easing.OutCubic }
                             }
                         }
-                        pushExit: Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 120 } }
+                        Transition { id: fadeOut; NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 120 } }
                         popEnter: pushEnter
                         popExit: pushExit
                         replaceEnter: pushEnter

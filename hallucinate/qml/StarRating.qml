@@ -28,7 +28,7 @@ Row {
             Shape {
                 anchors.fill: parent
                 preferredRendererType: Shape.CurveRenderer
-                scale: starMouse.containsMouse ? 1.15 : 1
+                scale: Theme.reduceMotion ? 1 : (starMouse.containsMouse ? 1.15 : 1)
                 Behavior on scale { NumberAnimation { duration: 90 } }
                 ShapePath {
                     strokeWidth: star.lit ? 0 : Math.max(1, stars.size / 12)

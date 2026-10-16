@@ -166,7 +166,7 @@ Canvas {
             ctx.stroke()
             if (back) line([.16,.12,.24,.3,.42,.22])
             else line([.84,.12,.76,.3,.58,.22])
-            ctx.font = "bold " + Math.round(h * .34) + "px sans-serif"
+            ctx.font = "bold " + Math.round(h * .42) + "px sans-serif"
             ctx.textAlign = "center"; ctx.textBaseline = "middle"
             ctx.fillText(back ? "15" : "30", w*.5, h*.57)
             break

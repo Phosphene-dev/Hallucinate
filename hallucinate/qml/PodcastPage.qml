@@ -8,6 +8,7 @@ Item {
     objectName: "podcast"
     property int podcastId: 0
     property var info: ({})
+    readonly property var coverColors: themeManager.imagePalette(info.artUrl || "")
     function refreshInfo() { info = podcasts.show(podcastId) }
     Component.onCompleted: { podcasts.openShow(podcastId); refreshInfo() }
     Connections {
@@ -37,77 +38,85 @@ Item {
         spacing: 2
         ScrollBar.vertical: ScrollBar {}
 
-        header: Column {
+        header: Item {
             width: list.width
-            spacing: 14
-            topPadding: 20
-            bottomPadding: 14
-            Row {
-                width: parent.width - 16
-                x: 8
-                spacing: 20
-                Cover {
-                    id: art
-                    width: Math.min(180, list.width * 0.28); height: width; radius: 18
-                    source: page.info.artUrl || ""
-                    fallback: (page.info.title || "?").charAt(0)
-                }
+            height: headerColumn.height
+            // the show's own colours, glowing behind its cover
+            Bloom { tint: page.coverColors.length ? page.coverColors[0] : Theme.accent; size: 560; x: -140; y: -200 }
+            Bloom { tint: page.coverColors.length > 1 ? page.coverColors[1] : Theme.art1; size: 420; x: list.width * 0.45; y: -180 }
                 Column {
-                    width: parent.width - art.width - 20
-                    anchors.verticalCenter: art.verticalCenter
-                    spacing: 8
-                    Text { textFormat: Text.PlainText; text: page.info.folder ? "PODCAST · FOLDER" : "PODCAST"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold }
-                    Text {
-                        textFormat: Text.PlainText
-                        width: parent.width
-                        wrapMode: Text.WordWrap
-                        maximumLineCount: 2
-                        elide: Text.ElideRight
-                        text: page.info.title || ""
-                        color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(28); font.weight: Font.Bold
+                id: headerColumn
+                width: list.width
+                spacing: 14
+                topPadding: 20
+                bottomPadding: 14
+                Row {
+                    width: parent.width - 16
+                    x: 8
+                    spacing: 20
+                    Cover {
+                        id: art
+                        width: Math.min(180, list.width * 0.28); height: width; radius: 18
+                        source: page.info.artUrl || ""
+                        fallback: (page.info.title || "?").charAt(0)
                     }
-                    Text { textFormat: Text.PlainText; visible: text.length > 0; text: page.info.author || ""; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
-                    Text {
-                        textFormat: Text.PlainText
-                        visible: (page.info.error || "").length > 0
-                        width: parent.width
-                        wrapMode: Text.WordWrap
-                        text: "Couldn't check the feed: " + (page.info.error || "")
-                        color: Theme.error; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
-                    }
-                    Flow {
-                        width: parent.width
-                        spacing: 10
-                        PillButton {
-                            objectName: "playLatest"
-                            primary: true
-                            text: "Play latest"
-                            enabled: list.count > 0
-                            onClicked: podcasts.playLatest(page.podcastId)
+                    Column {
+                        width: parent.width - art.width - 20
+                        anchors.verticalCenter: art.verticalCenter
+                        spacing: 8
+                        Text { textFormat: Text.PlainText; text: page.info.folder ? "PODCAST · FOLDER" : "PODCAST"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold }
+                        Text {
+                            textFormat: Text.PlainText
+                            width: parent.width
+                            wrapMode: Text.WordWrap
+                            maximumLineCount: 2
+                            elide: Text.ElideRight
+                            text: page.info.title || ""
+                            color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(28); font.weight: Font.Bold
                         }
-                        PillButton { text: "Check for new"; enabled: !podcasts.busy; onClicked: podcasts.refresh(page.podcastId) }
-                        PillButton { text: "Mark all played"; enabled: (page.info.unplayed || 0) > 0; onClicked: podcasts.markAllPlayed(page.podcastId) }
-                        PillButton { text: "Unfollow"; onClicked: unfollowDlg.open() }
-                    }
-                    StyledCheck {
-                        visible: !page.info.folder
-                        text: "Download new episodes by themselves"
-                        checked: !!page.info.auto_download
-                        onToggled: podcasts.setAutoDownload(page.podcastId, checked)
+                        Text { textFormat: Text.PlainText; visible: text.length > 0; text: page.info.author || ""; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+                        Text {
+                            textFormat: Text.PlainText
+                            visible: (page.info.error || "").length > 0
+                            width: parent.width
+                            wrapMode: Text.WordWrap
+                            text: "Couldn't check the feed: " + (page.info.error || "")
+                            color: Theme.error; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                        }
+                        Flow {
+                            width: parent.width
+                            spacing: 10
+                            PillButton {
+                                objectName: "playLatest"
+                                primary: true
+                                text: "Play latest"
+                                enabled: list.count > 0
+                                onClicked: podcasts.playLatest(page.podcastId)
+                            }
+                            PillButton { text: "Check for new"; enabled: !podcasts.busy; onClicked: podcasts.refresh(page.podcastId) }
+                            PillButton { text: "Mark all played"; enabled: (page.info.unplayed || 0) > 0; onClicked: podcasts.markAllPlayed(page.podcastId) }
+                            PillButton { text: "Unfollow"; onClicked: unfollowDlg.open() }
+                        }
+                        StyledCheck {
+                            visible: !page.info.folder
+                            text: "Download new episodes by themselves"
+                            checked: !!page.info.auto_download
+                            onToggled: podcasts.setAutoDownload(page.podcastId, checked)
+                        }
                     }
                 }
-            }
-            Text {
-                textFormat: Text.PlainText
-                x: 8
-                width: parent.width - 16
-                visible: text.length > 0
-                wrapMode: Text.WordWrap
-                maximumLineCount: 4
-                elide: Text.ElideRight
-                text: page.info.description || ""
-                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
-                lineHeight: 1.15
+                Text {
+                    textFormat: Text.PlainText
+                    x: 8
+                    width: parent.width - 16
+                    visible: text.length > 0
+                    wrapMode: Text.WordWrap
+                    maximumLineCount: 4
+                    elide: Text.ElideRight
+                    text: page.info.description || ""
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                    lineHeight: 1.15
+                }
             }
         }
 

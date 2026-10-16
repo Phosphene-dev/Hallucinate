@@ -26,7 +26,7 @@ Item {
 
     // keep clicks, wheel and keys from reaching the app underneath
     MouseArea { anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.AllButtons; onWheel: function (w) { w.accepted = true } }
-    Ambience { anchors.fill: parent; animated: welcome.open && shell.ambientMotion }
+    Ambience { anchors.fill: parent; animated: welcome.open && shell.ambientMotion && !shell.reduceMotion }
 
     component Heading: Text {
         color: Theme.text
