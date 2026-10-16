@@ -167,6 +167,7 @@ Dialog {
                     id: field
                     Layout.fillWidth: true
                     selectByMouse: true
+                    Accessible.name: dlg.labels[rowItem.key]
                     color: Theme.text
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(14)

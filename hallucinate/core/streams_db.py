@@ -57,6 +57,10 @@ CREATE TABLE IF NOT EXISTS episodes(
     UNIQUE(podcast_id, guid)
 );
 CREATE INDEX IF NOT EXISTS idx_episodes_podcast ON episodes(podcast_id, published);
+-- What a show's tile counts (episodes, unplayed, latest) and the top search's title match, read from these
+-- alone instead of every episode's notes.
+CREATE INDEX IF NOT EXISTS idx_episodes_counts ON episodes(podcast_id, played, published);
+CREATE INDEX IF NOT EXISTS idx_episodes_titles ON episodes(published, title);
 -- Songs heard on the radio (after a minute of each), newest last. The station's name is kept so the log still
 -- reads right after the station is removed.
 CREATE TABLE IF NOT EXISTS radio_log(
@@ -212,10 +216,10 @@ class StreamsDB:
     # --- podcasts --------------------------------------------------------------------------------------
     def podcasts(self):
         return [dict(r) for r in self.conn.execute(
-            "SELECT p.*, (SELECT COUNT(*) FROM episodes e WHERE e.podcast_id=p.id AND e.played=0) AS unplayed, "
-            "(SELECT MAX(published) FROM episodes e WHERE e.podcast_id=p.id) AS latest, "
-            "(SELECT COUNT(*) FROM episodes e WHERE e.podcast_id=p.id) AS episodes "
-            "FROM podcasts p ORDER BY latest DESC, title COLLATE NOCASE")]
+            "SELECT p.*, COALESCE(a.unplayed, 0) AS unplayed, a.latest AS latest, COALESCE(a.n, 0) AS episodes "
+            "FROM podcasts p LEFT JOIN (SELECT podcast_id, SUM(played=0) AS unplayed, MAX(published) AS latest, "
+            "COUNT(*) AS n FROM episodes GROUP BY podcast_id) a ON a.podcast_id=p.id "
+            "ORDER BY latest DESC, p.title COLLATE NOCASE")]
 
     def podcast(self, podcast_id):
         row = self.conn.execute("SELECT * FROM podcasts WHERE id=?", (podcast_id,)).fetchone()
@@ -279,7 +283,8 @@ class StreamsDB:
         self.conn.commit()
         return new
 
-    def episodes(self, podcast_id=None, unplayed_only=False, limit=None, oldest_first=False, text=""):
+    def episodes(self, podcast_id=None, unplayed_only=False, limit=None, oldest_first=False, text="",
+                 titles_only=False):
         sql = ("SELECT e.*, p.title AS podcast, p.image AS podcast_image FROM episodes e "
                "JOIN podcasts p ON p.id=e.podcast_id")
         where, args = [], []
@@ -289,9 +294,13 @@ class StreamsDB:
         if unplayed_only:
             where.append("e.played=0")
         for word in (text or "").split():
-            where.append("(e.title LIKE ? ESCAPE '\\' OR e.description LIKE ? ESCAPE '\\')")
             pattern = "%" + word.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
-            args += [pattern, pattern]
+            if titles_only:  # the top search: quick even across tens of thousands of episodes
+                where.append("e.title LIKE ? ESCAPE '\\'")
+                args.append(pattern)
+            else:
+                where.append("(e.title LIKE ? ESCAPE '\\' OR e.description LIKE ? ESCAPE '\\')")
+                args += [pattern, pattern]
         if where:
             sql += " WHERE " + " AND ".join(where)
         sql += " ORDER BY e.published ASC, e.id ASC" if oldest_first else " ORDER BY e.published DESC, e.id DESC"

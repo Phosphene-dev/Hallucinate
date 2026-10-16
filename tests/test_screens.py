@@ -539,12 +539,45 @@ def test_everything_clickable_has_a_name_for_screen_readers(qapp, app_window):
     for page in PAGES:
         invoke("go", page)
         visit(page)
+    def dialog(name, where, opener=None):
+        dlg = window.findChild(QObject, name)
+        assert dlg is not None, name
+        if opener:
+            opener(dlg)
+        else:
+            QMetaObject.invokeMethod(dlg, "open")
+        from conftest import wait_for
+        assert wait_for(lambda: dlg.property("opened")), name
+        visit(where)
+        QMetaObject.invokeMethod(dlg, "close")
+        assert wait_for(lambda: not dlg.property("visible")), name
+
     with listening_extras(objects):
-        for page in ("stations", "podcasts"):
+        stations = objects["stations"]
+        stations._db.log_radio_song(stations._db.stations()[0]["id"], "FM", "Enduser", "Death Vest")
+        stations.logChanged.emit()
+        for page, dlg in (("stations", "addStationDialog"), ("podcasts", "followDialog")):
             invoke("go", page)
             visit(page)
+            dialog(dlg, dlg)
         invoke("openPodcast", 1)
         visit("podcast")
+        dialog("showSettings", "show settings")
+    editor, library = objects["metaEditor"], objects["library"]
+    album = library.albums.get(0)
+    editor._genres["proposals"] = [{"album_key": album["album_key"], "album": album["album"], "artist": "A",
+                                    "genre": "IDM", "genres": ["IDM", "Ambient"], "source": "artist", "songs": 2}]
+    editor.genresChanged.emit()
+    invoke("go", "health")
+    visit("health")
+    dialog("genreReview", "genre review")
+    editor.clearGenreProposals()
+    dialog("tagEditor", "edit album", lambda d: QMetaObject.invokeMethod(d, "editAlbum", Q_ARG("QVariant", album["album_key"])))
+    invoke("go", "settings")
+    dialog("themeEditor", "theme editor")
+    dialog("whatsNewDialog", "what's new")
+    shell = objects["shell"]
+    shell._whats_new_dismissed = False
     invoke("go", "albums")
     albums = window.findChild(QObject, "pageStack").property("currentItem")
     for view in ("grid", "colour", "timeline"):

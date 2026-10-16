@@ -319,9 +319,10 @@ class Podcasts(QObject):
         words = [w.casefold() for w in (query or "").split()]
         if not words or not self._enabled:
             return {"shows": [], "episodes": []}
-        shows = [self._show_row(p) for p in self._db.podcasts()
-                 if all(w in f"{p['title']} {p['author']}".casefold() for w in words)][:6]
-        episodes = [self._episode_row(e) for e in self._db.episodes(text=query, limit=8)]
+        matched = [r["id"] for r in self._db.conn.execute("SELECT id, title, author FROM podcasts")
+                   if all(w in f"{r['title']} {r['author']}".casefold() for w in words)][:6]
+        shows = [self._show_row(p) for p in self._db.podcasts() if p["id"] in matched] if matched else []
+        episodes = [self._episode_row(e) for e in self._db.episodes(text=query, limit=8, titles_only=True)]
         return {"shows": shows, "episodes": episodes}
 
     @Slot(str, result=bool)
