@@ -5,6 +5,10 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.9.2] - 2026-10-16
+
+Polish everywhere, podcasts done properly, and your own touches on the look.
+
 ### Added
 - Ribbon, a new theme in deep red.
 - Two new visualizer styles: Halo (a ring of light that swells with the spectrum and sends out ripples on the beat) and Waves (layered waves of light whose heights follow the music).

@@ -532,7 +532,7 @@ Item {
             id: sec_library
             objectName: "settings_library"
             title: "Library"
-            keywords: "music folders scan rescan health import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums"
+            keywords: "music folders scan rescan health import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums backup export your data move computer"
             query: page.query
             Text {
                 textFormat: Text.PlainText
@@ -558,6 +558,32 @@ Item {
                 }
             }
 
+            Row {
+                objectName: "backupRow"
+                spacing: 10
+                Text {
+                    textFormat: Text.PlainText
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "Your likes, ratings, playlists, history, stations and shows"
+                    color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                }
+                PillButton { objectName: "exportBackup"; height: 32; text: "Back up…"; onClicked: backupSaveDlg.open() }
+                PillButton { objectName: "importBackup"; height: 32; text: "Restore…"; onClicked: backupOpenDlg.open() }
+            }
+            FileDialog {
+                id: backupSaveDlg
+                title: "Back up your data"
+                fileMode: FileDialog.SaveFile
+                defaultSuffix: "hallucinate-backup"
+                nameFilters: ["Hallucinate backup (*.hallucinate-backup)"]
+                onAccepted: Nav.notify(shell.exportBackup(selectedFile.toString()))
+            }
+            FileDialog {
+                id: backupOpenDlg
+                title: "Restore from a backup"
+                nameFilters: ["Hallucinate backup (*.hallucinate-backup)", "All files (*)"]
+                onAccepted: Nav.notify(shell.importBackup(selectedFile.toString()))
+            }
             Repeater {
                 model: library.folders
                 Rectangle {

@@ -307,6 +307,17 @@ class Podcasts(QObject):
         p = next((r for r in self._db.podcasts() if r["id"] == podcast_id), None)
         return self._show_row(p) if p else {}
 
+    @Slot(str, result="QVariantMap")
+    def find(self, query):
+        """Shows and episodes matching `query`, for the top search: {"shows": [...], "episodes": [...]}."""
+        words = [w.casefold() for w in (query or "").split()]
+        if not words or not self._enabled:
+            return {"shows": [], "episodes": []}
+        shows = [self._show_row(p) for p in self._db.podcasts()
+                 if all(w in f"{p['title']} {p['author']}".casefold() for w in words)][:6]
+        episodes = [self._episode_row(e) for e in self._db.episodes(text=query, limit=8)]
+        return {"shows": shows, "episodes": episodes}
+
     @Slot(str, result=bool)
     def isEpisode(self, path):
         """Whether a queue entry's path is a podcast episode (a stream or a downloaded file)."""

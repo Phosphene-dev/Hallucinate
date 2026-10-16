@@ -172,6 +172,16 @@ def main(argv=None) -> int:
     shell.featuresChanged.connect(apply_features)
     podcasts.newEpisodes.connect(lambda show, title: shell.notify(f"New from {show}", title))
 
+    def after_restore():
+        library.reload()
+        user_lib.refresh()
+        user_lib.refreshStats()
+        stations.refresh()
+        podcasts.reload()
+        library.rescan()  # folders and hidden songs from the backup take effect
+
+    shell.setBackupSources(paths.db_path(), paths.data_dir() / "streams.db", after_restore)
+
     if not library.folders and not args.folders:
         # A fresh install: open on the welcome (music folder, theme, scrobbling) until it is finished
         shell.setUiValue("welcome", "1")

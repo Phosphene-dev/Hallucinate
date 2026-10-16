@@ -174,6 +174,19 @@ class Stations(QObject):
             self._db.conn.commit()
             self.refresh()
 
+    @Slot(str, result="QVariantList")
+    def find(self, query):
+        """Saved stations whose name or genres have every word of `query` (for the top search)."""
+        words = [w.casefold() for w in (query or "").split()]
+        if not words or not self._enabled:
+            return []
+        out = []
+        for s in self._db.stations():
+            hay = f"{s['name']} {s['tags']} {s['country']}".casefold()
+            if all(w in hay for w in words):
+                out.append(self._row(s))
+        return out[:8]
+
     @Slot(int, result="QVariantMap")
     def station(self, station_id):
         found = self._db.station(int(station_id))

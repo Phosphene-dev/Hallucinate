@@ -336,6 +336,76 @@ class DesktopShell(QObject):
         title, artist = track.get("title", "Unknown track"), track.get("artist", "")
         self._send_notification(title, artist)
 
+    # --- backup ---------------------------------------------------------------------------------------------
+    def setBackupSources(self, library_db, streams_db, after_restore):
+        self._backup = (library_db, streams_db, after_restore)
+
+    @Slot(str, result=str)
+    def exportBackup(self, url):
+        """Write a backup of your own data (see core/backup); returns what happened, for a toast."""
+        from PySide6.QtCore import QUrl
+
+        from .core import backup
+
+        library_db, streams_db, _ = getattr(self, "_backup", (None, None, None))
+        if library_db is None:
+            return "Backups aren't available here"
+        path = QUrl(url).toLocalFile() if url.startswith("file:") else url
+        if not path.endswith(".hallucinate-backup"):
+            path += ".hallucinate-backup"
+        try:
+            s = backup.export(library_db, streams_db, path)
+        except (OSError, ValueError) as exc:
+            return f"Couldn't save the backup: {exc}"
+        return (f"Backed up {s['likes']} likes, {s['ratings']} ratings, {s['playlists']} playlists, "
+                f"{s['listens']} listens, {s['stations']} stations and {s['podcasts']} shows")
+
+    @Slot(str, result=str)
+    def importBackup(self, url):
+        from PySide6.QtCore import QUrl
+
+        from .core import backup
+
+        library_db, streams_db, after = getattr(self, "_backup", (None, None, None))
+        if library_db is None:
+            return "Backups aren't available here"
+        path = QUrl(url).toLocalFile() if url.startswith("file:") else url
+        try:
+            s = backup.restore(backup.read(path), library_db, streams_db)
+        except (OSError, ValueError) as exc:
+            return str(exc)
+        if after is not None:
+            after()
+        return (f"Restored {s['likes']} likes, {s['ratings']} ratings, {s['playlists']} playlists, "
+                f"{s['listens']} listens, {s['stations']} stations and {s['podcasts']} shows")
+
+    whatsNewChanged = Signal()
+
+    @Property("QStringList", notify=whatsNewChanged)
+    def whatsNew(self):
+        """This version's highlights, once, after an update from an earlier one ([] on a first start, after it's
+        been seen, or when there's nothing to say)."""
+        from . import __version__
+        from .whatsnew import highlights
+
+        seen = str(self._settings.value("ui/lastVersion", "") or "")
+        if seen == __version__ or self._whats_new_dismissed:
+            return []
+        if not seen:  # a first start: nothing is "new" yet
+            self._settings.setValue("ui/lastVersion", __version__)
+            return []
+        return highlights(__version__)
+
+    @Slot()
+    def dismissWhatsNew(self):
+        from . import __version__
+
+        self._whats_new_dismissed = True
+        self._settings.setValue("ui/lastVersion", __version__)
+        self.whatsNewChanged.emit()
+
+    _whats_new_dismissed = False
+
     @Slot(str, str)
     def notify(self, title, body):
         """A desktop notification (new podcast episodes); shown whatever the now-playing setting says."""

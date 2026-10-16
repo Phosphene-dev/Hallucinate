@@ -62,7 +62,33 @@ ApplicationWindow {
     property var forwardRoutes: []
     property bool replaying: false
     function sameRoute(a, b) { return a && b && JSON.stringify(a) === JSON.stringify(b) }
+    // Where each page was scrolled, by route, so going back to a page (or forward again) lands where you were
+    property var scrollMemory: ({})
+    function flickOf(item, depth) {
+        if (!item || (depth || 0) > 6) return null
+        if (item.contentY !== undefined && item.flickableDirection !== undefined && item.contentHeight > item.height)
+            return item
+        for (var i = 0; i < item.children.length; i++) {
+            var f = flickOf(item.children[i], (depth || 0) + 1)
+            if (f) return f
+        }
+        return null
+    }
+    function saveScroll() {
+        var f = flickOf(stack.currentItem)
+        if (f) { var m = scrollMemory; m[JSON.stringify(route)] = f.contentY; scrollMemory = m }
+    }
+    Timer {
+        id: restoreScroll
+        interval: 80
+        onTriggered: {
+            var y = window.scrollMemory[JSON.stringify(window.route)]
+            var f = window.flickOf(stack.currentItem)
+            if (f && y !== undefined) f.contentY = Math.min(y, Math.max(0, f.contentHeight - f.height))
+        }
+    }
     function remember(next) {
+        saveScroll()
         if (!replaying && !sameRoute(route, next)) {
             backRoutes = backRoutes.concat([route]).slice(-100)
             forwardRoutes = []
@@ -456,6 +482,49 @@ ApplicationWindow {
         onRejected: shell.dismissCrashReport()
     }
     Timer { interval: 900; running: shell.crashReport.length > 0 && !crashDlg.opened; onTriggered: crashDlg.open() }
+    // Once after an update: what's new in this version
+    Dialog {
+        id: whatsNewDlg
+        objectName: "whatsNewDialog"
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: Math.min(520, window.width - 40)
+        modal: true
+        title: "New in Hallucinate " + shell.appVersion
+        standardButtons: Dialog.Ok
+        onClosed: shell.dismissWhatsNew()
+        Column {
+            width: whatsNewDlg.availableWidth
+            spacing: 10
+            Repeater {
+                model: shell.whatsNew
+                Row {
+                    required property string modelData
+                    width: parent.width
+                    spacing: 10
+                    Rectangle { width: 6; height: 6; radius: 3; color: Theme.accent; y: 7 }
+                    Text {
+                        textFormat: Text.PlainText
+                        width: parent.width - 16
+                        wrapMode: Text.WordWrap
+                        text: modelData
+                        color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                    }
+                }
+            }
+            Text {
+                textFormat: Text.PlainText
+                text: "Everything that changed"
+                color: Theme.accent; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); font.weight: Font.DemiBold
+                LinkArea { onClicked: Qt.openUrlExternally("https://github.com/Phosphene-dev/Hallucinate/releases") }
+            }
+        }
+    }
+    Timer {
+        interval: 1200
+        running: shell.whatsNew.length > 0 && !crashDlg.opened && shell.crashReport.length === 0
+        onTriggered: whatsNewDlg.open()
+    }
     SmartPlaylistEditor {
         id: smartEditor
         onSaved: function (id, name) { window.openSmartPlaylist(id, name) }
@@ -639,6 +708,7 @@ ApplicationWindow {
                     StackView {
                         id: stack
                         objectName: "pageStack"
+                        onCurrentItemChanged: restoreScroll.restart()
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         clip: true
