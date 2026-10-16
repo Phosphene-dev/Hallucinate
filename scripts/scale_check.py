@@ -65,6 +65,7 @@ def main():
     from hallucinate.replaygain import ReplayGainAnalyzer
     from hallucinate.scrobbling import LastFmScrobbler
     from hallucinate.shell import DesktopShell
+    from hallucinate.stations import Stations
     from hallucinate.themes import ThemeManager
     from hallucinate.thumbs import ArtProvider
     from hallucinate.userlib import UserLibrary
@@ -114,6 +115,7 @@ def main():
         "shell": DesktopShell(app, player, QIcon()),
         "discord": DiscordPresence(player),
         "themeManager": ThemeManager(work / "config", player),
+        "stations": Stations(work / "streams.db", work / "cache", player),
     }
     for k, v in context.items():
         engine.rootContext().setContextProperty(k, v)

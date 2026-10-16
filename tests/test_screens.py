@@ -102,6 +102,7 @@ def app_window(qapp, tmp_path, monkeypatch, request):
     from hallucinate.replaygain import ReplayGainAnalyzer
     from hallucinate.scrobbling import LastFmScrobbler
     from hallucinate.shell import DesktopShell
+    from hallucinate.stations import Stations
     from hallucinate.themes import ThemeManager
     from hallucinate.userlib import UserLibrary
 
@@ -127,6 +128,7 @@ def app_window(qapp, tmp_path, monkeypatch, request):
         "shell": DesktopShell(qapp, player, QIcon()),
         "discord": DiscordPresence(player),
         "themeManager": ThemeManager(tmp_path / "config", player),
+        "stations": Stations(tmp_path / "streams.db", tmp_path / "cache", player),
     }
     engine = QQmlApplicationEngine()
     for key, value in objects.items():
@@ -809,16 +811,10 @@ def test_features_switched_off_disappear_everywhere(qapp, app_window):
         for _ in range(3):
             qapp.processEvents()
 
+    names = {"rail_stats": "Stats", "rail_recap": "Recap"}
+
     def rail_labels():
-        found, todo = set(), [window.contentItem()]
-        while todo:
-            item = todo.pop()
-            if not item.isVisible():
-                continue
-            if item.metaObject().className().startswith("RailButton"):
-                found.add(item.property("text"))
-            todo += item.childItems()
-        return found
+        return {names.get(n, n) for n in visible_names(window, "rail_")}
 
     palette = window.findChild(QObject, "commandPalette")
 
@@ -844,11 +840,7 @@ def test_features_switched_off_disappear_everywhere(qapp, app_window):
         assert not window.findChild(QObject, "homeHealthLink").property("visible")
         assert not window.findChild(QObject, "lyricsToggle").property("visible")
         invoke("go", "settings")
-        todo, check = [window.contentItem()], None
-        while todo and check is None:
-            item = todo.pop()
-            check = item if item.objectName() == "feature_stats" else None
-            todo += item.childItems()
+        check = find_item(window, "feature_stats")
         assert check is not None and check.property("checked") is False
     finally:
         for name in turned_off:
@@ -856,4 +848,68 @@ def test_features_switched_off_disappear_everywhere(qapp, app_window):
     for _ in range(3):
         qapp.processEvents()
     assert "Stats" in rail_labels()
+    assert not warnings, warnings[:3]
+
+
+def find_item(window, name):
+    """An item by objectName anywhere in the window, Repeater rows included (they aren't QObject children).
+    Looked up in QML: walking the item tree from Python leaves PySide wrappers behind."""
+    found = QMetaObject.invokeMethod(window, "findItem", Qt.ConnectionType.DirectConnection, Q_RETURN_ARG("QVariant"),
+                                     Q_ARG("QVariant", name), Q_ARG("QVariant", None))
+    return found if isinstance(found, QObject) else None
+
+
+def visible_names(window, prefix):
+    names = QMetaObject.invokeMethod(window, "visibleNames", Qt.ConnectionType.DirectConnection,
+                                     Q_RETURN_ARG("QVariant"), Q_ARG("QVariant", prefix), Q_ARG("QVariant", None))
+    return set(plain(names) or [])
+
+
+def test_internet_radio_page(qapp, app_window):
+    """Switched on in Settings, Internet radio gets a sidebar entry and a page listing your stations, each with
+    a menu; switched off, it's gone."""
+    window, objects, warnings = app_window
+    shell, stations = objects["shell"], objects["stations"]
+    stations._db.add_station({"name": "Test FM", "url": "http://127.0.0.1:9/live", "tags": "ambient, chill",
+                              "country": "Iceland", "codec": "MP3", "bitrate": 128})
+    stations.refresh()
+
+    def go(page):
+        QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", page))
+        for _ in range(3):
+            qapp.processEvents()
+
+    go("stations")
+    assert window.property("section") == "home", "radio starts switched off"
+    shell.setFeature("stations", True)
+    try:
+        go("stations")
+        assert window.property("section") == "stations"
+        saved = find_item(window, "savedStations")
+        assert saved is not None and saved.property("height") > 40
+        menu = window.findChild(QObject, "stationMenu") or find_item(window, "stationMenu")
+        page = window.findChild(QObject, "pageStack").property("currentItem")
+        QMetaObject.invokeMethod(page, "showMenu", Qt.ConnectionType.DirectConnection,
+                                 Q_ARG("QVariant", {"id": 1, "name": "Test FM", "url": "http://x", "homepage": ""}))
+        from conftest import wait_for
+
+        assert menu is not None and wait_for(lambda: menu.property("opened"), timeout=2)
+        QMetaObject.invokeMethod(menu, "close")
+        assert not warnings, warnings[:3]
+    finally:
+        shell.setFeature("stations", False)
+    for _ in range(3):
+        qapp.processEvents()
+    assert window.property("section") == "home"
+
+
+def test_text_fields_use_the_themed_editing_menu(qapp, app_window):
+    """Right-click in a text field opens the app's own menu; Qt's stock one is native and ignores the theme."""
+    window, objects, warnings = app_window
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "settings"))
+    for _ in range(3):
+        qapp.processEvents()
+    field = find_item(window, "settingsSearch")
+    assert field.property("editMenuName") == "textEditMenu"
+    del field
     assert not warnings, warnings[:3]

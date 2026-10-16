@@ -318,7 +318,13 @@ Item {
                     Layout.maximumWidth: 640
                     Text { text: Theme.fmtTime(player.position); color: Qt.rgba(1, 1, 1, 0.65); font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
                     Item { Layout.fillWidth: true }
-                    Text { text: Theme.fmtTime(player.duration); color: Qt.rgba(1, 1, 1, 0.65); font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
+                    Text {
+                        readonly property bool live: player.hasTrack && player.current.kind === "station"
+                        text: live ? "LIVE" : Theme.fmtTime(player.duration)
+                        color: Qt.rgba(1, 1, 1, live ? 0.9 : 0.65)
+                        font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: live ? Font.Bold : Font.Normal
+                        textFormat: Text.PlainText
+                    }
                 }
                 Row {
                     spacing: 14

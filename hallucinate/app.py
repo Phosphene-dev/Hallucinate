@@ -157,8 +157,16 @@ def main(argv=None) -> int:
     shell.setReportSources(library=library, theme_manager=theme_manager)
     shell.setStartupNotice(db_notice)
     shell.setCrashReport(last_crash, last_crashed)
-    lyrics.setEnabled(shell.featureOn("lyrics"))
-    shell.featuresChanged.connect(lambda: lyrics.setEnabled(shell.featureOn("lyrics")))
+    from .stations import Stations
+
+    stations = Stations(paths.data_dir() / "streams.db", paths.cache_dir(), player)
+
+    def apply_features():
+        lyrics.setEnabled(shell.featureOn("lyrics"))
+        stations.setEnabled(shell.featureOn("stations"))
+
+    apply_features()
+    shell.featuresChanged.connect(apply_features)
 
     if not library.folders and not args.folders:
         # A fresh install: open on the welcome (music folder, theme, scrobbling) until it is finished
@@ -190,6 +198,7 @@ def main(argv=None) -> int:
     ctx.setContextProperty("shell", shell)
     ctx.setContextProperty("discord", discord)
     ctx.setContextProperty("themeManager", theme_manager)
+    ctx.setContextProperty("stations", stations)
     engine.addImportPath(str(HERE / "qml"))
     engine.load(QUrl.fromLocalFile(str(HERE / "qml" / "main.qml")))
     if not engine.rootObjects():
@@ -244,6 +253,7 @@ def main(argv=None) -> int:
     replay_gain.shutdown()
     headphones.shutdown()
     lyrics.shutdown()
+    stations.shutdown()
     meta_editor.shutdown()
     user_lib.shutdown()
     library.shutdown()

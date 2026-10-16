@@ -50,6 +50,7 @@ ApplicationWindow {
         case "visualizer": return visualizerPage
         case "settings": return settingsPage
         case "liked": return likedPage
+        case "stations": return stationsPage
         default: return homePage
         }
     }
@@ -103,6 +104,24 @@ ApplicationWindow {
         visit(target)
     }
 
+    // For tests and tools: an item by objectName anywhere in the window (Repeater rows included), and the
+    // names of the visible ones that start with `prefix`.
+    function findItem(name, root) {
+        root = root || window.contentItem
+        if (root.objectName === name) return root
+        for (var i = 0; i < root.children.length; i++) {
+            var found = findItem(name, root.children[i])
+            if (found) return found
+        }
+        return null
+    }
+    function visibleNames(prefix, root) {
+        root = root || window.contentItem
+        if (!root.visible) return []
+        var out = root.objectName.indexOf(prefix) === 0 ? [root.objectName] : []
+        for (var i = 0; i < root.children.length; i++) out = out.concat(visibleNames(prefix, root.children[i]))
+        return out
+    }
     function featureOn(name) { return shell.features[name] !== false }  // pages that aren't features are always on
     function go(name) {
         if (!featureOn(name)) name = "home"
@@ -149,6 +168,7 @@ ApplicationWindow {
     Component { id: visualizerPage; VisualizerPage {} }
     Component { id: settingsPage; SettingsPage {} }
     Component { id: likedPage; PlaylistPage { liked: true } }
+    Component { id: stationsPage; StationsPage {} }
     Component { id: playlistPage; PlaylistPage {} }
     Component { id: smartPlaylistPage; SmartPlaylistPage {} }
     Component { id: searchPage; SearchPage {} }

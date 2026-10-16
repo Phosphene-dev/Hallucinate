@@ -15,11 +15,13 @@ Menu {
     property var info: ({})
     property var paths: []
     readonly property bool single: paths.length <= 1
+    // a radio station or a streamed episode: no tags, ratings, playlists or files to act on
+    readonly property bool stream: paths.some(function (p) { return /^https?:\/\//.test(p) })
     readonly property string what: single ? "“" + trackTitle + "”" : paths.length + " songs"
 
     function show(p, t, c, i) {
         path = p; trackTitle = t; context = c; index = i; paths = [p]
-        info = library.trackInfo(p)
+        info = /^https?:\/\//.test(p) ? ({}) : library.trackInfo(p)
         popup()
     }
     function showMany(list) {
@@ -31,7 +33,7 @@ Menu {
 
     Item {
         objectName: "menuRating"
-        visible: menu.single
+        visible: menu.single && !menu.stream
         width: 220; height: visible ? 38 : 0
         Text {
             textFormat: Text.PlainText
@@ -48,18 +50,31 @@ Menu {
             size: 17
         }
     }
-    MenuSeparator { visible: menu.single; height: visible ? implicitHeight : 0 }
-    MenuItem { text: "Play"; icon.name: "play"; onTriggered: { userLib.playPaths(menu.paths); menu.done("") } }
+    MenuSeparator { visible: menu.single && !menu.stream; height: visible ? implicitHeight : 0 }
     MenuItem {
+        objectName: "trackCopyLink"
+        visible: menu.stream && menu.single
+        height: visible ? implicitHeight : 0
+        text: "Copy stream link"; icon.name: "playlist"
+        onTriggered: { shell.copyText(menu.path); Nav.notify("Stream link copied") }
+    }
+    MenuItem {
+        visible: !menu.stream; height: visible ? implicitHeight : 0
+        text: "Play"; icon.name: "play"; onTriggered: { userLib.playPaths(menu.paths); menu.done("") }
+    }
+    MenuItem {
+        visible: !menu.stream; height: visible ? implicitHeight : 0
         text: "Play next"; icon.name: "next"
         onTriggered: { userLib.playNextPaths(menu.paths); menu.done(menu.single ? "" : menu.what + " will play next") }
     }
     MenuItem {
+        visible: !menu.stream; height: visible ? implicitHeight : 0
         text: "Add to queue"; icon.name: "queue"
         onTriggered: { userLib.enqueuePaths(menu.paths); menu.done(menu.what + " added to the queue") }
     }
     MenuItem {
         readonly property bool liked: userLib.likesRevision >= 0 && userLib.allLiked(menu.paths)
+        visible: !menu.stream; height: visible ? implicitHeight : 0
         text: liked ? "Remove from Liked Songs" : "Add to Liked Songs"
         icon.name: "heart"
         onTriggered: { userLib.setLikedPaths(menu.paths, !liked); menu.done("") }
@@ -68,6 +83,7 @@ Menu {
         id: plMenu
         title: "Add to playlist"
         icon.name: "playlist"
+        enabled: !menu.stream
         MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: newDlg.open() }
         MenuSeparator {}
         Instantiator {
@@ -82,7 +98,7 @@ Menu {
             onObjectRemoved: (i, o) => plMenu.removeItem(o)
         }
     }
-    MenuSeparator {}
+    MenuSeparator { visible: !menu.stream; height: visible ? implicitHeight : 0 }
     MenuItem {
         visible: menu.single && (menu.info.album_key || "").length > 0 && menu.context !== "album"
         height: visible ? implicitHeight : 0
@@ -99,7 +115,7 @@ Menu {
     }
     MenuItem {
         objectName: "trackShowInFolder"
-        visible: menu.single
+        visible: menu.single && !menu.stream
         height: visible ? implicitHeight : 0
         enabled: menu.info.exists === true
         text: "Show in folder"
@@ -107,6 +123,7 @@ Menu {
         onTriggered: library.showInFolder(menu.path)
     }
     MenuItem {
+        visible: !menu.stream; height: visible ? implicitHeight : 0
         text: "Edit tags…"
         icon.name: "edit"
         // CUE sheet songs are edited in the .cue file
@@ -129,14 +146,16 @@ Menu {
         icon.color: Theme.error
         onTriggered: userLib.removeFromPlaylist(menu.index)
     }
-    MenuSeparator {}
+    MenuSeparator { visible: !menu.stream; height: visible ? implicitHeight : 0 }
     MenuItem {
         objectName: "trackRemove"
+        visible: !menu.stream; height: visible ? implicitHeight : 0
         text: "Remove from library…"; icon.name: "remove"; icon.color: Theme.error
         onTriggered: Nav.removeSongs(menu.paths, menu.what)
     }
     MenuItem {
         objectName: "trackTrash"
+        visible: !menu.stream; height: visible ? implicitHeight : 0
         text: "Move to trash…"; icon.name: "trash"; icon.color: Theme.error
         enabled: !menu.single || menu.info.exists === true
         onTriggered: Nav.trashSongs(menu.paths, menu.what)

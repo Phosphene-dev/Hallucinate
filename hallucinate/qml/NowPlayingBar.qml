@@ -182,7 +182,14 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 26
             }
-            Text { text: Theme.fmtTime(player.duration); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); Layout.preferredWidth: 38; textFormat: Text.PlainText }
+            Text {
+                objectName: "barDuration"
+                readonly property bool live: player.hasTrack && player.current.kind === "station"
+                text: live ? "LIVE" : Theme.fmtTime(player.duration)
+                color: live ? Theme.accent : Theme.textDim
+                font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); font.weight: live ? Font.Bold : Font.Normal
+                Layout.preferredWidth: 38; textFormat: Text.PlainText
+            }
         }
     }
 

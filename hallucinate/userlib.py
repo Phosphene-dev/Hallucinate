@@ -753,8 +753,8 @@ class UserLibrary(QObject):
     @Slot("QVariantMap")
     def recordPlay(self, track):
         path = track.get("path") if hasattr(track, "get") else None
-        if not path:
-            return
+        if not path or (track.get("kind") or "music") != "music":
+            return  # radio and podcasts stay out of plays, stats and history
         self._write(lambda db, p: db.record_play(p), path)
         self.refreshStats()
         self._reload_history()

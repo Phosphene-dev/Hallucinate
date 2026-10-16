@@ -32,6 +32,7 @@ T.TextField {
     ContextMenu.menu: TextEditMenu {
         editor: control
     }
+    readonly property string editMenuName: ContextMenu.menu ? ContextMenu.menu.objectName : ""
 
     PlaceholderText {
         id: placeholder

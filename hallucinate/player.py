@@ -19,6 +19,8 @@ from PySide6.QtMultimedia import (
 from PySide6.QtQml import QQmlComponent, QQmlEngine
 
 from . import eq, signalpath
+from .core import net
+from .core.kinds import counts_for_scrobbling, is_url, track_kind  # noqa: F401 - re-exported
 from .core.tags import is_readable_audio
 from .models import TRACK_KEYS, DictModel
 
@@ -32,6 +34,8 @@ UNDO_STEPS = 20  # queue changes that can be undone
 SKIP_MIN_MS = 1500  # moving on sooner than this is browsing the queue, not a skip
 RADIO_LOW_WATER = 2  # ask for more radio tracks once fewer than this many are left to play
 RADIO_SEEDS = 5  # recently played tracks the next radio batch is based on  # stop a track left to finish this long after its expected end, in case it stalls
+STREAM_SONG_MS = 60_000  # a song heard this long on internet radio counts for scrobbling
+STREAM_RETRIES = 5  # reconnect a dropped station this many times (2, 4, 8… s apart) before giving up
 SESSION_VERSION = 1
 SESSION_MAX_TRACKS = 1000  # bounds the save cost for huge queues (e.g. "play all songs" on 50k tracks)
 VISUALIZER_BARS = 24
@@ -132,10 +136,11 @@ class _Voice:
         """Point this voice at a queue entry: its file and, for a CUE song, its stretch of it."""
         self.index, self.path = index, track_file(track)
         self.start, self.end = track_window(track)
-        self.seek_on_load = self.start if self.start else -1
+        resume = int(track.get("resume_ms") or 0)  # a podcast episode picks up where it was left
+        self.seek_on_load = self.start + resume if self.start or resume else -1
         if self.tap is not None:
             self.tap.reset()
-        self.player.setSource(QUrl.fromLocalFile(self.path))
+        self.player.setSource(QUrl(self.path) if is_url(self.path) else QUrl.fromLocalFile(self.path))
 
     def holds(self, index, track):
         return self.index == index and self.path == track_file(track) and (self.start, self.end) == track_window(track)
@@ -207,6 +212,7 @@ class Player(QObject):
         self._repeat = REPEAT_OFF
         self._error = ""
         self._error_streak = 0
+        self._stream_retries = 0
         self._model = DictModel(TRACK_KEYS, self)
         self._visualizer_enabled = False
         self._visualizer_levels = [0.0] * VISUALIZER_BARS
@@ -587,7 +593,7 @@ class Player(QObject):
 
     def _request_waveform(self, track, urgent=True):
         path = track.get("path", "")
-        if not path:
+        if not path or is_url(path) or track_kind(track) != "music":
             return None
         if track.get("file"):  # a CUE sheet song: its stretch of the album's file
             return self._waveforms.request_window(path, track["file"], track.get("cue_start") or 0.0,
@@ -636,7 +642,8 @@ class Player(QObject):
     @Slot()
     def _maybe_extend_radio(self):
         if (not self._radio or self._radio_source is None or self._radio_pending or not self.hasTrack
-                or self._repeat != REPEAT_OFF or self._tracks_left() >= RADIO_LOW_WATER):
+                or self._repeat != REPEAT_OFF or self._tracks_left() >= RADIO_LOW_WATER
+                or track_kind(self.current) != "music"):
             return
         recent = [i for i in self._history if 0 <= i < len(self._queue)][-(RADIO_SEEDS - 1):] + [self._index]
         seeds = [self._queue[i].get("path", "") for i in recent]
@@ -1136,11 +1143,17 @@ class Player(QObject):
     def _note_skip(self, target):
         """Moving on by hand from a song that is playing and hasn't counted as a play yet is a skip."""
         if (self.hasTrack and target != self._index and self.playing and not self._play_counted
-                and self._voice.position() >= SKIP_MIN_MS):
+                and self._voice.position() >= SKIP_MIN_MS and track_kind(self.current) == "music"):
             self.skipped.emit(dict(self.current))
 
     @Slot()
     def previous(self):
+        if self.hasTrack and track_kind(self.current) == "station":
+            if self._history:
+                self._load(self._history.pop(), record=False)
+            elif self._index > 0:
+                self._load(self._index - 1, record=False)
+            return
         if self._voice.position() > 3000 or not self.hasTrack:
             self.seek(0)
         elif self._history:
@@ -1375,8 +1388,21 @@ class Player(QObject):
             del self._history[:-200]
         track = self._queue[i]
         path = track_file(track)
-        exists = isinstance(path, str) and os.path.isfile(path)
-        if not exists or not is_readable_audio(path):
+        if i != self._index:
+            self._stream_retries = 0
+        if is_url(path) and net.is_offline():
+            self._end_fade()
+            for v in self._voices:
+                v.clear()
+            self._index = i
+            self._set_error("Offline mode is on, so streams can't play")
+            self.trackChanged.emit()
+            self.stateChanged.emit()
+            return
+        if track_kind(track) == "station" and track.get("station"):
+            track.update(title=track["station"], artist="", stream_title="")  # the song it said last is over
+        exists = is_url(path) or (isinstance(path, str) and os.path.isfile(path))
+        if not exists or not (is_url(path) or is_readable_audio(path)):
             self._index = i
             reason = "File not found" if not exists else "Unreadable audio file"
             self._set_error(f"{reason}: {path}")
@@ -1388,7 +1414,8 @@ class Player(QObject):
                 candidates += list(range(0, i))
             for candidate in candidates:
                 candidate_path = track_file(self._queue[candidate])
-                if isinstance(candidate_path, str) and os.path.isfile(candidate_path) and is_readable_audio(candidate_path):
+                if is_url(candidate_path) or (isinstance(candidate_path, str) and os.path.isfile(candidate_path)
+                                              and is_readable_audio(candidate_path)):
                     self._load(candidate, autoplay=autoplay, record=False)
                     return
             self._reset_empty()
@@ -1442,7 +1469,7 @@ class Player(QObject):
             self._cur = 1 - self._cur
             if self._voice.tap is not None:
                 self._voice.tap.reset()
-            self._voice.set_position(0)
+            self._voice.set_position(int(track.get("resume_ms") or 0))
             self.gapless_swaps += 1
             if fade_ms:
                 self._start_fade(fade_ms)
@@ -1522,6 +1549,15 @@ class Player(QObject):
         if self._play_counted or not self.playing or not 0 < step < 2000:
             return
         self._listened += step
+        kind = track_kind(self.current) if self.hasTrack else "music"
+        if kind == "episode":
+            return  # podcasts keep their own place (see podcasts.py); they're never plays
+        if kind == "station":
+            # a song on the radio, once its title is known, counts for scrobbling after a minute
+            if self._listened >= STREAM_SONG_MS and self.current.get("artist") and self.current.get("stream_title"):
+                self._play_counted = True
+                self.played.emit(dict(self.current))
+            return
         if self._listened >= min(30_000, max(dur, 1) / 2) and self.hasTrack:
             self._play_counted = True
             self.played.emit(dict(self.current))
@@ -1609,6 +1645,11 @@ class Player(QObject):
             if status == S.EndOfMedia:
                 self._voices[n].finishing = False
             return
+        if status == S.EndOfMedia and self.hasTrack and track_kind(self.current) == "station":
+            self._reconnect_stream("The station stopped sending")  # a live stream has no end: it dropped
+            return
+        if status in (S.BufferedMedia,) and self.hasTrack and is_url(self.current.get("path")):
+            self._stream_retries = 0
         if status == S.EndOfMedia and not self._ended and not self._fading:
             # Normally the next track has already taken over; this covers a handoff that never got scheduled.
             self._transitioning = False
@@ -1628,10 +1669,51 @@ class Player(QObject):
             sb = self._voices[n]
             sb.clear()  # a failed pre-roll just falls back to a normal load later
             return
+        if self._reconnect_stream(message):
+            return
         self._set_error(message or "Playback error")
         self._error_streak += 1
         if self._error_streak < len(self._queue):
             QTimer.singleShot(300, self._skip_after_error)
+
+    def _reconnect_stream(self, message):
+        """A station that drops or errors is reconnected a few times, further apart each time. True if a
+        reconnect was scheduled."""
+        if not self.hasTrack or track_kind(self.current) != "station" or net.is_offline():
+            return False
+        if self._stream_retries >= STREAM_RETRIES:
+            self._set_error(f"The station isn't answering: {message or 'no sound'}")
+            return True
+        self._stream_retries += 1
+        delay = 1000 * 2 ** self._stream_retries
+        self._set_error(f"Reconnecting to the station… ({message or 'it stopped'})")
+        index = self._index
+        QTimer.singleShot(delay, lambda: self._retry_stream(index))
+        return True
+
+    def _retry_stream(self, index):
+        if index == self._index and self.hasTrack and track_kind(self.current) == "station":
+            retries = self._stream_retries
+            self._load(index, record=False)
+            self._stream_retries = retries
+
+    @Slot(str, str)
+    def setStreamInfo(self, artist, title):
+        """What a station says is playing now (from its stream titles). It becomes the current entry's artist
+        and title, with the station's name kept as the album, so everything that shows the playing song
+        (the bar, Now Playing, the tray, media keys, Discord, scrobbling) follows the radio."""
+        if not self.hasTrack or track_kind(self.current) != "station":
+            return
+        entry = self._queue[self._index]
+        station = entry.get("station") or entry.get("album") or entry.get("title", "")
+        new_title = title or station
+        if entry.get("title") == new_title and entry.get("artist", "") == artist:
+            return
+        entry.update(title=new_title, artist=artist, station=station, album=station,
+                     stream_title=f"{artist} - {title}" if artist else title)
+        self._listened, self._play_counted = 0, False
+        self._model.set_items(self._queue)
+        self.trackChanged.emit()
 
     def _skip_after_error(self):
         if not self._error:
@@ -1692,7 +1774,8 @@ class Player(QObject):
                 return False
             queue = [
                 t for t in data["queue"]
-                if isinstance(t, dict) and isinstance(t.get("path"), str) and os.path.isfile(track_file(t))
+                if isinstance(t, dict) and isinstance(t.get("path"), str)
+                and (is_url(t["path"]) or os.path.isfile(track_file(t)))
             ]
             index = int(data.get("index", -1))
             pos = int(data.get("position", 0))
@@ -1704,7 +1787,8 @@ class Player(QObject):
             return False
         old = data["queue"]
         if 0 <= index < len(old):
-            keep = [i for i, t in enumerate(old) if isinstance(t, dict) and os.path.isfile(track_file(t))]
+            keep = [i for i, t in enumerate(old) if isinstance(t, dict)
+                    and (is_url(t.get("path")) or os.path.isfile(track_file(t)))]
             index = keep.index(index) if index in keep else min(sum(1 for i in keep if i < index), len(queue) - 1)
         else:
             index, pos = 0, 0
@@ -1715,5 +1799,5 @@ class Player(QObject):
         self.shuffleChanged.emit()
         self.repeatChanged.emit()
         self._load(index, autoplay=False, record=False)
-        self._restore_pos = max(pos, 0)
+        self._restore_pos = max(pos, 0) if track_kind(self._queue[index]) != "station" else 0
         return True

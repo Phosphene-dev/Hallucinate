@@ -146,6 +146,17 @@ Canvas {
         case "history":  // a clock
             ctx.beginPath(); ctx.arc(w*.5, h*.5, w*.38, 0, Math.PI*2); ctx.stroke()
             line([.5,.26,.5,.5]); line([.5,.5,.67,.62]); break
+        case "station":  // a radio set: an antenna, the body, a dial and its speaker grille
+            line([.3,.32,.72,.1])
+            ctx.beginPath(); ctx.moveTo(w*.18, h*.34); ctx.lineTo(w*.82, h*.34); ctx.lineTo(w*.82, h*.86)
+            ctx.lineTo(w*.18, h*.86); ctx.closePath(); ctx.stroke()
+            ctx.beginPath(); ctx.arc(w*.64, h*.6, w*.1, 0, Math.PI*2); ctx.stroke()
+            line([.28,.52,.42,.52]); line([.28,.68,.42,.68]); break
+        case "podcast":  // a microphone on a stand
+            ctx.beginPath(); ctx.moveTo(w*.38, h*.24); ctx.arc(w*.5, h*.24, w*.12, Math.PI, 0)
+            ctx.lineTo(w*.62, h*.46); ctx.arc(w*.5, h*.46, w*.12, 0, Math.PI); ctx.closePath(); ctx.stroke()
+            ctx.beginPath(); ctx.arc(w*.5, h*.46, w*.24, 0, Math.PI); ctx.stroke()
+            line([.5,.7,.5,.88]); line([.34,.88,.66,.88]); break
         case "search":
             ctx.beginPath(); ctx.arc(w*.42, h*.42, w*.28, 0, Math.PI*2); ctx.stroke(); line([.64,.64,.9,.9]); break
         }

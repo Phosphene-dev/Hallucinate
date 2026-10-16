@@ -29,7 +29,8 @@ Item {
         { id: "folders", t: "Folders", i: "folder" },
         { id: "liked", t: "Liked Songs", i: "heart" }, { id: "stats", t: "Stats", i: "stats" },
         { id: "history", t: "History", i: "history" },
-        { id: "recap", t: "Recap", i: "recap" }, { id: "visualizer", t: "Visualizer", i: "wave" }
+        { id: "recap", t: "Recap", i: "recap" }, { id: "visualizer", t: "Visualizer", i: "wave" },
+        { id: "stations", t: "Internet radio", i: "station" }
     ]
 
     Rectangle {
@@ -99,6 +100,7 @@ Item {
                         model: side.pages.filter(function (p) { return shell.features[p.id] !== false })
                         RailButton {
                             required property var modelData
+                            objectName: "rail_" + modelData.id
                             width: navCol.width
                             height: side.entryHeight
                             text: modelData.t

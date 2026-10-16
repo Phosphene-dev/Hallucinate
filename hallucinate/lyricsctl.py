@@ -122,6 +122,8 @@ class LyricsController(QObject):
     @Slot()
     def reload(self):
         track = self._player.current if self._player.hasTrack and self._enabled else {}
+        if (track.get("kind") or "music") != "music":
+            track = {}  # radio and podcasts have no lyrics to find
         path = track.get("path", "")
         if path == self._path and self._status in ("found", "loading"):
             return
