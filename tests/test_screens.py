@@ -581,3 +581,80 @@ def test_an_artists_menu_removes_their_songs_after_asking(qapp, app_window):
     assert wait_for(lambda: library.trackCount == before - len(theirs), timeout=10)
     assert library.hiddenCount == len(theirs)
     assert not [w for w in warnings if "CollectionMenu" in w or "main.qml" in w], warnings
+
+
+def test_back_and_forward_like_a_browser(qapp, app_window):
+    """Back and Forward walk the pages visited, across sections too; Back reuses the page underneath."""
+
+    window, objects, warnings = app_window
+    stack = window.findChild(QObject, "pageStack")
+    track = objects["library"].allTracks()[0]
+
+    def call(name, *args):
+        QMetaObject.invokeMethod(window, name, Qt.ConnectionType.DirectConnection,
+                                 *[Q_ARG("QVariant", a) for a in args])
+        for _ in range(3):
+            qapp.processEvents()
+
+    def where():
+        item = stack.property("currentItem")
+        return item.property("albumKey") or item.property("artistName") or window.property("section")
+
+    call("go", "albums")
+    call("openAlbum", track["album_key"])
+    call("go", "stats")
+    call("openArtist", track["album_artist"])
+    assert where() == track["album_artist"]
+    call("goBack")
+    assert where() == "stats"
+    call("goBack")
+    assert where() == track["album_key"]
+    album_page = stack.property("currentItem")
+    call("goBack")
+    assert where() == "albums"
+    call("goForward")
+    assert where() == track["album_key"]
+    call("goForward")
+    call("goForward")
+    assert where() == track["album_artist"]
+    call("goForward")  # nothing further: stays
+    assert where() == track["album_artist"]
+    call("openAlbum", track["album_key"])  # a new visit drops what was ahead
+    assert window.property("forwardRoutes").toVariant() == []
+    assert album_page is not None
+    assert not [w for w in warnings if "main.qml" in w], warnings
+
+
+def test_mouse_side_buttons_navigate_and_other_clicks_pass_through(qapp, app_window):
+    from PySide6.QtCore import QPoint, QPointF
+    from PySide6.QtGui import QMouseEvent
+    from PySide6.QtTest import QTest
+
+    window, objects, warnings = app_window
+    stack = window.findChild(QObject, "pageStack")
+    track = objects["library"].allTracks()[0]
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "home"))
+    QMetaObject.invokeMethod(window, "openAlbum", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", track["album_key"]))
+    qapp.processEvents()
+
+    def side_button(button):
+        pos = QPointF(window.width() / 2, window.height() / 2)
+        for kind in (QMouseEvent.Type.MouseButtonPress, QMouseEvent.Type.MouseButtonRelease):
+            qapp.sendEvent(window, QMouseEvent(kind, pos, pos, button, button if kind == QMouseEvent.Type.MouseButtonPress
+                                               else Qt.MouseButton.NoButton, Qt.KeyboardModifier.NoModifier))
+        for _ in range(3):
+            qapp.processEvents()
+
+    side_button(Qt.MouseButton.BackButton)
+    assert window.property("section") == "home" and stack.property("depth") == 1
+    side_button(Qt.MouseButton.ForwardButton)
+    assert stack.property("currentItem").property("albumKey") == track["album_key"]
+
+    # an ordinary click still reaches the page: the sidebar's Settings entry opens Settings
+    settings = next(o for o in window.findChildren(QObject) if o.property("text") == "Settings"
+                    and o.metaObject().className().startswith("RailButton"))
+    centre = settings.mapToScene(QPointF(settings.width() / 2, settings.height() / 2))
+    QTest.mouseClick(window, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QPoint(int(centre.x()), int(centre.y())))
+    for _ in range(3):
+        qapp.processEvents()
+    assert window.property("section") == "settings"
