@@ -328,7 +328,10 @@ Item {
                 }
                 Row {
                     spacing: 14
-                    IconButton { anchors.verticalCenter: parent.verticalCenter; icon: "shuffle"; size: 22; active: player.shuffle; onClicked: player.toggleShuffle() }
+                    readonly property bool episode: player.hasTrack && player.current.kind === "episode"
+                    readonly property bool music: player.hasTrack && !(player.current.kind || "").length
+                    IconButton { anchors.verticalCenter: parent.verticalCenter; visible: !parent.episode; icon: "shuffle"; size: 22; active: player.shuffle; onClicked: player.toggleShuffle() }
+                    IconButton { anchors.verticalCenter: parent.verticalCenter; visible: parent.episode; icon: "skipback"; size: 24; tip: "Back 15 seconds"; onClicked: player.seekBy(-15000) }
                     IconButton { anchors.verticalCenter: parent.verticalCenter; icon: "prev"; size: 24; onClicked: player.previous() }
                     Rectangle {
                         width: 64; height: 64; radius: 32
@@ -347,8 +350,10 @@ Item {
                         Accessible.name: player.playing ? "Pause" : "Play"
                     }
                     IconButton { anchors.verticalCenter: parent.verticalCenter; icon: "next"; size: 24; onClicked: player.next() }
+                    IconButton { anchors.verticalCenter: parent.verticalCenter; visible: parent.episode; icon: "skipfwd"; size: 24; tip: "Forward 30 seconds"; onClicked: player.seekBy(30000) }
                     IconButton {
                         anchors.verticalCenter: parent.verticalCenter
+                        visible: !parent.episode
                         icon: player.repeat === 2 ? "repeat1" : "repeat"
                         size: 22
                         active: player.repeat !== 0
@@ -356,6 +361,7 @@ Item {
                     }
                     IconButton {
                         anchors.verticalCenter: parent.verticalCenter
+                        visible: parent.music
                         icon: "heart"; size: 22
                         active: player.hasTrack && userLib.likesRevision >= 0 && userLib.isLiked(player.current.path)
                         tip: "Like"

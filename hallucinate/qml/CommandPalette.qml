@@ -54,6 +54,7 @@ Popup {
             { f: "stats", t: "Stats", s: "Go to", i: "stats", run: () => w.go("stats") },
             { f: "history", t: "History", s: "Go to", i: "history", run: () => w.go("history") },
             { f: "recap", t: "Recap", s: "Go to  ·  your week, month or year", i: "recap", run: () => w.go("recap") },
+            { f: "podcasts", t: "Podcasts", s: "Go to  ·  your shows", i: "podcast", run: () => w.go("podcasts") },
             { f: "stations", t: "Internet radio", s: "Go to  ·  your stations", i: "station", run: () => w.go("stations") },
             { f: "visualizer", t: "Visualizer", s: "Go to", i: "wave", run: () => w.go("visualizer") },
             { t: "Settings", s: "Go to", i: "settings", run: () => w.go("settings") },

@@ -51,6 +51,7 @@ ApplicationWindow {
         case "settings": return settingsPage
         case "liked": return likedPage
         case "stations": return stationsPage
+        case "podcasts": return podcastsPage
         default: return homePage
         }
     }
@@ -72,6 +73,7 @@ ApplicationWindow {
         if (!item) return null
         if (item.albumKey !== undefined && item.objectName !== "search" && item.albumKey) return { kind: "album", key: item.albumKey }
         if (item.artistName !== undefined && item.artistName) return { kind: "artist", name: item.artistName }
+        if (item.podcastId !== undefined && item.podcastId) return { kind: "podcast", id: item.podcastId }
         return depth === 0 ? route0 : null
     }
     property var route0: ({ kind: "section", name: "home" })  // what sits at the bottom of the page stack
@@ -82,6 +84,7 @@ ApplicationWindow {
         else if (r.kind === "smart") openSmartPlaylist(r.id, r.name)
         else if (r.kind === "album") openAlbum(r.key)
         else if (r.kind === "artist") openArtist(r.name)
+        else if (r.kind === "podcast") openPodcast(r.id)
         route = r
         replaying = false
     }
@@ -151,6 +154,12 @@ ApplicationWindow {
     function newPlaylist() { createDlg.open() }
     function openAlbum(key) { remember({ kind: "album", key: key }); stack.push(albumDetail, { albumKey: key }) }
     function openArtist(name) { remember({ kind: "artist", name: name }); stack.push(artistDetail, { artistName: name }) }
+    function openPodcast(id) {
+        if (!featureOn("podcasts")) return
+        if (section !== "podcasts") go("podcasts")
+        remember({ kind: "podcast", id: id })
+        stack.push(podcastDetail, { podcastId: id })
+    }
     function showSearch() {
         if (stack.currentItem && stack.currentItem.objectName === "search") return
         stack.push(searchPage, { query: searchField.text })
@@ -169,6 +178,8 @@ ApplicationWindow {
     Component { id: settingsPage; SettingsPage {} }
     Component { id: likedPage; PlaylistPage { liked: true } }
     Component { id: stationsPage; StationsPage {} }
+    Component { id: podcastsPage; PodcastsPage {} }
+    Component { id: podcastDetail; PodcastPage {} }
     Component { id: playlistPage; PlaylistPage {} }
     Component { id: smartPlaylistPage; SmartPlaylistPage {} }
     Component { id: searchPage; SearchPage {} }
@@ -179,6 +190,7 @@ ApplicationWindow {
         target: Nav
         function onOpenAlbum(key) { window.openAlbum(key) }
         function onOpenArtist(name) { window.openArtist(name) }
+        function onOpenPodcast(id) { window.openPodcast(id) }
         function onOpenSettings() { window.go("settings") }
         function onOpenLiked() { window.go("liked") }
         function onGoHome() { window.go("home") }

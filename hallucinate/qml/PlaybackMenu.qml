@@ -6,10 +6,13 @@ import "."
 Menu {
     id: menu
     Menu {
+        id: speedMenu
         icon.name: "wave"
-        title: "Playback speed" + (player.speed !== 1 ? " (" + player.speed + "×)" : "")
+        readonly property bool episode: player.hasTrack && player.current.kind === "episode"
+        // podcasts keep a speed of their own, and go up to 3×
+        title: (episode ? "Podcast speed" : "Playback speed") + (player.speed !== 1 ? " (" + player.speed + "×)" : "")
         Repeater {
-            model: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
+            model: speedMenu.episode ? [0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3] : [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
             MenuItem {
                 required property real modelData
                 text: modelData + "×"

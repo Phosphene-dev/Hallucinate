@@ -99,6 +99,7 @@ def app_window(qapp, tmp_path, monkeypatch, request):
     from hallucinate.lyricsctl import LyricsController
     from hallucinate.metaedit import MetadataEditor
     from hallucinate.player import Player
+    from hallucinate.podcasts import Podcasts
     from hallucinate.replaygain import ReplayGainAnalyzer
     from hallucinate.scrobbling import LastFmScrobbler
     from hallucinate.shell import DesktopShell
@@ -129,6 +130,7 @@ def app_window(qapp, tmp_path, monkeypatch, request):
         "discord": DiscordPresence(player),
         "themeManager": ThemeManager(tmp_path / "config", player),
         "stations": Stations(tmp_path / "streams.db", tmp_path / "cache", player),
+        "podcasts": Podcasts(tmp_path / "streams.db", tmp_path / "data", tmp_path / "cache", player),
     }
     engine = QQmlApplicationEngine()
     for key, value in objects.items():
@@ -537,6 +539,12 @@ def test_everything_clickable_has_a_name_for_screen_readers(qapp, app_window):
     for page in PAGES:
         invoke("go", page)
         visit(page)
+    with listening_extras(objects):
+        for page in ("stations", "podcasts"):
+            invoke("go", page)
+            visit(page)
+        invoke("openPodcast", 1)
+        visit("podcast")
     invoke("go", "albums")
     albums = window.findChild(QObject, "pageStack").property("currentItem")
     for view in ("grid", "colour", "timeline"):
@@ -692,6 +700,33 @@ def test_mouse_side_buttons_navigate_and_other_clicks_pass_through(qapp, app_win
     assert window.property("section") == "settings"
 
 
+import contextlib  # noqa: E402
+
+
+@contextlib.contextmanager
+def listening_extras(objects):
+    """Internet radio and podcasts switched on, with a station and a show (long names included) to draw."""
+    shell, stations, podcasts = objects["shell"], objects["stations"], objects["podcasts"]
+    stations._db.add_station({"name": "A Station With An Exceedingly Long Name For Testing", "url": "http://127.0.0.1:9/s",
+                              "tags": "ambient, chill, downtempo, electronic", "country": "Iceland", "codec": "MP3",
+                              "bitrate": 128})
+    stations.refresh()
+    pid = podcasts._db.add_podcast({"title": "A Podcast Whose Title Goes On For Quite Some Time", "author": "Host",
+                                    "feed_url": "https://x/feed", "description": "Notes " * 80})
+    podcasts._db.merge_episodes(pid, [{"guid": str(i), "title": f"Episode {i} with a long and winding title " * 2,
+                                       "url": f"https://x/{i}.mp3", "published": 1_900_000_000 + i, "duration": 1800}
+                                      for i in range(3)])
+    podcasts._db.set_position(1, 300)
+    podcasts.reload()
+    shell.setFeature("stations", True)
+    shell.setFeature("podcasts", True)
+    try:
+        yield
+    finally:
+        shell.setFeature("stations", False)
+        shell.setFeature("podcasts", False)
+
+
 def overflowing(root):
     """What spills out of a card: visible things inside a GlassPanel that reach past its edges, unless something
     between them clips (a scrolling list, say) or they belong to a popup."""
@@ -734,11 +769,12 @@ def test_nothing_spills_out_of_its_card_at_any_width(qapp, app_window, width):
     window, objects, warnings = app_window
     window.resize(width, 900)
     problems = []
-    for page in PAGES:
-        assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", page))
-        for _ in range(4):
-            qapp.processEvents()
-        problems += [f"{page}: {p}" for p in overflowing(window)]
+    with listening_extras(objects):
+        for page in PAGES + ("stations", "podcasts"):
+            assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", page))
+            for _ in range(4):
+                qapp.processEvents()
+            problems += [f"{page}: {p}" for p in overflowing(window)]
     assert not problems, "\n".join(problems[:25])
 
 
@@ -778,9 +814,11 @@ def test_nothing_runs_off_a_narrow_window(qapp, app_window, width):
                                         *[Q_ARG("QVariant", a) for a in args]), method
 
     def screens():
-        for page in PAGES:
+        for page in PAGES + ("stations", "podcasts"):
             invoke("go", page)
             yield page
+        invoke("openPodcast", 1)
+        yield "podcast"
         invoke("openAlbum", "v0")
         yield "album"
         invoke("openArtist", "The Extraordinarily Long Named Orchestra")
@@ -791,10 +829,11 @@ def test_nothing_runs_off_a_narrow_window(qapp, app_window, width):
         window.setProperty("queueOpen", False)
 
     problems = []
-    for screen in screens():
-        for _ in range(4):
-            qapp.processEvents()
-        problems += [f"{screen}: {p}" for p in past_the_edge(window)]
+    with listening_extras(objects):
+        for screen in screens():
+            for _ in range(4):
+                qapp.processEvents()
+            problems += [f"{screen}: {p}" for p in past_the_edge(window)]
     assert not problems, "\n".join(problems[:25])
 
 
@@ -913,3 +952,46 @@ def test_text_fields_use_the_themed_editing_menu(qapp, app_window):
     assert field.property("editMenuName") == "textEditMenu"
     del field
     assert not warnings, warnings[:3]
+
+
+def test_podcast_pages(qapp, app_window):
+    """Switched on, Podcasts lists your shows and new episodes; a show opens on its own page with its
+    episodes and their menus, and Back returns."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    shell, podcasts = objects["shell"], objects["podcasts"]
+    pid = podcasts._db.add_podcast({"title": "Test Talk", "author": "Host", "feed_url": "https://x/feed"})
+    podcasts._db.merge_episodes(pid, [
+        {"guid": "2", "title": "Episode Two", "url": "https://x/2.mp3", "published": 2_000_000_000, "duration": 1800},
+        {"guid": "1", "title": "Episode One", "url": "https://x/1.mp3", "published": 1_900_000_000, "duration": 1200}])
+    podcasts.reload()
+
+    def invoke(method, *args):
+        assert QMetaObject.invokeMethod(window, method, Qt.ConnectionType.DirectConnection,
+                                        *[Q_ARG("QVariant", a) for a in args]), method
+        for _ in range(3):
+            qapp.processEvents()
+
+    invoke("go", "podcasts")
+    assert window.property("section") == "home", "podcasts start switched off"
+    shell.setFeature("podcasts", True)
+    try:
+        invoke("go", "podcasts")
+        assert window.property("section") == "podcasts"
+        assert find_item(window, "followedShows").property("height") > 100
+        assert find_item(window, "latestEpisodes").property("visible")
+        invoke("openPodcast", pid)
+        page = window.findChild(QObject, "pageStack").property("currentItem")
+        assert page.property("podcastId") == pid
+        assert wait_for(lambda: find_item(window, "episodeList").property("count") == 2)
+        menu = page.findChild(QObject, "episodeMenu")
+        QMetaObject.invokeMethod(menu, "showFor", Qt.ConnectionType.DirectConnection,
+                                 Q_ARG("QVariant", podcasts.episodes._items[0]), Q_ARG("QVariant", False))
+        assert wait_for(lambda: menu.property("opened"), timeout=2)
+        QMetaObject.invokeMethod(menu, "close")
+        invoke("goBack")
+        assert window.findChild(QObject, "pageStack").property("currentItem").objectName() == "podcasts"
+        assert not warnings, warnings[:3]
+    finally:
+        shell.setFeature("podcasts", False)

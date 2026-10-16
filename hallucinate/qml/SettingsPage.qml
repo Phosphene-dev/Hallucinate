@@ -243,6 +243,25 @@ Item {
                 items: [["homeRandom", "Random album"], ["homeListening", "Listening card"],
                         ["homeFacts", "Library facts"], ["homeShelves", "Album shelves"]]
             }
+            Column {
+                visible: shell.features.podcasts !== false
+                width: parent.width
+                spacing: 6
+                Text { textFormat: Text.PlainText; text: "Podcasts"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold }
+                StyledCheck {
+                    objectName: "deletePlayedEpisodes"
+                    text: "Remove a downloaded episode once it's played"
+                    checked: podcasts.deletePlayed
+                    onToggled: podcasts.setDeletePlayed(checked)
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: "Feeds are checked when Hallucinate starts and every few hours. Episodes in a folder you added are your own files and are never removed."
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                }
+            }
         }
 
         SettingsSection {

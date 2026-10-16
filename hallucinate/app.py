@@ -157,13 +157,16 @@ def main(argv=None) -> int:
     shell.setReportSources(library=library, theme_manager=theme_manager)
     shell.setStartupNotice(db_notice)
     shell.setCrashReport(last_crash, last_crashed)
+    from .podcasts import Podcasts
     from .stations import Stations
 
     stations = Stations(paths.data_dir() / "streams.db", paths.cache_dir(), player)
+    podcasts = Podcasts(paths.data_dir() / "streams.db", paths.data_dir(), paths.cache_dir(), player)
 
     def apply_features():
         lyrics.setEnabled(shell.featureOn("lyrics"))
         stations.setEnabled(shell.featureOn("stations"))
+        podcasts.setEnabled(shell.featureOn("podcasts"))
 
     apply_features()
     shell.featuresChanged.connect(apply_features)
@@ -199,6 +202,7 @@ def main(argv=None) -> int:
     ctx.setContextProperty("discord", discord)
     ctx.setContextProperty("themeManager", theme_manager)
     ctx.setContextProperty("stations", stations)
+    ctx.setContextProperty("podcasts", podcasts)
     engine.addImportPath(str(HERE / "qml"))
     engine.load(QUrl.fromLocalFile(str(HERE / "qml" / "main.qml")))
     if not engine.rootObjects():
@@ -254,6 +258,7 @@ def main(argv=None) -> int:
     headphones.shutdown()
     lyrics.shutdown()
     stations.shutdown()
+    podcasts.shutdown()
     meta_editor.shutdown()
     user_lib.shutdown()
     library.shutdown()

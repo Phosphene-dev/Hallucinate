@@ -61,6 +61,7 @@ def main():
     from hallucinate.lyricsctl import LyricsController
     from hallucinate.metaedit import MetadataEditor
     from hallucinate.player import Player
+    from hallucinate.podcasts import Podcasts
     from hallucinate.replaygain import ReplayGainAnalyzer
     from hallucinate.scrobbling import LastFmScrobbler
     from hallucinate.shell import DesktopShell
@@ -93,6 +94,7 @@ def main():
         "replayGain": ReplayGainAnalyzer(db), "headphones": HeadphoneFinder(tmp / "cache", player),
         "discord": DiscordPresence(player), "themeManager": ThemeManager(tmp / "config", player),
         "stations": Stations(tmp / "streams.db", tmp / "cache", player),
+        "podcasts": Podcasts(tmp / "streams.db", tmp / "data", tmp / "cache", player),
     }
     engine = QQmlApplicationEngine()
     engine.addImageProvider("art", ArtProvider(tmp / "thumbs"))

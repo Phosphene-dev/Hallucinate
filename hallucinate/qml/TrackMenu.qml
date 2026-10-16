@@ -16,12 +16,12 @@ Menu {
     property var paths: []
     readonly property bool single: paths.length <= 1
     // a radio station or a streamed episode: no tags, ratings, playlists or files to act on
-    readonly property bool stream: paths.some(function (p) { return /^https?:\/\//.test(p) })
+    readonly property bool stream: paths.some(function (p) { return /^https?:\/\//.test(p) || podcasts.isEpisode(p) })
     readonly property string what: single ? "“" + trackTitle + "”" : paths.length + " songs"
 
     function show(p, t, c, i) {
         path = p; trackTitle = t; context = c; index = i; paths = [p]
-        info = /^https?:\/\//.test(p) ? ({}) : library.trackInfo(p)
+        info = /^https?:\/\//.test(p) || podcasts.isEpisode(p) ? ({}) : library.trackInfo(p)
         popup()
     }
     function showMany(list) {
@@ -53,7 +53,7 @@ Menu {
     MenuSeparator { visible: menu.single && !menu.stream; height: visible ? implicitHeight : 0 }
     MenuItem {
         objectName: "trackCopyLink"
-        visible: menu.stream && menu.single
+        visible: menu.stream && menu.single && /^https?:\/\//.test(menu.path)
         height: visible ? implicitHeight : 0
         text: "Copy stream link"; icon.name: "playlist"
         onTriggered: { shell.copyText(menu.path); Nav.notify("Stream link copied") }

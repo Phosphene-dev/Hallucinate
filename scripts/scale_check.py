@@ -62,6 +62,7 @@ def main():
     from hallucinate.lyricsctl import LyricsController
     from hallucinate.metaedit import MetadataEditor
     from hallucinate.player import Player
+    from hallucinate.podcasts import Podcasts
     from hallucinate.replaygain import ReplayGainAnalyzer
     from hallucinate.scrobbling import LastFmScrobbler
     from hallucinate.shell import DesktopShell
@@ -116,6 +117,7 @@ def main():
         "discord": DiscordPresence(player),
         "themeManager": ThemeManager(work / "config", player),
         "stations": Stations(work / "streams.db", work / "cache", player),
+        "podcasts": Podcasts(work / "streams.db", work / "data", work / "cache", player),
     }
     for k, v in context.items():
         engine.rootContext().setContextProperty(k, v)

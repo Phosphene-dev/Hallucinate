@@ -140,7 +140,10 @@ class _Voice:
         self.seek_on_load = self.start + resume if self.start or resume else -1
         if self.tap is not None:
             self.tap.reset()
-        self.player.setSource(QUrl(self.path) if is_url(self.path) else QUrl.fromLocalFile(self.path))
+        url = QUrl(self.path) if is_url(self.path) else QUrl.fromLocalFile(self.path)
+        if self.seek_on_load >= 0 and self.player.source() == url:
+            self.player.setSource(QUrl())  # the same file again: reload it, so it reports loaded and seeks
+        self.player.setSource(url)
 
     def holds(self, index, track):
         return self.index == index and self.path == track_file(track) and (self.start, self.end) == track_window(track)
@@ -242,6 +245,7 @@ class Player(QObject):
         self._rg_preamp = self._float_setting("replaygain/preamp", 0.0, -15.0, 15.0)
         self._crossfade = int(self._float_setting("crossfade", 0, 0, 12))
         self._speed = self._float_setting("speed", 1.0, 0.5, 2.0)
+        self._podcast_speed = self._float_setting("podcastSpeed", 1.0, 0.5, 3.0)  # podcasts keep their own
         self._sleep_left = -1  # seconds until sleep; -1 when no timer is running
         self._sleep_after_track = False
         self._sleep_gain = 1.0
@@ -311,6 +315,8 @@ class Player(QObject):
         self.trackChanged.connect(self._clear_visualizer)
         self.trackChanged.connect(self._maybe_extend_radio)
         self.trackChanged.connect(self._update_waveform)
+        self.trackChanged.connect(self._apply_speed)
+        self.trackChanged.connect(self.speedChanged)
         self.queueChanged.connect(self._maybe_extend_radio)
         self.repeatChanged.connect(self._maybe_extend_radio)
         self.shuffleChanged.connect(self._maybe_extend_radio)
@@ -391,20 +397,39 @@ class Player(QObject):
     # --- playback speed and sleep timer -----------------------------------------
     @Property(float, notify=speedChanged)
     def speed(self):
-        return self._speed
+        return self._rate()
+
+    def _episode_now(self):
+        return self.hasTrack and track_kind(self.current) == "episode"
+
+    def _rate(self):
+        return self._podcast_speed if self._episode_now() else self._speed
 
     @Slot(float)
     def setSpeed(self, rate):
-        rate = round(min(max(float(rate), 0.5), 2.0), 2)
-        if rate != self._speed:
+        """The playback speed of what's playing. Podcasts keep a speed of their own (up to 3×), so speeding
+        up talk doesn't speed up the music after it."""
+        if self._episode_now():
+            rate = round(min(max(float(rate), 0.5), 3.0), 2)
+            if rate == self._podcast_speed:
+                return
+            self._podcast_speed = rate
+            self._settings.setValue("podcastSpeed", rate)
+        else:
+            rate = round(min(max(float(rate), 0.5), 2.0), 2)
+            if rate == self._speed:
+                return
             self._speed = rate
             self._settings.setValue("speed", rate)
-            self._apply_speed()
-            self.speedChanged.emit()
+        self._apply_speed()
+        self.speedChanged.emit()
 
+    @Slot()
     def _apply_speed(self):
+        rate = self._rate()
         for v in self._voices:
-            v.player.setPlaybackRate(self._speed)
+            if v.player.playbackRate() != rate:
+                v.player.setPlaybackRate(rate)
 
     @Property(int, notify=sleepChanged)
     def sleepRemaining(self):
@@ -707,7 +732,7 @@ class Player(QObject):
             rg_factor=replaygain_factor(track, self._rg_mode, self._rg_preamp),
             rg_mode=self._rg_mode,
             volume=self._volume,
-            speed=self._speed,
+            speed=self._rate(),
             eq_enabled=self._eq_enabled,
             eq_preset=self._eq_preset + (f" + {self._headphone['name']}" if self._headphone["name"] else ""),
             crossfeed=self._crossfeed if self._crossfeed in eq.CROSSFEED and eq.available() else "",
@@ -1450,7 +1475,7 @@ class Player(QObject):
                 if cur.tap is not None:
                     cur.tap.reset()
                 cur.set_position(0)
-            self._player.setPlaybackRate(self._speed)
+            self._player.setPlaybackRate(self._rate())
             if cur.seek_on_load >= 0:
                 pass
             elif autoplay:
@@ -1476,7 +1501,7 @@ class Player(QObject):
             self._player.play()
         else:
             self._voice.load(i, track)
-            self._player.setPlaybackRate(self._speed)
+            self._player.setPlaybackRate(self._rate())
             if autoplay and self._voice.seek_on_load >= 0:
                 self._voice.play_on_load = True  # start where the song starts, not at the top of the file
             elif autoplay:

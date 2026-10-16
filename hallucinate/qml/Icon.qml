@@ -157,6 +157,20 @@ Canvas {
             ctx.lineTo(w*.62, h*.46); ctx.arc(w*.5, h*.46, w*.12, 0, Math.PI); ctx.closePath(); ctx.stroke()
             ctx.beginPath(); ctx.arc(w*.5, h*.46, w*.24, 0, Math.PI); ctx.stroke()
             line([.5,.7,.5,.88]); line([.34,.88,.66,.88]); break
+        case "skipback":  // a circular arrow turning back, with the seconds in it
+        case "skipfwd":
+            var back = name === "skipback"
+            ctx.beginPath()
+            if (back) ctx.arc(w*.5, h*.54, w*.36, Math.PI*1.25, Math.PI*0.95, false)
+            else ctx.arc(w*.5, h*.54, w*.36, Math.PI*1.75, Math.PI*2.05, true)
+            ctx.stroke()
+            if (back) line([.16,.12,.24,.3,.42,.22])
+            else line([.84,.12,.76,.3,.58,.22])
+            ctx.font = "bold " + Math.round(h * .34) + "px sans-serif"
+            ctx.textAlign = "center"; ctx.textBaseline = "middle"
+            ctx.fillText(back ? "15" : "30", w*.5, h*.57)
+            break
+        case "check": line([.18,.52,.42,.76,.84,.28]); break
         case "search":
             ctx.beginPath(); ctx.arc(w*.42, h*.42, w*.28, 0, Math.PI*2); ctx.stroke(); line([.64,.64,.9,.9]); break
         }

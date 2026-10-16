@@ -30,7 +30,7 @@ Item {
         { id: "liked", t: "Liked Songs", i: "heart" }, { id: "stats", t: "Stats", i: "stats" },
         { id: "history", t: "History", i: "history" },
         { id: "recap", t: "Recap", i: "recap" }, { id: "visualizer", t: "Visualizer", i: "wave" },
-        { id: "stations", t: "Internet radio", i: "station" }
+        { id: "stations", t: "Internet radio", i: "station" }, { id: "podcasts", t: "Podcasts", i: "podcast" }
     ]
 
     Rectangle {
