@@ -46,14 +46,25 @@ Window {
         RowLayout {
             Layout.fillWidth: true
             spacing: 4
+            readonly property bool episode: player.hasTrack && player.current.kind === "episode"
+            readonly property bool live: player.hasTrack && player.current.kind === "station"
+            IconButton { visible: parent.episode; icon: "skipback:" + podcasts.options.skipBack; tip: "Back " + podcasts.options.skipBack + " seconds"; onClicked: player.seekBy(-1000 * podcasts.options.skipBack) }
             IconButton { icon: "prev"; tip: "Previous"; onClicked: player.previous() }
             IconButton { icon: player.playing ? "pause" : "play"; tip: player.playing ? "Pause" : "Play"; size: 24; onClicked: player.toggle() }
             IconButton { icon: "next"; tip: "Next"; onClicked: player.next() }
+            IconButton { visible: parent.episode; icon: "skipfwd:" + podcasts.options.skipForward; tip: "Forward " + podcasts.options.skipForward + " seconds"; onClicked: player.seekBy(1000 * podcasts.options.skipForward) }
             Item { Layout.fillWidth: true }
+            Text {
+                visible: parent.live
+                textFormat: Text.PlainText
+                text: "LIVE"
+                color: Theme.accent; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); font.weight: Font.Bold
+            }
             IconButton { icon: "expand"; tip: "Back to full window"; onClicked: shell.showMain() }
         }
         StyledSlider {
             Layout.fillWidth: true
+            visible: !(player.hasTrack && player.current.kind === "station")  // a live stream has no length to seek in
             from: 0
             to: Math.max(1, player.duration)
             value: player.position

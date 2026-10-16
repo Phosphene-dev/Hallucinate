@@ -156,7 +156,7 @@ def test_a_dropped_station_reconnects(radio, server, monkeypatch):
     assert wait_for(lambda: player.playing and player.position > 200, timeout=15), player.error
     before = len([r for r in server.requests if r == "/live"])
     player._reconnect_stream("test drop")
-    assert "Reconnecting" in player.error
+    assert "reconnecting" in player.error
     assert wait_for(lambda: len([r for r in server.requests if r == "/live"]) > before, timeout=10)
     assert wait_for(lambda: player.playing and player.position > 100 and player.error == "", timeout=15), player.error
 

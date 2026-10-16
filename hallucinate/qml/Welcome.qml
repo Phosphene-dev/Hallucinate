@@ -26,7 +26,7 @@ Item {
 
     // keep clicks, wheel and keys from reaching the app underneath
     MouseArea { anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.AllButtons; onWheel: function (w) { w.accepted = true } }
-    Ambience { anchors.fill: parent; animated: welcome.open && shell.ambientMotion }
+    Ambience { anchors.fill: parent; animated: welcome.open && shell.ambientMotion && !shell.reduceMotion }
 
     component Heading: Text {
         color: Theme.text
@@ -321,6 +321,31 @@ Item {
                             : scrobbler.configured ? scrobbler.status
                             : "Last.fm asks each app user for an API key of their own. Add yours in Settings → Internet & sharing whenever you like."
                         color: scrobbler.connected ? Theme.accent : Theme.textDim
+                    }
+                    Text {
+                        textFormat: Text.PlainText
+                        Layout.topMargin: 6
+                        text: "Radio and podcasts"
+                        color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold
+                    }
+                    RowLayout {
+                        spacing: 18
+                        StyledCheck {
+                            objectName: "welcomeStations"
+                            text: "Internet radio"
+                            checked: shell.features.stations === true
+                            onToggled: shell.setFeature("stations", checked)
+                        }
+                        StyledCheck {
+                            objectName: "welcomePodcasts"
+                            text: "Podcasts"
+                            checked: shell.features.podcasts === true
+                            onToggled: shell.setFeature("podcasts", checked)
+                        }
+                    }
+                    Body {
+                        text: "Both stay out of the way until you want them. Settings → Features turns these, and anything else you don't use, on or off."
+                        color: Theme.textDim
                     }
                     Item { Layout.fillHeight: true }
                 }

@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QMenu, QSystemTrayIcon
 
 from .core import net
 
-VISUALIZER_STYLES = ("liquid", "aurora", "nebula", "bars")
+VISUALIZER_STYLES = ("liquid", "aurora", "nebula", "halo", "waves", "bars")
 # What closing the main window does. "tray" needs a visible tray icon; without one it quits.
 CLOSE_ACTIONS = ("ask", "quit", "minimize", "tray")
 # Parts of the app that can be switched off in Settings → Features, and whether they're on to begin with. A
@@ -52,6 +52,7 @@ class DesktopShell(QObject):
         self._desktop_notifications = self._settings.value("shell/desktopNotifications", False, bool)
         self._sidebar_collapsed = self._settings.value("ui/sidebarCollapsed", False, bool)
         self._ambient_motion = self._settings.value("ui/ambientMotion", True, bool)
+        self._reduce_motion = self._settings.value("ui/reduceMotion", False, bool)
         self._visualizer_style = str(self._settings.value("ui/visualizerStyle", "liquid"))
         self._now_playing_vinyl = self._settings.value("ui/nowPlayingVinyl", False, bool)
         self._features = {name: self._settings.value(f"features/{name}", on, bool) for name, on in FEATURES.items()}
@@ -206,6 +207,18 @@ class DesktopShell(QObject):
         self._settings.setValue("ui/ambientMotion", self._ambient_motion)
         self.settingsChanged.emit()
 
+    @Property(bool, notify=settingsChanged)
+    def reduceMotion(self):
+        """Keep movement to a minimum: no page transitions, zooms, spinning record, hover growth or drifting
+        backdrop (for motion sensitivity, or just a calmer window)."""
+        return self._reduce_motion
+
+    @Slot(bool)
+    def setReduceMotion(self, on):
+        self._reduce_motion = bool(on)
+        self._settings.setValue("ui/reduceMotion", self._reduce_motion)
+        self.settingsChanged.emit()
+
     @Property(str, notify=settingsChanged)
     def visualizerStyle(self):
         """The visualizer look: one of VISUALIZER_STYLES."""
@@ -322,6 +335,81 @@ class DesktopShell(QObject):
         track = self._player.current
         title, artist = track.get("title", "Unknown track"), track.get("artist", "")
         self._send_notification(title, artist)
+
+    # --- backup ---------------------------------------------------------------------------------------------
+    def setBackupSources(self, library_db, streams_db, after_restore):
+        self._backup = (library_db, streams_db, after_restore)
+
+    @Slot(str, result=str)
+    def exportBackup(self, url):
+        """Write a backup of your own data (see core/backup); returns what happened, for a toast."""
+        from PySide6.QtCore import QUrl
+
+        from .core import backup
+
+        library_db, streams_db, _ = getattr(self, "_backup", (None, None, None))
+        if library_db is None:
+            return "Backups aren't available here"
+        path = QUrl(url).toLocalFile() if url.startswith("file:") else url
+        if not path.endswith(".hallucinate-backup"):
+            path += ".hallucinate-backup"
+        try:
+            s = backup.export(library_db, streams_db, path)
+        except (OSError, ValueError) as exc:
+            return f"Couldn't save the backup: {exc}"
+        return (f"Backed up {s['likes']} likes, {s['ratings']} ratings, {s['playlists']} playlists, "
+                f"{s['listens']} listens, {s['stations']} stations and {s['podcasts']} shows")
+
+    @Slot(str, result=str)
+    def importBackup(self, url):
+        from PySide6.QtCore import QUrl
+
+        from .core import backup
+
+        library_db, streams_db, after = getattr(self, "_backup", (None, None, None))
+        if library_db is None:
+            return "Backups aren't available here"
+        path = QUrl(url).toLocalFile() if url.startswith("file:") else url
+        try:
+            s = backup.restore(backup.read(path), library_db, streams_db)
+        except (OSError, ValueError) as exc:
+            return str(exc)
+        if after is not None:
+            after()
+        return (f"Restored {s['likes']} likes, {s['ratings']} ratings, {s['playlists']} playlists, "
+                f"{s['listens']} listens, {s['stations']} stations and {s['podcasts']} shows")
+
+    whatsNewChanged = Signal()
+
+    @Property("QStringList", notify=whatsNewChanged)
+    def whatsNew(self):
+        """This version's highlights, once, after an update from an earlier one ([] on a first start, after it's
+        been seen, or when there's nothing to say)."""
+        from . import __version__
+        from .whatsnew import highlights
+
+        seen = str(self._settings.value("ui/lastVersion", "") or "")
+        if seen == __version__ or self._whats_new_dismissed:
+            return []
+        if not seen:  # a first start: nothing is "new" yet
+            self._settings.setValue("ui/lastVersion", __version__)
+            return []
+        return highlights(__version__)
+
+    @Slot()
+    def dismissWhatsNew(self):
+        from . import __version__
+
+        self._whats_new_dismissed = True
+        self._settings.setValue("ui/lastVersion", __version__)
+        self.whatsNewChanged.emit()
+
+    _whats_new_dismissed = False
+
+    @Slot(str, str)
+    def notify(self, title, body):
+        """A desktop notification (new podcast episodes); shown whatever the now-playing setting says."""
+        self._send_notification(title, body)
 
     def _send_notification(self, title, artist):
         if sys.platform.startswith("linux"):

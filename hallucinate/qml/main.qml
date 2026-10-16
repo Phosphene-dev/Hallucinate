@@ -62,7 +62,33 @@ ApplicationWindow {
     property var forwardRoutes: []
     property bool replaying: false
     function sameRoute(a, b) { return a && b && JSON.stringify(a) === JSON.stringify(b) }
+    // Where each page was scrolled, by route, so going back to a page (or forward again) lands where you were
+    property var scrollMemory: ({})
+    function flickOf(item, depth) {
+        if (!item || (depth || 0) > 6) return null
+        if (item.contentY !== undefined && item.flickableDirection !== undefined && item.contentHeight > item.height)
+            return item
+        for (var i = 0; i < item.children.length; i++) {
+            var f = flickOf(item.children[i], (depth || 0) + 1)
+            if (f) return f
+        }
+        return null
+    }
+    function saveScroll() {
+        var f = flickOf(stack.currentItem)
+        if (f) { var m = scrollMemory; m[JSON.stringify(route)] = f.contentY; scrollMemory = m }
+    }
+    Timer {
+        id: restoreScroll
+        interval: 80
+        onTriggered: {
+            var y = window.scrollMemory[JSON.stringify(window.route)]
+            var f = window.flickOf(stack.currentItem)
+            if (f && y !== undefined) f.contentY = Math.min(y, Math.max(0, f.contentHeight - f.height))
+        }
+    }
     function remember(next) {
+        saveScroll()
         if (!replaying && !sameRoute(route, next)) {
             backRoutes = backRoutes.concat([route]).slice(-100)
             forwardRoutes = []
@@ -191,6 +217,13 @@ ApplicationWindow {
         function onOpenAlbum(key) { window.openAlbum(key) }
         function onOpenArtist(name) { window.openArtist(name) }
         function onOpenPodcast(id) { window.openPodcast(id) }
+        function onGoToPlaying() {
+            if (!player.hasTrack) return
+            var c = player.current
+            if (c.kind === "station") window.go("stations")
+            else if (c.kind === "episode") window.openPodcast(c.podcast_id)
+            else if (c.album_key) window.openAlbum(c.album_key)
+        }
         function onOpenSettings() { window.go("settings") }
         function onOpenLiked() { window.go("liked") }
         function onGoHome() { window.go("home") }
@@ -228,6 +261,7 @@ ApplicationWindow {
             exportDialog.open()
         }
         function onNotify(message) { toast.show(message) }
+        function onNotifyAction(message, actionText, action) { toast.show(message, 0, actionText, action) }
         function onBack() { window.goBack() }
         function onInstallUpdate() { updateDlg.open() }
         function onAlbumMenu(keys, title, artist) {
@@ -354,7 +388,8 @@ ApplicationWindow {
         function onAlbumsRemoved(r) {
             var n = r.albums > 0 ? r.albums + (r.albums === 1 ? " album" : " albums")
                                  : r.songs + (r.songs === 1 ? " song" : " songs")
-            if (r.kind === "hidden") toast.show(n + " removed from the library")
+            if (r.kind === "hidden") toast.show(n + " removed from the library", 0, "Undo",
+                                                function () { library.unhidePaths(r.paths || []) })
             else if (r.failed && !r.songs) toast.show("Couldn't move the files to the trash")
             else toast.show(n + " moved to the trash" + (r.failed ? " (" + r.failed + " files couldn't be moved)" : ""))
             if (r.songs > 0 && stack.currentItem && r.keys.indexOf(stack.currentItem.albumKey) >= 0) {
@@ -364,15 +399,37 @@ ApplicationWindow {
         }
     }
 
+    Connections {
+        target: userLib
+        function onLovesMatched(n) { toast.show(n ? "Liked " + n + (n === 1 ? " song" : " songs") + " you'd loved on Last.fm" : "No new songs to like from your Last.fm loves") }
+    }
+    Connections {
+        target: stations
+        function onUndoable(text) { toast.show(text, 0, "Undo", function () { stations.undo() }) }
+    }
+    Connections {
+        target: podcasts
+        function onUndoable(text) { toast.show(text, 0, "Undo", function () { podcasts.undo() }) }
+    }
     // A short message at the bottom of the window
     Rectangle {
         id: toast
         objectName: "toast"
         property string message: ""
-        function show(text, ms) { message = text; opacity = 1; toastTimer.interval = ms || 4500; toastTimer.restart() }
+        property string actionText: ""
+        property var action: null
+        // `actionText` and `action` (a function) add a button, such as Undo; the toast then stays a little longer
+        function show(text, ms, actionText, action) {
+            message = text
+            toast.actionText = action ? (actionText || "Undo") : ""
+            toast.action = action || null
+            opacity = 1
+            toastTimer.interval = ms || (action ? 8000 : 4500)
+            toastTimer.restart()
+        }
         z: 60
         anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Selection.count > 0 || AlbumSelection.count > 0 ? 176 : 118 }
-        width: toastText.width + 36
+        width: toastText.width + 36 + (toastAction.visible ? toastAction.width + 14 : 0)
         height: Math.max(40, toastText.height + 22)
         radius: 20
         color: Theme.glassStrong
@@ -383,9 +440,27 @@ ApplicationWindow {
         Behavior on opacity { NumberAnimation { duration: 220 } }
         Text {
             textFormat: Text.PlainText
+            id: toastAction
+            objectName: "toastAction"
+            visible: toast.actionText.length > 0
+            anchors { right: parent.right; rightMargin: 18; verticalCenter: parent.verticalCenter }
+            text: toast.actionText
+            color: actionMouse.containsMouse ? Theme.accentHi : Theme.accent
+            font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); font.weight: Font.Bold
+            LinkArea {
+                id: actionMouse
+                name: toast.actionText
+                hoverEnabled: true
+                onClicked: { var f = toast.action; toast.action = null; toast.actionText = ""; toast.opacity = 0; if (f) f() }
+            }
+        }
+        Text {
+            textFormat: Text.PlainText
             id: toastText
-            anchors.centerIn: parent
-            width: Math.min(implicitWidth, Math.max(200, window.width - 160))  // long messages wrap
+            anchors.centerIn: toastAction.visible ? undefined : parent
+            x: toastAction.visible ? 18 : (parent.width - width) / 2
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.min(implicitWidth, Math.max(200, window.width - 260))  // long messages wrap
             wrapMode: Text.WordWrap
             horizontalAlignment: Text.AlignHCenter
             text: toast.message
@@ -411,6 +486,58 @@ ApplicationWindow {
         onRejected: shell.dismissCrashReport()
     }
     Timer { interval: 900; running: shell.crashReport.length > 0 && !crashDlg.opened; onTriggered: crashDlg.open() }
+    // Once after an update: what's new in this version
+    Dialog {
+        id: whatsNewDlg
+        objectName: "whatsNewDialog"
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: Math.min(520, window.width - 40)
+        modal: true
+        title: "New in Hallucinate " + shell.appVersion
+        standardButtons: Dialog.Ok
+        onClosed: shell.dismissWhatsNew()
+        Flickable {
+            implicitHeight: Math.min(whatsNewCol.height, window.height - 200)
+            width: whatsNewDlg.availableWidth
+            contentHeight: whatsNewCol.height
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: ScrollBar {}
+            Column {
+                id: whatsNewCol
+                width: whatsNewDlg.availableWidth - 10
+                spacing: 10
+                Repeater {
+                    model: shell.whatsNew
+                    Row {
+                        required property string modelData
+                        width: parent.width
+                        spacing: 10
+                        Rectangle { width: 6; height: 6; radius: 3; color: Theme.accent; y: 7 }
+                        Text {
+                            textFormat: Text.PlainText
+                            width: parent.width - 16
+                            wrapMode: Text.WordWrap
+                            text: modelData
+                            color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                        }
+                    }
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    text: "Everything that changed"
+                    color: Theme.accent; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); font.weight: Font.DemiBold
+                    LinkArea { onClicked: Qt.openUrlExternally("https://github.com/Phosphene-dev/Hallucinate/releases") }
+                }
+            }
+        }
+    }
+    Timer {
+        interval: 1200
+        running: shell.whatsNew.length > 0 && !crashDlg.opened && shell.crashReport.length === 0
+        onTriggered: whatsNewDlg.open()
+    }
     SmartPlaylistEditor {
         id: smartEditor
         onSaved: function (id, name) { window.openSmartPlaylist(id, name) }
@@ -516,7 +643,7 @@ ApplicationWindow {
         objectName: "ambience"
         anchors.fill: parent
         z: -1
-        animated: shell.ambientMotion && window.active && !nowPlaying.covering
+        animated: shell.ambientMotion && !shell.reduceMotion && window.active && !nowPlaying.covering
         visible: !nowPlaying.covering
     }
 
@@ -562,6 +689,7 @@ ApplicationWindow {
                     }
                     TextField {
                         id: searchField
+                        objectName: "searchField"
                         anchors { left: backBtn.visible ? backBtn.right : parent.left; leftMargin: backBtn.visible ? 8 : 24; verticalCenter: parent.verticalCenter }
                         width: Math.min(520, parent.width - 120)
                         height: 42
@@ -594,17 +722,21 @@ ApplicationWindow {
                     StackView {
                         id: stack
                         objectName: "pageStack"
+                        onCurrentItemChanged: restoreScroll.restart()
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         clip: true
                         // Pages dissolve in with a slight rise: soft, not a hard cut
-                        pushEnter: Transition {
+                        pushEnter: Theme.reduceMotion ? null : fadeIn
+                        pushExit: Theme.reduceMotion ? null : fadeOut
+                        Transition {
+                            id: fadeIn
                             ParallelAnimation {
                                 NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 220; easing.type: Easing.OutCubic }
                                 NumberAnimation { property: "y"; from: 14; to: 0; duration: 260; easing.type: Easing.OutCubic }
                             }
                         }
-                        pushExit: Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 120 } }
+                        Transition { id: fadeOut; NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 120 } }
                         popEnter: pushEnter
                         popExit: pushExit
                         replaceEnter: pushEnter

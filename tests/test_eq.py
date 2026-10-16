@@ -101,3 +101,33 @@ def test_player_crossfeed_setting(qapp):
     finally:
         player.setCrossfeed("off")
         player.shutdown()
+
+
+def test_equalizer_settings_follow_the_output_device(qapp, tmp_path, monkeypatch):
+    from hallucinate import eq as eq_module
+    from hallucinate import player as player_module
+
+    if not eq_module.available():
+        import pytest
+
+        pytest.skip("needs numpy")
+    current = {"key": "speakers"}
+    monkeypatch.setattr(player_module.Player, "_current_device_key", lambda self: current["key"])
+    p = player_module.Player(session_file=None)
+    try:
+        p.setEqPerDevice(True)
+        p.setEqEnabled(True)
+        p.setEqBand(0, 6.0)
+        current["key"] = "headphones"  # the sound moves to headphones: a new device starts from what was in use
+        p._switch_device_eq()
+        p.setEqBand(0, -3.0)
+        p.setEqEnabled(False)
+        current["key"] = "speakers"
+        p._switch_device_eq()
+        assert p.eqEnabled and p.eqGains[0] == 6.0
+        current["key"] = "headphones"
+        p._switch_device_eq()
+        assert not p.eqEnabled and p.eqGains[0] == -3.0
+        p.setEqPerDevice(False)
+    finally:
+        p.shutdown()

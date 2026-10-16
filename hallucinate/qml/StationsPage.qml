@@ -261,7 +261,7 @@ Item {
                         onMenu: resultMenu.popupFor(model.row, model.saved)
                         trailing: [
                             PillButton {
-                                text: model.saved ? "Saved" : "Save"
+                                text: model.saved ? "✓ Saved" : "Save"
                                 enabled: !model.saved
                                 onClicked: stations.addResult(model.row)
                             }

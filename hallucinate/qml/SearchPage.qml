@@ -11,6 +11,10 @@ Item {
     readonly property var tracks: results.tracks || []
     readonly property var albums: results.albums || []
     readonly property var artists: results.artists || []
+    // with radio and podcasts on, your stations, shows and episodes are found too
+    readonly property var stationHits: shell.features.stations === true ? stations.find(query) : []
+    readonly property var podcastHits: shell.features.podcasts === true ? podcasts.find(query) : ({ shows: [], episodes: [] })
+    readonly property bool anyExtra: stationHits.length > 0 || podcastHits.shows.length > 0 || podcastHits.episodes.length > 0
 
     Flickable {
         id: fl
@@ -32,7 +36,7 @@ Item {
                 id: noResults
                 anchors.horizontalCenter: parent.horizontalCenter
                 visible: page.query.length === 0 || (page.tracks.length === 0 && page.albums.length === 0
-                                                      && page.artists.length === 0)
+                                                      && page.artists.length === 0 && !page.anyExtra)
                 icon: "search"
                 title: page.query.length === 0 ? "Search your library" : "No results for “" + page.query + "”"
                 hint: page.query.length === 0 ? "Songs, albums and artists. Ctrl+K also finds pages and commands."
@@ -111,6 +115,86 @@ Item {
                     current: Rows.currentId === modelData.id
                     onActivated: library.playSearchTracks(index)
                     onEnqueue: player.enqueue(modelData)
+                }
+            }
+
+            component HitRow: Rectangle {
+                id: hit
+                property string title
+                property string detail
+                property string artUrl
+                signal activated()
+                width: col.width
+                height: 56
+                radius: 14
+                color: hitMouse.containsMouse ? Theme.glassHover : "transparent"
+                Cover {
+                    id: hitArt
+                    x: 10; anchors.verticalCenter: parent.verticalCenter
+                    width: 38; height: 38; radius: 10
+                    source: hit.artUrl
+                    fallback: (hit.title || "?").charAt(0)
+                }
+                Column {
+                    anchors { left: hitArt.right; leftMargin: 12; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                    spacing: 3
+                    Text { textFormat: Text.PlainText; width: parent.width; elide: Text.ElideRight; text: hit.title; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold }
+                    Text { textFormat: Text.PlainText; width: parent.width; elide: Text.ElideRight; visible: text.length > 0; text: hit.detail; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12) }
+                }
+                MouseArea {
+                    id: hitMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: hit.activated()
+                    Accessible.role: Accessible.Button
+                    Accessible.name: hit.title
+                    Accessible.onPressAction: hit.activated()
+                }
+            }
+            Text {
+                textFormat: Text.PlainText
+                visible: page.stationHits.length > 0
+                text: "Stations"
+                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
+            }
+            Repeater {
+                model: page.stationHits
+                HitRow {
+                    required property var modelData
+                    title: modelData.name; detail: modelData.detail; artUrl: modelData.artUrl
+                    onActivated: stations.play(modelData.id)
+                }
+            }
+            Text {
+                textFormat: Text.PlainText
+                visible: page.podcastHits.shows.length > 0
+                text: "Podcasts"
+                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
+            }
+            Repeater {
+                model: page.podcastHits.shows
+                HitRow {
+                    required property var modelData
+                    title: modelData.title; detail: modelData.detail; artUrl: modelData.artUrl
+                    onActivated: Nav.openPodcast(modelData.id)
+                }
+            }
+            Text {
+                textFormat: Text.PlainText
+                visible: page.podcastHits.episodes.length > 0
+                text: "Episodes"
+                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
+            }
+            EpisodeMenu { id: searchEpisodeMenu }
+            Repeater {
+                model: page.podcastHits.episodes
+                EpisodeRow {
+                    required property var modelData
+                    width: col.width
+                    episode: modelData
+                    showPodcast: true
+                    onMenu: searchEpisodeMenu.showFor(modelData, true)
                 }
             }
         }

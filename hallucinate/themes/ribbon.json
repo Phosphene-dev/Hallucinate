@@ -1,0 +1,27 @@
+{
+  "name": "Ribbon",
+  "colors": {
+    "bg": "#0e0a0b",
+    "panel": "#151012",
+    "surface": "#1f1719",
+    "surfaceHi": "#2c2023",
+    "border": "#3a2a2e",
+    "text": "#f7f1f2",
+    "textDim": "#b9a9ac",
+    "accent": "#e5484d",
+    "error": "#ff8a65",
+    "onAccent": "#1a0608"
+  },
+  "palette": [
+    "#B3122E",
+    "#E5484D",
+    "#F4F0F0",
+    "#E5484D",
+    "#B3122E"
+  ],
+  "radius": 12,
+  "fonts": {
+    "family": "Sans Serif",
+    "scale": 1.0
+  }
+}

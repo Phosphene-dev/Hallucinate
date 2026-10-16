@@ -22,9 +22,10 @@ Item {
     opacity: open ? 1 : 0
     enabled: open
     focus: open
-    Behavior on opacity { NumberAnimation { id: melt; duration: 520; easing.type: Easing.InOutCubic } }
+    Behavior on opacity { NumberAnimation { id: melt; duration: Theme.reduceMotion ? 0 : 520; easing.type: Easing.InOutCubic } }
     readonly property var styles: [
-        { id: "liquid", t: "Liquid" }, { id: "aurora", t: "Aurora" }, { id: "nebula", t: "Nebula" }, { id: "bars", t: "Bars" }
+        { id: "liquid", t: "Liquid" }, { id: "aurora", t: "Aurora" }, { id: "nebula", t: "Nebula" },
+        { id: "halo", t: "Halo" }, { id: "waves", t: "Waves" }, { id: "bars", t: "Bars" }
     ]
 
     function toggle() { open = !open }
@@ -37,7 +38,7 @@ Item {
         id: stage
         anchors.fill: parent
         // the melt: the scene settles from a slight zoom as it fades in
-        scale: view.open ? 1 : 1.06
+        scale: view.open || Theme.reduceMotion ? 1 : 1.06
         Behavior on scale { NumberAnimation { duration: 700; easing.type: Easing.OutCubic } }
 
         Visualizer {
@@ -85,7 +86,7 @@ Item {
                     RotationAnimator on rotation {
                         from: 0; to: 360; duration: 1800 * 2  // 33⅓ rpm is too dizzy on screen; a calm half speed
                         loops: Animation.Infinite
-                        running: view.vinyl && view.shown && player.playing
+                        running: view.vinyl && view.shown && player.playing && !Theme.reduceMotion
                     }
                     Rectangle {
                         anchors.fill: parent
@@ -331,11 +332,11 @@ Item {
                     readonly property bool episode: player.hasTrack && player.current.kind === "episode"
                     readonly property bool music: player.hasTrack && !(player.current.kind || "").length
                     IconButton { anchors.verticalCenter: parent.verticalCenter; visible: !parent.episode; icon: "shuffle"; size: 22; active: player.shuffle; onClicked: player.toggleShuffle() }
-                    IconButton { anchors.verticalCenter: parent.verticalCenter; visible: parent.episode; icon: "skipback"; size: 24; tip: "Back 15 seconds"; onClicked: player.seekBy(-15000) }
+                    IconButton { anchors.verticalCenter: parent.verticalCenter; visible: parent.episode; icon: "skipback:" + podcasts.options.skipBack; size: 24; tip: "Back " + podcasts.options.skipBack + " seconds"; onClicked: player.seekBy(-1000 * podcasts.options.skipBack) }
                     IconButton { anchors.verticalCenter: parent.verticalCenter; icon: "prev"; size: 24; onClicked: player.previous() }
                     Rectangle {
                         width: 64; height: 64; radius: 32
-                        scale: bigPlay.pressed ? 0.94 : (bigPlay.containsMouse ? 1.06 : 1)
+                        scale: Theme.reduceMotion ? 1 : (bigPlay.pressed ? 0.94 : (bigPlay.containsMouse ? 1.06 : 1))
                         Behavior on scale { NumberAnimation { duration: 120 } }
                         color: "white"
                         Icon {
@@ -350,7 +351,7 @@ Item {
                         Accessible.name: player.playing ? "Pause" : "Play"
                     }
                     IconButton { anchors.verticalCenter: parent.verticalCenter; icon: "next"; size: 24; onClicked: player.next() }
-                    IconButton { anchors.verticalCenter: parent.verticalCenter; visible: parent.episode; icon: "skipfwd"; size: 24; tip: "Forward 30 seconds"; onClicked: player.seekBy(30000) }
+                    IconButton { anchors.verticalCenter: parent.verticalCenter; visible: parent.episode; icon: "skipfwd:" + podcasts.options.skipForward; size: 24; tip: "Forward " + podcasts.options.skipForward + " seconds"; onClicked: player.seekBy(1000 * podcasts.options.skipForward) }
                     IconButton {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: !parent.episode

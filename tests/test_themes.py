@@ -53,7 +53,7 @@ def test_builtin_themes_are_complete_and_switch_live(manager_factory):
     manager = manager_factory()
     assert manager.availableThemes == [
         "Ace Pride", "Bi Pride", "Catppuccin Latte", "Catppuccin Mocha", "Dark", "Dracula", "Gruvbox",
-        "Hallucinate", "Lesbian Pride", "Light", "Nonbinary Pride", "Nord", "Pan Pride", "Pride", "Tokyo Night",
+        "Hallucinate", "Lesbian Pride", "Light", "Nonbinary Pride", "Nord", "Pan Pride", "Pride", "Ribbon", "Tokyo Night",
         "Trans Pride", "Trans Pride Light",
     ]
     original = manager.bg
@@ -75,7 +75,7 @@ def test_selection_and_album_accent_preferences_persist(manager_factory, tmp_pat
     manager.selectTheme("Dracula")
     manager.setAlbumArtAccent(True)
     stored = json.loads((config / "preferences.json").read_text(encoding="utf-8"))
-    assert stored == {"theme": "Dracula", "album_art_accent": True}
+    assert {k: stored[k] for k in ("theme", "album_art_accent")} == {"theme": "Dracula", "album_art_accent": True}
 
     restored = manager_factory(config)
     assert restored.currentTheme == "Dracula"
@@ -472,3 +472,38 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     user_lib.shutdown()
     library.shutdown()
     qapp.setFont(old_font)
+
+
+def test_your_own_accent_system_mode_and_themes(manager_factory, tmp_path, monkeypatch):
+    from hallucinate.themes import contrast
+
+    manager = manager_factory()
+    assert "Ribbon" in manager.availableThemes
+    assert manager.selectTheme("Ribbon")
+    assert contrast(manager.accent, manager.bg) >= 4.5 and contrast(manager.onAccent, manager.accent) >= 4.5
+    # an accent of your own, over any theme, kept readable
+    manager.setAccentOverride("#2ec4b6")
+    assert manager.accentOverride == "#2ec4b6" and contrast(manager.accent, manager.bg) >= 4.5
+    manager.setAccentOverride("not a colour")
+    assert manager.accentOverride == "#2ec4b6"
+    again = manager_factory(tmp_path / "config")
+    assert again.accentOverride == "#2ec4b6"  # remembered
+    manager.setAccentOverride("")
+    assert manager.accent == QColor(json.loads((BUILTIN_THEME_DIR / "ribbon.json").read_text())["colors"]["accent"])
+
+    # light and dark following the system
+    monkeypatch.setattr(ThemeManager, "system_is_dark", lambda self: False)
+    manager.setSystemThemes("Light", "Nord")
+    manager.setFollowSystem(True)
+    assert manager.currentTheme == "Light"
+    monkeypatch.setattr(ThemeManager, "system_is_dark", lambda self: True)
+    manager._apply_system_scheme()
+    assert manager.currentTheme == "Nord"
+    manager.setFollowSystem(False)
+
+    # a theme of your own
+    assert manager.saveCustomTheme("Hallucinate", {}) != ""  # a built-in's name
+    assert manager.saveCustomTheme("Late Night", {"accent": "#ff9f43", "bg": "#050507"}) == ""
+    assert manager.currentTheme == "Late Night" and manager.bg == QColor("#050507")
+    saved = json.loads((tmp_path / "config" / "themes" / "late-night.json").read_text())
+    assert saved["name"] == "Late Night" and saved["colors"]["accent"] == "#ff9f43"

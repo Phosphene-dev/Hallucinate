@@ -5,6 +5,7 @@ QtObject {
     signal openAlbum(string key)
     signal openArtist(string name)
     signal openPodcast(int id)
+    signal goToPlaying()  // the playing song's album, the station's page or the episode's show
     signal openSettings()
     signal openLiked()
     signal goHome()
@@ -16,6 +17,7 @@ QtObject {
     signal importPlaylist()
     signal exportPlaylist(string kind, string name)
     signal notify(string message)
+    signal notifyAction(string message, string actionText, var action)  // a toast with a button (Undo)
     signal openPlaylist(int id)
     signal openSmartPlaylist(int id, string name)
     signal editSmartPlaylist(int id, string name)

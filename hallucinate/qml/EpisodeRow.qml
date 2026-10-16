@@ -8,9 +8,20 @@ Rectangle {
     id: row
     property var episode: ({})
     property bool showPodcast: false
+    property bool upNextRow: false  // in the Up next list: playing it plays the list from here
     readonly property bool playing: player.hasTrack && player.current.kind === "episode"
                                     && player.current.episode_id === episode.id
     signal menu()
+    activeFocusOnTab: true
+    Accessible.role: Accessible.ListItem
+    Accessible.name: (episode.title || "") + (episode.detail ? ", " + episode.detail : "")
+    Accessible.onPressAction: (row.upNextRow ? podcasts.playUpNext(episode.id) : podcasts.play(episode.id))
+    ListKeys { id: listKeys; row: row; onMenu: row.menu() }
+    Keys.onShortcutOverride: function (event) { event.accepted = listKeys.handles(event) || event.key === Qt.Key_Return }
+    Keys.onPressed: function (event) { if (listKeys.handles(event)) listKeys.press(event, row.ListView.view ? row.ListView.view.indexAt(row.x + 1, row.y + 1) : 0) }
+    Keys.onReturnPressed: row.playing ? player.toggle() : (row.upNextRow ? podcasts.playUpNext(row.episode.id) : podcasts.play(row.episode.id))
+    Keys.onEnterPressed: row.playing ? player.toggle() : (row.upNextRow ? podcasts.playUpNext(row.episode.id) : podcasts.play(row.episode.id))
+    Rectangle { anchors.fill: parent; anchors.margins: -2; radius: 14; color: "transparent"; border.width: 2; border.color: Theme.accent; visible: row.activeFocus }
     width: parent ? parent.width : 400
     height: 64
     radius: 14
@@ -61,12 +72,12 @@ Rectangle {
         onClicked: function (mouse) {
             if (mouse.button === Qt.RightButton) row.menu()
             else if (row.playing) player.toggle()
-            else podcasts.play(row.episode.id)
+            else (row.upNextRow ? podcasts.playUpNext(row.episode.id) : podcasts.play(row.episode.id))
         }
         onPressAndHold: row.menu()
         Accessible.role: Accessible.Button
         Accessible.name: (row.playing ? "Playing: " : "Play ") + (row.episode.title || "") + ", " + (row.episode.detail || "")
-        Accessible.onPressAction: podcasts.play(row.episode.id)
+        Accessible.onPressAction: (row.upNextRow ? podcasts.playUpNext(row.episode.id) : podcasts.play(row.episode.id))
     }
     Row {
         id: tail

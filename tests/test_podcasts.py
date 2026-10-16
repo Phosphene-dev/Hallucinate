@@ -246,3 +246,93 @@ def test_directory_results(shows, monkeypatch):
         assert "Offline" in podcasts.status
     finally:
         net.set_offline(False)
+
+
+def test_show_settings_and_episode_search(shows, server):
+    podcasts, player, messages = shows
+    show = follow(podcasts, server, messages)
+    pid = show["id"]
+    podcasts.setShowOption(pid, "newest_first", 0)
+    assert [e["title"] for e in podcasts.episodes._items] == ["Episode One", "Episode Two"]
+    podcasts.markPlayed(podcasts.episodes._items[0]["id"], True)
+    podcasts.setShowOption(pid, "hide_played", 1)
+    assert [e["title"] for e in podcasts.episodes._items] == ["Episode Two"]
+    podcasts.setShowOption(pid, "hide_played", 0)
+    podcasts.setEpisodeFilter("notes")  # Episode Two's notes say "Second notes"
+    assert [e["title"] for e in podcasts.episodes._items] == ["Episode Two"]
+    podcasts.setEpisodeFilter("")
+    podcasts.setShowOption(pid, "speed", 7)  # not one of the choices
+    assert podcasts.show(pid)["speed"] == 0
+    # its intro skipped and a speed of its own
+    podcasts.setShowOption(pid, "skip_intro", 15)
+    podcasts.setShowOption(pid, "speed", 1.5)
+    two = next(e for e in podcasts.episodes._items if e["title"] == "Episode Two")
+    podcasts.play(two["id"])
+    assert player.current["resume_ms"] == 15000 and player.speed == 1.5
+    assert wait_for(lambda: player.playing and player.position >= 14000, timeout=15), player.error
+    player.setSpeed(1.75)  # changing it while the show plays changes the show's
+    assert wait_for(lambda: podcasts.show(pid)["speed"] == 1.75)
+    player.stop()
+
+
+def test_podcast_settings(shows, server, monkeypatch):
+    podcasts, player, messages = shows
+    podcasts.setOption("skipBack", 10)
+    podcasts.setOption("skipBack", 11)  # not offered
+    assert podcasts.options["skipBack"] == 10
+    from hallucinate.podcasts import Podcasts
+
+    again = Podcasts(podcasts._db.conn.execute("PRAGMA database_list").fetchone()[2], "/tmp", "/tmp", player)
+    assert again.options["skipBack"] == 10  # remembered
+    again.shutdown()
+    podcasts.setOption("skipBack", 15)
+
+    # "stop" after an episode: nothing else is queued after it
+    show = follow(podcasts, server, messages)
+    podcasts.setOption("afterEpisode", "stop")
+    podcasts.play(podcasts.episodes._items[1]["id"])
+    assert player.queueLength == 1
+    podcasts.setOption("afterEpisode", "next")
+    player.stop()
+
+    # keep only the newest download of each show
+    podcasts.setOption("keep", "latest")
+    podcasts.setOption("keepCount", 1)
+    for e in list(podcasts.episodes._items):
+        podcasts.download(e["id"])
+    assert wait_for(lambda: not podcasts._downloading, timeout=15)
+    assert wait_for(lambda: len([e for e in podcasts._db.downloaded(show["id"])]) == 1, timeout=5)
+    assert podcasts._db.downloaded(show["id"])[0]["guid"] == "ep2"
+    assert podcasts.downloadsSize > 0
+    podcasts.removeAllDownloads()
+    assert podcasts.downloadsSize == 0 and not podcasts._db.downloaded(show["id"])
+    podcasts.setOption("keep", "played")
+    podcasts.setOption("keepCount", 3)
+
+
+def test_up_next_and_new_episode_notifications(shows, server, clip):
+    podcasts, player, messages = shows
+    follow(podcasts, server, messages)
+    one, two = podcasts.episodes._items[1], podcasts.episodes._items[0]
+    podcasts.addUpNext(one["id"])
+    podcasts.addUpNext(two["id"], True)  # first
+    assert [e["title"] for e in podcasts.upNext._items] == ["Episode Two", "Episode One"]
+    podcasts.playUpNext(two["id"])
+    assert [t["title"] for t in player.queue] == ["Episode Two", "Episode One"]
+    player.stop()
+    podcasts.markPlayed(two["id"], True)  # heard: off the list
+    assert [e["title"] for e in podcasts.upNext._items] == ["Episode One"]
+    podcasts.removeUpNext(one["id"])
+    assert podcasts.upNext.count == 0
+
+    told = []
+    podcasts.newEpisodes.connect(lambda show, title: told.append((show, title)))
+    podcasts.setOption("notifyNew", 1)
+    feed = server.files["/feed.xml"][1].decode()
+    extra = f"""<item><title>Brand New</title><guid>new</guid><pubDate>Wed, 14 Oct 2026 08:00:00 +0000</pubDate>
+    <enclosure url="{server.base}/ep1.mp3" type="audio/mpeg" length="{len(clip)}"/></item>"""
+    server.files["/feed.xml"] = ("application/rss+xml", feed.replace("<item>", extra + "<item>", 1).encode())
+    podcasts.refreshAll()
+    assert wait_for(lambda: told, timeout=10)
+    assert told[0] == ("Test Talk", "Brand New")
+    podcasts.setOption("notifyNew", 0)

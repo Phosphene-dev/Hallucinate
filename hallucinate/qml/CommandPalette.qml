@@ -78,7 +78,7 @@ Popup {
             { t: "New smart playlist", s: "Playlists", i: "smartlist", run: () => Nav.newSmartPlaylist() },
             { t: "Import playlist file", s: "Playlists  ·  M3U, M3U8, PLS", i: "playlist", run: () => Nav.importPlaylist() },
         ]
-        var styles = [["liquid", "Liquid"], ["aurora", "Aurora"], ["nebula", "Nebula"], ["bars", "Bars"]]
+        var styles = [["liquid", "Liquid"], ["aurora", "Aurora"], ["nebula", "Nebula"], ["halo", "Halo"], ["waves", "Waves"], ["bars", "Bars"]]
         styles.forEach(st => c.push({ t: "Visualizer: " + st[1], s: "Style", i: "wave", run: () => shell.setVisualizerStyle(st[0]) }))
         themeManager.availableThemes.forEach(name => c.push({ t: "Theme: " + name, s: "Appearance", i: "settings", run: () => themeManager.selectTheme(name) }))
         for (var p = 0; p < userLib.playlists.count; p++) {

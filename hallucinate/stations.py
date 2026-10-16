@@ -45,6 +45,7 @@ class Stations(QObject):
     changed = Signal()
     resultsChanged = Signal()
     message = Signal(str)  # something to tell the user (shown as a toast)
+    undoable = Signal(str)  # the same, with an Undo button that calls undo()
     _done = Signal(object)
 
     def __init__(self, db_path, cache_dir, player, parent=None):
@@ -141,7 +142,7 @@ class Stations(QObject):
             try:
                 info = st.resolve(url)
             except (OSError, ValueError) as exc:
-                return ("added", None, f"Couldn't add that station: {exc}")
+                return ("added", None, f"Couldn't add that station: {net.describe(exc)}")
             info["name"] = (name or "").strip() or info.get("name") or urlname(info["url"])
             return ("added", info, "")
 
@@ -158,8 +159,33 @@ class Stations(QObject):
         station = self._db.station(station_id)
         if station:
             self._db.remove_station(station_id)
+            self._undo = station
             self.refresh()
-            self.message.emit(f"Removed “{station['name']}”")
+            self.undoable.emit(f"Removed “{station['name']}”")
+
+    @Slot()
+    def undo(self):
+        """Put back the station removed last."""
+        station, self._undo = getattr(self, "_undo", None), None
+        if station:
+            new_id = self._db.add_station(station)
+            self._db.conn.execute("UPDATE stations SET added=?, last_played=?, plays=? WHERE id=?",
+                                  (station["added"], station["last_played"], station["plays"], new_id))
+            self._db.conn.commit()
+            self.refresh()
+
+    @Slot(str, result="QVariantList")
+    def find(self, query):
+        """Saved stations whose name or genres have every word of `query` (for the top search)."""
+        words = [w.casefold() for w in (query or "").split()]
+        if not words or not self._enabled:
+            return []
+        out = []
+        for s in self._db.stations():
+            hay = f"{s['name']} {s['tags']} {s['country']}".casefold()
+            if all(w in hay for w in words):
+                out.append(self._row(s))
+        return out[:8]
 
     @Slot(int, result="QVariantMap")
     def station(self, station_id):

@@ -62,17 +62,17 @@ Item {
             width: 60; height: 60; radius: 14
             source: player.hasTrack ? player.current.artUrl : ""
             Accessible.role: player.hasTrack ? Accessible.Button : Accessible.Graphic
-            Accessible.name: player.hasTrack ? "Open the album " + (player.current.album || "") : "Nothing playing"
-            Accessible.onPressAction: if (player.hasTrack && player.current.album_key) Nav.openAlbum(player.current.album_key)
+            Accessible.name: player.hasTrack ? "Go to what's playing: " + (player.current.album || player.current.title || "") : "Nothing playing"
+            Accessible.onPressAction: Nav.goToPlaying()
             MouseArea {
                 anchors.fill: parent
-                enabled: player.hasTrack && player.current.album_key
+                enabled: player.hasTrack
                 cursorShape: Qt.PointingHandCursor
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
                 onPressAndHold: Nav.trackMenu(player.current.path, player.current.title, "playing", -1)
                 onClicked: function (mouse) {
                     if (mouse.button === Qt.RightButton) Nav.trackMenu(player.current.path, player.current.title, "playing", -1)
-                    else Nav.openAlbum(player.current.album_key)
+                    else Nav.goToPlaying()
                 }
             }
         }
@@ -88,11 +88,15 @@ Item {
                 elide: Text.ElideRight
                 Accessible.role: Accessible.StaticText
                 Accessible.name: text
-                MouseArea {  // right-click the playing song for its menu
+                MouseArea {  // click: go to what's playing; right-click: its menu
                     anchors.fill: parent
                     enabled: player.hasTrack
-                    acceptedButtons: Qt.RightButton
-                    onClicked: Nav.trackMenu(player.current.path, player.current.title, "playing", -1)
+                    cursorShape: Qt.PointingHandCursor
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    onClicked: function (mouse) {
+                        if (mouse.button === Qt.RightButton) Nav.trackMenu(player.current.path, player.current.title, "playing", -1)
+                        else Nav.goToPlaying()
+                    }
                 }
             }
             Text {
@@ -108,7 +112,7 @@ Item {
                 Accessible.onPressAction: if (!player.error && player.hasTrack) Nav.openArtist(player.current.album_artist)
                 MouseArea {
                     anchors.fill: parent
-                    enabled: !player.error && player.hasTrack
+                    enabled: !player.error && player.hasTrack && !(player.current.kind || "").length
                     cursorShape: Qt.PointingHandCursor
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
                     onClicked: function (mouse) {
@@ -140,14 +144,14 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 6
             IconButton { visible: !bar.episode; icon: "shuffle"; active: player.shuffle; onClicked: player.toggleShuffle() }
-            IconButton { objectName: "skipBack"; visible: bar.episode; icon: "skipback"; tip: "Back 15 seconds"; onClicked: player.seekBy(-15000) }
+            IconButton { objectName: "skipBack"; visible: bar.episode; icon: "skipback:" + podcasts.options.skipBack; tip: "Back " + podcasts.options.skipBack + " seconds"; onClicked: player.seekBy(-1000 * podcasts.options.skipBack) }
             IconButton { icon: "prev"; onClicked: player.previous() }
             Rectangle {
                 width: 44; height: 44; radius: 22
                 Accessible.role: Accessible.Button
                 Accessible.name: player.playing ? "Pause" : "Play"
                 Accessible.onPressAction: player.toggle()
-                scale: pp.pressed ? 0.94 : (pp.containsMouse ? 1.06 : 1)
+                scale: Theme.reduceMotion ? 1 : (pp.pressed ? 0.94 : (pp.containsMouse ? 1.06 : 1))
                 Behavior on scale { NumberAnimation { duration: 120 } }
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
@@ -163,7 +167,7 @@ Item {
                 MouseArea { id: pp; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: player.toggle() }
             }
             IconButton { icon: "next"; onClicked: player.next() }
-            IconButton { objectName: "skipForward"; visible: bar.episode; icon: "skipfwd"; tip: "Forward 30 seconds"; onClicked: player.seekBy(30000) }
+            IconButton { objectName: "skipForward"; visible: bar.episode; icon: "skipfwd:" + podcasts.options.skipForward; tip: "Forward " + podcasts.options.skipForward + " seconds"; onClicked: player.seekBy(1000 * podcasts.options.skipForward) }
             IconButton {
                 visible: !bar.episode
                 icon: player.repeat === 2 ? "repeat1" : "repeat"

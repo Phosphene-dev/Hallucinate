@@ -62,7 +62,7 @@ Item {
             border.width: iso === map.selected ? 2 : (index === map.heat.today ? 1 : 0)
             border.color: iso === map.selected ? Theme.accentHi : Theme.text
             visible: index <= map.heat.today && Math.floor(index / 7) >= map.firstWeek
-            scale: cellMouse.containsMouse && count > 0 ? 1.25 : 1
+            scale: Theme.reduceMotion ? 1 : (cellMouse.containsMouse && count > 0 ? 1.25 : 1)
             Behavior on scale { NumberAnimation { duration: 90 } }
             Accessible.role: count > 0 ? Accessible.Button : Accessible.StaticText
             Accessible.name: Qt.formatDate(map.dateAt(index), "dddd d MMMM yyyy") + ": "

@@ -347,7 +347,56 @@ def main():
                     w.setProperty("step", max(step, 0))
                 return show
 
-            todo += [seed, play, pause]
+            def listening():
+                # A few stations and shows, made up and with local art, so nothing is fetched.
+                from hallucinate.core import net
+                net.set_offline(True)  # the feeds are made up; don't try them
+                stations, podcasts = ctx.contextProperty("stations"), ctx.contextProperty("podcasts")
+                for i, (name, tags, country) in enumerate([
+                        ("Night Owl FM", "ambient, chill", "Iceland"), ("Harbour Jazz", "jazz, swing", "Portugal"),
+                        ("Static Bloom", "dream pop, shoegaze", "Japan"), ("Lowland Folk Radio", "folk, acoustic", "Ireland"),
+                        ("Pulse 86", "synthwave, retro", "Canada")]):
+                    favicon = f"https://example.invalid/{i}.png"
+                    stations._db.add_station({"name": name, "url": f"http://127.0.0.1:9/{i}", "tags": tags,
+                                              "country": country, "codec": "MP3", "bitrate": 128 + 64 * (i % 3),
+                                              "favicon": favicon})
+                    icon = stations._icon_file({"favicon": favicon})
+                    icon.parent.mkdir(parents=True, exist_ok=True)
+                    icon.write_bytes(cover(100 + i))
+                stations.refresh()
+                art = work / "podcast-art"
+                art.mkdir(exist_ok=True)
+                now = time.time()
+                shows = [("The Long Listen", "Mara Quill", ["Why albums still matter", "A history of the B-side",
+                                                             "Inside a mastering studio", "The loudness war, revisited"]),
+                         ("Field Notes", "Owen Hart", ["Recording birdsong at dawn", "The sound of snow", "Rivers"]),
+                         ("Late Shift", "Ada & June", ["Night buses", "Diners after midnight", "Insomnia playlists"]),
+                         ("Slow Science", "Dr. Ines Ruiz", ["How ears hear", "Why some chords feel sad"])]
+                first = None
+                for n, (title, author, eps) in enumerate(shows):
+                    image = art / f"{n}.png"
+                    image.write_bytes(cover(200 + n))
+                    pid = podcasts._db.add_podcast({"title": title, "author": author, "feed_url": f"https://example.invalid/{n}",
+                                                    "image": str(image),
+                                                    "description": f"{title}, a show about listening closely."})
+                    first = first or pid
+                    podcasts._db.merge_episodes(pid, [
+                        {"guid": f"{n}-{i}", "title": t, "url": f"https://example.invalid/{n}/{i}.mp3",
+                         "published": now - (i * 7 + n) * 86400, "duration": 1800 + 600 * i,
+                         "description": "What this episode covers, and who's in it."}
+                        for i, t in enumerate(eps)])
+                eps = podcasts._db.episodes(first)
+                podcasts._db.set_position(eps[0]["id"], 1300)
+                podcasts._db.set_played([eps[-1]["id"]], True)
+                second = podcasts._db.episodes(first + 1)
+                podcasts._db.set_up_next(second[0]["id"], True, False)
+                podcasts._db.set_up_next(eps[1]["id"], True, False)
+                podcasts.reload()
+                state["show"] = first
+                shell.setFeature("stations", True)
+                shell.setFeature("podcasts", True)
+
+            todo += [seed, listening, play, pause]
             for page in ("home", "songs", "history", "settings", "folders", "recap", "stats"):
                 todo += [go(page), wait, shot(page)]
             todo += [go("artists"), open_artist, wait, shot("artist")]
@@ -368,6 +417,13 @@ def main():
             todo += [lambda: shell.setNowPlayingVinyl(True), lambda: shell.setVisualizerStyle("liquid"), wait, wait,
                      shot("now-playing-vinyl"), lambda: shell.setNowPlayingVinyl(False),
                      lambda: child("nowPlayingView").setProperty("open", False), wait]
+            for style in ("halo", "waves"):
+                todo += [lambda st=style: shell.setVisualizerStyle(st), go("visualizer"), wait, wait, shot(f"visualizer-{style}")]
+            todo += [go("stations"), wait, shot("stations"), go("podcasts"), wait, shot("podcasts"),
+                     lambda: QMetaObject.invokeMethod(win, "openPodcast", Q_ARG("QVariant", state["show"])), wait, wait,
+                     shot("podcast")]
+            todo += [lambda: managers[0].selectTheme("Ribbon"), go("home"), wait, wait, shot("theme-ribbon"),
+                     lambda: managers[0].selectTheme(themes[0]), wait]
             todo += [go("health"), wait, shot("health")]
             todo += [go("home"), palette_query, wait, palette_refresh, shot("palette"),
                      lambda: child("commandPalette").close(), wait]

@@ -122,3 +122,22 @@ def test_analyzer_measures_real_files(qapp, tmp_path, db):
         assert analyzer.missingCount() == 0
     finally:
         analyzer.shutdown()
+
+
+def test_new_music_is_measured_after_a_scan_when_asked(qapp, tmp_path, monkeypatch):
+    from hallucinate.core.db import Database
+    from hallucinate.replaygain import ReplayGainAnalyzer
+
+    Database(tmp_path / "lib.db").close()
+    rg = ReplayGainAnalyzer(tmp_path / "lib.db")
+    runs = []
+    monkeypatch.setattr(ReplayGainAnalyzer, "analyseMissing", lambda self: runs.append(1))
+    rg.after_scan({"added": 3})
+    assert runs == []  # off unless switched on
+    rg.setAuto(True)
+    runs.clear()
+    rg.after_scan({"added": 0, "updated": 0})
+    rg.after_scan({"added": 2})
+    assert runs == [1]
+    rg.setAuto(False)
+    rg.shutdown()

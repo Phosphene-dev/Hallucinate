@@ -48,6 +48,10 @@ class ReplayGainAnalyzer(QObject):
         self._total_tracks = 0
         self._current = ""
         self._failed = 0
+        from PySide6.QtCore import QSettings
+
+        self._settings = QSettings("hallucinate", "hallucinate")
+        self._auto = self._settings.value("replaygain/auto", False, bool)
 
     def _conn(self):
         if self._db is None:
@@ -74,6 +78,24 @@ class ReplayGainAnalyzer(QObject):
     @Property(int, notify=changed)
     def failed(self):
         return self._failed
+
+    @Property(bool, notify=changed)
+    def auto(self):
+        """Measure new music by itself after a scan adds or changes songs."""
+        return self._auto
+
+    @Slot(bool)
+    def setAuto(self, on):
+        self._auto = bool(on)
+        self._settings.setValue("replaygain/auto", self._auto)
+        self.changed.emit()
+        if on and not self.busy:
+            self.analyseMissing()
+
+    def after_scan(self, stats):
+        """A scan finished: with auto on, measure what it added or changed."""
+        if self._auto and not self.busy and isinstance(stats, dict) and (stats.get("added") or stats.get("updated")):
+            self.analyseMissing()
 
     @Slot(result=int)
     def missingCount(self):

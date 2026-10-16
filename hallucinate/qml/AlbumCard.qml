@@ -84,7 +84,7 @@ Item {
         width: 44; height: 44; radius: 22
         color: Theme.accent
         anchors { right: art.right; bottom: art.bottom; margins: 10 }
-        scale: hh.hovered ? 1 : 0.85
+        scale: Theme.reduceMotion ? 1 : (hh.hovered ? 1 : 0.85)
         Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
         opacity: hh.hovered ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 140 } }

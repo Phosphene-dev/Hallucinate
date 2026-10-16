@@ -146,6 +146,7 @@ def main(argv=None) -> int:
     meta_editor.changed.connect(library.reload)
     replay_gain = ReplayGainAnalyzer(paths.db_path())
     replay_gain.finished.connect(library.reload)
+    library.scanFinished.connect(replay_gain.after_scan)
     headphones = HeadphoneFinder(paths.cache_dir(), player)
     lyrics = LyricsController(paths.db_path(), player)
     scrobbler = LastFmScrobbler(player, paths.data_dir())
@@ -170,6 +171,19 @@ def main(argv=None) -> int:
 
     apply_features()
     shell.featuresChanged.connect(apply_features)
+    podcasts.newEpisodes.connect(lambda show, title: shell.notify(f"New from {show}", title))
+
+    def after_restore():
+        library.reload()
+        user_lib.refresh()
+        user_lib.refreshStats()
+        stations.refresh()
+        podcasts.reload()
+        library.rescan()  # folders and hidden songs from the backup take effect
+
+    user_lib.likeChanged.connect(scrobbler.love)
+    scrobbler.lovesImported.connect(user_lib.likeLoved)
+    shell.setBackupSources(paths.db_path(), paths.data_dir() / "streams.db", after_restore)
 
     if not library.folders and not args.folders:
         # A fresh install: open on the welcome (music folder, theme, scrobbling) until it is finished

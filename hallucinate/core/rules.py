@@ -32,7 +32,18 @@ FIELDS = {
     "liked": ("bool", "l.path IS NOT NULL", "Liked"),
     "rating": ("number", "COALESCE(r.stars, 0)", "Rating (stars)"),
     "skips": ("number", "COALESCE(s.count, 0)", "Skip count"),
+    "lossless": ("bool", "UPPER(COALESCE(t.codec, '')) IN ({lossless})", "Lossless"),
+    "sample_rate": ("number", "t.sample_rate / 1000.0", "Sample rate (kHz)"),
+    "liked_at": ("date", "l.liked_at", "Date liked"),
 }
+
+def _lossless_list():
+    from .insights import LOSSLESS
+
+    return ", ".join("'" + c.upper().replace("'", "''") + "'" for c in sorted(LOSSLESS))
+
+
+FIELDS["lossless"] = (FIELDS["lossless"][0], FIELDS["lossless"][1].format(lossless=_lossless_list()), FIELDS["lossless"][2])
 
 # kind -> {op: label}
 OPS = {

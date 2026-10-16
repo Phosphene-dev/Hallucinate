@@ -841,7 +841,7 @@ class Library(QObject):
         def work(db):
             songs = db.hide_paths(paths)
             self._removed.emit({"kind": "hidden", "albums": len(keys), "songs": songs, "failed": 0,
-                                "hidden": len(db.hidden_paths()), "keys": keys})
+                                "hidden": len(db.hidden_paths()), "keys": keys, "paths": list(paths)})
 
         self._bulk.submit(work)  # same single worker as reload(), so the refresh sees the rows gone
         self.reload()
@@ -854,7 +854,7 @@ class Library(QObject):
             paths = health_checks.extra_copies(db)
             songs = db.hide_paths(paths)
             self._removed.emit({"kind": "hidden", "albums": 0, "songs": songs, "failed": 0,
-                                "hidden": len(db.hidden_paths()), "keys": []})
+                                "hidden": len(db.hidden_paths()), "keys": [], "paths": list(paths)})
 
         self._bulk.submit(work)
         self.reload()
@@ -916,6 +916,14 @@ class Library(QObject):
         """Bring back everything removed with removeAlbums (on the next scan, which starts now)."""
         self._db.unhide_all()
         self._hidden_count = 0
+        self.hiddenChanged.emit()
+        self.rescan()
+
+    @Slot("QVariantList")
+    def unhidePaths(self, paths):
+        """Undo a "Remove from library": let those songs back in (the scan that starts now finds them)."""
+        n = self._db.unhide(paths)
+        self._hidden_count = max(0, self._hidden_count - n)
         self.hiddenChanged.emit()
         self.rescan()
 

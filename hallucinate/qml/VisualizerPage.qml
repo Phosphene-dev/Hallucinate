@@ -7,7 +7,8 @@ Item {
     id: page
     objectName: "visualizer"
     readonly property var styles: [
-        { id: "liquid", t: "Liquid" }, { id: "aurora", t: "Aurora" }, { id: "nebula", t: "Nebula" }, { id: "bars", t: "Bars" }
+        { id: "liquid", t: "Liquid" }, { id: "aurora", t: "Aurora" }, { id: "nebula", t: "Nebula" },
+        { id: "halo", t: "Halo" }, { id: "waves", t: "Waves" }, { id: "bars", t: "Bars" }
     ]
 
     Rectangle {

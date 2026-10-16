@@ -183,7 +183,7 @@ Item {
                         PillButton {
                             id: followBtn
                             anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                            text: model.followed ? "Following" : "Follow"
+                            text: model.followed ? "✓ Following" : "Follow"
                             enabled: !model.followed && !podcasts.busy
                             onClicked: podcasts.followResult(model.row)
                         }
@@ -191,6 +191,24 @@ Item {
                 }
             }
 
+            SectionHeader { visible: podcasts.upNext.count > 0; title: "Up next"; subtitle: "Episodes you've lined up, across shows; they play in this order" }
+            Column {
+                objectName: "upNextEpisodes"
+                width: parent.width
+                spacing: 2
+                visible: podcasts.upNext.count > 0
+                Repeater {
+                    model: podcasts.upNext
+                    EpisodeRow {
+                        required property var model
+                        width: col.width
+                        episode: model
+                        showPodcast: true
+                        upNextRow: true
+                        onMenu: episodeMenu.showFor(model, true)
+                    }
+                }
+            }
             SectionHeader { visible: podcasts.inProgress.count > 0; title: "Continue listening" }
             Column {
                 width: parent.width

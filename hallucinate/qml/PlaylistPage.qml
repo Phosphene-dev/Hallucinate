@@ -11,6 +11,18 @@ Item {
     readonly property var tracksModel: liked ? userLib.likedTracks : userLib.playlistTracks
 
     Component.onCompleted: if (!liked) userLib.openPlaylist(playlistId)
+    function syncName() {
+        for (var i = 0; i < userLib.playlists.count; i++)
+            if (userLib.playlists.get(i).id === page.playlistId) page.playlistName = userLib.playlists.get(i).name
+    }
+    // renamed elsewhere (the sidebar's menu): keep the heading in step
+    Connections {
+        target: userLib.playlists
+        enabled: !page.liked
+        function onModelReset() { page.syncName() }
+        function onDataChanged() { page.syncName() }
+        function onRowsInserted() { page.syncName() }
+    }
 
     Dialog {
         id: renameDlg

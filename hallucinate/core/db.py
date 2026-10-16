@@ -683,6 +683,13 @@ class Database:
     def hidden_paths(self) -> set:
         return {r[0] for r in self.conn.execute("SELECT path FROM hidden")}
 
+    def unhide(self, paths: Iterable[str]) -> int:
+        """Let these songs' files back into the library (on the next scan)."""
+        files = {self.file_of(p) for p in paths}
+        n = sum(self.conn.execute("DELETE FROM hidden WHERE path=?", (f,)).rowcount for f in files)
+        self.conn.commit()
+        return n
+
     def unhide_all(self) -> int:
         n = self.conn.execute("DELETE FROM hidden").rowcount
         self.conn.commit()

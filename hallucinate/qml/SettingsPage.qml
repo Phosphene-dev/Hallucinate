@@ -7,10 +7,10 @@ Item {
     id: page
     objectName: "settings"
     property string query: ""
-    readonly property var sectionIds: ["appearance", "features", "playback", "sound", "library", "sharing", "desktop", "about"]
-    readonly property var sectionTitles: ["Appearance", "Features", "Playback", "Sound", "Library", "Internet & sharing", "Desktop", "About"]
+    readonly property var sectionIds: ["appearance", "features", "podcasts", "playback", "sound", "library", "sharing", "desktop", "about"]
+    readonly property var sectionTitles: ["Appearance", "Features", "Podcasts", "Playback", "Sound", "Library", "Internet & sharing", "Desktop", "About"]
 
-    function sectionItem(i) { return [sec_appearance, sec_features, sec_playback, sec_sound, sec_library, sec_sharing, sec_desktop, sec_about][i] }
+    function sectionItem(i) { return [sec_appearance, sec_features, sec_podcasts, sec_playback, sec_sound, sec_library, sec_sharing, sec_desktop, sec_about][i] }
     function jumpTo(i) {
         page.query = ""
         search.text = ""
@@ -63,7 +63,7 @@ Item {
             textFormat: Text.PlainText
             visible: page.query.length > 0
             text: noMatches ? "No settings match “" + page.query + "”" : "Showing settings that match “" + page.query + "”"
-            readonly property bool noMatches: !(sec_appearance.matches || sec_features.matches || sec_playback.matches || sec_sound.matches || sec_library.matches || sec_sharing.matches || sec_desktop.matches || sec_about.matches)
+            readonly property bool noMatches: !(sec_appearance.matches || sec_features.matches || sec_podcasts.matches || sec_playback.matches || sec_sound.matches || sec_library.matches || sec_sharing.matches || sec_desktop.matches || sec_about.matches)
             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
         }
     }
@@ -87,7 +87,7 @@ Item {
             id: sec_appearance
             objectName: "settings_appearance"
             title: "Appearance"
-            keywords: "theme colours font accent album art ambient motion visualizer vinyl dark light pride"
+            keywords: "theme colours font accent album art ambient motion reduce animation visualizer vinyl dark light system pride ribbon custom"
             query: page.query
             StyledCheck {
                 text: "Show audio format and average bitrate on tracks"
@@ -138,11 +138,94 @@ Item {
                     }
                 }
             }
+            // Your own touches on the theme: an accent colour, light and dark following the system, a theme of your own
+            Column {
+                width: parent.width
+                spacing: 8
+                Text { textFormat: Text.PlainText; text: "Accent colour"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+                Flow {
+                    objectName: "accentSwatches"
+                    width: parent.width
+                    spacing: 8
+                    Repeater {
+                        model: ["", "#8f7bff", "#c08bff", "#ff7ab6", "#ff6b6b", "#ff9f43", "#ffd166", "#5fd38d",
+                                "#2ec4b6", "#4cc9f0", "#5b8cff", "#e8e8f0"]
+                        Rectangle {
+                            required property string modelData
+                            readonly property bool chosen: themeManager.accentOverride === modelData
+                            width: 30; height: 30; radius: 15
+                            color: modelData.length ? modelData : "transparent"
+                            border.width: chosen ? 3 : 1
+                            border.color: chosen ? Theme.text : Theme.border
+                            Text {
+                                visible: !modelData.length
+                                anchors.centerIn: parent
+                                text: "A"; textFormat: Text.PlainText
+                                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.Bold
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: themeManager.setAccentOverride(modelData)
+                                Accessible.role: Accessible.RadioButton
+                                Accessible.name: modelData.length ? "Accent " + modelData : "The theme's own accent"
+                                Accessible.checked: chosen
+                                Accessible.onPressAction: themeManager.setAccentOverride(modelData)
+                            }
+                        }
+                    }
+                    TextField {
+                        id: accentHex
+                        objectName: "accentHex"
+                        width: 120; height: 30
+                        placeholderText: "#hex"
+                        text: themeManager.accentOverride
+                        selectByMouse: true
+                        Accessible.name: "Accent colour as a hex code"
+                        onAccepted: themeManager.setAccentOverride(text)
+                    }
+                }
+                StyledCheck {
+                    objectName: "followSystemTheme"
+                    text: "Follow the system's light or dark mode"
+                    checked: themeManager.followSystem
+                    onToggled: themeManager.setFollowSystem(checked)
+                }
+                Flow {
+                    visible: themeManager.followSystem
+                    width: parent.width
+                    spacing: 10
+                    Text { textFormat: Text.PlainText; text: "Light"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                    StyledCombo {
+                        width: 200
+                        model: themeManager.availableThemes
+                        currentIndex: Math.max(0, themeManager.availableThemes.indexOf(themeManager.lightTheme))
+                        onActivated: themeManager.setSystemThemes(currentText, themeManager.darkTheme)
+                        Accessible.name: "Theme in light mode"
+                    }
+                    Text { textFormat: Text.PlainText; text: "Dark"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                    StyledCombo {
+                        width: 200
+                        model: themeManager.availableThemes
+                        currentIndex: Math.max(0, themeManager.availableThemes.indexOf(themeManager.darkTheme))
+                        onActivated: themeManager.setSystemThemes(themeManager.lightTheme, currentText)
+                        Accessible.name: "Theme in dark mode"
+                    }
+                }
+                PillButton { objectName: "makeTheme"; text: "Make my own theme…"; onClicked: themeEditor.open() }
+            }
+            ThemeEditor { id: themeEditor }
             StyledCheck {
                 objectName: "ambientMotion"
                 text: "Animated background (slowly drifting colours from the current cover)"
                 checked: shell.ambientMotion
                 onToggled: shell.setAmbientMotion(checked)
+            }
+            StyledCheck {
+                objectName: "reduceMotion"
+                text: "Reduce motion (no page transitions, zooms, spinning record or growing buttons)"
+                checked: shell.reduceMotion
+                onToggled: shell.setReduceMotion(checked)
             }
             CheckBox {
                 id: albumAccentToggle
@@ -243,24 +326,102 @@ Item {
                 items: [["homeRandom", "Random album"], ["homeListening", "Listening card"],
                         ["homeFacts", "Library facts"], ["homeShelves", "Album shelves"]]
             }
-            Column {
-                visible: shell.features.podcasts !== false
-                width: parent.width
-                spacing: 6
-                Text { textFormat: Text.PlainText; text: "Podcasts"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold }
-                StyledCheck {
-                    objectName: "deletePlayedEpisodes"
-                    text: "Remove a downloaded episode once it's played"
-                    checked: podcasts.deletePlayed
-                    onToggled: podcasts.setDeletePlayed(checked)
-                }
+        }
+
+        SettingsSection {
+            id: sec_podcasts
+            objectName: "settings_podcasts"
+            title: "Podcasts"
+            keywords: "podcast episodes skip back forward seconds feeds check refresh download keep remove storage played speed next"
+            query: page.query
+            visible: matches && shell.features.podcasts !== false
+            readonly property var o: podcasts.options
+            function secs(list) { return list.map(function (n) { return n + " seconds" }) }
+            OptionCombo {
+                label: "Skip back"
+                values: [5, 10, 15, 30, 45, 60]; labels: sec_podcasts.secs(values)
+                current: sec_podcasts.o.skipBack
+                onPicked: function (v) { podcasts.setOption("skipBack", v) }
+            }
+            OptionCombo {
+                label: "Skip forward"
+                values: [10, 15, 30, 45, 60, 90]; labels: sec_podcasts.secs(values)
+                current: sec_podcasts.o.skipForward
+                onPicked: function (v) { podcasts.setOption("skipForward", v) }
+            }
+            OptionCombo {
+                label: "Check for new episodes"
+                values: [1, 2, 4, 8, 12, 24, 0]
+                labels: ["Every hour", "Every 2 hours", "Every 4 hours", "Every 8 hours", "Twice a day", "Once a day", "Only when I ask"]
+                current: sec_podcasts.o.refreshHours
+                onPicked: function (v) { podcasts.setOption("refreshHours", v) }
+            }
+            OptionCombo {
+                label: "After an episode"
+                values: ["next", "stop"]
+                labels: ["Play the show's next one", "Stop"]
+                current: sec_podcasts.o.afterEpisode
+                onPicked: function (v) { podcasts.setOption("afterEpisode", v) }
+            }
+            OptionCombo {
+                label: "Played when this close to the end"
+                values: [10, 30, 45, 60, 120, 300]
+                labels: ["10 seconds", "30 seconds", "45 seconds", "1 minute", "2 minutes", "5 minutes"]
+                current: sec_podcasts.o.playedWindow
+                onPicked: function (v) { podcasts.setOption("playedWindow", v) }
+            }
+            StyledCheck {
+                objectName: "notifyNewEpisodes"
+                text: "Tell me when a show I follow has a new episode (a desktop notification)"
+                checked: sec_podcasts.o.notifyNew === 1
+                onToggled: podcasts.setOption("notifyNew", checked ? 1 : 0)
+            }
+            Text { textFormat: Text.PlainText; text: "Downloads"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold }
+            OptionCombo {
+                label: "A show you follow downloads"
+                values: [0, 1, 2, 3, 5]
+                labels: ["Nothing by itself", "Its newest episode", "Its newest 2", "Its newest 3", "Its newest 5"]
+                current: sec_podcasts.o.newShowDownloads
+                onPicked: function (v) { podcasts.setOption("newShowDownloads", v) }
+            }
+            OptionCombo {
+                label: "Keep downloads"
+                values: ["played", "latest", "forever"]
+                labels: ["Until they're played", "Only the newest of each show", "Until I remove them"]
+                current: sec_podcasts.o.keep
+                onPicked: function (v) { podcasts.setOption("keep", v) }
+            }
+            OptionCombo {
+                visible: sec_podcasts.o.keep === "latest"
+                label: "Newest to keep per show"
+                values: [1, 2, 3, 5, 10]; labels: ["1", "2", "3", "5", "10"]
+                current: sec_podcasts.o.keepCount
+                onPicked: function (v) { podcasts.setOption("keepCount", v) }
+            }
+            Row {
+                spacing: 12
                 Text {
                     textFormat: Text.PlainText
-                    width: parent.width
-                    wrapMode: Text.WordWrap
-                    text: "Feeds are checked when Hallucinate starts and every few hours. Episodes in a folder you added are your own files and are never removed."
-                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "Downloads take " + Theme.fmtBytes(podcasts.downloadsSize)
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
                 }
+                PillButton { text: "Remove all downloads"; enabled: podcasts.downloadsSize > 0; onClicked: removeDownloadsDlg.open() }
+            }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: "Each show can have its own speed, skip its intro or outro, list oldest first and download its newest episodes: open the show and choose Show settings. Episodes in a folder you added are your own files and are never removed."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+            }
+            ConfirmDialog {
+                id: removeDownloadsDlg
+                title: "Remove every downloaded episode?"
+                body: "The files go; the episodes stay, and play from the web until downloaded again."
+                confirmText: "Remove downloads"
+                destructive: true
+                onAccepted: podcasts.removeAllDownloads()
             }
         }
 
@@ -307,6 +468,12 @@ Item {
                     value: player.replayGainPreamp
                     onMoved: player.setReplayGainPreamp(value)
                 }
+            }
+            StyledCheck {
+                objectName: "autoReplayGain"
+                text: "Measure new music by itself after each scan"
+                checked: replayGain.auto
+                onToggled: replayGain.setAuto(checked)
             }
             Row {
                 spacing: 12
@@ -371,7 +538,7 @@ Item {
             id: sec_library
             objectName: "settings_library"
             title: "Library"
-            keywords: "music folders scan rescan health import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums"
+            keywords: "music folders scan rescan health import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums backup export your data move computer"
             query: page.query
             Text {
                 textFormat: Text.PlainText
@@ -397,6 +564,32 @@ Item {
                 }
             }
 
+            Row {
+                objectName: "backupRow"
+                spacing: 10
+                Text {
+                    textFormat: Text.PlainText
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "Your likes, ratings, playlists, history, stations and shows"
+                    color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                }
+                PillButton { objectName: "exportBackup"; height: 32; text: "Back up…"; onClicked: backupSaveDlg.open() }
+                PillButton { objectName: "importBackup"; height: 32; text: "Restore…"; onClicked: backupOpenDlg.open() }
+            }
+            FileDialog {
+                id: backupSaveDlg
+                title: "Back up your data"
+                fileMode: FileDialog.SaveFile
+                defaultSuffix: "hallucinate-backup"
+                nameFilters: ["Hallucinate backup (*.hallucinate-backup)"]
+                onAccepted: Nav.notify(shell.exportBackup(selectedFile.toString()))
+            }
+            FileDialog {
+                id: backupOpenDlg
+                title: "Restore from a backup"
+                nameFilters: ["Hallucinate backup (*.hallucinate-backup)", "All files (*)"]
+                onAccepted: Nav.notify(shell.importBackup(selectedFile.toString()))
+            }
             Repeater {
                 model: library.folders
                 Rectangle {
@@ -538,6 +731,20 @@ Item {
                 text: "Count songs heard on internet radio on Last.fm and ListenBrainz"
                 checked: stations.scrobble
                 onToggled: stations.setScrobble(checked)
+            }
+            StyledCheck {
+                objectName: "syncLoves"
+                visible: scrobbler.connected
+                text: "Liking a song loves it on Last.fm (and unliking unloves it)"
+                checked: scrobbler.syncLoves
+                onToggled: scrobbler.setSyncLoves(checked)
+            }
+            PillButton {
+                objectName: "importLoves"
+                visible: scrobbler.connected
+                text: scrobbler.lovesBusy ? "Fetching your loves…" : "Like the songs I've loved on Last.fm"
+                enabled: !scrobbler.lovesBusy
+                onClicked: scrobbler.importLoves()
             }
             StyledCheck {
                 objectName: "offlineMode"

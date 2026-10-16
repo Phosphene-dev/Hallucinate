@@ -5,6 +5,43 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.9.2] - 2026-10-16
+
+Polish everywhere, podcasts done properly, and your own touches on the look.
+
+### Added
+- Ribbon, a new theme in deep red.
+- Two new visualizer styles: Halo (a ring of light that swells with the spectrum and sends out ripples on the beat) and Waves (layered waves of light whose heights follow the music).
+- Pick an accent colour of your own for any theme (it's kept readable), follow the system's light or dark mode with a theme for each, or make your own theme from the current one (Settings → Appearance).
+- Reduce motion (Settings → Appearance): no page transitions, zooms, spinning record, growing buttons or drifting backdrop.
+- A show's page glows in its cover's colours, like an album's.
+- Podcasts have their own section in Settings: how far skip back and forward go (the buttons show it), how often feeds are checked (or only when you ask), whether the show's next episode follows or playback stops, how close to the end counts as played, how many episodes a newly followed show downloads, and which downloads to keep (until played, the newest few per show, or until you remove them), with the space they take and a button to remove them all.
+- Show settings on each show's page: newest or oldest first, hide played episodes, a speed of its own (change the speed while it plays and the show remembers it), skip its intro or outro, and how many of its newest episodes download by themselves.
+- Find an episode within a show, and read an episode's show notes from its menu.
+- Undo on the toasts that follow removing songs from the library, clearing the queue or taking a song out of it, removing a station, and marking a whole show played.
+- Click the playing song's cover or title to go to it: its album, the station's page or the episode's show. The queue opens scrolled to what's playing.
+- Song and episode lists work from the keyboard: Up and Down (and Page Up/Down, Home, End) move between rows without changing the volume, Enter plays, and the Menu key or Shift+F10 opens the row's menu.
+- Up next for podcasts: line up episodes from any show and they play in that order, from Podcasts or an episode's menu.
+- A notification when a show you follow has new episodes (Settings → Podcasts; on by default).
+- Search finds your stations, shows and episodes too, alongside music.
+- Pages remember how far down you'd scrolled when you come back to them with Back or from the sidebar.
+- The mini player works with radio (it says LIVE, with no seek bar) and podcasts (skip back and forward buttons).
+- The first-run welcome mentions internet radio and podcasts, with a switch for each.
+- After an update, a short card says what's new. It shows once, and never on a first start.
+- Back up and restore (Settings → Library): likes, ratings, playlists, play counts, listening history, music folders, stations and podcasts in one file. Restoring merges into what you have; nothing is deleted.
+- An equalizer for each output device, if you want one (in the equalizer): headphones and speakers keep their own settings and switch over by themselves.
+- Liked Songs and Last.fm loves stay in step if you choose to (Settings → Internet & sharing): liking a song loves it on Last.fm, and your existing loves can be brought in as likes.
+- Smart playlist rules for lossless, sample rate and date liked.
+- ReplayGain can be measured by itself for new music after each scan (Settings → Playback).
+- The album tag editor can look the album up on MusicBrainz and fill in its title, album artist, year, genre and, if you want, every track's title and number.
+
+### Fixed
+- Renaming a playlist from the sidebar updates its page's heading straight away.
+- Buttons that can't be pressed right now look it (dimmed), so "Saved" and "Following" no longer look like buttons to press.
+- A station that stops answering says so in plain words instead of showing Qt's error text.
+- Feeds, stations, MusicBrainz and cover lookups that fail say why in plain words ("the server couldn't be found", "nothing was found at that link") instead of showing Python's error text.
+- In a narrow window, History says when its heatmap is showing only the last few weeks.
+
 ## [0.9.9.1] - 2026-10-16
 
 Turn off what you don't use, and turn on internet radio and podcasts if you want them.

@@ -205,3 +205,16 @@ def test_features_are_remembered_and_new_kinds_start_off(make_shell):
     assert seen == [1] and not shell.featureOn("stats") and "nonsense" not in shell.features
     assert shell._settings.value("features/stats", True, bool) is False
     shell.setFeature("stats", True)  # the settings are shared by the whole test run
+
+
+def test_whats_new_once_after_an_update(make_shell):
+    from hallucinate import __version__
+    from hallucinate.whatsnew import HIGHLIGHTS
+
+    shell, _, _ = make_shell()
+    assert __version__ in HIGHLIGHTS, "this version needs its highlights in whatsnew.py"
+    assert shell.whatsNew == []  # a first start
+    shell._settings.setValue("ui/lastVersion", "0.0.1")
+    assert shell.whatsNew == HIGHLIGHTS[__version__]
+    shell.dismissWhatsNew()
+    assert shell.whatsNew == []

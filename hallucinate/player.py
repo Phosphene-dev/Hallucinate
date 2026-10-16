@@ -190,6 +190,7 @@ class Player(QObject):
     speedChanged = Signal()
     sleepChanged = Signal()
     eqChanged = Signal()
+    showSpeedChanged = Signal(int, float)  # a podcast show's own speed was changed while one of its episodes played
     played = Signal("QVariantMap")  # a track was listened to for long enough to count as a play
     skipped = Signal("QVariantMap")  # the listener moved on from a playing track before it counted as played
     visualizerChanged = Signal()
@@ -283,6 +284,8 @@ class Player(QObject):
         self._radio_ready.connect(self._apply_radio)
         self._output_key = str(self._settings.value("audio/outputDevice", "") or "")
         self._output_name = str(self._settings.value("audio/outputDeviceName", "") or "")
+        self._eq_per_device = self._settings.value("eq/perDevice", False, bool)
+        self._eq_device = ""  # the device whose equalizer is in use (set once the outputs are known)
         self._media_devices = QMediaDevices(self)
         self._media_devices.audioOutputsChanged.connect(self._on_audio_outputs_changed)
         self._fading = False
@@ -308,6 +311,7 @@ class Player(QObject):
             p.playbackStateChanged.connect(lambda st, n=n: self._tap_state(n, st))
         self._apply_speed()
         self._apply_output_device()
+        self._eq_device = self._current_device_key()
         if self._dsp_on():
             self._sync_taps()
         elif self._visualizer_enabled:
@@ -403,7 +407,13 @@ class Player(QObject):
         return self.hasTrack and track_kind(self.current) == "episode"
 
     def _rate(self):
-        return self._podcast_speed if self._episode_now() else self._speed
+        if self._episode_now():
+            return float(self.current.get("speed") or 0) or self._podcast_speed  # a show can keep its own
+        return self._speed
+
+    @Property(float, notify=speedChanged)
+    def podcastSpeed(self):
+        return self._podcast_speed
 
     @Slot(float)
     def setSpeed(self, rate):
@@ -411,10 +421,16 @@ class Player(QObject):
         up talk doesn't speed up the music after it."""
         if self._episode_now():
             rate = round(min(max(float(rate), 0.5), 3.0), 2)
-            if rate == self._podcast_speed:
+            if self.current.get("speed"):  # this show has a speed of its own: that's what changes
+                if rate == self.current["speed"]:
+                    return
+                self.current["speed"] = rate
+                self.showSpeedChanged.emit(int(self.current.get("podcast_id") or 0), rate)
+            elif rate == self._podcast_speed:
                 return
-            self._podcast_speed = rate
-            self._settings.setValue("podcastSpeed", rate)
+            else:
+                self._podcast_speed = rate
+                self._settings.setValue("podcastSpeed", rate)
         else:
             rate = round(min(max(float(rate), 0.5), 2.0), 2)
             if rate == self._speed:
@@ -506,7 +522,62 @@ class Player(QObject):
     def eqBands(self):
         return [f"{b // 1000}k" if b >= 1000 else str(b) for b in eq.BANDS]
 
+    # --- the equalizer for each output device -------------------------------------------------------------
+    @Property(bool, notify=eqChanged)
+    def eqPerDevice(self):
+        """Keep separate equalizer settings (bands, headphone correction, crossfeed) for each output device,
+        switching when the sound moves to another one (headphones plugged in, say)."""
+        return self._eq_per_device
+
+    @Slot(bool)
+    def setEqPerDevice(self, on):
+        self._eq_per_device = bool(on)
+        self._settings.setValue("eq/perDevice", self._eq_per_device)
+        self._eq_device = self._current_device_key()
+        if on:
+            self._save_eq()  # what's set now becomes this device's
+        self.eqChanged.emit()
+
+    @Property(str, notify=eqChanged)
+    def eqDeviceName(self):
+        device = self._output_audio_device()
+        return "" if device.isNull() else device.description()
+
+    def _current_device_key(self):
+        device = self._output_audio_device()
+        return "" if device.isNull() else device_key(device)
+
+    def _switch_device_eq(self):
+        """The sound moved to another device: bring back that device's equalizer, if it has one."""
+        if not self._eq_per_device:
+            return
+        key = self._current_device_key()
+        if key == self._eq_device:
+            return
+        self._eq_device = key
+        try:
+            stored = json.loads(str(self._settings.value(f"eq/device/{key}", "") or "null"))
+        except ValueError:
+            stored = None
+        if not isinstance(stored, dict):
+            self._save_eq()  # a new device starts from what was in use
+            return
+        gains = stored.get("gains")
+        if isinstance(gains, list) and len(gains) == len(self._eq_gains):
+            self._eq_gains = [min(max(float(g), -eq.MAX_GAIN_DB), eq.MAX_GAIN_DB) for g in gains]
+        self._eq_enabled = bool(stored.get("enabled")) and eq.available()
+        hp = stored.get("headphone")
+        self._headphone = hp if isinstance(hp, dict) and "name" in hp else {"name": "", "curve": None}
+        cf = stored.get("crossfeed", "off")
+        self._crossfeed = cf if cf in eq.CROSSFEED else "off"
+        self._sync_taps()
+        self._save_eq()
+
     def _save_eq(self):
+        if getattr(self, "_eq_per_device", False):
+            self._settings.setValue(f"eq/device/{self._eq_device}", json.dumps({
+                "enabled": self._eq_enabled, "gains": self._eq_gains, "headphone": self._headphone,
+                "crossfeed": self._crossfeed}))
         self._settings.setValue("eq/enabled", "true" if self._eq_enabled else "false")
         self._settings.setValue("eq/gains", json.dumps(self._eq_gains))
         self._settings.setValue("eq/headphone", json.dumps(self._headphone))
@@ -720,6 +791,7 @@ class Player(QObject):
         self._settings.setValue("audio/outputDevice", self._output_key)
         self._settings.setValue("audio/outputDeviceName", self._output_name if key else "")
         self._apply_output_device()
+        self._switch_device_eq()
         self.outputDevicesChanged.emit()
 
     @Property("QVariantMap", notify=signalPathChanged)
@@ -763,6 +835,7 @@ class Player(QObject):
         # looks unchanged while the sound server has moved our stream elsewhere; re-attach to the chosen device.
         chosen = pick_output_device(QMediaDevices.audioOutputs(), self._output_key) is not None
         self._apply_output_device(reattach=chosen)
+        self._switch_device_eq()
         self.outputDevicesChanged.emit()
 
     def _sync_taps(self):
@@ -1707,11 +1780,13 @@ class Player(QObject):
         if not self.hasTrack or track_kind(self.current) != "station" or net.is_offline():
             return False
         if self._stream_retries >= STREAM_RETRIES:
-            self._set_error(f"The station isn't answering: {message or 'no sound'}")
+            logger.info("Station gave up after %d tries: %s", self._stream_retries, message)
+            self._set_error("The station isn't answering. Try again later, or check its link.")
             return True
         self._stream_retries += 1
         delay = 1000 * 2 ** self._stream_retries
-        self._set_error(f"Reconnecting to the station… ({message or 'it stopped'})")
+        logger.info("Station dropped (%s); reconnecting", message)
+        self._set_error("Lost the station, reconnecting…")
         index = self._index
         QTimer.singleShot(delay, lambda: self._retry_stream(index))
         return True

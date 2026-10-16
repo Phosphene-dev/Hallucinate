@@ -31,16 +31,17 @@
 
 ## Highlights
 - **A look of its own.** Frosted glass over a backdrop that slowly drifts in the colours of the current cover, a floating player, and a waveform seek bar drawn from each song's own loudness.
-- **Now Playing that fills the screen.** Press F: the cover, or the record sliding out of its sleeve, over GPU visualizers (Liquid, Aurora, Nebula) that move with the music in the cover's colours.
+- **Now Playing that fills the screen.** Press F: the cover, or the record sliding out of its sleeve, over GPU visualizers (Liquid, Aurora, Nebula, Halo, Waves) that move with the music in the cover's colours.
 - **Home is about your library.** A random album to play, your listening heatmap and streak, albums to rediscover, what you played on this day in past years, and library facts.
 - **Browse like a record shelf.** Album and artist pages, a colour wall that sorts every cover round the colour wheel, a timeline by decade and year, and your own folders.
 - **Every listen remembered.** A searchable history of everything you played, recaps of every week, month and year, and your Last.fm, ListenBrainz or old player's history brought over.
 - **Plays everything well.** FLAC, MP3, AAC/ALAC, Ogg, Opus, WAV, WavPack, AIFF and more, CUE sheet albums too, with true gapless playback, ReplayGain (measured where tags are missing), a 10-band equalizer, headphone correction and crossfeed, and a signal path readout that tells you when the sound is untouched.
-- **Internet radio and podcasts, if you want them.** Both are off until you switch them on in Settings → Features (where anything else you don't use can be switched off too). Stations come from their stream links or the Radio Browser directory and show the song they're playing; podcasts come from RSS feeds, the Apple Podcasts directory, OPML files from other apps or a folder of episodes, and remember where you stopped. Neither ever counts toward your stats.
+- **Internet radio and podcasts, if you want them.** Both are off until you switch them on in Settings → Features (where anything else you don't use can be switched off too). Stations come from their stream links or the Radio Browser directory and show the song they're playing; podcasts come from RSS feeds, the Apple Podcasts directory, OPML files from other apps or a folder of episodes, remember where you stopped, line up in an Up next list and have settings of their own, per show too. Neither ever counts toward your stats.
 - **Radio mode and smart playlists.** Similar songs from your library keep playing when the queue runs out (songs you keep skipping come up less); playlists update themselves from rules, ratings included.
 - **Fast to drive.** Instant search even across a quarter of a million songs, Ctrl+K for anything, Ctrl/Shift+click to act on many songs at once, and Ctrl+Z when the queue goes wrong.
 - **Looks after your library.** A health check finds missing covers (and fetches them all at once), tags and folders, split albums and duplicates, with a fix next to each.
-- **No account, no cloud.** Your library, playlists and history stay on your computer. Scrobbling and Discord are opt-in, cover art is fetched only when you ask, and online lyrics lookup can be turned off.
+- **Make it yours.** Eighteen themes, any accent colour, light and dark that follow the system, a theme editor, an equalizer for each output device, and reduce motion for a stiller window.
+- **No account, no cloud.** Your library, playlists and history stay on your computer. Scrobbling and Discord are opt-in, cover art is fetched only when you ask, and online lyrics lookup can be turned off. Back everything up to one file, and restore it anywhere.
 
 ## Help test it
 Hallucinate is young and mostly tested by one person, so reports from other machines are the most useful thing
@@ -86,6 +87,12 @@ Known rough edges:
 | ![Songs selected with the selection bar](docs/screenshots/selection.png) | ![Folder view](docs/screenshots/folders.png) |
 | Settings | Pride themes |
 | ![Settings in searchable sections](docs/screenshots/settings.png) | ![The Trans Pride theme](docs/screenshots/theme-trans-pride.png) |
+| Internet radio | Podcasts |
+| ![Saved radio stations](docs/screenshots/stations.png) | ![Podcasts with Up next and Continue listening](docs/screenshots/podcasts.png) |
+| A show's page | The Ribbon theme |
+| ![A podcast's page and its episodes](docs/screenshots/podcast.png) | ![The Ribbon theme](docs/screenshots/theme-ribbon.png) |
+| Halo visualizer | Waves visualizer |
+| ![Halo visualizer](docs/screenshots/visualizer-halo.png) | ![Waves visualizer](docs/screenshots/visualizer-waves.png) |
 
 ![Themes](docs/screenshots/themes.gif)
 
@@ -114,12 +121,12 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - Formats: FLAC, MP3, OGG/Vorbis, Opus, WAV, AAC/M4A, ALAC, WMA, APE, WavPack, AIFF and more (anything Qt's FFmpeg backend decodes). WAV/AIFF RIFF/FORM text tags are read; missing tags fall back to the filename and unknown values.
 - Features (Settings): switch off Liked Songs, Folders, Stats, History, Recap, Visualizer, Library health, lyrics or any card on Home; it leaves the sidebar, Ctrl+K, links and shortcuts. Internet radio and podcasts start switched off.
 - Internet radio: save stations by stream link (.pls/.m3u links are opened for the stream inside), import or export them as .m3u, or search Radio Browser. The song a station is playing (its ICY title) shows as artist and title in the app, the tray, media keys and Discord; dropped streams reconnect. Optional scrobbling of radio songs. Logos are cached, so nothing loads from the web in offline mode.
-- Podcasts: follow RSS/Atom feeds, search the Apple Podcasts directory, import/export OPML, or add a folder of episode files. Resume where you stopped, played/unplayed, "Continue listening" and new episodes, downloads (by hand or automatically per show; removed once played if you like), chapters (Podcasting 2.0 and ID3/MP4), skip back 15 s / forward 30 s and a speed of their own up to 3×. Episodes never count as plays.
+- Podcasts: follow RSS/Atom feeds, search the Apple Podcasts directory, import/export OPML, or add a folder of episode files. Resume where you stopped, played/unplayed, "Continue listening" and new episodes, downloads (by hand or automatically per show; removed once played if you like), chapters (Podcasting 2.0 and ID3/MP4), skip back and forward (15 s / 30 s by default, adjustable) and a speed of their own up to 3×. An Up next list across shows, new-episode notifications, show notes, search within a show, and Settings → Podcasts for refresh interval, what plays after an episode, when it counts as played, and which downloads to keep. Per show: newest or oldest first, hide played, its own speed, skip intro/outro and automatic downloads. Episodes never count as plays.
 - Home: a random album (roll again for another), a 26-week listening heatmap with your streak and this month's top artists, library facts (hours of music, size, lossless share, formats), albums to rediscover, "On this day" from past years, and recently added albums.
 - History: every listen newest first, grouped by day with each day's plays and time; search it, narrow it to a period, a day on the 12-month heatmap, an artist or a source (played here or imported); play a song again or remove a listen (its play count follows).
 - Album pages with liner notes (genre, format and sample rate, discs, size, date added, your plays with first and last listen, liked songs) and tracks split by disc. The Albums page also has a colour wall (covers ordered by measured colour, cached) and a timeline by decade and year.
 - Now Playing (F): full-window view with the visualizer as backdrop, a large cover or a spinning record in its sleeve, a large waveform seek bar, and controls that fade when the pointer rests.
-- Visualizers drawn with GPU shaders and tinted by the cover: Liquid, Aurora and Nebula (bars without hardware graphics), driven by the spectrum, smoothed band energies and a beat detector.
+- Visualizers drawn with GPU shaders and tinted by the cover: Liquid, Aurora, Nebula, Halo and Waves (bars without hardware graphics), driven by the spectrum, smoothed band energies and a beat detector.
 - Signal path readout: source format, ReplayGain, equalizer, speed, volume, crossfade and output device with its rate, marking which stages change the sound and when the system resamples.
 - Library health: missing folders, untagged songs, split albums, missing covers, track numbers, years and genres, probable duplicates and low-bitrate files, each with a fix.
 - Artist pages: a picture lit by its own colours, facts, your listening (plays, rank, first listen, plays per month), most played songs, the discography by year and albums they appear on; radio from their most played song.
@@ -137,26 +144,29 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - Offline mode (Settings → Internet & sharing): one switch and Hallucinate makes no internet connections at all. Lyrics and cover lookups, scrobbling, headphone EQ downloads and update checks stay off; scrobbles wait and are sent when you switch it off. Every request in the code goes through one gate, and a test fails if anything bypasses it.
 - Updates: an optional, off-by-default check (once a day, against GitHub). The Windows installer build and the AppImage can then update themselves with "Update now": the download is checked against the release's SHA-256 digest before it's installed. The Flatpak, AUR and other packages leave updates to their package manager.
 - Command palette (Ctrl+K) with fuzzy matching over pages and commands plus albums, artists and songs.
-- Global search grouped into Artists / Albums / Songs; Home, Albums, Artists, Songs browse views; album and artist pages; editable queue; shuffle/repeat; seek; volume. Queue, current position, shuffle, repeat, and volume are restored after restart; missing queue files are discarded.
+- Global search grouped into Artists / Albums / Songs, plus Stations, Podcasts and Episodes when those are on; pages remember where you'd scrolled to; Home, Albums, Artists, Songs browse views; album and artist pages; editable queue; shuffle/repeat; seek; volume. Queue, current position, shuffle, repeat, and volume are restored after restart; missing queue files are discarded.
 - Drag audio files or folders onto the window to play them (onto the queue panel to append); files outside the library play straight from their tags. Save the queue as a playlist from the queue panel.
-- Smart playlists (Playlists → + → New smart playlist) that update live: combine rules on title, artist, album, genre, format, path, year, length, bitrate, play count, date added, last played and liked, matching all or any, with a sort order and optional song limit. Examples: liked songs not played in 60 days; jazz before 1970; the 50 most played songs this year. With radio on, a smart playlist keeps going with more songs that match its rules.
+- Smart playlists (Playlists → + → New smart playlist) that update live: combine rules on title, artist, album, genre, format, path, year, length, bitrate, sample rate, lossless, play count, date added, last played, liked and date liked, matching all or any, with a sort order and optional song limit. Examples: liked songs not played in 60 days; jazz before 1970; the 50 most played songs this year; lossless albums at 96 kHz or more. With radio on, a smart playlist keeps going with more songs that match its rules.
 - Radio mode (the broadcast button next to repeat): when the queue is about to run out, similar songs from your library are added so playback keeps going. Picks are based on what you have listened to alongside the recent tracks, their artists, genres and years, with liked and often-played songs slightly favoured, recently played songs held back, and at most two songs per artist in each batch. Radio pauses while repeat is on.
 - Choose the audio output device in Settings → Playback; the choice is remembered, and if that device is unplugged playback moves to the system default until it returns.
 - MPRIS2 controls and media keys on Linux; on Windows 10/11, the system media controls (volume/media overlay, lock screen and media keys) with title, artist, album, artwork, timeline, seeking, shuffle and repeat.
 - CLI controls (`hallucinate --next`, `--prev`, `--play-pause`) and JSON playback status (`--status`) through per-user single-instance IPC; optional desktop notifications on track changes.
 - Optional Last.fm account linking, now-playing updates, 50%-or-four-minutes
-  scrobbling, secure system-keyring credentials, and a persistent offline retry queue.
+  scrobbling, secure system-keyring credentials, a persistent offline retry queue, and optional two-way sync between Liked Songs and Last.fm loves.
 - Liked Songs and user playlists (create, rename, delete, add from any track's "…" menu); the Stats page shows Recently played and a listening-based personal mix.
 - A Stats page with top artists/albums/tracks and listening time for all time, the last 7 days, 30 days, or 12 months. Listening time is estimated from known track durations.
 - Filter the library by genre, year, and format; find probable duplicate tracks by normalized title, artist, and duration. Manage multiple library folders in Settings.
-- ReplayGain (track/album, preamp, read from tags, or measured with EBU R128 for files without tags, which are never modified), optional crossfade (0–12 s), gapless playback that plays every track to its last sample, and a 10-band equalizer with presets (needs numpy).
+- ReplayGain (track/album, preamp, read from tags, or measured with EBU R128 for files without tags, which are never modified; new music can be measured after each scan by itself), optional crossfade (0–12 s), gapless playback that plays every track to its last sample, and a 10-band equalizer with presets (needs numpy).
 - The visualizer's FFT analysis runs on a worker thread and can be turned off ("React to the music").
 - Optional compact format/average-bitrate badges in track rows and the now-playing bar (Settings → Appearance); the display is off by default, shows approximate average kb/s, and leaves unavailable bitrates out rather than displaying zero.
-- Tag editor (single track or whole album; MP3, FLAC, Ogg/Opus, M4A, WMA, APE) and cover art: set from an image file, fetch from MusicBrainz / Cover Art Archive, optionally embed in files.
-- Headphone correction from AutoEQ's profiles (search by model, or import a ParametricEQ / GraphicEQ file), applied under the equalizer bands, and headphone crossfeed (light, medium, strong).
+- Tag editor (single track or whole album; MP3, FLAC, Ogg/Opus, M4A, WMA, APE), with MusicBrainz lookup for a whole album's title, album artist, year, genre and track titles, and cover art: set from an image file, fetch from MusicBrainz / Cover Art Archive, optionally embed in files.
+- Headphone correction from AutoEQ's profiles (search by model, or import a ParametricEQ / GraphicEQ file), applied under the equalizer bands, and headphone crossfeed (light, medium, strong). Optionally a separate equalizer for each output device, switched as devices come and go.
 - Lyrics panel with synced highlighting, and karaoke-style lyrics in Now Playing: embedded tags, sidecar `.lrc`, or LRCLIB (cached locally; can be disabled). Nudge synced lyrics that run early or late and save the timing as an `.lrc` next to the song.
 - Import M3U, M3U8 and PLS playlists (matched by path, then artist and title, then file name) and export any playlist, Liked Songs or the queue as M3U8.
-- Mini player (always-on-top, `Ctrl+M`) and a system tray icon with play/pause/next/previous, optional close-to-tray.
+- Backup and restore (Settings → Library): likes, ratings, playlists, play counts, listening history, folders, stations and podcasts in one `.hallucinate-backup` file; restoring merges, never deletes.
+- Undo on the toasts after removing songs, clearing the queue, removing a station or marking a show played; a short What's new card after updates.
+- Song and episode lists work from the keyboard (arrows, Page Up/Down, Home/End, Enter, Menu key).
+- Mini player (always-on-top, `Ctrl+M`, with LIVE for radio and skip buttons for podcasts) and a system tray icon with play/pause/next/previous, optional close-to-tray.
 - Keyboard focus rings, and a spoken name and role for everything you can click, type into or slide (a test walks every page as a screen reader sees it); renders crisply on HiDPI (tested at 2x).
 - Live-switchable, file-backed themes with album-art accent mode and keyboard-friendly UI.
 
@@ -272,12 +282,15 @@ Options: hide when paused, hide cover, privacy mode (shows only "Listening to mu
 
 ## Themes
 Choose a theme in Settings. Built-ins are Hallucinate, Dark, Light, Catppuccin Mocha/Latte,
-Nord, Gruvbox, Tokyo Night, and Dracula, plus pride themes: Pride, Trans (dark and light), Bi,
+Nord, Gruvbox, Tokyo Night, Dracula and Ribbon (deep red), plus pride themes: Pride, Trans (dark and light), Bi,
 Lesbian, Nonbinary, Pan and Ace. These are calm, readable themes in each flag's colours: the
 flag shows in the drifting backdrop, as a slim stripe under the logo and in the accent, never
 behind text. The optional album-art accent follows
 the currently playing track; theme selection and this preference persist across
-restarts.
+restarts. Any theme can take an accent colour of your own (kept readable against it), Hallucinate can
+follow the system's light or dark mode with a theme picked for each, and **Make my own theme** starts an
+editable copy of the current one. **Reduce motion** stops page transitions, zooms, the spinning record and
+the drifting backdrop.
 
 Add custom JSON files to `$XDG_CONFIG_HOME/hallucinate/themes/` (normally
 `~/.config/hallucinate/themes/`) and select **Reload themes** in Settings.

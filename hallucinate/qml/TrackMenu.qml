@@ -136,7 +136,7 @@ Menu {
         height: visible ? implicitHeight : 0
         text: "Remove from the queue"
         icon.name: "close"
-        onTriggered: player.removeAt(menu.index)
+        onTriggered: { player.removeAt(menu.index); Nav.notifyAction("Removed from the queue", "Undo", function () { player.undoQueue() }) }
     }
     MenuItem {
         visible: menu.single && menu.context === "playlist"
