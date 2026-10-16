@@ -525,3 +525,35 @@ def test_everything_clickable_has_a_name_for_screen_readers(qapp, app_window):
     assert wait_for(lambda: now_playing.property("covering"))
     visit("now playing")
     assert not missing, "\n".join(sorted(missing))
+
+
+def test_library_health_items_open_their_usual_menus(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "health"))
+    qapp.processEvents()
+    page = window.findChild(QObject, "pageStack").property("currentItem")
+    album_menu = window.findChild(QObject, "albumMenu")
+    track_menu = window.findChild(QObject, "trackMenu")
+    track = objects["library"].allTracks()[0]
+
+    QMetaObject.invokeMethod(page, "menuFor", Qt.ConnectionType.DirectConnection,
+                             Q_ARG("QVariant", {"kind": "album"}),
+                             Q_ARG("QVariant", {"album_key": track["album_key"], "album": track["album"],
+                                                "album_artist": track["album_artist"]}))
+    assert wait_for(lambda: album_menu.property("opened"))
+    assert album_menu.property("keys") == [track["album_key"]]
+    QMetaObject.invokeMethod(album_menu, "close")
+    assert wait_for(lambda: not album_menu.property("opened"))
+
+    QMetaObject.invokeMethod(page, "menuFor", Qt.ConnectionType.DirectConnection,
+                             Q_ARG("QVariant", {"kind": "track"}),
+                             Q_ARG("QVariant", {"path": track["path"], "title": track["title"]}))
+    assert wait_for(lambda: track_menu.property("opened"))
+    assert track_menu.property("path") == track["path"]
+    assert track_menu.property("info")["album_key"] == track["album_key"]
+    remove = window.findChild(QObject, "trackRemove")
+    assert remove.property("enabled")
+    QMetaObject.invokeMethod(track_menu, "close")
+    assert not [w for w in warnings if "HealthPage" in w or "TrackMenu" in w], warnings

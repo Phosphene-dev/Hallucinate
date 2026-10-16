@@ -60,3 +60,36 @@ def test_library_runs_the_report(qapp, tmp_path, db, scan, music):
         assert {c["id"] for c in lib.health["checks"]} >= {"covers", "duplicates", "folders"}
     finally:
         lib.shutdown()
+
+
+def test_keeping_the_best_copy_of_each_duplicate(db):
+    add(db, "/m/dup/a.mp3", album="Single", title="Song", codec="MP3", bitrate=320_000, duration=200)
+    add(db, "/m/dup/b.flac", album="Album", title="Song", codec="FLAC", bitrate=900_000, duration=200)
+    add(db, "/m/dup/c.mp3", album="Live", title="Song", codec="MP3", bitrate=128_000, duration=200.4)
+    add(db, "/m/two/x.mp3", album="X", title="Other", artist="Duo", codec="MP3", bitrate=192_000, duration=90)
+    add(db, "/m/two/y.mp3", album="Y", title="Other", artist="Duo", codec="MP3", bitrate=256_000, duration=90)
+    add(db, "/m/alone.mp3", album="Z", title="Unique", codec="MP3", duration=50)
+    assert sorted(health.extra_copies(db)) == ["/m/dup/a.mp3", "/m/dup/c.mp3", "/m/two/x.mp3"]  # lossless, then bitrate
+    assert by_id(health.report(db))["duplicates"]["extra"] == 3
+
+
+def test_library_removes_extra_copies(qapp, tmp_path):
+    from conftest import wait_for
+
+    from hallucinate.core.db import Database
+    from hallucinate.library import Library
+
+    path = tmp_path / "library.db"
+    seed = Database(path)
+    add(seed, "/m/a.mp3", album="One", title="Song", codec="MP3", bitrate=128_000, duration=200)
+    add(seed, "/m/b.flac", album="Two", title="Song", codec="FLAC", duration=200)
+    seed.commit()
+    seed.close()
+    lib = Library(path, tmp_path / "art")
+    try:
+        assert wait_for(lambda: lib.trackCount == 2, timeout=10)
+        lib.removeExtraCopies()
+        assert wait_for(lambda: lib.trackCount == 1 and lib.hiddenCount == 1, timeout=10)
+        assert [t["path"] for t in lib.allTracks()] == ["/m/b.flac"]
+    finally:
+        lib.shutdown()

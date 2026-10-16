@@ -836,6 +836,19 @@ class Library(QObject):
         self._bulk.submit(work)  # same single worker as reload(), so the refresh sees the rows gone
         self.reload()
 
+    @Slot()
+    def removeExtraCopies(self):
+        """Keep the best copy of each set of probable duplicates and take the others out of the library (their
+        files stay on disk, and Settings → Library brings them back)."""
+        def work(db):
+            paths = health_checks.extra_copies(db)
+            songs = db.hide_paths(paths)
+            self._removed.emit({"kind": "hidden", "albums": 0, "songs": songs, "failed": 0,
+                                "hidden": len(db.hidden_paths()), "keys": []})
+
+        self._bulk.submit(work)
+        self.reload()
+
     @Slot("QVariantList")
     def trashAlbums(self, keys):
         """Move albums' files to the system trash (recoverable from there) and take them out of the library.

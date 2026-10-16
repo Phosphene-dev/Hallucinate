@@ -244,6 +244,10 @@ class DesktopShell(QObject):
         return diagnostics.report(player=self._player, window=self._window,
                                   **getattr(self, "_report_sources", {}))
 
+    @Slot(str)
+    def copyText(self, text):
+        self._app.clipboard().setText(text)
+
     @Slot(result=str)
     def copyDebugInfo(self):
         text = self.debugInfo()

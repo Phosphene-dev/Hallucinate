@@ -5,6 +5,8 @@ Pure functions over a Database. Every check returns {"id", "title", "detail", "c
 is capped (count is the full number)."""
 import os
 
+from .insights import LOSSLESS
+
 LIMIT = 200
 UNKNOWN_ARTIST = "Unknown Artist"
 UNKNOWN_ALBUM = "Unknown Album"
@@ -106,8 +108,29 @@ def low_bitrate(db):
 
 def duplicates(db):
     rows = db.duplicate_tracks(LIMIT + 1000)
-    return _check("duplicates", "Probable duplicates",
-                  "The same title, artist and length more than once.", "track", rows)
+    check = _check("duplicates", "Probable duplicates",
+                   "The same title, artist and length more than once.", "track", rows)
+    check["extra"] = len(extra_copies(db))
+    return check
+
+
+def _quality(row):
+    """How good a copy is, for keeping the best of a set of duplicates: lossless first, then the higher bitrate,
+    then the higher sample rate; ties go to the shorter (usually tidier) path."""
+    fmt = (row.get("codec") or row.get("fmt") or "").upper()
+    return (fmt in LOSSLESS, row.get("bitrate") or 0, row.get("sample_rate") or 0, -len(row.get("path") or ""))
+
+
+def extra_copies(db):
+    """Paths of every duplicate but the best copy of each (see _quality), for removing them from the library."""
+    groups = {}
+    for row in db.duplicate_tracks(10_000_000):
+        groups.setdefault((row["s_title"], row["s_artist"], round(row["duration"])), []).append(row)
+    extra = []
+    for rows in groups.values():
+        best = max(rows, key=_quality)
+        extra += [r["path"] for r in rows if r is not best]
+    return extra
 
 
 def missing_folders(db):
