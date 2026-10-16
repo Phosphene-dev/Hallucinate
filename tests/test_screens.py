@@ -55,6 +55,28 @@ def seed(tmp_path):
     db.close()
 
 
+def seed_varied(tmp_path):
+    """More of a real collection on top of seed(): five formats and artists with long names, all played this
+    month, so legends and rows have something to wrap and crowd."""
+    music = tmp_path / "Music"
+    db = Database(tmp_path / "library.db")
+    names = ("The Extraordinarily Long Named Orchestra", "Midnight Cathedral Choir", "Sunset Boulevard Ensemble",
+             "Quiet Static", "Lowercase Afternoon Radio")
+    for n, (artist, fmt) in enumerate(zip(names, ("MP3", "M4A", "AAC", "OGG", "OPUS"))):
+        for i in range(3):
+            path = str(music / artist / "Album" / f"{i + 1:02d}.{fmt.lower()}")
+            db.upsert_track({
+                "path": path, "mtime": 0, "size": 1, "title": f"Track {n}{i}", "artist": artist,
+                "album_artist": artist, "aa_tag": 1, "album": f"Album of {artist}", "album_key": f"v{n}",
+                "track_no": i + 1, "disc_no": 0, "year": 2010 + n, "genre": "Ambient", "duration": 200.0 + i,
+                "fmt": fmt, "codec": fmt, "bitrate": 256_000, "sample_rate": 44100,
+            })
+            for _ in range(5 + n):
+                db.record_play(path)
+    db.commit()
+    db.close()
+
+
 @pytest.fixture
 def app_window(qapp, tmp_path, monkeypatch, request):
     """The whole window over the seeded library (or, parametrized with "empty", none: a first start), with page
@@ -62,6 +84,7 @@ def app_window(qapp, tmp_path, monkeypatch, request):
     from conftest import wait_for
 
     empty = getattr(request, "param", None) == "empty"
+    varied = getattr(request, "param", None) == "varied"
 
     from hallucinate import scrobbling
     from hallucinate.discord import DiscordPresence
@@ -82,6 +105,8 @@ def app_window(qapp, tmp_path, monkeypatch, request):
     QQuickStyle.setStyle(QML_STYLE)
     if not empty:
         seed(tmp_path)
+    if varied:
+        seed_varied(tmp_path)
     db_path = tmp_path / "library.db"
     library = Library(db_path, tmp_path / "art")
     player = Player(session_file=tmp_path / "session.json")
@@ -116,7 +141,7 @@ def app_window(qapp, tmp_path, monkeypatch, request):
     if empty:
         assert wait_for(lambda: library.ready)
     else:
-        assert wait_for(lambda: library.trackCount == 8 and user_lib.topArtists.count > 0)
+        assert wait_for(lambda: library.trackCount == (23 if varied else 8) and user_lib.topArtists.count > 0)
         player.playList(library.allTracks()[:3], 0)
         player.pause()
 
@@ -658,3 +683,109 @@ def test_mouse_side_buttons_navigate_and_other_clicks_pass_through(qapp, app_win
     for _ in range(3):
         qapp.processEvents()
     assert window.property("section") == "settings"
+
+
+def overflowing(root):
+    """What spills out of a card: visible things inside a GlassPanel that reach past its edges, unless something
+    between them clips (a scrolling list, say) or they belong to a popup."""
+    from PySide6.QtCore import QRectF
+    from PySide6.QtQuick import QQuickItem
+
+    found = []
+
+    def name(item):
+        return item.objectName() or item.metaObject().className().split("_QML")[0]
+
+    def walk(item, panel, clipped):
+        if not item.isVisible() or item.opacity() == 0:
+            return
+        cls = item.metaObject().className()
+        if cls.startswith("GlassPanel"):
+            panel, clipped = item, False
+        elif panel is not None and not clipped and item.width() > 0 and item.height() > 0 \
+                and not cls.startswith(("QQuickItem", "QQuickRepeater")):
+            box = item.mapRectToItem(panel, QRectF(0, 0, item.width(), item.height()))
+            if box.left() < -1 or box.top() < -1 or box.right() > panel.width() + 1 \
+                    or box.bottom() > panel.height() + 1:
+                text = item.property("text")
+                found.append(f"{name(item)}{' “' + text + '”' if isinstance(text, str) and text else ''}"
+                             f" spills out of {name(panel)} ({box.left():.0f},{box.top():.0f} "
+                             f"{box.width():.0f}×{box.height():.0f} in {panel.width():.0f}×{panel.height():.0f})")
+        if item.clip() or cls.startswith(("QQuickListView", "QQuickGridView", "QQuickFlickable", "QQuickPopupItem")):
+            clipped = True
+        for child in item.childItems():
+            walk(child, panel, clipped)
+
+    walk(root if isinstance(root, QQuickItem) else root.contentItem(), None, False)
+    return found
+
+
+@pytest.mark.parametrize("app_window", ["varied"], indirect=True)
+@pytest.mark.parametrize("width", [760, 900, 1100, 1500])
+def test_nothing_spills_out_of_its_card_at_any_width(qapp, app_window, width):
+    """Tiled and half-screen windows: every card's contents stay inside the card on every page."""
+    window, objects, warnings = app_window
+    window.resize(width, 900)
+    problems = []
+    for page in PAGES:
+        assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", page))
+        for _ in range(4):
+            qapp.processEvents()
+        problems += [f"{page}: {p}" for p in overflowing(window)]
+    assert not problems, "\n".join(problems[:25])
+
+
+def past_the_edge(window):
+    """Visible, unclipped things that reach past the window's right edge."""
+    from PySide6.QtCore import QRectF
+
+    found = []
+
+    def walk(item, clipped):
+        if not item.isVisible() or item.opacity() == 0:
+            return
+        cls = item.metaObject().className()
+        if not clipped and item.width() > 0 and item.height() > 0 and not cls.startswith(("QQuickItem", "QQuickRepeater")):
+            box = item.mapRectToScene(QRectF(0, 0, item.width(), item.height()))
+            if box.right() > window.width() + 3 and box.left() < window.width():  # 2 px: the window outline
+                text = item.property("text")
+                found.append(f"{item.objectName() or cls.split('_QML')[0]}"
+                             f"{' “' + text + '”' if isinstance(text, str) and text else ''} reaches x={box.right():.0f}")
+        if item.clip() or cls.startswith(("QQuickListView", "QQuickGridView", "QQuickFlickable", "QQuickPopupItem")):
+            clipped = True
+        for child in item.childItems():
+            walk(child, clipped)
+
+    walk(window.contentItem(), False)
+    return found
+
+
+@pytest.mark.parametrize("app_window", ["varied"], indirect=True)
+@pytest.mark.parametrize("width", [760, 900])
+def test_nothing_runs_off_a_narrow_window(qapp, app_window, width):
+    window, objects, warnings = app_window
+    window.resize(width, 700)
+
+    def invoke(method, *args):
+        assert QMetaObject.invokeMethod(window, method, Qt.ConnectionType.DirectConnection,
+                                        *[Q_ARG("QVariant", a) for a in args]), method
+
+    def screens():
+        for page in PAGES:
+            invoke("go", page)
+            yield page
+        invoke("openAlbum", "v0")
+        yield "album"
+        invoke("openArtist", "The Extraordinarily Long Named Orchestra")
+        yield "artist"
+        invoke("go", "home")
+        window.setProperty("queueOpen", True)
+        yield "queue"
+        window.setProperty("queueOpen", False)
+
+    problems = []
+    for screen in screens():
+        for _ in range(4):
+            qapp.processEvents()
+        problems += [f"{screen}: {p}" for p in past_the_edge(window)]
+    assert not problems, "\n".join(problems[:25])

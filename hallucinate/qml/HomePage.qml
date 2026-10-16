@@ -123,22 +123,25 @@ Item {
                 }
             }
 
-            // What your collection holds
-            Row {
+            // What your collection holds: four across, or two by two when the window is narrow
+            Grid {
                 id: factRow
                 visible: library.trackCount > 0
                 width: parent.width
+                columns: width >= 760 ? 4 : 2
                 spacing: 14
-                readonly property real tileWidth: (width - 3 * spacing) / 4
+                readonly property real tileWidth: (width - (columns - 1) * spacing) / columns
+                // every tile as tall as the format legend needs, so a wrapped legend stays inside its card
+                readonly property real tileHeight: Math.max(96, formatsColumn.implicitHeight + 36)
                 component Fact: GlassPanel {
                     property string value
                     property string label
-                    width: factRow.tileWidth; height: 96
+                    width: factRow.tileWidth; height: factRow.tileHeight
                     Column {
-                        anchors { left: parent.left; leftMargin: 20; verticalCenter: parent.verticalCenter }
+                        anchors { left: parent.left; right: parent.right; leftMargin: 20; rightMargin: 12; verticalCenter: parent.verticalCenter }
                         spacing: 4
-                        Text { text: value; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(21); font.weight: Font.Bold; textFormat: Text.PlainText }
-                        Text { text: label; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); textFormat: Text.PlainText }
+                        Text { width: parent.width; elide: Text.ElideRight; text: value; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(21); font.weight: Font.Bold; textFormat: Text.PlainText }
+                        Text { width: parent.width; elide: Text.ElideRight; text: label; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); textFormat: Text.PlainText }
                     }
                 }
                 Fact { value: page.facts.seconds ? Theme.fmtHours(page.facts.seconds).replace(" ", "\u2009") : "–"; label: "of music" }
@@ -147,21 +150,25 @@ Item {
                 GlassPanel {
                     id: formatsTile
                     objectName: "formatsTile"
-                    width: factRow.tileWidth; height: 96
+                    width: factRow.tileWidth; height: factRow.tileHeight
                     readonly property var formats: page.facts.formats || []
                     readonly property var swatches: [Theme.accent, Theme.art1, Theme.art2, Theme.accentHi, Theme.textDim]
                     Column {
+                        id: formatsColumn
                         anchors { left: parent.left; right: parent.right; margins: 18; verticalCenter: parent.verticalCenter }
                         spacing: 10
                         Row {
+                            id: formatsBar
                             width: parent.width
                             height: 10
+                            spacing: 2
+                            clip: true
                             Repeater {
                                 model: formatsTile.formats
                                 Rectangle {
                                     required property var modelData
                                     required property int index
-                                    width: Math.max(3, parent.width * modelData.share - 2)
+                                    width: Math.max(3, (formatsBar.width - formatsBar.spacing * (formatsTile.formats.length - 1)) * modelData.share)
                                     height: 10
                                     radius: 5
                                     color: formatsTile.swatches[index % 5]
