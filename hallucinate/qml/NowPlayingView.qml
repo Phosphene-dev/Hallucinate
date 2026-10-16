@@ -332,7 +332,7 @@ Item {
                     readonly property bool episode: player.hasTrack && player.current.kind === "episode"
                     readonly property bool music: player.hasTrack && !(player.current.kind || "").length
                     IconButton { anchors.verticalCenter: parent.verticalCenter; visible: !parent.episode; icon: "shuffle"; size: 22; active: player.shuffle; onClicked: player.toggleShuffle() }
-                    IconButton { anchors.verticalCenter: parent.verticalCenter; visible: parent.episode; icon: "skipback"; size: 24; tip: "Back 15 seconds"; onClicked: player.seekBy(-15000) }
+                    IconButton { anchors.verticalCenter: parent.verticalCenter; visible: parent.episode; icon: "skipback:" + podcasts.options.skipBack; size: 24; tip: "Back " + podcasts.options.skipBack + " seconds"; onClicked: player.seekBy(-1000 * podcasts.options.skipBack) }
                     IconButton { anchors.verticalCenter: parent.verticalCenter; icon: "prev"; size: 24; onClicked: player.previous() }
                     Rectangle {
                         width: 64; height: 64; radius: 32
@@ -351,7 +351,7 @@ Item {
                         Accessible.name: player.playing ? "Pause" : "Play"
                     }
                     IconButton { anchors.verticalCenter: parent.verticalCenter; icon: "next"; size: 24; onClicked: player.next() }
-                    IconButton { anchors.verticalCenter: parent.verticalCenter; visible: parent.episode; icon: "skipfwd"; size: 24; tip: "Forward 30 seconds"; onClicked: player.seekBy(30000) }
+                    IconButton { anchors.verticalCenter: parent.verticalCenter; visible: parent.episode; icon: "skipfwd:" + podcasts.options.skipForward; size: 24; tip: "Forward " + podcasts.options.skipForward + " seconds"; onClicked: player.seekBy(1000 * podcasts.options.skipForward) }
                     IconButton {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: !parent.episode

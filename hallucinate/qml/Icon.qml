@@ -31,7 +31,8 @@ Canvas {
             for (var i = 2; i < pts.length; i += 2) ctx.lineTo(pts[i] * w, pts[i + 1] * h)
             ctx.stroke()
         }
-        switch (name) {
+        var kind = name.split(":")[0], arg = name.split(":")[1] || ""
+        switch (kind) {
         case "play": tri(w*.25, h*.12, w*.25, h*.88, w*.88, h*.5); break
         case "pause": ctx.fillRect(w*.2, h*.14, w*.2, h*.72); ctx.fillRect(w*.6, h*.14, w*.2, h*.72); break
         case "next": tri(w*.12, h*.2, w*.12, h*.8, w*.66, h*.5); ctx.fillRect(w*.72, h*.2, w*.14, h*.6); break
@@ -159,7 +160,7 @@ Canvas {
             line([.5,.7,.5,.88]); line([.34,.88,.66,.88]); break
         case "skipback":  // a circular arrow turning back, with the seconds in it
         case "skipfwd":
-            var back = name === "skipback"
+            var back = kind === "skipback"
             ctx.beginPath()
             if (back) ctx.arc(w*.5, h*.54, w*.36, Math.PI*1.25, Math.PI*0.95, false)
             else ctx.arc(w*.5, h*.54, w*.36, Math.PI*1.75, Math.PI*2.05, true)
@@ -168,7 +169,7 @@ Canvas {
             else line([.84,.12,.76,.3,.58,.22])
             ctx.font = "bold " + Math.round(h * .42) + "px sans-serif"
             ctx.textAlign = "center"; ctx.textBaseline = "middle"
-            ctx.fillText(back ? "15" : "30", w*.5, h*.57)
+            ctx.fillText(arg || (back ? "15" : "30"), w*.5, h*.57)
             break
         case "check": line([.18,.52,.42,.76,.84,.28]); break
         case "search":

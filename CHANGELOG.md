@@ -11,6 +11,9 @@ All notable changes to this project are documented here. Format based on
 - Pick an accent colour of your own for any theme (it's kept readable), follow the system's light or dark mode with a theme for each, or make your own theme from the current one (Settings → Appearance).
 - Reduce motion (Settings → Appearance): no page transitions, zooms, spinning record, growing buttons or drifting backdrop.
 - A show's page glows in its cover's colours, like an album's.
+- Podcasts have their own section in Settings: how far skip back and forward go (the buttons show it), how often feeds are checked (or only when you ask), whether the show's next episode follows or playback stops, how close to the end counts as played, how many episodes a newly followed show downloads, and which downloads to keep (until played, the newest few per show, or until you remove them), with the space they take and a button to remove them all.
+- Show settings on each show's page: newest or oldest first, hide played episodes, a speed of its own (change the speed while it plays and the show remembers it), skip its intro or outro, and how many of its newest episodes download by themselves.
+- Find an episode within a show, and read an episode's show notes from its menu.
 - Undo on the toasts that follow removing songs from the library, clearing the queue or taking a song out of it, removing a station, and marking a whole show played.
 - Click the playing song's cover or title to go to it: its album, the station's page or the episode's show. The queue opens scrolled to what's playing.
 - Song and episode lists work from the keyboard: Up and Down (and Page Up/Down, Home, End) move between rows without changing the volume, Enter plays, and the Menu key or Shift+F10 opens the row's menu.

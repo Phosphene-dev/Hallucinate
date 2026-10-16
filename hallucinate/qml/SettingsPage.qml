@@ -7,10 +7,10 @@ Item {
     id: page
     objectName: "settings"
     property string query: ""
-    readonly property var sectionIds: ["appearance", "features", "playback", "sound", "library", "sharing", "desktop", "about"]
-    readonly property var sectionTitles: ["Appearance", "Features", "Playback", "Sound", "Library", "Internet & sharing", "Desktop", "About"]
+    readonly property var sectionIds: ["appearance", "features", "podcasts", "playback", "sound", "library", "sharing", "desktop", "about"]
+    readonly property var sectionTitles: ["Appearance", "Features", "Podcasts", "Playback", "Sound", "Library", "Internet & sharing", "Desktop", "About"]
 
-    function sectionItem(i) { return [sec_appearance, sec_features, sec_playback, sec_sound, sec_library, sec_sharing, sec_desktop, sec_about][i] }
+    function sectionItem(i) { return [sec_appearance, sec_features, sec_podcasts, sec_playback, sec_sound, sec_library, sec_sharing, sec_desktop, sec_about][i] }
     function jumpTo(i) {
         page.query = ""
         search.text = ""
@@ -63,7 +63,7 @@ Item {
             textFormat: Text.PlainText
             visible: page.query.length > 0
             text: noMatches ? "No settings match “" + page.query + "”" : "Showing settings that match “" + page.query + "”"
-            readonly property bool noMatches: !(sec_appearance.matches || sec_features.matches || sec_playback.matches || sec_sound.matches || sec_library.matches || sec_sharing.matches || sec_desktop.matches || sec_about.matches)
+            readonly property bool noMatches: !(sec_appearance.matches || sec_features.matches || sec_podcasts.matches || sec_playback.matches || sec_sound.matches || sec_library.matches || sec_sharing.matches || sec_desktop.matches || sec_about.matches)
             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
         }
     }
@@ -326,24 +326,96 @@ Item {
                 items: [["homeRandom", "Random album"], ["homeListening", "Listening card"],
                         ["homeFacts", "Library facts"], ["homeShelves", "Album shelves"]]
             }
-            Column {
-                visible: shell.features.podcasts !== false
-                width: parent.width
-                spacing: 6
-                Text { textFormat: Text.PlainText; text: "Podcasts"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold }
-                StyledCheck {
-                    objectName: "deletePlayedEpisodes"
-                    text: "Remove a downloaded episode once it's played"
-                    checked: podcasts.deletePlayed
-                    onToggled: podcasts.setDeletePlayed(checked)
-                }
+        }
+
+        SettingsSection {
+            id: sec_podcasts
+            objectName: "settings_podcasts"
+            title: "Podcasts"
+            keywords: "podcast episodes skip back forward seconds feeds check refresh download keep remove storage played speed next"
+            query: page.query
+            visible: matches && shell.features.podcasts !== false
+            readonly property var o: podcasts.options
+            function secs(list) { return list.map(function (n) { return n + " seconds" }) }
+            OptionCombo {
+                label: "Skip back"
+                values: [5, 10, 15, 30, 45, 60]; labels: sec_podcasts.secs(values)
+                current: sec_podcasts.o.skipBack
+                onPicked: function (v) { podcasts.setOption("skipBack", v) }
+            }
+            OptionCombo {
+                label: "Skip forward"
+                values: [10, 15, 30, 45, 60, 90]; labels: sec_podcasts.secs(values)
+                current: sec_podcasts.o.skipForward
+                onPicked: function (v) { podcasts.setOption("skipForward", v) }
+            }
+            OptionCombo {
+                label: "Check for new episodes"
+                values: [1, 2, 4, 8, 12, 24, 0]
+                labels: ["Every hour", "Every 2 hours", "Every 4 hours", "Every 8 hours", "Twice a day", "Once a day", "Only when I ask"]
+                current: sec_podcasts.o.refreshHours
+                onPicked: function (v) { podcasts.setOption("refreshHours", v) }
+            }
+            OptionCombo {
+                label: "After an episode"
+                values: ["next", "stop"]
+                labels: ["Play the show's next one", "Stop"]
+                current: sec_podcasts.o.afterEpisode
+                onPicked: function (v) { podcasts.setOption("afterEpisode", v) }
+            }
+            OptionCombo {
+                label: "Played when this close to the end"
+                values: [10, 30, 45, 60, 120, 300]
+                labels: ["10 seconds", "30 seconds", "45 seconds", "1 minute", "2 minutes", "5 minutes"]
+                current: sec_podcasts.o.playedWindow
+                onPicked: function (v) { podcasts.setOption("playedWindow", v) }
+            }
+            Text { textFormat: Text.PlainText; text: "Downloads"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold }
+            OptionCombo {
+                label: "A show you follow downloads"
+                values: [0, 1, 2, 3, 5]
+                labels: ["Nothing by itself", "Its newest episode", "Its newest 2", "Its newest 3", "Its newest 5"]
+                current: sec_podcasts.o.newShowDownloads
+                onPicked: function (v) { podcasts.setOption("newShowDownloads", v) }
+            }
+            OptionCombo {
+                label: "Keep downloads"
+                values: ["played", "latest", "forever"]
+                labels: ["Until they're played", "Only the newest of each show", "Until I remove them"]
+                current: sec_podcasts.o.keep
+                onPicked: function (v) { podcasts.setOption("keep", v) }
+            }
+            OptionCombo {
+                visible: sec_podcasts.o.keep === "latest"
+                label: "Newest to keep per show"
+                values: [1, 2, 3, 5, 10]; labels: ["1", "2", "3", "5", "10"]
+                current: sec_podcasts.o.keepCount
+                onPicked: function (v) { podcasts.setOption("keepCount", v) }
+            }
+            Row {
+                spacing: 12
                 Text {
                     textFormat: Text.PlainText
-                    width: parent.width
-                    wrapMode: Text.WordWrap
-                    text: "Feeds are checked when Hallucinate starts and every few hours. Episodes in a folder you added are your own files and are never removed."
-                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "Downloads take " + Theme.fmtBytes(podcasts.downloadsSize)
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
                 }
+                PillButton { text: "Remove all downloads"; enabled: podcasts.downloadsSize > 0; onClicked: removeDownloadsDlg.open() }
+            }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: "Each show can have its own speed, skip its intro or outro, list oldest first and download its newest episodes: open the show and choose Show settings. Episodes in a folder you added are your own files and are never removed."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+            }
+            ConfirmDialog {
+                id: removeDownloadsDlg
+                title: "Remove every downloaded episode?"
+                body: "The files go; the episodes stay, and play from the web until downloaded again."
+                confirmText: "Remove downloads"
+                destructive: true
+                onAccepted: podcasts.removeAllDownloads()
             }
         }
 

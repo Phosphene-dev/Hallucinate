@@ -190,6 +190,7 @@ class Player(QObject):
     speedChanged = Signal()
     sleepChanged = Signal()
     eqChanged = Signal()
+    showSpeedChanged = Signal(int, float)  # a podcast show's own speed was changed while one of its episodes played
     played = Signal("QVariantMap")  # a track was listened to for long enough to count as a play
     skipped = Signal("QVariantMap")  # the listener moved on from a playing track before it counted as played
     visualizerChanged = Signal()
@@ -403,7 +404,13 @@ class Player(QObject):
         return self.hasTrack and track_kind(self.current) == "episode"
 
     def _rate(self):
-        return self._podcast_speed if self._episode_now() else self._speed
+        if self._episode_now():
+            return float(self.current.get("speed") or 0) or self._podcast_speed  # a show can keep its own
+        return self._speed
+
+    @Property(float, notify=speedChanged)
+    def podcastSpeed(self):
+        return self._podcast_speed
 
     @Slot(float)
     def setSpeed(self, rate):
@@ -411,10 +418,16 @@ class Player(QObject):
         up talk doesn't speed up the music after it."""
         if self._episode_now():
             rate = round(min(max(float(rate), 0.5), 3.0), 2)
-            if rate == self._podcast_speed:
+            if self.current.get("speed"):  # this show has a speed of its own: that's what changes
+                if rate == self.current["speed"]:
+                    return
+                self.current["speed"] = rate
+                self.showSpeedChanged.emit(int(self.current.get("podcast_id") or 0), rate)
+            elif rate == self._podcast_speed:
                 return
-            self._podcast_speed = rate
-            self._settings.setValue("podcastSpeed", rate)
+            else:
+                self._podcast_speed = rate
+                self._settings.setValue("podcastSpeed", rate)
         else:
             rate = round(min(max(float(rate), 0.5), 2.0), 2)
             if rate == self._speed:

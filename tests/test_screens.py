@@ -990,8 +990,19 @@ def test_podcast_pages(qapp, app_window):
                                  Q_ARG("QVariant", podcasts.episodes._items[0]), Q_ARG("QVariant", False))
         assert wait_for(lambda: menu.property("opened"), timeout=2)
         QMetaObject.invokeMethod(menu, "close")
+        for name in ("showSettings",):
+            dialog = page.findChild(QObject, name)
+            QMetaObject.invokeMethod(dialog, "open")
+            assert wait_for(lambda: dialog.property("opened"), timeout=2)
+            QMetaObject.invokeMethod(dialog, "close")
+        notes = menu.findChild(QObject, "episodeNotesDialog")
+        QMetaObject.invokeMethod(notes, "open")
+        assert wait_for(lambda: notes.property("opened"), timeout=2)
+        QMetaObject.invokeMethod(notes, "close")
         invoke("goBack")
         assert window.findChild(QObject, "pageStack").property("currentItem").objectName() == "podcasts"
+        invoke("go", "settings")
+        assert window.findChild(QObject, "settings_podcasts").property("visible")
         assert not warnings, warnings[:3]
     finally:
         shell.setFeature("podcasts", False)

@@ -28,11 +28,26 @@ SAVE_EVERY_MS = 5_000
 REFRESH_EVERY_MS = 4 * 3600 * 1000
 FIRST_REFRESH_MS = 20_000
 PLAYED_REMAINING_S = 45  # stop this close to the end of a long episode (or past 97%) and it counts as played
+# Settings → Podcasts, with their defaults
+DEFAULTS = {
+    "skipBack": 15, "skipForward": 30,  # seconds
+    "refreshHours": 4,  # 0: only when you ask
+    "newShowDownloads": 0,  # how many of a newly followed show's latest episodes download by themselves
+    "keep": "played",  # downloads: "played" (removed once played), "latest" (the newest keepCount per show), "forever"
+    "keepCount": 3,
+    "playedWindow": PLAYED_REMAINING_S,  # seconds before the end of a long episode that count as the end
+    "afterEpisode": "next",  # "next": the show's next unplayed episode follows; "stop": just the one
+}
+CHOICES = {"skipBack": (5, 10, 15, 30, 45, 60), "skipForward": (10, 15, 30, 45, 60, 90),
+           "refreshHours": (0, 1, 2, 4, 8, 12, 24), "newShowDownloads": (0, 1, 2, 3, 5),
+           "keep": ("played", "latest", "forever"), "keepCount": (1, 2, 3, 5, 10),
+           "playedWindow": (10, 30, 45, 60, 120, 300), "afterEpisode": ("next", "stop")}
 
 
-def near_end(pos, dur):
-    return bool(dur and pos) and (pos / dur >= 0.97 or (dur > 600 and dur - pos <= PLAYED_REMAINING_S))
+def near_end(pos, dur, window=PLAYED_REMAINING_S):
+    return bool(dur and pos) and (pos / dur >= 0.97 or (dur > 600 and dur - pos <= window))
 SHOW_KEYS = ["id", "title", "author", "artUrl", "unplayed", "episodes", "latest", "feed_url", "folder", "error",
+             "newest_first", "hide_played", "speed", "skip_intro", "skip_outro",
              "auto_download", "description", "link", "detail"]
 EPISODE_KEYS = ["id", "podcast_id", "title", "podcast", "description", "published", "duration", "position",
                 "played", "downloaded", "progress", "artUrl", "detail", "url", "local", "downloading", "status"]
@@ -79,7 +94,16 @@ class Podcasts(QObject):
         self._images = Path(cache_dir) / "podcast-art"
         self._player = player
         self._settings = QSettings("hallucinate", "hallucinate")
-        self._delete_played = self._settings.value("podcasts/deletePlayed", True, bool)
+        legacy_keep = "played" if self._settings.value("podcasts/deletePlayed", True, bool) else "forever"
+        self._options = {}
+        for key, default in DEFAULTS.items():
+            value = self._settings.value(f"podcasts/{key}", legacy_keep if key == "keep" else default)
+            try:
+                value = type(default)(value)
+            except (TypeError, ValueError):
+                value = default
+            self._options[key] = value if value in CHOICES[key] else default
+        self._filter = ""
         self._enabled = True
         self._shows = DictModel(SHOW_KEYS, self, key_field="id")
         self._episodes = DictModel(EPISODE_KEYS, self, key_field="id")
@@ -103,7 +127,7 @@ class Podcasts(QObject):
         self._save_timer.setInterval(SAVE_EVERY_MS)
         self._save_timer.timeout.connect(self._save_position)
         self._refresh_timer = QTimer(self)
-        self._refresh_timer.setInterval(REFRESH_EVERY_MS)
+        self._refresh_timer.setInterval(max(1, self._options["refreshHours"]) * 3600 * 1000)
         self._refresh_timer.timeout.connect(self.refreshAll)
         self._progress_timer = QTimer(self)
         self._progress_timer.setInterval(500)
@@ -112,6 +136,8 @@ class Podcasts(QObject):
         player.stateChanged.connect(self._on_state)
         player.seeked.connect(lambda *_: self._save_position())
         player.positionChanged.connect(self._note_position)
+        if hasattr(player, "showSpeedChanged"):
+            player.showSpeedChanged.connect(lambda pid, rate: (self._db.update_podcast(pid, speed=rate), self.reload()))
         self.reload()
 
     # --- switching on and off ------------------------------------------------------------------------------
@@ -119,7 +145,7 @@ class Podcasts(QObject):
         """Settings → Features → Podcasts. Off: no feed checks or downloads (an episode playing stops)."""
         self._enabled = bool(on)
         if self._enabled:
-            if not self._refresh_timer.isActive():
+            if not self._refresh_timer.isActive() and self._options["refreshHours"]:
                 self._refresh_timer.start()
                 QTimer.singleShot(FIRST_REFRESH_MS, self.refreshAll)
         else:
@@ -186,7 +212,10 @@ class Podcasts(QObject):
 
     def _reload_episodes(self):
         if self._open_id:
-            self._episodes.set_items([self._episode_row(e) for e in self._db.episodes(self._open_id)])
+            show = self._db.podcast(self._open_id) or {}
+            rows = self._db.episodes(self._open_id, unplayed_only=bool(show.get("hide_played")),
+                                     oldest_first=not show.get("newest_first", 1), text=self._filter)
+            self._episodes.set_items([self._episode_row(e) for e in rows])
         with self._lock:
             active = bool(self._downloading)
         if not active:
@@ -252,7 +281,110 @@ class Podcasts(QObject):
     @Slot(int)
     def openShow(self, podcast_id):
         self._open_id = podcast_id
+        self._filter = ""
         self._reload_episodes()
+
+    @Slot(str)
+    def setEpisodeFilter(self, text):
+        """Only the open show's episodes whose title or notes have these words."""
+        if text != self._filter:
+            self._filter = text
+            self._reload_episodes()
+
+    # per-show settings
+    SHOW_OPTIONS = {"newest_first": (0, 1), "hide_played": (0, 1), "speed": (0, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3),
+                    "skip_intro": (0, 15, 30, 45, 60, 90, 120), "skip_outro": (0, 15, 30, 45, 60, 90, 120),
+                    "auto_download": (0, 1, 2, 3, 5)}
+
+    @Slot(int, str, "QVariant")
+    def setShowOption(self, podcast_id, key, value):
+        """A show's own settings: newest or oldest first, hide played, its speed (0 = your podcast speed),
+        seconds of intro and outro to skip, and how many of its latest episodes download by themselves."""
+        allowed = self.SHOW_OPTIONS.get(key)
+        if allowed is None:
+            return
+        value = float(value) if key == "speed" else int(value)
+        if value not in allowed:
+            return
+        self._db.update_podcast(podcast_id, **{key: value})
+        if key == "speed" and self._player.hasTrack and self._player.current.get("podcast_id") == podcast_id:
+            self._player.current["speed"] = value
+            self._player._apply_speed()
+            self._player.speedChanged.emit()
+        self.reload()
+        if key == "auto_download" and value:
+            self._download_new(podcast_id, value)
+
+    # app-wide settings
+    @Property("QVariantMap", notify=changed)
+    def options(self):
+        return dict(self._options)
+
+    @Property("QVariantMap", constant=True)
+    def optionChoices(self):
+        return {k: list(v) for k, v in CHOICES.items()}
+
+    @Slot(str, "QVariant")
+    def setOption(self, key, value):
+        if key not in DEFAULTS:
+            return
+        try:
+            value = type(DEFAULTS[key])(value)
+        except (TypeError, ValueError):
+            return
+        if value not in CHOICES[key] or value == self._options[key]:
+            return
+        self._options[key] = value
+        self._settings.setValue(f"podcasts/{key}", value)
+        if key == "refreshHours":
+            self._refresh_timer.stop()
+            if value and self._enabled:
+                self._refresh_timer.setInterval(value * 3600 * 1000)
+                self._refresh_timer.start()
+        if key in ("keep", "keepCount"):
+            self._enforce_keep()
+        self.changed.emit()
+
+    @Property(float, notify=changed)
+    def downloadsSize(self):
+        """Bytes the downloaded episodes take."""
+        total = 0
+        for e in self._db.downloaded():
+            if e.get("url"):
+                try:
+                    total += os.path.getsize(e["local_path"])
+                except OSError:
+                    pass
+        return float(total)
+
+    @Slot()
+    def removeAllDownloads(self):
+        n = 0
+        for e in self._db.downloaded():
+            if e.get("url") and not (self._player.playing and self._player.current.get("episode_id") == e["id"]):
+                if self._remove_file(e["local_path"]):
+                    self._db.set_local_path(e["id"], "")
+                    n += 1
+        self.reload()
+        self.message.emit(f"Removed {n} download{'s' if n != 1 else ''}" if n else "No downloads to remove")
+
+    def _enforce_keep(self, podcast_id=None):
+        """Apply the keep setting to downloads: once played, the newest few per show, or all of them."""
+        policy = self._options["keep"]
+        if policy == "forever":
+            return
+        shows = [podcast_id] if podcast_id else [p["id"] for p in self._db.podcasts()]
+        playing = self._player.current.get("episode_id") if self._player.hasTrack and self._player.playing else None
+        for show in shows:
+            downloads = sorted((e for e in self._db.downloaded(show) if e.get("url")),
+                               key=lambda e: e["published"], reverse=True)
+            if policy == "played":
+                doomed = [e for e in downloads if e["played"]]
+            else:
+                doomed = downloads[self._options["keepCount"]:]
+            for e in doomed:
+                if e["id"] != playing and self._remove_file(e["local_path"]):
+                    self._db.set_local_path(e["id"], "")
 
     # --- following ---------------------------------------------------------------------------------------
     @Slot(str)
@@ -310,21 +442,7 @@ class Podcasts(QObject):
 
     @Slot(int, bool)
     def setAutoDownload(self, podcast_id, on):
-        self._db.update_podcast(podcast_id, auto_download=1 if on else 0)
-        self.reload()
-        if on:
-            self._download_new(podcast_id, 1)
-
-    @Property(bool, notify=changed)
-    def deletePlayed(self):
-        """Remove a downloaded episode's file once it's played."""
-        return self._delete_played
-
-    @Slot(bool)
-    def setDeletePlayed(self, on):
-        self._delete_played = bool(on)
-        self._settings.setValue("podcasts/deletePlayed", self._delete_played)
-        self.changed.emit()
+        self.setShowOption(podcast_id, "auto_download", 1 if on else 0)
 
     # --- refreshing ---------------------------------------------------------------------------------------
     @Slot()
@@ -364,13 +482,17 @@ class Podcasts(QObject):
     def _entry(self, e):
         """The queue entry that plays an episode: its downloaded file if there is one, else its stream."""
         local = e.get("local_path") if e.get("local_path") and os.path.isfile(e["local_path"]) else ""
+        show = self._db.podcast(e["podcast_id"]) or {}
         resume = 0 if e.get("played") else int((e.get("position") or 0) * 1000)
         if e.get("duration") and resume > (e["duration"] - 5) * 1000:
             resume = 0
+        if not resume and show.get("skip_intro"):
+            resume = int(show["skip_intro"]) * 1000  # starts after the show's intro
         return {"path": local or e["url"], "kind": "episode", "episode_id": e["id"], "podcast_id": e["podcast_id"],
                 "title": e["title"], "artist": e.get("podcast") or "", "album": e.get("podcast") or "",
                 "album_artist": "", "artUrl": self._art(e.get("image")) or self._art(e.get("podcast_image")),
-                "duration": e.get("duration") or 0, "resume_ms": resume, "id": -1_000_000 - e["id"]}
+                "duration": e.get("duration") or 0, "resume_ms": resume, "id": -1_000_000 - e["id"],
+                "speed": float(show.get("speed") or 0), "skip_outro": int(show.get("skip_outro") or 0)}
 
     @Slot(int)
     def play(self, episode_id):
@@ -384,6 +506,8 @@ class Podcasts(QObject):
             return
         later = [x for x in reversed(self._db.episodes(e["podcast_id"]))
                  if x["published"] > e["published"] and not x["played"]][:20]
+        if self._options["afterEpisode"] == "stop":
+            later = []
         self._player.playList([self._entry(e)] + [self._entry(x) for x in later], 0)
 
     @Slot(int)
@@ -440,7 +564,7 @@ class Podcasts(QObject):
             self.reload()
 
     def _after_played(self, episode_id):
-        if not self._delete_played:
+        if self._options["keep"] != "played":
             return
         e = self._db.episode(episode_id)
         playing = (self._player.playing and self._player.hasTrack
@@ -515,7 +639,7 @@ class Podcasts(QObject):
         p = self._db.podcast(podcast_id)
         if not p or not p.get("auto_download") or p.get("folder"):
             return
-        for e in self._db.episodes(podcast_id, unplayed_only=True)[:how_many]:
+        for e in self._db.episodes(podcast_id, unplayed_only=True)[:min(how_many, int(p["auto_download"]))]:
             if not e.get("local_path"):
                 self.download(e["id"])
 
@@ -635,6 +759,10 @@ class Podcasts(QObject):
         this is how far it got."""
         if self._playing_id and self._player.hasTrack and self._player.current.get("episode_id") == self._playing_id:
             self._last_pos, self._last_dur = self._player.position / 1000.0, self._player.duration / 1000.0
+            outro = self._player.current.get("skip_outro") or 0
+            if outro and self._player.playing and self._last_dur > outro * 2 and self._last_pos >= self._last_dur - outro:
+                self._finish(self._playing_id, self._last_dur, self._last_dur)  # the outro is skipped: it's played
+                self._player.next()
 
     def _save_position(self):
         episode_id = self._current_episode()
@@ -644,7 +772,7 @@ class Podcasts(QObject):
         self._last_pos, self._last_dur = pos, dur
         if pos <= 1:
             return
-        if near_end(pos, dur):
+        if near_end(pos, dur, self._options["playedWindow"]):
             self._finish(episode_id, pos, dur)
             return
         self._db.set_position(episode_id, pos)
@@ -655,7 +783,7 @@ class Podcasts(QObject):
         if not e:
             return
         dur = dur or e.get("duration") or 0
-        if near_end(pos, dur):
+        if near_end(pos, dur, self._options["playedWindow"]):
             if not e["played"]:
                 self._db.set_played([episode_id], True)
                 self._after_played(episode_id)
@@ -712,6 +840,9 @@ class Podcasts(QObject):
             existing = self._db.podcast_by(podcast.get("feed_url", ""), podcast.get("folder", ""))
             podcast_id = self._db.add_podcast(podcast)
             self._db.merge_episodes(podcast_id, episodes)
+            if not existing and self._options["newShowDownloads"] and not podcast.get("folder"):
+                self._db.update_podcast(podcast_id, auto_download=self._options["newShowDownloads"])
+                self._download_new(podcast_id, self._options["newShowDownloads"])
             self._db.update_podcast(podcast_id, checked=time.time(), error="")
             self.reload()
             self._mark_followed()
@@ -752,6 +883,10 @@ class Podcasts(QObject):
                 self._cancel.discard(episode_id)
             if isinstance(path, str):
                 self._db.set_local_path(episode_id, path)
+                if self._options["keep"] == "latest":
+                    e = self._db.episode(episode_id)
+                    if e:
+                        self._enforce_keep(e["podcast_id"])
             elif isinstance(path, OSError):
                 self.message.emit(f"Download failed: {path}")
             self.reload()

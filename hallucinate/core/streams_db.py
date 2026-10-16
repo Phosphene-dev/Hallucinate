@@ -72,7 +72,16 @@ class StreamsDB:
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.execute("PRAGMA foreign_keys=ON")
         self.conn.executescript(SCHEMA)
+        self._migrate()
         self.conn.commit()
+
+    def _migrate(self):
+        cols = {r["name"] for r in self.conn.execute("PRAGMA table_info(podcasts)")}
+        for name, kind in (("newest_first", "INTEGER NOT NULL DEFAULT 1"), ("hide_played", "INTEGER NOT NULL DEFAULT 0"),
+                           ("speed", "REAL NOT NULL DEFAULT 0"), ("skip_intro", "INTEGER NOT NULL DEFAULT 0"),
+                           ("skip_outro", "INTEGER NOT NULL DEFAULT 0")):
+            if name not in cols:
+                self.conn.execute(f"ALTER TABLE podcasts ADD COLUMN {name} {kind}")
 
     def close(self):
         self.conn.close()
@@ -149,7 +158,8 @@ class StreamsDB:
         return cur.lastrowid
 
     def update_podcast(self, podcast_id, **fields):
-        allowed = set(PODCAST_FIELDS) | {"checked", "error", "auto_download", "keep"}
+        allowed = set(PODCAST_FIELDS) | {"checked", "error", "auto_download", "keep", "newest_first", "hide_played",
+                                         "speed", "skip_intro", "skip_outro"}
         fields = {k: v for k, v in fields.items() if k in allowed}
         if fields:
             sets = ", ".join(f"{k}=?" for k in fields)
@@ -186,7 +196,7 @@ class StreamsDB:
         self.conn.commit()
         return new
 
-    def episodes(self, podcast_id=None, unplayed_only=False, limit=None):
+    def episodes(self, podcast_id=None, unplayed_only=False, limit=None, oldest_first=False, text=""):
         sql = ("SELECT e.*, p.title AS podcast, p.image AS podcast_image FROM episodes e "
                "JOIN podcasts p ON p.id=e.podcast_id")
         where, args = [], []
@@ -195,9 +205,13 @@ class StreamsDB:
             args.append(podcast_id)
         if unplayed_only:
             where.append("e.played=0")
+        for word in (text or "").split():
+            where.append("(e.title LIKE ? ESCAPE '\\' OR e.description LIKE ? ESCAPE '\\')")
+            pattern = "%" + word.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+            args += [pattern, pattern]
         if where:
             sql += " WHERE " + " AND ".join(where)
-        sql += " ORDER BY e.published DESC, e.id DESC"
+        sql += " ORDER BY e.published ASC, e.id ASC" if oldest_first else " ORDER BY e.published DESC, e.id DESC"
         if limit:
             sql += f" LIMIT {int(limit)}"
         return [dict(r) for r in self.conn.execute(sql, args)]

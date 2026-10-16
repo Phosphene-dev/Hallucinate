@@ -144,7 +144,7 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 6
             IconButton { visible: !bar.episode; icon: "shuffle"; active: player.shuffle; onClicked: player.toggleShuffle() }
-            IconButton { objectName: "skipBack"; visible: bar.episode; icon: "skipback"; tip: "Back 15 seconds"; onClicked: player.seekBy(-15000) }
+            IconButton { objectName: "skipBack"; visible: bar.episode; icon: "skipback:" + podcasts.options.skipBack; tip: "Back " + podcasts.options.skipBack + " seconds"; onClicked: player.seekBy(-1000 * podcasts.options.skipBack) }
             IconButton { icon: "prev"; onClicked: player.previous() }
             Rectangle {
                 width: 44; height: 44; radius: 22
@@ -167,7 +167,7 @@ Item {
                 MouseArea { id: pp; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: player.toggle() }
             }
             IconButton { icon: "next"; onClicked: player.next() }
-            IconButton { objectName: "skipForward"; visible: bar.episode; icon: "skipfwd"; tip: "Forward 30 seconds"; onClicked: player.seekBy(30000) }
+            IconButton { objectName: "skipForward"; visible: bar.episode; icon: "skipfwd:" + podcasts.options.skipForward; tip: "Forward " + podcasts.options.skipForward + " seconds"; onClicked: player.seekBy(1000 * podcasts.options.skipForward) }
             IconButton {
                 visible: !bar.episode
                 icon: player.repeat === 2 ? "repeat1" : "repeat"
