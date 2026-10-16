@@ -52,6 +52,8 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: Nav.openArtist(card.name)
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onPressAndHold: Nav.artistMenu(card.name)
+        onClicked: function (mouse) { mouse.button === Qt.RightButton ? Nav.artistMenu(card.name) : Nav.openArtist(card.name) }
     }
 }

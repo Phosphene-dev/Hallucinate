@@ -557,3 +557,27 @@ def test_library_health_items_open_their_usual_menus(qapp, app_window):
     assert remove.property("enabled")
     QMetaObject.invokeMethod(track_menu, "close")
     assert not [w for w in warnings if "HealthPage" in w or "TrackMenu" in w], warnings
+
+
+def test_an_artists_menu_removes_their_songs_after_asking(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    library = objects["library"]
+    track = library.allTracks()[0]
+    artist = track["album_artist"]
+    theirs = library.artistPaths(artist)
+    before = library.trackCount
+    assert theirs and track["path"] in theirs and len(theirs) < before
+
+    menu = window.findChild(QObject, "collectionMenu")
+    QMetaObject.invokeMethod(menu, "showArtist", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", artist))
+    assert wait_for(lambda: menu.property("opened"))
+    QMetaObject.invokeMethod(window.findChild(QObject, "collectionRemove"), "triggered")
+    dialog = window.findChild(QObject, "removeAlbumsDialog")
+    assert wait_for(lambda: dialog.property("opened"))
+    assert dialog.property("songs") is True and artist in dialog.property("what")
+    QMetaObject.invokeMethod(dialog, "accept")
+    assert wait_for(lambda: library.trackCount == before - len(theirs), timeout=10)
+    assert library.hiddenCount == len(theirs)
+    assert not [w for w in warnings if "CollectionMenu" in w or "main.qml" in w], warnings

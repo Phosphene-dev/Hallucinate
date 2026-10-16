@@ -67,7 +67,12 @@ Item {
                 anchors.fill: parent
                 enabled: player.hasTrack && player.current.album_key
                 cursorShape: Qt.PointingHandCursor
-                onClicked: Nav.openAlbum(player.current.album_key)
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                onPressAndHold: Nav.trackMenu(player.current.path, player.current.title, "playing", -1)
+                onClicked: function (mouse) {
+                    if (mouse.button === Qt.RightButton) Nav.trackMenu(player.current.path, player.current.title, "playing", -1)
+                    else Nav.openAlbum(player.current.album_key)
+                }
             }
         }
         Column {
@@ -80,6 +85,14 @@ Item {
                 text: player.hasTrack ? player.current.title : "Nothing playing"
                 color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
                 elide: Text.ElideRight
+                Accessible.role: Accessible.StaticText
+                Accessible.name: text
+                MouseArea {  // right-click the playing song for its menu
+                    anchors.fill: parent
+                    enabled: player.hasTrack
+                    acceptedButtons: Qt.RightButton
+                    onClicked: Nav.trackMenu(player.current.path, player.current.title, "playing", -1)
+                }
             }
             Text {
                 textFormat: Text.PlainText
@@ -96,7 +109,11 @@ Item {
                     anchors.fill: parent
                     enabled: !player.error && player.hasTrack
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: Nav.openArtist(player.current.album_artist)
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    onClicked: function (mouse) {
+                        if (mouse.button === Qt.RightButton) Nav.artistMenu(player.current.album_artist || player.current.artist)
+                        else Nav.openArtist(player.current.album_artist)
+                    }
                 }
             }
             Row {

@@ -154,7 +154,10 @@ Item {
                         font.pixelSize: Theme.fontSize(16)
                         font.weight: Font.DemiBold
                         LinkArea {
-                            onClicked: Nav.openArtist(page.info.album_artist)
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                            onClicked: function (mouse) {
+                                mouse && mouse.button === Qt.RightButton ? Nav.artistMenu(page.info.album_artist) : Nav.openArtist(page.info.album_artist)
+                            }
                         }
                     }
                     Text {

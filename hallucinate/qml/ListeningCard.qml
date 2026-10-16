@@ -72,7 +72,11 @@ GlassPanel {
                         font.pixelSize: Theme.fontSize(13)
                         width: Math.min(implicitWidth, 110)
                         elide: Text.ElideRight
-                        LinkArea { onClicked: Nav.openArtist(modelData.name) }
+                        LinkArea {
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                            onPressAndHold: Nav.artistMenu(modelData.name)
+                            onClicked: function (mouse) { mouse && mouse.button === Qt.RightButton ? Nav.artistMenu(modelData.name) : Nav.openArtist(modelData.name) }
+                        }
                     }
                 }
             }

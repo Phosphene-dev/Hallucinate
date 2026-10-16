@@ -114,6 +114,14 @@ Menu {
         onTriggered: menu.single ? Nav.editTags(menu.path) : Nav.editTagsMany(menu.paths)
     }
     MenuItem {
+        objectName: "trackRemoveFromQueue"
+        visible: menu.single && menu.context === "queue"
+        height: visible ? implicitHeight : 0
+        text: "Remove from the queue"
+        icon.name: "close"
+        onTriggered: player.removeAt(menu.index)
+    }
+    MenuItem {
         visible: menu.single && menu.context === "playlist"
         height: visible ? implicitHeight : 0
         text: "Remove from this playlist"

@@ -711,6 +711,16 @@ class Library(QObject):
         if self._player is not None:
             self._player.enqueueAll(decorate(self._db.album_tracks(key)))
 
+    @Slot(str, result="QVariantList")
+    def artistPaths(self, name):
+        """Every song path of an artist (as on their page), for queueing, playlists or removal from a menu."""
+        return [t["path"] for t in self._db.artist_tracks(name)]
+
+    @Slot(str, result="QVariantList")
+    def folderPaths(self, path):
+        """Every song path in a folder and the folders below it, in folder order."""
+        return [t["path"] for t in folder_views.tracks_below(self._db, path)]
+
     @Slot(str, bool)
     def playArtist(self, name, shuffle=False):
         import random

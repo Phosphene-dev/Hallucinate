@@ -140,8 +140,19 @@ Item {
                         objectName: index === 0 ? "statsTopArtist" : ""
                         width: parent.width
                         height: 42
-                        color: index % 2 ? "transparent" : Theme.surface
+                        color: artistHover.hovered ? Theme.glassHover : index % 2 ? "transparent" : Theme.surface
                         radius: Theme.radiusSmall
+                        HoverHandler { id: artistHover }
+                        Accessible.role: Accessible.Button
+                        Accessible.name: name + ", " + plays + (plays === 1 ? " listen" : " listens")
+                        Accessible.onPressAction: Nav.openArtist(name)
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                            onPressAndHold: Nav.artistMenu(name)
+                            onClicked: function (mouse) { mouse.button === Qt.RightButton ? Nav.artistMenu(name) : Nav.openArtist(name) }
+                        }
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: 12
@@ -172,12 +183,26 @@ Item {
                         required property int index
                         required property string album
                         required property string album_artist
+                        required property string album_key
                         required property int plays
                         objectName: index === 0 ? "statsTopAlbum" : ""
                         width: parent.width
                         height: 42
-                        color: index % 2 ? "transparent" : Theme.surface
+                        color: albumHover.hovered ? Theme.glassHover : index % 2 ? "transparent" : Theme.surface
                         radius: Theme.radiusSmall
+                        HoverHandler { id: albumHover }
+                        Accessible.role: Accessible.Button
+                        Accessible.name: album + ", " + album_artist + ", " + plays + (plays === 1 ? " listen" : " listens")
+                        Accessible.onPressAction: Nav.openAlbum(album_key)
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                            onPressAndHold: Nav.albumMenu([album_key], album, album_artist)
+                            onClicked: function (mouse) {
+                                mouse.button === Qt.RightButton ? Nav.albumMenu([album_key], album, album_artist) : Nav.openAlbum(album_key)
+                            }
+                        }
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: 12

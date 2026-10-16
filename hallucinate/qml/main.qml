@@ -110,6 +110,8 @@ ApplicationWindow {
         function onEditTags(path) { tagEditor.editTrack(path) }
         function onEditAlbum(key) { tagEditor.editAlbum(key) }
         function onEditTagsMany(paths) { tagEditor.editTracks(paths) }
+        function onArtistMenu(name) { if (name) collectionMenu.showArtist(name) }
+        function onFolderMenu(path, name) { if (path) collectionMenu.showFolder(path, name) }
         function onTrackMenu(path, title, context, index) {
             // on a song that's part of a selection, the menu acts on the whole selection
             if (Selection.count > 1 && Selection.paths.indexOf(path) >= 0) trackMenu.showMany(Selection.paths)
@@ -160,6 +162,7 @@ ApplicationWindow {
 
     TrackMenu { id: trackMenu; objectName: "trackMenu" }
     AlbumMenu { id: albumMenu }
+    CollectionMenu { id: collectionMenu }
     CommandPalette { id: commandPalette; win: window }
 
     // Playlist files

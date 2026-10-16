@@ -144,7 +144,16 @@ Rectangle {
             }
             Accessible.role: Accessible.ListItem
             Accessible.name: model.title + ", " + model.artist
-            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: player.playIndex(index) }
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                onPressAndHold: Nav.trackMenu(model.path, model.title, "queue", index)
+                onClicked: function (mouse) {
+                    if (mouse.button === Qt.RightButton) Nav.trackMenu(model.path, model.title, "queue", index)
+                    else player.playIndex(index)
+                }
+            }
             MouseArea {
                 id: grip
                 width: 22; height: parent.height
