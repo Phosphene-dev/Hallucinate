@@ -206,3 +206,75 @@ def test_directory_results_can_be_saved(radio, monkeypatch):
     assert stations.count == 1 and stations.results._items[0]["saved"] is True
     stations.search("nothing")
     assert wait_for(lambda: not stations.searching) and "No stations match" in stations.status
+
+
+def test_radio_and_podcast_scrobbles_say_the_right_things():
+    from hallucinate.core.kinds import counts_for_scrobbling, scrobble_fields
+    from hallucinate.listenbrainz import track_metadata
+
+    song = {"kind": "station", "artist": "Enduser", "title": "Death Vest", "stream_title": "Enduser - Death Vest",
+            "album": "Radio Caprice - Breakcore", "scrobble": True}
+    assert scrobble_fields(song)["album"] == ""  # the station's name isn't the song's album
+    assert "release_name" not in track_metadata(song)
+    episode = {"kind": "episode", "artist": "The Long Listen", "album": "The Long Listen", "title": "Ep 1"}
+    assert not counts_for_scrobbling(episode)  # podcasts scrobble only when you turn it on
+    assert counts_for_scrobbling({**episode, "scrobble": True})
+    assert track_metadata({**episode, "scrobble": True})["release_name"] == "The Long Listen"
+
+
+def test_songs_heard_on_the_radio_are_logged(radio):
+    stations, player, _ = radio
+    entry = {"kind": "station", "station_id": 3, "station": "Test FM", "album": "Test FM", "artist": "Artist One",
+             "title": "First Song", "stream_title": "Artist One - First Song"}
+    changed = []
+    stations.logChanged.connect(lambda: changed.append(1))
+    player.played.emit(entry)
+    player.played.emit(entry)  # the stream repeating its title isn't a second hearing
+    player.played.emit({**entry, "title": "Second Song", "stream_title": "Artist One - Second Song"})
+    player.played.emit({"kind": "music", "path": "/x.flac", "artist": "A", "title": "B"})  # not radio
+    log = stations.radioLog
+    assert [(r["title"], r["artist"], r["station"]) for r in log] == [
+        ("Second Song", "Artist One", "Test FM"), ("First Song", "Artist One", "Test FM")]
+    assert log[0]["time"] and log[0]["day"]
+    stations.setLogQuery("first")
+    assert [r["title"] for r in stations.radioLog] == ["First Song"]
+    stations.setLogQuery("")
+    stations.removeLogEntry(log[0]["id"])
+    assert len(stations.radioLog) == 1
+    assert stations.listening(7)["songs"] == 1
+    stations.clearLog()
+    assert stations.radioLog == [] and changed
+
+
+def test_listening_time_is_counted_while_a_station_plays(qapp, tmp_path):
+    from PySide6.QtCore import QObject, Signal
+
+    from hallucinate.core.streams_db import StreamsDB
+    from hallucinate.listentime import ListenClock
+
+    class FakePlayer(QObject):
+        stateChanged = Signal()
+        trackChanged = Signal()
+        playing, hasTrack = False, True
+        current = {"kind": "station", "station_id": 7, "station": "Test FM"}
+
+    now = [100.0]
+    player, db = FakePlayer(), StreamsDB(tmp_path / "streams.db")
+    clock = ListenClock(player, db, "station", lambda e: ("station", e["station_id"], e["station"]),
+                        tick_ms=60_000, clock=lambda: now[0])
+    try:
+        player.playing = True
+        player.stateChanged.emit()
+        now[0] += 50
+        clock.tick()
+        player.playing = False
+        now[0] += 30
+        player.stateChanged.emit()  # paused: the 30 s since the last tick count, nothing after
+        now[0] += 500
+        clock.tick()
+        got = db.listening("station", 7)
+        assert got["seconds"] == 80 and got["top"] == [{"item_id": 7, "name": "Test FM", "seconds": 80.0}]
+        assert db.listening("podcast")["seconds"] == 0
+    finally:
+        clock.stop()
+        db.close()

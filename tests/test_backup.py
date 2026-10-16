@@ -34,6 +34,10 @@ def test_backup_and_restore(tmp_path):
     ep = streams.episodes(show)[0]["id"]
     streams.set_position(ep, 120)
     streams.set_up_next(ep, True)
+    sid = streams.stations()[0]["id"]
+    streams.log_radio_song(sid, "FM", "Enduser", "Death Vest", ts=1000)
+    streams.add_listen_time("station", sid, "FM", 600)
+    streams.add_listen_time("podcast", show, "Show", 300)
     streams.close()
 
     out = tmp_path / "mine.hallucinate-backup"
@@ -55,6 +59,8 @@ def test_backup_and_restore(tmp_path):
     assert [s["name"] for s in s2.stations()] == ["FM"]
     e = s2.episodes()[0]
     assert e["position"] == 120 and e["up_next"] > 0
+    assert [(r["station"], r["title"]) for r in s2.radio_log()] == [("FM", "Death Vest")]
+    assert s2.listening("station")["seconds"] == 600 and s2.listening("podcast")["seconds"] == 300
     s2.close()
 
 

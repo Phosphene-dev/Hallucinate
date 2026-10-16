@@ -1181,7 +1181,7 @@ FEATURE_LABELS = {"liked": "Liked Songs", "folders": "Folders", "stats": "Stats"
                   "stations": "Internet radio", "podcasts": "Podcasts"}
 # Words that only describe something (Settings' notes about offline mode or backups), not a way into the feature.
 FEATURE_PROSE = ("folders that can't be found", "folders are scanned", "import history", "import listening history",
-                 "no lyrics or cover lookups", "playlists, history, stations")
+                 "no lyrics or cover lookups", "playlists, history, stations", "music's stats")
 
 
 def visible_texts(window):

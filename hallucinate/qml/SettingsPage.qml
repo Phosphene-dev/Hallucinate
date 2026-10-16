@@ -365,8 +365,8 @@ Item {
                         required property string modelData
                         required property int index
                         objectName: "sidebarOrder_" + modelData
-                        width: Math.min(420, sidebarOrderBox.width)
-                        height: 40
+                        width: Math.min(380, sidebarOrderBox.width)
+                        height: 34
                         radius: Theme.radiusSmall
                         color: Theme.surface
                         Text {
@@ -785,7 +785,7 @@ Item {
             id: sec_sharing
             objectName: "settings_sharing"
             title: "Internet & sharing"
-            keywords: "offline mode internet network privacy connection last.fm lastfm listenbrainz scrobble discord rich presence history import account radio stations"
+            keywords: "offline mode internet network privacy connection last.fm lastfm listenbrainz scrobble discord rich presence history import account radio stations podcasts episodes"
             query: page.query
             Text { text: "Offline mode"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {
@@ -801,6 +801,13 @@ Item {
                 text: "Count songs heard on internet radio on Last.fm and ListenBrainz"
                 checked: stations.scrobble
                 onToggled: stations.setScrobble(checked)
+            }
+            StyledCheck {
+                objectName: "scrobblePodcasts"
+                visible: shell.features.podcasts !== false
+                text: "Count podcast episodes on Last.fm and ListenBrainz (as the show and the episode's title)"
+                checked: podcasts.scrobble
+                onToggled: podcasts.setScrobble(checked)
             }
             StyledCheck {
                 objectName: "syncLoves"

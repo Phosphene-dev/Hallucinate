@@ -15,7 +15,7 @@ from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices
 
 from .core import net
-from .core.kinds import counts_for_scrobbling, track_kind
+from .core.kinds import counts_for_scrobbling, scrobble_fields, track_kind
 
 API_URL = "https://ws.audioscrobbler.com/2.0/"
 AUTH_URL = "https://www.last.fm/api/auth/"
@@ -435,6 +435,7 @@ class LastFmScrobbler(QObject):
             self._send_pending()
 
     def _api_track_fields(self, track):
+        track = scrobble_fields(track)
         artist = track.get("artist", "")
         title = track.get("title", "")
         if not artist or not title:

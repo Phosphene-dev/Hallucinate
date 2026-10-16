@@ -22,6 +22,29 @@ Item {
     }
 
     Menu {
+        id: logMenu
+        objectName: "radioLogMenu"
+        property var song: ({})
+        function popupFor(s) { song = s; popup() }
+        readonly property string text: (song.artist ? song.artist + " – " : "") + (song.title || "")
+        MenuItem { text: "Find in your library"; icon.name: "search"; onTriggered: Nav.search(logMenu.text.replace(" – ", " ")) }
+        MenuItem { text: "Copy artist and title"; icon.name: "playlist"; onTriggered: { shell.copyText(logMenu.text); Nav.notify("Copied “" + logMenu.text + "”") } }
+        MenuSeparator {}
+        MenuItem {
+            text: "Remove from the log"; icon.name: "remove"; icon.color: Theme.error
+            onTriggered: stations.removeLogEntry(logMenu.song.id)
+        }
+    }
+    ConfirmDialog {
+        id: clearLogDlg
+        objectName: "clearRadioLogDialog"
+        title: "Clear what you've heard?"
+        body: "Every song in “Heard on the radio” goes. Your stations, and anything already scrobbled, stay."
+        confirmText: "Clear"
+        destructive: true
+        onAccepted: stations.clearLog()
+    }
+    Menu {
         id: stationMenu
         objectName: "stationMenu"
         property var station: ({})
@@ -307,6 +330,122 @@ Item {
                                 font.letterSpacing: 1
                             }
                         ]
+                    }
+                }
+            }
+            SectionHeader {
+                visible: stations.count > 0
+                title: "Your listening"
+                subtitle: "Time spent on the radio, kept apart from your music's stats"
+            }
+            ListeningStrip {
+                objectName: "radioListening"
+                visible: stations.count > 0
+                width: parent.width
+                source: stations
+                onOpenItem: function (id) { if (id) stations.play(id) }
+            }
+            SectionHeader {
+                visible: stations.count > 0
+                title: "Heard on the radio"
+                subtitle: "Songs a station played while you listened for a minute or more, newest first"
+            }
+            Row {
+                visible: stations.count > 0
+                spacing: 10
+                TextField {
+                    id: logSearch
+                    objectName: "radioLogSearch"
+                    width: Math.min(360, col.width - 140)
+                    height: 36
+                    placeholderText: "Find a song you heard"
+                    color: Theme.text
+                    placeholderTextColor: Theme.textDim
+                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                    leftPadding: 14
+                    selectByMouse: true
+                    Accessible.name: "Find a song you heard on the radio"
+                    background: Rectangle { radius: height / 2; color: Theme.surface; border.color: logSearch.activeFocus ? Theme.accent : Theme.border }
+                    onTextChanged: stations.setLogQuery(text)
+                    Keys.onEscapePressed: text = ""
+                }
+                PillButton {
+                    objectName: "clearRadioLog"
+                    height: 36
+                    text: "Clear…"
+                    visible: stations.radioLog.length > 0 && logSearch.text.length === 0
+                    onClicked: clearLogDlg.open()
+                }
+            }
+            Text {
+                visible: stations.count > 0 && stations.radioLog.length === 0
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: logSearch.text.length ? "No song you heard matches “" + logSearch.text + "”"
+                      : "Nothing yet. Songs show up here once a station has said what it's playing and you've listened for a minute."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            Column {
+                objectName: "radioLog"
+                width: parent.width
+                spacing: 0
+                visible: stations.count > 0
+                Repeater {
+                    model: stations.radioLog
+                    Column {
+                        id: logRow
+                        required property var modelData
+                        required property int index
+                        readonly property bool newDay: index === 0 || stations.radioLog[index - 1].day !== modelData.day
+                        width: col.width
+                        Text {
+                            visible: logRow.newDay
+                            textFormat: Text.PlainText
+                            topPadding: logRow.index === 0 ? 0 : 12
+                            bottomPadding: 4
+                            text: Qt.formatDate(new Date(logRow.modelData.ts * 1000), "dddd d MMMM yyyy")
+                            color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold
+                        }
+                        Rectangle {
+                            width: parent.width
+                            height: 44
+                            radius: 12
+                            color: logMouse.containsMouse ? Theme.glassHover : "transparent"
+                            Text {
+                                id: logTime
+                                anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                                width: 48
+                                textFormat: Text.PlainText
+                                text: logRow.modelData.time
+                                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                            }
+                            Column {
+                                anchors { left: logTime.right; leftMargin: 8; right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                                Text {
+                                    textFormat: Text.PlainText; width: parent.width; elide: Text.ElideRight
+                                    text: logRow.modelData.title
+                                    color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); font.weight: Font.DemiBold
+                                }
+                                Text {
+                                    textFormat: Text.PlainText; width: parent.width; elide: Text.ElideRight
+                                    text: [logRow.modelData.artist, logRow.modelData.station].filter(function (x) { return x }).join("  ·  ")
+                                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                                }
+                            }
+                            MouseArea {
+                                id: logMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                onClicked: logMenu.popupFor(logRow.modelData)
+                                onPressAndHold: logMenu.popupFor(logRow.modelData)
+                                Accessible.role: Accessible.Button
+                                Accessible.name: logRow.modelData.title + " by " + logRow.modelData.artist + ", on "
+                                                 + logRow.modelData.station + " at " + logRow.modelData.time
+                                Accessible.onPressAction: logMenu.popupFor(logRow.modelData)
+                            }
+                        }
                     }
                 }
             }

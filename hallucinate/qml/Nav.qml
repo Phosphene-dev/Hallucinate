@@ -17,6 +17,7 @@ QtObject {
     signal importPlaylist()
     signal exportPlaylist(string kind, string name)
     signal notify(string message)
+    signal search(string text)  // search the library, as if typed in the search field
     signal notifyAction(string message, string actionText, var action)  // a toast with a button (Undo)
     signal openPlaylist(int id)
     signal openSmartPlaylist(int id, string name)

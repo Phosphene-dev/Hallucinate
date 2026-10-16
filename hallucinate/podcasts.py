@@ -20,6 +20,7 @@ from .core import net
 from .core import podcasts as pc
 from .core.kinds import track_kind
 from .core.streams_db import StreamsDB
+from .listentime import ListenClock
 from .models import DictModel
 
 logger = logging.getLogger(__name__)
@@ -86,6 +87,7 @@ class Podcasts(QObject):
     resultsChanged = Signal()
     chaptersChanged = Signal()
     message = Signal(str)
+    listeningChanged = Signal()  # listening time grew, or the scrobble switch changed
     newEpisodes = Signal(str, str)  # (show, latest episode title) when a check finds something new, if asked to tell
     undoable = Signal(str)  # a toast with an Undo button that calls undo()
     _done = Signal(object)
@@ -130,6 +132,10 @@ class Podcasts(QObject):
         self._save_timer = QTimer(self)
         self._save_timer.setInterval(SAVE_EVERY_MS)
         self._save_timer.timeout.connect(self._save_position)
+        self._scrobble = self._settings.value("podcasts/scrobble", False, bool)
+        self._clock = ListenClock(player, self._db, "episode",
+                                  lambda e: ("podcast", int(e.get("podcast_id") or 0), e.get("album") or ""), self)
+        self._clock.counted.connect(self.listeningChanged)
         self._refresh_timer = QTimer(self)
         self._refresh_timer.setInterval(max(1, self._options["refreshHours"]) * 3600 * 1000)
         self._refresh_timer.timeout.connect(self.refreshAll)
@@ -539,7 +545,8 @@ class Podcasts(QObject):
                 "title": e["title"], "artist": e.get("podcast") or "", "album": e.get("podcast") or "",
                 "album_artist": "", "artUrl": self._art(e.get("image")) or self._art(e.get("podcast_image")),
                 "duration": e.get("duration") or 0, "resume_ms": resume, "id": -1_000_000 - e["id"],
-                "speed": float(show.get("speed") or 0), "skip_outro": int(show.get("skip_outro") or 0)}
+                "speed": float(show.get("speed") or 0), "skip_outro": int(show.get("skip_outro") or 0),
+                "scrobble": self._scrobble}
 
     @Slot(int)
     def play(self, episode_id):
@@ -949,7 +956,31 @@ class Podcasts(QObject):
                 self._chapters = value
                 self.chaptersChanged.emit()
 
+    # --- scrobbling and your listening -------------------------------------------------------------------
+    @Property(bool, notify=listeningChanged)
+    def scrobble(self):
+        """Whether episodes count on Last.fm and ListenBrainz (as the show and the episode's title). Off unless
+        you turn it on."""
+        return self._scrobble
+
+    @Slot(bool)
+    def setScrobble(self, on):
+        self._scrobble = bool(on)
+        self._settings.setValue("podcasts/scrobble", self._scrobble)
+        if self._player.hasTrack and track_kind(self._player.current) == "episode":
+            self._player.current["scrobble"] = self._scrobble
+        self.listeningChanged.emit()
+
+    @Slot(int, result="QVariantMap")
+    def listening(self, days):
+        """Podcast listening for the last `days` days (0: all time): {hours, finished, top: [{id, name, hours}]}."""
+        self._clock.tick()
+        got = self._db.listening("podcast", days)
+        return {"hours": round(got["seconds"] / 3600, 1), "finished": self._db.episodes_finished(days),
+                "top": [{"id": t["item_id"], "name": t["name"], "hours": round(t["seconds"] / 3600, 1)} for t in got["top"]]}
+
     def shutdown(self):
+        self._clock.stop()
         self._save_position()
         self._save_timer.stop()
         self._refresh_timer.stop()

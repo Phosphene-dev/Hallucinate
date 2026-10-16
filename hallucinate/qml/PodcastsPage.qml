@@ -244,6 +244,16 @@ Item {
                 }
             }
 
+            SectionHeader { visible: podcasts.count > 0; title: "Your listening"; subtitle: "Time spent on podcasts, kept apart from your music's stats" }
+            ListeningStrip {
+                objectName: "podcastListening"
+                visible: podcasts.count > 0
+                width: parent.width
+                source: podcasts
+                countKey: "finished"; countOne: "episode finished"; countMany: "episodes finished"
+                onOpenItem: function (id) { if (id) Nav.openPodcast(id) }
+            }
+
             SectionHeader { visible: podcasts.count > 0; title: "Your shows" }
             Flow {
                 objectName: "followedShows"

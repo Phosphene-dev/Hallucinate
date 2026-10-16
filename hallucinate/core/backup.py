@@ -1,6 +1,7 @@
 """Your own data in one file, to keep safe or carry to another computer: likes, ratings, playlists (plain and
 smart), play counts, skips, every listen, songs taken out of the library, music folders, stations, podcast
-subscriptions with where you were in each episode, and Up next.
+subscriptions with where you were in each episode, Up next, the songs heard on the radio and the time spent on
+stations and shows.
 
 The music itself, covers and caches aren't in it: they come back from your folders. Restoring merges into what
 is already there (nothing is deleted); songs are matched by path, so a backup restored on a computer where the
@@ -58,6 +59,8 @@ def export(library_db, streams_db, target):
         st = sqlite3.connect(str(streams_db))
         try:
             data["stations"] = _rows(st, "stations", STATION_COLUMNS)
+            data["radio_log"] = _rows(st, "radio_log", ("ts", "station", "artist", "title"))
+            data["listen_time"] = _rows(st, "listen_time", ("kind", "name", "day", "seconds"))
             for row in st.execute("SELECT id FROM podcasts"):
                 pid = row[0]
                 podcast = dict(zip(PODCAST_COLUMNS, st.execute(
@@ -152,6 +155,22 @@ def restore(data, library_db, streams_db):
                     sid = st.add_station(s)
                     st.conn.execute("UPDATE stations SET added=?, last_played=?, plays=? WHERE id=?",
                                     (s.get("added") or time.time(), s.get("last_played") or 0, s.get("plays") or 0, sid))
+            station_ids = {s["name"]: s["id"] for s in st.stations()}
+            have = {(r["ts"], r["artist"], r["title"]) for r in st.radio_log(limit=10_000_000)}
+            for r in data.get("radio_log", []):
+                if (r["ts"], r["artist"], r["title"]) not in have:
+                    st.conn.execute("INSERT INTO radio_log(ts, station_id, station, artist, title) VALUES(?, ?, ?, ?, ?)",
+                                    (r["ts"], station_ids.get(r["station"], 0), r["station"], r["artist"], r["title"]))
+            show_ids = {p["title"]: p["id"] for p in st.podcasts()}
+            for p in data.get("podcasts", []):
+                show_ids.setdefault(p["title"], st.add_podcast(p))
+            for t in data.get("listen_time", []):
+                item = (station_ids if t["kind"] == "station" else show_ids).get(t["name"])
+                if item:  # the larger of the two days' counts, so restoring twice adds nothing
+                    st.conn.execute(
+                        "INSERT INTO listen_time(kind, item_id, name, day, seconds) VALUES(?, ?, ?, ?, ?) "
+                        "ON CONFLICT(kind, item_id, day) DO UPDATE SET seconds=MAX(seconds, excluded.seconds)",
+                        (t["kind"], item, t["name"], t["day"], t["seconds"]))
             for p in data.get("podcasts", []):
                 pid = st.add_podcast(p)
                 st.update_podcast(pid, **{k: p[k] for k in ("auto_download", "newest_first", "hide_played", "speed",

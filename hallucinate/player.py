@@ -1649,7 +1649,12 @@ class Player(QObject):
         self._listened += step
         kind = track_kind(self.current) if self.hasTrack else "music"
         if kind == "episode":
-            return  # podcasts keep their own place (see podcasts.py); they're never plays
+            # podcasts keep their own place (see podcasts.py) and are never plays; one that's scrobbled counts
+            # for that after half of it or four minutes, like a song
+            if (self.current.get("scrobble") and self._listened >= min(240_000, max(dur, 1) / 2)):
+                self._play_counted = True
+                self.played.emit(dict(self.current))
+            return
         if kind == "station":
             # a song on the radio, once its title is known, counts for scrobbling after a minute
             if self._listened >= STREAM_SONG_MS and self.current.get("artist") and self.current.get("stream_title"):

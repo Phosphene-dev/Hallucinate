@@ -249,6 +249,7 @@ ApplicationWindow {
         function onEditSmartPlaylist(id, name) { smartEditor.openEdit(id, name) }
         function onEditTags(path) { tagEditor.editTrack(path) }
         function onEditAlbum(key) { tagEditor.editAlbum(key) }
+        function onSearch(text) { searchField.text = text; searchField.forceActiveFocus() }
         function onFindAlbumGenre(key) { tagEditor.editAlbum(key); if (tagEditor.albumKey === key) tagEditor.findGenre() }
         function onEditTagsMany(paths) { tagEditor.editTracks(paths) }
         function onArtistMenu(name) { if (name) collectionMenu.showArtist(name) }
