@@ -23,7 +23,7 @@ Item {
     width: collapsed ? railWidth : fullWidth
     Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
-    readonly property var pages: [
+    readonly property var allPages: [
         { id: "home", t: "Home", i: "home" }, { id: "albums", t: "Albums", i: "album" },
         { id: "artists", t: "Artists", i: "artist" }, { id: "songs", t: "Songs", i: "songs" },
         { id: "folders", t: "Folders", i: "folder" },
@@ -32,6 +32,28 @@ Item {
         { id: "recap", t: "Recap", i: "recap" }, { id: "visualizer", t: "Visualizer", i: "wave" },
         { id: "stations", t: "Internet radio", i: "station" }, { id: "podcasts", t: "Podcasts", i: "podcast" }
     ]
+    // In the order you've arranged them (Settings → Appearance → Sidebar, or right-click an entry)
+    readonly property var pages: {
+        var order = shell.sidebarOrder, byId = {}
+        for (var i = 0; i < allPages.length; i++) byId[allPages[i].id] = allPages[i]
+        return order.map(function (id) { return byId[id] }).filter(function (p) { return p !== undefined })
+    }
+    readonly property var shownPages: pages.filter(function (p) { return shell.features[p.id] !== false })
+
+    Menu {
+        id: pageMenu
+        objectName: "sidebarPageMenu"
+        property string page: ""
+        readonly property int at: side.shownPages.map(function (p) { return p.id }).indexOf(page)
+        MenuItem { text: "Move up"; icon.name: "up"; enabled: pageMenu.at > 0; onTriggered: shell.moveSidebarPage(pageMenu.page, -1) }
+        MenuItem {
+            text: "Move down"; icon.name: "down"; enabled: pageMenu.at >= 0 && pageMenu.at < side.shownPages.length - 1
+            onTriggered: shell.moveSidebarPage(pageMenu.page, 1)
+        }
+        MenuSeparator {}
+        MenuItem { text: "Rearrange…"; icon.name: "settings"; onTriggered: side.rearrange() }
+    }
+    signal rearrange()  // open Settings at the sidebar list
 
     Rectangle {
         id: panel
@@ -92,15 +114,52 @@ Item {
                     }
                 }
 
+                // Where a dragged entry would land: a line between entries
+                Rectangle {
+                    id: dropLine
+                    property int index: -1
+                    visible: index >= 0
+                    z: 2
+                    x: navCol.x + 14; width: navCol.width - 28; height: 2; radius: 1
+                    y: navCol.y + index * (side.entryHeight + navCol.spacing) - navCol.spacing / 2 - 1
+                    color: Theme.accent
+                }
                 Column {
                     id: navCol
                     anchors { left: parent.left; right: parent.right; top: brand.bottom; topMargin: side.compact ? 8 : 14; leftMargin: 10; rightMargin: 10 }
                     spacing: side.compact ? 2 : 4
                     Repeater {
-                        model: side.pages.filter(function (p) { return shell.features[p.id] !== false })
+                        model: side.shownPages
                         RailButton {
+                            id: rail
                             required property var modelData
+                            required property int index
                             objectName: "rail_" + modelData.id
+                            hasMenu: true
+                            z: dragger.active ? 3 : 0
+                            opacity: dragger.active ? 0.85 : 1
+                            transform: Translate { y: dragger.active ? dragger.activeTranslation.y : 0 }
+                            Accessible.description: "Alt+Up or Alt+Down moves it"
+                            Keys.onPressed: function (event) {
+                                if (!(event.modifiers & Qt.AltModifier)) return
+                                if (event.key === Qt.Key_Up) { shell.moveSidebarPage(modelData.id, -1); event.accepted = true }
+                                else if (event.key === Qt.Key_Down) { shell.moveSidebarPage(modelData.id, 1); event.accepted = true }
+                            }
+                            // Drag an entry up or down to move it
+                            // the slot the entry would take, and the line drawn at that slot's edge
+                            readonly property int dropIndex: Math.max(0, Math.min(side.shownPages.length - 1,
+                                Math.round((y + dragger.activeTranslation.y) / (side.entryHeight + navCol.spacing))))
+                            DragHandler {
+                                id: dragger
+                                target: null
+                                xAxis.enabled: false
+                                onActiveChanged: {
+                                    if (active) return
+                                    dropLine.index = -1
+                                    if (rail.dropIndex !== rail.index) shell.placeSidebarPage(rail.modelData.id, rail.dropIndex)
+                                }
+                                onActiveTranslationChanged: if (active) dropLine.index = rail.dropIndex > rail.index ? rail.dropIndex + 1 : rail.dropIndex
+                            }
                             width: navCol.width
                             height: side.entryHeight
                             text: modelData.t
@@ -108,6 +167,7 @@ Item {
                             collapsed: side.collapsed
                             selected: side.section === modelData.id && side.atRoot
                             onClicked: side.navigate(modelData.id)
+                            onMenuRequested: { pageMenu.page = modelData.id; pageMenu.popup() }
                         }
                     }
                 }

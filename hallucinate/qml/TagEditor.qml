@@ -17,6 +17,8 @@ Dialog {
     property var mbResults: []     // MusicBrainz releases found for this album
     property string mbStatus: ""
     property var trackTags: []     // per-song titles and numbers from the chosen release
+    property var genreChoices: []  // genres MusicBrainz suggested, best first
+    property string genreStatus: ""
 
     parent: Overlay.overlay
     anchors.centerIn: parent
@@ -69,7 +71,7 @@ Dialog {
         load(tracks[0]); open()
     }
     function load(info) {
-        mbResults = []; mbStatus = ""; trackTags = []
+        mbResults = []; mbStatus = ""; trackTags = []; genreChoices = []; genreStatus = ""
         original = info
         artUrl = info.artUrl || ""
         message = ""
@@ -90,6 +92,15 @@ Dialog {
         if (Object.keys(changes).length) metaEditor.saveTags(paths, changes)
         if (trackTagsBox.checked && trackTags.length) metaEditor.saveTrackTags(trackTags)
     }
+    function fieldValue(key) {
+        for (var i = 0; i < rep.count; i++) if (rep.itemAt(i).key === key) return rep.itemAt(i).value
+        return String(original[key] || "")
+    }
+    function findGenre() {
+        genreChoices = []
+        genreStatus = "Asking MusicBrainz…"
+        metaEditor.findGenre(fieldValue("album_artist") || fieldValue("artist"), fieldValue("album"))
+    }
     function setField(key, value) {
         for (var i = 0; i < rep.count; i++) if (rep.itemAt(i).key === key && value) rep.itemAt(i).value = String(value)
     }
@@ -108,6 +119,15 @@ Dialog {
             dlg.mbStatus = r.matched ? "Filled in from MusicBrainz. Check the fields, then Save."
                 : "Filled in the album from MusicBrainz. Its " + r.releaseTracks + " tracks don't match this album's "
                   + r.songs + " songs, so song titles are left as they are."
+        }
+        function onGenreFound(r) {
+            if (!dlg.opened) return
+            if (r.error) { dlg.genreStatus = r.error; return }
+            dlg.setField("genre", r.genre)
+            dlg.genreChoices = r.genres
+            dlg.genreStatus = r.source === "artist"
+                ? "MusicBrainz has no genre for this album, so this is the artist's. Pick another below or type your own, then Save."
+                : "From MusicBrainz. Pick another below or type your own, then Save."
         }
         function onCoverResult(ok, msg) { dlg.message = msg; if (ok) dlg.artUrl = library.albumInfo(dlg.albumKey).artUrl || "" }
         function onFailed(msg) { dlg.message = msg }
@@ -153,6 +173,37 @@ Dialog {
                     placeholderText: dlg.mixed.indexOf(rowItem.key) >= 0 ? "mixed" : ""
                     placeholderTextColor: Theme.textDim
                     background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: field.activeFocus ? Theme.accent : Theme.border }
+                }
+                PillButton {
+                    objectName: "findGenre"
+                    visible: rowItem.key === "genre"
+                    height: 32
+                    text: "Find online"
+                    enabled: !shell.offlineMode && dlg.fieldValue("album").length > 0
+                    onClicked: dlg.findGenre()
+                    Accessible.name: "Find the genre online"
+                }
+            }
+        }
+        Text {
+            textFormat: Text.PlainText
+            Layout.fillWidth: true
+            visible: dlg.genreStatus.length > 0
+            text: dlg.genreStatus
+            wrapMode: Text.WordWrap
+            color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+        }
+        Flow {
+            Layout.fillWidth: true
+            visible: dlg.genreChoices.length > 1
+            spacing: 6
+            Repeater {
+                model: dlg.genreChoices
+                Chip {
+                    required property string modelData
+                    text: modelData
+                    selected: dlg.fieldValue("genre") === modelData
+                    onClicked: dlg.setField("genre", modelData)
                 }
             }
         }

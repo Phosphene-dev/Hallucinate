@@ -74,7 +74,7 @@ Menu {
     }
     MenuItem {
         readonly property bool liked: userLib.likesRevision >= 0 && userLib.allLiked(menu.paths)
-        visible: !menu.stream; height: visible ? implicitHeight : 0
+        visible: !menu.stream && shell.features.liked !== false; height: visible ? implicitHeight : 0
         text: liked ? "Remove from Liked Songs" : "Add to Liked Songs"
         icon.name: "heart"
         onTriggered: { userLib.setLikedPaths(menu.paths, !liked); menu.done("") }

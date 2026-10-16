@@ -4,7 +4,7 @@ This catches bugs like the Stats rows that fell back to white when their colour 
 Qt's software renderer, so shader effects are left out, but every control, colour and layout is drawn."""
 import numpy as np
 import pytest
-from PySide6.QtCore import Q_ARG, Q_RETURN_ARG, QMetaObject, QObject, Qt, QUrl
+from PySide6.QtCore import Q_ARG, Q_RETURN_ARG, QMetaObject, QObject, QPointF, Qt, QUrl
 from PySide6.QtGui import QIcon, QImage
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
@@ -1145,3 +1145,98 @@ def test_whats_new_fits_a_short_window(qapp, app_window):
         shell._settings.setValue("ui/lastVersion", old)
         shell._whats_new_dismissed = False
     assert not [w for w in warnings if "main.qml" in w], warnings
+
+
+def test_genres_found_online_are_reviewed_before_saving(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    library, editor = objects["library"], objects["metaEditor"]
+    albums = [library.albums.get(i) for i in range(2)]
+    editor._genres["proposals"] = [
+        {"album_key": a["album_key"], "album": a["album"], "artist": a["album_artist"], "genre": g,
+         "genres": [g, "Ambient"], "source": src, "songs": 2}
+        for a, g, src in zip(albums, ("Shoegaze", "Folk"), ("album", "artist"))]
+    editor.genresChanged.emit()
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "health"))
+    assert wait_for(lambda: window.findChild(QObject, "genreReview") is not None)
+    dlg = window.findChild(QObject, "genreReview")
+    QMetaObject.invokeMethod(dlg, "open")
+    assert wait_for(lambda: dlg.property("opened"))
+    assert dlg.property("kept") == 1  # the artist's genre is a guess, so it starts unticked
+    saved = []
+    editor._run = lambda fn, items: saved.append(items)  # the seeded songs aren't real files to write to
+    try:
+        QMetaObject.invokeMethod(dlg, "accept")
+        assert wait_for(lambda: saved)
+    finally:
+        del editor._run
+    assert saved == [[(albums[0]["album_key"], "Shoegaze")]]
+    assert plain(editor.genreProposals) == []
+    assert not [w for w in warnings if "GenreReview" in w or "HealthPage" in w], warnings
+
+
+FEATURE_LABELS = {"liked": "Liked Songs", "folders": "Folders", "stats": "Stats", "history": "History",
+                  "recap": "Recap", "visualizer": "Visualizer", "health": "Library health", "lyrics": "Lyrics",
+                  "stations": "Internet radio", "podcasts": "Podcasts"}
+# Words that only describe something (Settings' notes about offline mode or backups), not a way into the feature.
+FEATURE_PROSE = ("folders that can't be found", "folders are scanned", "import history", "import listening history",
+                 "no lyrics or cover lookups", "playlists, history, stations")
+
+
+def visible_texts(window):
+    texts = QMetaObject.invokeMethod(window, "visibleTexts", Qt.ConnectionType.DirectConnection,
+                                     Q_RETURN_ARG("QVariant"), Q_ARG("QVariant", None))
+    return plain(texts) or []
+
+
+def test_a_switched_off_feature_is_gone_from_every_page(qapp, app_window):
+    """Settings → Features promises a switched-off feature "disappears everywhere": no page, link, button or
+    heading names it any more."""
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    pages = ["home", "albums", "artists", "songs", "settings", *FEATURE_LABELS]
+    with listening_extras(objects):
+        leaks = []
+        for feature, label in FEATURE_LABELS.items():
+            shell.setFeature(feature, False)
+            try:
+                for page in pages:
+                    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", page))
+                    for _ in range(20):
+                        qapp.processEvents()
+                    leaks += [(feature, page, t[:80]) for t in visible_texts(window)
+                              if label.lower() in t.lower() and not any(p in t.lower() for p in FEATURE_PROSE)]
+            finally:
+                shell.setFeature(feature, True)
+    assert leaks == []
+    assert not [w for w in warnings if "main.qml" in w], warnings
+
+
+def test_sidebar_entries_are_dragged_into_a_new_order(qapp, app_window):
+    from conftest import wait_for
+    from PySide6.QtCore import QPoint
+    from PySide6.QtTest import QTest
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    try:
+        songs, home = find_item(window, "rail_songs"), find_item(window, "rail_home")
+        start = songs.mapToScene(songs.boundingRect().center())
+        end = home.mapToScene(home.boundingRect().center())
+        x, y0, y1 = int(start.x()), int(start.y()), int(end.y())
+        QTest.mousePress(window, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QPoint(x, y0))
+        for i in range(1, 13):
+            QTest.mouseMove(window, QPoint(x, y0 + (y1 - y0) * i // 12), 10)
+        QTest.mouseRelease(window, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QPoint(x, y1), 10)
+        assert wait_for(lambda: shell.sidebarOrder[0] == "songs")
+        assert wait_for(lambda: find_item(window, "rail_songs").mapToScene(QPointF(0, 0)).y()
+                        < find_item(window, "rail_home").mapToScene(QPointF(0, 0)).y())
+        # and the same order is listed in Settings, where it can be reset
+        QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "settings"))
+        assert wait_for(lambda: find_item(window, "sidebarOrder_songs") is not None)
+        find_item(window, "resetSidebarOrder").clicked.emit()
+        assert wait_for(lambda: shell.sidebarOrder[0] == "home")
+    finally:
+        shell.resetSidebarOrder()
+    assert not [w for w in warnings if "Sidebar" in w or "SettingsPage" in w], warnings

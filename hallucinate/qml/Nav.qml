@@ -25,6 +25,7 @@ QtObject {
     signal editTags(string path)
     signal editTagsMany(var paths)
     signal editAlbum(string key)
+    signal findAlbumGenre(string key)  // open the album editor and look its genre up
     signal back()
     signal installUpdate()
     // keys: album keys; what: how to name them in messages ("“Album”" or "3 albums")

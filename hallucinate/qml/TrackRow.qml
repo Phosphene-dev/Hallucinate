@@ -153,7 +153,7 @@ Rectangle {
         anchors { right: moreBtn.visible ? moreBtn.left : dur.left; rightMargin: 0; verticalCenter: parent.verticalCenter }
         icon: "heart"; size: 14
         active: row.liked
-        visible: row.path.length > 0
+        visible: row.path.length > 0 && shell.features.liked !== false
         opacity: (hh.hovered || row.liked) ? 1 : 0
         onClicked: userLib.toggleLike(row.path)
     }

@@ -39,6 +39,11 @@ def missing_covers(db):
                   "album", _albums(db, "MAX(art) IS NULL OR MAX(art) = ''"))
 
 
+def missing_genre_all(db):
+    """Every album without a genre (not capped like the check)."""
+    return _albums(db, "MAX(genre) = ''")
+
+
 def missing_year(db):
     return _check("year", "Albums without a year",
                   "They sit at the end of the timeline and can't be found by year.",

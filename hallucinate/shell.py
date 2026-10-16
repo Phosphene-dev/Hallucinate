@@ -18,6 +18,22 @@ FEATURES = {
     "health": True, "lyrics": True, "stations": False, "podcasts": False,
     "homeRandom": True, "homeListening": True, "homeFacts": True, "homeShelves": True,
 }
+# The sidebar's pages in their usual order; people can rearrange them (Settings → Appearance or right-click).
+SIDEBAR_PAGES = ("home", "albums", "artists", "songs", "folders", "liked", "stats", "history", "recap", "visualizer",
+                 "stations", "podcasts")
+
+
+def sidebar_order(saved):
+    """The saved order with anything unknown dropped and any page it lacks (new in an update) put back where it
+    usually goes."""
+    order = [p for p in dict.fromkeys(saved or []) if p in SIDEBAR_PAGES]
+    for i, page in enumerate(SIDEBAR_PAGES):
+        if page not in order:
+            before = [p for p in SIDEBAR_PAGES[:i] if p in order]
+            order.insert(order.index(before[-1]) + 1 if before else 0, page)
+    return order
+
+
 # Tiling compositors and window managers that have no minimize: offering it there would do nothing.
 NO_MINIMIZE = ("hyprland", "sway", "i3", "niri", "river", "dwm", "bspwm", "qtile", "awesome")
 
@@ -157,6 +173,49 @@ class DesktopShell(QObject):
         self._sidebar_collapsed = bool(on)
         self._settings.setValue("ui/sidebarCollapsed", self._sidebar_collapsed)
         self.settingsChanged.emit()
+
+    sidebarOrderChanged = Signal()
+
+    @Property("QStringList", notify=sidebarOrderChanged)
+    def sidebarOrder(self):
+        raw = self._settings.value("ui/sidebarOrder", "")
+        return sidebar_order([p for p in str(raw or "").split(",") if p])
+
+    @Slot("QStringList")
+    def setSidebarOrder(self, order):
+        order = sidebar_order(list(order))
+        if order == list(SIDEBAR_PAGES):
+            self._settings.remove("ui/sidebarOrder")
+        else:
+            self._settings.setValue("ui/sidebarOrder", ",".join(order))
+        self.sidebarOrderChanged.emit()
+
+    def _shown(self, page):
+        return page not in FEATURES or self.featureOn(page)
+
+    @Slot(str, int)
+    def placeSidebarPage(self, page, index):
+        """Put a page at `index` among the pages showing (as dragged in the sidebar). Switched-off pages keep
+        their places for when they come back."""
+        order = self.sidebarOrder
+        shown = [p for p in order if self._shown(p)]
+        if page not in shown:
+            return
+        shown.remove(page)
+        shown.insert(max(0, min(index, len(shown))), page)
+        slots = iter(shown)
+        self.setSidebarOrder([next(slots) if self._shown(p) else p for p in order])
+
+    @Slot(str, int)
+    def moveSidebarPage(self, page, step):
+        """Move a page up (-1) or down (+1) past the next one that's showing."""
+        shown = [p for p in self.sidebarOrder if self._shown(p)]
+        if page in shown:
+            self.placeSidebarPage(page, shown.index(page) + (1 if step > 0 else -1))
+
+    @Slot()
+    def resetSidebarOrder(self):
+        self.setSidebarOrder(list(SIDEBAR_PAGES))
 
     featuresChanged = Signal()
 

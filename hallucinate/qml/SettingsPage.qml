@@ -11,6 +11,11 @@ Item {
     readonly property var sectionTitles: ["Appearance", "Features", "Podcasts", "Playback", "Sound", "Library", "Internet & sharing", "Desktop", "About"]
 
     function sectionItem(i) { return [sec_appearance, sec_features, sec_podcasts, sec_playback, sec_sound, sec_library, sec_sharing, sec_desktop, sec_about][i] }
+    function jumpToSidebar() {
+        jumpTo(1)
+        var y = sidebarOrderBox.mapToItem(flick.contentItem, 0, 0).y - 20
+        flick.contentY = Math.max(0, Math.min(y, flick.contentHeight - flick.height))
+    }
     function jumpTo(i) {
         page.query = ""
         search.text = ""
@@ -54,6 +59,7 @@ Item {
                 Chip {
                     required property string modelData
                     required property int index
+                    visible: modelData !== "Podcasts" || shell.features.podcasts !== false
                     text: modelData
                     onClicked: page.jumpTo(index)
                 }
@@ -276,7 +282,7 @@ Item {
             id: sec_features
             objectName: "settings_features"
             title: "Features"
-            keywords: "hide show turn off sidebar pages home cards internet radio stations podcasts lyrics stats recap history visualizer health folders liked"
+            keywords: "hide show turn off sidebar pages order rearrange move arrange home cards internet radio stations podcasts lyrics stats recap history visualizer health folders liked"
             query: page.query
             Text {
                 textFormat: Text.PlainText
@@ -325,6 +331,70 @@ Item {
                 heading: "Home"
                 items: [["homeRandom", "Random album"], ["homeListening", "Listening card"],
                         ["homeFacts", "Library facts"], ["homeShelves", "Album shelves"]]
+            }
+            Column {
+                id: sidebarOrderBox
+                objectName: "sidebarOrder"
+                width: parent.width
+                spacing: 6
+                readonly property var names: ({ home: "Home", albums: "Albums", artists: "Artists", songs: "Songs",
+                    folders: "Folders", liked: "Liked Songs", stats: "Stats", history: "History", recap: "Recap",
+                    visualizer: "Visualizer", stations: "Internet radio", podcasts: "Podcasts" })
+                readonly property var shown: shell.sidebarOrder.filter(function (p) { return shell.features[p] !== false })
+                Row {
+                    width: parent.width
+                    spacing: 12
+                    Text {
+                        textFormat: Text.PlainText
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Sidebar order"
+                        color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
+                    }
+                    PillButton { objectName: "resetSidebarOrder"; height: 30; text: "Reset"; onClicked: shell.resetSidebarOrder() }
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: "Move pages up or down here, drag them in the sidebar, or right-click one there. With a page focused, Alt+Up and Alt+Down move it too."
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                }
+                Repeater {
+                    model: sidebarOrderBox.shown
+                    Rectangle {
+                        required property string modelData
+                        required property int index
+                        objectName: "sidebarOrder_" + modelData
+                        width: Math.min(420, sidebarOrderBox.width)
+                        height: 40
+                        radius: Theme.radiusSmall
+                        color: Theme.surface
+                        Text {
+                            textFormat: Text.PlainText
+                            anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
+                            text: (index + 1) + ".  " + sidebarOrderBox.names[modelData]
+                            color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                        }
+                        Row {
+                            anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
+                            spacing: 2
+                            IconButton {
+                                icon: "up"; size: 16
+                                enabled: index > 0
+                                opacity: enabled ? 1 : 0.35
+                                tip: "Move " + sidebarOrderBox.names[modelData] + " up"
+                                onClicked: shell.moveSidebarPage(modelData, -1)
+                            }
+                            IconButton {
+                                icon: "down"; size: 16
+                                enabled: index < sidebarOrderBox.shown.length - 1
+                                opacity: enabled ? 1 : 0.35
+                                tip: "Move " + sidebarOrderBox.names[modelData] + " down"
+                                onClicked: shell.moveSidebarPage(modelData, 1)
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -734,14 +804,14 @@ Item {
             }
             StyledCheck {
                 objectName: "syncLoves"
-                visible: scrobbler.connected
+                visible: scrobbler.connected && shell.features.liked !== false
                 text: "Liking a song loves it on Last.fm (and unliking unloves it)"
                 checked: scrobbler.syncLoves
                 onToggled: scrobbler.setSyncLoves(checked)
             }
             PillButton {
                 objectName: "importLoves"
-                visible: scrobbler.connected
+                visible: scrobbler.connected && shell.features.liked !== false
                 text: scrobbler.lovesBusy ? "Fetching your loves…" : "Like the songs I've loved on Last.fm"
                 enabled: !scrobbler.lovesBusy
                 onClicked: scrobbler.importLoves()

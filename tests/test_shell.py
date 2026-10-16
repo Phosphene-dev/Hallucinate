@@ -218,3 +218,29 @@ def test_whats_new_once_after_an_update(make_shell):
     assert shell.whatsNew == HIGHLIGHTS[__version__]
     shell.dismissWhatsNew()
     assert shell.whatsNew == []
+
+
+def test_sidebar_pages_can_be_rearranged(make_shell):
+    from hallucinate.shell import SIDEBAR_PAGES, sidebar_order
+
+    shell, _, _ = make_shell()
+    assert shell.sidebarOrder == list(SIDEBAR_PAGES)
+    shell.moveSidebarPage("songs", -1)
+    assert shell.sidebarOrder[:4] == ["home", "albums", "songs", "artists"]
+    shell.placeSidebarPage("history", 0)
+    assert shell.sidebarOrder[0] == "history"
+    # switched-off pages (radio and podcasts start off) keep their places and are stepped over
+    shell.placeSidebarPage("visualizer", 99)
+    order = shell.sidebarOrder
+    assert order.index("visualizer") > order.index("recap") and order[-2:] == ["stations", "podcasts"]
+    shell.setFeature("stations", True)
+    shell.moveSidebarPage("stations", -1)
+    assert shell.sidebarOrder.index("stations") < shell.sidebarOrder.index("visualizer")
+    shell.setFeature("stations", False)
+    shell.resetSidebarOrder()
+    assert shell.sidebarOrder == list(SIDEBAR_PAGES) and not shell._settings.contains("ui/sidebarOrder")
+    # a saved order from an older version: unknown pages dropped, a new one put after the page it usually follows
+    old = [p for p in SIDEBAR_PAGES if p != "podcasts"][::-1] + ["gone"]
+    assert sidebar_order(old) == ["stations", "podcasts", *old[1:-1]]  # podcasts usually follows stations
+    assert sidebar_order(["songs", "home"])[:3] == ["songs", "folders", "liked"]
+    assert sorted(sidebar_order(["songs"])) == sorted(SIDEBAR_PAGES)

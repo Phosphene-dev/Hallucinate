@@ -16,6 +16,7 @@ Item {
     function fixLabel(kind, id) {
         if (kind === "folder") return "Remove"
         if (id === "covers") return "Find cover"
+        if (id === "genre") return "Find genre"
         if (id === "replaygain") return "Analyse"
         if (kind === "album") return "Edit album"
         return "Edit tags"
@@ -24,6 +25,7 @@ Item {
         if (check.kind === "folder") library.removeFolder(item.path)
         else if (check.id === "covers") metaEditor.fetchCover(item.album_key, item.album_artist || "", item.album || "", false)
         else if (check.id === "replaygain") replayGain.analyseAlbum(item.album_key)
+        else if (check.id === "genre") Nav.findAlbumGenre(item.album_key)
         else if (check.kind === "album") Nav.editAlbum(item.album_key)
         else Nav.editTags(item.path)
     }
@@ -31,6 +33,14 @@ Item {
         target: metaEditor
         function onChanged() { library.checkHealth() }
     }
+    Connections {
+        target: metaEditor
+        function onGenresFinished(text) {
+            Nav.notify(text)
+            if (metaEditor.genreProposals.length) genreReview.open()
+        }
+    }
+    GenreReview { id: genreReview }
     Connections {
         target: replayGain
         function onFinished() { library.checkHealth() }
@@ -243,6 +253,41 @@ Item {
                                       ? "Looked up " + metaEditor.coversDone + " of " + metaEditor.coversTotal + " albums  ·  "
                                         + metaEditor.coversFound + " found" + (metaEditor.coversCurrent ? "  ·  " + metaEditor.coversCurrent : "")
                                       : "Searches MusicBrainz and the Cover Art Archive, about one album a second."
+                                color: Theme.textDim
+                                font.family: Theme.fontFamily
+                                font.pixelSize: Theme.fontSize(12)
+                            }
+                        }
+                        Row {
+                            visible: card.modelData.id === "genre" && (card.modelData.count > 0 || metaEditor.genresBusy
+                                                                        || metaEditor.genreProposals.length > 0)
+                            spacing: 12
+                            leftPadding: 24
+                            PillButton {
+                                objectName: "findAllGenres"
+                                primary: !metaEditor.genresBusy && !metaEditor.genreProposals.length
+                                height: 32
+                                text: metaEditor.genresBusy ? "Stop" : "Find all online"
+                                enabled: metaEditor.genresBusy || !shell.offlineMode
+                                onClicked: metaEditor.genresBusy ? metaEditor.cancelGenres() : metaEditor.findMissingGenres()
+                            }
+                            PillButton {
+                                objectName: "reviewGenres"
+                                visible: !metaEditor.genresBusy && metaEditor.genreProposals.length > 0
+                                primary: true
+                                height: 32
+                                text: "Review " + metaEditor.genreProposals.length + " found…"
+                                onClicked: genreReview.open()
+                            }
+                            Text {
+                                textFormat: Text.PlainText
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: Math.min(implicitWidth, card.width - 360)
+                                elide: Text.ElideRight
+                                text: metaEditor.genresBusy
+                                      ? "Looked up " + metaEditor.genresDone + " of " + metaEditor.genresTotal + " albums  ·  "
+                                        + metaEditor.genresFound + " found" + (metaEditor.genresCurrent ? "  ·  " + metaEditor.genresCurrent : "")
+                                      : "Asks MusicBrainz, a couple of seconds an album. You check what it finds before anything is saved."
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily
                                 font.pixelSize: Theme.fontSize(12)

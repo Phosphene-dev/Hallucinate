@@ -138,6 +138,8 @@ Canvas {
             line([.86,.64,.86,.86]); line([.86,.86,.64,.86]); line([.36,.86,.14,.86]); line([.14,.86,.14,.64]); break
         case "down":
             line([.22,.38,.5,.66]); line([.5,.66,.78,.38]); break
+        case "up":
+            line([.22,.62,.5,.34]); line([.5,.34,.78,.62]); break
         case "vinyl":
             ctx.beginPath(); ctx.arc(w*.5, h*.5, w*.4, 0, Math.PI*2); ctx.stroke()
             ctx.beginPath(); ctx.arc(w*.5, h*.5, w*.24, -0.6, 1.2); ctx.stroke()

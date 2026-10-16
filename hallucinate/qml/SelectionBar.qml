@@ -74,6 +74,7 @@ Rectangle {
             IconButton {
                 anchors.verticalCenter: parent.verticalCenter
                 icon: "heart"; size: 16
+                visible: shell.features.liked !== false
                 readonly property bool all: userLib.likesRevision >= 0 && userLib.allLiked(Selection.paths)
                 active: all
                 tip: all ? "Unlike all" : "Like all"

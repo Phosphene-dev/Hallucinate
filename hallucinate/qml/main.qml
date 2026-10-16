@@ -151,6 +151,14 @@ ApplicationWindow {
         for (var i = 0; i < root.children.length; i++) out = out.concat(visibleNames(prefix, root.children[i]))
         return out
     }
+    function visibleTexts(root) {
+        // Every visible piece of text, for tests; the Features switches themselves are left out.
+        root = root || window.contentItem
+        if (!root.visible || root.opacity === 0 || root.objectName.indexOf("feature_") === 0) return []
+        var out = typeof root.text === "string" && root.text.length ? [root.text] : []
+        for (var i = 0; i < root.children.length; i++) out = out.concat(visibleTexts(root.children[i]))
+        return out
+    }
     function featureOn(name) { return shell.features[name] !== false }  // pages that aren't features are always on
     function go(name) {
         if (!featureOn(name)) name = "home"
@@ -241,6 +249,7 @@ ApplicationWindow {
         function onEditSmartPlaylist(id, name) { smartEditor.openEdit(id, name) }
         function onEditTags(path) { tagEditor.editTrack(path) }
         function onEditAlbum(key) { tagEditor.editAlbum(key) }
+        function onFindAlbumGenre(key) { tagEditor.editAlbum(key); if (tagEditor.albumKey === key) tagEditor.findGenre() }
         function onEditTagsMany(paths) { tagEditor.editTracks(paths) }
         function onArtistMenu(name) { if (name) collectionMenu.showArtist(name) }
         function onFolderMenu(path, name) { if (path) collectionMenu.showFolder(path, name) }
@@ -668,6 +677,7 @@ ApplicationWindow {
                 onOpenSmartPlaylist: (id, name) => window.openSmartPlaylist(id, name)
                 onNewPlaylist: window.newPlaylist()
                 onNewSmartPlaylist: smartEditor.openNew()
+                onRearrange: { window.go("settings"); Qt.callLater(function () { var p = stack.currentItem; if (p && p.jumpToSidebar) p.jumpToSidebar() }) }
             }
 
             // Content
