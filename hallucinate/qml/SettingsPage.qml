@@ -469,6 +469,12 @@ Item {
                     onMoved: player.setReplayGainPreamp(value)
                 }
             }
+            StyledCheck {
+                objectName: "autoReplayGain"
+                text: "Measure new music by itself after each scan"
+                checked: replayGain.auto
+                onToggled: replayGain.setAuto(checked)
+            }
             Row {
                 spacing: 12
                 PillButton {

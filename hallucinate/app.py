@@ -146,6 +146,7 @@ def main(argv=None) -> int:
     meta_editor.changed.connect(library.reload)
     replay_gain = ReplayGainAnalyzer(paths.db_path())
     replay_gain.finished.connect(library.reload)
+    library.scanFinished.connect(replay_gain.after_scan)
     headphones = HeadphoneFinder(paths.cache_dir(), player)
     lyrics = LyricsController(paths.db_path(), player)
     scrobbler = LastFmScrobbler(player, paths.data_dir())

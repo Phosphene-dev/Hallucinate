@@ -174,3 +174,15 @@ def test_user_library_smart_playlists(qapp, tmp_path, lib):
         assert ul.smartTracks.count == 0
     finally:
         ul.shutdown()
+
+
+def test_lossless_sample_rate_and_date_liked(lib):
+    lossless = {"rules": [rule("lossless", "is_true")], "sort": "title"}
+    assert "/m/giant" not in paths(R.matching_tracks(lib, lossless, NOW))  # the MP3
+    lossy = {"rules": [rule("lossless", "is_false")]}
+    assert paths(R.matching_tracks(lib, lossy, NOW)) == ["/m/giant"]
+    assert len(R.matching_tracks(lib, {"rules": [rule("sample_rate", "ge", 44.1)]}, NOW)) == 5
+    lib.conn.execute("UPDATE likes SET liked_at=? WHERE path='/m/blue'", (NOW - 200 * DAY,))
+    lib.conn.execute("UPDATE likes SET liked_at=? WHERE path<>'/m/blue'", (NOW - DAY,))
+    recent = {"rules": [rule("liked_at", "in_last", 30)], "sort": "title"}
+    assert set(paths(R.matching_tracks(lib, recent, NOW))) == {"/m/modern", "/m/metal"}
