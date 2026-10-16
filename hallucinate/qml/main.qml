@@ -109,7 +109,12 @@ ApplicationWindow {
         function onEditSmartPlaylist(id, name) { smartEditor.openEdit(id, name) }
         function onEditTags(path) { tagEditor.editTrack(path) }
         function onEditAlbum(key) { tagEditor.editAlbum(key) }
-        function onTrackMenu(path, title, context, index) { trackMenu.show(path, title, context, index) }
+        function onEditTagsMany(paths) { tagEditor.editTracks(paths) }
+        function onTrackMenu(path, title, context, index) {
+            // on a song that's part of a selection, the menu acts on the whole selection
+            if (Selection.count > 1 && Selection.paths.indexOf(path) >= 0) trackMenu.showMany(Selection.paths)
+            else trackMenu.show(path, title, context, index)
+        }
         function onToggleNowPlaying() { nowPlaying.toggle() }
         function onOpenHealth() { window.go("health") }
         function onOpenPalette() { commandPalette.show() }
@@ -129,8 +134,14 @@ ApplicationWindow {
             var k = keys.length === 1 && AlbumSelection.has(keys[0]) ? AlbumSelection.keys.slice() : keys
             albumMenu.show(k, title, artist)
         }
-        function onRemoveAlbums(keys, what) { removeDlg.keys = keys; removeDlg.what = what; removeDlg.open() }
-        function onTrashAlbums(keys, what) { trashDlg.keys = keys; trashDlg.what = what; trashDlg.open() }
+        function onRemoveAlbums(keys, what) { removeDlg.songs = false; removeDlg.keys = keys; removeDlg.what = what; removeDlg.open() }
+        function onTrashAlbums(keys, what) { trashDlg.songs = false; trashDlg.keys = keys; trashDlg.what = what; trashDlg.open() }
+        function onRemoveSongs(paths, what) { removeDlg.songs = true; removeDlg.keys = paths; removeDlg.what = what; removeDlg.open() }
+        function onTrashSongs(paths, what) {
+            trashDlg.songs = true; trashDlg.keys = paths; trashDlg.what = what
+            trashDlg.cue = paths.some(p => /\.[A-Za-z0-9]+#\d+$/.test(p))
+            trashDlg.open()
+        }
     }
 
     Timer {
@@ -214,7 +225,11 @@ ApplicationWindow {
         confirmText: "Remove"
         body: what + ": the music stays on your disk; Hallucinate just stops showing it, and rescans leave it out. "
               + "Settings → Library can bring it back. Plays, likes and playlists are kept."
-        onAccepted: { library.removeAlbums(keys); AlbumSelection.clear() }
+        property bool songs: false  // keys are song paths rather than album keys
+        onAccepted: {
+            if (songs) { library.removeSongs(keys); Selection.clear() }
+            else { library.removeAlbums(keys); AlbumSelection.clear() }
+        }
     }
     ConfirmDialog {
         id: trashDlg
@@ -224,12 +239,19 @@ ApplicationWindow {
         destructive: true
         body: what + ": the music files go to your system's trash, where you can restore them from. A folder left with only "
               + "covers or logs goes too; anything else in it stays."
-        onAccepted: { library.trashAlbums(keys); AlbumSelection.clear() }
+              + (cue ? " Songs from a CUE sheet share one audio file with the rest of their album, so that whole file goes." : "")
+        property bool songs: false
+        property bool cue: false  // a CUE sheet's songs share one file: trashing one trashes the whole sheet's audio
+        onAccepted: {
+            if (songs) { library.trashSongs(keys); Selection.clear() }
+            else { library.trashAlbums(keys); AlbumSelection.clear() }
+        }
     }
     Connections {
         target: library
         function onAlbumsRemoved(r) {
-            var n = r.albums + (r.albums === 1 ? " album" : " albums")
+            var n = r.albums > 0 ? r.albums + (r.albums === 1 ? " album" : " albums")
+                                 : r.songs + (r.songs === 1 ? " song" : " songs")
             if (r.kind === "hidden") toast.show(n + " removed from the library")
             else if (r.failed && !r.songs) toast.show("Couldn't move the files to the trash")
             else toast.show(n + " moved to the trash" + (r.failed ? " (" + r.failed + " files couldn't be moved)" : ""))

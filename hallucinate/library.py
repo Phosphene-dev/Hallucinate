@@ -6,6 +6,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 from PySide6.QtCore import Property, QFile, QFileSystemWatcher, QObject, QTimer, QUrl, Signal, Slot
+from PySide6.QtGui import QDesktopServices
 
 from .core import albums as album_views
 from .core import artists as artist_views
@@ -819,12 +820,18 @@ class Library(QObject):
     @Slot("QVariantList")
     def removeAlbums(self, keys):
         """Take albums out of the library, leaving their files where they are."""
-        paths, n = self.albumPaths(keys), len(keys)
+        self._hide(self.albumPaths(keys), list(keys))
 
+    @Slot("QVariantList")
+    def removeSongs(self, paths):
+        """Take songs out of the library, leaving their files where they are (Settings → Library brings them back)."""
+        self._hide([str(p) for p in paths if p], [])
+
+    def _hide(self, paths, keys):
         def work(db):
             songs = db.hide_paths(paths)
-            self._removed.emit({"kind": "hidden", "albums": n, "songs": songs, "failed": 0,
-                                "hidden": len(db.hidden_paths()), "keys": list(keys)})
+            self._removed.emit({"kind": "hidden", "albums": len(keys), "songs": songs, "failed": 0,
+                                "hidden": len(db.hidden_paths()), "keys": keys})
 
         self._bulk.submit(work)  # same single worker as reload(), so the refresh sees the rows gone
         self.reload()
@@ -833,7 +840,15 @@ class Library(QObject):
     def trashAlbums(self, keys):
         """Move albums' files to the system trash (recoverable from there) and take them out of the library.
         A folder left with no other music and no subfolders goes to the trash too, with its cover and logs."""
-        paths, n = self.albumPaths(keys), len(keys)
+        self._trash(self.albumPaths(keys), list(keys))
+
+    @Slot("QVariantList")
+    def trashSongs(self, paths):
+        """Move songs' files to the system trash and take them out of the library. A song of a CUE sheet shares
+        its file with the rest of the sheet, so the whole file goes (the page says so before asking)."""
+        self._trash([str(p) for p in paths if p], [])
+
+    def _trash(self, paths, keys):
         roots = {os.path.normpath(f) for f in self._db.folders()}
 
         def work(db):
@@ -851,11 +866,27 @@ class Library(QObject):
             gone = [p for p in paths if db.file_of(p) in done]
             db.remove_paths(gone)
             db.commit()
-            self._removed.emit({"kind": "trashed", "albums": n, "songs": len(gone), "failed": failed,
-                                "keys": list(keys)})
+            self._removed.emit({"kind": "trashed", "albums": len(keys), "songs": len(gone), "failed": failed,
+                                "keys": keys})
 
         self._bulk.submit(work)
         self.reload()
+
+    @Slot(str, result="QVariantMap")
+    def trackInfo(self, path):
+        """What a song's menu needs to know about it: its album, artist and whether it comes from a CUE sheet."""
+        row = self._db.track_by_path(path) or {}
+        return {"album_key": row.get("album_key") or "", "album": row.get("album") or "",
+                "artist": row.get("artist") or "", "album_artist": row.get("album_artist") or "",
+                "cue": bool(row.get("file")), "exists": os.path.exists(self._db.file_of(path)) if path else False}
+
+    @Slot(str)
+    def showInFolder(self, path):
+        """Open the folder holding a song (or a folder itself) in the system's file manager."""
+        target = self._db.file_of(path) if path else ""
+        folder = target if os.path.isdir(target) else os.path.dirname(target)
+        if folder and os.path.isdir(folder):
+            QDesktopServices.openUrl(QUrl.fromLocalFile(folder))
 
     @Slot()
     def restoreHidden(self):
