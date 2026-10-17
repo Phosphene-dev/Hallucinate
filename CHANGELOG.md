@@ -17,6 +17,14 @@ All notable changes to this project are documented here. Format based on
   - The sidebar folds to icons when there isn't room for it and a page beside it, and the queue and lyrics
     panels narrow in a small window.
   - The random album card on Home makes room.
+  - In the player bar, the track's format, stars and signal path no longer run into the time and waveform:
+    what doesn't fit beside the cover is left out, and the play controls move aside rather than over the
+    track. In a window under about 740 pixels, the volume slider, lyrics and radio buttons step out of the
+    bar (the mouse wheel over the bar sets the volume then; radio is in Ctrl+K).
+- The Aurora, Halo and Waves visualizers drew nothing on some graphics drivers. They no longer use the
+  shader feature those drivers can't run, and a style that still can't run shows the bars instead (with the
+  reason in Copy debug info) rather than an empty page.
+- The visualizers glow for a black or colourless cover too, instead of staying almost dark.
 
 ### Added
 - Shrimp Boat (PPG's soft peach, #F5BE9D) as an accent colour.

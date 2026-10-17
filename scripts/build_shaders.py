@@ -15,8 +15,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES = ROOT / "hallucinate" / "shaders"
 OUT = ROOT / "hallucinate" / "qml" / "shaders"
-# OpenGL (ES 2 / 2.1 / 3.2+), Direct3D 11 and Metal, so every Qt Quick backend can run them
-TARGETS = ["--glsl", "100 es,120,150", "--hlsl", "50", "--msl", "12"]
+# OpenGL (ES 2 / ES 3 / 2.1 / 3.2+), Direct3D 11 and Metal, so every Qt Quick backend can run them
+TARGETS = ["--glsl", "100 es,300 es,120,150", "--hlsl", "50", "--msl", "12"]
 
 
 def qsb_tool():

@@ -1,4 +1,5 @@
 """The visualizer shaders: every source has a compiled .qsb next to the QML, and the sources still compile."""
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -32,3 +33,11 @@ def test_shader_sources_compile(source, tmp_path):
 def test_includes_are_expanded():
     text = build_shaders.expand(ROOT / "hallucinate" / "shaders" / "liquid.frag")
     assert "#include" not in text and "float fbm(" in text and text.startswith("#version 440")
+
+
+@pytest.mark.parametrize("source", SOURCES, ids=lambda p: p.stem)
+def test_no_shader_builds_an_array(source):
+    """Some drivers (OpenGL ES above all) can't index an array made in the shader by a computed number, and
+    then the shader draws nothing at all: Aurora, Halo and Waves were blank on such a machine."""
+    text = build_shaders.expand(source)
+    assert not re.search(r"\w+\s*\[\s*\d+\s*\]\s*=", text), f"{source.name} builds an array"

@@ -896,6 +896,33 @@ def test_the_update_row_wraps_while_an_update_installs(qapp, app_window, width):
         updates.changed.emit()
 
 
+@pytest.mark.parametrize("app_window", ["varied"], indirect=True)
+@pytest.mark.parametrize("width", [520, 600, 640, 700, 760, 860, 945, 1100, 1300])
+def test_the_player_bar_parts_never_overlap(qapp, app_window, width):
+    """The track info (title, format, stars, signal path), the transport and the controls on the right each
+    keep to their own part of the bar, and the track info's badges stay inside it."""
+    from PySide6.QtCore import QRectF
+    from PySide6.QtQuick import QQuickItem
+
+    window, objects, warnings = app_window
+    objects["player"].setShowTrackInfo(True)  # a track is loaded already: show everything the info can hold
+    window.resize(width, 700)
+    for _ in range(6):
+        qapp.processEvents()
+
+    def box(name):
+        item = window.findChild(QQuickItem, name)
+        return item.mapRectToScene(QRectF(0, 0, item.width(), item.height()))
+
+    info, transport, controls = box("barNowInfo"), box("barTransport"), box("barControls")
+    buttons = window.findChild(QQuickItem, "barTransport").childItems()[0]  # the play, skip… row
+    row = buttons.mapRectToScene(QRectF(0, 0, buttons.width(), buttons.height()))
+    assert info.right() <= min(transport.left(), row.left()) + 1, (info, transport, row)
+    assert max(transport.right(), row.right()) <= controls.left() + 1, (transport, row, controls)
+    assert transport.right() <= controls.left() + 1, (transport, controls)
+    objects["player"].setShowTrackInfo(False)
+
+
 def test_features_switched_off_disappear_everywhere(qapp, app_window):
     """Settings → Features: a page that's off leaves the sidebar and Ctrl+K, can't be reached, and is left if
     it was showing; Home's cards and the lyrics button go too. Radio and podcasts start off."""
