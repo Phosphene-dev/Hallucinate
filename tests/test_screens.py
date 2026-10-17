@@ -695,6 +695,17 @@ def test_back_and_forward_like_a_browser(qapp, app_window):
     call("openAlbum", track["album_key"])  # a new visit drops what was ahead
     assert window.property("forwardRoutes").toVariant() == []
     assert album_page is not None
+    call("openAlbum", track["album_key"])
+    under = stack.property("currentItem")
+    call("openArtist", track["album_artist"])
+    before = under.property("revision")
+    objects["library"]._detail_revision += 1
+    objects["library"].detailChanged.emit()  # a reload: only the page on screen reads again now
+    for _ in range(3):
+        qapp.processEvents()
+    assert under.property("revision") == before
+    call("goBack")
+    assert stack.property("currentItem") == under and under.property("revision") == before + 1  # caught up
     call("openPlaylist", 7, "Gone soon")
     call("go", "stats")
     call("forgetRoute", "playlist", 7)  # deleted: Back skips it

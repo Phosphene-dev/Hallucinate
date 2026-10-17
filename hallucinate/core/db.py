@@ -67,6 +67,8 @@ CREATE TABLE IF NOT EXISTS album_colors(album_key TEXT PRIMARY KEY, art TEXT NOT
   hue REAL NOT NULL, sat REAL NOT NULL, val REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS lyrics(path TEXT PRIMARY KEY, synced TEXT NOT NULL DEFAULT '',
   plain TEXT NOT NULL DEFAULT '', source TEXT NOT NULL DEFAULT '', fetched REAL NOT NULL);
+-- a cover you chose for an album: it stays, whatever the files' own pictures are
+CREATE TABLE IF NOT EXISTS chosen_art(album_key TEXT PRIMARY KEY, art TEXT NOT NULL, chosen_at REAL NOT NULL);
 """
 
 FTS = (
@@ -222,16 +224,14 @@ class Database:
         return {r["path"] for r in self.conn.execute("SELECT path FROM likes")}
 
     def ratings(self) -> dict:
-        return {r["path"]: r["stars"] for r in self.conn.execute("SELECT path, stars FROM ratings")}
+        return {r["path"]: r["stars"] for r in self.conn.execute("SELECT path, stars FROM ratings WHERE stars > 0")}
 
     def set_rating(self, path: str, stars: int):
-        """1–5 stars; 0 clears the rating."""
+        """1–5 stars; 0 clears the rating. A cleared rating is kept as 0 stars, so one left in the file's tags
+        (by another player, or a file that can't be written) doesn't come back at the next scan."""
         stars = max(0, min(5, int(stars)))
-        if stars:
-            self.conn.execute("INSERT OR REPLACE INTO ratings(path, stars, rated_at) VALUES(?,?,?)",
-                              (path, stars, time.time()))
-        else:
-            self.conn.execute("DELETE FROM ratings WHERE path=?", (path,))
+        self.conn.execute("INSERT OR REPLACE INTO ratings(path, stars, rated_at) VALUES(?,?,?)",
+                          (path, stars, time.time()))
         self.conn.commit()
 
     def set_liked(self, path: str, liked: bool):
@@ -705,6 +705,26 @@ class Database:
 
     def set_album_art(self, key: str, art: str):
         self.conn.execute("UPDATE tracks SET art=? WHERE album_key=?", (art, key))
+
+    def carry_file_caches(self, path: str, mtime: float, size: int):
+        """`path` was rewritten with new tags only (by this app): its row and its loudness measurement stay
+        right for the new file, so the next scan needn't read it again or ReplayGain analyse it again."""
+        self.conn.execute("UPDATE tracks SET mtime=?, size=? WHERE path=?", (mtime, size, path))
+        self.conn.execute("UPDATE loudness SET mtime=?, size=? WHERE path=?", (mtime, size, path))
+
+    def chosen_art(self, key: str):
+        """The cover you picked for an album (from a file or found online), or None."""
+        row = self.conn.execute("SELECT art FROM chosen_art WHERE album_key=?", (key,)).fetchone()
+        return row["art"] if row else None
+
+    def set_chosen_art(self, key: str, art: str):
+        self.conn.execute("INSERT OR REPLACE INTO chosen_art(album_key, art, chosen_at) VALUES(?,?,?)",
+                          (key, art, time.time()))
+        self.set_album_art(key, art)
+
+    def art_in_use(self, art: str) -> bool:
+        return bool(self.conn.execute("SELECT 1 FROM tracks WHERE art=? LIMIT 1", (art,)).fetchone()
+                    or self.conn.execute("SELECT 1 FROM chosen_art WHERE art=? LIMIT 1", (art,)).fetchone())
 
     def album_art_map(self) -> dict:
         cur = self.conn.execute(

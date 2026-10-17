@@ -80,9 +80,9 @@ def mono_samples(buf):
     return np.abs(raw.reshape(-1, channels)).max(axis=1) if channels > 1 else raw
 
 
-def cache_name(path):
+def cache_name(path, st=None):
     try:
-        st = os.stat(path)
+        st = st or os.stat(path)
     except OSError:
         return None
     key = f"{path}|{st.st_size}|{st.st_mtime_ns}".encode("utf-8", "surrogatepass")
@@ -241,6 +241,19 @@ class WaveformService(QObject):
         self._windows = {}  # song key -> (file, start s, end s) waiting for the file's envelope
         self._worker = _Worker(cache_dir, self)
         self._worker.done.connect(self._on_done)
+        from .core import tagedit
+
+        tagedit.on_rewritten(self._carry)  # a rating or tag saved into a song doesn't change its waveform
+
+    def _carry(self, path, before, after):
+        old, new = cache_name(path, before), cache_name(path, after)
+        if not old or not new or old == new:
+            return
+        for a, b in ((old, new), (old[:-3] + ".env.npz", new[:-3] + ".env.npz")):
+            try:
+                os.replace(self._cache_dir / a, self._cache_dir / b)
+            except OSError:
+                pass
 
     def peaks(self, path):
         """The waveform if known (memory or disk), else None."""
@@ -300,4 +313,7 @@ class WaveformService(QObject):
             self.ready.emit(key)
 
     def shutdown(self):
+        from .core import tagedit
+
+        tagedit.forget_rewritten(self._carry)
         self._worker.stop()

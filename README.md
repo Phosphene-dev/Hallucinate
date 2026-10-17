@@ -132,7 +132,7 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - Artist pages: a picture lit by its own colours, facts, your listening (plays, rank, first listen, plays per month), most played songs, the discography by year and albums they appear on; radio from their most played song.
 - Recap: a week, month or year of listening summed up (time, top artists, albums, songs and genres, new artists, the busiest day, longest streak, when you listen), with a highlights card to save as an image.
 - Folder view: browse your folders on disk with breadcrumbs, and play, shuffle or queue a folder with everything below it.
-- Star ratings (1–5, alongside Like) from the track menu, the player or Ctrl+1…5; ratings from other players' tags are read, and smart playlists can use them.
+- Star ratings (1–5, alongside Like) from the track menu, the player or Ctrl+1…5; ratings are saved in the songs' own tags (POPM, RATING/FMPS_RATING, WMA's rating) so other players see them, ratings from other players' tags are read, and smart playlists can use them.
 - CUE sheets: a single-file album with a .cue (or a sheet embedded in the file) appears as its separate songs, each with its own waveform, and plays gaplessly.
 - First-run welcome: choose your music folders, a theme and scrobbling on a fresh install.
 - Album menus and multi-select: right-click an album (or Ctrl/Shift+click several) to play, queue, add to a playlist, edit, remove from the library (files kept; Settings → Library brings them back) or move to the trash.
@@ -159,7 +159,7 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - ReplayGain (track/album, preamp, read from tags, or measured with EBU R128 for files without tags, which are never modified; new music can be measured after each scan by itself), optional crossfade (0–12 s), gapless playback that plays every track to its last sample, and a 10-band equalizer with presets (needs numpy).
 - The visualizer's FFT analysis runs on a worker thread and can be turned off ("React to the music").
 - Optional compact format/average-bitrate badges in track rows and the now-playing bar (Settings → Appearance); the display is off by default, shows approximate average kb/s, and leaves unavailable bitrates out rather than displaying zero.
-- Tag editor (single track or whole album; MP3, FLAC, Ogg/Opus, M4A, WMA, APE), with MusicBrainz lookup for a whole album's title, album artist, year, genre and track titles, a genre lookup for one album or (from Library health, reviewed before saving) every album without one, and cover art: set from an image file, fetch from MusicBrainz / Cover Art Archive, optionally embed in files.
+- Tag editor (single track or whole album; MP3, FLAC, Ogg/Opus, M4A, WMA, APE), with MusicBrainz lookup for a whole album's title, album artist, year, genre and track titles, a genre lookup for one album or (from Library health, reviewed before saving) every album without one, and cover art: set from an image file or fetch from MusicBrainz / Cover Art Archive, saved as `cover.jpg` in the album's folder and optionally embedded in the files. A cover you choose stays: the files' own pictures don't replace it.
 - Headphone correction from AutoEQ's profiles (search by model, or import a ParametricEQ / GraphicEQ file), applied under the equalizer bands, and headphone crossfeed (light, medium, strong). Optionally a separate equalizer for each output device, switched as devices come and go.
 - Lyrics panel with synced highlighting, and karaoke-style lyrics in Now Playing: embedded tags, sidecar `.lrc`, or LRCLIB (cached locally; switch it off in Settings → Internet & sharing). Nudge synced lyrics that run early or late and save the timing as an `.lrc` next to the song.
 - Import M3U, M3U8 and PLS playlists (matched by path, then artist and title, then file name) and export any playlist, Liked Songs or the queue as M3U8.
@@ -249,7 +249,7 @@ virtualized and thumbnails are cached under the data directory. `tests/test_perf
 library and asserts the UI thread is never blocked for long. For bigger collections, `scripts/scale_check.py` runs
 the whole app against a synthetic library (250,000 songs by default) and reports the worst stall for every page and
 action, `scripts/startup_check.py` times each step of starting up on it and measures memory, and
-`scripts/bench_library.py` times the queries behind them. With 250,000 songs the window is up about 0.8 s after
+`scripts/bench_library.py` times the queries behind them, and `scripts/soak_check.py` uses the app round and round to check its memory levels off instead of climbing. With 250,000 songs the window is up about 0.8 s after
 launch and the library has loaded in the background a few seconds later.
 
 ## Privacy

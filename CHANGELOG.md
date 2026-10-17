@@ -5,12 +5,34 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Added
+- Star ratings are saved in the songs' own tags too, so other players (foobar2000, MusicBee, Strawberry,
+  Windows) see them. On by default; switch it off in Settings → Library.
+- A cover you add is also saved as cover.jpg in the album's folder (not in a folder shared with other
+  albums, where it would become all of theirs). "Also embed in the audio files" is remembered, and both are
+  in Settings → Library.
+- MP4 and WMA ratings from other players are read too.
+
 ### Fixed
+- What you choose stays chosen:
+  - A cover you picked is no longer replaced by the songs' own picture when the files are read again.
+  - A rating you cleared no longer comes back from the file's tags at the next scan.
+  - Lyrics of your own (embedded, or an .lrc beside the song) now win over lyrics found online earlier.
+- Nothing is looked up again for no reason:
+  - When LRCLIB has no lyrics for a song, that's remembered for a month instead of asked again every play.
+  - Saving tags or a rating into a song no longer makes the app measure its loudness or draw its waveform
+    again (the audio is the same).
+- A rating of one star written as RATING=1 (foobar2000) was read as five stars.
+- Clearing a field in a WMA file's tags failed to save.
+- The cover saved for an album is written whole or not at all, and the one it replaces is removed instead of
+  piling up.
+- Two saves of the same song at once (a tag edit and a rating) can't undo each other.
+- A full rescan no longer waits on album and artist pages kept underneath for Back: they catch up when you
+  go back to them.
 - A CUE sheet whose last song starts past the end of its file is no longer read again on every library scan.
 - A star rating or like you just set no longer flips back for a moment when the lists refresh.
 - Without a private runtime folder (some X sessions, ssh), the control socket lives in a folder of its own
   that other users can't use, instead of a shared name another user could take first.
-
 - Debug info and crash reports now leave out song files, music folders and links, as well as the home
   folder. Log lines no longer name the album or station they're about.
 

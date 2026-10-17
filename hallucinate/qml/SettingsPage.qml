@@ -608,12 +608,30 @@ Item {
             id: sec_library
             objectName: "settings_library"
             title: "Library"
-            keywords: "music folders scan rescan health import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums backup export your data move computer"
+            keywords: "music folders scan rescan health tags files ratings stars cover art cover.jpg embed import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums backup export your data move computer"
             query: page.query
             Text {
                 textFormat: Text.PlainText
                 text: "Folders are scanned in the background and watched for changes."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            StyledCheck {
+                objectName: "ratingsInFiles"
+                text: "Save star ratings in the songs' own tags too, so other players see them"
+                checked: userLib.ratingsInFiles
+                onToggled: userLib.setRatingsInFiles(checked)
+            }
+            StyledCheck {
+                objectName: "coversToFolder"
+                text: "Save covers you add as cover.jpg in the album's folder"
+                checked: metaEditor.coversToFolder
+                onToggled: metaEditor.setCoversToFolder(checked)
+            }
+            StyledCheck {
+                objectName: "embedCovers"
+                text: "Also embed covers you add in the songs themselves"
+                checked: metaEditor.embedCovers
+                onToggled: metaEditor.setEmbedCovers(checked)
             }
             Row {
                 visible: library.hiddenCount > 0

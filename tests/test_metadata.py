@@ -535,3 +535,47 @@ def test_a_failed_tag_save_leaves_the_song_untouched(tmp_path, monkeypatch):
         tagedit.write_tags(str(src), {"title": "New"})
     assert src.read_bytes() == before
     assert [p.name for p in tmp_path.iterdir()] == ["a.flac"]  # no leftover copy
+
+
+def test_lyrics_found_nowhere_are_not_looked_up_every_time(qapp, lib, monkeypatch):
+    tmp, root = lib
+    calls = []
+    monkeypatch.setattr(lyrics, "fetch_lrclib", lambda a, t, *rest, **k: calls.append(t))  # nothing found
+    pl = FakePlayer()
+    ctl = LyricsController(tmp / "lib.db", pl)
+    try:
+        ctl.setOnlineLookup(True)
+        song = {"path": str(root / "01.mp3"), "artist": "Band", "title": "One", "album": "Disc", "duration": 3}
+        for other in ("02.mp3", "01.mp3"):
+            pl.current = dict(song)
+            pl.trackChanged.emit()
+            assert wait_for(lambda: ctl.status == "none")
+            pl.current = {**song, "path": str(root / other), "title": other}
+            pl.trackChanged.emit()
+            assert wait_for(lambda: ctl.status == "none")
+        assert calls.count("One") == 1  # asked once, remembered for a month
+    finally:
+        ctl.shutdown()
+
+
+def test_your_own_lrc_beats_lyrics_found_online_earlier(qapp, lib, monkeypatch):
+    tmp, root = lib
+    monkeypatch.setattr(lyrics, "fetch_lrclib", lambda *a, **k: ("", "words from online"))
+    pl = FakePlayer()
+    ctl = LyricsController(tmp / "lib.db", pl)
+    try:
+        ctl.setOnlineLookup(True)
+        song = {"path": str(root / "01.mp3"), "artist": "Band", "title": "One", "album": "Disc", "duration": 3}
+        pl.current = song
+        pl.trackChanged.emit()
+        assert wait_for(lambda: ctl.status == "found") and ctl.plain == "words from online"
+        (root / "01.lrc").write_text("[00:01.00]my own words", encoding="utf-8")
+        pl.current = {**song, "path": str(root / "02.mp3")}  # play something else, then come back
+        pl.trackChanged.emit()
+        assert wait_for(lambda: ctl.status != "loading")
+        pl.current = song
+        pl.trackChanged.emit()
+        assert wait_for(lambda: ctl.status == "found" and ctl.source != "LRCLIB")
+        assert [ln["text"] for ln in ctl.lines] == ["my own words"]
+    finally:
+        ctl.shutdown()

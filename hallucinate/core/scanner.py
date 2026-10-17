@@ -190,10 +190,14 @@ class Scanner:
             t["art"] = self._art[key]
             return
         path = None
-        if raw:
+        chosen = self.db.chosen_art(key)
+        if chosen and os.path.isfile(chosen):
+            path = chosen  # you picked this one: the file's own picture doesn't replace it
+        elif raw:
             path = os.path.join(self.art_dir, key + tags._image_ext(raw))
             from .atomic import write_atomic
 
+            os.makedirs(self.art_dir, exist_ok=True)  # the cover cache may have been cleared
             write_atomic(path, lambda fh: fh.write(raw))  # never a half-written cover, even if stopped
         else:
             path = tags.find_folder_art(directory)

@@ -99,3 +99,11 @@ def test_a_refresh_read_before_a_rating_does_not_undo_it(qapp, db):
         assert ul.rating("/a") == 0 and not ul.isLiked("/a")
     finally:
         ul.shutdown()
+
+
+def test_a_rating_you_cleared_stays_cleared_when_the_file_still_has_one(db):
+    add(db, "/a", rating=4)  # another player's rating, in the file
+    assert db.ratings()["/a"] == 4
+    db.set_rating("/a", 0)
+    add(db, "/a", rating=4)  # read again: the file's tags still say 4
+    assert "/a" not in db.ratings()
