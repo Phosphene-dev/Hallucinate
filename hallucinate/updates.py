@@ -203,11 +203,11 @@ class UpdateChecker(QObject):
                             "url": latest["url"]}
                 if kind == "appimage":  # beside the AppImage, so the swap is a rename on one filesystem
                     folder = os.path.dirname(os.environ["APPIMAGE"])
-                else:
-                    folder = tempfile.gettempdir()
+                else:  # a fresh private folder: nothing else can have put a file where the installer goes
+                    folder = tempfile.mkdtemp(prefix="hallucinate-update-")
                 dest = os.path.join(folder, f".{asset['name']}.part")
                 self._download(asset, dest, lambda f: self._installProgress.emit({"progress": f}), lambda: self._cancel)
-                return {"path": dest, "version": latest["version"]}
+                return {"path": dest, "version": latest["version"], "sha256": asset["sha256"]}
             except ValueError as exc:
                 logger.warning("Update download rejected: %s", exc)
                 return {"error": str(exc)}
@@ -242,11 +242,13 @@ class UpdateChecker(QObject):
         self._status = f"Installing Hallucinate {result['version']}…"
         self.changed.emit()
         try:
+            if result.get("sha256"):
+                selfupdate.verified(result["path"], result["sha256"])  # still the file that was checked
             if self._kind == "windows":
                 selfupdate.run_windows_installer(result["path"])
             else:
                 selfupdate.swap_appimage(result["path"], os.environ["APPIMAGE"], os.getpid())
-        except OSError as exc:
+        except (OSError, ValueError) as exc:
             logger.warning("Couldn't install the update: %s", exc)
             self._status = "Couldn't install the update"
             self.changed.emit()

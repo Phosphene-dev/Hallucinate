@@ -102,9 +102,19 @@ class _WebOnlyRedirects(urllib.request.HTTPRedirectHandler):
     """Follow redirects only to other web addresses (urllib already refuses file://, but not ftp://)."""
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
-        if not is_web_url(urllib.parse.urljoin(req.full_url, newurl)):
+        target = urllib.parse.urljoin(req.full_url, newurl)
+        if not is_web_url(target):
             raise NotWebLink(newurl)
-        return super().redirect_request(req, fp, code, msg, headers, newurl)
+        new = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new is not None and urllib.parse.urlsplit(target).netloc != urllib.parse.urlsplit(req.full_url).netloc:
+            # urllib forwards every header: a token meant for one server mustn't reach the next one
+            for name in list(new.headers):
+                if name.lower() in ("authorization", "cookie"):
+                    del new.headers[name]
+            for name in list(new.unredirected_hdrs):
+                if name.lower() in ("authorization", "cookie"):
+                    del new.unredirected_hdrs[name]
+        return new
 
 
 urllib.request.install_opener(urllib.request.build_opener(_WebOnlyRedirects))

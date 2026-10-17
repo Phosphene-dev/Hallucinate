@@ -46,6 +46,9 @@ def socket_candidates(env=None, platform=None):
     return out
 
 
+MAX_FRAME = 64 * 1024
+
+
 def encode_frame(op, payload):
     data = json.dumps(payload, separators=(",", ":")).encode()
     return struct.pack("<II", op, len(data)) + data
@@ -108,6 +111,11 @@ class _Conn:
             self._pipe = open(path, "r+b", buffering=0)  # noqa: SIM115
             return
         import socket
+        try:  # in a shared folder like /tmp, only a socket of your own: another user's could be listening in
+            if os.stat(path).st_uid != os.getuid():
+                raise OSError("not your Discord")
+        except AttributeError:
+            pass
         s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         s.settimeout(3)
         try:
@@ -137,6 +145,8 @@ class _Conn:
 
     def _recv(self):
         op, length = struct.unpack("<II", self._read(8))
+        if length > MAX_FRAME:  # Discord's answers are a few KB; anything this big isn't Discord
+            raise OSError("Discord's answer was far too large")
         return op, json.loads(self._read(length).decode() or "{}")
 
     def set_activity(self, activity):

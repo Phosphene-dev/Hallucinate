@@ -50,6 +50,7 @@ T.MenuItem {
             elide: Text.ElideRight
         }
         Text {  // the chosen option of a checkable item (playback speed, sorting)
+            textFormat: Text.PlainText
             visible: control.checkable && control.checked
             text: "\u2713"
             color: Theme.accent

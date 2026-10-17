@@ -90,6 +90,7 @@ def test_swap_appimage_replaces_and_relaunches_after_exit(tmp_path):
     calls = []
     env = {"HOME": "/home/me", "APPIMAGE": str(target), "APPDIR": "/tmp/.mount_abc", "ARGV0": "x",
            "LD_LIBRARY_PATH": "/tmp/.mount_abc/usr/lib", "PATH": "/usr/bin"}
+    selfupdate.verified(new, hashlib.sha256(b"new").hexdigest())  # as the updater does, just before swapping
     selfupdate.swap_appimage(new, target, 4242, env, popen=lambda args, **kw: calls.append((args, kw)))
     assert target.read_bytes() == b"new" and not new.exists() and target.stat().st_mode & 0o111
     args, kw = calls[0]
@@ -160,3 +161,41 @@ def test_no_self_install_for_packaged_copies():
     checker = updates.UpdateChecker(kind="")
     assert not checker.canInstall
     checker.shutdown()
+
+
+def test_an_update_swapped_after_its_check_is_refused(tmp_path):
+    good = hashlib.sha256(b"release").hexdigest()
+    part = tmp_path / ".x.part"
+    part.write_bytes(b"something else")
+    with pytest.raises(ValueError):
+        selfupdate.verified(part, good)
+    part.unlink()
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.write_bytes(b"release")
+    part.symlink_to(elsewhere)
+    with pytest.raises(ValueError):
+        selfupdate.verified(part, good)  # a link put in its place isn't followed
+
+
+def test_a_download_never_writes_through_a_planted_link(tmp_path):
+    victim = tmp_path / "victim"
+    victim.write_bytes(b"precious")
+    dest = tmp_path / ".x.part"
+    dest.symlink_to(victim)
+
+    class Resp:
+        def __init__(self):
+            self.left = [b"abc"]
+
+        def read(self, n):
+            return self.left.pop() if self.left else b""
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    asset = {"url": "https://example/x", "size": 3, "sha256": hashlib.sha256(b"abc").hexdigest()}
+    selfupdate.download(asset, dest, opener=lambda req, timeout=0, limit=0: Resp())
+    assert victim.read_bytes() == b"precious" and dest.read_bytes() == b"abc" and not dest.is_symlink()

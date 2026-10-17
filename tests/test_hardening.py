@@ -11,7 +11,7 @@ def test_every_text_element_is_plain_text():
     """Qt's default (AutoText) turns "<b>…" or "<img src=http://…>" in a song title into formatting and fetches.
     Every Text element must say Text.PlainText; add it to new ones."""
     missing = []
-    for f in sorted(QML.glob("*.qml")):
+    for f in sorted([*QML.glob("*.qml"), *QML.glob("HallucinateStyle/*.qml")]):
         lines = f.read_text(encoding="utf-8").split("\n")
         for i, line in enumerate(lines):
             if not re.match(r"^\s*(?:[A-Za-z_][\w.]*\s*:\s*)?Text \{", line):
@@ -196,3 +196,16 @@ def test_a_damaged_waveform_cache_file_is_recomputed(tmp_path):
     bad = tmp_path / "x.env.npz"
     bad.write_bytes(b"PK\x03\x04 truncated zip")
     assert Envelope.load(bad) is None and not bad.exists()
+
+
+def test_tokens_are_not_forwarded_to_another_server():
+    import urllib.request
+
+    from hallucinate.core import net
+
+    req = urllib.request.Request("https://api.listenbrainz.org/1/submit", headers={"Authorization": "Token secret"})
+    handler = net._WebOnlyRedirects()
+    same = handler.redirect_request(req, None, 302, "Found", {}, "https://api.listenbrainz.org/2/submit")
+    other = handler.redirect_request(req, None, 302, "Found", {}, "https://evil.example/collect")
+    assert "Token secret" in same.headers.values()
+    assert "Token secret" not in other.headers.values()
