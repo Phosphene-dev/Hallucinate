@@ -186,7 +186,7 @@ Item {
                 height: 128
                 Row {
                     anchors { left: parent.left; leftMargin: 22; verticalCenter: parent.verticalCenter }
-                    spacing: 36
+                    spacing: parent.width < 640 ? 16 : 36  // closer together in a narrow page, so the last one fits
                     Stat {
                         value: page.profile.plays ? page.profile.plays : "—"
                         label: page.profile.plays === 1 ? "play" : "plays"
