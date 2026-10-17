@@ -41,7 +41,7 @@ class ArtProvider(QQuickImageProvider):
         return px, path
 
     def _cache_path(self, path: str, px: int, mtime: float) -> Path:
-        digest = hashlib.sha1(f"{path}|{mtime}|{px}".encode("utf-8", "surrogateescape")).hexdigest()
+        digest = hashlib.sha1(f"{path}|{mtime}|{px}".encode("utf-8", "surrogateescape"), usedforsecurity=False).hexdigest()
         return self._dir / f"{digest}.jpg"
 
     def requestImage(self, image_id, size, requested_size):

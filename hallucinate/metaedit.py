@@ -201,7 +201,7 @@ class MetadataEditor(QObject):
     def _store_cover(self, db, album_key, data, embed):
         if not (data[:8] == b"\x89PNG\r\n\x1a\n" or data[:3] == b"\xff\xd8\xff"):
             raise tagedit.TagWriteError("Not a PNG or JPEG image")
-        name = f"{album_key}-{hashlib.sha1(data).hexdigest()[:8]}{_image_ext(data)}"
+        name = f"{album_key}-{hashlib.sha1(data, usedforsecurity=False).hexdigest()[:8]}{_image_ext(data)}"
         path = os.path.join(self._art_dir, name)
         os.makedirs(self._art_dir, exist_ok=True)
         with open(path, "wb") as fh:

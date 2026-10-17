@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 def api_signature(params: dict, secret: str) -> str:
     payload = "".join(f"{key}{params[key]}" for key in sorted(params) if key not in {"format", "callback"})
-    return hashlib.md5((payload + secret).encode("utf-8")).hexdigest()
+    return hashlib.md5((payload + secret).encode("utf-8"), usedforsecurity=False).hexdigest()
 
 
 def scrobble_threshold(duration_ms: int) -> int:

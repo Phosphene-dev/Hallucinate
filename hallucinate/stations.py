@@ -86,7 +86,7 @@ class Stations(QObject):
     def _icon_file(self, station):
         if not station.get("favicon"):
             return None
-        name = hashlib.sha1(station["favicon"].encode("utf-8")).hexdigest()[:20]
+        name = hashlib.sha1(station["favicon"].encode("utf-8"), usedforsecurity=False).hexdigest()[:20]
         return self._icons / name
 
     def _row(self, station):

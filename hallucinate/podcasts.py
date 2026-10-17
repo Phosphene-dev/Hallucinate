@@ -172,7 +172,7 @@ class Podcasts(QObject):
             return None
         if not url.startswith(("http://", "https://")):
             return Path(url) if os.path.isfile(url) else None
-        return self._images / hashlib.sha1(url.encode("utf-8")).hexdigest()[:24]
+        return self._images / hashlib.sha1(url.encode("utf-8"), usedforsecurity=False).hexdigest()[:24]
 
     def _art(self, url):
         f = self._image_file(url)

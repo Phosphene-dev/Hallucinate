@@ -85,7 +85,7 @@ def cache_name(path):
     except OSError:
         return None
     key = f"{path}|{st.st_size}|{st.st_mtime_ns}".encode("utf-8", "surrogatepass")
-    return hashlib.sha1(key).hexdigest() + ".wf"
+    return hashlib.sha1(key, usedforsecurity=False).hexdigest() + ".wf"
 
 
 class Envelope:
