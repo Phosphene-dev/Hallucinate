@@ -190,8 +190,17 @@ class StreamsDB:
         existing = self.station_by_url(info["url"])
         if existing:
             return existing["id"]
+        from . import net
+        from .stations import web_homepage
+
+        if not net.is_web_url(info.get("url")):
+            raise ValueError("A station's stream is a web link")
         fields = {k: info.get(k) or ("" if k != "bitrate" else 0) for k in STATION_FIELDS}
+        for k in STATION_FIELDS:  # text stays text and numbers numbers, wherever the station came from
+            fields[k] = (fields[k] if isinstance(fields[k], int) else 0) if k == "bitrate" else str(fields[k])
         fields["name"] = (fields["name"] or info["url"]).strip()
+        fields["homepage"] = web_homepage(fields["homepage"])
+        fields["favicon"] = fields["favicon"] if net.is_web_url(fields["favicon"]) else ""
         cur = self.conn.execute(
             f"INSERT INTO stations({', '.join(fields)}, added) VALUES ({', '.join('?' * len(fields))}, ?)",
             (*fields.values(), time.time()))

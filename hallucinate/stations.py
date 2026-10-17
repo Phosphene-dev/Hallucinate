@@ -151,7 +151,7 @@ class Stations(QObject):
         def work():
             try:
                 info = st.resolve(url)
-            except (OSError, ValueError) as exc:
+            except Exception as exc:  # noqa: BLE001 - a worker must always report back
                 return ("added", None, f"Couldn't add that station: {net.describe(exc)}")
             info["name"] = (name or "").strip() or info.get("name") or urlname(info["url"])
             return ("added", info, "")
@@ -303,7 +303,7 @@ class Stations(QObject):
         def work():
             try:
                 return ("results", query, st.search_directory(query))
-            except (OSError, ValueError) as exc:
+            except Exception as exc:  # noqa: BLE001 - a worker must always report back
                 logger.warning("Radio Browser search failed: %s", exc)
                 return ("results", query, None)
 
@@ -384,7 +384,7 @@ class Stations(QObject):
         def work():
             try:
                 title, _ = st.read_stream_title(url)
-            except (OSError, ValueError):
+            except Exception:  # noqa: BLE001 - a worker must always report back
                 return ("title", None, None)
             artist, song = st.split_title(title, station)
             return ("title", (token, url), (artist, song, self._album_in_library(artist, song)))

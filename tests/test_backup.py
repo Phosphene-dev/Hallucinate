@@ -72,3 +72,36 @@ def test_not_a_backup(tmp_path):
         f.write(b'{"format": "something else"}')
     with pytest.raises(ValueError):
         backup.read(tmp_path / "other")
+
+
+def test_a_damaged_or_crafted_backup_restores_what_is_sound(tmp_path):
+    make(tmp_path, "dst").close()
+    crafted = {"format": "hallucinate-backup", "version": 1,
+               "likes": [{"path": "/music/ok.flac", "liked_at": 1.0}, {"liked_at": 2}, "junk", {"path": ["x"]}],
+               "ratings": [{"path": "/music/ok.flac", "stars": 99}],
+               "plays": [{"path": "/m.flac", "count": "lots"}],
+               "playlists": [{"name": "P", "paths": ["/a.flac", 5, None]}, {"paths": []}],
+               "stations": [{"url": "file:///etc/passwd", "name": "x"}, {"url": "http://fm/live", "name": "FM",
+                                                                         "homepage": "file:///C:/x.exe"}],
+               "podcasts": [{"title": "S", "feed_url": "https://s/feed",
+                             "episodes": [{"guid": "1", "url": "file:///etc/shadow"}, {"title": "no guid"}]}],
+               "play_log": {"not": "a list"}}
+    out = tmp_path / "crafted.hallucinate-backup"
+    out.write_bytes(gzip.compress(json.dumps(crafted).encode()))
+    backup.restore(backup.read(out), tmp_path / "dst.db", tmp_path / "dst-streams.db")
+    dst = Database(tmp_path / "dst.db")
+    assert [r[0] for r in dst.conn.execute("SELECT path FROM likes")] == ["/music/ok.flac"]
+    assert dst.conn.execute("SELECT stars FROM ratings").fetchone()[0] == 5
+    assert [r[0] for r in dst.conn.execute("SELECT path FROM playlist_items")] == ["/a.flac"]
+    dst.close()
+    s2 = StreamsDB(tmp_path / "dst-streams.db")
+    assert [(s["url"], s["homepage"]) for s in s2.stations()] == [("http://fm/live", "")]
+    assert [e["url"] for e in s2.episodes()] == [""]
+    s2.close()
+
+
+def test_a_backup_bomb_is_refused(tmp_path):
+    bomb = tmp_path / "bomb.hallucinate-backup"
+    bomb.write_bytes(gzip.compress(b'{"format": "hallucinate-backup", "x": "' + b"a" * (backup.MAX_BYTES + 10) + b'"}'))
+    with pytest.raises(ValueError):
+        backup.read(bomb)

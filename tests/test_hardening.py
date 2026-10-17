@@ -2,6 +2,8 @@
 import re
 from pathlib import Path
 
+import pytest
+
 QML = Path(__file__).parents[1] / "hallucinate" / "qml"
 
 
@@ -107,3 +109,70 @@ def test_network_answers_are_size_capped(monkeypatch):
     monkeypatch.setattr(net.urllib.request, "urlopen", fake(json.dumps({"plainLyrics": "la" * 5000}).encode()))
     with pytest.raises(OSError):
         lyrics.fetch_lrclib("Artist", "Title")
+
+
+def test_only_web_links_are_ever_fetched(tmp_path):
+    from hallucinate.core import net
+
+    secret = tmp_path / "secret.txt"
+    secret.write_text("private")
+    for url in (secret.as_uri(), "ftp://example.com/x", "data:,hi", "javascript:alert(1)", "/etc/passwd"):
+        with pytest.raises(net.NotWebLink):
+            net.urlopen(url)
+
+
+def test_a_feed_cannot_point_episodes_at_local_files():
+    from hallucinate.core import podcasts as pc
+
+    feed = b"""<rss><channel><title>Evil</title><link>file:///etc</link><image><url>file:///etc/x.png</url></image>
+      <item><title>Key</title><guid>1</guid><enclosure url="file:///home/u/.ssh/id_rsa" type="audio/mpeg"/></item>
+      <item><title>Real</title><guid>2</guid><enclosure url="https://example.com/2.mp3" type="audio/mpeg"/></item>
+    </channel></rss>"""
+    podcast, episodes = pc.parse_feed(feed, "https://example.com/feed")
+    assert [e["title"] for e in episodes] == ["Real"]
+    assert podcast["link"] == "" and podcast["image"] == ""
+
+
+def test_broken_http_answers_are_ordinary_network_errors(monkeypatch):
+    import http.client
+    import urllib.error
+
+    from hallucinate.core import net
+
+    def broken(*a, **k):
+        raise http.client.BadStatusLine("garbage")
+
+    monkeypatch.setattr(net.urllib.request, "urlopen", broken)
+    with pytest.raises(urllib.error.URLError):
+        net.urlopen("https://example.com/")
+
+
+def test_station_websites_are_only_web_links():
+    from hallucinate.core.stations import web_homepage
+
+    assert web_homepage("www.example.com") == "https://www.example.com"
+    assert web_homepage("http://radio.example/") == "http://radio.example/"
+    for bad in ("file:///C:/x.exe", "smb://host/share", "javascript:alert(1)", "search-ms:query=x", "", "a b"):
+        assert web_homepage(bad) == ""
+
+
+def test_playlists_pointing_at_each_other_stop(monkeypatch):
+    from hallucinate.core import stations as st
+
+    class Resp:
+        def __init__(self, url):
+            self.headers = {"Content-Type": "audio/x-scpls"}
+            self.url = url
+
+        def read(self, n=-1):
+            return f"[playlist]\nFile1={self.url}x\nNumberOfEntries=1\n".encode()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    monkeypatch.setattr(st.net, "urlopen", lambda req, timeout=0, limit=0: Resp(req.full_url))
+    with pytest.raises(OSError):
+        st.resolve("https://example.com/a.pls")

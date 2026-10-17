@@ -60,7 +60,7 @@ Item {
             visible: (stationMenu.station.homepage || "").length > 0
             height: visible ? implicitHeight : 0
             text: "Open the station's website"; icon.name: "expand"
-            onTriggered: Qt.openUrlExternally(stationMenu.station.homepage)
+            onTriggered: if (!shell.openWebLink(stationMenu.station.homepage)) Nav.notify("That station's website link can't be opened")
         }
         MenuSeparator {}
         MenuItem {

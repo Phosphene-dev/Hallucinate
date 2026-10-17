@@ -5,6 +5,7 @@ Every request goes through core.net, so offline mode stops all of it."""
 import json
 import re
 import socket
+import time
 import urllib.parse
 import urllib.request
 
@@ -96,6 +97,7 @@ def _request(url, icy=False):
 def read_stream_title(url, timeout=8):
     """Connect to a stream just long enough to read its first metadata block: (title, headers). title is ""
     when the stream sends none; headers are the lower-cased response headers (icy-name, icy-genre, …)."""
+    deadline = time.monotonic() + timeout * 2  # a server trickling bytes can't hold a worker for long
     with net.urlopen(_request(url, icy=True), timeout=timeout, limit=1_000_000) as resp:
         headers = {k.lower(): v for k, v in resp.headers.items()}
         try:
@@ -106,6 +108,8 @@ def read_stream_title(url, timeout=8):
             return "", headers
         left = metaint
         while left > 0:
+            if time.monotonic() > deadline:
+                return "", headers
             chunk = resp.read(min(left, 65536))
             if not chunk:
                 return "", headers
@@ -117,13 +121,33 @@ def read_stream_title(url, timeout=8):
         return parse_icy_block(block), headers
 
 
-def resolve(url, timeout=10):
+def web_homepage(url):
+    """A station's website as something safe to open: an http(s) address (a bare "www.example.com" gets
+    https://), or "" for anything else (file:, smb:, javascript:, a custom scheme…), since the value comes
+    from the station's own server, the directory or a backup."""
+    url = (url or "").strip()
+    if not url or any(c.isspace() for c in url):
+        return ""
+    if "://" not in url and "." in url.split("/")[0] and ":" not in url.split("/")[0]:
+        url = "https://" + url
+    parts = urllib.parse.urlsplit(url)
+    return url if parts.scheme.lower() in ("http", "https") and parts.netloc else ""
+
+
+MAX_PLAYLIST_HOPS = 3  # a playlist naming a playlist naming a stream is as deep as real stations go
+
+
+def resolve(url, timeout=10, _seen=None):
     """Where a link the user pasted actually streams from, with what the server says about it:
     {"url", "name", "tags", "homepage", "codec", "bitrate"}. A playlist link (.pls, .m3u) is opened and its
     first stream used. Raises OSError when nothing playable answers."""
     url = url.strip()
     if not is_stream_url(url):
         raise OSError("That isn't a web link (it should start with http:// or https://)")
+    seen = _seen if _seen is not None else set()
+    if url in seen or len(seen) >= MAX_PLAYLIST_HOPS:
+        raise OSError("The playlist only points at more playlists")
+    seen.add(url)
     lower = urllib.parse.urlsplit(url).path.lower()
     looks_like_list = lower.endswith((".pls", ".m3u", ".xspf"))
     with net.urlopen(_request(url, icy=True), timeout=timeout, limit=1_000_000) as resp:
@@ -136,11 +160,14 @@ def resolve(url, timeout=10):
                 if "#EXT-X-" in text:
                     return {"url": url, "name": "", "tags": "", "homepage": "", "codec": "HLS", "bitrate": 0}
                 raise OSError("The playlist has no stream links in it")
-            info = resolve(streams[0], timeout) if streams[0] != url else {"url": streams[0]}
-            info["name"] = info.get("name") or playlist_titles(text).get(streams[0], "")
-            return info
-        if kind.startswith(("text/html", "application/json")):
+            first = streams[0]
+            title = playlist_titles(text).get(first, "")
+        elif kind.startswith(("text/html", "application/json")):
             raise OSError("That link is a web page, not a stream")
+    if looks_like_list or kind in PLAYLIST_TYPES:  # the playlist's connection is closed before following it
+        info = resolve(first, timeout, seen)
+        info["name"] = info.get("name") or title
+        return info
     codec = {"audio/mpeg": "MP3", "audio/aac": "AAC", "audio/aacp": "AAC+", "audio/ogg": "Ogg",
              "application/ogg": "Ogg", "audio/flac": "FLAC", "application/vnd.apple.mpegurl": "HLS",
              "application/x-mpegurl": "HLS"}.get(kind, "")
@@ -149,7 +176,7 @@ def resolve(url, timeout=10):
     except ValueError:
         bitrate = 0
     return {"url": url, "name": (headers.get("icy-name") or "").strip(), "tags": (headers.get("icy-genre") or "").strip(),
-            "homepage": (headers.get("icy-url") or "").strip(), "codec": codec, "bitrate": bitrate}
+            "homepage": web_homepage(headers.get("icy-url")), "codec": codec, "bitrate": bitrate}
 
 
 # --- Radio Browser ---------------------------------------------------------------------------------------
@@ -171,15 +198,29 @@ def directory_servers():
     return names or list(FALLBACK_SERVERS)
 
 
+def _int(value):
+    try:
+        return max(0, int(value or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _str(value):
+    return value.strip() if isinstance(value, str) else ""
+
+
 def _station_from_directory(item):
-    url = (item.get("url_resolved") or item.get("url") or "").strip()
+    """A directory entry as a station. Anyone can add or edit entries there, so every field is checked: text
+    stays text, numbers numbers, and links only web links."""
+    url = _str(item.get("url_resolved")) or _str(item.get("url"))
+    favicon = _str(item.get("favicon"))
     return {
-        "name": (item.get("name") or "").strip(), "url": url, "homepage": (item.get("homepage") or "").strip(),
-        "favicon": (item.get("favicon") or "").strip(), "tags": ", ".join(
-            t.strip() for t in (item.get("tags") or "").split(",") if t.strip())[:200],
-        "country": (item.get("country") or "").strip(), "codec": (item.get("codec") or "").strip(),
-        "bitrate": int(item.get("bitrate") or 0), "uuid": (item.get("stationuuid") or "").strip(),
-        "votes": int(item.get("votes") or 0),
+        "name": _str(item.get("name"))[:200], "url": url, "homepage": web_homepage(_str(item.get("homepage"))),
+        "favicon": favicon if net.is_web_url(favicon) else "", "tags": ", ".join(
+            t.strip() for t in _str(item.get("tags")).split(",") if t.strip())[:200],
+        "country": _str(item.get("country"))[:80], "codec": _str(item.get("codec"))[:20],
+        "bitrate": _int(item.get("bitrate")), "uuid": _str(item.get("stationuuid"))[:64],
+        "votes": _int(item.get("votes")),
     }
 
 
@@ -196,6 +237,8 @@ def search_directory(query, limit=60, servers=None, timeout=10):
                 with net.urlopen(_request(url), timeout=timeout, limit=8_000_000) as resp:
                     data = json.loads(resp.read().decode("utf-8"))
                 for item in data if isinstance(data, list) else []:
+                    if not isinstance(item, dict):
+                        continue
                     st = _station_from_directory(item)
                     if st["url"] and is_stream_url(st["url"]) and st["uuid"] not in seen:
                         seen.add(st["uuid"])

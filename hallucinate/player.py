@@ -645,8 +645,8 @@ class Player(QObject):
             curve = [[float(f), float(g)] for f, g in json.loads(curve_json)]
         except (TypeError, ValueError):
             return
-        if len(curve) < 2 or not name.strip():
-            return
+        if len(curve) < 2 or not name.strip() or not all(math.isfinite(f) and math.isfinite(g) for f, g in curve):
+            return  # nan or inf would make the filter (and the sound) garbage
         self._headphone = {"name": name.strip(), "curve": curve}
         if not self._eq_enabled and eq.available():
             self._eq_enabled = True

@@ -459,7 +459,7 @@ class Podcasts(QObject):
         def work():
             try:
                 podcast, episodes, final = pc.fetch_feed(url)
-            except (OSError, ValueError) as exc:
+            except Exception as exc:  # noqa: BLE001 - a worker must always report back
                 return ("followed", None, f"Couldn't follow that: {net.describe(exc)}")
             return ("followed", (podcast, episodes, final), "")
 
@@ -474,7 +474,7 @@ class Podcasts(QObject):
         def work():
             try:
                 podcast, episodes = pc.scan_folder(path)
-            except OSError as exc:
+            except Exception as exc:  # noqa: BLE001 - a worker must always report back
                 return ("folder", None, str(exc))
             return ("folder", (podcast, episodes), "")
 
@@ -523,7 +523,7 @@ class Podcasts(QObject):
                 info, episodes, final = pc.fetch_feed(p["feed_url"])
                 info["feed_url"] = final
                 return ("refreshed", (p["id"], info, episodes, quiet), "")
-            except (OSError, ValueError) as exc:
+            except Exception as exc:  # noqa: BLE001 - a worker must always report back
                 return ("refreshed", (p["id"], None, None, quiet), net.describe(exc))
 
         self._pool.submit(lambda: self._done.emit(work()))
@@ -657,7 +657,7 @@ class Podcasts(QObject):
                 return ("downloaded", episode_id, path)
             except InterruptedError:
                 return ("downloaded", episode_id, None)
-            except OSError as exc:
+            except Exception as exc:  # noqa: BLE001 - a worker must always report back
                 logger.warning("Episode download failed: %s", exc)
                 return ("downloaded", episode_id, OSError(str(exc)))
 
@@ -761,7 +761,7 @@ class Podcasts(QObject):
         def work():
             try:
                 return ("results", query, pc.search_directory(query))
-            except (OSError, ValueError) as exc:
+            except Exception as exc:  # noqa: BLE001 - a worker must always report back
                 logger.warning("Podcast search failed: %s", exc)
                 return ("results", query, None)
 
@@ -861,7 +861,7 @@ class Podcasts(QObject):
             if not chapters and e.get("chapters_url") and not net.is_offline():
                 try:
                     chapters = pc.fetch_chapters(e["chapters_url"])
-                except (OSError, ValueError):
+                except Exception:  # noqa: BLE001 - a worker must always report back
                     chapters = []
             return ("chapters", episode_id, chapters)
 

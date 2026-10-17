@@ -46,8 +46,9 @@ def find_releases(artist, album, limit=5, sleep=time.sleep):
                 raise ServiceError(f"MusicBrainz is having trouble right now (HTTP {exc.code}); "
                                    "try again in a minute") from exc
             sleep(1.1)
+    releases = data.get("releases") if isinstance(data, dict) else None
     return [(r["id"], (r.get("release-group") or {}).get("id") or "")
-            for r in data.get("releases", []) if r.get("id")]
+            for r in releases or [] if isinstance(r, dict) and isinstance(r.get("id"), str)]
 
 
 def find_release_ids(artist, album, limit=5):

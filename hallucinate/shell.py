@@ -1,5 +1,6 @@
 """Desktop integration: system tray icon, close-to-tray and the mini player window."""
 import os
+import sqlite3
 import sys
 
 from PySide6.QtCore import Property, QObject, QSettings, Signal, Slot
@@ -341,6 +342,19 @@ class DesktopShell(QObject):
         return diagnostics.report(player=self._player, window=self._window,
                                   **getattr(self, "_report_sources", {}))
 
+    @Slot(str, result=bool)
+    def openWebLink(self, url):
+        """Open a link that came from outside (a station's website) in the browser, but only an http(s)
+        address: a file:, smb: or custom-scheme link could run a program or leak a password hash. Returns
+        whether it was opened."""
+        from PySide6.QtCore import QUrl
+        from PySide6.QtGui import QDesktopServices
+
+        from .core.stations import web_homepage
+
+        safe = web_homepage(url)
+        return bool(safe) and QDesktopServices.openUrl(QUrl(safe, QUrl.ParsingMode.StrictMode))
+
     @Slot(str)
     def copyText(self, text):
         self._app.clipboard().setText(text)
@@ -414,7 +428,7 @@ class DesktopShell(QObject):
             path += ".hallucinate-backup"
         try:
             s = backup.export(library_db, streams_db, path)
-        except (OSError, ValueError) as exc:
+        except (OSError, ValueError, sqlite3.Error) as exc:
             return f"Couldn't save the backup: {exc}"
         return (f"Backed up {s['likes']} likes, {s['ratings']} ratings, {s['playlists']} playlists, "
                 f"{s['listens']} listens, {s['stations']} stations and {s['podcasts']} shows")
@@ -431,8 +445,8 @@ class DesktopShell(QObject):
         path = QUrl(url).toLocalFile() if url.startswith("file:") else url
         try:
             s = backup.restore(backup.read(path), library_db, streams_db)
-        except (OSError, ValueError) as exc:
-            return str(exc)
+        except (OSError, ValueError, sqlite3.Error) as exc:
+            return f"Couldn't restore that backup: {exc}"
         if after is not None:
             after()
         return (f"Restored {s['likes']} likes, {s['ratings']} ratings, {s['playlists']} playlists, "
