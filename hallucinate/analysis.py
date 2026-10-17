@@ -21,7 +21,7 @@ import time
 import numpy as np
 from PySide6.QtCore import QObject, QProcess, QTimer, Signal, Slot
 
-STALL_S = 20.0  # no progress for this long: the helper is stuck, so it's ended
+STALL_S = 45.0  # no progress for this long: the helper is stuck, so it's ended (a busy disk can be slow)
 IDLE_MS = 60_000  # the helper quits after this long with nothing to do
 BEAT_MS = 1000
 

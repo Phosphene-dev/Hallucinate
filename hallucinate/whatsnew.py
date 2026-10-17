@@ -2,6 +2,11 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "0.9.9.6": [
+        "Saving genres found online for many albums is much faster, shows how far it has got (with Stop), "
+        "and no longer makes the library rescan over and over.",
+        "Tags that fit in the room a file keeps for them are written in place, so editing tags is quicker too.",
+    ],
     "0.9.9.5": [
         "Fixed: the window could stop responding while ReplayGain measured your music. Songs are now measured "
         "in a separate helper, so a file the decoder chokes on can't freeze the app.",

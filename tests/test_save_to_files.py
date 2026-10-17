@@ -179,3 +179,33 @@ def test_clearing_a_field_in_a_wma_file_saves(tmp_path):
     tagedit.write_tags(path, {"genre": "", "title": "New"})
     tags = mutagen.File(path).tags
     assert "WM/Genre" not in tags and str(tags["Title"][0]) == "New"
+
+
+@pytest.mark.parametrize("ext", ["flac", "mp3", "m4a"])
+def test_a_tag_that_fits_is_written_in_place_and_one_that_doesnt_in_a_copy(tmp_path, monkeypatch, ext):
+    """Writing a genre into a few thousand songs mustn't copy every file: when the new tags fit in the room the
+    file keeps for them, only that room is rewritten. When they don't, it's done in a copy, as before."""
+    import hashlib
+    import shutil
+
+    from audio import FFMPEG, encode
+
+    from hallucinate.core import tagedit, tags
+
+    if not FFMPEG:
+        pytest.skip("ffmpeg not installed")
+    song = encode(tmp_path / f"a.{ext}", ext, seconds=1, title="x", artist="A", album="B")
+    tagedit.write_tags(str(song), {"genre": "Ambient"})  # (gives every format room for tags)
+    copies, real = [], shutil.copy2
+    monkeypatch.setattr(shutil, "copy2", lambda *a, **k: (copies.append(1), real(*a, **k))[1])
+    tagedit.write_tags(str(song), {"genre": "IDM"})
+    assert copies == [] and tags.read_track(str(song), art_known=lambda k: False)["genre"] == "IDM"
+    before = hashlib.sha256(song.read_bytes()).hexdigest()
+    f = tagedit._open(str(song))
+    {"id3": tagedit._w_id3, "vorbis": tagedit._w_vorbis, "mp4": tagedit._w_mp4}[tagedit._kind(f)](
+        f, tagedit._clean({"title": "y" * 50000}))
+    assert tagedit._save_in_place(f, str(song)) is False  # doesn't fit: nothing written...
+    assert hashlib.sha256(song.read_bytes()).hexdigest() == before
+    tagedit.write_tags(str(song), {"title": "y" * 50000})  # ...so it goes through a copy
+    got = tags.read_track(str(song), art_known=lambda k: False)
+    assert copies == [1] and got["title"] == "y" * 50000 and got["genre"] == "IDM" and got["duration"] > 0.9

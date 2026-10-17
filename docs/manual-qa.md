@@ -106,7 +106,13 @@ finding, following and playing podcasts.
 - [ ] The whole app from the keyboard alone: Tab through every page, arrows in lists, Enter to play, Menu key
   (or Shift+F10) for menus, Esc closes dialogs.
 
-### 10. New in 0.9.9.5
+### 10. New in 0.9.9.6
+- [ ] Library health → Albums without a genre → **Find all online**, then save them all: "Saving genres to your
+  files: n of m albums" counts up, the number of albums without a genre goes down as it goes, and the library
+  doesn't keep rescanning. **Stop** part-way keeps the ones done.
+- [ ] Edit a song's tags (a genre, a rating): it saves at once, and the song still plays.
+
+### 11. New in 0.9.9.5
 - [ ] Settings → **Measure songs without ReplayGain** (search "ReplayGain") on your whole library: the window keeps
   responding throughout, and it finishes (a few songs may count as failed). `htop` shows a second Hallucinate
   process while it measures, gone a minute after.
@@ -116,7 +122,7 @@ finding, following and playing podcasts.
   Settings runs off the right edge, and the player bar's title, badges, controls and time don't overlap.
 - [ ] Settings → Appearance → the Shrimp Boat accent (peach).
 
-### 11. New in 0.9.9.4
+### 12. New in 0.9.9.4
 - [ ] **Leave it open overnight** with a radio station restored from last time, not playing: still responding
   in the morning. Then press play: the station connects and plays what's on now.
 - [ ] Pause a station for a few minutes, then play: it reconnects without fuss.
@@ -132,7 +138,7 @@ finding, following and playing podcasts.
 - [ ] Lock your keyring (or log in without it unlocked) and start the app: it opens, and Last.fm says it's
   waiting for the keyring.
 
-### 12. New in 0.9.9.3
+### 13. New in 0.9.9.3
 - [ ] Sidebar: drag entries into a new order, right-click → Move up/down, Alt+Up/Down on a focused entry, and the
   list in Settings → Features (with Reset). The order survives a restart, and switching a page off and on keeps
   its place.
@@ -151,7 +157,7 @@ finding, following and playing podcasts.
 - [ ] CPU with the window focused and music playing, on your real GPU (`htop`): note the number; turn off
   **Animated background** in Settings → Appearance and note it again.
 
-### 13. macOS (Apple Silicon)
+### 14. macOS (Apple Silicon)
 The macOS app isn't signed, so the first start needs **right-click → Open** (or `xattr -dr
 com.apple.quarantine /Applications/Hallucinate.app`). Then:
 - [ ] It opens, scans `~/Music` or a chosen folder, and plays FLAC, MP3, AAC/ALAC, Opus and WAV.

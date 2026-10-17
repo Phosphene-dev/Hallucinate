@@ -5,6 +5,23 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.9.6] - 2026-10-17
+
+Saving genres for many albums at once works properly: fast, with progress, and without endless rescans.
+
+### Fixed
+- Saving genres for a few hundred albums ("Find all online") seemed not to work. Every song was copied whole
+  to write its tag, so it took a very long time, in the background with nothing to show for it. Meanwhile
+  the library rescanned over and over, and finding again turned up the same albums. Now:
+  - When the new tags fit in the room a file keeps for them (the usual case), only that room is rewritten,
+    with no copy. A file that has to grow is still written in a copy that then replaces it.
+  - Library health shows "Saving genres to your files: 34 of 221 albums", with Stop, and the count of
+    albums without a genre goes down as it goes. Find all waits until the saving is done.
+  - One album that can't be written no longer stops the rest.
+  - Hallucinate's own tag saves no longer set off a library rescan.
+- ReplayGain measuring gives a song longer before counting it as unreadable, so a busy disk doesn't make
+  songs fail.
+
 ## [0.9.9.5] - 2026-10-17
 
 A fix for the window freezing while ReplayGain measured, visualizers that run on every graphics driver, and

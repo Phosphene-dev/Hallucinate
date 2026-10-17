@@ -844,7 +844,11 @@ class Library(QObject):
             self._pending = False
             self.rescan()
 
-    def _on_dir_changed(self, _path):
+    def _on_dir_changed(self, path):
+        from .core import tagedit
+
+        if tagedit.written_recently(path):
+            return  # Hallucinate's own tag saves (they update the library themselves): no need to scan again
         self._debounce.start()
 
     # --- removing albums ---------------------------------------------------------------------

@@ -3,6 +3,7 @@ import base64
 import functools
 import os
 import threading
+import time
 import uuid
 
 import mutagen
@@ -110,28 +111,80 @@ def _kind(f):
     return None
 
 
+_written_dirs = {}  # folder -> when Hallucinate last wrote a song's tags in it (see written_recently)
+_written_lock = threading.Lock()
+
+
+def _note_writing(path):
+    with _written_lock:
+        _written_dirs[os.path.dirname(os.path.abspath(path))] = time.monotonic()
+
+
+def written_recently(folder, within=10.0):
+    """Whether Hallucinate itself wrote tags in `folder` in the last `within` seconds: its own saves (and their
+    temporary copies) change the folder, and the library needn't scan it again for that."""
+    with _written_lock:
+        when = _written_dirs.get(os.path.abspath(folder))
+    return when is not None and time.monotonic() - when < within
+
+
+class _WontFit(Exception):
+    pass
+
+
+def _keep_in_place(info):
+    """mutagen's padding choice: keep the file's size (the new tags fit in the room it keeps for them), or stop
+    before anything is written."""
+    if info.padding < 0:
+        raise _WontFit
+    return info.padding
+
+
+def _save_in_place(f, path):
+    """Rewrite only the tags' own space, when the new tags fit in it (the usual case: files keep room for
+    tags). The audio isn't moved or touched, so nothing needs copying. False when they don't fit: then nothing
+    was written."""
+    from mutagen.flac import FLAC
+    from mutagen.mp3 import MP3
+    from mutagen.mp4 import MP4
+
+    if not isinstance(f, (FLAC, MP3, MP4)) or (isinstance(f, MP3) and f.tags is None):
+        return False
+    try:
+        f.save(path, padding=_keep_in_place)
+    except _WontFit:
+        return False
+    return True
+
+
 def _save_safely(f, path):
-    """Save `f`'s tags without risking the song: into a copy next to it, which then replaces it. Saving in place
-    rewrites the file, and a crash, a full disk or a pulled drive half-way would leave the audio damaged."""
+    """Save `f`'s tags without risking the song. When they fit in the room the file keeps for tags, only that
+    room is rewritten. Otherwise the file has to grow, and mutagen would move the audio along inside it: a
+    crash, a full disk or a pulled drive half-way would leave it damaged, so that is done in a copy next to it,
+    which then replaces it."""
     import os
     import shutil
 
     path = os.fspath(path)
     before = os.stat(path)
-    folder, name = os.path.split(path)
-    tmp = os.path.join(folder, f".{name}.{uuid.uuid4().hex[:8]}.hallucinate-tmp")
-    try:
-        shutil.copy2(path, tmp)
-        f.save(tmp)
-        with open(tmp, "rb+") as written:
-            os.fsync(written.fileno())
-        os.replace(tmp, path)
-    except BaseException:
+    _note_writing(path)
+    if not _save_in_place(f, path):
+        folder, name = os.path.split(path)
+        tmp = os.path.join(folder, f".{name}.{uuid.uuid4().hex[:8]}.hallucinate-tmp")
         try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
+            shutil.copy2(path, tmp)
+            f.save(tmp)
+            with open(tmp, "rb+") as written:
+                os.fsync(written.fileno())
+            os.replace(tmp, path)
+        except BaseException:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
+        finally:
+            _note_writing(path)
     after = os.stat(path)
     for listener in list(_rewritten):
         try:
