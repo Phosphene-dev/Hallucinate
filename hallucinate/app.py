@@ -162,6 +162,7 @@ def main(argv=None) -> int:
     from .stations import Stations
 
     stations = Stations(paths.data_dir() / "streams.db", paths.cache_dir(), player)
+    stations.setLibraryDb(paths.db_path())
     podcasts = Podcasts(paths.data_dir() / "streams.db", paths.data_dir(), paths.cache_dir(), player)
 
     def apply_features():
@@ -229,6 +230,7 @@ def main(argv=None) -> int:
         window.frameSwapped.connect(lambda: _mark("first-frame"), Qt.ConnectionType.SingleShotConnection)
         library.readyChanged.connect(lambda: library.ready and _mark("library-ready"))
     shell.setWindow(engine.rootObjects()[0])
+    freeze_watch = crashlog.watch_freezes()  # noqa: F841 - kept alive for the run
     control.setRaiseCallback(shell.showMain)
     mpris = None
     try:

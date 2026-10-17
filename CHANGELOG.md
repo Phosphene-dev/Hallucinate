@@ -24,6 +24,9 @@ Hardening on the way to 1.0, plus a few things asked for while testing.
 - Podcast episodes can count on Last.fm and ListenBrainz, as the show and the episode's title (Settings →
   Internet & sharing; off unless you turn it on).
 - Backups include the radio log and listening time.
+- A song heard on the radio that's also in your library is scrobbled with your copy's album.
+- If the window stops responding for 20 seconds, what Hallucinate was doing is recorded, and the next start
+  offers it as a report to copy (like a crash report). A computer going to sleep doesn't count.
 
 ### Changed
 - Switching off Liked Songs also hides the heart buttons, the menu item and the Last.fm loves options. A test
@@ -31,7 +34,8 @@ Hardening on the way to 1.0, plus a few things asked for while testing.
 - Search everywhere and the Podcasts page stay quick with tens of thousands of episodes.
 
 ### Fixed
-- Songs scrobbled from internet radio no longer have the station's name as their album.
+- Songs scrobbled from internet radio no longer have the station's name as their album: they're the song and
+  its artist (and its album, if it's in your library).
 - The fields in Edit album and Edit tags have names for screen readers.
 
 ## [0.9.9.2] - 2026-10-16

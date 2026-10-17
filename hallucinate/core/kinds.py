@@ -24,9 +24,10 @@ def counts_for_scrobbling(track):
 
 
 def scrobble_fields(track):
-    """What a scrobble says about a queue entry: a song heard on the radio has no album (the entry's album is
-    the station's name, for showing); an episode is the show (as artist and album) and its title."""
+    """What a scrobble says about a queue entry: a song heard on the radio never has the station's name as its
+    album (the entry's album, for showing), only the album of your own copy of the song if you have one; an
+    episode is the show (as artist and album) and its title."""
     out = dict(track)
     if track_kind(track) == "station":
-        out["album"] = ""
+        out["album"] = track.get("song_album") or ""  # your copy's album when the song is in your library
     return out

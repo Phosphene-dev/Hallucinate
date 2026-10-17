@@ -386,7 +386,8 @@ class Stations(QObject):
                 title, _ = st.read_stream_title(url)
             except (OSError, ValueError):
                 return ("title", None, None)
-            return ("title", (token, url), st.split_title(title, station))
+            artist, song = st.split_title(title, station)
+            return ("title", (token, url), (artist, song, self._album_in_library(artist, song)))
 
         self._pool.submit(lambda: self._done.emit(work()))
 
@@ -418,8 +419,37 @@ class Stations(QObject):
         elif kind == "title" and what is not None:
             token, url = what
             if token == self._title_token and self._player.hasTrack and self._player.current.get("path") == url:
-                artist, title = value
+                artist, title, album = value
                 self._player.setStreamInfo(artist, title)
+                if self._player.current.get("title") == (title or self._player.current.get("station")):
+                    self._player.current["song_album"] = album  # what a scrobble names as the album
+
+    def setLibraryDb(self, path):
+        """The music library's database: a song a station plays that's also in your library is scrobbled with
+        your copy's album."""
+        self._library_db = str(path) if path else ""
+
+    _library_db = ""
+
+    def _album_in_library(self, artist, title):
+        """The album of a library song with this artist and title ("" if none, or more than one album has it,
+        since a guess could be wrong). Runs on a worker thread with its own read-only connection."""
+        if not (self._library_db and artist and title):
+            return ""
+        import sqlite3
+
+        from .core.db import fold
+        try:
+            conn = sqlite3.connect(f"file:{self._library_db}?mode=ro", uri=True, timeout=2)
+            try:
+                albums = {r[0] for r in conn.execute(
+                    "SELECT album FROM tracks WHERE s_artist=? AND s_title=? AND album != '' LIMIT 5",
+                    (fold(artist), fold(title)))}
+            finally:
+                conn.close()
+        except sqlite3.Error:
+            return ""
+        return albums.pop() if len(albums) == 1 else ""
 
     def _refresh_playing_art(self):
         if self._player.hasTrack and track_kind(self._player.current) == "station":

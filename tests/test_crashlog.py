@@ -95,3 +95,48 @@ def test_the_error_log_is_capped(tmp_path):
     """)
     assert r.returncode == 0, r.stderr
     assert (tmp_path / "python.log").stat().st_size < crashlog.MAX_BYTES + 20_000
+
+
+def test_a_freeze_is_recorded_with_what_was_busy_and_when_it_came_back(qapp, tmp_path):
+    from conftest import wait_for
+
+    from hallucinate import crashlog
+
+    assert crashlog.install(tmp_path)
+    now = [1000.0]
+    crashlog.watch_freezes(threshold=20, clock=lambda: now[0], interval=0.05)
+    try:
+        crashlog._state["beat"] = now[0]
+        timer = crashlog._state["watch"][0]
+        timer.stop()  # the window "stops responding": no more beats
+        for _ in range(5):  # time passes in small steps, so it isn't taken for a sleeping computer
+            now[0] += 5
+            import time
+            time.sleep(0.1)
+        assert wait_for(lambda: (tmp_path / "freeze.log").exists())
+        text = (tmp_path / "freeze.log").read_text()
+        assert "stopped responding" in text and "Thread" in text
+        crashlog._state["beat"] = now[0]  # it beats again
+        assert wait_for(lambda: "came back" in (tmp_path / "freeze.log").read_text())
+    finally:
+        crashlog.finish()
+    report, crashed = crashlog.take_previous(tmp_path)
+    assert report.startswith("Stopped responding:") and not crashed
+    assert not (tmp_path / "freeze.log").exists()
+
+
+def test_a_sleeping_computer_is_not_a_freeze(qapp, tmp_path):
+    import time
+
+    from hallucinate import crashlog
+
+    assert crashlog.install(tmp_path)
+    now = [1000.0]
+    crashlog.watch_freezes(threshold=20, clock=lambda: now[0], interval=0.05)
+    try:
+        crashlog._state["watch"][0].stop()
+        now[0] += 3600  # one jump: the whole process was paused
+        time.sleep(0.3)
+    finally:
+        crashlog.finish()
+    assert not (tmp_path / "freeze.log").exists()

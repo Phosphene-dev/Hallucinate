@@ -278,3 +278,26 @@ def test_listening_time_is_counted_while_a_station_plays(qapp, tmp_path):
     finally:
         clock.stop()
         db.close()
+
+
+def test_a_radio_song_you_own_is_scrobbled_with_your_copys_album(radio, tmp_path):
+    from hallucinate.core.db import Database
+    from hallucinate.core.kinds import scrobble_fields
+
+    stations, _player, _ = radio
+    db = Database(tmp_path / "lib.db")
+    for path, album in (("/m/a.flac", "Nightmare Fuel"), ("/m/b.flac", "Other"), ("/m/c.flac", "Another")):
+        title = "Death Vest" if path == "/m/a.flac" else "Same Name"
+        db.upsert_track({"path": path, "mtime": 0, "size": 1, "title": title, "artist": "Enduser",
+                         "album_artist": "Enduser", "aa_tag": 1, "album": album, "album_key": f"E|{album}",
+                         "track_no": 1, "disc_no": 0, "year": 2020, "genre": "", "duration": 60.0, "fmt": "FLAC",
+                         "codec": "FLAC", "bitrate": 0, "sample_rate": 44100, "art": None})
+    db.commit()
+    db.close()
+    stations.setLibraryDb(tmp_path / "lib.db")
+    assert stations._album_in_library("ENDUSER", "death vest") == "Nightmare Fuel"
+    assert stations._album_in_library("Enduser", "Same Name") == ""  # on two albums: no guessing
+    assert stations._album_in_library("Someone", "Unknown") == ""
+    song = {"kind": "station", "artist": "Enduser", "title": "Death Vest", "album": "Radio Caprice - Breakcore",
+            "song_album": "Nightmare Fuel"}
+    assert scrobble_fields(song)["album"] == "Nightmare Fuel"

@@ -504,9 +504,13 @@ ApplicationWindow {
     ConfirmDialog {
         id: crashDlg
         objectName: "crashDialog"
-        title: shell.lastRunCrashed ? "Hallucinate closed unexpectedly" : "Hallucinate ran into an error"
+        readonly property bool froze: !shell.lastRunCrashed && shell.crashReport.indexOf("Stopped responding:") === 0
+        title: shell.lastRunCrashed ? "Hallucinate closed unexpectedly"
+               : froze ? "Hallucinate stopped responding" : "Hallucinate ran into an error"
         confirmText: "Copy report"
-        body: (shell.lastRunCrashed ? "Last time, Hallucinate closed unexpectedly." : "Last time, Hallucinate hit an error it couldn't handle.")
+        body: (shell.lastRunCrashed ? "Last time, Hallucinate closed unexpectedly."
+               : froze ? "Last time, Hallucinate's window stopped responding for a while."
+               : "Last time, Hallucinate hit an error it couldn't handle.")
               + " A report of what happened is ready: paste it into a bug report so it can be fixed. It describes your setup"
               + " and the error, without file paths, names or anything from your library."
         Component.onCompleted: { var b = standardButton(Dialog.Cancel); if (b) b.text = "Not now" }
