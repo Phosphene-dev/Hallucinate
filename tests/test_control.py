@@ -191,8 +191,12 @@ def test_control_socket_is_private_to_the_user(tmp_path):
     from hallucinate.control import default_server_name
 
     assert default_server_name({"XDG_RUNTIME_DIR": str(tmp_path)}, "linux") == str(tmp_path / "hallucinate-control")
-    named = default_server_name({}, "win32")
+    appdata = tmp_path / "appdata"
+    named = default_server_name({"APPDATA": str(appdata)}, "win32")
     assert named.startswith("hallucinate-control-") and len(named) > len("hallucinate-control-")
+    token = (appdata / "hallucinate" / "control-name").read_text()
+    assert named.endswith("-" + token) and len(token) == 16  # a part other users can't guess
+    assert default_server_name({"APPDATA": str(appdata)}, "win32") == named  # the same every time
     assert default_server_name({"HALLUCINATE_CONTROL_SOCKET": "x"}, "linux") == "x"
     assert default_server_name({"XDG_RUNTIME_DIR": str(tmp_path), "FLATPAK_ID": "a"}, "linux").startswith(
         "hallucinate-control-")

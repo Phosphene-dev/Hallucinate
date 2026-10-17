@@ -33,6 +33,8 @@ All notable changes to this project are documented here. Format based on
 - A star rating or like you just set no longer flips back for a moment when the lists refresh.
 - Without a private runtime folder (some X sessions, ssh), the control socket lives in a folder of its own
   that other users can't use, instead of a shared name another user could take first.
+- On Windows, the control connection's name has a random part kept in your own app-data folder, so another
+  account on the same PC can't take it first and stop Hallucinate starting.
 - Debug info and crash reports now leave out song files, music folders and links, as well as the home
   folder. Log lines no longer name the album or station they're about.
 
