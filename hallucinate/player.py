@@ -19,7 +19,7 @@ from PySide6.QtMultimedia import (
 from PySide6.QtQml import QQmlComponent, QQmlEngine
 
 from . import eq, signalpath
-from .core import net
+from .core import net, remote
 from .core.kinds import counts_for_scrobbling, is_url, track_kind  # noqa: F401 - re-exported
 from .core.tags import is_readable_audio
 from .models import TRACK_KEYS, DictModel
@@ -85,6 +85,16 @@ def pick_output_device(devices, key):
     return None
 
 
+def _playable(path):
+    """Whether a queue entry's audio can be opened now: a stream, a server song whose server can be reached,
+    or a readable audio file."""
+    if is_url(path):
+        return True
+    if remote.is_remote(path):
+        return remote.available(path)
+    return isinstance(path, str) and os.path.isfile(path) and is_readable_audio(path)
+
+
 def track_file(track):
     """The audio file a queue entry plays: its own path, or for a CUE sheet song the album's file."""
     return track.get("file") or track.get("path", "")
@@ -141,7 +151,10 @@ class _Voice:
         self.seek_on_load = self.start + resume if self.start or resume else -1
         if self.tap is not None:
             self.tap.reset()
-        url = QUrl(self.path) if is_url(self.path) else QUrl.fromLocalFile(self.path)
+        if remote.is_remote(self.path):  # a song on a music server: its stream link, made now, login and all
+            url = QUrl(remote.stream_url(self.path))
+        else:
+            url = QUrl(self.path) if is_url(self.path) else QUrl.fromLocalFile(self.path)
         if (self.seek_on_load >= 0 or is_url(self.path)) and self.player.source() == url:
             # the same file again: reload it, so it reports loaded and seeks; the same stream again (a
             # reconnect): drop the old connection, which Qt would otherwise keep
@@ -707,8 +720,8 @@ class Player(QObject):
 
     def _request_waveform(self, track, urgent=True):
         path = track.get("path", "")
-        if not path or is_url(path) or track_kind(track) != "music":
-            return None
+        if not path or is_url(path) or remote.is_remote(path) or track_kind(track) != "music":
+            return None  # streams and server songs: no file to read a waveform from
         if track.get("file"):  # a CUE sheet song: its stretch of the album's file
             return self._waveforms.request_window(path, track["file"], track.get("cue_start") or 0.0,
                                                   track.get("cue_end") or 0.0, urgent)
@@ -1534,21 +1547,21 @@ class Player(QObject):
             return
         if track_kind(track) == "station" and track.get("station"):
             track.update(title=track["station"], artist="", stream_title="")  # the song it said last is over
-        exists = is_url(path) or (isinstance(path, str) and os.path.isfile(path))
-        if not exists or not (is_url(path) or is_readable_audio(path)):
+        if not _playable(path):
             self._index = i
-            reason = "File not found" if not exists else "Unreadable audio file"
-            self._set_error(f"{reason}: {path}")
+            if remote.is_remote(path):
+                self._set_error("Offline mode is on" if net.is_offline() else "The music server can't be reached")
+            else:
+                exists = isinstance(path, str) and os.path.isfile(path)
+                self._set_error(f"{'Unreadable audio file' if exists else 'File not found'}: {path}")
             candidates = list(range(i + 1, len(self._queue)))
             if self._shuffle:
                 candidates = [j for j in range(len(self._queue)) if j != i and j not in self._played]
                 random.shuffle(candidates)
             elif self._repeat == REPEAT_ALL:
                 candidates += list(range(0, i))
-            for candidate in candidates:
-                candidate_path = track_file(self._queue[candidate])
-                if is_url(candidate_path) or (isinstance(candidate_path, str) and os.path.isfile(candidate_path)
-                                              and is_readable_audio(candidate_path)):
+            for candidate in candidates:  # the next one that can play: songs on a server that's down are passed
+                if _playable(track_file(self._queue[candidate])):
                     self._load(candidate, autoplay=autoplay, record=False)
                     return
             self._reset_empty()
@@ -1943,7 +1956,7 @@ class Player(QObject):
             queue = [
                 t for t in data["queue"]
                 if isinstance(t, dict) and isinstance(t.get("path"), str)
-                and (is_url(t["path"]) or os.path.isfile(track_file(t)))
+                and (is_url(t["path"]) or remote.is_remote(t["path"]) or os.path.isfile(track_file(t)))
             ]
             index = int(data.get("index", -1))
             pos = int(data.get("position", 0))
@@ -1956,7 +1969,7 @@ class Player(QObject):
         old = data["queue"]
         if 0 <= index < len(old):
             keep = [i for i, t in enumerate(old) if isinstance(t, dict)
-                    and (is_url(t.get("path")) or os.path.isfile(track_file(t)))]
+                    and (is_url(t.get("path")) or remote.is_remote(t.get("path")) or os.path.isfile(track_file(t)))]
             if index in keep:
                 index = keep.index(index)
             else:  # the song that was playing is gone: start the one after it from the beginning

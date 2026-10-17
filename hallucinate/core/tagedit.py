@@ -75,6 +75,8 @@ def _clean(fields):
 
 
 def _writable(path):
+    if "://" in path:
+        raise TagWriteError("This song is on a music server: change its tags there")
     if cue.is_virtual(path):
         raise TagWriteError("This song comes from a CUE sheet; edit the .cue file instead")
     if not os.path.isfile(path):

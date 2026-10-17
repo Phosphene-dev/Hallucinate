@@ -169,11 +169,16 @@ def main(argv=None) -> int:
     stations = Stations(paths.data_dir() / "streams.db", paths.cache_dir(), player)
     stations.setLibraryDb(paths.db_path())
     podcasts = Podcasts(paths.data_dir() / "streams.db", paths.data_dir(), paths.cache_dir(), player)
+    from .servers import Servers
+
+    servers = Servers(paths.db_path(), paths.art_dir(), player)
+    servers.libraryChanged.connect(library.reload)
 
     def apply_features():
         lyrics.setEnabled(shell.featureOn("lyrics"))
         stations.setEnabled(shell.featureOn("stations"))
         podcasts.setEnabled(shell.featureOn("podcasts"))
+        servers.setEnabled(shell.featureOn("servers"))
 
     apply_features()
     shell.featuresChanged.connect(apply_features)
@@ -222,6 +227,7 @@ def main(argv=None) -> int:
     ctx.setContextProperty("discord", discord)
     ctx.setContextProperty("themeManager", theme_manager)
     ctx.setContextProperty("stations", stations)
+    ctx.setContextProperty("servers", servers)
     ctx.setContextProperty("podcasts", podcasts)
     engine.addImportPath(str(HERE / "qml"))
     engine.load(QUrl.fromLocalFile(str(HERE / "qml" / "main.qml")))
@@ -289,6 +295,7 @@ def main(argv=None) -> int:
     headphones.shutdown()
     lyrics.shutdown()
     stations.shutdown()
+    servers.shutdown()
     podcasts.shutdown()
     meta_editor.shutdown()
     user_lib.shutdown()

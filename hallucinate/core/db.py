@@ -5,6 +5,8 @@ import time
 import unicodedata
 from typing import Iterable, Optional
 
+from .remote import SQL_LOCAL
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS tracks(
   id INTEGER PRIMARY KEY,
@@ -631,13 +633,14 @@ class Database:
         """[(album_key, [paths in album order])] for albums with a song lacking ReplayGain; whole albums are
         returned so album gain covers every song."""
         keys = [r[0] for r in self.conn.execute(
-            "SELECT DISTINCT album_key FROM tracks WHERE rg_track IS NULL AND file IS NULL ORDER BY album_key"
+            f"SELECT DISTINCT album_key FROM tracks WHERE rg_track IS NULL AND file IS NULL AND {SQL_LOCAL} "
+            "ORDER BY album_key"
             + (" LIMIT ?" if limit else ""), (limit,) if limit else ())]
         return [(k, [r[0] for r in self.conn.execute(
-            f"SELECT path FROM tracks WHERE album_key=? AND file IS NULL ORDER BY {_ORDER}", (k,))]) for k in keys]
+            f"SELECT path FROM tracks WHERE album_key=? AND file IS NULL AND {SQL_LOCAL} ORDER BY {_ORDER}", (k,))]) for k in keys]
 
     def tracks_without_gain(self) -> int:
-        return self.conn.execute("SELECT COUNT(*) FROM tracks WHERE rg_track IS NULL AND file IS NULL").fetchone()[0]
+        return self.conn.execute(f"SELECT COUNT(*) FROM tracks WHERE rg_track IS NULL AND file IS NULL AND {SQL_LOCAL}").fetchone()[0]
 
     def store_loudness(self, results):
         """Save measurements [{path, track_gain, album_gain, peak}] and use them for songs without gain tags."""

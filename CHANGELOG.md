@@ -6,6 +6,19 @@ All notable changes to this project are documented here. Format based on
 ## [Unreleased]
 
 ### Added
+- Music servers: songs on your Navidrome, Gonic, Airsonic or other Subsonic server join your library and
+  play like your own files, in albums, artists, search, playlists, smart playlists, stats and history. Switch
+  it on in Settings → Features, then add a server in Settings → Music servers.
+  - The password is kept in your system keyring and never sent: each request carries a one-time code.
+  - The app warns about a link that isn't secure and isn't on your home network.
+  - Each server's albums are its own, so they don't merge with copies you have as files, and duplicate
+    checks keep your own file.
+  - A sync adds, updates and takes out songs to match the server, keeps songs you removed out, and fetches
+    each album's cover once.
+  - Songs from a server that can't be reached, or while offline mode is on, are skipped. The server is tried
+    again every few minutes.
+  - Plays count on the server too.
+  - Server songs can't be put in the trash, and their tags are edited on the server.
 - Star ratings are saved in the songs' own tags too, so other players (foobar2000, MusicBee, Strawberry,
   Windows) see them. On by default; switch it off in Settings → Library.
 - A cover you add is also saved as cover.jpg in the album's folder (not in a folder shared with other

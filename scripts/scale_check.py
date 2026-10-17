@@ -62,6 +62,7 @@ def launch(args):
     from hallucinate.podcasts import Podcasts
     from hallucinate.replaygain import ReplayGainAnalyzer
     from hallucinate.scrobbling import LastFmScrobbler
+    from hallucinate.servers import Servers
     from hallucinate.shell import DesktopShell
     from hallucinate.stations import Stations
     from hallucinate.themes import ThemeManager
@@ -114,6 +115,7 @@ def launch(args):
         "discord": DiscordPresence(player),
         "themeManager": ThemeManager(work / "config", player),
         "stations": Stations(work / "streams.db", work / "cache", player),
+        "servers": Servers(db_path, work / "art", player),
         "podcasts": Podcasts(work / "streams.db", work / "data", work / "cache", player),
     }
     for k, v in context.items():

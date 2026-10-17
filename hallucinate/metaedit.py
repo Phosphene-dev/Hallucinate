@@ -79,6 +79,8 @@ def save_folder_cover(db, album_key, files, data):
     if len(folders) != 1:
         return ""
     folder = folders.pop()
+    if not os.path.isabs(folder) or not os.path.isdir(folder):
+        return ""  # songs on a music server (or a folder that's gone): no folder here to save it in
     # another album's song directly in this folder (not in a folder below it); "!" escapes LIKE's wildcards,
     # since "\\" is Windows' separator
     base = folder.replace("!", "!!").replace("%", "!%").replace("_", "!_") + os.sep

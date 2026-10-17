@@ -3,6 +3,7 @@ treating what a server sends as data to check, not to trust."""
 import hashlib
 import http.server
 import json
+import os
 import threading
 import urllib.parse
 
@@ -157,3 +158,152 @@ def test_covers_and_stream_links(server):
     assert s.cover("al-A1")[:3] == b"\xff\xd8\xff"
     q = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(s.stream_url("s5")).query))
     assert q["id"] == "s5" and q["format"] == "raw" and "secret" not in s.stream_url("s5")
+
+
+# --- in the app: the Servers service and the player ----------------------------------------------------------
+
+class FakeKeyring:
+    def __init__(self):
+        self.kept = {}
+
+    def get_password(self, service, user):
+        return self.kept.get((service, user))
+
+    def set_password(self, service, user, password):
+        self.kept[(service, user)] = password
+
+    def delete_password(self, service, user):
+        self.kept.pop((service, user), None)
+
+
+@pytest.fixture
+def service(qapp, tmp_path, monkeypatch):
+    from PySide6.QtCore import QSettings
+
+    from hallucinate import servers as servers_mod
+    from hallucinate.core.db import Database
+
+    keyring = FakeKeyring()
+    monkeypatch.setattr(servers_mod, "_keyring", lambda: keyring)
+    settings = QSettings("hallucinate", "hallucinate")
+    before = settings.value("servers/list")
+    settings.remove("servers/list")
+    Database(tmp_path / "lib.db").close()
+    svc = servers_mod.Servers(tmp_path / "lib.db", tmp_path / "art")
+    svc.keyring = keyring
+    yield svc
+    svc.setEnabled(False)
+    svc.shutdown()
+    settings.remove("servers/list") if before is None else settings.setValue("servers/list", before)
+
+
+def _rows(tmp_path):
+    from hallucinate.core.db import Database
+
+    db = Database(tmp_path / "lib.db")
+    try:
+        return {r["path"]: r for r in db._rows("SELECT * FROM tracks")}
+    finally:
+        db.close()
+
+
+def test_a_server_is_added_and_its_songs_join_the_library(service, server, tmp_path):
+    from conftest import wait_for
+
+    from hallucinate.core import remote
+
+    service.setEnabled(True)
+    service.addServer(server.base, "me", "secret", "Home")
+    assert wait_for(lambda: service.servers and service.servers[0]["songs"] == 1200, timeout=30)
+    entry = service.servers[0]
+    assert entry["name"] == "Home" and entry["status"] == "ok"
+    assert service.keyring.kept[("Hallucinate Music servers", entry["id"])] == "secret"
+    from PySide6.QtCore import QSettings
+
+    assert "secret" not in str(QSettings("hallucinate", "hallucinate").value("servers/list"))  # keyring only
+    rows = _rows(tmp_path)
+    song = rows[remote.make_path("subsonic", entry["id"], "s5")]
+    assert song["title"] == "Song 5" and song["fmt"] == "FLAC" and song["art"] and os.path.isfile(song["art"])
+    assert "secret" not in json.dumps(list(rows))  # no login in any path
+    assert remote.available(song["path"]) and remote.stream_url(song["path"]).startswith(server.base)
+
+
+def test_a_wrong_password_adds_nothing(service, server):
+    from conftest import wait_for
+
+    messages = []
+    service.message.connect(messages.append)
+    service.setEnabled(True)
+    service.addServer(server.base, "me", "wrong", "")
+    assert wait_for(lambda: messages, timeout=10)
+    assert "password is wrong" in messages[-1] and service.servers == [] and service.keyring.kept == {}
+
+
+def test_a_sync_follows_the_server_and_respects_what_you_removed(service, server, tmp_path):
+    from conftest import wait_for
+
+    from hallucinate.core import remote
+    from hallucinate.core.db import Database
+
+    service.setEnabled(True)
+    service.addServer(server.base, "me", "secret", "")
+    assert wait_for(lambda: service.servers and service.servers[0]["songs"] == 1200, timeout=30)
+    sid = service.servers[0]["id"]
+    db = Database(tmp_path / "lib.db")
+    db.hide_paths([remote.make_path("subsonic", sid, "s7")])  # you removed it from the library
+    db.commit()
+    db.close()
+    server.songs = server.songs[:100]  # the server lost most of its songs
+    service.sync(sid)
+    assert wait_for(lambda: service.servers[0]["songs"] == 99, timeout=30)
+    paths = set(_rows(tmp_path))
+    assert remote.make_path("subsonic", sid, "s7") not in paths and remote.make_path("subsonic", sid, "s50") in paths
+    assert remote.make_path("subsonic", sid, "s500") not in paths
+
+
+def test_switching_servers_off_takes_their_songs_out(service, server, tmp_path):
+    from conftest import wait_for
+
+    service.setEnabled(True)
+    service.addServer(server.base, "me", "secret", "")
+    assert wait_for(lambda: service.servers and service.servers[0]["songs"] == 1200, timeout=30)
+    service.setEnabled(False)
+    assert wait_for(lambda: not any("://" in p for p in _rows(tmp_path)), timeout=10)
+
+
+def test_a_server_that_cant_be_reached_makes_its_songs_unavailable(service, server):
+    from conftest import wait_for
+
+    from hallucinate.core import remote
+    from hallucinate.player import _playable
+
+    service.setEnabled(True)
+    service.addServer(server.base, "me", "secret", "")
+    assert wait_for(lambda: service.servers and service.servers[0]["songs"] == 1200, timeout=30)
+    path = remote.make_path("subsonic", service.servers[0]["id"], "s1")
+    assert _playable(path)
+    server.close()
+    service.sync(service.servers[0]["id"])
+    assert wait_for(lambda: service.servers[0]["status"] == "down", timeout=30)
+    assert not _playable(path) and remote.stream_url(path) == ""
+
+
+def test_server_songs_stay_out_of_trash_and_file_only_work(qapp, tmp_path):
+    from hallucinate.core import remote, tagedit
+    from hallucinate.core.db import Database
+    from hallucinate.core.lyrics import read_embedded, sidecar_path
+    from hallucinate.metaedit import save_folder_cover
+    from hallucinate.servers import track_row
+
+    row = track_row("1", subsonic.song_from(song(1)))
+    db = Database(tmp_path / "lib.db")
+    db.upsert_track(row)
+    db.commit()
+    with pytest.raises(tagedit.TagWriteError, match="music server"):
+        tagedit.write_tags(row["path"], {"title": "x"})
+    assert read_embedded(row["path"]) == "" and sidecar_path(row["path"]) is None
+    assert save_folder_cover(db, row["album_key"], [row["path"]], b"\xff\xd8\xff" + b"0" * 20) == ""
+    assert not (tmp_path / "subsonic:").exists()  # nothing written beside the working folder
+    local = {**row, "path": str(tmp_path / "a.flac"), "fmt": "MP3"}
+    assert remote.is_remote(row["path"]) and not remote.is_remote(local["path"])
+    db.close()

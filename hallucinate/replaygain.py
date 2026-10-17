@@ -10,6 +10,7 @@ from PySide6.QtMultimedia import QAudioDecoder
 
 from . import loudness
 from .core.db import Database
+from .core.remote import SQL_LOCAL
 from .waveform import _SCALE
 
 logger = logging.getLogger(__name__)
@@ -112,7 +113,8 @@ class ReplayGainAnalyzer(QObject):
     def analyseAlbum(self, album_key):
         db = self._conn()
         paths = [r[0] for r in db.conn.execute(
-            "SELECT path FROM tracks WHERE album_key=? AND file IS NULL ORDER BY disc_no, track_no, s_title", (album_key,))]
+            f"SELECT path FROM tracks WHERE album_key=? AND file IS NULL AND {SQL_LOCAL} "
+            "ORDER BY disc_no, track_no, s_title", (album_key,))]
         if paths:
             self.analyse([(album_key, paths)])
 

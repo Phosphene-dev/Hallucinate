@@ -7,10 +7,10 @@ Item {
     id: page
     objectName: "settings"
     property string query: ""
-    readonly property var sectionIds: ["appearance", "features", "podcasts", "playback", "sound", "library", "sharing", "desktop", "about"]
-    readonly property var sectionTitles: ["Appearance", "Features", "Podcasts", "Playback", "Sound", "Library", "Internet & sharing", "Desktop", "About"]
+    readonly property var sectionIds: ["appearance", "features", "podcasts", "playback", "sound", "library", "servers", "sharing", "desktop", "about"]
+    readonly property var sectionTitles: ["Appearance", "Features", "Podcasts", "Playback", "Sound", "Library", "Music servers", "Internet & sharing", "Desktop", "About"]
 
-    function sectionItem(i) { return [sec_appearance, sec_features, sec_podcasts, sec_playback, sec_sound, sec_library, sec_sharing, sec_desktop, sec_about][i] }
+    function sectionItem(i) { return [sec_appearance, sec_features, sec_podcasts, sec_playback, sec_sound, sec_library, sec_servers, sec_sharing, sec_desktop, sec_about][i] }
     function jumpToSidebar() {
         jumpTo(1)
         var y = sidebarOrderBox.mapToItem(flick.contentItem, 0, 0).y - 20
@@ -59,7 +59,8 @@ Item {
                 Chip {
                     required property string modelData
                     required property int index
-                    visible: modelData !== "Podcasts" || shell.features.podcasts !== false
+                    visible: (modelData !== "Podcasts" || shell.features.podcasts !== false)
+                             && (modelData !== "Music servers" || shell.features.servers === true)
                     text: modelData
                     onClicked: page.jumpTo(index)
                 }
@@ -69,7 +70,7 @@ Item {
             textFormat: Text.PlainText
             visible: page.query.length > 0
             text: noMatches ? "No settings match “" + page.query + "”" : "Showing settings that match “" + page.query + "”"
-            readonly property bool noMatches: !(sec_appearance.matches || sec_features.matches || sec_podcasts.matches || sec_playback.matches || sec_sound.matches || sec_library.matches || sec_sharing.matches || sec_desktop.matches || sec_about.matches)
+            readonly property bool noMatches: !(sec_appearance.matches || sec_features.matches || sec_podcasts.matches || sec_playback.matches || sec_sound.matches || sec_library.matches || sec_servers.matches || sec_sharing.matches || sec_desktop.matches || sec_about.matches)
             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
         }
     }
@@ -319,8 +320,8 @@ Item {
             }
             FeatureGroup {
                 heading: "Listening"
-                items: [["stations", "Internet radio"], ["podcasts", "Podcasts"], ["lyrics", "Lyrics"],
-                        ["visualizer", "Visualizer"]]
+                items: [["stations", "Internet radio"], ["podcasts", "Podcasts"], ["servers", "Music servers"],
+                        ["lyrics", "Lyrics"], ["visualizer", "Visualizer"]]
             }
             FeatureGroup {
                 heading: "Pages"
@@ -798,6 +799,140 @@ Item {
                 title: "Choose another player's library"
                 nameFilters: ["Player libraries (*.db *.xml)", "All files (*)"]
                 onAccepted: userLib.importFromPlayer(selectedFile.toString())
+            }
+        }
+        SettingsSection {
+            id: sec_servers
+            objectName: "settings_servers"
+            title: "Music servers"
+            keywords: "server servers subsonic navidrome gonic airsonic ampache jellyfin stream remote network nas sync"
+            query: page.query
+            visible: matches && shell.features.servers === true
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: "Songs on your Navidrome, Gonic, Airsonic or other Subsonic server join your library and play like your own files. The password stays in your system keyring. Songs from a server that can't be reached are skipped."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            Repeater {
+                model: servers.servers
+                Row {
+                    id: serverRow
+                    required property var modelData
+                    objectName: "server_" + modelData.id
+                    spacing: 12
+                    width: parent ? parent.width : 0
+                    Column {
+                        width: serverRow.width - syncButton.width - removeButton.width - 24
+                        anchors.verticalCenter: parent.verticalCenter
+                        Text {
+                            textFormat: Text.PlainText
+                            width: parent.width
+                            elide: Text.ElideRight
+                            text: serverRow.modelData.name + "  ·  " + serverRow.modelData.user
+                            color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
+                        }
+                        Text {
+                            textFormat: Text.PlainText
+                            width: parent.width
+                            elide: Text.ElideRight
+                            readonly property var m: serverRow.modelData
+                            text: (m.status === "syncing" ? "Reading its songs…"
+                                   : m.status === "checking" ? "Checking…"
+                                   : m.status === "down" ? "Can't be reached" + (m.error ? ": " + m.error : "") + " (tried again every few minutes)"
+                                   : m.status === "error" ? m.error
+                                   : m.songs.toLocaleString(Qt.locale(), "f", 0) + (m.songs === 1 ? " song" : " songs")
+                                     + (m.error ? "  ·  " + m.error : ""))
+                                  + (m.secure ? "" : "  ·  not a secure link")
+                            color: m.status === "down" || m.status === "error" ? Theme.error : Theme.textDim
+                            font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                        }
+                    }
+                    PillButton {
+                        id: syncButton
+                        anchors.verticalCenter: parent.verticalCenter
+                        height: 32
+                        text: "Sync now"
+                        enabled: !serverRow.modelData.busy
+                        onClicked: servers.sync(serverRow.modelData.id)
+                    }
+                    PillButton {
+                        id: removeButton
+                        anchors.verticalCenter: parent.verticalCenter
+                        height: 32
+                        text: "Remove"
+                        onClicked: { removeServerDlg.serverId = serverRow.modelData.id; removeServerDlg.what = serverRow.modelData.name; removeServerDlg.open() }
+                    }
+                }
+            }
+            PillButton {
+                objectName: "addServer"
+                primary: true
+                text: "Add a server…"
+                onClicked: addServerDlg.open()
+            }
+            ConfirmDialog {
+                id: removeServerDlg
+                property string serverId: ""
+                property string what: ""
+                title: "Remove this server?"
+                confirmText: "Remove server"
+                destructive: true
+                body: "Its songs leave your library and its password leaves the keyring. Nothing on the server changes."
+                onAccepted: servers.removeServer(serverId)
+            }
+            Dialog {
+                id: addServerDlg
+                objectName: "addServerDialog"
+                parent: Overlay.overlay
+                anchors.centerIn: parent
+                width: Math.min(460, (parent ? parent.width : 460) - 40)
+                modal: true
+                title: "Add a music server"
+                standardButtons: Dialog.Ok | Dialog.Cancel
+                readonly property bool ready: serverLink.text.trim().length > 0 && serverUser.text.trim().length > 0
+                                              && serverPassword.text.length > 0
+                function okLater() { var b = standardButton(Dialog.Ok); if (b) b.enabled = ready }
+                onReadyChanged: okLater()
+                onOpened: { serverLink.text = ""; serverUser.text = ""; serverPassword.text = ""; serverName.text = ""; okLater(); serverLink.forceActiveFocus() }
+                onAccepted: {
+                    servers.addServer(serverLink.text.trim(), serverUser.text.trim(), serverPassword.text, serverName.text.trim())
+                    serverPassword.text = ""  // don't keep it in the field
+                }
+                onRejected: serverPassword.text = ""
+                Column {
+                    width: addServerDlg.availableWidth
+                    spacing: 10
+                    TextField {
+                        id: serverLink; objectName: "serverLink"; width: parent.width; selectByMouse: true
+                        placeholderText: "Server link (https://music.example.com)"; Accessible.name: "Server link"
+                        onAccepted: if (addServerDlg.ready) addServerDlg.accept()
+                    }
+                    Text {
+                        visible: serverLink.text.trim().length > 0 && !servers.linkIsSecure(serverLink.text)
+                        textFormat: Text.PlainText
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: "This isn't a secure (https) link and isn't on your home network: anyone on the networks in between could see what you play and reuse your sign-in."
+                        color: Theme.error; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                    }
+                    TextField {
+                        id: serverUser; objectName: "serverUser"; width: parent.width; selectByMouse: true
+                        placeholderText: "User name"; Accessible.name: "User name"
+                        onAccepted: if (addServerDlg.ready) addServerDlg.accept()
+                    }
+                    TextField {
+                        id: serverPassword; objectName: "serverPassword"; width: parent.width
+                        echoMode: TextInput.Password; placeholderText: "Password"; Accessible.name: "Password"
+                        onAccepted: if (addServerDlg.ready) addServerDlg.accept()
+                    }
+                    TextField {
+                        id: serverName; width: parent.width; selectByMouse: true
+                        placeholderText: "Name (optional)"; Accessible.name: "Server name"
+                        onAccepted: if (addServerDlg.ready) addServerDlg.accept()
+                    }
+                }
             }
         }
         SettingsSection {
