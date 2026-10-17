@@ -805,14 +805,14 @@ Item {
             id: sec_servers
             objectName: "settings_servers"
             title: "Music servers"
-            keywords: "server servers subsonic navidrome gonic airsonic ampache jellyfin stream remote network nas sync"
+            keywords: "server servers subsonic navidrome gonic airsonic ampache jellyfin emby stream remote network nas sync"
             query: page.query
             visible: matches && shell.features.servers === true
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Songs on your Navidrome, Gonic, Airsonic or other Subsonic server join your library and play like your own files. The password stays in your system keyring. Songs from a server that can't be reached are skipped."
+                text: "Songs on your Jellyfin server, or your Navidrome, Gonic, Airsonic or other Subsonic server, join your library and play like your own files. The sign-in stays in your system keyring (for Jellyfin, only the access token it gives). Songs from a server that can't be reached are skipped."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Repeater {
@@ -891,19 +891,35 @@ Item {
                 modal: true
                 title: "Add a music server"
                 standardButtons: Dialog.Ok | Dialog.Cancel
+                property string kind: "subsonic"
                 readonly property bool ready: serverLink.text.trim().length > 0 && serverUser.text.trim().length > 0
                                               && serverPassword.text.length > 0
                 function okLater() { var b = standardButton(Dialog.Ok); if (b) b.enabled = ready }
                 onReadyChanged: okLater()
-                onOpened: { serverLink.text = ""; serverUser.text = ""; serverPassword.text = ""; serverName.text = ""; okLater(); serverLink.forceActiveFocus() }
+                onOpened: { kind = "subsonic"; serverLink.text = ""; serverUser.text = ""; serverPassword.text = ""; serverName.text = ""; okLater(); serverLink.forceActiveFocus() }
                 onAccepted: {
-                    servers.addServer(serverLink.text.trim(), serverUser.text.trim(), serverPassword.text, serverName.text.trim())
+                    servers.addServer(serverLink.text.trim(), serverUser.text.trim(), serverPassword.text, serverName.text.trim(), kind)
                     serverPassword.text = ""  // don't keep it in the field
                 }
                 onRejected: serverPassword.text = ""
                 Column {
                     width: addServerDlg.availableWidth
                     spacing: 10
+                    Row {
+                        spacing: 6
+                        Chip {
+                            objectName: "serverKindSubsonic"
+                            text: "Subsonic (Navidrome, Gonic…)"
+                            selected: addServerDlg.kind === "subsonic"
+                            onClicked: addServerDlg.kind = "subsonic"
+                        }
+                        Chip {
+                            objectName: "serverKindJellyfin"
+                            text: "Jellyfin"
+                            selected: addServerDlg.kind === "jellyfin"
+                            onClicked: addServerDlg.kind = "jellyfin"
+                        }
+                    }
                     TextField {
                         id: serverLink; objectName: "serverLink"; width: parent.width; selectByMouse: true
                         placeholderText: "Server link (https://music.example.com)"; Accessible.name: "Server link"

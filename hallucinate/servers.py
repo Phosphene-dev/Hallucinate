@@ -15,7 +15,7 @@ import time
 
 from PySide6.QtCore import Property, QObject, QSettings, QTimer, Signal, Slot
 
-from .core import net, remote, subsonic, tags
+from .core import jellyfin, net, remote, subsonic, tags
 from .core.atomic import write_atomic
 from .library import _Reader
 
@@ -32,14 +32,14 @@ def _when(text):
         return 0.0
 
 
-def track_row(server_id, song):
-    """A library row for a song a Subsonic server listed (see subsonic.song_from)."""
+def track_row(server_id, song, kind="subsonic"):
+    """A library row for a song a server listed (see subsonic.song_from and jellyfin.song_from)."""
     album_artist = song["album_artist"] or song["artist"]
     # Its own album, not merged with a copy you have as files (or one on another server)
-    key_base = f"{album_artist}\x1esubsonic:{server_id}" if album_artist else f"\x1esubsonic:{server_id}:{song['album_id']}"
+    key_base = f"{album_artist}\x1e{kind}:{server_id}" if album_artist else f"\x1e{kind}:{server_id}:{song['album_id']}"
     fmt = song["suffix"].upper() or "STREAM"
     return {
-        "path": remote.make_path("subsonic", server_id, song["id"]),
+        "path": remote.make_path(kind, server_id, song["id"]),
         "mtime": _when(song["changed"]), "size": song["size"],
         "title": song["title"], "artist": song["artist"] or album_artist, "album_artist": album_artist,
         "aa_tag": 1 if album_artist else 0, "album": song["album"],
@@ -92,6 +92,7 @@ class Servers(QObject):
         for s in self._list:
             st = self._state.get(s["id"], {})
             out.append({"id": s["id"], "name": s.get("name") or s["base"], "base": s["base"], "user": s.get("user", ""),
+                    "kind": s.get("kind") or "subsonic",
                         "status": st.get("status", "waiting"), "busy": bool(st.get("busy")),
                         "songs": st.get("songs", s.get("songs", 0)), "error": st.get("error", ""),
                         "synced": s.get("synced", 0), "secure": subsonic.is_private_link(s["base"])})
@@ -127,29 +128,37 @@ class Servers(QObject):
             self._worker.submit(lambda db: self._take_out(db, None))  # every server song, listed server or not
         self.changed.emit()
 
+    def _kind(self, sid):
+        return next((s.get("kind") or "subsonic" for s in self._list if s["id"] == sid), "subsonic")
+
     def _connect(self, s, sync=False):
-        password = self._password(s["id"])
-        if password is None:
-            self._state[s["id"]] = {"status": "error", "error": "The password isn't in the system keyring"}
+        secret = self._password(s["id"])
+        if secret is None:
+            self._state[s["id"]] = {"status": "error", "error": "The sign-in isn't in the system keyring"}
             return
         try:
-            client = subsonic.Server(s["base"], s.get("user", ""), password)
-        except ValueError as exc:
-            self._state[s["id"]] = {"status": "error", "error": str(exc)}
+            client = _client(s, secret)
+        except (ValueError, KeyError) as exc:
+            self._state[s["id"]] = {"status": "error", "error": str(exc) or "The kept sign-in is damaged"}
             return
         self._clients[s["id"]] = client
-        remote.register("subsonic", s["id"], client)
+        remote.register(self._kind(s["id"]), s["id"], client)
         self._check(s["id"], sync)
 
     def _disconnect(self, sid):
-        remote.forget("subsonic", sid)
+        remote.forget(self._kind(sid), sid)
         self._clients.pop(sid, None)
         self._state.pop(sid, None)
 
     # --- adding and removing -------------------------------------------------------------------------------
     @Slot(str, str, str, str)
-    def addServer(self, base, user, password, name=""):
-        """Check the link and login, keep the password in the keyring, and read the server's songs."""
+    @Slot(str, str, str, str, str)
+    def addServer(self, base, user, password, name="", kind="subsonic"):
+        """Check the link and login, keep the sign-in in the keyring, and read the server's songs. For Subsonic
+        that's the password (each request signs in with a one-time code made from it); for Jellyfin, the access
+        token the server gives for it (the password isn't kept)."""
+        if kind not in ("subsonic", "jellyfin"):
+            return
         try:
             base = subsonic.normalise_base(base)
         except ValueError as exc:
@@ -167,30 +176,43 @@ class Servers(QObject):
         sid = str(max([int(s["id"]) for s in self._list if str(s["id"]).isdigit()] + [0]) + 1)
         self._state[sid] = {"status": "checking", "busy": True}
         self.changed.emit()
-        entry = {"id": sid, "kind": "subsonic", "base": base, "user": user, "name": (name or "").strip()[:100]}
+        import secrets
+
+        entry = {"id": sid, "kind": kind, "base": base, "user": user, "name": (name or "").strip()[:100],
+                 "device": secrets.token_hex(8)}
 
         def work(_db):
             try:
-                info = subsonic.Server(base, user, password).ping()
-            except subsonic.SubsonicError as exc:
+                if kind == "jellyfin":
+                    server, token, user_id = jellyfin.Server.sign_in(base, user, password, entry["device"])
+                    info = server.ping()
+                    secret = json.dumps({"token": token, "user_id": user_id})
+                else:
+                    info = subsonic.Server(base, user, password).ping()
+                    secret = password
+            except (subsonic.SubsonicError, jellyfin.JellyfinError) as exc:
                 return {"op": "add", "id": sid, "error": f"Couldn't sign in: {exc}"}
             except (OSError, ValueError) as exc:
-                return {"op": "add", "id": sid, "error": f"Couldn't reach the server: {net.describe(exc)}"}
-            return {"op": "add", "id": sid, "entry": entry, "password": password, "info": info}
+                return {"op": "add", "id": sid, "error": f"Couldn't reach the server: {_plain(exc)}"}
+            return {"op": "add", "id": sid, "entry": entry, "password": secret, "info": info}
 
         self._run(work)
 
     @Slot(str)
     def removeServer(self, sid):
         """Forget a server: its songs leave the library and its password leaves the keyring."""
+        client = self._clients.get(sid)
+        kind = self._kind(sid)
+        if isinstance(client, jellyfin.Server):  # revoke the sign-in on the server too, if it answers
+            self._worker.submit(lambda _db, c=client: _quietly(c.sign_out))
+        self._disconnect(sid)
         self._list = [s for s in self._list if s["id"] != sid]
         self._save_list()
-        self._disconnect(sid)
         try:
             _keyring().delete_password(KEYRING_SERVICE, sid)
         except Exception:  # noqa: BLE001 - not there, or no keyring: nothing to remove
             pass
-        self._worker.submit(lambda db: self._take_out(db, [sid]))
+        self._worker.submit(lambda db: self._take_out(db, [(kind, sid)]))
         self.changed.emit()
 
     @Slot(str)
@@ -227,13 +249,14 @@ class Servers(QObject):
         self._run(work)
 
     def _sync(self, db, sid, client):
-        prefix = remote.prefix("subsonic", sid)
+        kind = self._kind(sid)
+        prefix = remote.prefix(kind, sid)
         before = {r[0] for r in db.conn.execute("SELECT path FROM tracks WHERE substr(path, 1, ?) = ?",
                                                 (len(prefix), prefix))}
         hidden = db.hidden_paths()
         seen, covers = set(), {}
         for song in client.songs():
-            row = track_row(sid, song)
+            row = track_row(sid, song, kind)
             if row["path"] in hidden:  # you removed it from the library
                 continue
             seen.add(row["path"])
@@ -276,8 +299,8 @@ class Servers(QObject):
             paths = [r[0] for r in db.conn.execute(f"SELECT path FROM tracks WHERE NOT ({remote.SQL_LOCAL})")]
         else:
             paths = []
-            for sid in ids:
-                prefix = remote.prefix("subsonic", sid)
+            for kind, sid in ids:
+                prefix = remote.prefix(kind, sid)
                 paths += [r[0] for r in db.conn.execute("SELECT path FROM tracks WHERE substr(path, 1, ?) = ?",
                                                         (len(prefix), prefix))]
         if paths:
@@ -329,7 +352,7 @@ class Servers(QObject):
         if op == "check":
             st = self._state.setdefault(sid, {})
             st["busy"] = False
-            remote.set_reachable("subsonic", sid, r["ok"])
+            remote.set_reachable(self._kind(sid), sid, r["ok"])
             st["status"] = "ok" if r["ok"] else "down"
             st["error"] = r.get("error", "")
             if not r["ok"]:
@@ -374,7 +397,8 @@ class Servers(QObject):
             return None
 
     def _save_list(self):
-        keep = [{k: s.get(k) for k in ("id", "kind", "base", "user", "name", "songs", "synced")} for s in self._list]
+        keep = [{k: s.get(k) for k in ("id", "kind", "base", "user", "name", "songs", "synced", "device")}
+                for s in self._list]
         self._settings.setValue("servers/list", json.dumps(keep))
 
     def shutdown(self):
@@ -383,7 +407,17 @@ class Servers(QObject):
 
 
 def _plain(exc):
-    return str(exc) if isinstance(exc, (subsonic.SubsonicError, ValueError)) else net.describe(exc)
+    if isinstance(exc, (subsonic.SubsonicError, jellyfin.JellyfinError, ValueError)):
+        return str(exc)
+    return net.describe(exc)
+
+
+def _client(entry, secret):
+    """The client for a kept server: Subsonic with its password, Jellyfin with its token."""
+    if (entry.get("kind") or "subsonic") == "jellyfin":
+        kept = json.loads(secret)
+        return jellyfin.Server(entry["base"], kept["token"], kept["user_id"], entry.get("device") or "hallucinate")
+    return subsonic.Server(entry["base"], entry.get("user", ""), secret)
 
 
 def _quietly(fn, *args):

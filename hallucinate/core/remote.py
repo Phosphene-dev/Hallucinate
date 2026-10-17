@@ -8,7 +8,7 @@ make its songs unavailable, and the player moves past them)."""
 import threading
 import urllib.parse
 
-SCHEMES = ("subsonic",)
+SCHEMES = ("subsonic", "jellyfin")
 # In SQL: a row that's a file on this computer (not a server's song). Local paths never start "word://".
 SQL_LOCAL = "path NOT GLOB '[a-z]*://*'"
 

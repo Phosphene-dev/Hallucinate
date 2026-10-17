@@ -36,7 +36,7 @@
 - **Browse like a record shelf.** Album and artist pages, a colour wall that sorts every cover round the colour wheel, a timeline by decade and year, and your own folders.
 - **Every listen remembered.** A searchable history of everything you played, recaps of every week, month and year, and your Last.fm, ListenBrainz or old player's history brought over.
 - **Plays everything well.** FLAC, MP3, AAC/ALAC, Ogg, Opus, WAV, WavPack, AIFF and more, CUE sheet albums too, with true gapless playback, ReplayGain (measured where tags are missing), a 10-band equalizer, headphone correction and crossfeed, and a signal path readout that tells you when the sound is untouched.
-- **Your music server too, if you have one.** Songs on a Navidrome, Gonic, Airsonic or other Subsonic server join your library and play like your own files; songs from a server that can't be reached are skipped. Off until you switch it on in Settings → Features.
+- **Your music server too, if you have one.** Songs on a Jellyfin server, or a Navidrome, Gonic, Airsonic or other Subsonic server, join your library and play like your own files; songs from a server that can't be reached are skipped. Off until you switch it on in Settings → Features.
 - **Internet radio and podcasts, if you want them.** Both are off until you switch them on in Settings → Features (where anything else you don't use can be switched off too). Stations come from their stream links or the Radio Browser directory and show the song they're playing; podcasts come from RSS feeds, the Apple Podcasts directory, OPML files from other apps or a folder of episodes, remember where you stopped, line up in an Up next list and have settings of their own, per show too. Neither ever counts toward your stats.
 - **Radio mode and smart playlists.** Similar songs from your library keep playing when the queue runs out (songs you keep skipping come up less); playlists update themselves from rules, ratings included.
 - **Fast to drive.** Instant search even across a quarter of a million songs, Ctrl+K for anything, Ctrl/Shift+click to act on many songs at once, and Ctrl+Z when the queue goes wrong.
@@ -265,7 +265,7 @@ What does go online, and only when:
 | Covers and tags (MusicBrainz, Cover Art Archive) | Only when you click Find online, Find all, or Look up | Album and artist |
 | Last.fm, ListenBrainz | Only after you connect your own account | What you play (scrobbles); keys stay in your system keyring |
 | Discord status | Only if you switch it on; talks to the Discord app on your computer | The song, or just "Listening to music" in privacy mode. To show the cover, the album and artist are looked up on MusicBrainz (not when the cover is hidden) |
-| Music servers | Only if you switch them on and add one | Requests to your own server; your password stays in your system keyring, and each request signs in with a one-time code |
+| Music servers | Only if you switch them on and add one | Requests to your own server only. The sign-in stays in your system keyring: for Subsonic, each request signs in with a one-time code; for Jellyfin, only the server's access token is kept, not your password |
 | Internet radio, podcasts | Only if you switch them on and use them | Requests to the station or feed you chose; directory searches send your search words |
 | Headphone EQ (AutoEQ) | Only when you search for headphones | The profile list is downloaded from GitHub |
 | Update check | Off unless you switch it on; once a day | Asks GitHub for the latest version |

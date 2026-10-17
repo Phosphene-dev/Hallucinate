@@ -6,10 +6,12 @@ All notable changes to this project are documented here. Format based on
 ## [Unreleased]
 
 ### Added
-- Music servers: songs on your Navidrome, Gonic, Airsonic or other Subsonic server join your library and
-  play like your own files, in albums, artists, search, playlists, smart playlists, stats and history. Switch
+- Music servers: songs on your Jellyfin server, or your Navidrome, Gonic, Airsonic or other Subsonic server,
+  join your library and play like your own files, in albums, artists, search, playlists, smart playlists, stats and history. Switch
   it on in Settings → Features, then add a server in Settings → Music servers.
-  - The password is kept in your system keyring and never sent: each request carries a one-time code.
+  - Your sign-in is kept in your system keyring. For Subsonic it's the password, which is never sent: each
+    request carries a one-time code. For Jellyfin it's only the access token the server gives; the password
+    isn't kept, and removing the server signs it out there.
   - The app warns about a link that isn't secure and isn't on your home network.
   - Each server's albums are its own, so they don't merge with copies you have as files, and duplicate
     checks keep your own file.

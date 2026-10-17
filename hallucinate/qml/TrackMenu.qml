@@ -18,7 +18,7 @@ Menu {
     // a radio station or a streamed episode: no tags, ratings, playlists or files to act on
     readonly property bool stream: paths.some(function (p) { return /^https?:\/\//.test(p) || podcasts.isEpisode(p) })
     // a song on a music server: no file here to show, edit or put in the trash
-    readonly property bool onServer: paths.some(function (p) { return /^subsonic:\/\//.test(p) })
+    readonly property bool onServer: paths.some(function (p) { return /^(subsonic|jellyfin):\/\//.test(p) })
     readonly property string what: single ? "“" + trackTitle + "”" : paths.length + " songs"
 
     function show(p, t, c, i) {
