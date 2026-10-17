@@ -125,6 +125,11 @@ ApplicationWindow {
             route = target
         } else visit(target)
     }
+    function forgetRoute(kind, id) {  // a deleted playlist or unfollowed show: Back and Forward skip it
+        var keep = function (r) { return !(r.kind === kind && r.id === id) }
+        backRoutes = backRoutes.filter(keep)
+        forwardRoutes = forwardRoutes.filter(keep)
+    }
     function goForward() {
         if (!forwardRoutes.length) return
         var target = forwardRoutes[forwardRoutes.length - 1]
@@ -177,6 +182,7 @@ ApplicationWindow {
         for (var i = 0; i < root.children.length; i++) out = out.concat(pastTheEdge(root.children[i], clipped))
         return out
     }
+    function searchText() { return searchField.text }
     function featureOn(name) { return shell.features[name] !== false }  // pages that aren't features are always on
     function go(name) {
         if (!featureOn(name)) name = "home"
@@ -285,12 +291,13 @@ ApplicationWindow {
         function onExportPlaylist(kind, name) {
             exportDialog.kind = kind
             exportDialog.selectedFile = StandardPaths.writableLocation(StandardPaths.MusicLocation) + "/"
-                                        + (name || "Playlist").replace(/[\\/:*?"<>|]/g, "-") + ".m3u8"
+                                        + (name || "Playlist").replace(/[\\/:*?"<>|#%]/g, "-") + ".m3u8"
             exportDialog.open()
         }
         function onNotify(message) { toast.show(message) }
         function onNotifyAction(message, actionText, action) { toast.show(message, 0, actionText, action) }
         function onBack() { window.goBack() }
+        function onRouteGone(kind, id) { window.forgetRoute(kind, id) }
         function onInstallUpdate() { updateDlg.open() }
         function onAlbumMenu(keys, title, artist) {
             // acting on a selected album acts on the whole selection
@@ -378,8 +385,31 @@ ApplicationWindow {
     }
     onSectionChanged: { Selection.clear(); AlbumSelection.clear() }
     Connections { target: stack; function onCurrentItemChanged() { Selection.clear(); AlbumSelection.clear() } }
-    Shortcut { sequence: "Escape"; enabled: Selection.count > 0 && !nowPlaying.open; onActivated: Selection.clear() }
-    Shortcut { sequence: "Escape"; enabled: AlbumSelection.count > 0 && !nowPlaying.open; onActivated: AlbumSelection.clear() }
+    // One Escape for both kinds of selection: two shortcuts on the same key at once would be ambiguous, and Qt
+    // then runs neither. Selecting songs drops a selection of albums and the other way round, so their bars
+    // never sit on top of each other.
+    Shortcut {
+        sequence: "Escape"
+        enabled: (Selection.count > 0 || AlbumSelection.count > 0) && !nowPlaying.open
+        onActivated: { Selection.clear(); AlbumSelection.clear() }
+    }
+    Connections { target: Selection; function onCountChanged() { if (Selection.count > 0) AlbumSelection.clear() } }
+    Connections { target: AlbumSelection; function onCountChanged() { if (AlbumSelection.count > 0) Selection.clear() } }
+
+    ConfirmDialog {
+        id: removeFolderDlg
+        objectName: "removeFolderDialog"
+        property string path: ""
+        title: "Remove this music folder?"
+        confirmText: "Remove"
+        body: "“" + path + "” and the songs in it leave the library. The files stay on your disk; add the folder "
+              + "again to bring them back (a full rescan). If it's on a drive that's only unplugged, plug it back in instead."
+        onAccepted: library.removeFolder(path)
+    }
+    Connections {
+        target: Nav
+        function onRemoveFolder(path) { removeFolderDlg.path = path; removeFolderDlg.open() }
+    }
 
     // Removing albums: from the library only (files stay; Settings → Library brings them back), or to the trash
     ConfirmDialog {
@@ -634,7 +664,12 @@ ApplicationWindow {
         standardButtons: Dialog.Ok | Dialog.Cancel
         onOpened: { createField.text = ""; createField.forceActiveFocus() }
         onAccepted: if (createField.text.trim().length) window.openPlaylist(userLib.createPlaylist(createField.text.trim()), createField.text.trim())
-        TextField { id: createField; width: 280; placeholderText: "Playlist name"; selectByMouse: true; onAccepted: createDlg.accept() }
+        TextField {
+            id: createField; width: 280; placeholderText: "Playlist name"; selectByMouse: true
+            onAccepted: if (text.trim().length) createDlg.accept()  // no nameless playlists
+            onTextChanged: { var b = createDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
+            onVisibleChanged: if (visible) { var b = createDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
+        }
     }
 
     Dialog {
@@ -806,8 +841,13 @@ ApplicationWindow {
     }
 
     // Keyboard shortcuts (disabled while typing in the search box)
+    // Any text field with the focus (the search, a page's filter, a dialog's field): the window's single-key
+    // shortcuts (Space, arrows, letters) stand aside so the keys reach it.
     readonly property bool typing: searchField.activeFocus
-    Shortcut { sequence: "Space"; enabled: !window.typing; onActivated: player.toggle() }
+        || (window.activeFocusItem !== null && window.activeFocusItem.cursorPosition !== undefined)
+    // A focused Qt control (a checkbox, a combo box, a dialog's buttons) presses itself with Space
+    readonly property bool onControl: window.activeFocusItem !== null && window.activeFocusItem.down !== undefined
+    Shortcut { sequence: "Space"; enabled: !window.typing && !window.onControl; onActivated: player.toggle() }
     Shortcut { sequence: "Left"; enabled: !window.typing; onActivated: player.seekBy(-5000) }
     Shortcut { sequence: "Right"; enabled: !window.typing; onActivated: player.seekBy(5000) }
     Shortcut { sequence: "Up"; enabled: !window.typing; onActivated: player.changeVolume(0.05) }
@@ -829,7 +869,7 @@ ApplicationWindow {
             required property int index
             Shortcut {
                 sequence: "Ctrl+" + index
-                enabled: player.hasTrack
+                enabled: player.hasTrack && !(player.current.kind || "").length  // stations and episodes have no rating
                 onActivated: userLib.setRating(player.current.path, index === 0 ? userLib.rating(player.current.path) : index)
             }
         }

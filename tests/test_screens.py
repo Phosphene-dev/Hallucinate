@@ -695,6 +695,11 @@ def test_back_and_forward_like_a_browser(qapp, app_window):
     call("openAlbum", track["album_key"])  # a new visit drops what was ahead
     assert window.property("forwardRoutes").toVariant() == []
     assert album_page is not None
+    call("openPlaylist", 7, "Gone soon")
+    call("go", "stats")
+    call("forgetRoute", "playlist", 7)  # deleted: Back skips it
+    call("goBack")
+    assert where() == track["album_key"]
     assert not [w for w in warnings if "main.qml" in w], warnings
 
 
@@ -950,6 +955,16 @@ def test_internet_radio_page(qapp, app_window):
 
         assert menu is not None and wait_for(lambda: menu.property("opened"), timeout=2)
         QMetaObject.invokeMethod(menu, "close")
+        add = window.findChild(QObject, "addStationDialog")
+        QMetaObject.invokeMethod(add, "open")
+        assert wait_for(lambda: add.property("opened"), timeout=2)
+        assert add.property("linkOk") is False  # OK waits for a web link
+        url = window.findChild(QObject, "stationUrl")
+        url.setProperty("text", "  https://example.com/live  ")
+        assert add.property("linkOk") is True
+        url.setProperty("text", "file:///etc/passwd")
+        assert add.property("linkOk") is False
+        QMetaObject.invokeMethod(add, "close")
         assert not warnings, warnings[:3]
     finally:
         shell.setFeature("stations", False)

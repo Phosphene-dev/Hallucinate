@@ -32,7 +32,11 @@ Dialog {
     Column {
         width: dlg.availableWidth
         spacing: 10
-        TextField { id: nameField; width: parent.width; placeholderText: "Theme name"; selectByMouse: true; Accessible.name: "Theme name" }
+        TextField {
+            id: nameField; width: parent.width; placeholderText: "Theme name"; selectByMouse: true; Accessible.name: "Theme name"
+            onTextChanged: { var b = dlg.standardButton(Dialog.Save) || dlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }  // keeps your colours until it has a name
+            onVisibleChanged: if (visible) { var b = dlg.standardButton(Dialog.Save) || dlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
+        }
         Repeater {
             model: dlg.keys
             Row {

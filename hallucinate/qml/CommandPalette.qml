@@ -39,7 +39,12 @@ Popup {
         open()
         field.forceActiveFocus()
     }
-    onClosed: if (win) win.contentItem.forceActiveFocus()
+    onClosed: {
+        if (searched && win)  // the search page shows the library's results: put back what it was showing
+            library.search(win.searchText())
+        searched = false
+        if (win) win.contentItem.forceActiveFocus()
+    }
 
     // --- commands ------------------------------------------------------------------------
     function commands() {
@@ -149,7 +154,8 @@ Popup {
         item.run()
     }
 
-    Timer { id: searchDelay; interval: 110; onTriggered: { library.search(field.text); palette.rebuild() } }
+    property bool searched: false  // the palette used the library's search, so the page's results need restoring
+    Timer { id: searchDelay; interval: 110; onTriggered: { palette.searched = true; library.search(field.text); palette.rebuild() } }
     Connections {
         target: library.searchTracks
         enabled: palette.opened

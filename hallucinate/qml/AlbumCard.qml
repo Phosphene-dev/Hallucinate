@@ -21,6 +21,8 @@ Item {
     height: cardWidth + (note.length ? 80 : 62)
     activeFocusOnTab: true
     Keys.onReturnPressed: Nav.openAlbum(card.albumKey)
+    // A focused control takes Space and Enter itself; without this the window's Space (play/pause) wins
+    Keys.onShortcutOverride: function (event) { event.accepted = event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter }
     Keys.onSpacePressed: Nav.openAlbum(card.albumKey)
     Keys.onMenuPressed: card.openMenu()
     Accessible.role: Accessible.Button

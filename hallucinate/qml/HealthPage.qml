@@ -22,7 +22,7 @@ Item {
         return "Edit tags"
     }
     function fix(check, item) {
-        if (check.kind === "folder") library.removeFolder(item.path)
+        if (check.kind === "folder") Nav.removeFolder(item.path)
         else if (check.id === "covers") metaEditor.fetchCover(item.album_key, item.album_artist || "", item.album || "", false)
         else if (check.id === "replaygain") replayGain.analyseAlbum(item.album_key)
         else if (check.id === "genre") Nav.findAlbumGenre(item.album_key)
@@ -68,7 +68,7 @@ Item {
         MenuSeparator {}
         MenuItem {
             text: "Remove from the library"; icon.name: "remove"; icon.color: Theme.error
-            onTriggered: library.removeFolder(folderMenu.path)
+            onTriggered: Nav.removeFolder(folderMenu.path)
         }
     }
     ConfirmDialog {

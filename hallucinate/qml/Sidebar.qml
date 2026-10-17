@@ -230,7 +230,7 @@ Item {
                                 icon.name: "playlist"
                                 onTriggered: side.openPlaylist(model.id, model.name)
                             }
-                            onObjectAdded: (index, object) => playlistMenu.insertItem(index + 3, object)
+                            onObjectAdded: (index, object) => playlistMenu.insertItem(index + 4, object)  // after the three actions and the separator
                             onObjectRemoved: (index, object) => playlistMenu.removeItem(object)
                         }
                         Instantiator {
@@ -391,6 +391,7 @@ Item {
             if (plItemMenu.smart) userLib.deleteSmartPlaylist(plItemMenu.pid)
             else userLib.deletePlaylist(plItemMenu.pid)
             if (open) Nav.goHome()
+            Nav.routeGone(plItemMenu.smart ? "smart" : "playlist", plItemMenu.pid)
         }
     }
 }

@@ -167,6 +167,7 @@ Dialog {
                     id: field
                     Layout.fillWidth: true
                     selectByMouse: true
+                    onAccepted: dlg.accept()  // Enter saves, as in the other dialogs
                     Accessible.name: dlg.labels[rowItem.key]
                     color: Theme.text
                     font.family: Theme.fontFamily

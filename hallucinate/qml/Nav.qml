@@ -28,6 +28,7 @@ QtObject {
     signal editAlbum(string key)
     signal findAlbumGenre(string key)  // open the album editor and look its genre up
     signal back()
+    signal routeGone(string kind, int id)  // a playlist or show was deleted: Back and Forward skip it
     signal installUpdate()
     // keys: album keys; what: how to name them in messages ("“Album”" or "3 albums")
     signal albumMenu(var keys, string title, string artist)
@@ -37,5 +38,6 @@ QtObject {
     signal artistMenu(string name)
     signal folderMenu(string path, string name)
     signal removeSongs(var paths, string what)
+    signal removeFolder(string path)  // take a music folder out of the library, after asking
     signal trashSongs(var paths, string what)
 }

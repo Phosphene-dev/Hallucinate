@@ -40,7 +40,7 @@ Item {
         body: "“" + page.playlistName + "” goes away for good. The songs in it stay in your library."
         confirmText: "Delete playlist"
         destructive: true
-        onAccepted: { userLib.deletePlaylist(page.playlistId); Nav.goHome() }
+        onAccepted: { var id = page.playlistId; userLib.deletePlaylist(id); Nav.goHome(); Nav.routeGone("playlist", id) }
     }
 
     ListView {
@@ -62,6 +62,8 @@ Item {
                 Text {
                     textFormat: Text.PlainText
                     text: page.liked ? "Liked Songs" : page.playlistName
+                    width: Math.min(implicitWidth, list.width - 24)
+                    elide: Text.ElideRight
                     color: Theme.text
                     font.family: Theme.displayFamily
                     font.pixelSize: Theme.fontSize(30)

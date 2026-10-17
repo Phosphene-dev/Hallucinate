@@ -93,6 +93,9 @@ Dialog {
             width: parent.width
             placeholderText: "Playlist name"
             selectByMouse: true
+            // a smart playlist needs a name: Save waits for one rather than closing and losing the rules
+            onTextChanged: { var b = dlg.standardButton(Dialog.Save) || dlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
+            onVisibleChanged: if (visible) { var b = dlg.standardButton(Dialog.Save) || dlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
         }
         Row {
             spacing: 8

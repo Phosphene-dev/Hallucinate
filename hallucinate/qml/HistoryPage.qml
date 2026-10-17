@@ -174,7 +174,7 @@ Item {
                         Icon { x: 13; anchors.verticalCenter: parent.verticalCenter; width: 14; height: 14; name: "search"; color: Theme.textDim }
                     }
                     onTextEdited: { page.query = text; queryTimer.restart() }
-                    Keys.onEscapePressed: { text = ""; page.query = ""; queryTimer.restart() }
+                    Keys.onEscapePressed: { page.query = ""; queryTimer.restart() }  // keeps the text: binding
                 }
                 Repeater {
                     model: page.periods

@@ -301,6 +301,7 @@ Item {
                 }
                 StarRating {
                     objectName: "nowPlayingRating"
+                    visible: !(player.current.kind || "").length
                     Layout.topMargin: 2
                     path: player.hasTrack ? player.current.path || "" : ""
                     size: 20

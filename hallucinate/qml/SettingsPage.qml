@@ -676,7 +676,8 @@ Item {
                         id: rm
                         anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
                         icon: "close"; size: 14
-                        onClicked: library.removeFolder(modelData)
+                        tip: "Remove this folder from the library"
+                        onClicked: Nav.removeFolder(modelData)
                     }
                 }
             }

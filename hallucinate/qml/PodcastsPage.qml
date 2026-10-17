@@ -37,7 +37,7 @@ Item {
               + (show.folder ? ". The files in its folder stay where they are." : ", along with its downloads.")
         confirmText: "Unfollow"
         destructive: true
-        onAccepted: podcasts.unfollow(show.id, true)
+        onAccepted: { var id = show.id; podcasts.unfollow(id, true); Nav.routeGone("podcast", id) }
     }
     Dialog {
         id: followDlg

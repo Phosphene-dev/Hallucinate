@@ -42,6 +42,20 @@ Hardening on the way to 1.0, plus a few things asked for while testing.
   (it used to look like it was still playing, forever).
 - Reconnecting to a station that dropped now really opens a new connection (it could carry on waiting on the
   old one).
+- A full code review for bugs and safety. Among the fixes:
+  - Links from stations, podcast feeds and online lookups must be web links (http or https), redirects
+    included, and saved passwords are never sent on to another site.
+  - Files and settings are written whole or not at all, so a crash or full disk can't leave half a file.
+    Your data folders are private to your account.
+  - An update is checked against its published checksum again just before it's installed.
+  - Backups are checked before restoring.
+  - A tag edit can't damage a song if saving fails.
+  - Several dialogs no longer accept an empty name or a link that isn't a web link.
+  - Space and Enter on a focused button press that button instead of play/pause.
+  - Radio stations and podcast episodes can't be given star ratings.
+  - Back and Forward skip a playlist or show you've deleted.
+  - Long playlist names and artist lists are shortened instead of running off the page.
+  - The queue's Clear button is greyed out when the queue is empty, and Enter saves in Edit tags.
 
 ## [0.9.9.2] - 2026-10-16
 

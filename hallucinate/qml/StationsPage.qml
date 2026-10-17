@@ -79,8 +79,11 @@ Item {
         modal: true
         title: "Add a station"
         standardButtons: Dialog.Ok | Dialog.Cancel
-        onOpened: { urlField.text = ""; nameField.text = ""; urlField.forceActiveFocus() }
-        onAccepted: stations.add(urlField.text, nameField.text)
+        readonly property bool linkOk: /^https?:\/\/\S+$/i.test(urlField.text.trim())
+        function okLater() { var b = standardButton(Dialog.Ok); if (b) b.enabled = linkOk }
+        onLinkOkChanged: okLater()
+        onOpened: { urlField.text = ""; nameField.text = ""; okLater(); urlField.forceActiveFocus() }
+        onAccepted: stations.add(urlField.text.trim(), nameField.text.trim())
         Column {
             width: addDlg.availableWidth
             spacing: 10
@@ -98,7 +101,7 @@ Item {
                 placeholderText: "https://…"
                 selectByMouse: true
                 Accessible.name: "Stream link"
-                onAccepted: addDlg.accept()
+                onAccepted: if (addDlg.linkOk) addDlg.accept()
             }
             TextField {
                 id: nameField
@@ -106,7 +109,7 @@ Item {
                 placeholderText: "Name (optional: the station's own name is used)"
                 selectByMouse: true
                 Accessible.name: "Station name"
-                onAccepted: addDlg.accept()
+                onAccepted: if (addDlg.linkOk) addDlg.accept()
             }
         }
     }
@@ -119,8 +122,12 @@ Item {
         title: "Rename station"
         standardButtons: Dialog.Ok | Dialog.Cancel
         onOpened: renameField.forceActiveFocus()
-        onAccepted: stations.rename(stationId, renameField.text)
-        TextField { id: renameField; width: 280; selectByMouse: true; Accessible.name: "Station name"; onAccepted: renameDlg.accept() }
+        onAccepted: if (renameField.text.trim().length) stations.rename(stationId, renameField.text.trim())
+        TextField {
+            id: renameField; width: 280; selectByMouse: true; Accessible.name: "Station name"
+            onAccepted: if (text.trim().length) renameDlg.accept()
+            onTextChanged: { var b = renameDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
+        }
     }
     FileDialog {
         id: importDlg
