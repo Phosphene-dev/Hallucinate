@@ -106,7 +106,26 @@ finding, following and playing podcasts.
 - [ ] The whole app from the keyboard alone: Tab through every page, arrows in lists, Enter to play, Menu key
   (or Shift+F10) for menus, Esc closes dialogs.
 
-### 10. macOS (Apple Silicon)
+### 10. New in 0.9.9.3
+- [ ] Sidebar: drag entries into a new order, right-click → Move up/down, Alt+Up/Down on a focused entry, and the
+  list in Settings → Features (with Reset). The order survives a restart, and switching a page off and on keeps
+  its place.
+- [ ] Library health → Albums without a genre → **Find all online** on your real library (it takes a couple of
+  seconds an album; **Stop** works part-way). In the review: are the genres right? Are the artist-based ones
+  (unticked) sensible? Change one, pick an alternative for another, untick a few, Save, and check the files'
+  tags in another tagger.
+- [ ] **Find genre** on a single Library health row, and **Find online** next to Genre in Edit album and Edit
+  tags (one song).
+- [ ] Internet radio → **Heard on the radio**: after an hour on a station the songs are listed with the right
+  times; search, Find in your library, Copy, Remove and Clear work.
+- [ ] **Your listening** on the radio and Podcasts pages: the hours look about right for this week, month and
+  all time.
+- [ ] Last.fm/ListenBrainz with radio scrobbling on: songs heard on the radio scrobble with no album (not the
+  station's name). With **Count podcast episodes** on, an episode scrobbles as the show and its title.
+- [ ] CPU with the window focused and music playing, on your real GPU (`htop`): note the number; turn off
+  **Animated background** in Settings → Appearance and note it again.
+
+### 11. macOS (Apple Silicon)
 The macOS app isn't signed, so the first start needs **right-click → Open** (or `xattr -dr
 com.apple.quarantine /Applications/Hallucinate.app`). Then:
 - [ ] It opens, scans `~/Music` or a chosen folder, and plays FLAC, MP3, AAC/ALAC, Opus and WAV.

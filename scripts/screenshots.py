@@ -364,6 +364,15 @@ def main():
                     icon.parent.mkdir(parents=True, exist_ok=True)
                     icon.write_bytes(cover(100 + i))
                 stations.refresh()
+                first_station = stations._db.stations()[0]
+                now = time.time()
+                heard = [("Aurora Vale", "Glass Horizon"), ("Daydream Atlas", "Meridian"), ("Echo Meadow", "Dew Point"),
+                         ("Hollow Pines", "Timberline"), ("Glass Orchard", "Harvest Moon"), ("Fable Quartet", "Colophon")]
+                for i, (artist, title) in enumerate(heard):
+                    stations._db.log_radio_song(first_station["id"], first_station["name"], artist, title,
+                                                ts=now - i * 1900 - 600)
+                stations._db.add_listen_time("station", first_station["id"], first_station["name"], 3 * 3600 + 900)
+                stations.logChanged.emit()
                 art = work / "podcast-art"
                 art.mkdir(exist_ok=True)
                 now = time.time()

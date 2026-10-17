@@ -812,28 +812,11 @@ def test_nothing_spills_out_of_its_card_at_any_width(qapp, app_window, width):
 
 
 def past_the_edge(window):
-    """Visible, unclipped things that reach past the window's right edge."""
-    from PySide6.QtCore import QRectF
-
-    found = []
-
-    def walk(item, clipped):
-        if not item.isVisible() or item.opacity() == 0:
-            return
-        cls = item.metaObject().className()
-        if not clipped and item.width() > 0 and item.height() > 0 and not cls.startswith(("QQuickItem", "QQuickRepeater")):
-            box = item.mapRectToScene(QRectF(0, 0, item.width(), item.height()))
-            if box.right() > window.width() + 3 and box.left() < window.width():  # 2 px: the window outline
-                text = item.property("text")
-                found.append(f"{item.objectName() or cls.split('_QML')[0]}"
-                             f"{' “' + text + '”' if isinstance(text, str) and text else ''} reaches x={box.right():.0f}")
-        if item.clip() or cls.startswith(("QQuickListView", "QQuickGridView", "QQuickFlickable", "QQuickPopupItem")):
-            clipped = True
-        for child in item.childItems():
-            walk(child, clipped)
-
-    walk(window.contentItem(), False)
-    return found
+    """Visible, unclipped things that reach past the window's right edge. Walked in QML: walking the item tree
+    from Python can be handed a stale wrapper when many items come and go."""
+    found = QMetaObject.invokeMethod(window, "pastTheEdge", Qt.ConnectionType.DirectConnection,
+                                     Q_RETURN_ARG("QVariant"), Q_ARG("QVariant", None), Q_ARG("QVariant", False))
+    return plain(found) or []
 
 
 @pytest.mark.parametrize("app_window", ["varied"], indirect=True)

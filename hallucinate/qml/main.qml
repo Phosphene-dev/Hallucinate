@@ -159,6 +159,24 @@ ApplicationWindow {
         for (var i = 0; i < root.children.length; i++) out = out.concat(visibleTexts(root.children[i]))
         return out
     }
+    function pastTheEdge(root, clipped) {
+        // For tests: visible, unclipped things that reach past the window's right edge (2 px: the outline).
+        root = root || window.contentItem
+        if (!root.visible || root.opacity === 0) return []
+        var out = []
+        var cls = root.toString()
+        var plain = cls.indexOf("QQuickItem") === 0 || cls.indexOf("QQuickRepeater") === 0
+        if (!clipped && root.width > 0 && root.height > 0 && !plain) {
+            var box = root.mapToItem(null, 0, 0, root.width, root.height)
+            if (box.x + box.width > window.width + 3 && box.x < window.width)
+                out.push((root.objectName || cls.split("_QML")[0].split("(")[0])
+                         + (typeof root.text === "string" && root.text ? " “" + root.text + "”" : "")
+                         + " reaches x=" + Math.round(box.x + box.width))
+        }
+        if (root.clip || /^QQuick(ListView|GridView|Flickable|PopupItem)/.test(cls)) clipped = true
+        for (var i = 0; i < root.children.length; i++) out = out.concat(pastTheEdge(root.children[i], clipped))
+        return out
+    }
     function featureOn(name) { return shell.features[name] !== false }  // pages that aren't features are always on
     function go(name) {
         if (!featureOn(name)) name = "home"
