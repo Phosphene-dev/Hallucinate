@@ -5,6 +5,10 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.9.6] - 2026-10-17
+
+Saving genres for many albums at once works properly: fast, with progress, and without endless rescans.
+
 ### Fixed
 - Saving genres for a few hundred albums ("Find all online") seemed not to work. Every song was copied whole
   to write its tag, so it took a very long time, in the background with nothing to show for it. Meanwhile

@@ -95,6 +95,11 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.9.9.6" date="2026-10-17">
+      <description>
+        <p>Saving genres found online for many albums is much faster, shows its progress with a Stop button, and no longer makes the library rescan over and over. Tags that fit in the room a file keeps for them are written in place.</p>
+      </description>
+    </release>
     <release version="0.9.9.5" date="2026-10-17">
       <description>
         <p>Fixed the window freezing while ReplayGain measured music: songs are now decoded in a separate helper process, so a file the decoder chokes on can't hang the app.</p>
