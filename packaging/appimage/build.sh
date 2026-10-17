@@ -20,8 +20,16 @@ printf 'PySide6>=6.8\nmutagen>=1.46\nkeyring>=24\nnumpy>=1.24\n%s\n' "$repo" > "
 
 python3 -m venv "$work/venv"
 "$work/venv/bin/pip" install -q python-appimage
+# A fixed release of appimagetool, checked against its checksum: the "continuous" build changes under us.
+tool_version=1.9.0
+case "$(uname -m)" in
+  x86_64) tool_sha=46fdd785094c7f6e545b61afcfb0f3d98d8eab243f644b4b17698c01d06083d1 ;;
+  aarch64) tool_sha=04f45ea45b5aa07bb2b071aed9dbf7a5185d3953b11b47358c1311f11ea94a96 ;;
+  *) echo "No pinned appimagetool for $(uname -m)" >&2; exit 1 ;;
+esac
 curl -fsSL -o "$work/appimagetool" \
-  "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-$(uname -m).AppImage"
+  "https://github.com/AppImage/appimagetool/releases/download/$tool_version/appimagetool-$(uname -m).AppImage"
+echo "$tool_sha  $work/appimagetool" | sha256sum -c --quiet -
 chmod +x "$work/appimagetool"
 
 (cd "$work" && "$work/venv/bin/python-appimage" build app -p "${PYTHON_VERSION:-3.12}" --no-packaging appdir)

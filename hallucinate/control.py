@@ -21,6 +21,21 @@ def default_server_name(env=None, platform=None):
     runtime = env.get("XDG_RUNTIME_DIR", "")
     if platform.startswith("linux") and runtime and os.path.isdir(runtime) and not env.get("FLATPAK_ID"):
         return os.path.join(runtime, "hallucinate-control")
+    if not platform.startswith(("win", "darwin")) and not env.get("FLATPAK_ID") and hasattr(os, "getuid"):
+        # No runtime folder (a bare X session, ssh): a folder of our own in the cache, closed to other users.
+        # macOS's temp folder and the Flatpak's /tmp are already private; Windows has no folders for pipes.
+        home = env.get("HOME") or os.path.expanduser("~")
+        folder = os.path.join(env.get("XDG_CACHE_HOME") or os.path.join(home, ".cache"), "hallucinate")
+        path = os.path.join(folder, "control")
+        if len(path) < 100:  # a Unix socket's path has to fit in 108 bytes
+            try:
+                os.makedirs(folder, mode=0o700, exist_ok=True)
+                st = os.lstat(folder)
+                if os.path.isdir(folder) and not os.path.islink(folder) and st.st_uid == os.getuid():
+                    os.chmod(folder, 0o700)
+                    return path
+            except OSError:
+                pass
     try:
         user = getpass.getuser()
     except Exception:  # noqa: BLE001 - no login name: fall back to the uid where there is one

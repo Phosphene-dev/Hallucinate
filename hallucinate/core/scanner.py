@@ -146,9 +146,12 @@ class Scanner:
         sheet, entry, cue_mtime = found
         expected = [cue.virtual_path(path, t["number"]) for t in entry["tracks"]]
         mtime = max(st.st_mtime, cue_mtime)
-        if all(existing.get(p) == (mtime, st.st_size) for p in expected):
-            seen.update(expected)
-            stats["unchanged"] += len(expected)
+        # A song with no length (a last track past the end of the file) is never stored, so it can't count
+        # against "unchanged": editing the sheet or the file changes mtime for every song that is.
+        known = [p for p in expected if p in existing]
+        if known and all(existing[p] == (mtime, st.st_size) for p in known):
+            seen.update(known)
+            stats["unchanged"] += len(known)
             return 0
         whole = tags.read_track(path, art_known=lambda k: False)
         if whole is None:

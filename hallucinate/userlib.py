@@ -65,6 +65,9 @@ class UserLibrary(QObject):
         self._liked = set()
         self._ratings = {}
         self._likes_revision = 0
+        # Likes and ratings change here at once and are written behind; a refresh read before such a write
+        # would put the old value back, so a refresh only takes them if nothing was changed since it started.
+        self._edits = 0
         self._playlist_id = -1
         self._playlist_items = []
         self._stats_period = "all"
@@ -153,9 +156,12 @@ class UserLibrary(QObject):
 
     # --- refresh ------------------------------------------------------------
     def refresh(self):
+        edits = self._edits
+
         def work(db):
             try:
                 data = {
+                    "edits": edits,
                     "liked_paths": db.liked_paths(),
                     "ratings": db.ratings(),
                     "playlists": db.playlists(),
@@ -183,8 +189,9 @@ class UserLibrary(QObject):
 
     @Slot(object)
     def _apply_refresh(self, data):
-        self._liked = data["liked_paths"]
-        self._ratings = data["ratings"]
+        if data["edits"] == self._edits:
+            self._liked = data["liked_paths"]
+            self._ratings = data["ratings"]
         m = self._models
         m["playlists"].set_items(data["playlists"])
         m["liked"].set_items(data["liked"])
@@ -296,6 +303,7 @@ class UserLibrary(QObject):
             return
         liked = path not in self._liked
         (self._liked.add if liked else self._liked.discard)(path)
+        self._edits += 1
         self._likes_revision += 1
         self.likesChanged.emit()
         self._write(lambda db, p, v: (db.set_liked(p, v), self._announce_likes(db, [p], v)), path, liked)
@@ -317,6 +325,7 @@ class UserLibrary(QObject):
             self._ratings[path] = stars
         else:
             self._ratings.pop(path, None)
+        self._edits += 1
         self._likes_revision += 1
         self.likesChanged.emit()
         self._write(lambda db, p, s: db.set_rating(p, s), path, stars, refresh=False)
@@ -744,6 +753,7 @@ class UserLibrary(QObject):
             return
         for p in paths:
             (self._liked.add if liked else self._liked.discard)(p)
+        self._edits += 1
         self._likes_revision += 1
         self.likesChanged.emit()
 
@@ -788,6 +798,7 @@ class UserLibrary(QObject):
                 self._ratings[p] = stars
             else:
                 self._ratings.pop(p, None)
+        self._edits += 1
         self._likes_revision += 1
         self.likesChanged.emit()
         self._write(lambda db, ps, s: [db.set_rating(p, s) for p in ps], paths, stars, refresh=False)

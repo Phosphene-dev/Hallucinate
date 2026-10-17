@@ -78,3 +78,24 @@ def test_user_library_ratings(qapp, db):
         assert wait_for(lambda: "/a" not in db.ratings())
     finally:
         ul.shutdown()
+
+
+def test_a_refresh_read_before_a_rating_does_not_undo_it(qapp, db):
+    from hallucinate.userlib import UserLibrary
+
+    add(db, "/a")
+    db.commit()
+    ul = UserLibrary(db.conn.execute("PRAGMA database_list").fetchone()["file"])
+    try:
+        stale = {"edits": ul._edits, "liked_paths": set(), "ratings": {}, "playlists": [], "liked": [],
+                 "mostPlayed": [], "recentPlayed": [], "homeMix": [], "smart": [], "rediscover": [],
+                 "onThisDay": [], "home": {}}
+        ul.setRating("/a", 5)
+        ul.toggleLike("/a")
+        ul._apply_refresh(stale)  # read before the writes landed: it must not put the old values back
+        assert ul.rating("/a") == 5 and ul.isLiked("/a")
+        stale["edits"] = ul._edits
+        ul._apply_refresh(stale)  # read after: it's the truth
+        assert ul.rating("/a") == 0 and not ul.isLiked("/a")
+    finally:
+        ul.shutdown()
