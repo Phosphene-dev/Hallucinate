@@ -47,6 +47,15 @@ All notable changes to this project are documented here. Format based on
   ListenBrainz say "Waiting for the system keyring to unlock…" and sign in once it answers.
 - A library scan that's slow reading a file (a network share, a drive waking up) no longer keeps the
   library locked while it waits, so the rest of the app carries on.
+- A song on a disk that's waking up, or on a network share that has gone away, no longer freezes the window:
+  - Playing it shows "Opening…" and starts once the disk answers, or says the file didn't open.
+  - Switching away from a song that's still opening doesn't wait for it.
+  - Waveforms and ReplayGain measuring open each file in the background first.
+  - Quitting doesn't leave the app running in the background, waiting on a file or stream that won't open.
+- Saving or removing a Last.fm or ListenBrainz sign-in can't hang the window on a keyring that doesn't
+  answer, and neither can moving sign-ins over from an old version at start.
+- Checking podcasts for new episodes is lighter: only episodes the feed changed are written, and the lists
+  refresh once after every show is checked instead of after each one.
 - Last.fm and ListenBrainz errors are in plain words ("Couldn't reach Last.fm: the server is having trouble;
   try again later" rather than "HTTP Error 500: Internal Server Error"), and their requests carry the real
   version.

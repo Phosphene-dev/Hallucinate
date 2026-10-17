@@ -14,7 +14,7 @@ import keyring
 from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices
 
-from . import __version__
+from . import __version__, keyringwait
 from .core import net
 from .core.kinds import counts_for_scrobbling, scrobble_fields, track_kind
 
@@ -145,7 +145,6 @@ class LastFmScrobbler(QObject):
         self._on_track_changed()
 
     def _load_keyring(self):
-        from . import keyringwait
 
         self._keyring_late.connect(self._apply_keyring)
         got = keyringwait.read(lambda k: keyring.get_password(KEYRING_SERVICE, k),
@@ -237,11 +236,10 @@ class LastFmScrobbler(QObject):
         if self._keyring_error:
             self._set_status(f"Cannot store API credentials securely: {self._keyring_error}")
             return
-        try:
-            keyring.set_password(KEYRING_SERVICE, "api_key", api_key)
-            keyring.set_password(KEYRING_SERVICE, "api_secret", api_secret)
-        except Exception as exc:
-            self._set_status(f"Could not save API credentials to the system keyring: {exc}")
+        error = keyringwait.call(lambda: (keyring.set_password(KEYRING_SERVICE, "api_key", api_key),
+                                          keyring.set_password(KEYRING_SERVICE, "api_secret", api_secret)))
+        if error:
+            self._set_status(f"Could not save API credentials to the system keyring: {error}")
             return
         self._api_key, self._api_secret = api_key, api_secret
         self.statusChanged.emit()
@@ -287,11 +285,13 @@ class LastFmScrobbler(QObject):
         if self._busy:
             self._set_status("Wait for the current Last.fm request to finish before disconnecting.")
             return
-        try:
+        def forget():
             if keyring.get_password(KEYRING_SERVICE, "session"):
                 keyring.delete_password(KEYRING_SERVICE, "session")
-        except Exception as exc:
-            self._set_status(f"Could not remove the Last.fm session from the system keyring: {exc}")
+
+        error = keyringwait.call(forget)
+        if error:
+            self._set_status(f"Could not remove the Last.fm session from the system keyring: {error}")
             return
         self._session_key = ""
         self._auth_token = ""
@@ -342,9 +342,12 @@ class LastFmScrobbler(QObject):
             try:
                 session_key = result["session"]["key"]
                 username = result["session"].get("name", "")
-                keyring.set_password(KEYRING_SERVICE, "session", session_key)
-            except Exception as exc:
-                self._set_status(f"Could not store Last.fm session securely: {exc}")
+            except (KeyError, TypeError, AttributeError):
+                self._set_status("Last.fm didn't return a session.")
+                return
+            error = keyringwait.call(lambda: keyring.set_password(KEYRING_SERVICE, "session", session_key))
+            if error:
+                self._set_status(f"Could not store Last.fm session securely: {error}")
                 return
             self._session_key = session_key
             self._auth_token = ""

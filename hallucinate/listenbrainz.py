@@ -11,7 +11,7 @@ from urllib.request import Request
 import keyring
 from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
 
-from . import __version__
+from . import __version__, keyringwait
 from .core import net
 from .core.kinds import counts_for_scrobbling, scrobble_fields
 
@@ -176,7 +176,6 @@ class ListenBrainzScrobbler(QObject):
 
     # --- state ---------------------------------------------------------------
     def _load_keyring(self):
-        from . import keyringwait
 
         self._keyring_late.connect(self._apply_keyring)
         got = keyringwait.read(lambda k: keyring.get_password(KEYRING_SERVICE, k), ("token", "user"),
@@ -277,12 +276,14 @@ class ListenBrainzScrobbler(QObject):
         if self._busy:
             self._set_status("Wait for the current ListenBrainz request to finish before disconnecting.")
             return
-        try:
+        def forget():
             for k in ("token", "user"):
                 if keyring.get_password(KEYRING_SERVICE, k):
                     keyring.delete_password(KEYRING_SERVICE, k)
-        except Exception as exc:  # noqa: BLE001
-            self._set_status(f"Could not remove the token from the keyring: {exc}")
+
+        error = keyringwait.call(forget)
+        if error:
+            self._set_status(f"Could not remove the token from the keyring: {error}")
             return
         self._token = self._user = ""
         self.connectionChanged.emit()
@@ -322,11 +323,10 @@ class ListenBrainzScrobbler(QObject):
             if not result.get("valid"):
                 self._set_status("ListenBrainz says that token is not valid.")
                 return
-            try:
-                keyring.set_password(KEYRING_SERVICE, "token", item)
-                keyring.set_password(KEYRING_SERVICE, "user", result.get("user_name", ""))
-            except Exception as exc:  # noqa: BLE001
-                self._set_status(f"Could not store the token securely: {exc}")
+            error = keyringwait.call(lambda: (keyring.set_password(KEYRING_SERVICE, "token", item),
+                                              keyring.set_password(KEYRING_SERVICE, "user", result.get("user_name", ""))))
+            if error:
+                self._set_status(f"Could not store the token securely: {error}")
                 return
             self._token, self._user = item, result.get("user_name", "")
             self.connectionChanged.emit()

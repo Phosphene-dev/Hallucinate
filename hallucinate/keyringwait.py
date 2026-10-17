@@ -36,3 +36,14 @@ def read(get, keys, late=None, timeout=WAIT_S):
             return dict(result)
         waited_out.append(True)
         return None
+
+
+WRITE_WAIT_S = 10.0
+NO_ANSWER = "the system keyring didn't answer (is it locked?)"
+
+
+def call(fn, timeout=WRITE_WAIT_S):
+    """Run fn() (keyring writes) the same way: "" when it worked, the error's text when it failed, NO_ANSWER
+    when the keyring didn't answer in time (it may still finish afterwards)."""
+    got = read(lambda _key: fn(), ("call",), timeout=timeout)
+    return NO_ANSWER if got is None else got["error"]

@@ -19,7 +19,7 @@ from PySide6.QtMultimedia import (
 )
 from PySide6.QtQml import QQmlComponent, QQmlEngine
 
-from . import eq, signalpath
+from . import eq, fileready, signalpath
 from .core import net, remote
 from .core.kinds import counts_for_scrobbling, is_url, track_kind  # noqa: F401 - re-exported
 from .core.tags import is_readable_audio
@@ -88,6 +88,8 @@ def pick_output_device(devices, key):
 
 RESOLVE_FRESH_S = 10  # a host name looked up this recently is taken as answering (FFmpeg looks it up again)
 RESOLVE_TIMEOUT_MS = 15_000  # a lookup that hasn't answered by then counts as failed
+FILE_WAIT_S = 0.25  # a song file that hasn't answered by then is waited for in the background
+FILE_TIMEOUT_MS = 15_000
 _resolved_hosts = {}  # host -> when it last resolved
 
 
@@ -145,8 +147,9 @@ def _resolve_in_background(name, done=None):
     threading.Thread(target=run, name="resolve", daemon=True).start()
 
 
-# Players set aside while they were still opening a network stream (see _Voice._set_aside_if_loading): stopping
-# or switching one then makes the window wait for the lookup inside it, so it's left to finish and deleted after.
+# Players set aside while they were still opening a stream or file (see _Voice._set_aside_if_loading): stopping or
+# switching one then makes the window wait for the lookup or slow disk inside it, so it's left to finish and
+# deleted after.
 _set_aside = []
 
 
@@ -163,6 +166,12 @@ def _reap_set_aside():
             for obj in item:
                 if obj is not None:
                     obj.deleteLater()
+
+
+def still_opening():
+    """Whether a set-aside player is still opening its source (quitting would then wait on it)."""
+    _reap_set_aside()
+    return bool(_set_aside)
 
 
 def _playable(path):
@@ -215,14 +224,14 @@ class _Voice:
         self.finish_by = 0.0
 
     def _set_aside_if_loading(self):
-        """A player still opening a network stream can't be stopped or pointed elsewhere without the window
-        waiting on it (FFmpeg's address lookup can't be interrupted): leave it to finish on its own, and carry
-        on with a new one. True when it did."""
+        """A player still opening its source can't be stopped or pointed elsewhere without the window waiting
+        on it (FFmpeg's address lookup, or a file on a disk waking up, can't be interrupted): leave it to
+        finish on its own, and carry on with a new one. True when it did."""
         try:
             loading = self.player.mediaStatus() == QMediaPlayer.MediaStatus.LoadingMedia
         except RuntimeError:
             return False
-        if not (loading and _is_network(self.path)):
+        if not loading:
             return False
         old = (self.player, self.audio, self.tap, self.visual_output)
         self.player.blockSignals(True)
@@ -322,6 +331,7 @@ class Player(QObject):
     eqChanged = Signal()
     showSpeedChanged = Signal(int, float)  # a podcast show's own speed was changed while one of its episodes played
     _host_looked_up = Signal(object)
+    _file_checked = Signal(object)
     played = Signal("QVariantMap")  # a track was listened to for long enough to count as a play
     skipped = Signal("QVariantMap")  # the listener moved on from a playing track before it counted as played
     visualizerChanged = Signal()
@@ -341,6 +351,7 @@ class Player(QObject):
         self._host_wait = 0
         self._looking_up = set()
         self._host_looked_up.connect(self._on_host_looked_up)
+        self._file_checked.connect(self._on_file_checked)
         self._next_pick = None
         self.gapless_swaps = 0
         self._queue = []
@@ -1718,7 +1729,13 @@ class Player(QObject):
             return
         if track_kind(track) == "station" and track.get("station"):
             track.update(title=track["station"], artist="", stream_title="")  # the song it said last is over
-        if not _playable(path):
+        if not is_url(path) and not remote.is_remote(path):
+            answered, ok = self._check_file(path, i, autoplay, fade_ms, drain)
+            if not answered:
+                return  # a slow disk: it carries on once the file has answered
+        else:
+            ok = _playable(path)
+        if not ok:
             self._index = i
             if remote.is_remote(path):
                 self._set_error("Offline mode is on" if net.is_offline() else "The music server can't be reached")
@@ -1732,7 +1749,7 @@ class Player(QObject):
             elif self._repeat == REPEAT_ALL:
                 candidates += list(range(0, i))
             for candidate in candidates:  # the next one that can play: songs on a server that's down are passed
-                if _playable(track_file(self._queue[candidate])):
+                if self._maybe_playable(track_file(self._queue[candidate])):
                     self._load(candidate, autoplay=autoplay, record=False)
                     return
             self._reset_empty()
@@ -1809,6 +1826,54 @@ class Player(QObject):
         self.stateChanged.emit()
         self.durationChanged.emit()
         self.positionChanged.emit()
+
+    def _check_file(self, path, i, autoplay, fade_ms, drain):
+        """(answered, playable) for a song file, checked on a thread so a disk waking up or a network share
+        that's gone away can't hold the window. Not answered quickly: "Opening…" shows and the song loads
+        once it does (or, after FILE_TIMEOUT_MS, says it couldn't be opened)."""
+        token = self._host_wait
+        me = weakref.ref(self)
+
+        def late(ok):
+            owner = me()
+            try:
+                if owner is not None:
+                    owner._file_checked.emit((token, ok, path, i, autoplay, fade_ms, drain))
+            except RuntimeError:  # the player is gone (the app closed meanwhile)
+                pass
+
+        answered, ok = fileready.soon(lambda: _playable(path), late, FILE_WAIT_S)
+        if answered:
+            return True, ok
+        self._set_error("Opening…")
+        QTimer.singleShot(FILE_TIMEOUT_MS, self, lambda: me() is not None and me()._on_file_checked(
+            (token, None, path, i, autoplay, fade_ms, drain)))
+        return False, False
+
+    @Slot(object)
+    def _on_file_checked(self, r):
+        token, ok, path, i, autoplay, fade_ms, drain = r
+        if token != self._host_wait or not 0 <= i < len(self._queue):
+            return  # something else was chosen meanwhile (or this check already answered, or timed out)
+        self._host_wait += 1
+        if ok is None:  # still not answered: don't wait on it again, nor on the songs after it
+            self._end_fade()
+            for v in self._voices:
+                v.clear()
+            self._index = i
+            self._set_error(f"The file didn't open (is its disk or network share there?): {path}")
+            self.trackChanged.emit()
+            self.stateChanged.emit()
+            return
+        self._load(i, autoplay=autoplay, record=False, fade_ms=fade_ms, drain=drain)
+
+    def _maybe_playable(self, path):
+        """For passing over songs that can't play: True unless it surely can't (a slow file counts as maybe,
+        and is then loaded the careful way)."""
+        if is_url(path) or remote.is_remote(path):
+            return _playable(path)
+        answered, ok = fileready.soon(lambda: _playable(path), lambda _ok: None, FILE_WAIT_S)
+        return ok or not answered
 
     def _await_host(self, name, i, autoplay, fade_ms, drain):
         """Look a stream's host up in the background, then load it (see _resolve). A lookup that doesn't

@@ -306,6 +306,14 @@ def main(argv=None) -> int:
     del scrobbler, listenbrainz
     del mpris
     crashlog.finish()
+    from .player import still_opening
+
+    if still_opening():
+        # A stream or file still opening (a stuck lookup, a network share gone away) would keep the app
+        # running, window closed, until it gives up. Everything is saved and closed by now: leave at once.
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os._exit(code)
     return code
 
 

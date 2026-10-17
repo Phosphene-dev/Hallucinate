@@ -28,3 +28,15 @@ def test_a_broken_keyring_says_why():
         raise RuntimeError("no backend")
 
     assert keyringwait.read(broken, ("token",)) == {"values": {}, "error": "no backend"}
+
+
+def test_call_reports_success_errors_and_no_answer():
+    import threading
+
+    from hallucinate import keyringwait
+
+    assert keyringwait.call(lambda: None) == ""
+    assert "locked" in keyringwait.call(lambda: (_ for _ in ()).throw(RuntimeError("locked")))
+    gate = threading.Event()
+    assert keyringwait.call(lambda: gate.wait(5), timeout=0.05) == keyringwait.NO_ANSWER
+    gate.set()
