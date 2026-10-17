@@ -7,7 +7,7 @@ import mutagen
 import pytest
 from audio import FFMPEG, encode
 from conftest import PNG, make_mp3, wait_for
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, QSettings, Signal
 
 from hallucinate.core import artfetch, lyrics, tagedit
 from hallucinate.core.db import Database
@@ -286,6 +286,38 @@ class FakePlayer(QObject):
     @property
     def hasTrack(self):
         return bool(self.current)
+
+
+@pytest.fixture(autouse=True)
+def _lyrics_online_setting():
+    """The online-lyrics switch is saved; put back what was there."""
+    settings = QSettings("hallucinate", "hallucinate")
+    before = settings.value("lyrics/online")
+    yield
+    if before is None:
+        settings.remove("lyrics/online")
+    else:
+        settings.setValue("lyrics/online", before)
+
+
+def test_finding_lyrics_online_can_be_switched_off_and_stays_off(qapp, lib, monkeypatch):
+    tmp, root = lib
+    calls = []
+    monkeypatch.setattr(lyrics, "fetch_lrclib", lambda *a, **k: calls.append(a) or ("", "words"))
+    pl = FakePlayer()
+    ctl = LyricsController(tmp / "lib.db", pl)
+    assert ctl.onlineLookup  # on unless switched off
+    ctl.setOnlineLookup(False)
+    ctl.shutdown()
+    ctl = LyricsController(tmp / "lib.db", pl)
+    try:
+        assert not ctl.onlineLookup  # remembered
+        pl.current = {"path": str(root / "02.mp3"), "artist": "Band", "title": "Two", "album": "Disc", "duration": 3}
+        pl.trackChanged.emit()
+        assert wait_for(lambda: ctl.status == "none")
+        assert calls == []  # nothing was sent
+    finally:
+        ctl.shutdown()
 
 
 def test_lyrics_controller_sidecar_and_sync(qapp, lib):

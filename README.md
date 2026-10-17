@@ -161,7 +161,7 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - Optional compact format/average-bitrate badges in track rows and the now-playing bar (Settings → Appearance); the display is off by default, shows approximate average kb/s, and leaves unavailable bitrates out rather than displaying zero.
 - Tag editor (single track or whole album; MP3, FLAC, Ogg/Opus, M4A, WMA, APE), with MusicBrainz lookup for a whole album's title, album artist, year, genre and track titles, a genre lookup for one album or (from Library health, reviewed before saving) every album without one, and cover art: set from an image file, fetch from MusicBrainz / Cover Art Archive, optionally embed in files.
 - Headphone correction from AutoEQ's profiles (search by model, or import a ParametricEQ / GraphicEQ file), applied under the equalizer bands, and headphone crossfeed (light, medium, strong). Optionally a separate equalizer for each output device, switched as devices come and go.
-- Lyrics panel with synced highlighting, and karaoke-style lyrics in Now Playing: embedded tags, sidecar `.lrc`, or LRCLIB (cached locally; can be disabled). Nudge synced lyrics that run early or late and save the timing as an `.lrc` next to the song.
+- Lyrics panel with synced highlighting, and karaoke-style lyrics in Now Playing: embedded tags, sidecar `.lrc`, or LRCLIB (cached locally; switch it off in Settings → Internet & sharing). Nudge synced lyrics that run early or late and save the timing as an `.lrc` next to the song.
 - Import M3U, M3U8 and PLS playlists (matched by path, then artist and title, then file name) and export any playlist, Liked Songs or the queue as M3U8.
 - Backup and restore (Settings → Library): likes, ratings, playlists, play counts, listening history, folders, stations and podcasts in one `.hallucinate-backup` file; restoring merges, never deletes.
 - Undo on the toasts after removing songs, clearing the queue, removing a station or marking a show played; a short What's new card after updates.
@@ -251,6 +251,24 @@ the whole app against a synthetic library (250,000 songs by default) and reports
 action, `scripts/startup_check.py` times each step of starting up on it and measures memory, and
 `scripts/bench_library.py` times the queries behind them. With 250,000 songs the window is up about 0.8 s after
 launch and the library has loaded in the background a few seconds later.
+
+## Privacy
+
+Hallucinate has no accounts, no analytics, no usage pings and no install ID. Nothing is ever sent to the project. Your library, history, ratings and settings stay on your computer, in a data folder only your user account can open. Offline mode (Settings → Internet & sharing) stops every connection at once.
+
+What does go online, and only when:
+
+| What | When | What's sent |
+|---|---|---|
+| Lyrics (LRCLIB) | A song with no lyrics of its own starts; switch off in Settings → Internet & sharing | Artist, title, album, length |
+| Covers and tags (MusicBrainz, Cover Art Archive) | Only when you click Find online, Find all, or Look up | Album and artist |
+| Last.fm, ListenBrainz | Only after you connect your own account | What you play (scrobbles); keys stay in your system keyring |
+| Discord status | Only if you switch it on; talks to the Discord app on your computer | The song, or just "Listening to music" in privacy mode. To show the cover, the album and artist are looked up on MusicBrainz (not when the cover is hidden) |
+| Internet radio, podcasts | Only if you switch them on and use them | Requests to the station or feed you chose; directory searches send your search words |
+| Headphone EQ (AutoEQ) | Only when you search for headphones | The profile list is downloaded from GitHub |
+| Update check | Off unless you switch it on; once a day | Asks GitHub for the latest version |
+
+Crash records stay on your computer. When the app starts after a crash, it offers a report you can read and copy yourself. Debug info works the same way. Neither is sent anywhere, and both leave out song files, music folders, links and your user name.
 
 ## Last.fm
 In Settings, enter the API key and secret for a Last.fm API application (create

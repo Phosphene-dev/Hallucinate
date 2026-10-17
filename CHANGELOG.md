@@ -11,7 +11,13 @@ All notable changes to this project are documented here. Format based on
 - Without a private runtime folder (some X sessions, ssh), the control socket lives in a folder of its own
   that other users can't use, instead of a shared name another user could take first.
 
+- Debug info and crash reports now leave out song files, music folders and links, as well as the home
+  folder. Log lines no longer name the album or station they're about.
+
 ### Changed
+- Finding lyrics online (LRCLIB) has its own switch in Settings → Internet & sharing.
+- Playing a station from the Radio Browser directory no longer tells Radio Browser you played it.
+- The README has a Privacy section: what goes online, when, and what's sent.
 - Release builds install exact versions of every package, checked against their checksums, and a fixed
   release of appimagetool, also checked: a build gets the same files every time.
 

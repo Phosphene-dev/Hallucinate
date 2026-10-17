@@ -786,7 +786,7 @@ Item {
             id: sec_sharing
             objectName: "settings_sharing"
             title: "Internet & sharing"
-            keywords: "offline mode internet network privacy connection last.fm lastfm listenbrainz scrobble discord rich presence history import account radio stations podcasts episodes"
+            keywords: "offline mode internet network privacy connection lyrics lrclib last.fm lastfm listenbrainz scrobble discord rich presence history import account radio stations podcasts episodes"
             query: page.query
             Text { text: "Offline mode"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {
@@ -795,6 +795,13 @@ Item {
                 wrapMode: Text.WordWrap
                 text: "Hallucinate makes no internet connections at all: no lyrics or cover lookups, internet radio, podcast updates, scrobbling, headphone EQ downloads or update checks. Scrobbles wait and are sent when you turn it off. Discord status talks only to the Discord app on this computer, so it keeps its own switch below (it shows no cover art while offline)."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            StyledCheck {
+                objectName: "lyricsOnline"
+                visible: shell.features.lyrics !== false
+                text: "Find lyrics online for songs that have none (sends the song's artist, title and album to LRCLIB)"
+                checked: lyricsCtl.onlineLookup
+                onToggled: lyricsCtl.setOnlineLookup(checked)
             }
             StyledCheck {
                 objectName: "scrobbleStations"

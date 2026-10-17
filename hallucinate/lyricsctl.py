@@ -2,7 +2,7 @@
 import logging
 import os
 
-from PySide6.QtCore import Property, QObject, Signal, Slot
+from PySide6.QtCore import Property, QObject, QSettings, Signal, Slot
 
 from .core import lyrics as lx
 from .library import _Reader
@@ -27,7 +27,10 @@ class LyricsController(QObject):
         self._source = ""
         self._line = -1
         self._token = 0
-        self._online = True
+        self._settings = QSettings("hallucinate", "hallucinate")
+        # Settings → Internet & sharing: look up songs with no lyrics of their own on LRCLIB (artist, title, album
+        # and length are sent; no account, nothing else)
+        self._online = self._settings.value("lyrics/online", True, type=bool)
         self._enabled = True  # Settings → Features; off, nothing is read or looked up
         self._offset = 0  # ms; positive shows lines earlier (as LRC's [offset:])
         self._loaded.connect(self._apply)
@@ -108,8 +111,10 @@ class LyricsController(QObject):
 
     @Slot(bool)
     def setOnlineLookup(self, on):
+        on = bool(on)
         if on != self._online:
             self._online = on
+            self._settings.setValue("lyrics/online", on)
             self.changed.emit()
             self.reload()
 

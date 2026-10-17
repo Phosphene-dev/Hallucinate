@@ -131,6 +131,8 @@ def main(argv=None) -> int:
     db_notice = " ".join(n for n in (db_notice, dbguard.check(streams_db, backup_dir)) if n)
     _mark("application")
     library = Library(paths.db_path(), paths.art_dir())
+    diagnostics.set_private_folders(library.folders)  # kept out of debug info and crash reports
+    library.foldersChanged.connect(lambda: diagnostics.set_private_folders(library.folders))
     _mark("library-opened")
     dbguard.backup_if_due(paths.db_path(), backup_dir)
     dbguard.backup_if_due(streams_db, backup_dir)

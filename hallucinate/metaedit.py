@@ -300,7 +300,7 @@ class MetadataEditor(QObject):
                         self._store_cover(db, album["album_key"], data, False)
                         found += 1
                 except (OSError, tagedit.TagWriteError) as exc:
-                    logger.info("No cover for %s: %s", album["album"], exc)
+                    logger.info("No cover found for an album: %s", exc)
                 done += 1
                 self._covers_progress.emit({"done": done, "found": found, "reload": bool(found) and found % 10 == 0})
         except Exception:  # noqa: BLE001
@@ -409,7 +409,7 @@ class MetadataEditor(QObject):
                 try:
                     hit = musicbrainz.find_genre(artist, album["album"], artists)
                 except (OSError, ValueError, KeyError) as exc:
-                    logger.info("No genre for %s: %s", album["album"], exc)
+                    logger.info("No genre found for an album: %s", exc)
                     hit = None
                 if hit:
                     found += 1
