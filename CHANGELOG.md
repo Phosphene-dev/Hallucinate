@@ -5,6 +5,10 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.9.4] - 2026-10-17
+
+Music servers, your choices saved into the files, and a fix for the window freezing while left idle.
+
 ### Added
 - Music servers: songs on your Jellyfin server, or your Navidrome, Gonic, Airsonic or other Subsonic server,
   join your library and play like your own files, in albums, artists, search, playlists, smart playlists, stats and history. Switch
