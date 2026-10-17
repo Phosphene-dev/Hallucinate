@@ -11,6 +11,7 @@ from urllib.request import Request
 import keyring
 from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
 
+from . import __version__
 from .core import net
 from .core.kinds import counts_for_scrobbling, scrobble_fields
 
@@ -18,6 +19,13 @@ DEFAULT_URL = "https://api.listenbrainz.org"
 KEYRING_SERVICE = "Hallucinate ListenBrainz"
 MAX_RETRY_SECONDS = 900
 logger = logging.getLogger(__name__)
+
+
+def _words(exc):
+    """A network or parsing error in plain words (never the request, which holds the API key)."""
+    if isinstance(exc, ValueError) and not isinstance(exc, OSError):
+        return "its answer couldn't be read"
+    return net.describe(exc)
 
 
 def lb_request(base, path, token=None, payload=None, params=None):
@@ -36,9 +44,9 @@ def lb_request(base, path, token=None, payload=None, params=None):
     except HTTPError as exc:
         if exc.code in (400, 401, 403):  # rejected for good, retrying won't help
             raise PermissionError(f"ListenBrainz rejected the request ({exc.code})") from exc
-        raise RuntimeError(f"ListenBrainz request failed: {exc}") from exc
+        raise RuntimeError(f"Couldn't reach ListenBrainz: {_words(exc)}") from exc
     except (URLError, TimeoutError, OSError, ValueError) as exc:
-        raise RuntimeError(f"ListenBrainz request failed: {exc}") from exc
+        raise RuntimeError(f"Couldn't reach ListenBrainz: {_words(exc)}") from exc
 
 
 def track_metadata(track):
@@ -110,10 +118,10 @@ def fetch_lastfm_history(user, api_key, progress=None, max_pages=500):
         url = API_URL + "?" + urlencode({"method": "user.getrecenttracks", "user": user, "api_key": api_key,
                                          "format": "json", "limit": 200, "page": page})
         try:
-            with net.urlopen(Request(url, headers={"User-Agent": "Hallucinate/0.3"}), timeout=20) as r:
+            with net.urlopen(Request(url, headers={"User-Agent": f"Hallucinate/{__version__}"}), timeout=20) as r:
                 data = json.loads(r.read().decode("utf-8"))
         except (HTTPError, URLError, TimeoutError, OSError, ValueError) as exc:
-            raise RuntimeError(f"Last.fm request failed: {exc}") from exc
+            raise RuntimeError(f"Couldn't reach Last.fm: {_words(exc)}") from exc
         if "error" in data:
             raise RuntimeError(f"Last.fm error {data['error']}: {data.get('message', '')}")
         got, pages = parse_lastfm_page(data)

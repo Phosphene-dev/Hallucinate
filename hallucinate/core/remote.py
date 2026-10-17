@@ -81,3 +81,14 @@ def stream_url(path):
         return server.stream_url(parts[2]) if server is not None else ""
     except Exception:  # noqa: BLE001 - a server that can't make a link is just unavailable
         return ""
+
+
+def host(path):
+    """The host name a server song streams from (for checking it resolves before playing), or ""."""
+    parts = parse(path)
+    if parts is None:
+        return ""
+    with _lock:
+        server = _servers.get(parts[:2])
+    base = getattr(server, "base", "") if server is not None else ""
+    return urllib.parse.urlsplit(base).hostname or "" if base else ""

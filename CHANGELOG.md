@@ -29,6 +29,19 @@ All notable changes to this project are documented here. Format based on
 - MP4 and WMA ratings from other players are read too.
 
 ### Fixed
+- The window could stop responding while sitting idle with a radio station restored from last time. A
+  station was connected (paused) at start; when the station dropped that idle connection, Hallucinate
+  reconnected over and over in the background, and a reconnect that got stuck looking up the station's
+  address froze the window. Now:
+  - A station is connected only while you listen. Restored at start, it's only shown, and pausing hangs up
+    (live radio can't be paused). Play connects again, to what's on now.
+  - Nothing reconnects in the background while you're not listening.
+  - Before any stream is handed to the player (a station, a podcast stream, a music server's song), its
+    server's address is looked up in the background, so a slow or broken lookup can't freeze the window.
+    One that fails says "Couldn't find the station" instead.
+- Last.fm and ListenBrainz errors are in plain words ("Couldn't reach Last.fm: the server is having trouble;
+  try again later" rather than "HTTP Error 500: Internal Server Error"), and their requests carry the real
+  version.
 - What you choose stays chosen:
   - A cover you picked is no longer replaced by the songs' own picture when the files are read again.
   - A rating you cleared no longer comes back from the file's tags at the next scan.

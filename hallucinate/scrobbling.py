@@ -14,6 +14,7 @@ import keyring
 from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices
 
+from . import __version__
 from .core import net
 from .core.kinds import counts_for_scrobbling, scrobble_fields, track_kind
 
@@ -22,6 +23,13 @@ AUTH_URL = "https://www.last.fm/api/auth/"
 KEYRING_SERVICE = "Hallucinate Last.fm"
 MAX_RETRY_SECONDS = 900
 logger = logging.getLogger(__name__)
+
+
+def _words(exc):
+    """A network or parsing error in plain words (never the request, which holds the API key)."""
+    if isinstance(exc, ValueError) and not isinstance(exc, OSError):
+        return "its answer couldn't be read"
+    return net.describe(exc)
 
 
 def api_signature(params: dict, secret: str) -> str:
@@ -42,14 +50,14 @@ def api_request(method, params, api_key, api_secret, session_key=None, signed=Tr
         fields["api_sig"] = api_signature(fields, api_secret)
     fields["format"] = "json"
     req = Request(API_URL, data=urlencode(fields).encode("utf-8"), headers={
-        "User-Agent": "Hallucinate/0.1",
+        "User-Agent": f"Hallucinate/{__version__}",
         "Content-Type": "application/x-www-form-urlencoded",
     })
     try:
         with net.urlopen(req, timeout=15) as response:
             data = json.loads(response.read().decode("utf-8"))
     except (HTTPError, URLError, TimeoutError, OSError, ValueError) as exc:
-        raise RuntimeError(f"Last.fm request failed: {exc}") from exc
+        raise RuntimeError(f"Couldn't reach Last.fm: {_words(exc)}") from exc
     if not isinstance(data, dict):
         raise RuntimeError("Last.fm returned an invalid response")
     if "error" in data:
