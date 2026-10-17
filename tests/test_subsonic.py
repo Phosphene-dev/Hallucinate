@@ -307,3 +307,21 @@ def test_server_songs_stay_out_of_trash_and_file_only_work(qapp, tmp_path):
     local = {**row, "path": str(tmp_path / "a.flac"), "fmt": "MP3"}
     assert remote.is_remote(row["path"]) and not remote.is_remote(local["path"])
     db.close()
+
+
+def test_starting_with_servers_off_clears_songs_left_from_before(qapp, tmp_path, monkeypatch):
+    from conftest import wait_for
+
+    from hallucinate import servers as servers_mod
+    from hallucinate.core.db import Database
+
+    db = Database(tmp_path / "lib.db")
+    db.upsert_track(servers_mod.track_row("1", subsonic.song_from(song(1))))
+    db.commit()
+    db.close()
+    svc = servers_mod.Servers(tmp_path / "lib.db", tmp_path / "art")
+    try:
+        svc.setEnabled(False)  # as the app does at start, with the feature off
+        assert wait_for(lambda: not _rows(tmp_path), timeout=10)
+    finally:
+        svc.shutdown()

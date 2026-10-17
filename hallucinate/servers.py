@@ -69,6 +69,7 @@ class Servers(QObject):
         self._art_dir = str(art_dir)
         self._worker = _Reader(str(db_path), "servers")
         self._enabled = False
+        self._applied = False  # the first setEnabled also tidies up after a run that ended with them on
         self._state = {}  # server id -> {"status", "busy", "songs", "error"}
         self._clients = {}  # server id -> subsonic.Server (holding the password, in memory only)
         try:
@@ -112,8 +113,9 @@ class Servers(QObject):
     @Slot(bool)
     def setEnabled(self, on):
         on = bool(on)
-        if on == self._enabled:
+        if on == self._enabled and self._applied:
             return
+        self._applied = True
         self._enabled = on
         if on:
             for s in self._list:
@@ -122,7 +124,7 @@ class Servers(QObject):
             self._retry.stop()
             for s in self._list:
                 self._disconnect(s["id"])
-            self._worker.submit(lambda db: self._take_out(db, [s["id"] for s in self._list]))
+            self._worker.submit(lambda db: self._take_out(db, None))  # every server song, listed server or not
         self.changed.emit()
 
     def _connect(self, s, sync=False):
@@ -269,13 +271,19 @@ class Servers(QObject):
         db.commit()
 
     def _take_out(self, db, ids):
-        for sid in ids:
-            prefix = remote.prefix("subsonic", sid)
-            paths = [r[0] for r in db.conn.execute("SELECT path FROM tracks WHERE substr(path, 1, ?) = ?",
-                                                   (len(prefix), prefix))]
+        """Take the songs of servers `ids` (None: of every server) out of the library."""
+        if ids is None:
+            paths = [r[0] for r in db.conn.execute(f"SELECT path FROM tracks WHERE NOT ({remote.SQL_LOCAL})")]
+        else:
+            paths = []
+            for sid in ids:
+                prefix = remote.prefix("subsonic", sid)
+                paths += [r[0] for r in db.conn.execute("SELECT path FROM tracks WHERE substr(path, 1, ?) = ?",
+                                                        (len(prefix), prefix))]
+        if paths:
             db.remove_paths(paths)
-        db.commit()
-        self._done.emit({"op": "removed"})
+            db.commit()
+            self._done.emit({"op": "removed"})
 
     def _run(self, work):
         def wrapped(db):
