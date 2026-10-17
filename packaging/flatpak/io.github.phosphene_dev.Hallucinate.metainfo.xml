@@ -99,6 +99,7 @@
       <description>
         <p>Rearrange the sidebar, and find genres online for one album or every album without one, checked before anything is saved.</p>
         <p>Internet radio keeps a list of the songs you heard, radio and podcasts show how much you listened, and podcast episodes can be scrobbled if you want. Songs scrobbled from the radio no longer carry the station's name as their album.</p>
+        <p>A full review for bugs and safety: links from stations and feeds must be web links, files are saved whole or not at all, updates are checked again before installing, and many small fixes.</p>
       </description>
     </release>
     <release version="0.9.9.2" date="2026-10-16">

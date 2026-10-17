@@ -8,6 +8,7 @@ HIGHLIGHTS = {
         "You check what's found before anything is saved.",
         "Internet radio lists the songs you heard, and radio and podcasts show how much you've listened.",
         "Podcast episodes can count on Last.fm and ListenBrainz if you want (Settings → Internet & sharing).",
+        "A full review for bugs and safety: safer links, downloads, updates and saving, and many small fixes.",
     ],
     "0.9.9.2": [
         "Undo on the toasts after removing songs, clearing the queue, removing a station or marking a show played.",
