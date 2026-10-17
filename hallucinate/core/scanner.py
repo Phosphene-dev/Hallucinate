@@ -189,8 +189,9 @@ class Scanner:
         path = None
         if raw:
             path = os.path.join(self.art_dir, key + tags._image_ext(raw))
-            with open(path, "wb") as fh:
-                fh.write(raw)
+            from .atomic import write_atomic
+
+            write_atomic(path, lambda fh: fh.write(raw))  # never a half-written cover, even if stopped
         else:
             path = tags.find_folder_art(directory)
         if path:

@@ -65,15 +65,28 @@ _FILTER = re.compile(r"Filter\s*\d*:\s*ON\s+(PK|LSC|HSC|LS|HS)\s+Fc\s+([\d.]+)\s
                      r"(?:\s+Q\s+([\d.]+))?", re.I)
 
 
+MAX_GAIN_DB = 30.0  # no real headphone correction goes near this; anything past it is a broken file
+
+
+def _finite(value, low, high):
+    """`value` as a float within [low, high], or ValueError for nan, inf or anything out of range."""
+    number = float(value)
+    if not math.isfinite(number) or not low <= number <= high:
+        raise ValueError("This EQ file has values out of range")
+    return number
+
+
 def parse(text):
-    """A curve [[freq, dB], ...] from a ParametricEQ.txt or GraphicEQ.txt; ValueError if it is neither."""
+    """A curve [[freq, dB], ...] from a ParametricEQ.txt or GraphicEQ.txt; ValueError if it is neither, or if
+    its numbers are out of range (nan, a 0 Hz filter, a 0 Q, absurd gains), which would otherwise turn the
+    sound into noise or silence."""
     graphic = re.search(r"GraphicEQ:\s*(.+)", text)
     if graphic:
         points = []
         for pair in graphic.group(1).split(";"):
             parts = pair.split()
             if len(parts) == 2:
-                points.append([float(parts[0]), float(parts[1])])
+                points.append([_finite(parts[0], 1.0, 48_000.0), _finite(parts[1], -MAX_GAIN_DB, MAX_GAIN_DB)])
         if len(points) < 2:
             raise ValueError("This GraphicEQ file has no curve")
         return sorted(points)
@@ -84,8 +97,11 @@ def parse(text):
     total = [0.0] * len(freqs)
     for kind, fc, gain, q in filters:
         kind = {"LS": "LSC", "HS": "HSC"}.get(kind.upper(), kind.upper())
-        for i, db in enumerate(_biquad_db(kind, float(fc), float(gain), float(q or 0.71), freqs)):
+        fc, gain = _finite(fc, 1.0, 24_000.0), _finite(gain, -MAX_GAIN_DB, MAX_GAIN_DB)
+        q = _finite(q or 0.71, 0.05, 30.0)
+        for i, db in enumerate(_biquad_db(kind, fc, gain, q, freqs)):
             total[i] += db
+    total = [max(-60.0, min(60.0, g)) for g in total]
     return [[round(f, 2), round(g, 3)] for f, g in zip(freqs, total)]
 
 
@@ -218,7 +234,7 @@ class HeadphoneFinder(QObject):
             text = Path(path).read_text(encoding="utf-8", errors="replace")
             name = re.sub(r"\s*(ParametricEQ|GraphicEQ|FixedBandEQ)$", "", Path(path).stem).strip() or "Imported"
             self._player.setHeadphoneProfile(name, json.dumps(parse(text)))
-        except (OSError, ValueError) as exc:
+        except (OSError, ValueError, ArithmeticError) as exc:
             return str(exc)
         return ""
 
@@ -232,7 +248,7 @@ class HeadphoneFinder(QObject):
             try:
                 self._player.setHeadphoneProfile(what["name"], json.dumps(parse(value)))
                 self._set(f"Correcting for {what['name']}", False)
-            except ValueError as exc:
+            except (ValueError, ArithmeticError) as exc:
                 self._set(str(exc), False)
         else:
             self._set(value, False)

@@ -121,7 +121,7 @@ def parse_feed(data, feed_url=""):
         "title": html.unescape(_text(channel, title_path)) or feed_url,
         "author": html.unescape(_text(channel, "itunes:author") or _text(channel, "atom:author/atom:name")
                                 or _text(channel, "managingEditor")),
-        "link": link_of(channel), "image": image, "feed_url": feed_url,
+        "link": _web_only(link_of(channel)), "image": _web_only(image), "feed_url": feed_url,
         "description": plain_text(_text(channel, "itunes:summary") or _text(channel, "description")
                                   or _text(channel, "atom:subtitle"), 2000),
     }
@@ -151,14 +151,24 @@ def parse_feed(data, feed_url=""):
             size = int(size)
         except ValueError:
             size = 0
+        url = urllib.parse.urljoin(feed_url, url) if feed_url else url
+        if not net.is_web_url(url):
+            continue  # file://, ftp://, data:…: a feed only ever points at web addresses
         episodes.append({
             "guid": guid, "title": html.unescape(_text(item, title_path)) or "Untitled episode",
-            "description": plain_text(description), "url": urllib.parse.urljoin(feed_url, url) if feed_url else url,
+            "description": plain_text(description), "url": url,
             "mime": mime, "size": max(0, size), "published": published,
             "duration": parse_duration(_text(item, "itunes:duration")),
-            "image": _attr(item, "itunes:image", "href"), "chapters_url": _attr(item, "podcast:chapters", "url"),
+            "image": _web_only(_attr(item, "itunes:image", "href")),
+            "chapters_url": _web_only(_attr(item, "podcast:chapters", "url")),
         })
     return podcast, episodes
+
+
+def _web_only(url):
+    """`url` if it's a web address, else "" (a feed's links, images and chapters are never local files)."""
+    url = (url or "").strip()
+    return url if net.is_web_url(url) else ""
 
 
 def fetch_feed(url, timeout=20):
@@ -332,7 +342,10 @@ def download(url, target, progress=None, cancelled=None, timeout=30):
     part = target.with_name(target.name + ".part")
     try:
         with net.urlopen(_request(url), timeout=timeout, limit=EPISODE_LIMIT) as resp, open(part, "wb") as out:
-            total = int(resp.headers.get("Content-Length") or 0)
+            try:
+                total = max(0, int(resp.headers.get("Content-Length") or 0))
+            except ValueError:  # a garbled header: download anyway, without a percentage
+                total = 0
             done, last = 0, 0.0
             while True:
                 if cancelled is not None and cancelled():

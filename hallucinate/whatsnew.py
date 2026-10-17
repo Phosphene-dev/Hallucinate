@@ -2,6 +2,14 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "0.9.9.3": [
+        "Rearrange the sidebar: drag an entry, right-click it, or use Settings → Features.",
+        "Find genres online, for one album in Edit album or for every album without one in Library health. "
+        "You check what's found before anything is saved.",
+        "Internet radio lists the songs you heard, and radio and podcasts show how much you've listened.",
+        "Podcast episodes can count on Last.fm and ListenBrainz if you want (Settings → Internet & sharing).",
+        "A full review for bugs and safety: safer links, downloads, updates and saving, and many small fixes.",
+    ],
     "0.9.9.2": [
         "Undo on the toasts after removing songs, clearing the queue, removing a station or marking a show played.",
         "Click the playing song's cover or title to go to its album, station or show.",

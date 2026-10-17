@@ -57,6 +57,30 @@ CREATE TABLE IF NOT EXISTS episodes(
     UNIQUE(podcast_id, guid)
 );
 CREATE INDEX IF NOT EXISTS idx_episodes_podcast ON episodes(podcast_id, published);
+-- What a show's tile counts (episodes, unplayed, latest) and the top search's title match, read from these
+-- alone instead of every episode's notes.
+CREATE INDEX IF NOT EXISTS idx_episodes_counts ON episodes(podcast_id, played, published);
+CREATE INDEX IF NOT EXISTS idx_episodes_titles ON episodes(published, title);
+-- Songs heard on the radio (after a minute of each), newest last. The station's name is kept so the log still
+-- reads right after the station is removed.
+CREATE TABLE IF NOT EXISTS radio_log(
+    id INTEGER PRIMARY KEY,
+    ts REAL NOT NULL,
+    station_id INTEGER NOT NULL DEFAULT 0,
+    station TEXT NOT NULL DEFAULT '',
+    artist TEXT NOT NULL DEFAULT '',
+    title TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_radio_log_ts ON radio_log(ts);
+-- Time spent listening, per station or show and day: kind is "station" or "podcast", day is YYYY-MM-DD.
+CREATE TABLE IF NOT EXISTS listen_time(
+    kind TEXT NOT NULL,
+    item_id INTEGER NOT NULL,
+    name TEXT NOT NULL DEFAULT '',
+    day TEXT NOT NULL,
+    seconds REAL NOT NULL DEFAULT 0,
+    PRIMARY KEY(kind, item_id, day)
+);
 """
 
 STATION_FIELDS = ("name", "url", "homepage", "favicon", "tags", "country", "codec", "bitrate", "uuid")
@@ -86,6 +110,66 @@ class StreamsDB:
             if name not in cols:
                 self.conn.execute(f"ALTER TABLE podcasts ADD COLUMN {name} {kind}")
 
+    # --- what you've listened to -------------------------------------------------------------------------
+    def log_radio_song(self, station_id, station, artist, title, ts=None):
+        """A song heard on a station. The same song logged again within ten minutes (a stream repeating its
+        title) is ignored."""
+        ts = time.time() if ts is None else ts
+        last = self.conn.execute("SELECT artist, title, ts FROM radio_log WHERE station_id=? ORDER BY ts DESC LIMIT 1",
+                                 (station_id,)).fetchone()
+        if last and last["artist"] == artist and last["title"] == title and ts - last["ts"] < 600:
+            return
+        self.conn.execute("INSERT INTO radio_log(ts, station_id, station, artist, title) VALUES(?, ?, ?, ?, ?)",
+                          (ts, station_id, station, artist, title))
+        self.conn.commit()
+
+    def radio_log(self, limit=200, text="", station_id=0):
+        where, params = [], []
+        for word in (text or "").split():
+            where.append("(artist || ' ' || title || ' ' || station) LIKE ?")
+            params.append(f"%{word}%")
+        if station_id:
+            where.append("station_id=?")
+            params.append(station_id)
+        sql = "SELECT * FROM radio_log" + (" WHERE " + " AND ".join(where) if where else "")
+        return [dict(r) for r in self.conn.execute(sql + " ORDER BY ts DESC LIMIT ?", (*params, limit))]
+
+    def remove_radio_log(self, entry_id=0):
+        """Remove one logged song, or (with no id) the whole log."""
+        if entry_id:
+            self.conn.execute("DELETE FROM radio_log WHERE id=?", (entry_id,))
+        else:
+            self.conn.execute("DELETE FROM radio_log")
+        self.conn.commit()
+
+    def add_listen_time(self, kind, item_id, name, seconds, ts=None):
+        day = time.strftime("%Y-%m-%d", time.localtime(time.time() if ts is None else ts))
+        self.conn.execute(
+            "INSERT INTO listen_time(kind, item_id, name, day, seconds) VALUES(?, ?, ?, ?, ?) "
+            "ON CONFLICT(kind, item_id, day) DO UPDATE SET seconds=seconds+excluded.seconds, name=excluded.name",
+            (kind, item_id, name, day, float(seconds)))
+        self.conn.commit()
+
+    def listening(self, kind, days=0, limit=5):
+        """Time spent on stations or shows: {"seconds", "top": [{item_id, name, seconds}]} for the last `days`
+        days (0: all time)."""
+        since = time.strftime("%Y-%m-%d", time.localtime(time.time() - (days - 1) * 86400)) if days else ""
+        params = (kind, since)
+        total = self.conn.execute("SELECT COALESCE(SUM(seconds), 0) FROM listen_time WHERE kind=? AND day>=?",
+                                  params).fetchone()[0]
+        top = [dict(r) for r in self.conn.execute(
+            "SELECT item_id, MAX(name) AS name, SUM(seconds) AS seconds FROM listen_time WHERE kind=? AND day>=? "
+            "GROUP BY item_id ORDER BY seconds DESC LIMIT ?", (*params, limit))]
+        return {"seconds": float(total), "top": top}
+
+    def radio_songs_heard(self, days=0):
+        since = time.time() - days * 86400 if days else 0
+        return self.conn.execute("SELECT COUNT(*) FROM radio_log WHERE ts>=?", (since,)).fetchone()[0]
+
+    def episodes_finished(self, days=0):
+        since = time.time() - days * 86400 if days else 0
+        return self.conn.execute("SELECT COUNT(*) FROM episodes WHERE played=1 AND played_at>=?", (since,)).fetchone()[0]
+
     def close(self):
         self.conn.close()
 
@@ -106,8 +190,17 @@ class StreamsDB:
         existing = self.station_by_url(info["url"])
         if existing:
             return existing["id"]
+        from . import net
+        from .stations import web_homepage
+
+        if not net.is_web_url(info.get("url")):
+            raise ValueError("A station's stream is a web link")
         fields = {k: info.get(k) or ("" if k != "bitrate" else 0) for k in STATION_FIELDS}
+        for k in STATION_FIELDS:  # text stays text and numbers numbers, wherever the station came from
+            fields[k] = (fields[k] if isinstance(fields[k], int) else 0) if k == "bitrate" else str(fields[k])
         fields["name"] = (fields["name"] or info["url"]).strip()
+        fields["homepage"] = web_homepage(fields["homepage"])
+        fields["favicon"] = fields["favicon"] if net.is_web_url(fields["favicon"]) else ""
         cur = self.conn.execute(
             f"INSERT INTO stations({', '.join(fields)}, added) VALUES ({', '.join('?' * len(fields))}, ?)",
             (*fields.values(), time.time()))
@@ -132,10 +225,10 @@ class StreamsDB:
     # --- podcasts --------------------------------------------------------------------------------------
     def podcasts(self):
         return [dict(r) for r in self.conn.execute(
-            "SELECT p.*, (SELECT COUNT(*) FROM episodes e WHERE e.podcast_id=p.id AND e.played=0) AS unplayed, "
-            "(SELECT MAX(published) FROM episodes e WHERE e.podcast_id=p.id) AS latest, "
-            "(SELECT COUNT(*) FROM episodes e WHERE e.podcast_id=p.id) AS episodes "
-            "FROM podcasts p ORDER BY latest DESC, title COLLATE NOCASE")]
+            "SELECT p.*, COALESCE(a.unplayed, 0) AS unplayed, a.latest AS latest, COALESCE(a.n, 0) AS episodes "
+            "FROM podcasts p LEFT JOIN (SELECT podcast_id, SUM(played=0) AS unplayed, MAX(published) AS latest, "
+            "COUNT(*) AS n FROM episodes GROUP BY podcast_id) a ON a.podcast_id=p.id "
+            "ORDER BY latest DESC, p.title COLLATE NOCASE")]
 
     def podcast(self, podcast_id):
         row = self.conn.execute("SELECT * FROM podcasts WHERE id=?", (podcast_id,)).fetchone()
@@ -199,7 +292,8 @@ class StreamsDB:
         self.conn.commit()
         return new
 
-    def episodes(self, podcast_id=None, unplayed_only=False, limit=None, oldest_first=False, text=""):
+    def episodes(self, podcast_id=None, unplayed_only=False, limit=None, oldest_first=False, text="",
+                 titles_only=False):
         sql = ("SELECT e.*, p.title AS podcast, p.image AS podcast_image FROM episodes e "
                "JOIN podcasts p ON p.id=e.podcast_id")
         where, args = [], []
@@ -209,9 +303,13 @@ class StreamsDB:
         if unplayed_only:
             where.append("e.played=0")
         for word in (text or "").split():
-            where.append("(e.title LIKE ? ESCAPE '\\' OR e.description LIKE ? ESCAPE '\\')")
             pattern = "%" + word.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
-            args += [pattern, pattern]
+            if titles_only:  # the top search: quick even across tens of thousands of episodes
+                where.append("e.title LIKE ? ESCAPE '\\'")
+                args.append(pattern)
+            else:
+                where.append("(e.title LIKE ? ESCAPE '\\' OR e.description LIKE ? ESCAPE '\\')")
+                args += [pattern, pattern]
         if where:
             sql += " WHERE " + " AND ".join(where)
         sql += " ORDER BY e.published ASC, e.id ASC" if oldest_first else " ORDER BY e.published DESC, e.id DESC"

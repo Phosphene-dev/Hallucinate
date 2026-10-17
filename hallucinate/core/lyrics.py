@@ -139,5 +139,8 @@ def fetch_lrclib(artist, title, album="", duration=0, timeout=8):
         raise OSError(f"LRCLIB error {exc.code}") from exc
     except (urllib.error.URLError, TimeoutError, ValueError) as exc:
         raise OSError(str(exc)) from exc
-    synced, plain = data.get("syncedLyrics") or "", data.get("plainLyrics") or ""
+    if not isinstance(data, dict):
+        return None
+    synced, plain = data.get("syncedLyrics"), data.get("plainLyrics")
+    synced, plain = (synced if isinstance(synced, str) else ""), (plain if isinstance(plain, str) else "")
     return (synced, plain) if (synced or plain) else None

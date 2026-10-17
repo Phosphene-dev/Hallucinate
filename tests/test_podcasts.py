@@ -336,3 +336,26 @@ def test_up_next_and_new_episode_notifications(shows, server, clip):
     assert wait_for(lambda: told, timeout=10)
     assert told[0] == ("Test Talk", "Brand New")
     podcasts.setOption("notifyNew", 0)
+
+
+def test_the_top_search_stays_quick_with_many_episodes(tmp_path):
+    """Search everywhere asks for shows and episodes on the GUI thread as you type: with 120 shows of 400
+    episodes (each with long notes) it must stay well inside a frame or two."""
+    import time
+
+    from hallucinate.core.streams_db import StreamsDB
+
+    db = StreamsDB(tmp_path / "s.db")
+    notes = "words about the episode " * 60
+    for p in range(120):
+        pid = db.add_podcast({"title": f"Show {p}", "feed_url": f"https://x/{p}"})
+        db.merge_episodes(pid, [{"guid": str(i), "title": f"Episode {i} of show {p}", "url": f"https://x/{p}/{i}",
+                                 "published": 1.7e9 + i * 86400, "duration": 60, "description": notes}
+                                for i in range(400)])
+    start = time.perf_counter()
+    for _ in range(5):
+        db.podcasts()
+        db.episodes(text="nothing-matches-this", limit=8, titles_only=True)
+    per_search = (time.perf_counter() - start) / 5
+    db.close()
+    assert per_search < 0.05, f"{per_search * 1000:.0f} ms"

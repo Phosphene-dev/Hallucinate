@@ -8,6 +8,8 @@ Item {
     signal clicked()
     height: 40
     activeFocusOnTab: true
+    // A focused control takes Space and Enter itself; without this the window's Space (play/pause) wins
+    Keys.onShortcutOverride: function (event) { event.accepted = event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter }
     Keys.onSpacePressed: item.clicked()
     Keys.onReturnPressed: item.clicked()
     Keys.onEnterPressed: item.clicked()

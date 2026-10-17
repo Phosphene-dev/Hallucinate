@@ -58,6 +58,9 @@ class UserLibrary(QObject):
     def __init__(self, db_path, player=None, parent=None):
         super().__init__(parent)
         self._reader = _Reader(str(db_path), "userlib")
+        # Imports can take minutes (reading every file's tags); they get their own worker, so likes, ratings,
+        # playlists and the quick lookups the window waits on never queue behind them.
+        self._bulk = _Reader(str(db_path), "userlib-bulk")
         self._player = player
         self._liked = set()
         self._ratings = {}
@@ -417,7 +420,7 @@ class UserLibrary(QObject):
                 result = {"id": -1, "name": name, "added": 0, "missing": 0, "error": "Couldn't read that playlist"}
             self._imported.emit(result)
 
-        self._reader.submit(work)
+        self._bulk.submit(work)
 
     # --- another player's library ---------------------------------------------------------
     @Slot(result="QVariantList")
@@ -446,7 +449,7 @@ class UserLibrary(QObject):
                 result = {"error": "Couldn't import that library"}
             self._player_imported.emit(result)
 
-        self._reader.submit(work)
+        self._bulk.submit(work)
 
     @Slot(str)
     def importFromPlayer(self, url):
@@ -491,9 +494,11 @@ class UserLibrary(QObject):
         tracks = [t for t in tracks if t.get("path")]
         if not tracks:
             return "There are no songs to export"
+        from .core.atomic import write_atomic
+
+        text = playlist_files.write_m3u(tracks, path).encode("utf-8")  # built first: a failure leaves no empty file
         try:
-            with open(path, "w", encoding="utf-8") as fh:
-                fh.write(playlist_files.write_m3u(tracks, path))
+            write_atomic(path, lambda fh: fh.write(text))
         except OSError as exc:
             return f"Couldn't save the playlist: {exc.strerror or exc}"
         return ""
@@ -819,7 +824,7 @@ class UserLibrary(QObject):
             self.refresh()
             self._history_requery.emit()
 
-        self._reader.submit(work)
+        self._bulk.submit(work)
 
     # --- listening history -------------------------------------------------------
     @Property("QVariantMap", notify=historyChanged)
@@ -974,4 +979,5 @@ class UserLibrary(QObject):
                 self._play([t], 0)
 
     def shutdown(self):
+        self._bulk.close()
         self._reader.close()

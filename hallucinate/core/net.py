@@ -1,7 +1,9 @@
 """The one door to the internet. Every request Hallucinate makes goes through `urlopen` here, so offline mode
 can close it in one place (tests/test_offline.py checks that nothing else calls urllib directly)."""
+import http.client
 import threading
 import urllib.error
+import urllib.parse
 import urllib.request
 
 _lock = threading.Lock()
@@ -28,6 +30,8 @@ def describe(exc):
 
     if isinstance(exc, OfflineError):
         return "offline mode is on"
+    if isinstance(exc, NotWebLink):
+        return "that isn't a web link"
     if isinstance(exc, ResponseTooLarge):
         return "the server sent far more than expected"
     if isinstance(exc, urllib.error.HTTPError):
@@ -78,6 +82,53 @@ class ResponseTooLarge(OSError, ValueError):
     answer" handling catches it."""
 
 
+SCHEMES = ("http", "https")
+
+
+class NotWebLink(urllib.error.URLError):
+    """A link that isn't http(s): a feed, playlist or server can name file://, ftp:// or data: links, which
+    urllib would happily open (a feed's "episode" at file:///home/you/.ssh/id_rsa would be copied into the
+    downloads folder). Nothing Hallucinate fetches is anything but a web address."""
+
+    def __init__(self, url):
+        super().__init__(f"not a web link ({urllib.parse.urlsplit(url).scheme or 'no scheme'})")
+
+
+def is_web_url(url):
+    return isinstance(url, str) and urllib.parse.urlsplit(url.strip()).scheme.lower() in SCHEMES
+
+
+class _WebOnlyRedirects(urllib.request.HTTPRedirectHandler):
+    """Follow redirects only to other web addresses (urllib already refuses file://, but not ftp://)."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        target = urllib.parse.urljoin(req.full_url, newurl)
+        if not is_web_url(target):
+            raise NotWebLink(newurl)
+        new = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new is not None and urllib.parse.urlsplit(target).netloc != urllib.parse.urlsplit(req.full_url).netloc:
+            # urllib forwards every header: a token meant for one server mustn't reach the next one
+            for name in list(new.headers):
+                if name.lower() in ("authorization", "cookie"):
+                    del new.headers[name]
+            for name in list(new.unredirected_hdrs):
+                if name.lower() in ("authorization", "cookie"):
+                    del new.unredirected_hdrs[name]
+        return new
+
+
+urllib.request.install_opener(urllib.request.build_opener(_WebOnlyRedirects))
+
+
+def _as_url_error(exc):
+    """http.client's protocol errors (a cut-off body, a garbled status line, too many headers) aren't
+    OSErrors, so callers' "no network" handling would miss them and a worker could die without reporting
+    back. They become URLErrors, which every caller already handles."""
+    err = urllib.error.URLError(f"the server's answer was broken ({type(exc).__name__})")
+    err.__cause__ = exc
+    return err
+
+
 class _Limited:
     """A response that refuses to read past `limit` bytes in total."""
 
@@ -86,7 +137,10 @@ class _Limited:
 
     def read(self, amt=-1):
         want = self._left + 1 if amt is None or amt < 0 else min(amt, self._left + 1)
-        data = self._resp.read(want)
+        try:
+            data = self._resp.read(want)
+        except http.client.HTTPException as exc:
+            raise _as_url_error(exc) from exc
         self._left -= len(data)
         if self._left < 0:
             raise ResponseTooLarge("The server's answer was too large")
@@ -107,5 +161,11 @@ def urlopen(request, timeout=10, limit=MAX_RESPONSE):
     """Open a URL unless offline mode is on. Reading more than `limit` bytes raises ResponseTooLarge."""
     if _offline:
         raise OfflineError()
-    resp = urllib.request.urlopen(request, timeout=timeout)  # noqa: S310 - callers pass fixed https endpoints
+    url = request.full_url if isinstance(request, urllib.request.Request) else str(request)
+    if not is_web_url(url):
+        raise NotWebLink(url)
+    try:
+        resp = urllib.request.urlopen(request, timeout=timeout)  # noqa: S310 - http(s) only, checked above
+    except http.client.HTTPException as exc:
+        raise _as_url_error(exc) from exc
     return _Limited(resp, limit)

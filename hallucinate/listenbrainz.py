@@ -12,7 +12,7 @@ import keyring
 from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
 
 from .core import net
-from .core.kinds import counts_for_scrobbling
+from .core.kinds import counts_for_scrobbling, scrobble_fields
 
 DEFAULT_URL = "https://api.listenbrainz.org"
 KEYRING_SERVICE = "Hallucinate ListenBrainz"
@@ -42,6 +42,7 @@ def lb_request(base, path, token=None, payload=None, params=None):
 
 
 def track_metadata(track):
+    track = scrobble_fields(track)
     artist, title = track.get("artist", ""), track.get("title", "")
     if not artist or not title:
         raise ValueError("ListenBrainz requires a track title and artist.")

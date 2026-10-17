@@ -190,3 +190,23 @@ def test_radio_keeps_smart_playlist_rules(qapp, radio_player, radio_clips):
     assert wait_for(lambda: len(source.calls) == 2)
     assert source.calls[1][0] == [radio_clips[1]["path"]]
     assert source.rules is None
+
+
+@needs_ffmpeg
+def test_radio_with_nothing_left_to_add_asks_once(qapp, radio_player, radio_clips):
+    """An empty batch (everything is queued, or the song isn't in the library) used to ask again at once,
+    thousands of times a second."""
+    from conftest import wait_for
+
+    p = radio_player
+    source = Source()
+    p.setRadioSource(source)
+    p.playList(radio_clips[:1], 0)
+    p.setRadio(True)
+    assert len(source.calls) == 1
+    source.calls[0][2]([])  # nothing similar
+    for _ in range(20):
+        qapp.processEvents()
+    assert len(source.calls) == 1
+    p.playList(radio_clips[1:2], 0)  # a new song asks again
+    assert wait_for(lambda: len(source.calls) == 2)

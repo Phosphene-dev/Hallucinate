@@ -47,8 +47,20 @@ def data_dir() -> Path:
         base = Path.home() / "Library" / "Application Support" / "hallucinate"
     else:
         base = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share")) / "hallucinate"
-    base.mkdir(parents=True, exist_ok=True)
-    return base
+    return _private(base)
+
+
+def _private(folder: Path) -> Path:
+    """Make one of Hallucinate's own folders readable by you alone: it holds your listening history, backups
+    and crash records, and a shared computer's other users have no business reading them."""
+    folder.mkdir(parents=True, exist_ok=True)
+    if os.name == "posix":
+        try:
+            if folder.stat().st_mode & 0o077:
+                folder.chmod(0o700)
+        except OSError:
+            pass
+    return folder
 
 
 def config_dir() -> Path:
@@ -61,15 +73,11 @@ def config_dir() -> Path:
         base = Path.home() / "Library" / "Application Support"
     else:
         base = Path.home() / ".config"
-    result = base / "hallucinate"
-    result.mkdir(parents=True, exist_ok=True)
-    return result
+    return _private(base / "hallucinate")
 
 
 def cache_dir() -> Path:
-    result = _cache_base() / "hallucinate"
-    result.mkdir(parents=True, exist_ok=True)
-    return result
+    return _private(_cache_base() / "hallucinate")
 
 
 def art_dir() -> Path:

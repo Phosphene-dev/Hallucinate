@@ -139,7 +139,7 @@ def _num(s: str) -> int:
 
 def album_key(album_artist: str, album: str, directory: str) -> str:
     base = album_artist.lower() if album_artist else directory
-    return hashlib.sha1(f"{base}\x1f{album.lower()}".encode("utf-8", "replace")).hexdigest()[:16]
+    return hashlib.sha1(f"{base}\x1f{album.lower()}".encode("utf-8", "replace"), usedforsecurity=False).hexdigest()[:16]
 
 
 def _image_ext(data: bytes) -> str:

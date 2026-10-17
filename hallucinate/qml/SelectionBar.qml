@@ -74,6 +74,7 @@ Rectangle {
             IconButton {
                 anchors.verticalCenter: parent.verticalCenter
                 icon: "heart"; size: 16
+                visible: shell.features.liked !== false
                 readonly property bool all: userLib.likesRevision >= 0 && userLib.allLiked(Selection.paths)
                 active: all
                 tip: all ? "Unlike all" : "Like all"
@@ -154,6 +155,11 @@ Rectangle {
             userLib.addPathsToNewPlaylist(name, p)
             bar.done(bar.songs(p.length) + " added to “" + name + "”")
         }
-        TextField { id: plName; width: 280; placeholderText: "Playlist name"; selectByMouse: true; onAccepted: newPl.accept() }
+        TextField {
+            id: plName; width: 280; placeholderText: "Playlist name"; selectByMouse: true
+            onAccepted: if (text.trim().length) newPl.accept()  // no nameless playlists
+            onTextChanged: { var b = newPl.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
+            onVisibleChanged: if (visible) { var b = newPl.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
+        }
     }
 }

@@ -5,6 +5,58 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.9.3] - 2026-10-17
+
+Hardening on the way to 1.0, plus a few things asked for while testing.
+
+### Added
+- Rearrange the sidebar: drag an entry up or down, right-click it for Move up and Move down, press Alt+Up or
+  Alt+Down on it, or use the list in Settings → Features (with Reset).
+- Find genres online. In Edit album (or Edit tags), **Find online** next to Genre asks MusicBrainz and offers
+  its other suggestions to pick from. In Library health, each album without a genre has **Find genre**, and
+  **Find all online** looks them all up, then shows what it found to tick, change or pick another before
+  anything is written. Genres come from the album where MusicBrainz has one, else from the artist (those start
+  unticked).
+- Heard on the radio: the Internet radio page lists every song a station played while you listened for a
+  minute or more, by day, with search, Find in your library, Copy and Remove.
+- Your listening on the Internet radio and Podcasts pages: hours this week, this month or all time, songs heard
+  or episodes finished, and your top stations or shows. Kept apart from the music's stats.
+- Podcast episodes can count on Last.fm and ListenBrainz, as the show and the episode's title (Settings →
+  Internet & sharing; off unless you turn it on).
+- Backups include the radio log and listening time.
+- A song heard on the radio that's also in your library is scrobbled with your copy's album.
+- If the window stops responding for 20 seconds, what Hallucinate was doing is recorded, and the next start
+  offers it as a report to copy (like a crash report), with what the window and player were doing just
+  before. A computer going to sleep doesn't count.
+
+### Changed
+- Switching off Liked Songs also hides the heart buttons, the menu item and the Last.fm loves options. A test
+  now checks every page with each feature switched off.
+- Search everywhere and the Podcasts page stay quick with tens of thousands of episodes.
+
+### Fixed
+- Songs scrobbled from internet radio no longer have the station's name as their album: they're the song and
+  its artist (and its album, if it's in your library).
+- The fields in Edit album and Edit tags have names for screen readers.
+- A station that goes silent without closing the connection is noticed after 15 seconds and reconnected
+  (it used to look like it was still playing, forever).
+- Reconnecting to a station that dropped now really opens a new connection (it could carry on waiting on the
+  old one).
+- A full code review for bugs and safety. Among the fixes:
+  - Links from stations, podcast feeds and online lookups must be web links (http or https), redirects
+    included, and saved passwords are never sent on to another site.
+  - Files and settings are written whole or not at all, so a crash or full disk can't leave half a file.
+    Your data folders are private to your account.
+  - An update is checked against its published checksum again just before it's installed.
+  - Backups are checked before restoring.
+  - A tag edit can't damage a song if saving fails.
+  - Several dialogs no longer accept an empty name or a link that isn't a web link.
+  - Space and Enter on a focused button press that button instead of play/pause.
+  - Radio stations and podcast episodes can't be given star ratings.
+  - Back and Forward skip a playlist or show you've deleted.
+  - Long playlist names and artist lists are shortened instead of running off the page.
+  - The queue's Clear button is greyed out when the queue is empty, and Enter saves in Edit tags.
+
 ## [0.9.9.2] - 2026-10-16
 
 Polish everywhere, podcasts done properly, and your own touches on the look.

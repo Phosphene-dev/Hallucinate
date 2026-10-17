@@ -16,6 +16,7 @@ from PySide6.QtCore import QObject, QUrl, Signal, Slot
 from PySide6.QtMultimedia import QAudioDecoder, QAudioFormat
 
 from .cachetrim import touch_if_stale
+from .core.atomic import write_atomic
 
 logger = logging.getLogger(__name__)
 POINTS = 600
@@ -85,7 +86,7 @@ def cache_name(path):
     except OSError:
         return None
     key = f"{path}|{st.st_size}|{st.st_mtime_ns}".encode("utf-8", "surrogatepass")
-    return hashlib.sha1(key).hexdigest() + ".wf"
+    return hashlib.sha1(key, usedforsecurity=False).hexdigest() + ".wf"
 
 
 class Envelope:
@@ -103,18 +104,22 @@ class Envelope:
         return peaks_from_blocks(self.ms[a:b], self.peak[a:b], points) if a < len(self.ms) else []
 
     def save(self, path):
-        try:
-            with open(path, "wb") as fh:  # half precision: about a megabyte for an hour of audio
-                np.savez(fh, ms=self.ms.astype(np.float16), peak=self.peak.astype(np.float16), rate=self.rate)
+        try:  # half precision: about a megabyte for an hour of audio; whole or not at all
+            write_atomic(path, lambda fh: np.savez(fh, ms=self.ms.astype(np.float16),
+                                                     peak=self.peak.astype(np.float16), rate=self.rate))
         except OSError as exc:
             logger.debug("Could not cache waveform envelope: %s", exc)
 
     @classmethod
     def load(cls, path):
         try:
-            with np.load(path) as data:
+            with np.load(path, allow_pickle=False) as data:
                 return cls(data["ms"], data["peak"], int(data["rate"]))
-        except (OSError, ValueError, KeyError):
+        except Exception:  # noqa: BLE001 - a damaged cache file (a truncated zip, say) is just recomputed
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
             return None
 
 
@@ -184,7 +189,8 @@ class _Worker(QObject):
         if peaks and name:
             try:
                 self._cache_dir.mkdir(parents=True, exist_ok=True)
-                (self._cache_dir / name).write_bytes(bytes(int(round(v * 255)) for v in peaks))
+                data = bytes(int(round(v * 255)) for v in peaks)
+                write_atomic(self._cache_dir / name, lambda fh: fh.write(data))
             except OSError as exc:
                 logger.debug("Could not cache waveform: %s", exc)
         envelope = None

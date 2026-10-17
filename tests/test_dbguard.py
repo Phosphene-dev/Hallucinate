@@ -113,3 +113,33 @@ def test_a_skipped_check_still_finds_damage_after_a_crash(tmp_path):
     dbguard.mark_clean(db)
     db.write_bytes(b"not a database" * 100)  # changed (and damaged) after the clean exit
     assert "damaged" in dbguard.check(db, tmp_path / "backups")
+
+
+def test_the_radio_and_podcasts_database_is_guarded_too(tmp_path):
+    from hallucinate.core.streams_db import StreamsDB
+
+    db, backups = tmp_path / "streams.db", tmp_path / "backups"
+    s = StreamsDB(db)
+    s.add_station({"name": "FM", "url": "http://fm/live"})
+    s.close()
+    dbguard.backup_now(db, backups)
+    assert [p.name.split("-")[0] for p in dbguard.backups(backups, "streams")] == ["streams"]
+    assert dbguard.backups(backups) == []  # the library's backups are kept apart
+    db.write_bytes(b"this is not a database" * 100)
+    notice = dbguard.check(db, backups)
+    assert "radio and podcasts database was damaged" in notice
+    s = StreamsDB(db)
+    assert [x["name"] for x in s.stations()] == ["FM"]
+    s.close()
+
+
+def test_a_database_that_cannot_be_checked_now_is_left_alone(tmp_path, monkeypatch):
+    db = tmp_path / "library.db"
+    Database(db).close()
+
+    def busy(*a, **k):
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(dbguard.sqlite3, "connect", busy)
+    assert dbguard.check(db, tmp_path / "backups") == ""
+    assert db.exists() and not list(tmp_path.glob("*.damaged-*"))

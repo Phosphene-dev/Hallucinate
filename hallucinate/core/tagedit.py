@@ -80,6 +80,29 @@ def _kind(f):
     return None
 
 
+def _save_safely(f, path):
+    """Save `f`'s tags without risking the song: into a copy next to it, which then replaces it. Saving in place
+    rewrites the file, and a crash, a full disk or a pulled drive half-way would leave the audio damaged."""
+    import os
+    import shutil
+
+    path = os.fspath(path)
+    folder, name = os.path.split(path)
+    tmp = os.path.join(folder, f".{name}.hallucinate-tmp")
+    try:
+        shutil.copy2(path, tmp)
+        f.save(tmp)
+        with open(tmp, "rb+") as written:
+            os.fsync(written.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
 def write_tags(path, fields):
     """Write the given fields ("" removes a tag). Raises TagWriteError."""
     fields = _clean(fields)
@@ -95,7 +118,7 @@ def write_tags(path, fields):
         pass
     try:
         {"id3": _w_id3, "vorbis": _w_vorbis, "mp4": _w_mp4, "asf": _w_asf, "ape": _w_ape}[kind](f, fields)
-        f.save()
+        _save_safely(f, path)
     except TagWriteError:
         raise
     except Exception as exc:  # noqa: BLE001
@@ -182,7 +205,7 @@ def embed_cover(path, data):
             f.tags["covr"] = [MP4Cover(data, imageformat=fmt)]
         else:
             raise TagWriteError(f"Embedding cover art is not supported for {type(f).__name__}")
-        f.save()
+        _save_safely(f, path)
     except TagWriteError:
         raise
     except Exception as exc:  # noqa: BLE001

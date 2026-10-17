@@ -20,6 +20,7 @@ from .core import net
 from .core import podcasts as pc
 from .core.kinds import track_kind
 from .core.streams_db import StreamsDB
+from .listentime import ListenClock
 from .models import DictModel
 
 logger = logging.getLogger(__name__)
@@ -86,6 +87,7 @@ class Podcasts(QObject):
     resultsChanged = Signal()
     chaptersChanged = Signal()
     message = Signal(str)
+    listeningChanged = Signal()  # listening time grew, or the scrobble switch changed
     newEpisodes = Signal(str, str)  # (show, latest episode title) when a check finds something new, if asked to tell
     undoable = Signal(str)  # a toast with an Undo button that calls undo()
     _done = Signal(object)
@@ -130,6 +132,10 @@ class Podcasts(QObject):
         self._save_timer = QTimer(self)
         self._save_timer.setInterval(SAVE_EVERY_MS)
         self._save_timer.timeout.connect(self._save_position)
+        self._scrobble = self._settings.value("podcasts/scrobble", False, bool)
+        self._clock = ListenClock(player, self._db, "episode",
+                                  lambda e: ("podcast", int(e.get("podcast_id") or 0), e.get("album") or ""), self)
+        self._clock.counted.connect(self.listeningChanged)
         self._refresh_timer = QTimer(self)
         self._refresh_timer.setInterval(max(1, self._options["refreshHours"]) * 3600 * 1000)
         self._refresh_timer.timeout.connect(self.refreshAll)
@@ -166,7 +172,7 @@ class Podcasts(QObject):
             return None
         if not url.startswith(("http://", "https://")):
             return Path(url) if os.path.isfile(url) else None
-        return self._images / hashlib.sha1(url.encode("utf-8")).hexdigest()[:24]
+        return self._images / hashlib.sha1(url.encode("utf-8"), usedforsecurity=False).hexdigest()[:24]
 
     def _art(self, url):
         f = self._image_file(url)
@@ -313,9 +319,10 @@ class Podcasts(QObject):
         words = [w.casefold() for w in (query or "").split()]
         if not words or not self._enabled:
             return {"shows": [], "episodes": []}
-        shows = [self._show_row(p) for p in self._db.podcasts()
-                 if all(w in f"{p['title']} {p['author']}".casefold() for w in words)][:6]
-        episodes = [self._episode_row(e) for e in self._db.episodes(text=query, limit=8)]
+        matched = [r["id"] for r in self._db.conn.execute("SELECT id, title, author FROM podcasts")
+                   if all(w in f"{r['title']} {r['author']}".casefold() for w in words)][:6]
+        shows = [self._show_row(p) for p in self._db.podcasts() if p["id"] in matched] if matched else []
+        episodes = [self._episode_row(e) for e in self._db.episodes(text=query, limit=8, titles_only=True)]
         return {"shows": shows, "episodes": episodes}
 
     @Slot(str, result=bool)
@@ -452,7 +459,7 @@ class Podcasts(QObject):
         def work():
             try:
                 podcast, episodes, final = pc.fetch_feed(url)
-            except (OSError, ValueError) as exc:
+            except Exception as exc:  # noqa: BLE001 - a worker must always report back
                 return ("followed", None, f"Couldn't follow that: {net.describe(exc)}")
             return ("followed", (podcast, episodes, final), "")
 
@@ -467,7 +474,7 @@ class Podcasts(QObject):
         def work():
             try:
                 podcast, episodes = pc.scan_folder(path)
-            except OSError as exc:
+            except Exception as exc:  # noqa: BLE001 - a worker must always report back
                 return ("folder", None, str(exc))
             return ("folder", (podcast, episodes), "")
 
@@ -516,7 +523,7 @@ class Podcasts(QObject):
                 info, episodes, final = pc.fetch_feed(p["feed_url"])
                 info["feed_url"] = final
                 return ("refreshed", (p["id"], info, episodes, quiet), "")
-            except (OSError, ValueError) as exc:
+            except Exception as exc:  # noqa: BLE001 - a worker must always report back
                 return ("refreshed", (p["id"], None, None, quiet), net.describe(exc))
 
         self._pool.submit(lambda: self._done.emit(work()))
@@ -539,7 +546,8 @@ class Podcasts(QObject):
                 "title": e["title"], "artist": e.get("podcast") or "", "album": e.get("podcast") or "",
                 "album_artist": "", "artUrl": self._art(e.get("image")) or self._art(e.get("podcast_image")),
                 "duration": e.get("duration") or 0, "resume_ms": resume, "id": -1_000_000 - e["id"],
-                "speed": float(show.get("speed") or 0), "skip_outro": int(show.get("skip_outro") or 0)}
+                "speed": float(show.get("speed") or 0), "skip_outro": int(show.get("skip_outro") or 0),
+                "scrobble": self._scrobble}
 
     @Slot(int)
     def play(self, episode_id):
@@ -649,7 +657,7 @@ class Podcasts(QObject):
                 return ("downloaded", episode_id, path)
             except InterruptedError:
                 return ("downloaded", episode_id, None)
-            except OSError as exc:
+            except Exception as exc:  # noqa: BLE001 - a worker must always report back
                 logger.warning("Episode download failed: %s", exc)
                 return ("downloaded", episode_id, OSError(str(exc)))
 
@@ -717,7 +725,9 @@ class Podcasts(QObject):
             path += ".opml"
         shows = [p for p in self._db.podcasts() if p.get("feed_url")]
         try:
-            Path(path).write_text(pc.make_opml(shows), encoding="utf-8")
+            from .core.atomic import write_text
+
+            write_text(path, pc.make_opml(shows))
         except OSError as exc:
             return f"Couldn't save: {exc.strerror or exc}"
         return f"Saved {len(shows)} show{'s' if len(shows) != 1 else ''} to {Path(path).name}"
@@ -753,7 +763,7 @@ class Podcasts(QObject):
         def work():
             try:
                 return ("results", query, pc.search_directory(query))
-            except (OSError, ValueError) as exc:
+            except Exception as exc:  # noqa: BLE001 - a worker must always report back
                 logger.warning("Podcast search failed: %s", exc)
                 return ("results", query, None)
 
@@ -853,7 +863,7 @@ class Podcasts(QObject):
             if not chapters and e.get("chapters_url") and not net.is_offline():
                 try:
                     chapters = pc.fetch_chapters(e["chapters_url"])
-                except (OSError, ValueError):
+                except Exception:  # noqa: BLE001 - a worker must always report back
                     chapters = []
             return ("chapters", episode_id, chapters)
 
@@ -949,7 +959,31 @@ class Podcasts(QObject):
                 self._chapters = value
                 self.chaptersChanged.emit()
 
+    # --- scrobbling and your listening -------------------------------------------------------------------
+    @Property(bool, notify=listeningChanged)
+    def scrobble(self):
+        """Whether episodes count on Last.fm and ListenBrainz (as the show and the episode's title). Off unless
+        you turn it on."""
+        return self._scrobble
+
+    @Slot(bool)
+    def setScrobble(self, on):
+        self._scrobble = bool(on)
+        self._settings.setValue("podcasts/scrobble", self._scrobble)
+        if self._player.hasTrack and track_kind(self._player.current) == "episode":
+            self._player.current["scrobble"] = self._scrobble
+        self.listeningChanged.emit()
+
+    @Slot(int, result="QVariantMap")
+    def listening(self, days):
+        """Podcast listening for the last `days` days (0: all time): {hours, finished, top: [{id, name, hours}]}."""
+        self._clock.tick()
+        got = self._db.listening("podcast", days)
+        return {"hours": round(got["seconds"] / 3600, 1), "finished": self._db.episodes_finished(days),
+                "top": [{"id": t["item_id"], "name": t["name"], "hours": round(t["seconds"] / 3600, 1)} for t in got["top"]]}
+
     def shutdown(self):
+        self._clock.stop()
         self._save_position()
         self._save_timer.stop()
         self._refresh_timer.stop()

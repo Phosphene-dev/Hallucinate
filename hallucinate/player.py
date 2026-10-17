@@ -35,6 +35,7 @@ SKIP_MIN_MS = 1500  # moving on sooner than this is browsing the queue, not a sk
 RADIO_LOW_WATER = 2  # ask for more radio tracks once fewer than this many are left to play
 RADIO_SEEDS = 5  # recently played tracks the next radio batch is based on  # stop a track left to finish this long after its expected end, in case it stalls
 STREAM_SONG_MS = 60_000  # a song heard this long on internet radio counts for scrobbling
+STREAM_QUIET_MS = 15_000  # a station "playing" whose position hasn't moved this long has gone silent
 STREAM_RETRIES = 5  # reconnect a dropped station this many times (2, 4, 8… s apart) before giving up
 SESSION_VERSION = 1
 SESSION_MAX_TRACKS = 1000  # bounds the save cost for huge queues (e.g. "play all songs" on 50k tracks)
@@ -141,8 +142,10 @@ class _Voice:
         if self.tap is not None:
             self.tap.reset()
         url = QUrl(self.path) if is_url(self.path) else QUrl.fromLocalFile(self.path)
-        if self.seek_on_load >= 0 and self.player.source() == url:
-            self.player.setSource(QUrl())  # the same file again: reload it, so it reports loaded and seeks
+        if (self.seek_on_load >= 0 or is_url(self.path)) and self.player.source() == url:
+            # the same file again: reload it, so it reports loaded and seeks; the same stream again (a
+            # reconnect): drop the old connection, which Qt would otherwise keep
+            self.player.setSource(QUrl())
         self.player.setSource(url)
 
     def holds(self, index, track):
@@ -325,6 +328,21 @@ class Player(QObject):
         self.repeatChanged.connect(self._maybe_extend_radio)
         self.shuffleChanged.connect(self._maybe_extend_radio)
         self.stateChanged.connect(self._clear_visualizer)
+
+        # A station can go silent without closing the connection: nothing errors and nothing ends, the
+        # position just stops. Notice that and reconnect, as for a dropped stream.
+        self._quiet_timer = QTimer(self)
+        self._quiet_timer.setInterval(5000)
+        self._quiet_timer.timeout.connect(self._check_stream_quiet)
+        self._stream_pos, self._stream_moved = -1, 0.0
+        # One reconnect waits at a time: a drop can be reported twice (an error and an end), and the silence
+        # check can fire while a retry is pending; a stray second retry would tear down a stream that's back.
+        self._retry_timer = QTimer(self)
+        self._retry_timer.setSingleShot(True)
+        self._retry_timer.timeout.connect(self._retry_stream_now)
+        self._retry_index = -1
+        self.stateChanged.connect(self._watch_stream)
+        self.trackChanged.connect(self._watch_stream)
 
         self._save_timer = QTimer(self)
         self._save_timer.setSingleShot(True)
@@ -633,8 +651,8 @@ class Player(QObject):
             curve = [[float(f), float(g)] for f, g in json.loads(curve_json)]
         except (TypeError, ValueError):
             return
-        if len(curve) < 2 or not name.strip():
-            return
+        if len(curve) < 2 or not name.strip() or not all(math.isfinite(f) and math.isfinite(g) for f, g in curve):
+            return  # nan or inf would make the filter (and the sound) garbage
         self._headphone = {"name": name.strip(), "curve": curve}
         if not self._eq_enabled and eq.available():
             self._eq_enabled = True
@@ -744,6 +762,8 @@ class Player(QObject):
         recent = [i for i in self._history if 0 <= i < len(self._queue)][-(RADIO_SEEDS - 1):] + [self._index]
         seeds = [self._queue[i].get("path", "") for i in recent]
         anchor = seeds[-1]
+        if anchor == getattr(self, "_radio_exhausted", None):
+            return  # nothing more to add for this song (asked already); a new song asks again
         self._radio_pending = True
         self._radio_source(seeds, [t.get("path", "") for t in self._queue],
                            lambda tracks: self._radio_ready.emit((anchor, tracks)), self._radio_rules)
@@ -753,8 +773,13 @@ class Player(QObject):
         anchor, tracks = payload
         self._radio_pending = False
         # Drop stale results: radio was switched off, or the queue was replaced while they were being picked.
-        if not self._radio or not tracks or not any(t.get("path") == anchor for t in self._queue):
+        if not self._radio or not any(t.get("path") == anchor for t in self._queue):
             self._maybe_extend_radio()  # e.g. the queue was replaced: ask again for the new one
+            return
+        if not tracks:
+            # Nothing similar left (everything's queued, the song isn't in the library, a smart playlist's
+            # rules match nothing new): don't ask again for this song, or it would ask in a tight loop.
+            self._radio_exhausted = anchor
             return
         start = len(self._queue)
         ended = self._ended
@@ -1319,7 +1344,7 @@ class Player(QObject):
         del self._queue[i]
         self._history = [h - (h > i) for h in self._history if h != i]
         self._played = {p - (p > i) for p in self._played if p != i}
-        self._standby.clear()
+        self._drop_standby()
         if i == self._index:
             was_playing = self.playing
             self._player.stop()
@@ -1356,7 +1381,7 @@ class Player(QObject):
         self._voice.index = self._index
         self._history = [remap(h) for h in self._history]
         self._played = {remap(p) for p in self._played}
-        self._standby.clear()
+        self._drop_standby()
         self._invalidate_next()
         self._sync_queue()
         self.trackChanged.emit()
@@ -1415,7 +1440,7 @@ class Player(QObject):
             self._index = self._voice.index = snap["index"]
             self.trackChanged.emit()
         elif target is not None:
-            self._load(snap["index"], autoplay=snap["playing"] and not self.playing, record=False)
+            self._load(snap["index"], autoplay=snap["playing"] or self.playing, record=False)  # keep the music going
             if snap["position"] > 0:
                 self._restore_pos = snap["position"]
                 if self._player.mediaStatus() in (QMediaPlayer.MediaStatus.LoadedMedia,
@@ -1440,7 +1465,7 @@ class Player(QObject):
     def _shift_indexes_after(self, at, delta):
         self._history = [h + delta if h >= at else h for h in self._history]
         self._played = {p + delta if p >= at else p for p in self._played}
-        self._standby.clear()
+        self._drop_standby()
         self._invalidate_next()
 
     def _sync_queue(self):
@@ -1451,6 +1476,15 @@ class Player(QObject):
     def _standby_check(self):
         sb = self._standby
         if sb.index >= len(self._queue) or (sb.index >= 0 and not sb.holds(sb.index, self._queue[sb.index])):
+            self._drop_standby()
+
+    def _drop_standby(self):
+        """Forget the pre-loaded next song after a queue edit. During a crossfade or a gapless tail the other
+        voice is still playing out the previous song: let it finish instead of cutting it off mid-note."""
+        sb = self._standby
+        if self._fading or sb.finishing:
+            sb.index = -1  # no longer anyone's next song; it stops by itself when it's done
+        else:
             sb.clear()
 
     def _invalidate_next(self):
@@ -1488,6 +1522,7 @@ class Player(QObject):
         path = track_file(track)
         if i != self._index:
             self._stream_retries = 0
+            self._retry_timer.stop()  # moving on: a reconnect for the old station isn't wanted
         if is_url(path) and net.is_offline():
             self._end_fade()
             for v in self._voices:
@@ -1649,14 +1684,21 @@ class Player(QObject):
         self._listened += step
         kind = track_kind(self.current) if self.hasTrack else "music"
         if kind == "episode":
-            return  # podcasts keep their own place (see podcasts.py); they're never plays
+            # podcasts keep their own place (see podcasts.py) and are never plays; one that's scrobbled counts
+            # for that after half of it or four minutes, like a song
+            if (self.current.get("scrobble") and self._listened >= min(240_000, max(dur, 1) / 2)):
+                self._play_counted = True
+                self.played.emit(dict(self.current))
+            return
         if kind == "station":
             # a song on the radio, once its title is known, counts for scrobbling after a minute
             if self._listened >= STREAM_SONG_MS and self.current.get("artist") and self.current.get("stream_title"):
                 self._play_counted = True
                 self.played.emit(dict(self.current))
             return
-        if self._listened >= min(30_000, max(dur, 1) / 2) and self.hasTrack:
+        if dur <= 0:  # Qt hasn't said how long it is (yet): fall back to what the scan found, else 30 s
+            dur = int(float(self.current.get("duration") or 0) * 1000) if self.hasTrack else 0
+        if self._listened >= (min(30_000, dur / 2) if dur > 0 else 30_000) and self.hasTrack:
             self._play_counted = True
             self.played.emit(dict(self.current))
 
@@ -1748,6 +1790,7 @@ class Player(QObject):
             return
         if status in (S.BufferedMedia,) and self.hasTrack and is_url(self.current.get("path")):
             self._stream_retries = 0
+            self._retry_timer.stop()  # it's back: a pending reconnect would only interrupt it
         if status == S.EndOfMedia and not self._ended and not self._fading:
             # Normally the next track has already taken over; this covers a handoff that never got scheduled.
             self._transitioning = False
@@ -1779,6 +1822,8 @@ class Player(QObject):
         reconnect was scheduled."""
         if not self.hasTrack or track_kind(self.current) != "station" or net.is_offline():
             return False
+        if self._retry_timer.isActive():
+            return True  # a reconnect is already on its way
         if self._stream_retries >= STREAM_RETRIES:
             logger.info("Station gave up after %d tries: %s", self._stream_retries, message)
             self._set_error("The station isn't answering. Try again later, or check its link.")
@@ -1787,9 +1832,32 @@ class Player(QObject):
         delay = 1000 * 2 ** self._stream_retries
         logger.info("Station dropped (%s); reconnecting", message)
         self._set_error("Lost the station, reconnecting…")
-        index = self._index
-        QTimer.singleShot(delay, lambda: self._retry_stream(index))
+        self._retry_index = self._index
+        self._retry_timer.start(delay)
         return True
+
+    def _retry_stream_now(self):
+        self._retry_stream(self._retry_index)
+
+    def _watch_stream(self):
+        on = self.playing and self.hasTrack and track_kind(self.current) == "station"
+        if on and not self._quiet_timer.isActive():
+            self._stream_pos, self._stream_moved = -1, time.monotonic()
+            self._quiet_timer.start()
+        elif not on:
+            self._quiet_timer.stop()
+
+    def _check_stream_quiet(self, now=None):
+        if not (self.playing and self.hasTrack and track_kind(self.current) == "station"):
+            self._quiet_timer.stop()
+            return
+        now = time.monotonic() if now is None else now
+        pos = self._voice.player.position()
+        if pos != self._stream_pos or self._retry_timer.isActive():
+            self._stream_pos, self._stream_moved = pos, now
+        elif (now - self._stream_moved) * 1000 >= STREAM_QUIET_MS:
+            self._stream_moved = now  # one reconnect per silence; the retry restarts the count
+            self._reconnect_stream("The station went quiet")
 
     def _retry_stream(self, index):
         if index == self._index and self.hasTrack and track_kind(self.current) == "station":
@@ -1889,7 +1957,10 @@ class Player(QObject):
         if 0 <= index < len(old):
             keep = [i for i, t in enumerate(old) if isinstance(t, dict)
                     and (is_url(t.get("path")) or os.path.isfile(track_file(t)))]
-            index = keep.index(index) if index in keep else min(sum(1 for i in keep if i < index), len(queue) - 1)
+            if index in keep:
+                index = keep.index(index)
+            else:  # the song that was playing is gone: start the one after it from the beginning
+                index, pos = min(sum(1 for i in keep if i < index), len(queue) - 1), 0
         else:
             index, pos = 0, 0
         self._queue = queue

@@ -499,7 +499,9 @@ class ThemeManager(QObject):
             return f"“{name}” is a built-in theme's name; pick another"
         try:
             self._user_theme_dir.mkdir(parents=True, exist_ok=True)
-            (self._user_theme_dir / f"{slug}.json").write_text(json.dumps(base, indent=2) + "\n", encoding="utf-8")
+            from .core.atomic import write_text
+
+            write_text(self._user_theme_dir / f"{slug}.json", json.dumps(base, indent=2) + "\n")
         except OSError as exc:
             return f"Couldn't save the theme: {exc.strerror or exc}"
         self._load_themes()

@@ -16,6 +16,9 @@ class StreamServer:
         self.title = "Artist One - First Song"
         self.requests = []
         self.drop_after = None  # bytes; the live stream cuts off after this many (a dropped connection)
+        self.stall_after = None  # bytes; the live stream goes silent after this many but keeps the connection
+        self.stalled = threading.Event()  # set once a stream has gone silent
+        self.release = threading.Event()  # set to let silent streams end (the server closing)
         server = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -68,6 +71,10 @@ class StreamServer:
                     while True:
                         if server.drop_after is not None and sent >= server.drop_after:
                             return
+                        if server.stall_after is not None and sent >= server.stall_after:
+                            server.stalled.set()
+                            server.release.wait()  # silent, the connection still open
+                            return
                         chunk = (data * 2)[pos:pos + METAINT]
                         pos = (pos + METAINT) % len(data)
                         self.wfile.write(chunk)
@@ -91,5 +98,6 @@ class StreamServer:
         return self.base + path
 
     def close(self):
+        self.release.set()
         self.httpd.shutdown()
         self.httpd.server_close()

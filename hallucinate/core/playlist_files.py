@@ -93,8 +93,13 @@ def write_m3u(tracks, dest):
     base = os.path.dirname(os.path.abspath(dest))
     lines = ["#EXTM3U"]
     for t in tracks:
+        if "://" in t["path"]:
+            continue  # a station or streamed episode in the queue isn't a file to list
         path = os.path.abspath(t["path"])
-        rel = os.path.relpath(path, base)
+        try:
+            rel = os.path.relpath(path, base)
+        except ValueError:  # on another drive (Windows): only the full path works
+            rel = path
         location = rel if not rel.startswith("..") and not os.path.isabs(rel) else path
         name = " - ".join(x for x in (t.get("artist") or "", t.get("title") or "") if x)
         lines.append(f"#EXTINF:{int(round(t.get('duration') or 0))},{name}")

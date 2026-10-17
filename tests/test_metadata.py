@@ -436,3 +436,70 @@ def test_lyrics_offset_is_saved_next_to_the_song(qapp, tmp_path):
         assert ctl.offset == 0 and ctl.currentLine == 1 and ctl.source == "lrc file"
     finally:
         ctl.shutdown()
+
+
+def test_genres_found_for_albums_without_one_are_saved_only_when_kept(qapp, lib, monkeypatch):
+    from hallucinate.core import musicbrainz
+
+    tmp, root = lib
+    asked = []
+
+    def fake(artist, album, cache=None):
+        asked.append((artist, album))
+        return {"genre": "Dream Pop", "genres": ["Dream Pop", "Shoegaze"], "source": "album", "release": album}
+
+    monkeypatch.setattr(musicbrainz, "find_genre", fake)
+    ed = MetadataEditor(tmp / "lib.db", tmp / "art")
+    done, changed = [], []
+    ed.genresFinished.connect(done.append)
+    ed.changed.connect(lambda: changed.append(1))
+    try:
+        ed.findMissingGenres()
+        assert wait_for(lambda: done, 10)
+        assert asked == [("Band", "Disc")] and done[0].startswith("Found genres for 1 of 1 albums")
+        proposals = ed.genreProposals
+        assert [(p["album"], p["genre"], p["genres"], p["songs"]) for p in proposals] == \
+            [("Disc", "Dream Pop", ["Dream Pop", "Shoegaze"], 2)]
+        assert ed.trackInfo(str(root / "01.mp3"))["genre"] == ""  # nothing written yet
+        ed.saveGenres([{"album_key": proposals[0]["album_key"], "genre": "Shoegaze"}])
+        assert wait_for(lambda: changed)
+        assert {ed.trackInfo(str(root / n))["genre"] for n in ("01.mp3", "02.mp3")} == {"Shoegaze"}
+        assert ed.genreProposals == []
+    finally:
+        ed.shutdown()
+
+
+def test_one_albums_genre_is_found_without_writing(qapp, lib, monkeypatch):
+    from hallucinate.core import musicbrainz, net
+
+    tmp, root = lib
+    monkeypatch.setattr(musicbrainz, "find_genre", lambda artist, album, cache=None: None)
+    ed = MetadataEditor(tmp / "lib.db", tmp / "art")
+    got = []
+    ed.genreFound.connect(lambda r: got.append(dict(r)))
+    try:
+        ed.findGenre("Band", "Disc")
+        assert wait_for(lambda: got, 10) and got[0]["error"] == "MusicBrainz has no genre for this album"
+        net.set_offline(True)
+        ed.findGenre("Band", "Disc")
+        assert got[1]["error"].startswith("Offline mode is on")
+    finally:
+        net.set_offline(False)
+        ed.shutdown()
+
+
+@needs_ffmpeg
+def test_a_failed_tag_save_leaves_the_song_untouched(tmp_path, monkeypatch):
+    import mutagen.flac
+
+    src = encode(tmp_path / "a.flac", "flac", seconds=0.5)
+    before = src.read_bytes()
+
+    def broken_save(self, *a, **k):
+        raise OSError("No space left on device")
+
+    monkeypatch.setattr(mutagen.flac.FLAC, "save", broken_save)
+    with pytest.raises(tagedit.TagWriteError):
+        tagedit.write_tags(str(src), {"title": "New"})
+    assert src.read_bytes() == before
+    assert [p.name for p in tmp_path.iterdir()] == ["a.flac"]  # no leftover copy

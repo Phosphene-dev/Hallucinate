@@ -7,6 +7,7 @@ side connection (Qt doesn't pass the titles on) and becomes the playing song's a
 downloaded once into the cache, so pictures never load from the web while offline mode is on."""
 import hashlib
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -16,6 +17,7 @@ from .core import net
 from .core import stations as st
 from .core.kinds import track_kind
 from .core.streams_db import StreamsDB
+from .listentime import ListenClock
 from .models import DictModel
 
 logger = logging.getLogger(__name__)
@@ -46,6 +48,8 @@ class Stations(QObject):
     resultsChanged = Signal()
     message = Signal(str)  # something to tell the user (shown as a toast)
     undoable = Signal(str)  # the same, with an Undo button that calls undo()
+    logChanged = Signal()  # a song was heard on the radio, or the log was cleared
+    listeningChanged = Signal()
     _done = Signal(object)
 
     def __init__(self, db_path, cache_dir, player, parent=None):
@@ -70,13 +74,19 @@ class Stations(QObject):
         self._title_timer.timeout.connect(self._poll_title)
         player.trackChanged.connect(self._on_player)
         player.stateChanged.connect(self._on_player)
+        player.played.connect(self._on_played)
+        self._log_query = ""
+        self._clock = ListenClock(player, self._db, "station",
+                                  lambda e: ("station", int(e.get("station_id") or 0), e.get("station") or e.get("album") or ""),
+                                  self)
+        self._clock.counted.connect(self.listeningChanged)
         self.refresh()
 
     # --- the saved stations ----------------------------------------------------------------------------
     def _icon_file(self, station):
         if not station.get("favicon"):
             return None
-        name = hashlib.sha1(station["favicon"].encode("utf-8")).hexdigest()[:20]
+        name = hashlib.sha1(station["favicon"].encode("utf-8"), usedforsecurity=False).hexdigest()[:20]
         return self._icons / name
 
     def _row(self, station):
@@ -141,7 +151,7 @@ class Stations(QObject):
         def work():
             try:
                 info = st.resolve(url)
-            except (OSError, ValueError) as exc:
+            except Exception as exc:  # noqa: BLE001 - a worker must always report back
                 return ("added", None, f"Couldn't add that station: {net.describe(exc)}")
             info["name"] = (name or "").strip() or info.get("name") or urlname(info["url"])
             return ("added", info, "")
@@ -256,7 +266,9 @@ class Stations(QObject):
         for s in self._db.stations():
             lines += [f"#EXTINF:-1,{s['name']}", s["url"]]
         try:
-            Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8")
+            from .core.atomic import write_text
+
+            write_text(path, "\n".join(lines) + "\n")
         except OSError as exc:
             return f"Couldn't save: {exc.strerror or exc}"
         return f"Saved {len(lines) // 2} stations to {Path(path).name}"
@@ -293,7 +305,7 @@ class Stations(QObject):
         def work():
             try:
                 return ("results", query, st.search_directory(query))
-            except (OSError, ValueError) as exc:
+            except Exception as exc:  # noqa: BLE001 - a worker must always report back
                 logger.warning("Radio Browser search failed: %s", exc)
                 return ("results", query, None)
 
@@ -374,9 +386,10 @@ class Stations(QObject):
         def work():
             try:
                 title, _ = st.read_stream_title(url)
-            except (OSError, ValueError):
+            except Exception:  # noqa: BLE001 - a worker must always report back
                 return ("title", None, None)
-            return ("title", (token, url), st.split_title(title, station))
+            artist, song = st.split_title(title, station)
+            return ("title", (token, url), (artist, song, self._album_in_library(artist, song)))
 
         self._pool.submit(lambda: self._done.emit(work()))
 
@@ -408,8 +421,37 @@ class Stations(QObject):
         elif kind == "title" and what is not None:
             token, url = what
             if token == self._title_token and self._player.hasTrack and self._player.current.get("path") == url:
-                artist, title = value
+                artist, title, album = value
                 self._player.setStreamInfo(artist, title)
+                if self._player.current.get("title") == (title or self._player.current.get("station")):
+                    self._player.current["song_album"] = album  # what a scrobble names as the album
+
+    def setLibraryDb(self, path):
+        """The music library's database: a song a station plays that's also in your library is scrobbled with
+        your copy's album."""
+        self._library_db = str(path) if path else ""
+
+    _library_db = ""
+
+    def _album_in_library(self, artist, title):
+        """The album of a library song with this artist and title ("" if none, or more than one album has it,
+        since a guess could be wrong). Runs on a worker thread with its own read-only connection."""
+        if not (self._library_db and artist and title):
+            return ""
+        import sqlite3
+
+        from .core.db import fold
+        try:
+            conn = sqlite3.connect(f"file:{self._library_db}?mode=ro", uri=True, timeout=2)
+            try:
+                albums = {r[0] for r in conn.execute(
+                    "SELECT album FROM tracks WHERE s_artist=? AND s_title=? AND album != '' LIMIT 5",
+                    (fold(artist), fold(title)))}
+            finally:
+                conn.close()
+        except sqlite3.Error:
+            return ""
+        return albums.pop() if len(albums) == 1 else ""
 
     def _refresh_playing_art(self):
         if self._player.hasTrack and track_kind(self._player.current) == "station":
@@ -418,7 +460,49 @@ class Stations(QObject):
             if found and not self._player.current.get("artUrl"):
                 self._player.current["artUrl"] = self._row(found)["artUrl"]
 
+    # --- what you've heard -----------------------------------------------------------------------------------
+    def _on_played(self, track):
+        """A song a station played for a minute or more goes in the radio log (scrobbled or not)."""
+        if track_kind(track) != "station" or not track.get("stream_title"):
+            return
+        self._db.log_radio_song(int(track.get("station_id") or 0), track.get("station") or track.get("album") or "",
+                                track.get("artist") or "", track.get("title") or "")
+        self.logChanged.emit()
+
+    @Property("QVariantList", notify=logChanged)
+    def radioLog(self):
+        """Songs heard on the radio, newest first: [{id, ts, station_id, station, artist, title, day, time}]."""
+        out = []
+        for r in self._db.radio_log(300, self._log_query):
+            when = time.localtime(r["ts"])
+            out.append({**r, "day": time.strftime("%Y-%m-%d", when), "time": time.strftime("%H:%M", when)})
+        return out
+
+    @Slot(str)
+    def setLogQuery(self, text):
+        self._log_query = text.strip()
+        self.logChanged.emit()
+
+    @Slot(int)
+    def removeLogEntry(self, entry_id):
+        self._db.remove_radio_log(int(entry_id))
+        self.logChanged.emit()
+
+    @Slot()
+    def clearLog(self):
+        self._db.remove_radio_log()
+        self.logChanged.emit()
+
+    @Slot(int, result="QVariantMap")
+    def listening(self, days):
+        """Radio listening for the last `days` days (0: all time): {hours, songs, top: [{name, hours}]}."""
+        self._clock.tick()
+        got = self._db.listening("station", days)
+        return {"hours": round(got["seconds"] / 3600, 1), "songs": self._db.radio_songs_heard(days),
+                "top": [{"id": t["item_id"], "name": t["name"], "hours": round(t["seconds"] / 3600, 1)} for t in got["top"]]}
+
     def shutdown(self):
+        self._clock.stop()
         self._title_timer.stop()
         self._pool.shutdown(wait=False, cancel_futures=True)
         self._db.close()

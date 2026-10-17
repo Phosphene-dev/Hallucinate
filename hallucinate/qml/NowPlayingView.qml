@@ -301,6 +301,7 @@ Item {
                 }
                 StarRating {
                     objectName: "nowPlayingRating"
+                    visible: !(player.current.kind || "").length
                     Layout.topMargin: 2
                     path: player.hasTrack ? player.current.path || "" : ""
                     size: 20
@@ -362,7 +363,7 @@ Item {
                     }
                     IconButton {
                         anchors.verticalCenter: parent.verticalCenter
-                        visible: parent.music
+                        visible: parent.music && shell.features.liked !== false
                         icon: "heart"; size: 22
                         active: player.hasTrack && userLib.likesRevision >= 0 && userLib.isLiked(player.current.path)
                         tip: "Like"

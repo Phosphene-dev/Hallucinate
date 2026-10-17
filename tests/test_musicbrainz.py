@@ -49,3 +49,56 @@ def test_offline_stops_lookups():
             mb._get("release/", {"query": "x"})
     finally:
         net.set_offline(False)
+
+
+def genre_server(monkeypatch, releases, group_genres, artist_genres):
+    calls = []
+
+    def get(path, params, timeout=15):
+        calls.append(path)
+        if path == "release/":
+            return {"releases": releases}
+        if path.startswith("release-group/"):
+            return {"genres": group_genres}
+        return {"genres": artist_genres}
+
+    monkeypatch.setattr(mb, "_get", get)
+    return calls
+
+
+def hit(title="Hangable Auto Bulb EP.", artist="AFX", score=100):
+    return {"id": "r", "title": title, "score": score, "release-group": {"id": "g1"},
+            "artist-credit": [{"name": artist, "artist": {"id": "a1", "name": artist}}]}
+
+
+def test_genre_names_read_like_tags():
+    assert [mb.genre_name(g) for g in ("idm", "drum and bass", "post-rock", "hip hop", "r&b", "lofi")] == \
+        ["IDM", "Drum and Bass", "Post-Rock", "Hip Hop", "R&B", "Lo-Fi"]
+
+
+def test_an_albums_genre_comes_from_its_release_group(monkeypatch):
+    calls = genre_server(monkeypatch, [hit()], [{"name": "electronic", "count": 2}, {"name": "idm", "count": 5}], [])
+    found = mb.find_genre("AFX", "Hangable Auto Bulb EP")
+    assert found["genre"] == "IDM" and found["genres"] == ["IDM", "Electronic"] and found["source"] == "album"
+    assert calls == ["release/", "release-group/g1"]
+
+
+def test_without_album_genres_the_artists_are_used_once(monkeypatch):
+    calls = genre_server(monkeypatch, [hit()], [], [{"name": "ambient", "count": 1}])
+    cache = {}
+    assert mb.find_genre("AFX", "Hangable Auto Bulb", cache)["source"] == "artist"
+    assert mb.find_genre("AFX", "Hangable Auto Bulb", cache)["genre"] == "Ambient"
+    assert calls.count("artist/a1") == 1
+
+
+@pytest.mark.parametrize("release", [hit(title="Hangable Auto Bulb Remixed"), hit(artist="Someone Else"),
+                                     hit(score=60)])
+def test_no_genre_rather_than_a_wrong_one(monkeypatch, release):
+    genre_server(monkeypatch, [release], [{"name": "idm", "count": 5}], [{"name": "idm", "count": 5}])
+    assert mb.find_genre("AFX", "Hangable Auto Bulb") is None
+
+
+def test_names_match_across_accents_punctuation_and_editions():
+    assert mb._same("Sigur Rós", "Sigur Ros") and mb._same("Simon & Garfunkel", "Simon and Garfunkel")
+    assert mb._same("Tidal (Deluxe Edition)", "Tidal") and mb._same("Analogue Bubblebath, Vol 3.1", "Analogue Bubblebath Vol. 3.1")
+    assert not mb._same("Tidal", "Tidal Wave")

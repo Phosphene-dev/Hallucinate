@@ -107,3 +107,17 @@ def test_finder_imports_files(qapp, tmp_path):
         player.clearHeadphone()
         player.setEqEnabled(False)
         player.shutdown()
+
+
+@pytest.mark.parametrize("text", [
+    "GraphicEQ: 20 nan; 1000 0",
+    "GraphicEQ: 20 inf; 1000 0",
+    "Filter 1: ON PK Fc 0 Hz Gain 3 dB Q 1",
+    "Filter 1: ON PK Fc 100 Hz Gain 3 dB Q 0",
+    "Filter 1: ON PK Fc 100 Hz Gain 900 dB Q 1",
+])
+def test_broken_eq_files_are_refused(text):
+    from hallucinate import headphones
+
+    with pytest.raises(ValueError):
+        headphones.parse(text)

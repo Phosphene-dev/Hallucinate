@@ -74,7 +74,7 @@ Menu {
     }
     MenuItem {
         readonly property bool liked: userLib.likesRevision >= 0 && userLib.allLiked(menu.paths)
-        visible: !menu.stream; height: visible ? implicitHeight : 0
+        visible: !menu.stream && shell.features.liked !== false; height: visible ? implicitHeight : 0
         text: liked ? "Remove from Liked Songs" : "Add to Liked Songs"
         icon.name: "heart"
         onTriggered: { userLib.setLikedPaths(menu.paths, !liked); menu.done("") }
@@ -170,6 +170,11 @@ Menu {
         standardButtons: Dialog.Ok | Dialog.Cancel
         onOpened: { nf.text = ""; nf.forceActiveFocus() }
         onAccepted: if (nf.text.trim().length) { Nav.openPlaylist(userLib.addPathsToNewPlaylist(nf.text.trim(), menu.paths)); menu.done("") }
-        TextField { id: nf; width: 280; placeholderText: "Playlist name"; selectByMouse: true; onAccepted: newDlg.accept() }
+        TextField {
+            id: nf; width: 280; placeholderText: "Playlist name"; selectByMouse: true
+            onAccepted: if (text.trim().length) newDlg.accept()  // no nameless playlists
+            onTextChanged: { var b = newDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
+            onVisibleChanged: if (visible) { var b = newDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
+        }
     }
 }

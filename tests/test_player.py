@@ -473,3 +473,4 @@ def test_queue_changes_can_be_undone(make_player, clips):
     assert p.undoLabel == "Queue replaced"
     p.undoQueue()
     assert titles() == ["T0", "T1", "T2", "T3"] and p.current["title"] == "T1"
+    assert wait_for(lambda: is_playing(p))  # undoing while music plays keeps the music playing

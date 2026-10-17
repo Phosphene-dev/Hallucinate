@@ -63,8 +63,9 @@ def download(asset, dest, progress=None, cancelled=lambda: False, opener=None):
     dest = Path(dest)
     digest, got = hashlib.sha256(), 0
     try:
+        dest.unlink(missing_ok=True)  # a leftover (or a planted link): removed, never written through
         req = urllib.request.Request(asset["url"], headers={"User-Agent": "Hallucinate updater"})
-        with opener(req, timeout=30, limit=asset["size"] + 1) as resp, open(dest, "wb") as out:
+        with opener(req, timeout=30, limit=asset["size"] + 1) as resp, _create_new(dest) as out:
             while True:
                 if cancelled():
                     raise OSError("Update cancelled")
@@ -86,6 +87,35 @@ def download(asset, dest, progress=None, cancelled=lambda: False, opener=None):
     return dest
 
 
+def _create_new(path):
+    """Open `path` for writing only if it doesn't exist yet, never following a link, readable by you alone."""
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0)
+    return os.fdopen(os.open(path, flags, 0o600), "wb")
+
+
+def verified(path, sha256):
+    """Check, just before it's used, that the downloaded file is still the one that matched the release
+    (nothing swapped it since): a regular file, not a link, with the same digest. Raises ValueError."""
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0)
+    try:
+        fd = os.open(path, flags)
+    except OSError as exc:
+        raise ValueError("The downloaded update has gone") from exc
+    with os.fdopen(fd, "rb") as f:
+        import stat
+
+        if not stat.S_ISREG(os.fstat(f.fileno()).st_mode):
+            raise ValueError("The downloaded update isn't a plain file any more")
+        digest = hashlib.sha256()
+        for chunk in iter(lambda: f.read(CHUNK), b""):
+            digest.update(chunk)
+        if digest.hexdigest() != sha256:
+            raise ValueError("The downloaded update changed after it was checked")
+        if os.name == "posix":
+            os.fchmod(f.fileno(), 0o755)  # on the file itself, not whatever a name points at
+    return path
+
+
 def run_windows_installer(path, popen=subprocess.Popen):
     """Start the installer without its wizard. It waits for this app to close, installs over it and starts it
     again (installer.iss runs the app after a silent install)."""
@@ -98,8 +128,7 @@ def swap_appimage(new_path, target, pid, env=None, popen=subprocess.Popen):
     """Replace the AppImage in place, then start the new one as soon as this process has exited (it is a single
     instance, so starting it earlier would only hand over to this one)."""
     target = Path(target)
-    os.chmod(new_path, 0o755)
-    os.replace(new_path, target)
+    os.replace(new_path, target)  # made executable by verified(), on the file itself
     env = dict(os.environ if env is None else env)
     appdir = env.get("APPDIR", "")
     # Drop what this AppImage's launcher set up, so the new one starts from the user's own environment.

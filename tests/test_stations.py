@@ -206,3 +206,134 @@ def test_directory_results_can_be_saved(radio, monkeypatch):
     assert stations.count == 1 and stations.results._items[0]["saved"] is True
     stations.search("nothing")
     assert wait_for(lambda: not stations.searching) and "No stations match" in stations.status
+
+
+def test_radio_and_podcast_scrobbles_say_the_right_things():
+    from hallucinate.core.kinds import counts_for_scrobbling, scrobble_fields
+    from hallucinate.listenbrainz import track_metadata
+
+    song = {"kind": "station", "artist": "Enduser", "title": "Death Vest", "stream_title": "Enduser - Death Vest",
+            "album": "Radio Caprice - Breakcore", "scrobble": True}
+    assert scrobble_fields(song)["album"] == ""  # the station's name isn't the song's album
+    assert "release_name" not in track_metadata(song)
+    episode = {"kind": "episode", "artist": "The Long Listen", "album": "The Long Listen", "title": "Ep 1"}
+    assert not counts_for_scrobbling(episode)  # podcasts scrobble only when you turn it on
+    assert counts_for_scrobbling({**episode, "scrobble": True})
+    assert track_metadata({**episode, "scrobble": True})["release_name"] == "The Long Listen"
+
+
+def test_songs_heard_on_the_radio_are_logged(radio):
+    stations, player, _ = radio
+    entry = {"kind": "station", "station_id": 3, "station": "Test FM", "album": "Test FM", "artist": "Artist One",
+             "title": "First Song", "stream_title": "Artist One - First Song"}
+    changed = []
+    stations.logChanged.connect(lambda: changed.append(1))
+    player.played.emit(entry)
+    player.played.emit(entry)  # the stream repeating its title isn't a second hearing
+    player.played.emit({**entry, "title": "Second Song", "stream_title": "Artist One - Second Song"})
+    player.played.emit({"kind": "music", "path": "/x.flac", "artist": "A", "title": "B"})  # not radio
+    log = stations.radioLog
+    assert [(r["title"], r["artist"], r["station"]) for r in log] == [
+        ("Second Song", "Artist One", "Test FM"), ("First Song", "Artist One", "Test FM")]
+    assert log[0]["time"] and log[0]["day"]
+    stations.setLogQuery("first")
+    assert [r["title"] for r in stations.radioLog] == ["First Song"]
+    stations.setLogQuery("")
+    stations.removeLogEntry(log[0]["id"])
+    assert len(stations.radioLog) == 1
+    assert stations.listening(7)["songs"] == 1
+    stations.clearLog()
+    assert stations.radioLog == [] and changed
+
+
+def test_listening_time_is_counted_while_a_station_plays(qapp, tmp_path):
+    from PySide6.QtCore import QObject, Signal
+
+    from hallucinate.core.streams_db import StreamsDB
+    from hallucinate.listentime import ListenClock
+
+    class FakePlayer(QObject):
+        stateChanged = Signal()
+        trackChanged = Signal()
+        playing, hasTrack = False, True
+        current = {"kind": "station", "station_id": 7, "station": "Test FM"}
+
+    now = [100.0]
+    player, db = FakePlayer(), StreamsDB(tmp_path / "streams.db")
+    clock = ListenClock(player, db, "station", lambda e: ("station", e["station_id"], e["station"]),
+                        tick_ms=60_000, clock=lambda: now[0])
+    try:
+        player.playing = True
+        player.stateChanged.emit()
+        now[0] += 50
+        clock.tick()
+        player.playing = False
+        now[0] += 30
+        player.stateChanged.emit()  # paused: the 30 s since the last tick count, nothing after
+        now[0] += 500
+        clock.tick()
+        got = db.listening("station", 7)
+        assert got["seconds"] == 80 and got["top"] == [{"item_id": 7, "name": "Test FM", "seconds": 80.0}]
+        assert db.listening("podcast")["seconds"] == 0
+    finally:
+        clock.stop()
+        db.close()
+
+
+def test_a_radio_song_you_own_is_scrobbled_with_your_copys_album(radio, tmp_path):
+    from hallucinate.core.db import Database
+    from hallucinate.core.kinds import scrobble_fields
+
+    stations, _player, _ = radio
+    db = Database(tmp_path / "lib.db")
+    for path, album in (("/m/a.flac", "Nightmare Fuel"), ("/m/b.flac", "Other"), ("/m/c.flac", "Another")):
+        title = "Death Vest" if path == "/m/a.flac" else "Same Name"
+        db.upsert_track({"path": path, "mtime": 0, "size": 1, "title": title, "artist": "Enduser",
+                         "album_artist": "Enduser", "aa_tag": 1, "album": album, "album_key": f"E|{album}",
+                         "track_no": 1, "disc_no": 0, "year": 2020, "genre": "", "duration": 60.0, "fmt": "FLAC",
+                         "codec": "FLAC", "bitrate": 0, "sample_rate": 44100, "art": None})
+    db.commit()
+    db.close()
+    stations.setLibraryDb(tmp_path / "lib.db")
+    assert stations._album_in_library("ENDUSER", "death vest") == "Nightmare Fuel"
+    assert stations._album_in_library("Enduser", "Same Name") == ""  # on two albums: no guessing
+    assert stations._album_in_library("Someone", "Unknown") == ""
+    song = {"kind": "station", "artist": "Enduser", "title": "Death Vest", "album": "Radio Caprice - Breakcore",
+            "song_album": "Nightmare Fuel"}
+    assert scrobble_fields(song)["album"] == "Nightmare Fuel"
+
+
+def test_a_station_that_goes_silent_is_reconnected(radio, server):
+    stations, player, _ = radio
+    server.stall_after = 8192 * 12  # the station stops sending but keeps the connection open
+    stations.add(server.url("/live"), "")
+    assert wait_for(lambda: stations.count == 1)
+    stations.play(stations.model._items[0]["id"])
+    assert wait_for(lambda: server.stalled.is_set() and player.playing, timeout=15)
+    pos = [-1]
+    assert wait_for(lambda: (pos.__setitem__(0, player.position) or True) and wait_for(
+        lambda: player.position == pos[0], timeout=1.5), timeout=20)  # the position has stopped moving
+    now = 1000.0
+    player._check_stream_quiet(now)
+    player._check_stream_quiet(now + 5)
+    assert player._stream_retries == 0  # not yet: it hasn't been quiet long enough
+    server.stall_after = None  # the station comes back
+    player._check_stream_quiet(now + 16)
+    assert player._stream_retries == 1 and "reconnecting" in player.error
+    assert wait_for(lambda: player.error == "", timeout=20), player.error  # back on the air
+    start = player.position
+    assert wait_for(lambda: player.position > start + 500, timeout=10)
+
+
+def test_only_one_reconnect_waits_at_a_time(radio):
+    _stations, player, _ = radio
+    player.playList([{"path": "http://127.0.0.1:9/x", "kind": "station", "station": "T", "title": "T",
+                      "album": "T", "artist": "", "station_id": 1, "id": -1}], 0)
+    player._stream_retries = 0
+    player._retry_timer.stop()
+    assert player._reconnect_stream("dropped") and player._stream_retries == 1
+    assert player._reconnect_stream("ended too") and player._stream_retries == 1  # the same drop, reported twice
+    player._check_stream_quiet(1000.0)
+    player._check_stream_quiet(1100.0)
+    assert player._stream_retries == 1  # quiet while a reconnect is pending isn't a new drop
+    player._retry_timer.stop()

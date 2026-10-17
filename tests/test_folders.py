@@ -81,3 +81,18 @@ def test_library_folder_slots(qapp, tmp_path, scan, music):
         assert [c["name"] for c in data["crumbs"]] == ["Music", "Aurora Vale", "Northern Lights"]
     finally:
         lib.shutdown()
+
+
+def test_removing_a_folder_during_a_scan_stops_it_and_purges_after(qapp, tmp_path, scan, music):
+    from hallucinate.library import Library
+
+    lib = Library(tmp_path / "lib.db", tmp_path / "art")
+    try:
+        lib._scanning = True  # a scan is running
+        lib.removeFolder(str(music))
+        assert lib._scan_stop.is_set() and lib._pending and lib._purge_after_scan == [str(music)]
+        lib._pending = False
+        lib._on_scan_finished({"added": 0})
+        assert lib._purge_after_scan == []
+    finally:
+        lib.shutdown()

@@ -84,7 +84,7 @@ Item {
               + (page.info.folder ? ". The files in its folder stay where they are." : ", along with its downloads.")
         confirmText: "Unfollow"
         destructive: true
-        onAccepted: { podcasts.unfollow(page.podcastId, true); Nav.back() }
+        onAccepted: { var id = page.podcastId; podcasts.unfollow(id, true); Nav.back(); Nav.routeGone("podcast", id) }
     }
 
     ListView {

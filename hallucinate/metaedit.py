@@ -37,11 +37,18 @@ class MetadataEditor(QObject):
     lookupResults = Signal("QVariantList", str)  # MusicBrainz releases matching an album, or [] and why
     releaseReady = Signal("QVariantMap")  # a chosen release: {fields, tracks, matched, error}
     _mb_done = Signal(object)
+    genreFound = Signal("QVariantMap")  # one album's genre from findGenre(): {genre, genres, source} or {error}
+    genresChanged = Signal()
+    genresFinished = Signal(str)  # the "find all" summary, for a toast
+    _genres_progress = Signal(object)
     _done = Signal(object)
 
     def __init__(self, db_path, art_dir, parent=None):
         super().__init__(parent)
         self._reader = _Reader(str(db_path), "metaedit")
+        # The editor waits on these lookups; tag writing (hundreds of files for a bulk genre save) mustn't
+        # make it wait, so they have their own worker.
+        self._lookup = _Reader(str(db_path), "metaedit-lookup")
         self._art_dir = str(art_dir)
         self._busy = 0
         self._done.connect(self._finish)
@@ -51,6 +58,10 @@ class MetadataEditor(QObject):
         self._mb_done.connect(self._on_mb_done)
         self._covers_thread = None
         self._covers_progress.connect(self._apply_covers_progress)
+        self._genres = {"busy": False, "done": 0, "total": 0, "found": 0, "current": "", "proposals": []}
+        self._genres_stop = threading.Event()
+        self._genres_thread = None
+        self._genres_progress.connect(self._apply_genres_progress)
 
     @Property(bool, notify=busyChanged)
     def busy(self):
@@ -96,7 +107,7 @@ class MetadataEditor(QObject):
     # --- tag editing -----------------------------------------------------------------
     @Slot(str, result="QVariantMap")
     def trackInfo(self, path):
-        row = self._reader.submit(lambda db: db.track_by_path(path)).result(timeout=10)
+        row = self._lookup.submit(lambda db: db.track_by_path(path)).result(timeout=10)
         return decorate([row])[0] if row else {}
 
     # --- MusicBrainz -------------------------------------------------------------------------------------
@@ -127,7 +138,7 @@ class MetadataEditor(QObject):
         counts agree); releaseReady() hands over what to fill in."""
         from .core import musicbrainz
 
-        songs = self._reader.submit(lambda db: db.album_tracks(album_key)).result(timeout=10) if album_key else []
+        songs = self._lookup.submit(lambda db: db.album_tracks(album_key)).result(timeout=10) if album_key else []
 
         def work():
             try:
@@ -150,6 +161,8 @@ class MetadataEditor(QObject):
         kind, value, message = result
         if kind == "results":
             self.lookupResults.emit(value, message)
+        elif kind == "genre":
+            self.genreFound.emit(value)
         else:
             self.releaseReady.emit(value)
 
@@ -191,7 +204,7 @@ class MetadataEditor(QObject):
     def _store_cover(self, db, album_key, data, embed):
         if not (data[:8] == b"\x89PNG\r\n\x1a\n" or data[:3] == b"\xff\xd8\xff"):
             raise tagedit.TagWriteError("Not a PNG or JPEG image")
-        name = f"{album_key}-{hashlib.sha1(data).hexdigest()[:8]}{_image_ext(data)}"
+        name = f"{album_key}-{hashlib.sha1(data, usedforsecurity=False).hexdigest()[:8]}{_image_ext(data)}"
         path = os.path.join(self._art_dir, name)
         os.makedirs(self._art_dir, exist_ok=True)
         with open(path, "wb") as fh:
@@ -307,8 +320,145 @@ class MetadataEditor(QObject):
         if finished:
             self.coverResult.emit(True, f"Found {self._covers['found']} of {self._covers['done']} covers")
 
+    # --- genres from MusicBrainz -------------------------------------------------------------------------
+    @Slot(str, str)
+    def findGenre(self, artist, album):
+        """Look up one album's genre; genreFound() reports back. Nothing is written: the editor fills its
+        Genre field and you save as usual."""
+        from .core import musicbrainz
+
+        if net.is_offline():
+            self.genreFound.emit({"error": "Offline mode is on, so MusicBrainz can't be searched"})
+            return
+        if not (album or "").strip():
+            self.genreFound.emit({"error": "The song needs an album name to look up its genre"})
+            return
+
+        def work():
+            try:
+                found = musicbrainz.find_genre(artist, album)
+                self._mb_done.emit(("genre", found or {"error": "MusicBrainz has no genre for this album"}, ""))
+            except (OSError, ValueError, KeyError) as exc:
+                self._mb_done.emit(("genre", {"error": f"Couldn't reach MusicBrainz: {net.describe(exc)}"}, ""))
+
+        threading.Thread(target=work, name="musicbrainz-genre", daemon=True).start()
+
+    @Property(bool, notify=genresChanged)
+    def genresBusy(self):
+        return self._genres["busy"]
+
+    @Property(int, notify=genresChanged)
+    def genresDone(self):
+        return self._genres["done"]
+
+    @Property(int, notify=genresChanged)
+    def genresTotal(self):
+        return self._genres["total"]
+
+    @Property(int, notify=genresChanged)
+    def genresFound(self):
+        return self._genres["found"]
+
+    @Property(str, notify=genresChanged)
+    def genresCurrent(self):
+        return self._genres["current"]
+
+    @Property("QVariantList", notify=genresChanged)
+    def genreProposals(self):
+        """What the last "find all" turned up, waiting to be checked and saved:
+        [{album_key, album, artist, genre, genres, source, songs}]."""
+        return list(self._genres["proposals"])
+
+    @Slot()
+    def findMissingGenres(self):
+        """Look up a genre for every album without one, about one request a second. Nothing is written until
+        saveGenres() is called with the ones you keep."""
+        if self._genres["busy"]:
+            return
+        self._genres_stop.clear()
+        self._genres = {"busy": True, "done": 0, "total": 0, "found": 0, "current": "", "proposals": []}
+        self.genresChanged.emit()
+        self._genres_thread = threading.Thread(target=self._fetch_genres, name="genres", daemon=True)
+        self._genres_thread.start()
+
+    @Slot()
+    def cancelGenres(self):
+        self._genres_stop.set()
+
+    @Slot()
+    def clearGenreProposals(self):
+        self._genres["proposals"] = []
+        self.genresChanged.emit()
+
+    def _fetch_genres(self):
+        from .core import musicbrainz
+
+        db = Database(self._db_path)
+        found, proposals, artists = 0, [], {}
+        try:
+            albums = [a for a in health.missing_genre_all(db)
+                      if (a.get("album") or "").strip() and a.get("album") != health.UNKNOWN_ALBUM]
+            self._genres_progress.emit({"total": len(albums)})
+            for done, album in enumerate(albums, start=1):
+                if self._genres_stop.is_set() or net.is_offline():
+                    break
+                self._genres_progress.emit({"current": album["album"]})
+                artist = album.get("album_artist") or ""
+                if artist == health.UNKNOWN_ARTIST:
+                    artist = ""
+                try:
+                    hit = musicbrainz.find_genre(artist, album["album"], artists)
+                except (OSError, ValueError, KeyError) as exc:
+                    logger.info("No genre for %s: %s", album["album"], exc)
+                    hit = None
+                if hit:
+                    found += 1
+                    proposals.append({"album_key": album["album_key"], "album": album["album"], "artist": artist,
+                                      "genre": hit["genre"], "genres": hit["genres"], "source": hit["source"],
+                                      "songs": int(album.get("n") or 0)})
+                self._genres_progress.emit({"done": done, "found": found})
+        except Exception:  # noqa: BLE001
+            logger.exception("Finding genres failed")
+        finally:
+            db.close()
+            self._genres_progress.emit({"busy": False, "current": "", "proposals": proposals, "finished": True})
+
+    @Slot(object)
+    def _apply_genres_progress(self, update):
+        finished = update.pop("finished", False)
+        self._genres.update(update)
+        self.genresChanged.emit()
+        if finished:
+            g = self._genres
+            stopped = g["done"] < g["total"]
+            self.genresFinished.emit(f"Found genres for {g['found']} of {g['done']} albums"
+                                        + (" (stopped early)" if stopped else "") + ". Check them, then save.")
+
+    @Slot("QVariantList")
+    def saveGenres(self, items):
+        """Write each album's chosen genre to its songs: [{album_key, genre}]."""
+        items = [(str(i["album_key"]), str(i["genre"]).strip()) for i in items if str(i.get("genre") or "").strip()]
+
+        def save_all(db, pairs):
+            total = {"kind": "tags", "saved": 0, "errors": []}
+            for key, genre in pairs:
+                paths = [t["path"] for t in db.album_tracks(key)]
+                result = self._save_tags(db, paths, {"genre": genre})
+                total["saved"] += result["saved"]
+                total["errors"] += result["errors"]
+            return total
+
+        if items:
+            self._run(save_all, items)
+        self._genres["proposals"] = []
+        self.genresChanged.emit()
+
     def shutdown(self):
         self._covers_stop.set()
+        self._genres_stop.set()
         if self._covers_thread is not None:
             self._covers_thread.join(timeout=2)
+        if self._genres_thread is not None:
+            self._genres_thread.join(timeout=2)
+        self._lookup.close()
         self._reader.close()

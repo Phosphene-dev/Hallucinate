@@ -19,7 +19,7 @@ Item {
         body: "“" + page.playlistName + "” and its rules go away for good. No songs are touched."
         confirmText: "Delete playlist"
         destructive: true
-        onAccepted: { userLib.deleteSmartPlaylist(page.smartId); Nav.goHome() }
+        onAccepted: { var id = page.smartId; userLib.deleteSmartPlaylist(id); Nav.goHome(); Nav.routeGone("smart", id) }
     }
 
     ListView {

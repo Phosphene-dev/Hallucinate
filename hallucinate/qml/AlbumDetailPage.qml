@@ -9,10 +9,11 @@ Item {
     id: page
     objectName: "album"
     property string albumKey
-    readonly property var info: library.albumInfo(albumKey)
+    // Everything on the page follows edits and rescans (a new cover, year or genre), not only the track list
+    readonly property var info: library.detailRevision >= 0 ? library.albumInfo(albumKey) : ({})
     readonly property var tracks: library.detailRevision >= 0 ? library.albumTracksModel(albumKey) : null
-    readonly property var notes: library.albumNotes(albumKey)
-    readonly property var coverColors: library.albumPalette(albumKey)
+    readonly property var notes: library.detailRevision >= 0 ? library.albumNotes(albumKey) : ({})
+    readonly property var coverColors: library.detailRevision >= 0 ? library.albumPalette(albumKey) : []
     readonly property color glow0: coverColors.length > 0 ? coverColors[0] : Theme.accent
     readonly property color glow1: coverColors.length > 1 ? coverColors[1] : Theme.art1
     readonly property bool multiDisc: (notes.discs || 0) > 1
@@ -130,6 +131,8 @@ Item {
                     Text {
                         textFormat: Text.PlainText
                         text: page.info.album_artist || ""
+                        width: Math.min(implicitWidth, parent.parent.width * 0.6)  // a long artist list elides
+                        elide: Text.ElideRight
                         color: Theme.text
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(16)

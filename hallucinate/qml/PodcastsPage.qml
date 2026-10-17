@@ -37,7 +37,7 @@ Item {
               + (show.folder ? ". The files in its folder stay where they are." : ", along with its downloads.")
         confirmText: "Unfollow"
         destructive: true
-        onAccepted: podcasts.unfollow(show.id, true)
+        onAccepted: { var id = show.id; podcasts.unfollow(id, true); Nav.routeGone("podcast", id) }
     }
     Dialog {
         id: followDlg
@@ -242,6 +242,16 @@ Item {
                         onMenu: episodeMenu.showFor(model, true)
                     }
                 }
+            }
+
+            SectionHeader { visible: podcasts.count > 0; title: "Your listening"; subtitle: "Time spent on podcasts, kept apart from your music's stats" }
+            ListeningStrip {
+                objectName: "podcastListening"
+                visible: podcasts.count > 0
+                width: parent.width
+                source: podcasts
+                countKey: "finished"; countOne: "episode finished"; countMany: "episodes finished"
+                onOpenItem: function (id) { if (id) Nav.openPodcast(id) }
             }
 
             SectionHeader { visible: podcasts.count > 0; title: "Your shows" }
