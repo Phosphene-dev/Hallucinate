@@ -5,6 +5,16 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Fixed
+- A CUE sheet whose last song starts past the end of its file is no longer read again on every library scan.
+- A star rating or like you just set no longer flips back for a moment when the lists refresh.
+- Without a private runtime folder (some X sessions, ssh), the control socket lives in a folder of its own
+  that other users can't use, instead of a shared name another user could take first.
+
+### Changed
+- Release builds install exact versions of every package, checked against their checksums, and a fixed
+  release of appimagetool, also checked: a build gets the same files every time.
+
 ## [0.9.9.3] - 2026-10-17
 
 Hardening on the way to 1.0, plus a few things asked for while testing.

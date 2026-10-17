@@ -16,7 +16,9 @@ for s in 16 24 32 48 64 128 256 512; do
   cp "$repo/packaging/icons/hicolor/${s}x${s}/apps/hallucinate.png" \
     "$work/appdir/usr/share/icons/hicolor/${s}x${s}/apps/hallucinate.png"
 done
-printf 'PySide6>=6.8\nmutagen>=1.46\nkeyring>=24\nnumpy>=1.24\n%s\n' "$repo" > "$work/appdir/requirements.txt"
+# The same versions as the Windows and macOS builds (python-appimage's own pip can't check hashes here)
+pin() { grep -io "^$1==[^ ;]*" "$repo/packaging/build-requirements.txt"; }
+printf '%s\n' "$(pin pyside6)" "$(pin mutagen)" "$(pin keyring)" "$(pin numpy)" "$repo" > "$work/appdir/requirements.txt"
 
 python3 -m venv "$work/venv"
 "$work/venv/bin/pip" install -q python-appimage
