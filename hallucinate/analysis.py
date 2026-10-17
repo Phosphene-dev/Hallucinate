@@ -38,7 +38,15 @@ def command():
     """How to start the helper: this same program with --analysis-worker."""
     if getattr(sys, "frozen", False):  # the Windows and macOS builds: the app itself is the executable
         return sys.executable, ["--analysis-worker"]
-    return sys.executable, ["-s", "-c", "import sys; from hallucinate.analysis import serve; sys.exit(serve())"]
+    python = sys.executable
+    if not os.path.basename(python).lower().startswith("python"):
+        # The AppImage gives its own file as the interpreter (starting it runs the app): use the Python inside
+        # it, or else the AppImage itself, which hands --analysis-worker on to the app.
+        inside = os.path.join(sys.prefix, "bin", f"python{sys.version_info[0]}.{sys.version_info[1]}")
+        if not os.path.isfile(inside):
+            return python, ["--analysis-worker"]
+        python = inside
+    return python, ["-s", "-c", "import sys; from hallucinate.analysis import serve; sys.exit(serve())"]
 
 
 # --- the helper process ------------------------------------------------------------------------------------

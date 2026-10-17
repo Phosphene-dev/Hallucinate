@@ -96,3 +96,21 @@ def test_the_real_helper_measures_and_draws(qapp, tmp_path):
     assert -30 < got["loud"]["loudness"] < 0 and len(got["loud"]["blocks"]) > 0
     assert got["bad"] is None
     analyser.shutdown()
+
+
+def test_the_appimage_starts_the_python_inside_it(monkeypatch, tmp_path):
+    """In the AppImage, sys.executable is the AppImage file (which starts the app, not Python)."""
+    import os
+
+    from hallucinate import analysis
+
+    monkeypatch.setattr(sys, "executable", "/home/me/Apps/hallucinate-0.9.9.5-x86_64.AppImage")
+    monkeypatch.setattr(sys, "prefix", str(tmp_path))
+    program, args = analysis.command()
+    assert program == sys.executable and args == ["--analysis-worker"]  # no Python inside: the app's own flag
+    inside = tmp_path / "bin" / f"python{sys.version_info[0]}.{sys.version_info[1]}"
+    inside.parent.mkdir()
+    inside.write_text("")
+    program, args = analysis.command()
+    assert program == str(inside) and args[:2] == ["-s", "-c"]
+    assert os.path.basename(program).startswith("python")
