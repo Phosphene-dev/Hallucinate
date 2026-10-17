@@ -17,6 +17,7 @@ Item {
     Rectangle { anchors.fill: parent; color: Theme.bg }
 
     component Bloom: Shape {
+        readonly property bool decoration: true  // a glow, meant to spill past edges
         id: bloom
         property color tint
         property real size: 600

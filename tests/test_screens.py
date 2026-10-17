@@ -833,7 +833,8 @@ def past_the_edge(window):
     """Visible, unclipped things that reach past the window's right edge. Walked in QML: walking the item tree
     from Python can be handed a stale wrapper when many items come and go."""
     found = QMetaObject.invokeMethod(window, "pastTheEdge", Qt.ConnectionType.DirectConnection,
-                                     Q_RETURN_ARG("QVariant"), Q_ARG("QVariant", None), Q_ARG("QVariant", False))
+                                     Q_RETURN_ARG("QVariant"), Q_ARG("QVariant", None), Q_ARG("QVariant", False),
+                                     Q_ARG("QVariant", None), Q_ARG("QVariant", False))
     return plain(found) or []
 
 
@@ -867,8 +868,32 @@ def test_nothing_runs_off_a_narrow_window(qapp, app_window, width):
         for screen in screens():
             for _ in range(4):
                 qapp.processEvents()
+            if screen == "queue":
+                __import__("conftest").wait_for(lambda: False, 0.4)  # the sidebar folds to icons to make room: let it finish
             problems += [f"{screen}: {p}" for p in past_the_edge(window)]
-    assert not problems, "\n".join(problems[:25])
+    assert not problems, "\n".join(problems[:400])
+
+
+@pytest.mark.parametrize("app_window", ["varied"], indirect=True)
+@pytest.mark.parametrize("width", [760, 945])
+def test_the_update_row_wraps_while_an_update_installs(qapp, app_window, width):
+    """Settings → About while an update downloads: the check box, Check now and Cancel stay inside the card."""
+    window, objects, warnings = app_window
+    updates = objects["shell"].updates
+    if not updates.supported:
+        pytest.skip("this copy doesn't check for updates")
+    updates._kind, updates._installing = "appimage", True
+    updates.changed.emit()
+    try:
+        window.resize(width, 700)
+        assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "settings"))
+        for _ in range(4):
+            qapp.processEvents()
+        problems = overflowing(window) + past_the_edge(window)
+        assert not problems, "\n".join(problems[:25])
+    finally:
+        updates._kind, updates._installing = "", False
+        updates.changed.emit()
 
 
 def test_features_switched_off_disappear_everywhere(qapp, app_window):

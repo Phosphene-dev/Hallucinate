@@ -48,7 +48,30 @@ def main(paths):
         detail = f"error: {error}" if error else f"{seconds:.2f} s decoded"
         if sys.stdout is not None:  # the Windows build has no console
             print(f"{'ok  ' if ok else 'FAIL'} {path}: {detail}", flush=True)
+    if paths:
+        ok, detail = helper_works(paths[0])
+        failed |= not ok
+        if sys.stdout is not None:
+            print(f"{'ok  ' if ok else 'FAIL'} analysis helper: {detail}", flush=True)
     return 1 if failed else 0
+
+
+def helper_works(path):
+    """Whether this build can start its analysis helper (analysis.py) and have it measure a song."""
+    from .analysis import Analyser
+
+    analyser, got = Analyser(), []
+    analyser.submit(path, "loudness", got.append)
+    timer = QElapsedTimer()
+    timer.start()
+    while not got and timer.elapsed() < TIMEOUT_MS * 2:
+        QCoreApplication.processEvents()
+        QCoreApplication.instance().thread().msleep(10)
+    analyser.shutdown()
+    result = got[0] if got else None
+    if not result or result.get("silent"):
+        return False, "no answer" if not got else "couldn't measure the song"
+    return True, f"measured {result['loudness']:.1f} LUFS"
 
 
 if __name__ == "__main__":

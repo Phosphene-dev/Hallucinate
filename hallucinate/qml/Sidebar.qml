@@ -5,7 +5,10 @@ import "."
 // Floating glass navigation rail. Collapsed it shows icons only; expanded it adds labels and the playlists.
 Item {
     id: side
-    property bool collapsed: shell.sidebarCollapsed
+    // Collapsed by choice, or because the window is too narrow for labels and a page beside them (a window
+    // on half a screen, or with the queue open): then it shows icons only until there's room again.
+    property bool squeezed: false
+    readonly property bool collapsed: shell.sidebarCollapsed || squeezed
     property string section: ""
     property bool atRoot: true
     signal navigate(string id)
@@ -329,6 +332,7 @@ Item {
             }
             RailButton {
                 objectName: "sidebarToggle"
+                visible: !side.squeezed  // there's no room to expand it
                 width: parent.width
                 height: side.entryHeight
                 text: side.collapsed ? "Expand sidebar" : "Collapse sidebar"

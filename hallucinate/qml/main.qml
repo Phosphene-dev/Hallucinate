@@ -168,22 +168,34 @@ ApplicationWindow {
         for (var i = 0; i < root.children.length; i++) out = out.concat(visibleTexts(root.children[i]))
         return out
     }
-    function pastTheEdge(root, clipped) {
-        // For tests: visible, unclipped things that reach past the window's right edge (2 px: the outline).
+    function pastTheEdge(root, clipped, edge, inPage) {
+        // For tests: visible, unclipped things that reach past the window's right edge (2 px: the outline), or
+        // past the right edge of the page they scroll in (a page that scrolls up and down cuts them off there).
         root = root || window.contentItem
-        if (!root.visible || root.opacity === 0) return []
+        if (edge === undefined || edge === null) edge = window.width
+        if (!root.visible || root.opacity === 0 || root.decoration === true) return []
         var out = []
         var cls = root.toString()
         var plain = cls.indexOf("QQuickItem") === 0 || cls.indexOf("QQuickRepeater") === 0
         if (!clipped && root.width > 0 && root.height > 0 && !plain) {
             var box = root.mapToItem(null, 0, 0, root.width, root.height)
-            if (box.x + box.width > window.width + 3 && box.x < window.width)
+            if (box.x + box.width > edge + 3 && (inPage || box.x < edge))
                 out.push((root.objectName || cls.split("_QML")[0].split("(")[0])
                          + (typeof root.text === "string" && root.text ? " “" + root.text + "”" : "")
-                         + " reaches x=" + Math.round(box.x + box.width))
+                         + " reaches x=" + Math.round(box.x + box.width) + (inPage ? " in a page ending at x=" + Math.round(edge) : ""))
         }
-        if (root.clip || /^QQuick(ListView|GridView|Flickable|PopupItem)/.test(cls)) clipped = true
-        for (var i = 0; i < root.children.length; i++) out = out.concat(pastTheEdge(root.children[i], clipped))
+        // A list, a popup or something that scrolls sideways hides what's past its edge on purpose. Anything
+        // else that clips (a page, one that scrolls up and down) cuts off what reaches past its right edge.
+        var sideways = root.flickableDirection !== undefined && root.contentWidth > root.width + 1
+        if (/^QQuick(ListView|GridView|PopupItem)/.test(cls) || root.currentIndex !== undefined && root.flickableDirection !== undefined || sideways) {
+            clipped = true
+        } else if (!clipped && (root.clip || root.flickableDirection !== undefined) && root.width > 0) {
+            var page = root.mapToItem(null, 0, 0, root.width, root.height)
+            edge = Math.min(edge, page.x + page.width)
+            inPage = true
+        }
+        for (var i = 0; i < root.children.length; i++)
+            out = out.concat(pastTheEdge(root.children[i], clipped, edge, inPage))
         return out
     }
     function searchText() { return searchField.text }
@@ -730,6 +742,8 @@ ApplicationWindow {
 
             Sidebar {
                 id: sidebar
+                // too narrow for the full sidebar and a page of at least 520 beside it (and the queue or lyrics)
+                squeezed: window.width - (window.queueOpen || window.lyricsOpen ? 340 : 0) < 236 + 520
                 Layout.preferredWidth: width
                 Layout.fillHeight: true
                 section: window.section
@@ -815,14 +829,14 @@ ApplicationWindow {
                         replaceExit: pushExit
                     }
                     QueuePanel {
-                        Layout.preferredWidth: window.queueOpen ? 330 : 0
+                        Layout.preferredWidth: window.queueOpen ? Math.min(330, Math.max(240, window.width * 0.4)) : 0
                         Layout.fillHeight: true
                         Layout.rightMargin: 10
                         Layout.bottomMargin: 4
                         visible: window.queueOpen
                     }
                     LyricsPanel {
-                        Layout.preferredWidth: window.lyricsOpen ? 350 : 0
+                        Layout.preferredWidth: window.lyricsOpen ? Math.min(350, Math.max(240, window.width * 0.4)) : 0
                         Layout.fillHeight: true
                         Layout.rightMargin: 10
                         Layout.bottomMargin: 4

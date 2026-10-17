@@ -42,6 +42,7 @@ Item {
     }
 
     component Bloom: Shape {
+        readonly property bool decoration: true  // a glow, meant to spill past edges
         id: bloom
         property color tint
         property real size: 680
@@ -160,7 +161,8 @@ Item {
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(14)
                     }
-                    Row {
+                    Flow {  // wraps beside a big photo in a narrow window
+                        width: parent.width
                         spacing: 10
                         topPadding: 10
                         PillButton { primary: true; text: "Play all"; onClicked: library.playArtist(page.artistName, false) }

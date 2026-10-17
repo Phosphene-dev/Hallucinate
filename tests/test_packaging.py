@@ -68,7 +68,7 @@ def test_decode_check_plays_every_format():
     if "ImportError" in r.stderr and "PySide6" in r.stderr:
         pytest.skip("PySide6 is not usable in this environment")
     assert r.returncode == 0, r.stdout + r.stderr
-    assert r.stdout.count("ok  ") == 7, r.stdout
+    assert r.stdout.count("ok  ") == 8, r.stdout  # seven clips, and the analysis helper
 
 
 def test_decode_check_fails_on_a_file_that_does_not_play(tmp_path):

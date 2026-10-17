@@ -45,6 +45,11 @@ QML_STYLE = "HallucinateStyle"
 
 
 def main(argv=None) -> int:
+    argv = argv if argv is not None else sys.argv[1:]
+    if argv[:1] == ["--analysis-worker"]:  # the helper that decodes songs for waveforms and ReplayGain
+        from .analysis import serve
+
+        return serve()
     ap = argparse.ArgumentParser(prog="hallucinate", description="Modern desktop music player")
     ap.add_argument("folders", nargs="*", help="music folders to add to the library")
     controls = ap.add_mutually_exclusive_group()
@@ -55,7 +60,7 @@ def main(argv=None) -> int:
     ap.add_argument("--quit-after", type=int, metavar="MS", help=argparse.SUPPRESS)
     ap.add_argument("--decode-check", nargs="+", metavar="FILE", help=argparse.SUPPRESS)  # packaging CI
     ap.add_argument("--version", action="version", version=__version__)
-    args, qt_args = ap.parse_known_args(argv if argv is not None else sys.argv[1:])
+    args, qt_args = ap.parse_known_args(argv)
 
     if args.decode_check:
         from . import decodecheck

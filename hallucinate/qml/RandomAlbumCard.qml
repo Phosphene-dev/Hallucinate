@@ -9,11 +9,13 @@ GlassPanel {
     property var album: ({})
     readonly property bool hasAlbum: album && album.album_key !== undefined
     signal reroll()
-    implicitHeight: 248
+    readonly property bool narrow: width < 560  // beside the queue, or a window on half a screen
+    implicitHeight: Math.max(248, details.implicitHeight + 48)
 
     // A bloom of the accent behind the cover
     Shape {
         id: bloom
+        readonly property bool decoration: true  // a glow, meant to spill past edges
         readonly property real size: 360
         x: cover.x + cover.width / 2 - size / 2; y: cover.y + cover.height / 2 - size / 2
         width: size; height: size
@@ -32,8 +34,8 @@ GlassPanel {
     Cover {
         id: cover
         x: 24; anchors.verticalCenter: parent.verticalCenter
-        width: 200; height: 200
-        radius: 18
+        width: card.narrow ? Math.max(90, Math.min(140, card.width * 0.3)) : 200; height: width
+        radius: card.narrow ? 12 : 18
         source: card.hasAlbum ? card.album.artUrl : ""
         Accessible.role: Accessible.Button
         Accessible.name: card.hasAlbum ? "Open " + card.album.album : ""
@@ -51,7 +53,9 @@ GlassPanel {
         }
     }
     Column {
-        anchors { left: cover.right; leftMargin: 26; right: parent.right; rightMargin: 24; verticalCenter: parent.verticalCenter }
+        id: details
+        anchors { left: cover.right; leftMargin: card.narrow ? 16 : 26; right: parent.right; rightMargin: card.narrow ? 16 : 24
+                  verticalCenter: parent.verticalCenter }
         spacing: 8
         Text {
             textFormat: Text.PlainText
@@ -87,6 +91,8 @@ GlassPanel {
         }
         Text {
             textFormat: Text.PlainText
+            width: parent.width
+            wrapMode: Text.WordWrap
             visible: card.hasAlbum
             text: card.hasAlbum ? [card.album.year > 0 ? card.album.year : "", card.album.n + (card.album.n === 1 ? " song" : " songs"),
                                     card.album.durText].filter(s => s !== "").join("  ·  ") : ""
@@ -95,7 +101,8 @@ GlassPanel {
             font.pixelSize: Theme.fontSize(13)
         }
         Item { width: 1; height: 6 }
-        Row {
+        Flow {
+            width: parent.width
             spacing: 10
             PillButton {
                 primary: true

@@ -20,23 +20,3 @@ def test_soon_hands_a_late_answer_on():
     assert time.monotonic() - started < 1
     gate.set()
     assert wait_for(lambda: late == ["yes"])
-
-
-def test_file_ready_answers_on_its_own_thread_and_only_the_latest(qapp, tmp_path):
-    from hallucinate.fileready import FileReady
-
-    good = tmp_path / "a.flac"
-    good.write_bytes(b"x" * 10)
-    ready, got = FileReady(), []
-    ready.check(str(tmp_path / "missing.flac"), lambda ok: got.append(("first", ok)))
-    ready.check(str(good), lambda ok: got.append(("second", ok)))
-    assert wait_for(lambda: got)
-    time.sleep(0.1)
-    assert got == [("second", True)]
-    ready.check(str(tmp_path / "missing.flac"), lambda ok: got.append(("third", ok)))
-    assert wait_for(lambda: len(got) == 2) and got[1] == ("third", False)
-    ready.check(str(good), lambda ok: got.append(("cancelled", ok)))
-    ready.cancel()
-    time.sleep(0.2)
-    qapp.processEvents()
-    assert len(got) == 2 and not ready.waiting

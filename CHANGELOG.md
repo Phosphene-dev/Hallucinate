@@ -5,6 +5,22 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Fixed
+- The window could stop responding while ReplayGain measured your music (the crash report from 0.9.9.3
+  showed it waiting forever on a song the decoder had choked on). Songs are now decoded for their waveform
+  and loudness in a separate helper process: if it gets stuck on a file, or crashes, it's ended, that song is
+  passed over, and the next one gets a fresh helper. The window never waits on it.
+- In a narrow window, or with the queue open, nothing runs off the right edge any more:
+  - Settings: long options wrap, and rows of fields and buttons wrap onto a second line (the update
+    check, Check now and Cancel among them). The equalizer fits.
+  - The Songs filters, the Recap header and an artist's buttons wrap too.
+  - The sidebar folds to icons when there isn't room for it and a page beside it, and the queue and lyrics
+    panels narrow in a small window.
+  - The random album card on Home makes room.
+
+### Added
+- Shrimp Boat (PPG's soft peach, #F5BE9D) as an accent colour.
+
 ## [0.9.9.4] - 2026-10-17
 
 Music servers, your choices saved into the files, and a fix for the window freezing while left idle.
