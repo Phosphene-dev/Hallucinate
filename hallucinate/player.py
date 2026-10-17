@@ -35,6 +35,7 @@ SKIP_MIN_MS = 1500  # moving on sooner than this is browsing the queue, not a sk
 RADIO_LOW_WATER = 2  # ask for more radio tracks once fewer than this many are left to play
 RADIO_SEEDS = 5  # recently played tracks the next radio batch is based on  # stop a track left to finish this long after its expected end, in case it stalls
 STREAM_SONG_MS = 60_000  # a song heard this long on internet radio counts for scrobbling
+STREAM_QUIET_MS = 15_000  # a station "playing" whose position hasn't moved this long has gone silent
 STREAM_RETRIES = 5  # reconnect a dropped station this many times (2, 4, 8… s apart) before giving up
 SESSION_VERSION = 1
 SESSION_MAX_TRACKS = 1000  # bounds the save cost for huge queues (e.g. "play all songs" on 50k tracks)
@@ -141,8 +142,10 @@ class _Voice:
         if self.tap is not None:
             self.tap.reset()
         url = QUrl(self.path) if is_url(self.path) else QUrl.fromLocalFile(self.path)
-        if self.seek_on_load >= 0 and self.player.source() == url:
-            self.player.setSource(QUrl())  # the same file again: reload it, so it reports loaded and seeks
+        if (self.seek_on_load >= 0 or is_url(self.path)) and self.player.source() == url:
+            # the same file again: reload it, so it reports loaded and seeks; the same stream again (a
+            # reconnect): drop the old connection, which Qt would otherwise keep
+            self.player.setSource(QUrl())
         self.player.setSource(url)
 
     def holds(self, index, track):
@@ -325,6 +328,15 @@ class Player(QObject):
         self.repeatChanged.connect(self._maybe_extend_radio)
         self.shuffleChanged.connect(self._maybe_extend_radio)
         self.stateChanged.connect(self._clear_visualizer)
+
+        # A station can go silent without closing the connection: nothing errors and nothing ends, the
+        # position just stops. Notice that and reconnect, as for a dropped stream.
+        self._quiet_timer = QTimer(self)
+        self._quiet_timer.setInterval(5000)
+        self._quiet_timer.timeout.connect(self._check_stream_quiet)
+        self._stream_pos, self._stream_moved = -1, 0.0
+        self.stateChanged.connect(self._watch_stream)
+        self.trackChanged.connect(self._watch_stream)
 
         self._save_timer = QTimer(self)
         self._save_timer.setSingleShot(True)
@@ -1795,6 +1807,26 @@ class Player(QObject):
         index = self._index
         QTimer.singleShot(delay, lambda: self._retry_stream(index))
         return True
+
+    def _watch_stream(self):
+        on = self.playing and self.hasTrack and track_kind(self.current) == "station"
+        if on and not self._quiet_timer.isActive():
+            self._stream_pos, self._stream_moved = -1, time.monotonic()
+            self._quiet_timer.start()
+        elif not on:
+            self._quiet_timer.stop()
+
+    def _check_stream_quiet(self, now=None):
+        if not (self.playing and self.hasTrack and track_kind(self.current) == "station"):
+            self._quiet_timer.stop()
+            return
+        now = time.monotonic() if now is None else now
+        pos = self._voice.player.position()
+        if pos != self._stream_pos:
+            self._stream_pos, self._stream_moved = pos, now
+        elif (now - self._stream_moved) * 1000 >= STREAM_QUIET_MS:
+            self._stream_moved = now  # one reconnect per silence; the retry restarts the count
+            self._reconnect_stream("The station went quiet")
 
     def _retry_stream(self, index):
         if index == self._index and self.hasTrack and track_kind(self.current) == "station":

@@ -26,7 +26,8 @@ Hardening on the way to 1.0, plus a few things asked for while testing.
 - Backups include the radio log and listening time.
 - A song heard on the radio that's also in your library is scrobbled with your copy's album.
 - If the window stops responding for 20 seconds, what Hallucinate was doing is recorded, and the next start
-  offers it as a report to copy (like a crash report). A computer going to sleep doesn't count.
+  offers it as a report to copy (like a crash report), with what the window and player were doing just
+  before. A computer going to sleep doesn't count.
 
 ### Changed
 - Switching off Liked Songs also hides the heart buttons, the menu item and the Last.fm loves options. A test
@@ -37,6 +38,10 @@ Hardening on the way to 1.0, plus a few things asked for while testing.
 - Songs scrobbled from internet radio no longer have the station's name as their album: they're the song and
   its artist (and its album, if it's in your library).
 - The fields in Edit album and Edit tags have names for screen readers.
+- A station that goes silent without closing the connection is noticed after 15 seconds and reconnected
+  (it used to look like it was still playing, forever).
+- Reconnecting to a station that dropped now really opens a new connection (it could carry on waiting on the
+  old one).
 
 ## [0.9.9.2] - 2026-10-16
 

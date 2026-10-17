@@ -230,7 +230,16 @@ def main(argv=None) -> int:
         window.frameSwapped.connect(lambda: _mark("first-frame"), Qt.ConnectionType.SingleShotConnection)
         library.readyChanged.connect(lambda: library.ready and _mark("library-ready"))
     shell.setWindow(engine.rootObjects()[0])
-    freeze_watch = crashlog.watch_freezes()  # noqa: F841 - kept alive for the run
+    root_window = engine.rootObjects()[0]
+
+    def freeze_context():
+        cur = player.current if player.hasTrack else {}
+        return (f"window {'shown' if root_window.isVisible() else 'hidden'}, {root_window.visibility().name}, "
+                f"{root_window.width()}x{root_window.height()}, {'active' if root_window.isActive() else 'inactive'}; "
+                f"{'playing' if player.playing else 'not playing'} {cur.get('kind') or ('music' if cur else 'nothing')}"
+                f"{', ' + player.error if player.error else ''}")
+
+    freeze_watch = crashlog.watch_freezes(context=freeze_context)  # noqa: F841 - kept alive for the run
     control.setRaiseCallback(shell.showMain)
     mpris = None
     try:

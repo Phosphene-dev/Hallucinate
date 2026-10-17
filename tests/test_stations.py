@@ -301,3 +301,25 @@ def test_a_radio_song_you_own_is_scrobbled_with_your_copys_album(radio, tmp_path
     song = {"kind": "station", "artist": "Enduser", "title": "Death Vest", "album": "Radio Caprice - Breakcore",
             "song_album": "Nightmare Fuel"}
     assert scrobble_fields(song)["album"] == "Nightmare Fuel"
+
+
+def test_a_station_that_goes_silent_is_reconnected(radio, server):
+    stations, player, _ = radio
+    server.stall_after = 8192 * 12  # the station stops sending but keeps the connection open
+    stations.add(server.url("/live"), "")
+    assert wait_for(lambda: stations.count == 1)
+    stations.play(stations.model._items[0]["id"])
+    assert wait_for(lambda: server.stalled.is_set() and player.playing, timeout=15)
+    pos = [-1]
+    assert wait_for(lambda: (pos.__setitem__(0, player.position) or True) and wait_for(
+        lambda: player.position == pos[0], timeout=1.5), timeout=20)  # the position has stopped moving
+    now = 1000.0
+    player._check_stream_quiet(now)
+    player._check_stream_quiet(now + 5)
+    assert player._stream_retries == 0  # not yet: it hasn't been quiet long enough
+    server.stall_after = None  # the station comes back
+    player._check_stream_quiet(now + 16)
+    assert player._stream_retries == 1 and "reconnecting" in player.error
+    assert wait_for(lambda: player.error == "", timeout=20), player.error  # back on the air
+    start = player.position
+    assert wait_for(lambda: player.position > start + 500, timeout=10)

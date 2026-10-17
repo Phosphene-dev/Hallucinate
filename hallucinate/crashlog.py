@@ -111,19 +111,28 @@ def install(folder):
     return True
 
 
-def watch_freezes(threshold=FREEZE_AFTER, clock=time.monotonic, interval=1.0):
+def watch_freezes(threshold=FREEZE_AFTER, clock=time.monotonic, interval=1.0, context=None):
     """Notice when the window stops responding: a timer on the GUI thread beats every half second and a small
     thread checks the beat. Once it's been silent for `threshold` seconds, the stacks of every thread go in
     freeze.log (what was busy), and when it beats again, how long it was gone. A computer that slept isn't a
-    freeze: the watcher itself stops then, so a gap in its own checks resets the count. Returns the timer."""
+    freeze: the watcher itself stops then, so a gap in its own checks resets the count. `context()`, called with
+    each beat on the GUI thread, says what the app was doing (the window's state, what's playing), and the last
+    one goes in the record. Returns the timer."""
     from PySide6.QtCore import QTimer
 
     if _state["dir"] is None:
         return None
     _state["beat"] = clock()
 
+    _state["context"] = ""
+
     def beat():
         _state["beat"] = clock()
+        if context is not None:
+            try:
+                _state["context"] = str(context())
+            except Exception:  # noqa: BLE001 - a record of the state must never break the app
+                pass
 
     timer = QTimer()
     timer.setInterval(500)
@@ -143,7 +152,9 @@ def watch_freezes(threshold=FREEZE_AFTER, clock=time.monotonic, interval=1.0):
             if frozen_since is None and silent >= threshold:
                 frozen_since = _state["beat"]
                 _write_freeze(f"--- {time.strftime('%Y-%m-%d %H:%M:%S')}, Hallucinate {__version__}: the window "
-                              f"stopped responding {silent:.0f} s ago. What each thread was doing:\n", stacks=True)
+                              f"stopped responding {silent:.0f} s ago.\n"
+                              + (f"Just before: {_state.get('context')}\n" if _state.get("context") else "")
+                              + "What each thread was doing:\n", stacks=True)
             elif frozen_since is not None and silent < threshold:
                 _write_freeze(f"It came back after {_state['beat'] - frozen_since:.0f} s.\n\n")
                 frozen_since = None

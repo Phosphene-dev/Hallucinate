@@ -104,8 +104,9 @@ def test_a_freeze_is_recorded_with_what_was_busy_and_when_it_came_back(qapp, tmp
 
     assert crashlog.install(tmp_path)
     now = [1000.0]
-    crashlog.watch_freezes(threshold=20, clock=lambda: now[0], interval=0.05)
+    crashlog.watch_freezes(threshold=20, clock=lambda: now[0], interval=0.05, context=lambda: "window hidden")
     try:
+        assert wait_for(lambda: crashlog._state["context"] == "window hidden")
         crashlog._state["beat"] = now[0]
         timer = crashlog._state["watch"][0]
         timer.stop()  # the window "stops responding": no more beats
@@ -115,7 +116,7 @@ def test_a_freeze_is_recorded_with_what_was_busy_and_when_it_came_back(qapp, tmp
             time.sleep(0.1)
         assert wait_for(lambda: (tmp_path / "freeze.log").exists())
         text = (tmp_path / "freeze.log").read_text()
-        assert "stopped responding" in text and "Thread" in text
+        assert "stopped responding" in text and "Just before: window hidden" in text and "Thread" in text
         crashlog._state["beat"] = now[0]  # it beats again
         assert wait_for(lambda: "came back" in (tmp_path / "freeze.log").read_text())
     finally:
