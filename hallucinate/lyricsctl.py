@@ -85,9 +85,10 @@ class LyricsController(QObject):
         if target is None:
             return "Lyrics for songs from a CUE sheet can't be saved next to the file"
         text = lx.format_lrc([(ln["t"], ln["text"]) for ln in self._lines], self._offset)
+        from .core.atomic import write_text
+
         try:
-            with open(target, "w", encoding="utf-8") as fh:
-                fh.write(text)
+            write_text(target, text)  # your own .lrc is replaced whole or not at all
         except OSError as exc:
             return f"Couldn't save {os.path.basename(target)}: {exc.strerror or exc}"
         path, plain = self._path, self._plain

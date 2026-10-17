@@ -137,7 +137,15 @@ class Database:
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.execute("PRAGMA synchronous=NORMAL")
         self.conn.executescript(SCHEMA)
-        self._migrate()
+        # All of an upgrade or none of it: a crash between adding a column and filling it in would otherwise
+        # leave it half-done for good (SQLite's schema changes are transactional).
+        self.conn.execute("BEGIN")
+        try:
+            self._migrate()
+            self.conn.commit()
+        except BaseException:
+            self.conn.rollback()
+            raise
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_stitle ON tracks(s_title)")
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_saa ON tracks(s_aa)")
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_sartist ON tracks(s_artist)")

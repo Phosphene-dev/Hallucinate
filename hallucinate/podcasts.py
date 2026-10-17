@@ -725,7 +725,9 @@ class Podcasts(QObject):
             path += ".opml"
         shows = [p for p in self._db.podcasts() if p.get("feed_url")]
         try:
-            Path(path).write_text(pc.make_opml(shows), encoding="utf-8")
+            from .core.atomic import write_text
+
+            write_text(path, pc.make_opml(shows))
         except OSError as exc:
             return f"Couldn't save: {exc.strerror or exc}"
         return f"Saved {len(shows)} show{'s' if len(shows) != 1 else ''} to {Path(path).name}"

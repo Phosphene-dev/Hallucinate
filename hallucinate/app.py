@@ -15,7 +15,7 @@ from PySide6.QtWidgets import QApplication
 
 from . import __version__
 from .control import ControlServer, send_control
-from .core import paths
+from .core import atomic, paths  # noqa: F401 - atomic reads the umask before any threads start
 from .discord import DiscordPresence
 from .headphones import HeadphoneFinder
 from .library import Library
@@ -127,10 +127,13 @@ def main(argv=None) -> int:
     from . import dbguard
     backup_dir = paths.data_dir() / "backups"
     db_notice = dbguard.check(paths.db_path(), backup_dir)  # a damaged database is set aside and restored
+    streams_db = paths.data_dir() / "streams.db"
+    db_notice = " ".join(n for n in (db_notice, dbguard.check(streams_db, backup_dir)) if n)
     _mark("application")
     library = Library(paths.db_path(), paths.art_dir())
     _mark("library-opened")
     dbguard.backup_if_due(paths.db_path(), backup_dir)
+    dbguard.backup_if_due(streams_db, backup_dir)
     from . import cachetrim
     cachetrim.trim_in_background({paths.data_dir() / "thumbs": cachetrim.LIMITS["thumbs"],
                                   paths.cache_dir() / "waveforms": cachetrim.LIMITS["waveforms"]})
@@ -289,6 +292,7 @@ def main(argv=None) -> int:
     user_lib.shutdown()
     library.shutdown()
     dbguard.mark_clean(paths.db_path())  # every connection is closed now
+    dbguard.mark_clean(paths.data_dir() / "streams.db")
     del scrobbler, listenbrainz
     del mpris
     crashlog.finish()

@@ -266,7 +266,9 @@ class Stations(QObject):
         for s in self._db.stations():
             lines += [f"#EXTINF:-1,{s['name']}", s["url"]]
         try:
-            Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8")
+            from .core.atomic import write_text
+
+            write_text(path, "\n".join(lines) + "\n")
         except OSError as exc:
             return f"Couldn't save: {exc.strerror or exc}"
         return f"Saved {len(lines) // 2} stations to {Path(path).name}"

@@ -12,6 +12,7 @@ import sqlite3
 import time
 
 from .. import __version__
+from .atomic import write_atomic
 
 FORMAT = "hallucinate-backup"
 VERSION = 1
@@ -74,30 +75,9 @@ def export(library_db, streams_db, target):
         finally:
             st.close()
     payload = json.dumps(data, ensure_ascii=False).encode("utf-8")
-    write_atomic(target, lambda f: f.write(gzip.compress(payload)))
+    write_atomic(target, lambda f: f.write(gzip.compress(payload)), private=True)
     return summary(data)
 
-
-def write_atomic(target, write):
-    """Write a file so that it's either the old one or the complete new one, never half of either: into a
-    temporary file next to it, flushed to disk, then renamed over it. `write(f)` writes to the open file."""
-    import os
-    import tempfile
-
-    target = os.fspath(target)
-    fd, tmp = tempfile.mkstemp(prefix=".tmp-", dir=os.path.dirname(os.path.abspath(target)))
-    try:
-        with os.fdopen(fd, "wb") as f:
-            write(f)
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp, target)
-    except BaseException:
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
 
 
 def summary(data):

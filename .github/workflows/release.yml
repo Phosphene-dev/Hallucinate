@@ -18,6 +18,9 @@ env:
   TAG: ${{ inputs.version && format('v{0}', inputs.version) || github.ref_name }}
   # What file names carry: the version for a release, dev-<run> for a build-only run (a branch name can hold "/").
   LABEL: ${{ inputs.version || (startsWith(github.ref, 'refs/tags/v') && github.ref_name) || format('dev-{0}', github.run_number) }}
+  # Whether this run publishes: a version was given or a v* tag was pushed. Not "the tag starts with v": a
+  # manual run from a branch called v2-work would otherwise publish that branch as a release.
+  RELEASE: ${{ inputs.version != '' || startsWith(github.ref, 'refs/tags/v') }}
 
 jobs:
   tag:
@@ -52,6 +55,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
+          persist-credentials: false  # build steps run third-party code; they don't need the token
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -76,7 +80,7 @@ jobs:
           name: AppImage
           path: hallucinate-*.AppImage
       - name: Attach to release
-        if: startsWith(env.TAG, 'v')
+        if: env.RELEASE == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -96,6 +100,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
+          persist-credentials: false  # build steps run third-party code; they don't need the token
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -125,7 +130,7 @@ jobs:
             dist/*.zip
             dist/*-setup.exe
       - name: Attach to release
-        if: startsWith(env.TAG, 'v')
+        if: env.RELEASE == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -146,6 +151,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
+          persist-credentials: false  # build steps run third-party code; they don't need the token
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -169,7 +175,7 @@ jobs:
           name: macOS
           path: dist/*-macos-*.zip
       - name: Attach to release
-        if: startsWith(env.TAG, 'v')
+        if: env.RELEASE == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -192,6 +198,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
+          persist-credentials: false  # build steps run third-party code; they don't need the token
       - name: Signing key
         id: key
         env:
@@ -244,7 +251,7 @@ jobs:
             --env=HALLUCINATE_CONTROL_SOCKET=hallucinate-release-flatpak-smoke \
             io.github.phosphene_dev.Hallucinate --quit-after 3000
       - name: Attach to release
-        if: steps.key.outputs.id && startsWith(env.TAG, 'v')
+        if: steps.key.outputs.id && env.RELEASE == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

@@ -138,6 +138,19 @@ def _free(lists, chunk=5000):
             del rows[-chunk:]
 
 
+def _strictly_inside(folder, roots):
+    """Whether `folder` is below one of the library folders `roots` (and isn't one of them)."""
+    folder = os.path.normcase(os.path.realpath(folder))
+    for root in roots:
+        root = os.path.normcase(os.path.realpath(root))
+        try:
+            if folder != root and os.path.commonpath([folder, root]) == root:
+                return True
+        except ValueError:  # different drives on Windows
+            continue
+    return False
+
+
 def _only_leftovers(folder):
     """True when a folder has no subfolders and no music left (just covers, logs, playlists and the like)."""
     try:
@@ -901,7 +914,9 @@ class Library(QObject):
                 else:
                     failed += 1
             for d in dirs:
-                if os.path.normpath(d) not in roots and _only_leftovers(d):
+                # Only an album's own folder inside your music, never a library folder itself or anything
+                # outside it: a song dropped in from ~/Downloads mustn't take Downloads with it.
+                if _strictly_inside(d, roots) and _only_leftovers(d):
                     QFile.moveToTrash(d)
             gone = [p for p in paths if db.file_of(p) in done]
             db.remove_paths(gone)

@@ -494,9 +494,11 @@ class UserLibrary(QObject):
         tracks = [t for t in tracks if t.get("path")]
         if not tracks:
             return "There are no songs to export"
+        from .core.atomic import write_atomic
+
+        text = playlist_files.write_m3u(tracks, path).encode("utf-8")  # built first: a failure leaves no empty file
         try:
-            with open(path, "w", encoding="utf-8") as fh:
-                fh.write(playlist_files.write_m3u(tracks, path))
+            write_atomic(path, lambda fh: fh.write(text))
         except OSError as exc:
             return f"Couldn't save the playlist: {exc.strerror or exc}"
         return ""

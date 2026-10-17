@@ -176,3 +176,23 @@ def test_playlists_pointing_at_each_other_stop(monkeypatch):
     monkeypatch.setattr(st.net, "urlopen", lambda req, timeout=0, limit=0: Resp(req.full_url))
     with pytest.raises(OSError):
         st.resolve("https://example.com/a.pls")
+
+
+def test_trash_never_takes_a_folder_outside_the_music(tmp_path):
+    from hallucinate.library import _strictly_inside
+
+    music = tmp_path / "Music"
+    (music / "Artist" / "Album").mkdir(parents=True)
+    roots = {str(music)}
+    assert _strictly_inside(str(music / "Artist" / "Album"), roots)
+    assert not _strictly_inside(str(music), roots)  # the library folder itself
+    assert not _strictly_inside(str(tmp_path / "Downloads"), roots)
+    assert not _strictly_inside(str(tmp_path / "Music2"), roots)  # a name that only starts the same
+
+
+def test_a_damaged_waveform_cache_file_is_recomputed(tmp_path):
+    from hallucinate.waveform import Envelope
+
+    bad = tmp_path / "x.env.npz"
+    bad.write_bytes(b"PK\x03\x04 truncated zip")
+    assert Envelope.load(bad) is None and not bad.exists()
