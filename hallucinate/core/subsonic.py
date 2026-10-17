@@ -173,47 +173,58 @@ class Server:
         return {"version": _text(answer.get("version"), 20), "type": _text(answer.get("type"), 40),
                 "server_version": _text(answer.get("serverVersion"), 40)}
 
-    def songs(self, page=PAGE):
-        """Every song on the server, a page at a time (search3 with an empty query, which Navidrome, Gonic and
-        Airsonic all answer with everything; servers that don't are read album by album instead)."""
-        offset = 0
-        seen = 0
-        while seen < MAX_SONGS:
+    def pages(self, page=PAGE, should_stop=lambda: False):
+        """Every song on the server as lists of checked songs, a page at a time (search3 with an empty query,
+        which Navidrome, Gonic and Airsonic all answer with everything; servers that don't are read album by
+        album instead). Bounded: it stops when a page brings nothing new, so a server that ignores the offset
+        or sends junk can't keep it going."""
+        offset, seen = 0, set()
+        while len(seen) < MAX_SONGS and offset < MAX_SONGS and not should_stop():
             result = self.call("search3", query="", songCount=page, songOffset=offset, artistCount=0,
                                albumCount=0).get("searchResult3")
             items = result.get("song") if isinstance(result, dict) else None
             if not isinstance(items, list) or not items:
                 break
-            for item in items:
-                song = song_from(item)
-                if song:
-                    seen += 1
-                    yield song
+            fresh = [s for s in (song_from(i) for i in items[:page]) if s and s["id"] not in seen]
+            if not fresh:
+                return  # the same page again, or nothing usable: done
+            seen.update(s["id"] for s in fresh)
+            yield fresh
             if len(items) < page:
                 return
             offset += len(items)
-        if offset == 0 and seen == 0:
-            yield from self._songs_by_album()
+        if offset == 0 and not seen and not should_stop():
+            yield from self._pages_by_album(page, should_stop)
 
-    def _songs_by_album(self, page=PAGE):
-        offset = 0
-        while offset < MAX_SONGS:
+    def _pages_by_album(self, page=PAGE, should_stop=lambda: False):
+        offset, albums_seen, songs_seen = 0, set(), 0
+        while offset < MAX_SONGS and not should_stop():
             result = self.call("getAlbumList2", type="alphabeticalByName", size=page, offset=offset)
-            albums = (result.get("albumList2") or {}).get("album") if isinstance(result.get("albumList2"), dict) else None
+            listing = result.get("albumList2") if isinstance(result.get("albumList2"), dict) else {}
+            albums = listing.get("album")
             if not isinstance(albums, list) or not albums:
                 return
-            for album in albums:
-                aid = _text(album.get("id"), 200) if isinstance(album, dict) else ""
-                if not aid:
-                    continue
+            ids = [a["id"] for a in albums[:page] if isinstance(a, dict) and _text(a.get("id"), 200)]
+            new_ids = [i for i in ids if i not in albums_seen]
+            if not new_ids:
+                return
+            albums_seen.update(new_ids)
+            for aid in new_ids:
+                if should_stop() or songs_seen >= MAX_SONGS:
+                    return
                 detail = self.call("getAlbum", id=aid).get("album")
-                for item in (detail.get("song") if isinstance(detail, dict) else None) or []:
-                    song = song_from(item)
-                    if song:
-                        yield song
+                found = [s for s in (song_from(i) for i in ((detail.get("song") if isinstance(detail, dict) else None)
+                                                            or [])[:5000]) if s]
+                songs_seen += len(found)
+                if found:
+                    yield found
             if len(albums) < page:
                 return
             offset += len(albums)
+
+    def songs(self, page=PAGE):
+        for chunk in self.pages(page):
+            yield from chunk
 
     def stream_url(self, song_id):
         """The link a song plays from, as the server stores it (no transcoding)."""

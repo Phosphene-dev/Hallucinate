@@ -1825,6 +1825,9 @@ class Player(QObject):
             return
         if self._reconnect_stream(message):
             return
+        if self.hasTrack and remote.is_remote(self._queue[self._index].get("path")):
+            # the backend's words for a server stream can include its link, sign-in and all: say it plainly
+            message = "The music server couldn't play this song"
         self._set_error(message or "Playback error")
         self._error_streak += 1
         if self._error_streak < len(self._queue):

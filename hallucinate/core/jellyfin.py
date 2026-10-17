@@ -125,24 +125,31 @@ class Server:
         info = self._request("GET", "/System/Info")
         return {"version": "", "type": "jellyfin", "server_version": _text(info.get("Version"), 40)}
 
-    def songs(self, page=PAGE):
-        start = 0
-        while start < MAX_SONGS:
-            answer = self._request("GET", f"/Users/{urllib.parse.quote(self.user_id)}/Items",
+    def pages(self, page=PAGE, should_stop=lambda: False):
+        """Every song as lists of checked songs, a page at a time; stops when a page brings nothing new."""
+        start, seen = 0, set()
+        while start < MAX_SONGS and not should_stop():
+            answer = self._request("GET", f"/Users/{urllib.parse.quote(self.user_id)}/Items", limit=32 * 1024 * 1024,
                                    IncludeItemTypes="Audio", Recursive="true", StartIndex=start, Limit=page,
                                    Fields="MediaSources,DateCreated,Genres,ProductionYear,ParentIndexNumber",
-                                   SortBy="AlbumArtist,Album,ParentIndexNumber,IndexNumber",
+                                   # SortName last: a fixed order, so pages don't skip or repeat songs
+                                   SortBy="AlbumArtist,Album,ParentIndexNumber,IndexNumber,SortName",
                                    EnableImageTypes="Primary", EnableUserData="true")
             items = answer.get("Items")
             if not isinstance(items, list) or not items:
                 return
-            for item in items:
-                song = song_from(item)
-                if song:
-                    yield song
+            fresh = [s for s in (song_from(i) for i in items[:page]) if s and s["id"] not in seen]
+            if not fresh:
+                return
+            seen.update(s["id"] for s in fresh)
+            yield fresh
             if len(items) < page:
                 return
             start += len(items)
+
+    def songs(self, page=PAGE):
+        for chunk in self.pages(page):
+            yield from chunk
 
     def stream_url(self, song_id):
         """The link a song plays from, as the server stores it (no transcoding)."""

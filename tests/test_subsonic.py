@@ -15,8 +15,9 @@ from hallucinate.core import subsonic
 class FakeServer:
     """A tiny Subsonic server: `songs` are what it has; `seen` is every query it got."""
 
-    def __init__(self, songs=(), password="secret", search_works=True, raw=None):
+    def __init__(self, songs=(), password="secret", search_works=True, raw=None, delay=0.0, cover=None):
         self.songs, self.password, self.search_works, self.raw = list(songs), password, search_works, raw
+        self.delay, self.cover_data = delay, cover
         self.seen = []
         fake = self
 
@@ -51,6 +52,10 @@ class FakeServer:
         if endpoint == "ping":
             return self.ok(serverVersion="0.53")
         if endpoint == "search3":
+            if self.delay:
+                import time
+
+                time.sleep(self.delay)
             if not self.search_works:
                 return self.ok(searchResult3={})
             off, n = int(q["songOffset"]), int(q["songCount"])
@@ -62,7 +67,7 @@ class FakeServer:
         if endpoint == "getAlbum":
             return self.ok(album={"id": q["id"], "song": [s for s in self.songs if s["albumId"] == q["id"]]})
         if endpoint == "getCoverArt":
-            return b"\xff\xd8\xff" + b"0" * 20
+            return self.cover_data or b"\xff\xd8\xff" + b"0" * 20
         return {"subsonic-response": {"status": "failed", "error": {"code": 70}}}
 
     def close(self):
@@ -325,3 +330,147 @@ def test_starting_with_servers_off_clears_songs_left_from_before(qapp, tmp_path,
         assert wait_for(lambda: not _rows(tmp_path), timeout=10)
     finally:
         svc.shutdown()
+
+
+# --- what a review of the feature found ------------------------------------------------------------------------
+
+def _added(service, server, **kw):
+    from conftest import wait_for
+
+    service.setEnabled(True)
+    service.addServer(server.base, "me", "secret", "")
+    assert wait_for(lambda: service.servers and service.servers[0]["songs"] == len(server.songs), timeout=60)
+    return service.servers[0]["id"]
+
+
+def test_a_server_whose_first_sync_never_finished_doesnt_break_the_next_start(qapp, tmp_path, monkeypatch):
+    from PySide6.QtCore import QSettings
+
+    from hallucinate import servers as servers_mod
+
+    settings = QSettings("hallucinate", "hallucinate")
+    before = settings.value("servers/list")
+    settings.setValue("servers/list", json.dumps([{"id": "ab", "kind": "subsonic", "base": "https://h.example",
+                                                   "user": "me", "name": "", "songs": None, "synced": None}]))
+    monkeypatch.setattr(servers_mod, "_keyring", lambda: FakeKeyring())
+    svc = servers_mod.Servers(tmp_path / "lib.db", tmp_path / "art")
+    try:
+        svc.setEnabled(True)  # used to raise: time.time() - None
+        assert svc.servers[0]["songs"] == 0
+    finally:
+        svc.setEnabled(False)
+        svc.shutdown()
+        settings.remove("servers/list") if before is None else settings.setValue("servers/list", before)
+
+
+def test_switching_servers_off_and_on_brings_their_songs_back(service, server, tmp_path):
+    from conftest import wait_for
+
+    _added(service, server)
+    service.setEnabled(False)
+    assert wait_for(lambda: not _rows(tmp_path), timeout=10)
+    service.setEnabled(True)
+    assert wait_for(lambda: len(_rows(tmp_path)) == 1200, timeout=60)
+
+
+def test_two_quick_adds_get_their_own_ids_and_the_same_one_twice_is_refused(service, server):
+    from conftest import wait_for
+
+    other = FakeServer([song(i) for i in range(1, 4)])
+    messages = []
+    service.message.connect(messages.append)
+    try:
+        service.setEnabled(True)
+        service.addServer(server.base, "me", "secret", "")
+        service.addServer(server.base, "me", "secret", "")  # still being checked: refused, not a second copy
+        service.addServer(other.base, "me", "secret", "")
+        assert wait_for(lambda: len(service.servers) == 2 and all(s["songs"] for s in service.servers), timeout=60)
+        assert len({s["id"] for s in service.servers}) == 2 and "already added" in messages[0]
+    finally:
+        other.close()
+
+
+def test_the_library_can_be_written_while_a_slow_server_syncs(service, tmp_path):
+    from conftest import wait_for
+
+    from hallucinate.core.db import Database
+
+    slow = FakeServer([song(i, album=f"A{i % 9}") for i in range(1, 1501)], delay=0.6)
+    try:
+        service.setEnabled(True)
+        service.addServer(slow.base, "me", "secret", "")
+        assert wait_for(lambda: len(_rows(tmp_path)) >= 500, timeout=30)  # mid-sync
+        db = Database(tmp_path / "lib.db")
+        db.conn.execute("PRAGMA busy_timeout=500")
+        db.set_rating("/m/mine.flac", 4)  # your own write doesn't wait on the server
+        db.close()
+        assert wait_for(lambda: service.servers and service.servers[0]["songs"] == 1500, timeout=60)
+    finally:
+        slow.close()
+
+
+def test_a_server_sending_junk_pages_forever_is_stopped():
+    junk = FakeServer([{"id": "", "isDir": True}] * 500)
+    try:
+        assert list(subsonic.Server(junk.base, "me", "secret").songs()) == []  # and it ends
+    finally:
+        junk.close()
+
+
+def test_removing_a_server_while_it_syncs_leaves_nothing_behind(service, tmp_path):
+    from conftest import wait_for
+
+    slow = FakeServer([song(i) for i in range(1, 2001)], delay=0.5)
+    try:
+        service.setEnabled(True)
+        service.addServer(slow.base, "me", "secret", "")
+        assert wait_for(lambda: len(_rows(tmp_path)) >= 500, timeout=30)
+        service.removeServer(service.servers[0]["id"])
+        import time
+
+        time.sleep(1.5)
+        assert wait_for(lambda: not _rows(tmp_path), timeout=20)
+        assert service.servers == [] and service.keyring.kept == {}
+    finally:
+        slow.close()
+
+
+def test_png_covers_are_kept_not_fetched_again_every_sync(service, tmp_path):
+    from conftest import wait_for
+
+    png = FakeServer([song(i) for i in range(1, 4)], cover=b"\x89PNG\r\n\x1a\n" + b"0" * 30)
+    try:
+        sid = _added(service, png)
+        covers = sum(1 for p, _ in png.seen if p.endswith("getCoverArt"))
+        service.sync(sid)
+        assert wait_for(lambda: not service.servers[0]["busy"] and sum(1 for p, _ in png.seen if p.endswith("ping")) >= 2,
+                        timeout=30)
+        assert sum(1 for p, _ in png.seen if p.endswith("getCoverArt")) == covers == 1
+    finally:
+        png.close()
+
+
+def test_offline_mode_isnt_taken_for_a_server_thats_down(service, server):
+    from conftest import wait_for
+
+    from hallucinate.core import net
+
+    sid = _added(service, server)
+    net.set_offline(True)
+    try:
+        service.sync(sid)
+        assert wait_for(lambda: not service.servers[0]["busy"], timeout=10)
+        assert service.servers[0]["status"] == "ok"
+    finally:
+        net.set_offline(False)
+
+
+def test_a_secure_link_redirecting_to_a_plain_one_drops_the_sign_in():
+    import urllib.request
+
+    from hallucinate.core import net
+
+    handler = net._WebOnlyRedirects()
+    req = urllib.request.Request("https://h.example/a", headers={"Authorization": "Token x"})
+    new = handler.redirect_request(req, None, 302, "Found", {}, "http://h.example/b")
+    assert new is not None and "Authorization" not in new.headers

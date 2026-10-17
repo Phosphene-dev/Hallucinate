@@ -173,6 +173,7 @@ def main(argv=None) -> int:
 
     servers = Servers(paths.db_path(), paths.art_dir(), player)
     servers.libraryChanged.connect(library.reload)
+    shell.settingsChanged.connect(servers.recheck)  # offline mode switched off: try servers again
 
     def apply_features():
         lyrics.setEnabled(shell.featureOn("lyrics"))
