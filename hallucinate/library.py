@@ -211,6 +211,9 @@ class Library(QObject):
 
     def __init__(self, db_path, art_dir, parent=None):
         super().__init__(parent)
+        self._scan_stop = threading.Event()  # set to stop a scan between files
+        self._purge_after_scan = []  # folders removed while a scan ran
+        self._scan_thread = None
         self._db_path = str(db_path)
         self._art_dir = str(art_dir)
         self._db = Database(self._db_path)
@@ -743,6 +746,12 @@ class Library(QObject):
     def removeFolder(self, path):
         self._db.forget_folder(path)
         self.foldersChanged.emit()
+        if self._scanning:
+            # The scan would carry on through the removed folder and bring its songs back: stop it, purge
+            # again once it has stopped, and scan the folders that remain.
+            self._scan_stop.set()
+            self._purge_after_scan.append(path)
+            self._pending = True
 
         def purge(db):
             db.purge_folder(path)
@@ -765,13 +774,16 @@ class Library(QObject):
         self.scanProgressChanged.emit()
         self.scanningChanged.emit()
         self._set_status("Scanning…")
-        threading.Thread(target=self._scan_worker, args=(folders,), daemon=True).start()
+        self._scan_stop.clear()
+        self._scan_thread = threading.Thread(target=self._scan_worker, args=(folders,), daemon=True)
+        self._scan_thread.start()
 
     def _scan_worker(self, folders):
         try:
             db = Database(self._db_path)
             try:
-                scanner = Scanner(db, self._art_dir, progress=self.scanProgress.emit)
+                scanner = Scanner(db, self._art_dir, progress=self.scanProgress.emit,
+                                  should_stop=self._scan_stop.is_set)
                 stats = scanner.scan(folders)
             finally:
                 db.close()
@@ -794,6 +806,11 @@ class Library(QObject):
     def _on_scan_finished(self, stats):
         self._scanning = False
         self.scanningChanged.emit()
+        for path in self._purge_after_scan:
+            self._bulk.submit(lambda db, p=path: db.purge_folder(p))
+        if self._purge_after_scan:
+            self._purge_after_scan = []
+            self.reload()
         self._scan_errors = stats.get("errors", 0)
         self._missing = [f for f in self._db.folders() if not os.path.isdir(f)]
         self.scanIssuesChanged.emit()
@@ -1112,6 +1129,9 @@ class Library(QObject):
         self.healthChanged.emit()
 
     def shutdown(self):
+        self._scan_stop.set()  # a scan stops between files, not half-way through writing a cover
+        if self._scan_thread is not None:
+            self._scan_thread.join(timeout=5)
         self._bulk.close()
         self._quick.close()
         self._db.close()

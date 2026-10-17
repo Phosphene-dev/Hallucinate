@@ -12,6 +12,7 @@ left behind and clears it, so the window can offer to copy it once. Paths under 
 replaced with "~" because the text usually ends up in a public issue."""
 import faulthandler
 import logging
+import os
 import sys
 import threading
 import time
@@ -39,7 +40,8 @@ def take_previous(folder):
     killed, or the computer lost power), so it isn't reported. Reading the records clears them."""
     folder = Path(folder)
     parts, crashed = [], False
-    for name, title in (("native.log", "Crash"), ("python.log", "Unhandled error"), ("freeze.log", "Stopped responding")):
+    freeze = _take(folder / "freeze.log") + _take(folder / "freeze-stacks.log")
+    for name, title in (("native.log", "Crash"), ("python.log", "Unhandled error")):
         path = folder / name
         try:
             text = path.read_text(encoding="utf-8", errors="replace").strip()
@@ -55,7 +57,22 @@ def take_previous(folder):
             crashed = True
         if text:
             parts.append(f"{title}:\n{text[-MAX_BYTES:]}")
+    if freeze.strip():
+        parts.append(f"Stopped responding:\n{freeze.strip()[-MAX_BYTES:]}")
     return _redact("\n\n".join(parts)), crashed
+
+
+def _take(path):
+    """A record's text, deleting it ("" if there's none)."""
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+    try:
+        path.unlink()
+    except OSError:
+        pass
+    return text
 
 
 def _append(name, text):
@@ -112,32 +129,54 @@ def install(folder):
 
 
 def watch_freezes(threshold=FREEZE_AFTER, clock=time.monotonic, interval=1.0, context=None):
-    """Notice when the window stops responding: a timer on the GUI thread beats every half second and a small
-    thread checks the beat. Once it's been silent for `threshold` seconds, the stacks of every thread go in
-    freeze.log (what was busy), and when it beats again, how long it was gone. A computer that slept isn't a
-    freeze: the watcher itself stops then, so a gap in its own checks resets the count. `context()`, called with
-    each beat on the GUI thread, says what the app was doing (the window's state, what's playing), and the last
-    one goes in the record. Returns the timer."""
+    """Notice when the window stops responding: a timer on the GUI thread beats every half second.
+
+    Each beat re-arms faulthandler's timer, which runs on a native thread of its own: if no beat comes for
+    `threshold` seconds it writes the stack of every thread to freeze-stacks.log, even when the GUI thread
+    is stuck holding Python's lock (a Python thread couldn't run then). A small Python thread adds what the
+    app was doing just before (`context()`, called with each beat: the window's state, what's playing) to
+    freeze.log, and, if the window comes back, after how long. A computer that slept isn't a freeze: the
+    watcher's own checks stop then too, and a gap in them throws away what was written during it. Returns
+    the timer."""
     from PySide6.QtCore import QTimer
 
-    if _state["dir"] is None:
+    folder = _state["dir"]
+    if folder is None:
+        return None
+    try:
+        stacks = open(folder / "freeze-stacks.log", "w", encoding="utf-8")  # noqa: SIM115 - outlives this call
+    except OSError:
         return None
     _state["beat"] = clock()
-
     _state["context"] = ""
+
+    def arm():
+        try:
+            faulthandler.dump_traceback_later(threshold, repeat=False, file=stacks)
+        except (ValueError, RuntimeError, OSError):
+            pass
 
     def beat():
         _state["beat"] = clock()
+        arm()
         if context is not None:
             try:
                 _state["context"] = str(context())
             except Exception:  # noqa: BLE001 - a record of the state must never break the app
                 pass
 
+    def forget_stacks():
+        try:
+            os.ftruncate(stacks.fileno(), 0)
+            os.lseek(stacks.fileno(), 0, os.SEEK_SET)
+        except OSError:
+            pass
+
     timer = QTimer()
     timer.setInterval(500)
     timer.timeout.connect(beat)
     timer.start()
+    arm()
     stop = threading.Event()
 
     def watch():
@@ -147,25 +186,48 @@ def watch_freezes(threshold=FREEZE_AFTER, clock=time.monotonic, interval=1.0, co
             now = clock()
             if now - last_check > max(5.0, interval * 5):  # the whole process was paused (sleep, a debugger)
                 _state["beat"] = now
+                if frozen_since is None:
+                    forget_stacks()  # written while asleep: not a freeze
             last_check = now
             silent = now - _state["beat"]
             if frozen_since is None and silent >= threshold:
                 frozen_since = _state["beat"]
                 _write_freeze(f"--- {time.strftime('%Y-%m-%d %H:%M:%S')}, Hallucinate {__version__}: the window "
                               f"stopped responding {silent:.0f} s ago.\n"
-                              + (f"Just before: {_state.get('context')}\n" if _state.get("context") else "")
-                              + "What each thread was doing:\n", stacks=True)
+                              + (f"Just before: {_state.get('context')}\n" if _state.get("context") else ""))
             elif frozen_since is not None and silent < threshold:
                 _write_freeze(f"It came back after {_state['beat'] - frozen_since:.0f} s.\n\n")
                 frozen_since = None
 
     thread = threading.Thread(target=watch, name="freeze-watch", daemon=True)
     thread.start()
-    _state["watch"] = (timer, stop, thread)
+    _state["watch"] = (timer, stop, thread, stacks)
     return timer
 
 
-def _write_freeze(text, stacks=False):
+def stop_watching():
+    """Stop watching for freezes (once the window has closed, shutting down isn't a freeze)."""
+    watch = _state.get("watch")
+    if watch is None:
+        return
+    _state["watch"] = None
+    timer, stop, _thread, stacks = watch
+    stop.set()
+    timer.stop()
+    try:
+        faulthandler.cancel_dump_traceback_later()
+    except (ValueError, RuntimeError):
+        pass
+    try:
+        empty = stacks.tell() == 0 and os.fstat(stacks.fileno()).st_size == 0
+        stacks.close()
+        if empty:
+            (_state["dir"] / "freeze-stacks.log").unlink()
+    except OSError:
+        pass
+
+
+def _write_freeze(text):
     folder = _state["dir"]
     if folder is None:
         return
@@ -175,10 +237,6 @@ def _write_freeze(text, stacks=False):
             return
         with open(path, "a", encoding="utf-8") as f:
             f.write(text)
-            if stacks:
-                f.flush()
-                faulthandler.dump_traceback(file=f, all_threads=True)
-                f.write("\n")
     except OSError:
         pass
 
@@ -197,11 +255,7 @@ def record_fatal(message):
 def finish():
     """A clean exit: the native log holds only its header, so drop it."""
     native, folder = _state["native"], _state["dir"]
-    if _state["watch"] is not None:
-        timer, stop, _thread = _state["watch"]
-        stop.set()
-        timer.stop()
-        _state["watch"] = None
+    stop_watching()
     if native is None:
         return
     try:

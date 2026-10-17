@@ -46,6 +46,9 @@ class MetadataEditor(QObject):
     def __init__(self, db_path, art_dir, parent=None):
         super().__init__(parent)
         self._reader = _Reader(str(db_path), "metaedit")
+        # The editor waits on these lookups; tag writing (hundreds of files for a bulk genre save) mustn't
+        # make it wait, so they have their own worker.
+        self._lookup = _Reader(str(db_path), "metaedit-lookup")
         self._art_dir = str(art_dir)
         self._busy = 0
         self._done.connect(self._finish)
@@ -104,7 +107,7 @@ class MetadataEditor(QObject):
     # --- tag editing -----------------------------------------------------------------
     @Slot(str, result="QVariantMap")
     def trackInfo(self, path):
-        row = self._reader.submit(lambda db: db.track_by_path(path)).result(timeout=10)
+        row = self._lookup.submit(lambda db: db.track_by_path(path)).result(timeout=10)
         return decorate([row])[0] if row else {}
 
     # --- MusicBrainz -------------------------------------------------------------------------------------
@@ -135,7 +138,7 @@ class MetadataEditor(QObject):
         counts agree); releaseReady() hands over what to fill in."""
         from .core import musicbrainz
 
-        songs = self._reader.submit(lambda db: db.album_tracks(album_key)).result(timeout=10) if album_key else []
+        songs = self._lookup.submit(lambda db: db.album_tracks(album_key)).result(timeout=10) if album_key else []
 
         def work():
             try:
@@ -457,4 +460,5 @@ class MetadataEditor(QObject):
             self._covers_thread.join(timeout=2)
         if self._genres_thread is not None:
             self._genres_thread.join(timeout=2)
+        self._lookup.close()
         self._reader.close()

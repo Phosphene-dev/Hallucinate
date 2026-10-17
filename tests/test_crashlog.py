@@ -116,7 +116,7 @@ def test_a_freeze_is_recorded_with_what_was_busy_and_when_it_came_back(qapp, tmp
             time.sleep(0.1)
         assert wait_for(lambda: (tmp_path / "freeze.log").exists())
         text = (tmp_path / "freeze.log").read_text()
-        assert "stopped responding" in text and "Just before: window hidden" in text and "Thread" in text
+        assert "stopped responding" in text and "Just before: window hidden" in text
         crashlog._state["beat"] = now[0]  # it beats again
         assert wait_for(lambda: "came back" in (tmp_path / "freeze.log").read_text())
     finally:
@@ -141,3 +141,34 @@ def test_a_sleeping_computer_is_not_a_freeze(qapp, tmp_path):
     finally:
         crashlog.finish()
     assert not (tmp_path / "freeze.log").exists()
+
+
+def test_a_freeze_with_the_gui_thread_stuck_is_still_recorded(qapp, tmp_path):
+    """faulthandler's own native thread writes the stacks even if no Python thread can run."""
+    import time
+
+    from conftest import wait_for
+
+    from hallucinate import crashlog
+
+    assert crashlog.install(tmp_path)
+    crashlog.watch_freezes(threshold=0.3)
+    try:
+        crashlog._state["watch"][0].stop()  # no more beats
+        stacks = tmp_path / "freeze-stacks.log"
+        time.sleep(0.6)  # the GUI thread "stuck" for twice the threshold
+        assert wait_for(lambda: stacks.exists() and "Thread" in stacks.read_text() or "thread" in stacks.read_text())
+    finally:
+        crashlog.finish()
+    report, crashed = crashlog.take_previous(tmp_path)
+    assert report.startswith("Stopped responding:") and "est_crashlog" in report and not crashed
+
+
+def test_a_clean_run_leaves_no_freeze_record(qapp, tmp_path):
+    from hallucinate import crashlog
+
+    assert crashlog.install(tmp_path)
+    crashlog.watch_freezes(threshold=30)
+    crashlog.stop_watching()
+    crashlog.finish()
+    assert crashlog.take_previous(tmp_path) == ("", False)

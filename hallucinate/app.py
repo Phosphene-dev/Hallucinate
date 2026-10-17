@@ -268,6 +268,7 @@ def main(argv=None) -> int:
     tick.timeout.connect(lambda: None)
 
     code = app.exec()
+    crashlog.stop_watching()  # the window is gone: a slow shutdown isn't a freeze
     control.close()
     del engine
     discord.shutdown()

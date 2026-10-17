@@ -486,3 +486,20 @@ def test_one_albums_genre_is_found_without_writing(qapp, lib, monkeypatch):
     finally:
         net.set_offline(False)
         ed.shutdown()
+
+
+@needs_ffmpeg
+def test_a_failed_tag_save_leaves_the_song_untouched(tmp_path, monkeypatch):
+    import mutagen.flac
+
+    src = encode(tmp_path / "a.flac", "flac", seconds=0.5)
+    before = src.read_bytes()
+
+    def broken_save(self, *a, **k):
+        raise OSError("No space left on device")
+
+    monkeypatch.setattr(mutagen.flac.FLAC, "save", broken_save)
+    with pytest.raises(tagedit.TagWriteError):
+        tagedit.write_tags(str(src), {"title": "New"})
+    assert src.read_bytes() == before
+    assert [p.name for p in tmp_path.iterdir()] == ["a.flac"]  # no leftover copy

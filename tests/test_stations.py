@@ -323,3 +323,17 @@ def test_a_station_that_goes_silent_is_reconnected(radio, server):
     assert wait_for(lambda: player.error == "", timeout=20), player.error  # back on the air
     start = player.position
     assert wait_for(lambda: player.position > start + 500, timeout=10)
+
+
+def test_only_one_reconnect_waits_at_a_time(radio):
+    _stations, player, _ = radio
+    player.playList([{"path": "http://127.0.0.1:9/x", "kind": "station", "station": "T", "title": "T",
+                      "album": "T", "artist": "", "station_id": 1, "id": -1}], 0)
+    player._stream_retries = 0
+    player._retry_timer.stop()
+    assert player._reconnect_stream("dropped") and player._stream_retries == 1
+    assert player._reconnect_stream("ended too") and player._stream_retries == 1  # the same drop, reported twice
+    player._check_stream_quiet(1000.0)
+    player._check_stream_quiet(1100.0)
+    assert player._stream_retries == 1  # quiet while a reconnect is pending isn't a new drop
+    player._retry_timer.stop()
