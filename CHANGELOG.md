@@ -5,6 +5,11 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.9.5] - 2026-10-17
+
+A fix for the window freezing while ReplayGain measured, visualizers that run on every graphics driver, and
+narrow windows where nothing runs off the edge.
+
 ### Fixed
 - The window could stop responding while ReplayGain measured your music (the crash report from 0.9.9.3
   showed it waiting forever on a song the decoder had choked on). Songs are now decoded for their waveform

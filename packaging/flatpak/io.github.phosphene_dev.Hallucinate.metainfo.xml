@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.9.9.5" date="2026-10-17">
+      <description>
+        <p>Fixed the window freezing while ReplayGain measured music: songs are now decoded in a separate helper process, so a file the decoder chokes on can't hang the app.</p>
+        <p>The Aurora, Halo and Waves visualizers work on every graphics driver and glow for dark covers. In narrow windows nothing runs off the edge, the sidebar folds to icons, and the player bar keeps its parts apart. A new Shrimp Boat accent colour.</p>
+      </description>
+    </release>
     <release version="0.9.9.4" date="2026-10-17">
       <description>
         <p>Music servers: songs on a Jellyfin, Navidrome or other Subsonic server join your library and play like your own files. Off until you switch it on.</p>
