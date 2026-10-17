@@ -136,6 +136,9 @@ class MetadataEditor(QObject):
         self._covers_progress.connect(self._apply_covers_progress)
         self._genres = {"busy": False, "done": 0, "total": 0, "found": 0, "current": "", "proposals": []}
         self._genres_stop = threading.Event()
+        self._saving = {"busy": False, "done": 0, "total": 0}  # writing the kept genres to the files
+        self._save_stop = threading.Event()
+        self._save_refreshed = 0.0
         self._genres_thread = None
         self._genres_progress.connect(self._apply_genres_progress)
         settings = QSettings("hallucinate", "hallucinate")
@@ -480,6 +483,24 @@ class MetadataEditor(QObject):
     def genresCurrent(self):
         return self._genres["current"]
 
+    @Property(bool, notify=genresChanged)
+    def genresSaving(self):
+        """The kept genres are being written to the songs (it takes a while for a few hundred albums)."""
+        return self._saving["busy"]
+
+    @Property(int, notify=genresChanged)
+    def genresSaved(self):
+        return self._saving["done"]
+
+    @Property(int, notify=genresChanged)
+    def genresToSave(self):
+        return self._saving["total"]
+
+    @Slot()
+    def stopSavingGenres(self):
+        """Stop after the album being written; the ones done so far keep their genre."""
+        self._save_stop.set()
+
     @Property("QVariantList", notify=genresChanged)
     def genreProposals(self):
         """What the last "find all" turned up, waiting to be checked and saved:
@@ -490,8 +511,8 @@ class MetadataEditor(QObject):
     def findMissingGenres(self):
         """Look up a genre for every album without one, about one request a second. Nothing is written until
         saveGenres() is called with the ones you keep."""
-        if self._genres["busy"]:
-            return
+        if self._genres["busy"] or self._saving["busy"]:
+            return  # (while saving, it would find the albums not written yet all over again)
         self._genres_stop.clear()
         self._genres = {"busy": True, "done": 0, "total": 0, "found": 0, "current": "", "proposals": []}
         self.genresChanged.emit()
@@ -542,6 +563,14 @@ class MetadataEditor(QObject):
 
     @Slot(object)
     def _apply_genres_progress(self, update):
+        if "saved" in update:  # writing the kept genres: one more album done
+            self._saving.update(done=update["saved"], busy=not update.get("over", False))
+            self.genresChanged.emit()
+            now = time.monotonic()
+            if update.get("over") or now - self._save_refreshed > 5:
+                self._save_refreshed = now
+                self.changed.emit()  # the library's counts (Albums without a genre) follow as it goes
+            return
         finished = update.pop("finished", False)
         self._genres.update(update)
         self.genresChanged.emit()
@@ -558,21 +587,37 @@ class MetadataEditor(QObject):
 
         def save_all(db, pairs):
             total = {"kind": "tags", "saved": 0, "errors": []}
-            for key, genre in pairs:
-                paths = [t["path"] for t in db.album_tracks(key)]
-                result = self._save_tags(db, paths, {"genre": genre})
-                total["saved"] += result["saved"]
-                total["errors"] += result["errors"]
+            albums = 0
+            try:
+                for key, genre in pairs:
+                    if self._save_stop.is_set():
+                        break
+                    paths = [t["path"] for t in db.album_tracks(key)]
+                    try:
+                        result = self._save_tags(db, paths, {"genre": genre})
+                    except Exception as exc:  # noqa: BLE001 - one album that can't be written doesn't stop the rest
+                        logger.warning("Could not save an album's genre: %s", exc)
+                        result = {"saved": 0, "errors": [str(exc)]}
+                    total["saved"] += result["saved"]
+                    total["errors"] += result["errors"]
+                    albums += 1
+                    self._genres_progress.emit({"saved": albums})
+            finally:
+                self._genres_progress.emit({"saved": albums, "over": True})
             return total
 
-        if items:
-            self._run(save_all, items)
         self._genres["proposals"] = []
+        if items:
+            self._save_stop.clear()
+            self._save_refreshed = time.monotonic()
+            self._saving = {"busy": True, "done": 0, "total": len(items)}
+            self._run(save_all, items)
         self.genresChanged.emit()
 
     def shutdown(self):
         self._covers_stop.set()
         self._genres_stop.set()
+        self._save_stop.set()
         if self._covers_thread is not None:
             self._covers_thread.join(timeout=2)
         if self._genres_thread is not None:

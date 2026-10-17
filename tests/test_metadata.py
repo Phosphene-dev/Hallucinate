@@ -579,3 +579,55 @@ def test_your_own_lrc_beats_lyrics_found_online_earlier(qapp, lib, monkeypatch):
         assert [ln["text"] for ln in ctl.lines] == ["my own words"]
     finally:
         ctl.shutdown()
+
+
+def test_saving_many_albums_genres_shows_progress_and_can_stop(qapp, tmp_path, monkeypatch):
+    """Saving a few hundred albums' genres takes a while: it says how far it has got, the library's counts
+    follow as it goes, and Stop leaves the rest untouched."""
+    from hallucinate.core import health
+
+    root = tmp_path / "Music"
+    for a in range(6):
+        (root / f"A{a}").mkdir(parents=True)
+        for t in (1, 2):
+            make_mp3(root / f"A{a}" / f"0{t}.mp3", f"T{t}", "Band", f"Disc {a}", "Band", f"{t}/2")
+    d = Database(tmp_path / "lib.db")
+    Scanner(d, tmp_path / "art").scan([str(root)])
+    keys = [a["album_key"] for a in health.missing_genre_all(d)]
+    d.close()
+    assert len(keys) == 6
+    ed = MetadataEditor(tmp_path / "lib.db", tmp_path / "art")
+    seen, changed = [], []
+    ed.genresChanged.connect(lambda: seen.append((ed.genresSaving, ed.genresSaved, ed.genresToSave)))
+    ed.changed.connect(lambda: changed.append(1))
+    real, calls = ed._save_tags, []
+
+    def slow(db, paths, fields):
+        calls.append(1)
+        if len(calls) == 3:
+            ed.stopSavingGenres()  # Stop, part-way: the album being written still gets its genre
+        return real(db, paths, fields)
+
+    monkeypatch.setattr(ed, "_save_tags", slow)
+    try:
+        ed.saveGenres([{"album_key": k, "genre": "IDM"} for k in keys])
+        assert ed.genresSaving and ed.genresToSave == 6
+        ed.findMissingGenres()  # not while saving: it would find the albums not written yet again
+        assert not ed.genresBusy
+        assert wait_for(lambda: not ed.genresSaving and changed)
+        assert (True, 1, 6) in seen and ed.genresSaved == 3
+        d = Database(tmp_path / "lib.db")
+        assert len(health.missing_genre_all(d)) == 3
+        d.close()
+    finally:
+        ed.shutdown()
+
+
+def test_hallucinates_own_tag_saves_dont_make_the_library_rescan(tmp_path):
+    from hallucinate.core import tagedit
+
+    song = tmp_path / "a.mp3"
+    make_mp3(song, "T", "A", "B", "A", "1/1")
+    assert not tagedit.written_recently(str(tmp_path))
+    tagedit.write_tags(str(song), {"genre": "IDM"})
+    assert tagedit.written_recently(str(tmp_path)) and not tagedit.written_recently(str(tmp_path / "other"))

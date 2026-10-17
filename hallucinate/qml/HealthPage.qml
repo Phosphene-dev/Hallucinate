@@ -260,6 +260,7 @@ Item {
                         }
                         Row {
                             visible: card.modelData.id === "genre" && (card.modelData.count > 0 || metaEditor.genresBusy
+                                                                        || metaEditor.genresSaving
                                                                         || metaEditor.genreProposals.length > 0)
                             spacing: 12
                             leftPadding: 24
@@ -267,9 +268,10 @@ Item {
                                 objectName: "findAllGenres"
                                 primary: !metaEditor.genresBusy && !metaEditor.genreProposals.length
                                 height: 32
-                                text: metaEditor.genresBusy ? "Stop" : "Find all online"
-                                enabled: metaEditor.genresBusy || !shell.offlineMode
-                                onClicked: metaEditor.genresBusy ? metaEditor.cancelGenres() : metaEditor.findMissingGenres()
+                                text: metaEditor.genresBusy || metaEditor.genresSaving ? "Stop" : "Find all online"
+                                enabled: metaEditor.genresBusy || metaEditor.genresSaving || !shell.offlineMode
+                                onClicked: metaEditor.genresSaving ? metaEditor.stopSavingGenres()
+                                           : metaEditor.genresBusy ? metaEditor.cancelGenres() : metaEditor.findMissingGenres()
                             }
                             PillButton {
                                 objectName: "reviewGenres"
@@ -284,7 +286,10 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: Math.min(implicitWidth, card.width - 360)
                                 elide: Text.ElideRight
-                                text: metaEditor.genresBusy
+                                text: metaEditor.genresSaving
+                                      ? "Saving genres to your files: " + metaEditor.genresSaved + " of " + metaEditor.genresToSave
+                                        + " albums. You can carry on meanwhile."
+                                      : metaEditor.genresBusy
                                       ? "Looked up " + metaEditor.genresDone + " of " + metaEditor.genresTotal + " albums  ·  "
                                         + metaEditor.genresFound + " found" + (metaEditor.genresCurrent ? "  ·  " + metaEditor.genresCurrent : "")
                                       : "Asks MusicBrainz, a couple of seconds an album. You check what it finds before anything is saved."
