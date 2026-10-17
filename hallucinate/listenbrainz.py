@@ -134,6 +134,7 @@ def fetch_lastfm_history(user, api_key, progress=None, max_pages=500):
 
 class ListenBrainzScrobbler(QObject):
     statusChanged = Signal()
+    _keyring_late = Signal(object)
     connectionChanged = Signal()
     pendingCountChanged = Signal()
     busyChanged = Signal()
@@ -175,11 +176,23 @@ class ListenBrainzScrobbler(QObject):
 
     # --- state ---------------------------------------------------------------
     def _load_keyring(self):
-        try:
-            self._token = keyring.get_password(KEYRING_SERVICE, "token") or ""
-            self._user = keyring.get_password(KEYRING_SERVICE, "user") or ""
-        except Exception as exc:  # noqa: BLE001
-            self._keyring_error = str(exc)
+        from . import keyringwait
+
+        self._keyring_late.connect(self._apply_keyring)
+        got = keyringwait.read(lambda k: keyring.get_password(KEYRING_SERVICE, k), ("token", "user"),
+                               late=self._keyring_late.emit)
+        if got is None:
+            self._set_status("Waiting for the system keyring to unlock…")
+            return
+        self._apply_keyring(got)
+
+    @Slot(object)
+    def _apply_keyring(self, got):
+        if got["error"]:
+            self._keyring_error = got["error"]
+        self._token = got["values"].get("token", "") or self._token
+        self._user = got["values"].get("user", "") or self._user
+        self.connectionChanged.emit()
         self._set_status(f"System keyring unavailable: {self._keyring_error}" if self._keyring_error
                          else ("Connected to ListenBrainz" + (f" as {self._user}." if self._user else "."))
                          if self._token else "Not connected to ListenBrainz.")

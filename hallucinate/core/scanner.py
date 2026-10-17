@@ -1,12 +1,14 @@
 """Incremental folder scanner: only new/changed files are parsed."""
 import os
 import re
+import time
 from typing import Callable, Optional
 
 from . import cue, tags
 from .db import Database
 
 _CUE_SONG = re.compile(r"^(.*\.[A-Za-z0-9]+)#\d+$")
+COMMIT_EVERY_S = 0.2  # changes waiting longer than this are saved before the next file is read
 
 
 class Scanner:
@@ -56,6 +58,7 @@ class Scanner:
                 embedded.setdefault(m.group(1), []).append(p)
         seen = set()
         pending = 0
+        last_commit = time.monotonic()
         visited = set()
         for root, dirs, files in os.walk(folder, followlinks=True):
             real = os.path.realpath(root)
@@ -95,6 +98,11 @@ class Scanner:
                     seen.update(songs)  # a file split by its own CUE sheet, unchanged
                     stats["unchanged"] += len(songs)
                     continue
+                if pending and time.monotonic() - last_commit > COMMIT_EVERY_S:
+                    # Not while reading a file (a slow or network disk): the library's other writers
+                    # (adding a folder, saving a play) would wait on this scan's lock until it's done.
+                    self.db.commit()
+                    pending, last_commit = 0, time.monotonic()
                 t = tags.read_track(path, art_known=lambda k: k in self._art)
                 if t is None:
                     stats["errors"] += 1
@@ -117,7 +125,7 @@ class Scanner:
                 pending += 1
                 if pending >= 200:
                     self.db.commit()
-                    pending = 0
+                    pending, last_commit = 0, time.monotonic()
         gone = [p for p in existing if p not in seen]
         if gone:
             self.db.remove_paths(gone)

@@ -39,6 +39,14 @@ All notable changes to this project are documented here. Format based on
   - Before any stream is handed to the player (a station, a podcast stream, a music server's song), its
     server's address is looked up in the background, so a slow or broken lookup can't freeze the window.
     One that fails says "Couldn't find the station" instead.
+  - A stream that's still opening when you pause, stop or switch is set aside to finish on its own, instead
+    of the window waiting for it.
+  - Sound devices appearing or going away while nothing plays (a headset sleeping, a monitor's speakers)
+    are picked up when you press play, instead of reopening the player each time.
+- A system keyring that's locked or slow to answer no longer holds up the window at start: Last.fm and
+  ListenBrainz say "Waiting for the system keyring to unlock…" and sign in once it answers.
+- A library scan that's slow reading a file (a network share, a drive waking up) no longer keeps the
+  library locked while it waits, so the rest of the app carries on.
 - Last.fm and ListenBrainz errors are in plain words ("Couldn't reach Last.fm: the server is having trouble;
   try again later" rather than "HTTP Error 500: Internal Server Error"), and their requests carry the real
   version.

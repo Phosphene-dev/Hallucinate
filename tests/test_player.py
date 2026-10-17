@@ -474,3 +474,14 @@ def test_queue_changes_can_be_undone(make_player, clips):
     p.undoQueue()
     assert titles() == ["T0", "T1", "T2", "T3"] and p.current["title"] == "T1"
     assert wait_for(lambda: is_playing(p))  # undoing while music plays keeps the music playing
+
+
+def test_sound_devices_changing_while_idle_wait_until_play(make_player):
+    """A monitor going to sleep takes its HDMI sound away: nothing is reconfigured while nothing plays."""
+    player = make_player()
+    calls = []
+    player._reapply_outputs = lambda: calls.append(1)
+    player._on_audio_outputs_changed()
+    assert calls == [] and player._outputs_changed
+    player.play()
+    assert calls == [1] and not player._outputs_changed

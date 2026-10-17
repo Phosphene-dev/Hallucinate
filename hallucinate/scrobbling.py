@@ -96,6 +96,7 @@ class LastFmScrobbler(QObject):
     syncChanged = Signal()
     lovesImported = Signal(object)  # [(artist, title)] loved on Last.fm, for the library to like
     _loves_done = Signal(object)
+    _keyring_late = Signal(object)
 
     def __init__(self, player, data_dir, parent=None):
         super().__init__(parent)
@@ -144,16 +145,29 @@ class LastFmScrobbler(QObject):
         self._on_track_changed()
 
     def _load_keyring(self):
-        try:
-            if not self._api_key:
-                self._api_key = keyring.get_password(KEYRING_SERVICE, "api_key") or ""
-            if not self._api_secret:
-                self._api_secret = keyring.get_password(KEYRING_SERVICE, "api_secret") or ""
-            self._session_key = keyring.get_password(KEYRING_SERVICE, "session") or ""
-        except Exception as exc:
-            self._keyring_error = str(exc)
-            logger.warning("Last.fm system keyring unavailable: %s", exc)
+        from . import keyringwait
+
+        self._keyring_late.connect(self._apply_keyring)
+        got = keyringwait.read(lambda k: keyring.get_password(KEYRING_SERVICE, k),
+                               ("api_key", "api_secret", "session"), late=self._keyring_late.emit)
+        if got is None:
+            self._set_status("Waiting for the system keyring to unlock…")
+            return
+        self._apply_keyring(got)
+
+    @Slot(object)
+    def _apply_keyring(self, got):
+        if got["error"]:
+            self._keyring_error = got["error"]
+            logger.warning("Last.fm system keyring unavailable: %s", got["error"])
+        values = got["values"]
+        if not self._api_key:
+            self._api_key = values.get("api_key", "")
+        if not self._api_secret:
+            self._api_secret = values.get("api_secret", "")
+        self._session_key = values.get("session", "") or self._session_key
         self._set_status(self._initial_status())
+        self.connectionChanged.emit()
 
     def _load_queue(self):
         try:

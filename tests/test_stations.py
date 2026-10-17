@@ -382,3 +382,40 @@ def test_a_station_whose_server_cant_be_found_says_so_instead_of_freezing(radio)
     assert player.error in ("Connecting…", "") or "Couldn't find" in player.error
     assert wait_for(lambda: "Couldn't find the station" in player.error, timeout=30), player.error
     assert not player.playing and player._voice.player.source().isEmpty()
+
+
+def test_a_stream_still_opening_is_set_aside_not_waited_for(radio):
+    """Stopping or switching a player that's still opening a network stream would make the window wait on
+    it (FFmpeg's address lookup can't be interrupted): the voice gets a new player instead."""
+    import socket
+    import threading
+    import time as _time
+
+    from hallucinate import player as player_module
+
+    _, player, _ = radio
+    silent = socket.socket()
+    silent.bind(("127.0.0.1", 0))
+    silent.listen(5)
+    held = []
+    threading.Thread(target=lambda: held.append(silent.accept()), daemon=True).start()  # accepts, never answers
+    url = f"http://127.0.0.1:{silent.getsockname()[1]}/live"
+    player.playList([{"path": url, "kind": "station", "station": "Silent", "title": "Silent", "artist": "",
+                      "duration": 0, "id": -98}], 0)
+    voice = player._voice
+    assert wait_for(lambda: voice.player.mediaStatus() == player_module.QMediaPlayer.MediaStatus.LoadingMedia,
+                    timeout=10)
+    old = voice.player
+    began = _time.monotonic()
+    player.pause()  # hangs up a station: clears its voice
+    assert _time.monotonic() - began < 0.5
+    assert voice.player is not old and any(item[0] is old for item in player_module._set_aside)
+    assert voice.player.source().isEmpty()
+    player.play()  # the fresh player works like the old one
+    assert wait_for(lambda: voice.player.mediaStatus() == player_module.QMediaPlayer.MediaStatus.LoadingMedia,
+                    timeout=10)
+    player.pause()
+    silent.close()
+    for conn, _addr in held:
+        conn.close()
+    assert wait_for(lambda: not any(item[0] is old for item in player_module._set_aside), timeout=30)
