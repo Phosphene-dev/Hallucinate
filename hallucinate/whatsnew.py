@@ -2,6 +2,14 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "0.9.9.5": [
+        "Fixed: the window could stop responding while ReplayGain measured your music. Songs are now measured "
+        "in a separate helper, so a file the decoder chokes on can't freeze the app.",
+        "The Aurora, Halo and Waves visualizers work on every graphics driver, and glow for dark covers too.",
+        "Narrow windows: nothing runs off the edge, the sidebar folds to icons when there's no room, and the "
+        "player bar keeps its parts apart.",
+        "Shrimp Boat, a soft peach, as an accent colour.",
+    ],
     "0.9.9.4": [
         "Music servers: songs on your Jellyfin, Navidrome or other Subsonic server join your library "
         "(switch it on in Settings → Features, then add a server in Settings → Music servers).",

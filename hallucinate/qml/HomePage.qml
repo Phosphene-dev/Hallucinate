@@ -33,6 +33,7 @@ Item {
             spacing: 26
 
             Column {
+                width: parent.width
                 spacing: 6
                 Text {
                     textFormat: Text.PlainText
@@ -45,6 +46,8 @@ Item {
                 Text {
                     textFormat: Text.PlainText
                     objectName: "librarySummary"
+                    width: parent.width
+                    wrapMode: Text.WordWrap
                     visible: library.trackCount > 0
                     text: [library.albumCount + " albums", library.trackCount + " songs", library.artistCount + " artists",
                            page.facts.seconds ? Theme.fmtHours(page.facts.seconds) + " of music" : ""].filter(s => s).join("  ·  ")

@@ -49,7 +49,7 @@ Column {
                 required property int index
                 required property string modelData
                 spacing: 4
-                width: 44
+                width: Math.max(26, Math.min(44, (panel.width - 6 * (player.eqBands.length - 1)) / Math.max(1, player.eqBands.length)))
                 Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; text: (player.eqGains[index] > 0 ? "+" : "") + Math.round(player.eqGains[index]) ; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); textFormat: Text.PlainText }
                 Slider {
                     id: sl
@@ -91,7 +91,7 @@ Column {
     }
     Text {
         textFormat: Text.PlainText
-        width: 560
+        width: Math.min(560, panel.width)
         wrapMode: Text.Wrap
         text: "Make your headphones sound neutral with an AutoEQ profile. It's applied under the bands above; the "
               + "volume is lowered a little so the correction can't clip."

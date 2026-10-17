@@ -71,6 +71,7 @@ Item {
         property string sub
         property url art
         property bool round: false
+        property real labelRoom: 190  // the names' column: narrower when the card is
         spacing: 12
         Text {
             textFormat: Text.PlainText
@@ -90,7 +91,7 @@ Item {
         }
         Column {
             anchors.verticalCenter: parent.verticalCenter
-            width: 190
+            width: Math.max(60, Math.min(190, parent.labelRoom))
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
@@ -187,12 +188,13 @@ Item {
             spacing: 22
 
             // Title, period kind and navigation
-            Row {
+            Flow {  // wraps in a narrow window
                 width: col.width
                 spacing: 16
                 Text {
                     textFormat: Text.PlainText
-                    anchors.verticalCenter: parent.verticalCenter
+                    height: 36
+                    verticalAlignment: Text.AlignVCenter
                     text: "Recap"
                     color: Theme.text
                     font.family: Theme.displayFamily
@@ -200,7 +202,6 @@ Item {
                     font.weight: Font.Bold
                 }
                 Row {
-                    anchors.verticalCenter: parent.verticalCenter
                     spacing: 6
                     Repeater {
                         model: [{ id: "week", t: "Week" }, { id: "month", t: "Month" }, { id: "year", t: "Year" }]
@@ -214,7 +215,6 @@ Item {
                     }
                 }
                 Row {
-                    anchors.verticalCenter: parent.verticalCenter
                     spacing: 2
                     IconButton { objectName: "recapPrev"; icon: "prev"; size: 14; tip: "Earlier"; onClicked: userLib.stepRecap(-1) }
                     Text {
@@ -334,6 +334,7 @@ Item {
                                 required property var modelData
                                 required property int index
                                 rank: index + 1; label: modelData.name; round: true
+                                labelRoom: shareCard.width - hero.x - hero.width - 10 - 18 - 44 - 24 - 24
                                 sub: page.plural(modelData.plays, "play", "plays"); art: modelData.artUrl || ""
                             }
                         }

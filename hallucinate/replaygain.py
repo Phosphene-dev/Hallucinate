@@ -1,18 +1,15 @@
 """Measure ReplayGain for songs whose files carry no gain tags, an album at a time, in the background.
 
-Like the waveform service, decoding uses QAudioDecoder on the GUI thread (it only delivers buffers there), each
-file opened on a thread first so a slow disk can't hold the window (fileready.py); the
-loudness maths is vectorised (see loudness.py), so the GUI thread only does a little numpy per buffer. Files
-are never modified: results go to the database and are used when a file has no tags of its own."""
+Like waveforms, decoding and measuring happen in a helper process (analysis.py), so a file FFmpeg gets stuck
+on can't freeze the window: the helper is ended and the song counted as failed. Files are never modified: results go to the database and are used when a file has no tags of its own."""
 import logging
 
-from PySide6.QtCore import Property, QObject, QUrl, Signal, Slot
-from PySide6.QtMultimedia import QAudioDecoder
+from PySide6.QtCore import Property, QObject, Signal, Slot
 
 from . import loudness
+from .analysis import Analyser
 from .core.db import Database
 from .core.remote import SQL_LOCAL
-from .fileready import FileReady
 from .waveform import _SCALE
 
 logger = logging.getLogger(__name__)
@@ -45,13 +42,11 @@ class ReplayGainAnalyzer(QObject):
         self._album = None         # (album_key, paths) in progress
         self._results = []         # per path in the current album
         self._index = -1
-        self._decoder = None
-        self._meter = None
         self._done_tracks = 0
         self._total_tracks = 0
         self._current = ""
         self._failed = 0
-        self._ready = FileReady(self)  # each file is opened off this thread first (a slow disk can't hang it)
+        self._analyser = Analyser(self)
         from PySide6.QtCore import QSettings
 
         self._settings = QSettings("hallucinate", "hallucinate")
@@ -137,7 +132,7 @@ class ReplayGainAnalyzer(QObject):
     @Slot()
     def cancel(self):
         self._albums.clear()
-        self._stop_decoder()
+        self._analyser.cancel()
         self._album = None
         self._current = ""
         self.changed.emit()
@@ -145,7 +140,7 @@ class ReplayGainAnalyzer(QObject):
 
     def shutdown(self):
         self._albums.clear()
-        self._stop_decoder()
+        self._analyser.shutdown()
         self._album = None
         if self._db is not None:
             self._db.close()
@@ -173,62 +168,17 @@ class ReplayGainAnalyzer(QObject):
         path = paths[self._index]
         self._current = path
         self.changed.emit()
-        self._ready.check(path, self._opened)
+        self._analyser.submit(path, "loudness", lambda result: self._measured(path, result))
 
-    def _opened(self, ok):
-        if not ok:
-            logger.debug("ReplayGain analysis skipped %s: the file didn't open", self._current)
+    def _measured(self, path, result):
+        if self._album is None or path != self._current:
+            return  # cancelled meanwhile
+        if result is None:
+            logger.debug("ReplayGain analysis failed for %s", path)
             self._failed += 1
-            self._track_done(None)
-            return
-        path = self._current
-        self._meter = loudness.Meter()
-        self._decoder = QAudioDecoder(self)
-        self._decoder.bufferReady.connect(self._on_buffer)
-        self._decoder.finished.connect(self._on_finished)
-        self._decoder.error.connect(self._on_error)
-        self._decoder.setSource(QUrl.fromLocalFile(path))
-        self._decoder.start()
-        self.changed.emit()
-
-    @Slot()
-    def _on_buffer(self):
-        if self._decoder is None:
-            return
-        buf = self._decoder.read()
-        if not buf.isValid():
-            return
-        samples = channel_samples(buf)
-        if samples is not None and samples.size:
-            self._meter.add(samples, buf.format().sampleRate())
-
-    @Slot()
-    def _on_finished(self):
-        if self._decoder is None:
-            return
-        self._track_done(loudness.track_result(self._meter))
-
-    @Slot(QAudioDecoder.Error)
-    def _on_error(self, _error):
-        if self._decoder is None:
-            return
-        logger.debug("ReplayGain analysis failed for %s: %s", self._current, self._decoder.errorString())
-        self._failed += 1
-        self._track_done(None)
-
-    def _track_done(self, result):
-        self._stop_decoder()
-        self._results.append(result)
+        self._results.append(None if result is None or result.get("silent") else result)
         self._done_tracks += 1
         self._next_track()
-
-    def _stop_decoder(self):
-        self._ready.cancel()
-        decoder, self._decoder = self._decoder, None
-        if decoder is not None:
-            decoder.blockSignals(True)  # stop() would report "finished" again, synchronously
-            decoder.stop()
-            decoder.deleteLater()
 
     def _finish_album(self):
         key, paths = self._album

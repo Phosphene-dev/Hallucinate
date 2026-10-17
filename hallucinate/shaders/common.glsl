@@ -41,18 +41,25 @@ float fbm(vec2 p) {
     return v;
 }
 
+// One band, 0..23. Picked without an array: some drivers (OpenGL ES above all) can't index an array made
+// in the shader by a computed number, and then the whole shader draws nothing.
+float bandAt(int i) {
+    vec4 v = i < 4 ? s0 : i < 8 ? s1 : i < 12 ? s2 : i < 16 ? s3 : i < 20 ? s4 : s5;
+    int k = i - (i / 4) * 4;
+    return k == 0 ? v.x : k == 1 ? v.y : k == 2 ? v.z : v.w;
+}
+
 float band(float x) {
     float i = clamp(x, 0.0, 1.0) * 23.0;
     int lo = int(floor(i));
-    float f = fract(i);
-    float b[24] = float[24](s0.x, s0.y, s0.z, s0.w, s1.x, s1.y, s1.z, s1.w, s2.x, s2.y, s2.z, s2.w,
-                            s3.x, s3.y, s3.z, s3.w, s4.x, s4.y, s4.z, s4.w, s5.x, s5.y, s5.z, s5.w);
-    return mix(b[lo], b[min(lo + 1, 23)], f);
+    return mix(bandAt(lo), bandAt(min(lo + 1, 23)), fract(i));
 }
 
-// Cover colours are often muted; push them to full brightness and a bit more saturation so the light glows
+// Cover colours are often muted; push them to full brightness and a bit more saturation so the light glows.
+// A dark cover still gives full-brightness light (a grey one, white); a black one, a soft lilac.
 vec3 vivid(vec4 c) {
-    vec3 v = c.rgb / max(max(c.r, max(c.g, c.b)), 0.08);
+    float top = max(c.r, max(c.g, c.b));
+    vec3 v = top < 0.004 ? vec3(0.78, 0.72, 1.0) : c.rgb / top;
     float l = dot(v, vec3(0.299, 0.587, 0.114));
     return clamp(mix(vec3(l), v, 1.45), 0.0, 1.0);
 }

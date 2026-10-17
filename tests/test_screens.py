@@ -833,7 +833,8 @@ def past_the_edge(window):
     """Visible, unclipped things that reach past the window's right edge. Walked in QML: walking the item tree
     from Python can be handed a stale wrapper when many items come and go."""
     found = QMetaObject.invokeMethod(window, "pastTheEdge", Qt.ConnectionType.DirectConnection,
-                                     Q_RETURN_ARG("QVariant"), Q_ARG("QVariant", None), Q_ARG("QVariant", False))
+                                     Q_RETURN_ARG("QVariant"), Q_ARG("QVariant", None), Q_ARG("QVariant", False),
+                                     Q_ARG("QVariant", None), Q_ARG("QVariant", False))
     return plain(found) or []
 
 
@@ -867,8 +868,59 @@ def test_nothing_runs_off_a_narrow_window(qapp, app_window, width):
         for screen in screens():
             for _ in range(4):
                 qapp.processEvents()
+            if screen == "queue":
+                __import__("conftest").wait_for(lambda: False, 0.4)  # the sidebar folds to icons to make room: let it finish
             problems += [f"{screen}: {p}" for p in past_the_edge(window)]
-    assert not problems, "\n".join(problems[:25])
+    assert not problems, "\n".join(problems[:400])
+
+
+@pytest.mark.parametrize("app_window", ["varied"], indirect=True)
+@pytest.mark.parametrize("width", [760, 945])
+def test_the_update_row_wraps_while_an_update_installs(qapp, app_window, width):
+    """Settings → About while an update downloads: the check box, Check now and Cancel stay inside the card."""
+    window, objects, warnings = app_window
+    updates = objects["shell"].updates
+    if not updates.supported:
+        pytest.skip("this copy doesn't check for updates")
+    updates._kind, updates._installing = "appimage", True
+    updates.changed.emit()
+    try:
+        window.resize(width, 700)
+        assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "settings"))
+        for _ in range(4):
+            qapp.processEvents()
+        problems = overflowing(window) + past_the_edge(window)
+        assert not problems, "\n".join(problems[:25])
+    finally:
+        updates._kind, updates._installing = "", False
+        updates.changed.emit()
+
+
+@pytest.mark.parametrize("app_window", ["varied"], indirect=True)
+@pytest.mark.parametrize("width", [520, 600, 640, 700, 760, 860, 945, 1100, 1300])
+def test_the_player_bar_parts_never_overlap(qapp, app_window, width):
+    """The track info (title, format, stars, signal path), the transport and the controls on the right each
+    keep to their own part of the bar, and the track info's badges stay inside it."""
+    from PySide6.QtCore import QRectF
+    from PySide6.QtQuick import QQuickItem
+
+    window, objects, warnings = app_window
+    objects["player"].setShowTrackInfo(True)  # a track is loaded already: show everything the info can hold
+    window.resize(width, 700)
+    for _ in range(6):
+        qapp.processEvents()
+
+    def box(name):
+        item = window.findChild(QQuickItem, name)
+        return item.mapRectToScene(QRectF(0, 0, item.width(), item.height()))
+
+    info, transport, controls = box("barNowInfo"), box("barTransport"), box("barControls")
+    buttons = window.findChild(QQuickItem, "barTransport").childItems()[0]  # the play, skip… row
+    row = buttons.mapRectToScene(QRectF(0, 0, buttons.width(), buttons.height()))
+    assert info.right() <= min(transport.left(), row.left()) + 1, (info, transport, row)
+    assert max(transport.right(), row.right()) <= controls.left() + 1, (transport, row, controls)
+    assert transport.right() <= controls.left() + 1, (transport, controls)
+    objects["player"].setShowTrackInfo(False)
 
 
 def test_features_switched_off_disappear_everywhere(qapp, app_window):

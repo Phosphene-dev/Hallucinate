@@ -5,6 +5,35 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.9.5] - 2026-10-17
+
+A fix for the window freezing while ReplayGain measured, visualizers that run on every graphics driver, and
+narrow windows where nothing runs off the edge.
+
+### Fixed
+- The window could stop responding while ReplayGain measured your music (the crash report from 0.9.9.3
+  showed it waiting forever on a song the decoder had choked on). Songs are now decoded for their waveform
+  and loudness in a separate helper process: if it gets stuck on a file, or crashes, it's ended, that song is
+  passed over, and the next one gets a fresh helper. The window never waits on it.
+- In a narrow window, or with the queue open, nothing runs off the right edge any more:
+  - Settings: long options wrap, and rows of fields and buttons wrap onto a second line (the update
+    check, Check now and Cancel among them). The equalizer fits.
+  - The Songs filters, the Recap header and an artist's buttons wrap too.
+  - The sidebar folds to icons when there isn't room for it and a page beside it, and the queue and lyrics
+    panels narrow in a small window.
+  - The random album card on Home makes room.
+  - In the player bar, the track's format, stars and signal path no longer run into the time and waveform:
+    what doesn't fit beside the cover is left out, and the play controls move aside rather than over the
+    track. In a window under about 740 pixels, the volume slider, lyrics and radio buttons step out of the
+    bar (the mouse wheel over the bar sets the volume then; radio is in Ctrl+K).
+- The Aurora, Halo and Waves visualizers drew nothing on some graphics drivers. They no longer use the
+  shader feature those drivers can't run, and a style that still can't run shows the bars instead (with the
+  reason in Copy debug info) rather than an empty page.
+- The visualizers glow for a black or colourless cover too, instead of staying almost dark.
+
+### Added
+- Shrimp Boat (PPG's soft peach, #F5BE9D) as an accent colour.
+
 ## [0.9.9.4] - 2026-10-17
 
 Music servers, your choices saved into the files, and a fix for the window freezing while left idle.

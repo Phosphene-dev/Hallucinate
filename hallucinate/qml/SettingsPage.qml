@@ -104,6 +104,7 @@ Item {
             }
             Text {
                 textFormat: Text.PlainText
+                width: parent.width
                 text: "Shows compact format and approximate average bitrate badges in song rows and the now-playing bar."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 wrapMode: Text.WordWrap
@@ -155,8 +156,8 @@ Item {
                     width: parent.width
                     spacing: 8
                     Repeater {
-                        model: ["", "#8f7bff", "#c08bff", "#ff7ab6", "#ff6b6b", "#ff9f43", "#ffd166", "#5fd38d",
-                                "#2ec4b6", "#4cc9f0", "#5b8cff", "#e8e8f0"]
+                        model: ["", "#8f7bff", "#c08bff", "#ff7ab6", "#ff6b6b", "#ff9f43", "#f5be9d", "#ffd166",
+                                "#5fd38d", "#2ec4b6", "#4cc9f0", "#5b8cff", "#e8e8f0"]
                         Rectangle {
                             required property string modelData
                             readonly property bool chosen: themeManager.accentOverride === modelData
@@ -175,7 +176,8 @@ Item {
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: themeManager.setAccentOverride(modelData)
                                 Accessible.role: Accessible.RadioButton
-                                Accessible.name: modelData.length ? "Accent " + modelData : "The theme's own accent"
+                                Accessible.name: modelData === "#f5be9d" ? "Accent Shrimp Boat"  // PPG's paint colour
+                                                 : modelData.length ? "Accent " + modelData : "The theme's own accent"
                                 Accessible.checked: chosen
                                 Accessible.onPressAction: themeManager.setAccentOverride(modelData)
                             }
@@ -268,6 +270,8 @@ Item {
             }
             Text {
                 textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                 text: "Custom themes: " + themeManager.userThemeDirectory + "/*.json"
                 color: Theme.textDim
                 font.family: Theme.fontFamily
@@ -522,18 +526,18 @@ Item {
                     }
                 }
             }
-            Row {
+            Flow {  // wraps in a narrow window
+                width: parent.width
                 spacing: 12
-                Text { anchors.verticalCenter: parent.verticalCenter; text: "ReplayGain"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "ReplayGain"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledCombo {
                     objectName: "rgMode"
                     model: ["Off", "Track", "Album"]
                     currentIndex: ["off", "track", "album"].indexOf(player.replayGainMode)
                     onActivated: player.setReplayGainMode(["off", "track", "album"][currentIndex])
                 }
-                Text { anchors.verticalCenter: parent.verticalCenter; text: "Preamp " + player.replayGainPreamp.toFixed(1) + " dB"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Preamp " + player.replayGainPreamp.toFixed(1) + " dB"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledSlider {
-                    anchors.verticalCenter: parent.verticalCenter
                     width: 140
                     from: -15; to: 15; stepSize: 0.5
                     value: player.replayGainPreamp
@@ -546,7 +550,8 @@ Item {
                 checked: replayGain.auto
                 onToggled: replayGain.setAuto(checked)
             }
-            Row {
+            Flow {  // wraps in a narrow window
+                width: parent.width
                 spacing: 12
                 PillButton {
                     objectName: "analyseReplayGain"
@@ -555,7 +560,8 @@ Item {
                 }
                 Text {
                     textFormat: Text.PlainText
-                    anchors.verticalCenter: parent.verticalCenter
+                    width: Math.min(implicitWidth, parent.width)
+                    wrapMode: Text.WordWrap
                     text: replayGain.busy ? "Measured " + replayGain.done + " of " + replayGain.total + " songs…"
                         : "Measures loudness (EBU R128) for songs whose files have no ReplayGain tags. Files aren't changed."
                     color: Theme.textDim
@@ -575,7 +581,7 @@ Item {
                     onMoved: player.setCrossfade(value)
                 }
             }
-            Text { text: "Gapless playback is always on; with crossfade off, consecutive tracks play back to back."; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
+            Text { width: parent.width; wrapMode: Text.WordWrap; text: "Gapless playback is always on; with crossfade off, consecutive tracks play back to back."; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
         }
         SettingsSection {
             id: sec_sound
@@ -583,7 +589,7 @@ Item {
             title: "Sound"
             keywords: "equalizer eq bass treble headphones autoeq crossfeed"
             query: page.query
-            EqualizerPanel {}
+            EqualizerPanel { width: parent.width }
             Row {
                 spacing: 12
                 Text { anchors.verticalCenter: parent.verticalCenter; text: "Headphone crossfeed"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
@@ -653,12 +659,12 @@ Item {
                 }
             }
 
-            Row {
+            Flow {  // wraps in a narrow window
+                width: parent.width
                 objectName: "backupRow"
                 spacing: 10
                 Text {
                     textFormat: Text.PlainText
-                    anchors.verticalCenter: parent.verticalCenter
                     text: "Your likes, ratings, playlists, history, stations and shows"
                     color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                 }
@@ -701,7 +707,8 @@ Item {
                 }
             }
 
-            Row {
+            Flow {  // wraps in a narrow window
+                width: parent.width
                 spacing: 10
                 TextField {
                     id: pathField
@@ -1021,7 +1028,8 @@ Item {
                 text: "Register an API application, then enter its key and secret. Last.fm account authorization opens in your browser."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
-            Row {
+            Flow {  // wraps in a narrow window
+                width: parent.width
                 spacing: 10
                 TextField {
                     id: apiKey
@@ -1099,7 +1107,8 @@ Item {
                 text: "Connect with a ListenBrainz user token to send now-playing updates and listens. Tokens stay in the system keyring; failed submissions remain queued for retry."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
-            Row {
+            Flow {  // wraps in a narrow window
+                width: parent.width
                 spacing: 10
                 TextField {
                     id: lbToken
@@ -1133,7 +1142,8 @@ Item {
                 font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); wrapMode: Text.WordWrap
             }
             Text { text: "Import listening history"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
-            Row {
+            Flow {  // wraps in a narrow window
+                width: parent.width
                 spacing: 10
                 StyledCombo {
                     id: historySource
@@ -1249,10 +1259,13 @@ Item {
             }
             Text {
                 textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
                 text: "Hallucinate " + shell.appVersion + " — a modern music library and player"
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
-            Row {
+            Flow {
+                width: parent.width
                 spacing: 10
                 PillButton {
                     objectName: "copyDebugInfo"
@@ -1270,17 +1283,18 @@ Item {
                 text: "Updates come through your software centre or package manager."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
-            Row {
+            Flow {  // wraps in a narrow window instead of running off its edge
                 visible: shell.updates.supported
+                width: parent.width
                 spacing: 12
                 StyledCheck {
                     objectName: "updateChecks"
+                    width: Math.min(implicitWidth, parent.width)
                     text: "Tell me when a new version is out (checks GitHub once a day)"
                     checked: shell.updates.enabled
                     onToggled: shell.updates.setEnabled(checked)
                 }
                 PillButton {
-                    anchors.verticalCenter: parent.verticalCenter
                     height: 32
                     text: shell.updates.busy ? "Checking…" : "Check now"
                     enabled: !shell.updates.busy && !shell.offlineMode
@@ -1288,7 +1302,6 @@ Item {
                 }
                 PillButton {
                     objectName: "updateNow"
-                    anchors.verticalCenter: parent.verticalCenter
                     height: 32
                     primary: true
                     visible: shell.updates.canInstall && (shell.updates.available || shell.updates.installing)
@@ -1300,6 +1313,8 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 visible: shell.updates.status.length > 0
+                width: parent.width
+                wrapMode: Text.WordWrap
                 text: shell.updates.status
                 color: shell.updates.available ? Theme.accent : Theme.textDim
                 font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)

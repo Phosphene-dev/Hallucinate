@@ -35,12 +35,11 @@ Item {
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSize(14)
     }
-    Row {
+    Flow {  // the filters wrap onto a second line in a narrow window
         id: filters
         x: 28
         y: title.y + title.height + 12
         width: parent.width - 56
-        height: 40
         spacing: 10
         StyledCombo {
             id: genreFilter

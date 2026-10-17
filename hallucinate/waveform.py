@@ -1,9 +1,7 @@
 """Waveforms for the seek bar: each track is decoded once, in the background, into POINTS loudness values.
 
-QAudioDecoder decodes on FFmpeg's own thread but only delivers buffers to a thread with the GUI event loop
-(created on a QThread it never reports anything), so the service lives on the GUI thread; it only receives
-small 8 kHz mono buffers there, roughly a third of a second of work for a five-minute track in all. Each file
-is opened on a thread first (fileready.py), so a slow disk can't hold the window while the decoder opens it.
+Decoding happens in a helper process (analysis.py), so a file FFmpeg gets stuck on, or a slow disk, can't
+hold up the window; this side only turns the result into the waveform.
 Results are cached on disk (one small file per track, keyed by path, size and modification time, so edited
 files are analysed again) and in memory for the session."""
 import hashlib
@@ -13,12 +11,11 @@ from collections import OrderedDict
 from pathlib import Path
 
 import numpy as np
-from PySide6.QtCore import QObject, QUrl, Signal, Slot
-from PySide6.QtMultimedia import QAudioDecoder, QAudioFormat
+from PySide6.QtCore import QObject, Signal, Slot
+from PySide6.QtMultimedia import QAudioFormat
 
 from .cachetrim import touch_if_stale
 from .core.atomic import write_atomic
-from .fileready import FileReady
 
 logger = logging.getLogger(__name__)
 POINTS = 600
@@ -126,21 +123,19 @@ class Envelope:
 
 
 class _Worker(QObject):
-    """Decodes one track at a time."""
+    """Has one track at a time decoded in the helper process (analysis.py) and turned into its waveform."""
 
     done = Signal(str, object)
 
     def __init__(self, cache_dir, parent=None):
         super().__init__(parent)
+        from .analysis import Analyser
+
         self._cache_dir = Path(cache_dir)
         self._queue = []
-        self._decoder = None
         self._path = ""
-        self._ms = []
-        self._peak = []
-        self._rate = 0
         self._envelopes = set()  # files whose whole envelope is wanted too (CUE sheet albums)
-        self._ready = FileReady(self)  # each file is opened off this thread first (a slow disk can't hang it)
+        self._analyser = Analyser(self)
 
     def want_envelope(self, path):
         self._envelopes.add(path)
@@ -156,49 +151,24 @@ class _Worker(QObject):
         self._next()
 
     def _next(self):
-        if self._decoder is not None or self._ready.waiting or not self._queue:
+        if self._path or not self._queue:
             return
-        self._path = self._queue.pop(0)
-        self._ms, self._peak, self._rate = [], [], 0
-        self._ready.check(self._path, self._opened)
+        self._path = path = self._queue.pop(0)
+        self._analyser.submit(path, "waveform", lambda result: self._decoded(path, result),
+                              envelope=path in self._envelopes)
 
-    def _opened(self, ok):
-        if not ok:
-            path, self._path = self._path, ""
-            logger.debug("Waveform unavailable for %s: the file didn't open", path)
+    def _decoded(self, path, result):
+        if path != self._path:
+            return  # stopped meanwhile
+        self._path = ""
+        if result is None:
+            logger.debug("Waveform unavailable for %s", path)
             self._envelopes.discard(path)
             self.done.emit(path, {"peaks": [], "envelope": None})
             self._next()
             return
-        # Decode in the file's own format: asking QAudioDecoder to resample stalls on some files (MP3).
-        self._decoder = QAudioDecoder(self)
-        self._decoder.bufferReady.connect(self._on_buffer)
-        self._decoder.finished.connect(self._on_finished)
-        self._decoder.error.connect(self._on_error)
-        self._decoder.setSource(QUrl.fromLocalFile(self._path))
-        self._decoder.start()
-
-    @Slot()
-    def _on_buffer(self):
-        if self._decoder is None:
-            return
-        buf = self._decoder.read()
-        if buf.isValid() and not self._rate:
-            self._rate = buf.format().sampleRate()
-        samples = mono_samples(buf) if buf.isValid() else None
-        if samples is not None and samples.size:
-            ms, peak = blocks_from_samples(samples)
-            self._ms.append(ms)
-            self._peak.append(peak)
-
-    @Slot()
-    def _on_finished(self):
-        if self._decoder is None:
-            return
-        ms = np.concatenate(self._ms) if self._ms else np.zeros(0, np.float32)
-        peak = np.concatenate(self._peak) if self._peak else np.zeros(0, np.float32)
-        peaks = peaks_from_blocks(ms, peak) if ms.size else []
-        name = cache_name(self._path)
+        peaks = list(result.get("peaks") or [])
+        name = cache_name(path)
         if peaks and name:
             try:
                 self._cache_dir.mkdir(parents=True, exist_ok=True)
@@ -207,39 +177,19 @@ class _Worker(QObject):
             except OSError as exc:
                 logger.debug("Could not cache waveform: %s", exc)
         envelope = None
-        if self._path in self._envelopes and ms.size and self._rate:
-            self._envelopes.discard(self._path)
-            envelope = Envelope(ms, peak, self._rate)
+        if path in self._envelopes and result.get("envelope"):
+            self._envelopes.discard(path)
+            envelope = Envelope(*result["envelope"])
             if name:
                 envelope.save(self._cache_dir / (name[:-3] + ".env.npz"))
-        self._finish({"peaks": peaks, "envelope": envelope})
-
-    @Slot(QAudioDecoder.Error)
-    def _on_error(self, _error):
-        if self._decoder is None:
-            return
-        logger.debug("Waveform unavailable for %s: %s", self._path, self._decoder.errorString())
-        self._envelopes.discard(self._path)
-        self._finish({"peaks": [], "envelope": None})
-
-    def _finish(self, result):
-        path, decoder = self._path, self._decoder
-        self._decoder, self._path, self._ms, self._peak = None, "", [], []
-        decoder.blockSignals(True)  # stop() would report "finished" again, synchronously
-        decoder.stop()
-        decoder.deleteLater()
-        self.done.emit(path, result)
+        self.done.emit(path, {"peaks": peaks, "envelope": envelope})
         self._next()
 
     @Slot()
     def stop(self):
         self._queue.clear()
-        self._ready.cancel()
         self._path = ""
-        if self._decoder is not None:
-            self._decoder.blockSignals(True)
-            self._decoder.stop()
-            self._decoder = None
+        self._analyser.shutdown()
 
 
 class WaveformService(QObject):

@@ -10,6 +10,12 @@ Item {
     property bool lyricsOpen: false
     readonly property bool compact: width < 1100   // tiling window managers, small screens
     readonly property bool narrow: width < 860
+    readonly property bool tight: width < 740    // half of a small screen: only what's needed most
+
+    WheelHandler {  // with no room for the volume slider, the wheel over the bar is the volume
+        enabled: bar.tight
+        onWheel: event => player.setVolume(Math.max(0, Math.min(1, player.volume + event.angleDelta.y / 1200)))
+    }
     readonly property bool episode: player.hasTrack && player.current.kind === "episode"
     signal toggleQueue()
     signal toggleLyrics()
@@ -53,8 +59,9 @@ Item {
     // Now playing
     Row {
         id: nowInfo
+        objectName: "barNowInfo"
         anchors { left: parent.left; leftMargin: 16; verticalCenter: parent.verticalCenter }
-        width: Math.max(160, bar.width * (bar.compact ? 0.24 : 0.27))
+        width: bar.tight ? 140 : Math.max(160, bar.width * (bar.narrow ? 0.22 : bar.compact ? 0.24 : 0.27))
         spacing: 12
         Cover {
             id: art
@@ -122,27 +129,46 @@ Item {
                 }
             }
             Row {
+                id: infoRow
+                // Only what fits beside the cover: the signal path goes first, then the stars
+                readonly property real room: parent.width
+                width: Math.min(implicitWidth, room)
+                clip: true
                 spacing: 6
                 visible: player.hasTrack
                 AudioInfoBadge {
+                    id: infoBadge
                     visible: player.showTrackInfo && player.hasTrack
                     formatName: player.hasTrack ? player.current.codec || "" : ""
                     bitrate: player.hasTrack ? player.current.bitrate || 0 : 0
                 }
-                StarRating { visible: !bar.narrow && !(player.current.kind || "").length; anchors.verticalCenter: parent.verticalCenter; path: player.hasTrack ? player.current.path || "" : ""; size: 12 }
-                SignalPath { visible: player.hasTrack && stages.length > 0 }
+                StarRating {
+                    id: infoStars
+                    visible: !bar.narrow && !(player.current.kind || "").length
+                             && (infoBadge.visible ? infoBadge.width + 6 : 0) + implicitWidth <= infoRow.room
+                    anchors.verticalCenter: parent.verticalCenter; path: player.hasTrack ? player.current.path || "" : ""; size: 12
+                }
+                SignalPath {
+                    visible: player.hasTrack && stages.length > 0
+                             && (infoBadge.visible ? infoBadge.width + 6 : 0) + (infoStars.visible ? infoStars.width + 6 : 0)
+                                + implicitWidth <= infoRow.room
+                }
             }
         }
     }
 
-    // Transport: centred, as wide as the room between the track info and the controls on the right allows
+    // Transport: centred, as wide as the room between the track info and the controls on the right allows. In
+    // a narrow window it moves off centre rather than over the track info.
     Column {
-        anchors.centerIn: parent
-        width: Math.max(200, Math.min(560, bar.width * 0.42, bar.width - 2 * Math.max(nowInfo.width + 24, rightControls.width + 16) - 24))
+        objectName: "barTransport"
+        anchors.verticalCenter: parent.verticalCenter
+        width: Math.max(transportButtons.implicitWidth, 200, Math.min(560, bar.width * 0.42, bar.width - 2 * Math.max(nowInfo.width + 24, rightControls.width + 16) - 24))
+        x: Math.max(nowInfo.x + nowInfo.width + 12, Math.min((bar.width - width) / 2, rightControls.x - width - 12))
         spacing: 4
         Row {
+            id: transportButtons
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 6
+            spacing: bar.tight ? 0 : 6
             IconButton { visible: !bar.episode; icon: "shuffle"; active: player.shuffle; onClicked: player.toggleShuffle() }
             IconButton { objectName: "skipBack"; visible: bar.episode; icon: "skipback:" + podcasts.options.skipBack; tip: "Back " + podcasts.options.skipBack + " seconds"; onClicked: player.seekBy(-1000 * podcasts.options.skipBack) }
             IconButton { icon: "prev"; onClicked: player.previous() }
@@ -176,7 +202,7 @@ Item {
             }
             IconButton {
                 objectName: "radioButton"
-                visible: !bar.episode
+                visible: !bar.episode && !bar.tight  // (also in Ctrl+K)
                 icon: "radio"
                 active: player.radio
                 tip: player.radio ? "Radio on: similar songs keep playing after the queue" : "Radio: keep playing similar songs when the queue ends"
@@ -205,9 +231,11 @@ Item {
     // Volume + queue
     Row {
         id: rightControls
+        objectName: "barControls"
         anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
         spacing: 6
         IconButton {
+            visible: !bar.tight
             icon: "more"; tip: "Speed and sleep timer"
             active: player.speed !== 1 || player.sleepRemaining >= 0 || player.sleepAfterTrack
             onClicked: playbackMenu.popup()
@@ -240,12 +268,13 @@ Item {
         }
         IconButton { objectName: "openNowPlaying"; icon: "fullscreen"; tip: "Now playing (F)"; onClicked: Nav.toggleNowPlaying() }
         IconButton { icon: "expand"; tip: "Mini player (Ctrl+M)"; visible: !bar.compact; onClicked: shell.toggleMini() }
-        IconButton { visible: shell.features.lyrics !== false; icon: "note"; active: bar.lyricsOpen; tip: "Lyrics"; onClicked: bar.toggleLyrics() }
+        IconButton { visible: shell.features.lyrics !== false && !bar.tight; icon: "note"; active: bar.lyricsOpen; tip: "Lyrics"; onClicked: bar.toggleLyrics() }
         IconButton { icon: "queue"; active: bar.queueOpen; onClicked: bar.toggleQueue() }
-        Icon { anchors.verticalCenter: parent.verticalCenter; width: 18; height: 18; name: "volume"; color: Theme.textDim }
+        Icon { visible: !bar.tight; anchors.verticalCenter: parent.verticalCenter; width: 18; height: 18; name: "volume"; color: Theme.textDim }
         StyledSlider {
+            visible: !bar.tight  // hidden in a tight bar: the mouse wheel over the bar sets the volume then
             anchors.verticalCenter: parent.verticalCenter
-            width: bar.compact ? 64 : 100
+            width: bar.narrow ? 48 : bar.compact ? 64 : 100
             from: 0; to: 1
             value: player.volume
             onMoved: player.setVolume(value)

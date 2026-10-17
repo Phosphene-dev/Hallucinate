@@ -10,7 +10,8 @@ Item {
     property bool active: visible
     property real quality: 0.5          // shader resolution relative to the item (they are soft anyway)
     readonly property bool gpu: GraphicsInfo.api !== GraphicsInfo.Software && GraphicsInfo.api !== GraphicsInfo.Unknown
-    readonly property bool shaderStyle: style !== "bars" && gpu
+    property var unusable: ({})         // styles whose shader this computer's graphics driver couldn't run
+    readonly property bool shaderStyle: style !== "bars" && gpu && !unusable[style]
     readonly property var levels: player.visualizerLevels || []
 
     // Smoothed values handed to the shaders: fast attack, slower release, so motion follows the music without jitter
@@ -72,6 +73,15 @@ Item {
         ShaderEffect {
             objectName: "visualizerShader"
             fragmentShader: "shaders/" + vis.style + ".frag.qsb"
+            // A driver that can't run a style shouldn't leave an empty black page: show the bars instead, and
+            // say why in the log (Copy debug info carries it).
+            onStatusChanged: {
+                if (status !== ShaderEffect.Error) return
+                console.warn("The " + vis.style + " visualizer can't run on this graphics driver, showing bars: " + log)
+                var u = Object.assign({}, vis.unusable)
+                u[vis.style] = true
+                vis.unusable = u
+            }
             property real time: vis.t
             property real bass: vis.bass
             property real mid: vis.mid
