@@ -26,8 +26,8 @@ pages stay readable on ultrawide screens.
   higher. As before, only albums without a genre are looked up, and nothing is written until you've
   checked it: genres you set yourself are never replaced.
 - Artist bios on the artist page, from Wikipedia (found through MusicBrainz, so a band isn't mixed up with
-  a film of the same name), Last.fm or Discogs. Choose where bios come from in Settings, or for one artist on
-  their page, or write your own, which is always shown instead. Your own bios are in backups. Looking bios
+  a film of the same name), Last.fm or Discogs. Choose where bios come from in Settings (all three in turn,
+  or only one), or for one artist on their page, or write your own, which is always shown instead. Your own bios are in backups. Looking bios
   up when a page opens can be switched off.
 
 ### Changed
@@ -37,6 +37,7 @@ pages stay readable on ultrawide screens.
 ### Fixed
 - With a locked system keyring that shows no unlock prompt, the app could take nine seconds to open (three
   waits of three seconds). It now waits once.
+- Saving genres found online skips an album you've given a genre in the meantime: yours stays.
 - Tests can't reach the internet by accident.
 
 ## [0.9.9.6] - 2026-10-17

@@ -455,10 +455,10 @@ class MetadataEditor(QObject):
         use = src.genre_sources() if src else ("MusicBrainz",)
         lastfm_key = src.lastfm_key() if src and "Last.fm" in use else ""
         data_dir = self._data_dir
+        token = src.discogs_token(0) if src and "Discogs" in use else ""  # (never waits on a locked keyring)
         known = []
 
         def find(artist, album, cache=None):
-            token = src.discogs_token() if src and "Discogs" in use else ""
             if lastfm_key and data_dir and not known:
                 known.append(genrelist.known(data_dir))
             return genrefinder.find(artist, album, discogs_token=token, lastfm_key=lastfm_key,
@@ -621,7 +621,13 @@ class MetadataEditor(QObject):
                 for key, genre in pairs:
                     if self._save_stop.is_set():
                         break
-                    paths = [t["path"] for t in db.album_tracks(key)]
+                    tracks = db.album_tracks(key)
+                    if any((t.get("genre") or "").strip() for t in tracks):
+                        # you've given it a genre since it was looked up: yours stays
+                        albums += 1
+                        self._genres_progress.emit({"saved": albums})
+                        continue
+                    paths = [t["path"] for t in tracks]
                     try:
                         result = self._save_tags(db, paths, {"genre": genre})
                     except Exception as exc:  # noqa: BLE001 - one album that can't be written doesn't stop the rest

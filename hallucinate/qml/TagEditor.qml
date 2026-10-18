@@ -22,7 +22,7 @@ Dialog {
     // Several genres are one text, the main one first: "IDM; Ambient; Electronic"
     function genreList(text) {
         var out = [], seen = {}
-        var parts = String(text || "").split(/\s*[;\/|,]\s*/)
+        var parts = String(text || "").split(/\s*[;\/|]\s*/)
         for (var i = 0; i < parts.length; i++) {
             var name = parts[i].trim(), key = name.toLowerCase()
             if (name.length && !seen[key]) { seen[key] = true; out.push(name) }

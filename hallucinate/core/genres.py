@@ -17,7 +17,8 @@ def fold(s):
     return "".join(c for c in s if not unicodedata.combining(c))
 
 
-_SPLIT = re.compile(r"\s*[;/|,\x00]\s*")
+# (not commas: "Folk, World, & Country" is one genre)
+_SPLIT = re.compile(r"\s*[;/|\x00]\s*")
 
 
 def split(text):
@@ -49,4 +50,12 @@ def main(text):
 def has(text, name):
     """Whether `name` is one of the genres in `text` (case and accents aside)."""
     wanted = fold(name or "").strip()
-    return bool(wanted) and any(fold(g) == wanted for g in split(text))
+    if not wanted:
+        return False
+    # the whole text too: a smart playlist saved before as "Genre is Rock/Pop" still finds "Rock/Pop"
+    return fold(text or "").strip() == wanted or any(fold(g) == wanted for g in split(text))
+
+
+def key(name):
+    """For matching spellings of one genre: "Hip-Hop", "hip hop" and "HipHop" are the same."""
+    return re.sub(r"[\s\-_.&]+", "", fold(name)).replace("and", "")

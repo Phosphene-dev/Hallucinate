@@ -19,7 +19,7 @@ Dialog {
     function recount() { var n = 0; for (var i = 0; i < rows.count; i++) if (rows.get(i).keep) n++; kept = n }
     function setKeep(i, on) { rows.setProperty(i, "keep", on); recount() }
     function genreList(text) {
-        var out = [], parts = String(text || "").split(/\s*[;\/|,]\s*/)
+        var out = [], parts = String(text || "").split(/\s*[;\/|]\s*/)
         for (var i = 0; i < parts.length; i++) if (parts[i].trim().length && indexIn(out, parts[i].trim()) < 0) out.push(parts[i].trim())
         return out
     }

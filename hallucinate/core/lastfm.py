@@ -39,7 +39,7 @@ def _get(method, params, api_key, timeout=15):
 
 
 def filter_tags(tags, known=None, artist=""):
-    """The tags that are genres, best first: tagged by enough people and, with `known` (folded genre names),
+    """The tags that are genres, best first: tagged by enough people and, with `known` (genres.key names),
     on that list; without it, anything that doesn't look like a non-genre tag."""
     out = []
     for t in tags or []:
@@ -52,7 +52,7 @@ def filter_tags(tags, known=None, artist=""):
         if not name or count < MIN_COUNT or len(name) > 40 or _norm(name) == _norm(artist):
             continue
         if known is not None:
-            if genre_names.fold(name) not in known:
+            if genre_names.key(name) not in known:
                 continue
         elif _NOT_GENRES.match(low):
             continue

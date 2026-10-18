@@ -18,6 +18,7 @@ class OnlineSources(QObject):
     changed = Signal()
     _keyring_late = Signal(object)
     _checked = Signal(str, str, str)  # token, user, error
+    _stored = Signal(str)  # a keyring write finished: "" or what went wrong
 
     def __init__(self, lastfm_key=None, parent=None):
         super().__init__(parent)
@@ -26,18 +27,21 @@ class OnlineSources(QObject):
         self._token, self._user = "", ""
         self._status, self._busy = "", False
         self._loaded = threading.Event()
+        self._acted = False  # you connected or disconnected: a late keyring answer mustn't undo it
         self._keyring_late.connect(self._apply_keyring)
         self._checked.connect(self._on_checked)
-        # Not waited for: a locked keyring mustn't hold up the start (it answers in the background)
+        self._stored.connect(self._on_stored)
+        # A keyring that doesn't answer is waited for in the background (see keyringwait)
         got = keyringwait.read(lambda k: keyring.get_password(KEYRING_SERVICE, k), ("token", "user"),
-                               late=self._keyring_late.emit, timeout=0.2)
+                               late=self._keyring_late.emit)
         if got is not None:
             self._apply_keyring(got)
 
     @Slot(object)
     def _apply_keyring(self, got):
-        self._token = got["values"].get("token", "") or self._token
-        self._user = got["values"].get("user", "") or self._user
+        if not self._acted:
+            self._token = got["values"].get("token", "") or self._token
+            self._user = got["values"].get("user", "") or self._user
         if got["error"]:
             logger.info("Discogs token unavailable: %s", got["error"])
         self._loaded.set()
@@ -102,7 +106,7 @@ class OnlineSources(QObject):
 
     @Property(str, notify=changed)
     def bioSource(self):
-        """Where bios come from: "" (the first that has one: Wikipedia, then Last.fm, then Discogs) or one."""
+        """Where bios come from: "" (the first that has one: Wikipedia, then Last.fm, then Discogs) or only one."""
         value = str(self._settings.value("sources/bio", "") or "")
         return value if value in BIO_SOURCES else ""
 
@@ -150,26 +154,38 @@ class OnlineSources(QObject):
                             else f"Couldn't check the token: {error}")
             self.changed.emit()
             return
-        failed = keyringwait.call(lambda: (keyring.set_password(KEYRING_SERVICE, "token", token),
-                                           keyring.set_password(KEYRING_SERVICE, "user", user)))
+        self._acted = True
         self._token, self._user = token, user
-        self._status = (f"Connected as {user}" if user else "Connected") + (
-            f" (not saved for next time: {failed})" if failed else "")
+        self._status = f"Connected as {user}" if user else "Connected"
         self.changed.emit()
+        self._store(lambda: (keyring.set_password(KEYRING_SERVICE, "token", token),
+                             keyring.set_password(KEYRING_SERVICE, "user", user)))
 
     @Slot()
     def forgetDiscogs(self):
+        self._acted = True
         self._token, self._user, self._status = "", "", "Disconnected from Discogs"
+        self.changed.emit()
 
         def forget():
             for key in ("token", "user"):
                 if keyring.get_password(KEYRING_SERVICE, key):
                     keyring.delete_password(KEYRING_SERVICE, key)
 
-        failed = keyringwait.call(forget)
+        self._store(forget)
+
+    def _store(self, fn):
+        """Keyring writes on a thread of their own: a locked keyring mustn't freeze the window."""
+        def run():
+            self._stored.emit(keyringwait.call(fn))
+
+        threading.Thread(target=run, name="discogs-keyring", daemon=True).start()
+
+    @Slot(str)
+    def _on_stored(self, failed):
         if failed:
-            self._status += f" (the keyring still holds the token: {failed})"
-        self.changed.emit()
+            self._status += f" (the system keyring couldn't be updated: {failed})"
+            self.changed.emit()
 
     # --- for the lookups (any thread) -------------------------------------------------------------------
     def discogs_token(self, wait=3.0):

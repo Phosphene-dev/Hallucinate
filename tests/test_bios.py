@@ -168,3 +168,40 @@ def test_your_bios_are_in_backups(tmp_path, library):
     db = Database(fresh)
     assert db.conn.execute("SELECT own FROM artist_bios WHERE s_aa='boc'").fetchone()[0] == "Mine"
     db.close()
+
+
+def test_genre_text_with_commas_and_old_rules_still_match():
+    from hallucinate.core import genres
+
+    assert genres.split("Folk, World, & Country; Blues") == ["Folk, World, & Country", "Blues"]
+    assert genres.has("Rock/Pop", "Rock/Pop") and genres.has("Rock/Pop", "pop")
+    assert genres.key("Hip-Hop") == genres.key("hip hop") == genres.key("HipHop")
+
+
+def test_a_chosen_default_source_is_the_only_one_asked(qapp, library, monkeypatch):
+    calls = []
+    monkeypatch.setattr(bios, "lookup", lambda name, album, order, *a: calls.append(order) or None)
+    ab = bios.ArtistBios(library, Sources(first="Wikipedia", lastfm_key="k", token="t"))
+    try:
+        ab.ensure("Boards of Canada")
+        assert wait_for(lambda: calls == [["Wikipedia"]])
+        assert wait_for(lambda: not ab.bio("Boards of Canada")["busy"])
+        ab.pick("Boards of Canada", "Discogs")
+        assert wait_for(lambda: len(calls) == 2 and not ab.bio("Boards of Canada")["busy"])
+        ab.ensure("Boards of Canada")  # Discogs had nothing a moment ago: not asked again on every visit
+        assert len(calls) == 2
+    finally:
+        ab.shutdown()
+
+
+def test_a_late_keyring_answer_doesnt_undo_a_disconnect(qapp, monkeypatch):
+    import keyring
+
+    from hallucinate.onlinesources import OnlineSources
+
+    for name in ("get_password", "set_password", "delete_password"):
+        monkeypatch.setattr(keyring, name, lambda *_: None)
+    src = OnlineSources(lambda: "")
+    src.forgetDiscogs()
+    src._apply_keyring({"values": {"token": "old", "user": "me"}, "error": ""})
+    assert not src.discogsConnected

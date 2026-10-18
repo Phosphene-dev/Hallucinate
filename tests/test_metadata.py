@@ -631,3 +631,28 @@ def test_hallucinates_own_tag_saves_dont_make_the_library_rescan(tmp_path):
     assert not tagedit.written_recently(str(tmp_path))
     tagedit.write_tags(str(song), {"genre": "IDM"})
     assert tagedit.written_recently(str(tmp_path)) and not tagedit.written_recently(str(tmp_path / "other"))
+
+
+def test_an_album_given_a_genre_since_the_lookup_keeps_yours(qapp, lib, monkeypatch):
+    from hallucinate.core import musicbrainz
+    from hallucinate.core.db import Database
+
+    tmp, root = lib
+    monkeypatch.setattr(musicbrainz, "find_genre", lambda artist, album, cache=None:
+                        {"genre": "Dream Pop", "genres": ["Dream Pop"], "source": "album", "release": album})
+    ed = MetadataEditor(tmp / "lib.db", tmp / "art")
+    done = []
+    ed.genresFinished.connect(done.append)
+    try:
+        ed.findMissingGenres()
+        assert wait_for(lambda: done, 10)
+        key = ed.genreProposals[0]["album_key"]
+        db = Database(tmp / "lib.db")
+        db.conn.execute("UPDATE tracks SET genre='Mine' WHERE album_key=?", (key,))
+        db.commit()
+        db.close()
+        ed.saveGenres([{"album_key": key, "genre": "Dream Pop"}])
+        assert wait_for(lambda: not ed.genresSaving, 10)
+        assert ed.trackInfo(str(root / "01.mp3"))["genre"] != "Dream Pop"
+    finally:
+        ed.shutdown()

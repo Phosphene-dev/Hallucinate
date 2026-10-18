@@ -16,7 +16,7 @@ _cache = {}
 
 
 def known(data_dir, now=None):
-    """The folded genre names, or None."""
+    """The genre names (as genres.key), or None."""
     now = time.time() if now is None else now
     path = Path(data_dir) / "genres-musicbrainz.txt"
     if path in _cache:
@@ -38,7 +38,7 @@ def known(data_dir, now=None):
         except (OSError, ValueError):
             pass
     try:
-        names = {genre_names.fold(line.strip()) for line in path.read_text(encoding="utf-8").splitlines()
+        names = {genre_names.key(line.strip()) for line in path.read_text(encoding="utf-8").splitlines()
                  if line.strip()}
     except OSError:
         names = None

@@ -59,6 +59,7 @@ class ArtistBios(QObject):
         self._sources = sources
         self._jobs = queue.Queue()
         self._busy = set()
+        self._tried = {}  # the one source asked, when only one was (remembered with "nothing found")
         self._lang = (QLocale().name() or "en")[:2].lower()
         self._found.connect(self._on_found)
         self._closing = False
@@ -84,7 +85,9 @@ class ArtistBios(QObject):
         if picked:
             return [picked] if picked in ready else []
         first = src.bioSource if src else ""
-        return [s for s in ([first] if first else []) + list(BIO_SOURCES) if s in ready and s][:3]
+        if first:  # "Last.fm only": the others aren't asked
+            return [first] if first in ready else []
+        return [s for s in BIO_SOURCES if s in ready]
 
     @Slot(str)
     def ensure(self, name):
@@ -101,7 +104,7 @@ class ArtistBios(QObject):
             age = time.time() - r["fetched"]
             wanted = r["picked"] or ""
             if (r["text"] and age < REFRESH_S and (not wanted or r["source"] == wanted)) or \
-                    (not r["text"] and age < RETRY_S and not wanted):
+                    (not r["text"] and age < RETRY_S and r["source"] in ("", wanted)):
                 return
         self._ask(name)
 
@@ -127,6 +130,7 @@ class ArtistBios(QObject):
                ORDER BY COUNT(*) DESC LIMIT 1""", (key,)).fetchone()
         self._busy.add(key)
         self.changed.emit(key)
+        self._tried[key] = order[0] if len(order) == 1 else ""
         self._jobs.put((key, name, album[0] if album else "", order, token, lastfm_key))
 
     def _work(self):
@@ -155,7 +159,8 @@ class ArtistBios(QObject):
                 "INSERT INTO artist_bios(s_aa, text, source, url, fetched) VALUES(?, ?, ?, ?, ?) "
                 "ON CONFLICT(s_aa) DO UPDATE SET text=excluded.text, source=excluded.source, url=excluded.url, "
                 "fetched=excluded.fetched",
-                (key, found.get("text", ""), found.get("source", ""), found.get("url", ""), time.time()))
+                (key, found.get("text", ""), found.get("source", "") or self._tried.get(key, ""), found.get("url", ""),
+                 time.time()))
             self._db.conn.commit()
         self.changed.emit(key)
 
@@ -184,7 +189,8 @@ class ArtistBios(QObject):
             (key, source))
         self._db.conn.commit()
         self.changed.emit(key)
-        self.refresh(name)
+        if not self._sources or self._sources.fetchBios:
+            self.refresh(name)
 
     @Property(str, constant=True)
     def language(self):

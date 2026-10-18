@@ -1042,16 +1042,16 @@ Item {
             Flow {
                 width: parent.width
                 spacing: 12
-                Text { textFormat: Text.PlainText; text: "Bios come first from"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                Text { textFormat: Text.PlainText; text: "Bios come from"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
                 StyledCombo {
                     objectName: "bioSource"
                     width: 220
                     readonly property var names: ["", "Wikipedia", "Last.fm", "Discogs"]
-                    model: ["Wikipedia, then the others", "Wikipedia only", "Last.fm" + (sources.lastfmAvailable ? "" : " (not set up)"),
-                            "Discogs" + (sources.discogsConnected ? "" : " (not set up)")]
+                    model: ["Wikipedia, then Last.fm, then Discogs", "Wikipedia only", "Last.fm only" + (sources.lastfmAvailable ? "" : " (not set up)"),
+                            "Discogs only" + (sources.discogsConnected ? "" : " (not set up)")]
                     currentIndex: Math.max(0, names.indexOf(sources.bioSource))
                     onActivated: function (i) { sources.setBioSource(names[i]) }
-                    Accessible.name: "Where artist bios come from first"
+                    Accessible.name: "Where artist bios come from"
                 }
             }
             StyledCheck {
