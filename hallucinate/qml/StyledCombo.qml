@@ -5,6 +5,13 @@ import "."
 ComboBox {
     id: combo
     width: 200
+    // The choice as the app has it (an index). A ComboBox stops following its currentIndex binding once you pick
+    // from it, so a choice changed elsewhere (Ctrl+K, a dialog, the system) would no longer show: with
+    // `selection` bound instead, the shown choice always follows the app. -2: not used.
+    property int selection: -2
+    onSelectionChanged: if (selection > -2) currentIndex = Math.max(0, selection)
+    Component.onCompleted: if (selection > -2) currentIndex = Math.max(0, selection)
+    onActivated: if (selection > -2) Qt.callLater(function () { if (combo.selection > -2) combo.currentIndex = Math.max(0, combo.selection) })
     contentItem: Text {
         textFormat: Text.PlainText
         leftPadding: 12
