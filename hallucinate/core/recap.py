@@ -66,12 +66,19 @@ def _ts(day):
     return time.mktime(day.timetuple())
 
 
-def _top(db, group, cols, start, end, limit):
-    """Most played in the window, grouped by `group`; aggregates the log alone, then looks up the library
-    (album key, cover, length) only for the winners through one of their files."""
+# An album in the log: the library's album (so a compilation's many artists stay one album), or for a listen
+# with no song in the library (imported, or since removed) its album's name
+ALBUM_GROUP = "COALESCE('k' || t.album_key, 'n' || l.s_artist || char(31) || l.s_album)"
+
+
+def _top(db, group, cols, start, end, limit, tracks=False):
+    """Most played in the window, grouped by `group`; aggregates the log alone (with the library's songs
+    joined as t when `tracks`), then looks up the library (album key, cover, length) only for the winners
+    through one of their files."""
+    join = "LEFT JOIN tracks t ON t.path = l.path" if tracks else ""
     rows = db._rows(
         f"""SELECT {cols}, MAX(l.path) AS path, COUNT(*) AS plays, COALESCE(SUM(l.duration), 0) AS seconds
-            FROM play_log l WHERE l.ts >= ? AND l.ts < ? GROUP BY {group}
+            FROM play_log l {join} WHERE l.ts >= ? AND l.ts < ? GROUP BY {group}
             ORDER BY plays DESC, seconds DESC LIMIT ?""",
         (start, end, limit),
     )
@@ -99,8 +106,8 @@ def recap(db, period, now=None, limit=5):
     change = (summary["seconds"] - previous["seconds"]) / previous["seconds"] if previous["seconds"] else None
 
     artists = _top(db, "l.s_artist", "MIN(l.artist) AS name", start, end, limit)
-    albums = _top(db, "l.s_artist, l.s_album", "MIN(l.album) AS album, MIN(l.artist) AS album_artist",
-                  start, end, limit)
+    albums = _top(db, ALBUM_GROUP, "MIN(l.album) AS album, COALESCE(MAX(t.album_artist), MIN(l.artist)) AS album_artist",
+                  start, end, limit, tracks=True)
     songs = _top(db, "l.s_artist, l.s_title", "MIN(l.title) AS title, MIN(l.artist) AS artist, MIN(l.album) AS album",
                  start, end, limit)
     discoveries = db._rows(
@@ -114,14 +121,16 @@ def recap(db, period, now=None, limit=5):
     for d in discoveries[:limit]:
         t = db.conn.execute("SELECT art FROM tracks WHERE path = ?", (d["path"] or "",)).fetchone()
         d["art"] = t["art"] if t else ""
-    genres = {}
+    genres, names = {}, {}  # by folded name, so "Hip-Hop" and "hip-hop" count as one (the first spelling shown)
     for g, n in db.conn.execute(
         """SELECT t.genre, COUNT(*) FROM play_log l JOIN tracks t ON t.path = l.path
            WHERE l.ts >= ? AND l.ts < ? AND t.genre != '' GROUP BY t.genre""",
         (start, end),
     ):
         for part in genre_names.split(g):
-            genres[part] = genres.get(part, 0) + n
+            k = genre_names.fold(part)
+            names.setdefault(k, part)
+            genres[k] = genres.get(k, 0) + n
 
     days = history.daily_totals(db, start=start, end=end)
     busiest = max(days.items(), key=lambda kv: (kv[1]["seconds"], kv[1]["plays"]), default=None)
@@ -154,7 +163,7 @@ def recap(db, period, now=None, limit=5):
         "summary": summary, "change": change,
         "topArtists": artists, "topAlbums": albums, "topSongs": songs,
         "discoveries": discoveries[:limit], "discoveryCount": len(discoveries),
-        "genres": [g for g, _ in sorted(genres.items(), key=lambda kv: (-kv[1], kv[0]))[:3]],
+        "genres": [names[g] for g, _ in sorted(genres.items(), key=lambda kv: (-kv[1], kv[0]))[:3]],
         "busiestDay": {"day": busiest[0], **busiest[1]} if busiest else None,
         "hours": hours, "weekdays": weekdays, "streak": streak, "albumsAdded": added, "months": months,
         "hasNext": _ts(end_day) <= (time.time() if now is None else now),

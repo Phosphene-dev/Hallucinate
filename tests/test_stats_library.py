@@ -58,7 +58,7 @@ def test_filter_values_filtered_tracks_and_duplicate_detection(db, scan, music):
     first = dict(rows[0])
     for row in rows:
         db.conn.execute(
-            "UPDATE tracks SET genre=?, year=?, fmt=? WHERE id=?",
+            "UPDATE tracks SET genre=?, s_genre='ambient', year=?, fmt=? WHERE id=?",
             ("Ambient", 2024, "MP3" if row["path"].endswith(".mp3") else "WAV", row["id"]),
         )
     duplicate = dict(first)
@@ -72,7 +72,9 @@ def test_filter_values_filtered_tracks_and_duplicate_detection(db, scan, music):
         "years": [2024],
         "formats": ["MP3", "WAV"],
     }
+    assert len(db.filtered_tracks("Ambient")) == len(rows)  # (the copy was made before the update)
     assert all(row["genre"] == "Ambient" for row in db.filtered_tracks("Ambient"))
+    assert db.filtered_tracks("Amb") == []  # the LIKE prefilter lets it through; genre_has() doesn't
     assert all(row["year"] == 2024 for row in db.filtered_tracks(year=2024))
     assert all(row["fmt"] == "MP3" for row in db.filtered_tracks(fmt="MP3"))
     duplicates = db.duplicate_tracks()
@@ -110,7 +112,7 @@ def test_library_filters_and_duplicate_results_are_worker_backed(
     rows = db._rows("SELECT * FROM tracks ORDER BY path")
     for row in rows:
         db.conn.execute(
-            "UPDATE tracks SET genre='Ambient', year=2024, fmt='MP3' WHERE id=?",
+            "UPDATE tracks SET genre='Ambient', s_genre='ambient', year=2024, fmt='MP3' WHERE id=?",
             (row["id"],),
         )
     duplicate = dict(rows[0])
@@ -154,3 +156,31 @@ def test_user_library_stats_refresh_asynchronously(tmp_path, db, scan, music, qa
         assert user_library.statsSummary["listeningSeconds"] > 0
     finally:
         user_library.shutdown()
+
+
+def _song(db, path, artist, album="Mix", key="va|mix"):
+    db.upsert_track({"path": path, "mtime": 0, "size": 1, "title": path, "artist": artist,
+                     "album_artist": "Various Artists", "aa_tag": 1, "album": album, "album_key": key,
+                     "track_no": 1, "disc_no": 0, "year": 2000, "genre": "", "duration": 100.0, "fmt": "FLAC",
+                     "codec": "FLAC", "bitrate": 0, "sample_rate": 0})
+
+
+def test_a_compilation_is_one_album_and_artists_are_track_artists(db):
+    from hallucinate.core import recap
+
+    _song(db, "/c/1", "Ada")
+    _song(db, "/c/2", "Bo")
+    now = time.time()
+    db.record_play("/c/1", now - 30)
+    db.record_play("/c/2", now - 20)
+    db.record_play("/c/2", now - 10)
+    db.import_plays([{"ts": now - 5, "artist": "Cy", "title": "Gone", "album": "Mix"}], "lastfm")
+    recent = db.listening_stats(now - 86400)
+    albums = {(a["album_key"], a["plays"]) for a in recent["albums"]}
+    assert albums == {("va|mix", 3), (None, 1)}  # not one album per artist
+    all_time = db.listening_stats()
+    assert [(a["name"], a["plays"]) for a in all_time["artists"]] == [("Bo", 2), ("Ada", 1)]
+    period = "month:" + time.strftime("%Y-%m", time.localtime(now - 10))
+    r = recap.recap(db, period, now=now)
+    assert r["topAlbums"][0]["album_key"] == "va|mix" and r["topAlbums"][0]["plays"] == 3
+    assert r["topAlbums"][0]["album_artist"] == "Various Artists"

@@ -21,14 +21,18 @@ class Scanner:
         self._art = {k: v for k, v in db.album_art_map().items() if v and os.path.exists(v)}
         self._seen = 0
         self._hidden = set()
+        self._gone = []  # songs no longer found, removed once every folder is scanned (see _settle_moves)
+        self._added = []  # songs new in this scan: a gone one may have just moved here
 
     def scan(self, folders) -> dict:
-        stats = {"added": 0, "updated": 0, "removed": 0, "unchanged": 0, "errors": 0, "dirs": []}
+        stats = {"added": 0, "updated": 0, "removed": 0, "unchanged": 0, "errors": 0, "moved": 0, "dirs": []}
         self._hidden = self.db.hidden_paths()  # removed from the library on purpose
+        self._gone, self._added = [], []
         for folder in folders:
             if self.should_stop():
                 break
             self._scan_folder(folder, stats)
+        self._settle_moves(stats)
         self.db.finalize()
         return stats
 
@@ -60,7 +64,14 @@ class Scanner:
         pending = 0
         last_commit = time.monotonic()
         visited = set()
-        for root, dirs, files in os.walk(folder, followlinks=True):
+        # Folders and files that couldn't be read this time (permissions, a flaky network disk): the songs
+        # already in the library under them are kept, not taken for gone.
+        failed_dirs, failed = [], set()
+
+        def unreadable(err):
+            failed_dirs.append(err.filename)
+
+        for root, dirs, files in os.walk(folder, followlinks=True, onerror=unreadable):
             real = os.path.realpath(root)
             if real in visited:  # symlink loop / duplicate view of a directory
                 dirs[:] = []
@@ -81,12 +92,13 @@ class Scanner:
                 try:
                     st = os.stat(path)
                 except OSError:
+                    failed.add(path)
                     continue
                 self._seen += 1
                 if self.progress and self._seen % 25 == 0:
                     self.progress(self._seen)
                 if path in sheets:
-                    pending += self._scan_cue(path, st, sheets[path], existing, seen, stats)
+                    pending += self._scan_cue(path, st, sheets[path], existing, seen, stats, failed)
                     continue
                 seen.add(path)
                 old = existing.get(path)
@@ -106,6 +118,7 @@ class Scanner:
                 t = tags.read_track(path, art_known=lambda k: k in self._art)
                 if t is None:
                     stats["errors"] += 1
+                    failed.add(path)  # there, but unreadable now: its songs stay as they were
                     continue
                 sheet_text = t.pop("_cuesheet", "")
                 if sheet_text:
@@ -116,21 +129,53 @@ class Scanner:
                             self._attach_art(row, root)
                             self.db.upsert_track(row)
                             seen.add(row["path"])
-                            stats["updated" if row["path"] in existing else "added"] += 1
+                            self._count(row["path"], existing, stats)
                         pending += len(rows)
                         continue
                 self._attach_art(t, root)
                 self.db.upsert_track(t)
-                stats["updated" if old else "added"] += 1
+                self._count(path, existing, stats)
                 pending += 1
                 if pending >= 200:
                     self.db.commit()
                     pending, last_commit = 0, time.monotonic()
-        gone = [p for p in existing if p not in seen]
-        if gone:
-            self.db.remove_paths(gone)
-            stats["removed"] += len(gone)
+        dirs_failed = tuple(d.rstrip(os.sep) + os.sep for d in failed_dirs if d)
+        self._gone += [p for p in existing if p not in seen and not self._failed(p, failed, dirs_failed)]
         self.db.commit()
+
+    def _count(self, path, existing, stats):
+        if path in existing:
+            stats["updated"] += 1
+        else:
+            stats["added"] += 1
+            self._added.append(path)
+
+    def _failed(self, path, failed, dirs_failed) -> bool:
+        """Whether `path` (or the file its CUE song lies in) couldn't be read this time."""
+        return (path in failed or self.db.file_of(path) in failed or path.startswith(dirs_failed))
+
+    def _settle_moves(self, stats):
+        """Remove the songs no longer found, but first give each one that was only moved or renamed (the same
+        size, length, title and artist as exactly one song new in this scan) its likes, plays, ratings,
+        playlist places and listens, at the new path."""
+        if not self._gone:
+            return
+        gone, added = self.db.move_keys(self._gone), self.db.move_keys(self._added)
+        by_key = {}
+        for path, key in added.items():
+            by_key.setdefault(key, []).append(path)
+        olds = {}
+        for path, key in gone.items():
+            olds.setdefault(key, []).append(path)
+        moves = [(old[0], by_key[key][0]) for key, old in olds.items()
+                 if len(old) == 1 and len(by_key.get(key, ())) == 1 and key[1] > 0]
+        if moves:
+            self.db.move_user_data(moves)
+        self.db.remove_paths(self._gone)
+        stats["removed"] += len(self._gone)
+        stats["moved"] += len(moves)
+        self.db.commit()
+        self._gone, self._added = [], []
 
     @staticmethod
     def _cue_sheets(directory, files):
@@ -149,7 +194,7 @@ class Scanner:
                 out.setdefault(target, (sheet, entry, mtime))
         return out
 
-    def _scan_cue(self, path, st, found, existing, seen, stats) -> int:
+    def _scan_cue(self, path, st, found, existing, seen, stats, failed) -> int:
         """Add the songs a CUE sheet makes of one audio file. Returns how many rows were written."""
         sheet, entry, cue_mtime = found
         expected = [cue.virtual_path(path, t["number"]) for t in entry["tracks"]]
@@ -164,6 +209,7 @@ class Scanner:
         whole = tags.read_track(path, art_known=lambda k: False)
         if whole is None:
             stats["errors"] += 1
+            failed.add(path)
             return 0
         rows = cue.tracks(whole, sheet, entry, cue_mtime)
         art = whole.get("_art")
@@ -171,10 +217,9 @@ class Scanner:
             if art is not None:
                 row["_art"] = art
             self._attach_art(row, os.path.dirname(path))
-            old = existing.get(row["path"])
             self.db.upsert_track(row)
             seen.add(row["path"])
-            stats["updated" if old else "added"] += 1
+            self._count(row["path"], existing, stats)
         return len(rows)
 
     @staticmethod

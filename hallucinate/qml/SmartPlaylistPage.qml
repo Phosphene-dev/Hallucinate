@@ -11,6 +11,8 @@ Item {
     readonly property var info: userLib.smartRevision >= 0 ? userLib.smartInfo(smartId) : ({})
 
     Component.onCompleted: userLib.openSmartPlaylist(smartId)
+    // gone from view: it needn't be evaluated again after every play and like
+    Component.onDestruction: userLib.closeSmartPlaylist(smartId)
 
     ConfirmDialog {
         id: deleteDlg
@@ -41,6 +43,8 @@ Item {
                 Text {
                     textFormat: Text.PlainText
                     text: page.playlistName
+                    width: Math.min(implicitWidth, parent.width - 16)
+                    elide: Text.ElideRight
                     color: Theme.text
                     font.family: Theme.displayFamily
                     font.pixelSize: Theme.fontSize(30)
@@ -50,7 +54,8 @@ Item {
                     textFormat: Text.PlainText
                     width: parent.width
                     elide: Text.ElideRight
-                    text: list.count + " songs · " + page.info.summary
+                    objectName: "smartCount"
+                    text: list.count + (list.count === 1 ? " song" : " songs") + " · " + page.info.summary
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
                 }
                 Row {

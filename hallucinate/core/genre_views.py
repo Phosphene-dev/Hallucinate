@@ -39,10 +39,11 @@ def overview(db):
 def page(db, name, top=200):
     """One genre: {name, tracks, albums, artists, seconds, albumList, artistList, songs (the most played,
     up to `top`), related: [{name, tracks}]}. `name` is matched case- and accent-insensitively."""
+    sql, args = genre_names.prefilter(name, "t.s_genre")  # most songs ruled out without calling into Python
     rows = db._rows(
-        """SELECT t.*, COALESCE(p.count, 0) AS plays FROM tracks t LEFT JOIN plays p ON p.path = t.path
-           WHERE genre_has(t.genre, ?)""",
-        (name,),
+        f"""SELECT t.*, COALESCE(p.count, 0) AS plays FROM tracks t LEFT JOIN plays p ON p.path = t.path
+            WHERE {sql} AND genre_has(t.genre, ?)""",
+        (*args, name),
     )
     wanted = fold(name)
     shown = name
@@ -77,10 +78,11 @@ def page(db, name, top=200):
 
 def tracks(db, name):
     """Every song of a genre, album by album, for playing it all."""
+    sql, args = genre_names.prefilter(name)
     return db._rows(
-        """SELECT * FROM tracks WHERE genre_has(genre, ?)
-           ORDER BY s_aa, year, album_key, disc_no, track_no""",
-        (name,),
+        f"""SELECT * FROM tracks WHERE {sql} AND genre_has(genre, ?)
+            ORDER BY s_aa, year, album_key, disc_no, track_no""",
+        (*args, name),
     )
 
 

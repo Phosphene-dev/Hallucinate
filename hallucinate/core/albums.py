@@ -22,12 +22,15 @@ def liner_notes(db, key):
     if not rows:
         return {}
     # an album's genres, main one first: by how many songs carry each, then by where the songs list it
-    order, seen = Counter(), {}
+    # (by folded name: songs tagged "Hip-Hop" and "hip-hop" make one genre, spelled as first found)
+    order, seen, names = Counter(), {}, {}
     for r in rows:
         for pos, g in enumerate(genre_names.split(r["genre"])):
-            order[g] += 1
-            seen[g] = min(seen.get(g, pos), pos)
-    genres = sorted(order, key=lambda g: (-order[g], seen[g]))
+            k = genre_names.fold(g)
+            names.setdefault(k, g)
+            order[k] += 1
+            seen[k] = min(seen.get(k, pos), pos)
+    genres = [names[k] for k in sorted(order, key=lambda k: (-order[k], seen[k]))]
     formats = Counter((r["codec"] or r["fmt"] or "").upper() for r in rows)
     rates = sorted({r["sample_rate"] for r in rows if r["sample_rate"]})
     bitrates = [r["bitrate"] for r in rows if r["bitrate"]]

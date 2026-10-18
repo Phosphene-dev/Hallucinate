@@ -26,8 +26,10 @@ def _albums(db, having, params=()):
     return rows
 
 
-def _check(id_, title, detail, kind, items):
-    return {"id": id_, "title": title, "detail": detail, "kind": kind, "count": len(items), "items": items[:LIMIT]}
+def _check(id_, title, detail, kind, items, count=None):
+    """`count`: the full number when `items` was read with a LIMIT (and may be short of it)."""
+    return {"id": id_, "title": title, "detail": detail, "kind": kind,
+            "count": len(items) if count is None else count, "items": items[:LIMIT]}
 
 
 def missing_covers_all(db):
@@ -59,12 +61,11 @@ def missing_genre(db):
 
 
 def unknown_artist_or_album(db):
-    rows = db._rows(
-        "SELECT * FROM tracks WHERE artist = ? OR album = ? ORDER BY path LIMIT ?",
-        (UNKNOWN_ARTIST, UNKNOWN_ALBUM, LIMIT + 1000),
-    )
+    where = "WHERE artist = ? OR album = ?"
+    rows = db._rows(f"SELECT * FROM tracks {where} ORDER BY path LIMIT ?", (UNKNOWN_ARTIST, UNKNOWN_ALBUM, LIMIT))
+    count = db.conn.execute(f"SELECT COUNT(*) FROM tracks {where}", (UNKNOWN_ARTIST, UNKNOWN_ALBUM)).fetchone()[0]
     return _check("untagged", "Songs missing artist or album tags",
-                  "Shown as “Unknown” and grouped together. Edit their tags.", "track", rows)
+                  "Shown as “Unknown” and grouped together. Edit their tags.", "track", rows, count)
 
 
 def missing_track_numbers(db):
@@ -103,20 +104,18 @@ def missing_replaygain(db):
 
 def low_bitrate(db):
     marks = ",".join("?" * len(LOSSY))
-    rows = db._rows(
-        f"""SELECT * FROM tracks WHERE bitrate > 0 AND bitrate < ?
-              AND UPPER(CASE WHEN codec != '' THEN codec ELSE fmt END) IN ({marks})
-            ORDER BY bitrate, path LIMIT ?""",
-        (LOW_BITRATE, *LOSSY, LIMIT + 1000),
-    )
+    where = f"""WHERE bitrate > 0 AND bitrate < ?
+              AND UPPER(CASE WHEN codec != '' THEN codec ELSE fmt END) IN ({marks})"""
+    rows = db._rows(f"SELECT * FROM tracks {where} ORDER BY bitrate, path LIMIT ?", (LOW_BITRATE, *LOSSY, LIMIT))
+    count = db.conn.execute(f"SELECT COUNT(*) FROM tracks {where}", (LOW_BITRATE, *LOSSY)).fetchone()[0]
     return _check("bitrate", "Low-quality files",
-                  "Lossy files under 128 kbps; worth replacing if you have better copies.", "track", rows)
+                  "Lossy files under 128 kbps; worth replacing if you have better copies.", "track", rows, count)
 
 
 def duplicates(db):
-    rows = db.duplicate_tracks(LIMIT + 1000)
+    rows = db.duplicate_tracks(LIMIT)
     check = _check("duplicates", "Probable duplicates",
-                   "The same title, artist and length more than once.", "track", rows)
+                   "The same title, artist and length more than once.", "track", rows, db.duplicate_count())
     check["extra"] = len(extra_copies(db))
     return check
 
@@ -134,7 +133,9 @@ def extra_copies(db):
     """Paths of every duplicate but the best copy of each (see _quality), for removing them from the library."""
     groups = {}
     for row in db.duplicate_tracks(10_000_000):
-        groups.setdefault((row["s_title"], row["s_artist"], round(row["duration"])), []).append(row)
+        # the length as SQL rounded it (half away from zero; Python's round() goes to even, so 100.5 and
+        # 101.4 would fall apart here though the query found them together)
+        groups.setdefault((row["s_title"], row["s_artist"], row["duration_key"]), []).append(row)
     extra = []
     for rows in groups.values():
         best = max(rows, key=_quality)

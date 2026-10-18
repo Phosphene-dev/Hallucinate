@@ -192,6 +192,19 @@ def test_jumping_between_songs_of_a_sheet(player, cue_songs):
     assert player.current["title"] == "Harbour Lights"
 
 
+@needs_ffmpeg
+def test_stop_holds_at_the_songs_start_not_the_files(player, cue_songs):
+    player.playList([cue_songs[1]], 0)
+    assert wait_for(lambda: player.state == "Playing" and player.position > 300), player.error
+    player.stop()
+    assert player.state != "Playing" and player.currentIndex == 0
+    assert wait_for(lambda: 1900 < player._voice.player.position() < 2300)  # the song starts 2 s into the file
+    assert player.position < 300
+    player.play()
+    assert wait_for(lambda: player.state == "Playing" and player.position > 100)
+    assert player._voice.player.position() >= 2000
+
+
 def test_virtual_paths_are_not_edited_or_searched_for_lyrics(tmp_path):
     from hallucinate.core import lyrics, tagedit
 
@@ -294,3 +307,8 @@ def test_a_last_song_past_the_end_of_the_file_is_not_read_on_every_scan(db, tmp_
     assert scan()["added"] == 2
     again = scan()
     assert again["unchanged"] == 2 and again["updated"] == 0 and again["added"] == 0
+
+
+def test_a_sheets_genres_are_written_as_the_library_writes_them():
+    sheet = cue.parse('REM GENRE "Rock / Pop;  rock"\nFILE "a.flac" WAVE\n  TRACK 01 AUDIO\n    INDEX 01 00:00:00\n')
+    assert sheet["genre"] == "Rock; Pop"

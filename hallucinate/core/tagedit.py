@@ -23,6 +23,9 @@ _VORBIS = {
     "title": "title", "artist": "artist", "album_artist": "albumartist", "album": "album",
     "track_no": "tracknumber", "disc_no": "discnumber", "year": "date", "genre": "genre",
 }
+# Other spellings other programs use, which reading also accepts (see tags.KEYS): gone whenever the field is
+# written, so clearing the album artist or the year doesn't leave an old "ALBUM ARTIST" or "YEAR" to come back
+_VORBIS_ALSO = {"album_artist": ("album_artist", "album artist"), "year": ("year",)}
 _MP4 = {
     "title": "\xa9nam", "artist": "\xa9ART", "album_artist": "aART", "album": "\xa9alb",
     "year": "\xa9day", "genre": "\xa9gen",
@@ -237,6 +240,9 @@ def _w_id3(f, fields):
 def _w_vorbis(f, fields):
     for k, v in fields.items():
         key = _VORBIS[k]
+        for other in _VORBIS_ALSO.get(k, ()):
+            if other in f.tags:
+                del f.tags[other]
         if v:
             f.tags[key] = _values(k, v)
         elif key in f.tags:

@@ -190,3 +190,41 @@ def test_undoing_a_removal_brings_the_songs_back(lib):
     library.unhidePaths(removed[0]["paths"])
     assert wait_for(lambda: library.trackCount == 4 and not library.scanning, timeout=10)
     assert library.hiddenCount == 0
+
+
+def test_trashing_one_cue_song_takes_the_whole_files_songs(qapp, tmp_path, monkeypatch):
+    from hallucinate import library as library_module
+    from hallucinate.library import Library
+
+    audio = tmp_path / "Music" / "live.flac"
+    audio.parent.mkdir()
+    audio.write_bytes(b"fLaC")
+    db = Database(tmp_path / "library.db")
+    for n in (1, 2, 3):
+        db.upsert_track({"path": f"{audio}#{n}", "mtime": 1, "size": 1, "title": f"t{n}", "artist": "x",
+                         "album_artist": "x", "aa_tag": 1, "album": "Live", "album_key": "k", "track_no": n,
+                         "disc_no": 0, "duration": 60.0, "year": 0, "genre": "", "fmt": "FLAC", "bitrate": 0,
+                         "sample_rate": 0, "file": str(audio)})
+    db.commit()
+    db.close()
+
+    trash = tmp_path / "Trash"
+    trash.mkdir()
+
+    class FakeQFile:
+        @staticmethod
+        def moveToTrash(path):
+            shutil.move(path, trash / os.path.basename(path))
+            return True
+
+    monkeypatch.setattr(library_module, "QFile", FakeQFile)
+    library = Library(tmp_path / "library.db", tmp_path / "art")
+    try:
+        assert wait_for(lambda: library.trackCount == 3, timeout=5)
+        removed = []
+        library.albumsRemoved.connect(removed.append)
+        library.trashSongs([f"{audio}#2"])
+        assert wait_for(lambda: removed and library.trackCount == 0, timeout=5)
+        assert removed[0]["songs"] == 3 and not audio.exists()
+    finally:
+        library.shutdown()

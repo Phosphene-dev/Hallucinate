@@ -46,6 +46,22 @@ def test_write_tags_formats(tmp_path, ext):
 
 
 @needs_ffmpeg
+@pytest.mark.parametrize("ext", ["flac", "ogg"])
+def test_clearing_album_artist_and_year_removes_other_spellings(tmp_path, ext):
+    p = tmp_path / f"a.{ext}"
+    encode(p, ext, 1, title="Old")
+    f = mutagen.File(p)
+    f.tags["ALBUM ARTIST"] = ["Someone"]
+    f.tags["YEAR"] = ["1980"]
+    f.save()
+    assert read_track(str(p))["album_artist"] == "Someone" and read_track(str(p))["year"] == 1980
+    tagedit.write_tags(str(p), {"album_artist": "", "year": ""})
+    tags = read_track(str(p))
+    assert tags["year"] == 0 and tags["aa_tag"] == 0  # not read back from the old spellings
+    assert not {"album artist", "year", "albumartist", "date"} & {k.lower() for k in mutagen.File(p).tags.keys()}
+
+
+@needs_ffmpeg
 @pytest.mark.parametrize(("ext", "codec"), [
     ("flac", "FLAC"), ("mp3", "MP3"), ("ogg", "VORBIS"), ("opus", "OPUS"),
     ("m4a", "AAC"), ("alac.m4a", "ALAC"), ("wav", "WAV"), ("wma", "WMA"),
@@ -197,19 +213,22 @@ def test_fetch_cover_explains_server_trouble(monkeypatch):
 
 def test_musicbrainz_server_error_is_retried_once(monkeypatch):
     calls, slept = [], []
-    body = json.dumps({"releases": [{"id": "r1", "release-group": {"id": "g1"}}]}).encode()
+    body = {"releases": [{"id": "r1", "release-group": {"id": "g1"}}]}
 
-    def get(url, timeout=10):
-        calls.append(url)
+    def get(path, params, timeout=15):
+        calls.append((path, dict(params)))
         if len(calls) == 1:
-            raise http_error(url, 503)
+            raise http_error(path, 503)
         return body
 
-    monkeypatch.setattr(artfetch, "_get", get)
+    # through musicbrainz._get, so cover lookups share MusicBrainz's one-request-a-second limit
+    monkeypatch.setattr(artfetch.musicbrainz, "_get", get)
     assert artfetch.find_releases("Artist", "Album", sleep=slept.append) == [("r1", "g1")]
     assert len(calls) == 2 and slept == [1.1]
+    assert calls[0][0] == "release/" and 'release:"Album"' in calls[0][1]["query"]
     calls.clear()
-    monkeypatch.setattr(artfetch, "_get", lambda url, timeout=10: (_ for _ in ()).throw(http_error(url, 500)))
+    monkeypatch.setattr(artfetch.musicbrainz, "_get",
+                        lambda path, params, timeout=15: (_ for _ in ()).throw(http_error(path, 500)))
     with pytest.raises(artfetch.ServiceError, match="MusicBrainz is having trouble"):
         artfetch.find_releases("Artist", "Album", sleep=lambda s: None)
 

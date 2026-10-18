@@ -1,4 +1,5 @@
 """SQLite library storage with FTS5-backed search."""
+import os
 import re
 import sqlite3
 import time
@@ -146,6 +147,8 @@ class Database:
         self.conn.create_function("fold", 1, fold, deterministic=True)
         # genre_has(t.genre, 'IDM'): whether a song's genres (several, "IDM; Ambient") include that one
         self.conn.create_function("genre_has", 2, genres.has, deterministic=True)
+        # genre_starts(t.genre, 'amb'): whether one of a song's genres begins so
+        self.conn.create_function("genre_starts", 2, genres.starts, deterministic=True)
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.execute("PRAGMA synchronous=NORMAL")
         self.conn.executescript(SCHEMA)
@@ -212,6 +215,16 @@ class Database:
                 [(fold(r["title"]), fold(r["album"]), fold(r["album_artist"]), fold(r["artist"]), fold(r["genre"]),
                   r["id"]) for r in rows],
             )
+        version = self.conn.execute("PRAGMA user_version").fetchone()[0]
+        if version < 1:
+            # Songs in disc folders (CD1, CD2…) without an album artist now share their album's key: read them
+            # again at the next scan so the discs come together (the key is worked out from the path when read)
+            from .tags import album_folder
+
+            stale = [(r[0],) for r in self.conn.execute("SELECT path FROM tracks WHERE aa_tag = 0")
+                     if album_folder(os.path.dirname(r[0])) != os.path.dirname(r[0])]
+            self.conn.executemany("UPDATE tracks SET mtime=0 WHERE path=?", stale)
+            self.conn.execute("PRAGMA user_version = 1")
         log_cols = {r["name"] for r in self.conn.execute("PRAGMA table_info(play_log)")}
         if "duration" not in log_cols:
             self.conn.execute("ALTER TABLE play_log ADD COLUMN duration REAL NOT NULL DEFAULT 0")
@@ -390,11 +403,12 @@ class Database:
         params = () if period_start is None else (period_start,)
         where = "" if period_start is None else "WHERE l.ts >= ?"
         if period_start is None:
+            # by each song's own artist, as the period views count them (a compilation's artists apart)
             artists = self._rows(
-                """SELECT MIN(t.album_artist) AS name, SUM(p.count) AS plays,
+                """SELECT MIN(t.artist) AS name, SUM(p.count) AS plays,
                           COUNT(DISTINCT t.album_key) AS albums, COUNT(*) AS tracks, MAX(t.art) AS art
                    FROM plays p JOIN tracks t ON t.path=p.path
-                   GROUP BY t.s_aa ORDER BY plays DESC, name COLLATE NOCASE LIMIT ?""",
+                   GROUP BY t.s_artist ORDER BY plays DESC, name COLLATE NOCASE LIMIT ?""",
                 (limit,),
             )
             albums = self._rows(
@@ -422,11 +436,14 @@ class Database:
                 (*params, limit),
             )
             albums = self._rows(
-                f"""SELECT MAX(t.album_key) AS album_key, MIN(l.album) AS album, MIN(l.artist) AS album_artist,
+                # one row per library album (a compilation's artists together), or per album name for
+                # listens with no song in the library
+                f"""SELECT MAX(t.album_key) AS album_key, MIN(l.album) AS album,
+                           COALESCE(MAX(t.album_artist), MIN(l.artist)) AS album_artist,
                            MAX(t.year) AS year, COUNT(*) AS n, SUM(l.duration) AS duration,
                            MAX(t.art) AS art, MAX(l.ts) AS added, COUNT(*) AS plays
                     FROM play_log l LEFT JOIN tracks t ON t.path=l.path {where}
-                    GROUP BY +l.s_artist, l.s_album
+                    GROUP BY COALESCE('k' || t.album_key, 'n' || l.s_artist || char(31) || l.s_album)
                     ORDER BY plays DESC, album COLLATE NOCASE LIMIT ?""",
                 (*params, limit),
             )
@@ -505,8 +522,9 @@ class Database:
     def filtered_tracks(self, genre="", year=0, fmt=""):
         clauses, params = [], []
         if genre:
-            clauses.append("genre_has(genre, ?)")  # one of a song's genres
-            params.append(genre)
+            sql, args = genres.prefilter(genre)  # most songs are ruled out without calling into Python
+            clauses.append(f"{sql} AND genre_has(genre, ?)")  # one of a song's genres
+            params += [*args, genre]
         if year:
             clauses.append("year = ?")
             params.append(year)
@@ -525,11 +543,18 @@ class Database:
                  GROUP BY s_title, s_artist, ROUND(duration)
                  HAVING COUNT(*) > 1
                )
-               SELECT t.*, d.duplicate_count FROM duplicate_groups d JOIN tracks t
+               SELECT t.*, d.duplicate_count, d.duration_key FROM duplicate_groups d JOIN tracks t
                  ON t.s_title=d.s_title AND t.s_artist=d.s_artist AND ROUND(t.duration)=d.duration_key
                ORDER BY d.duplicate_count DESC, t.s_artist, t.s_title, t.path LIMIT ?""",
             (limit,),
         )
+
+    def duplicate_count(self) -> int:
+        """How many songs duplicate_tracks() would list without a limit."""
+        return self.conn.execute(
+            """SELECT COALESCE(SUM(n), 0) FROM (
+                 SELECT COUNT(*) AS n FROM tracks WHERE s_title != '' AND s_artist != '' AND duration > 0
+                 GROUP BY s_title, s_artist, ROUND(duration) HAVING COUNT(*) > 1)""").fetchone()[0]
 
     def most_played(self, limit: int = 10) -> list:
         return self._rows(
@@ -589,7 +614,6 @@ class Database:
 
     # --- writes --------------------------------------------------------
     def paths_under(self, folder: str) -> dict:
-        import os
         prefix = folder.rstrip(os.sep) + os.sep
         cur = self.conn.execute(
             "SELECT path, mtime, size FROM tracks WHERE path >= ? AND path < ?",
@@ -684,6 +708,38 @@ class Database:
                 self.conn.execute("DELETE FROM tracks_fts WHERE rowid=?", (row["id"],))
             self.conn.execute("DELETE FROM tracks WHERE id=?", (row["id"],))
 
+    def move_keys(self, paths: Iterable[str]) -> dict:
+        """{path: (size, whole seconds, folded title, folded artist)}: what a moved or renamed file keeps."""
+        paths, out = list(paths), {}
+        for i in range(0, len(paths), 500):
+            chunk = paths[i:i + 500]
+            for r in self.conn.execute(
+                    "SELECT path, size, ROUND(duration) AS d, s_title, s_artist FROM tracks "
+                    f"WHERE path IN ({','.join('?' * len(chunk))})", chunk):
+                out[r["path"]] = (r["size"], r["d"], r["s_title"], r["s_artist"])
+        return out
+
+    def move_user_data(self, moves: Iterable[tuple]):
+        """Songs that moved from one path to another [(old, new)]: their likes, ratings, plays, skips, playlist
+        places, listens, lyrics and loudness go with them, and so does when they were first added. Yours win
+        over whatever the new path already had (a rating read from the file's tags, say)."""
+        for old, new in moves:
+            row = self.conn.execute("SELECT added FROM tracks WHERE path=?", (old,)).fetchone()
+            if row:
+                self.conn.execute("UPDATE tracks SET added=? WHERE path=?", (row["added"], new))
+            for table in ("likes", "ratings", "plays", "skips", "lyrics", "loudness"):
+                self.conn.execute(f"UPDATE OR REPLACE {table} SET path=? WHERE path=?", (new, old))
+            self.conn.execute("UPDATE playlist_items SET path=? WHERE path=?", (new, old))
+            self.conn.execute("UPDATE play_log SET path=? WHERE path=?", (new, old))
+            # the measurement moved with the file: use it, as a scan would have, if the file has no gain tags
+            m = self.conn.execute(
+                "SELECT m.track_gain, m.album_gain, m.peak FROM loudness m JOIN tracks t ON t.path=m.path "
+                "WHERE m.path=? AND m.mtime=t.mtime AND m.size=t.size AND t.rg_track IS NULL AND t.rg_album IS NULL",
+                (new,)).fetchone()
+            if m:
+                self.conn.execute("UPDATE tracks SET rg_track=?, rg_album=?, rg_peak=?, rg_measured=1 WHERE path=?",
+                                  (m["track_gain"], m["album_gain"], m["peak"], new))
+
     @staticmethod
     def file_of(path: str) -> str:
         """The file a library path lives in: CUE sheet songs are "file.flac#3"."""
@@ -697,13 +753,18 @@ class Database:
         files = {self.file_of(p) for p in paths}
         self.conn.executemany("INSERT OR IGNORE INTO hidden(path, hidden_at) VALUES(?, ?)", [(f, now) for f in files])
         # every song of a hidden file goes, so a CUE album doesn't leave stragglers
-        doomed = set(paths)
-        for f in files:
-            doomed.update(r[0] for r in self.conn.execute(
-                "SELECT path FROM tracks WHERE path=? OR path LIKE ? ESCAPE '\\'", (f, _like_prefix(f) + "#%")))
+        doomed = set(paths) | self.songs_of_files(files)
         self.remove_paths(doomed)
         self.conn.commit()
         return len(doomed)
+
+    def songs_of_files(self, files: Iterable[str]) -> set:
+        """Every library path in these files: the file itself, or each song of the CUE sheet splitting it."""
+        out = set()
+        for f in files:
+            out.update(r[0] for r in self.conn.execute(
+                "SELECT path FROM tracks WHERE path=? OR path LIKE ? ESCAPE '\\'", (f, _like_prefix(f) + "#%")))
+        return out
 
     def hidden_paths(self) -> set:
         return {r[0] for r in self.conn.execute("SELECT path FROM hidden")}

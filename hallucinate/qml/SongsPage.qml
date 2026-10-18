@@ -115,7 +115,7 @@ Item {
             width: ListView.view.width - 12
             title: model.title
             artist: model.artist + (page.duplicatesVisible ? " · " + model.duplicateCount + " copies" : "")
-            album: library.songSort === "genre" && model.genre ? model.album + "  ·  " + model.genre.split(";")[0].trim() : model.album
+            album: library.songSort === "genre" && model.genre ? model.album + "  ·  " + shell.genresText(model.genre, false) : model.album
             durText: model.durText
             artUrl: model.artUrl
             current: Rows.currentId === model.id

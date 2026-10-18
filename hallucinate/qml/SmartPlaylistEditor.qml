@@ -18,7 +18,18 @@ Dialog {
     property string sortKey: "artist"
     readonly property var schema: userLib.smartRuleSchema
     property string rulesJson: "{}"
+    // songs the rules match now: counted on the library's worker a moment after you stop typing, so a big
+    // library never makes each keystroke wait (-1: the rules can't be read)
+    property int matches: 0
     signal saved(int id, string name)
+
+    onRulesJsonChanged: if (visible) countTimer.restart()
+    onVisibleChanged: if (visible) countTimer.restart()
+    Timer { id: countTimer; interval: 250; onTriggered: userLib.countRulesAsync(dlg.rulesJson) }
+    Connections {
+        target: userLib
+        function onRulesCounted(json, n) { if (json === dlg.rulesJson) dlg.matches = n }
+    }
 
     ListModel { id: rulesModel }
 
@@ -27,7 +38,9 @@ Dialog {
             if (schema.fields[i].key === field) return schema.fields[i].kind
         return "text"
     }
-    function needsValue(field, op) { return fieldKind(field) !== "bool" && op !== "never" }
+    function needsValue(field, op) {
+        return fieldKind(field) !== "bool" && op !== "never" && op !== "is_empty" && op !== "is_not_empty"
+    }
     function opsFor(field) {
         var ops = schema.ops[fieldKind(field)]
         return field === "last_played" ? ops : ops.filter(o => o.key !== "never")
@@ -196,7 +209,7 @@ Dialog {
             objectName: "smartPreview"
             width: parent.width
             wrapMode: Text.WordWrap
-            readonly property int matches: dlg.visible ? userLib.countRules(dlg.rulesJson) : 0
+            readonly property int matches: dlg.matches
             text: matches < 0 ? userLib.describeRules(dlg.rulesJson)
                               : userLib.describeRules(dlg.rulesJson) + " — " + matches + (matches === 1 ? " song now" : " songs now")
             color: matches < 0 ? Theme.error : Theme.textDim

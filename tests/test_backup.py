@@ -105,3 +105,21 @@ def test_a_backup_bomb_is_refused(tmp_path):
     bomb.write_bytes(gzip.compress(b'{"format": "hallucinate-backup", "x": "' + b"a" * (backup.MAX_BYTES + 10) + b'"}'))
     with pytest.raises(ValueError):
         backup.read(bomb)
+
+
+def test_imported_listens_without_a_song_survive_a_restore(tmp_path):
+    src = make(tmp_path, "src")
+    src.import_plays([{"ts": 500, "artist": "Björk", "title": "Joga", "album": "Homogenic"}], "lastfm")
+    src.close()
+    out = tmp_path / "mine.hallucinate-backup"
+    backup.export(tmp_path / "src.db", None, out)
+    make(tmp_path, "dst").close()
+    backup.restore(backup.read(out), tmp_path / "dst.db", None)
+    # an older backup without the folded names gets them back
+    old = {"format": "hallucinate-backup", "version": 1,
+           "play_log": [{"ts": 600, "artist": "Sigur Rós", "title": "Hoppípolla", "album": "Takk"}]}
+    backup.restore(old, tmp_path / "dst.db", None)
+    dst = Database(tmp_path / "dst.db")
+    rows = [tuple(r) for r in dst.conn.execute("SELECT ts, path, s_artist, s_title, s_album FROM play_log ORDER BY ts")]
+    assert rows == [(500, None, "bjork", "joga", "homogenic"), (600, None, "sigur ros", "hoppipolla", "takk")]
+    dst.close()

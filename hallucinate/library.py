@@ -995,7 +995,9 @@ class Library(QObject):
                 # outside it: a song dropped in from ~/Downloads mustn't take Downloads with it.
                 if _strictly_inside(d, roots) and _only_leftovers(d):
                     QFile.moveToTrash(d)
+            # the file's every song: trashing one song of a CUE sheet takes its file, so the rest go too
             gone = [p for p in paths if db.file_of(p) in done]
+            gone += sorted(db.songs_of_files(done) - set(gone))
             db.remove_paths(gone)
             db.commit()
             self._removed.emit({"kind": "trashed", "albums": len(keys), "songs": len(gone), "failed": failed,
@@ -1228,3 +1230,8 @@ class Library(QObject):
         self._bulk.close()
         self._quick.close()
         self._db.close()
+
+    @Slot(str, result="QVariantList")
+    def genrePaths(self, name):
+        """Every song path of a genre (all of them, not only the most played its page lists), for its menu."""
+        return [t["path"] for t in genre_views.tracks(self._db, name)]

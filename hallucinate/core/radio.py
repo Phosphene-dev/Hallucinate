@@ -7,10 +7,10 @@ held back. The final pick is a weighted random choice among the best candidates,
 per artist in a batch and no artist twice in a row, so stations stay varied and differ between runs."""
 import math
 import random
-import re
 import time
 
-from .db import fold
+from . import genres as genre_names
+from .db import _like, fold
 from .rules import FROM, compile_where
 
 SESSION_GAP_S = 30 * 60  # plays this close to a seed play count as the same listening session
@@ -33,8 +33,9 @@ RECENT_PENALTY = 4.0
 
 
 def genres(text):
-    """Folded genre names from a tag like "Rock; Indie/Pop"."""
-    return {g for g in (fold(part).strip() for part in re.split(r"[;/,|]", text or "")) if g}
+    """Folded genre names from a tag like "Rock; Indie/Pop" (split as everywhere else: a comma is part of a
+    name, "Folk, World, & Country")."""
+    return {fold(g) for g in genre_names.split(text)}
 
 
 def _artist(row):
@@ -93,10 +94,10 @@ def radio_tracks(db, seeds, exclude=(), limit=10, rng=None, now=None, rules=None
         (*where_params, *artists, POOL_PER_SOURCE),
     ))
     if seed_genres:
-        clauses = " OR ".join("t.s_genre LIKE ?" for _ in seed_genres)
+        clauses = " OR ".join("t.s_genre LIKE ? ESCAPE '\\'" for _ in seed_genres)  # "R_B" is no wildcard
         add(db._rows(
             f"{base} ({clauses}) ORDER BY random() LIMIT ?",
-            (*where_params, *(f"%{g}%" for g in seed_genres), POOL_PER_SOURCE),
+            (*where_params, *(_like(g) for g in sorted(seed_genres)), POOL_PER_SOURCE),
         ))
     add(db._rows(f"{base} 1 ORDER BY random() LIMIT ?", (*where_params, POOL_PER_SOURCE)))
     if not pool:
