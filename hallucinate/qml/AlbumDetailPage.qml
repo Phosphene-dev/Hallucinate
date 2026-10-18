@@ -55,6 +55,7 @@ Item {
     component Note: Column {
         property string label
         property string value
+        property var links: []
         visible: value.length > 0
         spacing: 3
         width: Math.min(implicitWidth, 320)
@@ -69,11 +70,18 @@ Item {
         }
         Text {
             textFormat: Text.PlainText
+            visible: parent.links.length === 0
             text: parent.value
             color: Theme.text
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize(13)
             elide: Text.ElideRight
+            width: Math.min(implicitWidth, 320)
+        }
+        GenreLinks {  // genres: each opens its page
+            visible: parent.links.length > 0
+            names: parent.links
+            pixelSize: Theme.fontSize(13)
             width: Math.min(implicitWidth, 320)
         }
     }
@@ -209,7 +217,8 @@ Item {
                     spacing: 32
                     Note {
                         label: shell.allGenresAlbums && (page.notes.genres || []).length > 1 ? "Genres" : "Genre"
-                        value: (page.notes.genres || []).slice(0, shell.allGenresAlbums ? 8 : 1).join(", ")
+                        value: links.join(", ")
+                        links: (page.notes.genres || []).slice(0, shell.allGenresAlbums ? 8 : 1)
                     }
                     Note { label: "Format"; value: page.formatLine() + (page.notes.lossless ? "  ·  lossless" : "") }
                     Note { label: "Discs"; value: page.multiDisc ? String(page.notes.discs) : "" }

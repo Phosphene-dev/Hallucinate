@@ -5,6 +5,19 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.9.8] - 2026-10-18
+
+Browse by genre.
+
+### Added
+- Every genre has a page: its albums, its artists, its most played songs, and the genres that go with it, with
+  Play all and Shuffle. A song counts for each of its genres, so an album tagged "IDM; Ambient" is under both.
+- Genres are links: click one on an album page, on an artist page, in Now Playing, or from a song's right-click
+  menu ("Go to genre") to open its page.
+- Albums → Genres: every genre as a tile with one of its covers, by most songs or A–Z.
+- Songs can be sorted by title, artist, album, genre or year (the order is remembered). Sorted by genre, each
+  row shows the song's main genre.
+
 ## [0.9.9.7] - 2026-10-18
 
 Albums can have several genres, genres can come from Discogs and Last.fm too, artist pages have bios, and

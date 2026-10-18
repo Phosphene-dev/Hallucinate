@@ -2,6 +2,11 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "0.9.9.8": [
+        "Every genre has a page with its albums, artists and songs. Click a genre on an album, an artist, Now "
+        "Playing or a song's menu to open it.",
+        "Albums → Genres shows every genre, and Songs can be sorted by genre (or artist, album or year).",
+    ],
     "0.9.9.7": [
         "Albums can have several genres, the main one first. Filters and smart playlists match any of them, "
         "and Settings → Library chooses whether pages show all of them or just the main one.",

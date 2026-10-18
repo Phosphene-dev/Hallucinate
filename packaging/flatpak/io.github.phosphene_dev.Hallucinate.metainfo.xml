@@ -95,6 +95,11 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.9.9.8" date="2026-10-18">
+      <description>
+        <p>Browse by genre: every genre has a page with its albums, artists and songs, genres are links wherever they're shown, Albums has a Genres view, and Songs can be sorted by genre, artist, album or year.</p>
+      </description>
+    </release>
     <release version="0.9.9.7" date="2026-10-18">
       <description>
         <p>Albums can have several genres, the main one first, and filters and smart playlists match any of them. Genres can also come from Discogs and Last.fm; genres you set yourself are never replaced.</p>

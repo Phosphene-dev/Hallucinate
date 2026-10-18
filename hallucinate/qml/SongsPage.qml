@@ -42,6 +42,18 @@ Item {
         width: parent.width - 56
         spacing: 10
         StyledCombo {
+            id: sortBox
+            objectName: "songSort"
+            width: 170
+            height: 38
+            readonly property var keys: ["title", "artist", "album", "genre", "year"]
+            model: ["Sort by title", "Sort by artist", "Sort by album", "Sort by genre", "Sort by year"]
+            currentIndex: Math.max(0, keys.indexOf(library.songSort))
+            onActivated: function (i) { library.setSongSort(keys[i]); shell.setUiValue("songSort", keys[i]) }
+            Component.onCompleted: library.setSongSort(shell.uiValue("songSort", "title"))
+            Accessible.name: "Order of the songs"
+        }
+        StyledCombo {
             id: genreFilter
             width: 180
             height: 38
@@ -90,7 +102,8 @@ Item {
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         model: page.duplicatesVisible ? library.duplicates
-            : library.filtersActive ? library.filteredTracks : library.songs
+            : library.filtersActive ? library.filteredTracks
+            : library.songSort !== "title" ? library.sortedSongs : library.songs
         cacheBuffer: 400
         ScrollBar.vertical: ScrollBar {}
         delegate: TrackRow {
@@ -102,13 +115,14 @@ Item {
             width: ListView.view.width - 12
             title: model.title
             artist: model.artist + (page.duplicatesVisible ? " · " + model.duplicateCount + " copies" : "")
-            album: model.album
+            album: library.songSort === "genre" && model.genre ? model.album + "  ·  " + model.genre.split(";")[0].trim() : model.album
             durText: model.durText
             artUrl: model.artUrl
             current: Rows.currentId === model.id
             onActivated: {
                 if (page.duplicatesVisible) library.playDuplicate(index)
                 else if (library.filtersActive) library.playFilteredSongs(index)
+                else if (library.songSort !== "title") library.playSortedSongs(index)
                 else library.playSongs(index)
             }
             onEnqueue: player.enqueue(list.model.get(index))

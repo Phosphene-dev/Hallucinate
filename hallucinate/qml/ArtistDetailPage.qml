@@ -155,12 +155,17 @@ Item {
                         text: [page.plural(page.profile.albums || 0, "album", "albums"),
                                page.plural(page.profile.tracks || 0, "song", "songs"),
                                page.profile.seconds ? Theme.fmtHours(page.profile.seconds) : "",
-                               page.yearsActive(),
-                               (page.profile.genres || []).slice(0, shell.allGenresAlbums ? 3 : 1).join(", ")].filter(s => s).join("  ·  ")
+                               page.yearsActive()].filter(s => s).join("  ·  ")
                         color: Theme.textDim
                         wrapMode: Text.Wrap
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(14)
+                    }
+                    GenreLinks {
+                        objectName: "artistGenres"
+                        width: parent.width
+                        names: (page.profile.genres || []).slice(0, shell.allGenresAlbums ? 3 : 1)
+                        color: Theme.textDim
                     }
                     Flow {  // wraps beside a big photo in a narrow window
                         width: parent.width
