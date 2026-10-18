@@ -380,6 +380,11 @@ class Library(QObject):
         return any(self._filters)
 
     @Property("QVariantList", notify=filtersChanged)
+    def activeFilters(self):
+        """[genre, year, format] as filtered now ("", 0, "" when not), so the Songs page shows them again."""
+        return list(self._filters)
+
+    @Property("QVariantList", notify=filtersChanged)
     def genres(self):
         return list(self._filter_values["genres"])
 
