@@ -59,3 +59,22 @@ def has(text, name):
 def key(name):
     """For matching spellings of one genre: "Hip-Hop", "hip hop" and "HipHop" are the same."""
     return re.sub(r"[\s\-_.&]+", "", fold(name)).replace("and", "")
+
+
+def starts(text, prefix):
+    """Whether one of the genres in `text` begins with `prefix` (case and accents aside)."""
+    wanted = fold(prefix or "").strip()
+    if not wanted:
+        return True
+    return fold(text or "").startswith(wanted) or any(fold(g).startswith(wanted) for g in split(text))
+
+
+def prefilter(name, column="s_genre"):
+    """(SQL, params): a cheap test on the folded genre text that every song has() would find passes, so
+    the Python genre_has() runs only for the few rows left. Every word of `name` must be in the text."""
+    words = fold(name or "").split()
+    if not words:
+        return "1", []
+    like = [f"{column} LIKE ? ESCAPE '\\'"] * len(words)
+    return " AND ".join(like), ["%" + w.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+                                for w in words]

@@ -2,7 +2,8 @@ import QtQuick
 import QtQuick.Controls
 import "."
 
-// Right-click (or "…") on an album, or on a selection of albums: play, queue, playlists, tags, remove.
+// Right-click (or "…") on an album, or on a selection of albums: play or shuffle, queue, playlists, likes, its
+// folder and genre, tags, remove.
 Menu {
     id: menu
     objectName: "albumMenu"
@@ -12,11 +13,32 @@ Menu {
     readonly property bool single: keys.length === 1
     readonly property string what: single ? "“" + albumTitle + "”" : keys.length + " albums"
 
+    // Read when the menu opens: whether every song is liked already, the first song (for its folder), the genre
+    property bool allLiked: false
+    property string firstPath: ""
+    property string genre: ""
+    readonly property bool onServer: /^(subsonic|jellyfin):\/\//.test(firstPath)
+
     // keys: the album keys to act on (the clicked album, or the whole selection when it was part of it)
-    function show(k, title, art) { keys = k; albumTitle = title; artist = art; popup() }
+    function show(k, title, art) {
+        keys = k; albumTitle = title; artist = art
+        var p = paths()
+        allLiked = userLib.allLiked(p)
+        firstPath = p.length ? p[0] : ""
+        genre = single ? ((library.albumNotes(k[0]) || {}).genres || [])[0] || "" : ""
+        popup()
+    }
     function paths() { return library.albumPaths(menu.keys) }
+    // every song in a random order, with shuffle on so it carries on that way
+    function shuffle() {
+        var p = paths()
+        for (var i = p.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = p[i]; p[i] = p[j]; p[j] = t }
+        player.setShuffle(true)
+        userLib.playPaths(p)
+    }
 
     MenuItem { text: "Play"; icon.name: "play"; onTriggered: menu.single ? library.playAlbum(menu.keys[0], 0) : userLib.playPaths(menu.paths()) }
+    MenuItem { objectName: "albumShuffle"; text: "Shuffle"; icon.name: "shuffle"; onTriggered: menu.shuffle() }
     MenuItem { text: "Play next"; icon.name: "next"; onTriggered: { userLib.playNextPaths(menu.paths()); Nav.notify(menu.what + " will play next") } }
     MenuItem { text: "Add to queue"; icon.name: "queue"; onTriggered: { userLib.enqueuePaths(menu.paths()); Nav.notify(menu.what + " added to the queue") } }
     Menu {
@@ -37,6 +59,18 @@ Menu {
             onObjectRemoved: (i, o) => plMenu.removeItem(o)
         }
     }
+    MenuItem {
+        objectName: "albumLikeAll"
+        visible: shell.features.liked !== false
+        height: visible ? implicitHeight : 0
+        text: menu.allLiked ? "Unlike all songs" : "Like all songs"
+        icon.name: "heart"
+        onTriggered: {
+            var p = menu.paths()
+            userLib.setLikedPaths(p, !menu.allLiked)
+            Nav.notify((menu.allLiked ? "Unliked" : "Liked") + " every song on " + menu.what)
+        }
+    }
     MenuSeparator {}
     MenuItem {
         visible: menu.single
@@ -51,6 +85,22 @@ Menu {
         text: "Go to " + Theme.plain(menu.artist)
         icon.name: "artist"
         onTriggered: Nav.openArtist(menu.artist)
+    }
+    MenuItem {
+        objectName: "albumGoToGenre"
+        visible: menu.single && menu.genre.length > 0
+        height: visible ? implicitHeight : 0
+        text: "Go to genre " + Theme.plain(menu.genre)
+        icon.name: "note"
+        onTriggered: Nav.openGenre(menu.genre)
+    }
+    MenuItem {
+        objectName: "albumShowInFolder"
+        visible: menu.single && menu.firstPath.length > 0 && !menu.onServer
+        height: visible ? implicitHeight : 0
+        text: "Show in folder"
+        icon.name: "folder"
+        onTriggered: library.showInFolder(menu.firstPath)
     }
     MenuSeparator {}
     MenuItem { objectName: "albumRemove"; text: "Remove from library…"; icon.name: "remove"; icon.color: Theme.error; onTriggered: Nav.removeAlbums(menu.keys, menu.what) }

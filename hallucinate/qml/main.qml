@@ -126,7 +126,14 @@ ApplicationWindow {
         var target = backRoutes[backRoutes.length - 1]
         backRoutes = backRoutes.slice(0, -1)
         forwardRoutes = forwardRoutes.concat([route])
-        if (stack.depth > 1 && sameRoute(routeOf(stack.get(stack.depth - 2), stack.depth - 2), target)) {
+        var under = stack.depth > 1 ? stack.get(stack.depth - 2) : null
+        // An album or artist opened from the search results: Back goes to those results, still typed in
+        if (under && under.objectName === "search") {
+            stack.pop()
+            route = target
+            return
+        }
+        if (under && sameRoute(routeOf(under, stack.depth - 2), target)) {
             stack.pop()  // the page is still there underneath, scrolled where it was
             route = target
         } else visit(target)
@@ -228,8 +235,19 @@ ApplicationWindow {
         if (searchField.text.length > 0) searchField.text = ""
     }
     function newPlaylist() { createDlg.open() }
-    function openAlbum(key) { remember({ kind: "album", key: key }); stack.push(albumDetail, { albumKey: key }) }
-    function openArtist(name) { remember({ kind: "artist", name: name }); stack.push(artistDetail, { artistName: name }) }
+    // Already on that album's or artist's page (a link to it on the page itself): stay, don't stack a copy
+    function openAlbum(key) {
+        if (!key) return
+        if (stack.currentItem && stack.currentItem.objectName === "album" && stack.currentItem.albumKey === key) return
+        remember({ kind: "album", key: key })
+        stack.push(albumDetail, { albumKey: key })
+    }
+    function openArtist(name) {
+        if (!name) return
+        if (stack.currentItem && stack.currentItem.objectName === "artist" && stack.currentItem.artistName === name) return
+        remember({ kind: "artist", name: name })
+        stack.push(artistDetail, { artistName: name })
+    }
     function openGenre(name) {
         if (!name) return
         if (stack.currentItem && stack.currentItem.genreName === name) return
@@ -306,7 +324,7 @@ ApplicationWindow {
         function onFolderMenu(path, name) { if (path) collectionMenu.showFolder(path, name) }
         function onTrackMenu(path, title, context, index) {
             // on a song that's part of a selection, the menu acts on the whole selection
-            if (Selection.count > 1 && Selection.paths.indexOf(path) >= 0) trackMenu.showMany(Selection.paths)
+            if (Selection.count > 1 && Selection.paths.indexOf(path) >= 0) trackMenu.showMany(Selection.paths, context)
             else trackMenu.show(path, title, context, index)
         }
         function onToggleNowPlaying() { nowPlaying.toggle() }
@@ -402,6 +420,7 @@ ApplicationWindow {
         x: sidebar.width + (stack.width - width) / 2
         anchors { bottom: parent.bottom; bottomMargin: 112 }
         onEditTags: function (paths) { tagEditor.editTracks(paths) }
+        onRemoveFromPlaylist: function (paths) { trackMenu.removePathsFromPlaylist(paths) }
     }
     AlbumBar {
         z: 59
@@ -418,6 +437,13 @@ ApplicationWindow {
         sequence: "Escape"
         enabled: (Selection.count > 0 || AlbumSelection.count > 0) && !nowPlaying.open
         onActivated: { Selection.clear(); AlbumSelection.clear() }
+    }
+    // Escape on the search results (nothing selected, not typing in a field) leaves the search, like Back
+    Shortcut {
+        sequence: "Escape"
+        enabled: !!(stack.currentItem && stack.currentItem.objectName === "search") && Selection.count === 0
+                 && AlbumSelection.count === 0 && !nowPlaying.open && !window.typing
+        onActivated: searchField.text = ""
     }
     Connections { target: Selection; function onCountChanged() { if (Selection.count > 0) AlbumSelection.clear() } }
     Connections { target: AlbumSelection; function onCountChanged() { if (AlbumSelection.count > 0) Selection.clear() } }
@@ -871,7 +897,8 @@ ApplicationWindow {
     // Keyboard shortcuts (disabled while typing in the search box)
     // Any text field with the focus (the search, a page's filter, a dialog's field): the window's single-key
     // shortcuts (Space, arrows, letters) stand aside so the keys reach it.
-    readonly property bool typing: searchField.activeFocus
+    // The first-run welcome counts too: while it's open, its own buttons and fields have the keys.
+    readonly property bool typing: welcomeView.open || searchField.activeFocus
         || (window.activeFocusItem !== null && window.activeFocusItem.cursorPosition !== undefined)
     // A focused Qt control (a checkbox, a combo box, a dialog's buttons) presses itself with Space
     readonly property bool onControl: window.activeFocusItem !== null && window.activeFocusItem.down !== undefined
@@ -880,12 +907,14 @@ ApplicationWindow {
     Shortcut { sequence: "Right"; enabled: !window.typing; onActivated: player.seekBy(5000) }
     Shortcut { sequence: "Up"; enabled: !window.typing; onActivated: player.changeVolume(0.05) }
     Shortcut { sequence: "Down"; enabled: !window.typing; onActivated: player.changeVolume(-0.05) }
+    // M mutes, and M again brings back the volume it had (the same remembered volume as the bar's button)
+    Shortcut { sequence: "M"; enabled: !window.typing; onActivated: player.toggleMute() }
     Shortcut { sequence: "N"; enabled: !window.typing; onActivated: player.next() }
     Shortcut { sequence: "P"; enabled: !window.typing; onActivated: player.previous() }
     Shortcut { sequence: "S"; enabled: !window.typing; onActivated: player.toggleShuffle() }
     Shortcut { sequence: "R"; enabled: !window.typing; onActivated: player.cycleRepeat() }
     Shortcut { sequence: "Q"; enabled: !window.typing; onActivated: { window.queueOpen = !window.queueOpen; if (window.queueOpen) window.lyricsOpen = false } }
-    Shortcut { sequence: "Ctrl+M"; onActivated: shell.toggleMini() }
+    Shortcut { sequence: "Ctrl+M"; enabled: !welcomeView.open; onActivated: shell.toggleMini() }
     Shortcut {
         sequence: "Ctrl+Z"
         enabled: !window.typing && player.canUndoQueue
@@ -897,14 +926,14 @@ ApplicationWindow {
             required property int index
             Shortcut {
                 sequence: "Ctrl+" + index
-                enabled: player.hasTrack && !(player.current.kind || "").length  // stations and episodes have no rating
+                enabled: !welcomeView.open && player.hasTrack && !(player.current.kind || "").length  // stations and episodes have no rating
                 onActivated: userLib.setRating(player.current.path, index === 0 ? userLib.rating(player.current.path) : index)
             }
         }
     }
     Shortcut { sequence: "F"; enabled: !window.typing; onActivated: nowPlaying.toggle() }
     Shortcut { sequence: "Escape"; enabled: nowPlaying.open; onActivated: nowPlaying.open = false }
-    Shortcut { sequence: "F11"; onActivated: nowPlaying.toggleFullScreen() }
+    Shortcut { sequence: "F11"; enabled: !welcomeView.open; onActivated: nowPlaying.toggleFullScreen() }
     Shortcut {
         sequence: "L"; enabled: !window.typing && window.featureOn("lyrics")
         onActivated: {
@@ -912,8 +941,8 @@ ApplicationWindow {
             window.lyricsOpen = !window.lyricsOpen; if (window.lyricsOpen) window.queueOpen = false
         }
     }
-    Shortcut { sequence: "Alt+Left"; onActivated: Nav.back() }
-    Shortcut { sequence: "Alt+Right"; onActivated: window.goForward() }
+    Shortcut { sequence: "Alt+Left"; enabled: !welcomeView.open; onActivated: Nav.back() }
+    Shortcut { sequence: "Alt+Right"; enabled: !welcomeView.open; onActivated: window.goForward() }
     // The mouse's back and forward side buttons, anywhere in the window; other buttons pass straight through
     MouseArea {
         anchors.fill: parent
@@ -923,12 +952,12 @@ ApplicationWindow {
         Accessible.name: "Hallucinate"
         onClicked: function (mouse) { mouse.button === Qt.BackButton ? Nav.back() : window.goForward() }
     }
-    Shortcut { sequences: ["Ctrl+K", "Ctrl+P"]; onActivated: commandPalette.opened ? commandPalette.close() : commandPalette.show() }
+    Shortcut { sequences: ["Ctrl+K", "Ctrl+P"]; enabled: !welcomeView.open; onActivated: commandPalette.opened ? commandPalette.close() : commandPalette.show() }
     Shortcut { sequences: ["/", "Ctrl+F"]; enabled: !window.typing; onActivated: { searchField.forceActiveFocus(); searchField.selectAll() } }
     Shortcut { sequence: "Ctrl+Q"; onActivated: Qt.quit() }
 
     NowPlayingView { id: nowPlaying; anchors.fill: parent }
-    Welcome { anchors.fill: parent; onFinished: window.go("home") }
+    Welcome { id: welcomeView; anchors.fill: parent; onFinished: { window.go("home"); window.contentItem.forceActiveFocus() } }
 
     Rectangle {
         anchors.fill: parent

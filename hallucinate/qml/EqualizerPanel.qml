@@ -36,7 +36,7 @@ Column {
         StyledCombo {
             id: presetBox
             model: player.eqPresets.concat(["Custom"])
-            currentIndex: Math.max(0, model.indexOf(player.eqPreset))
+            selection: model.indexOf(player.eqPreset)
             onActivated: if (currentText !== "Custom") player.setEqPreset(currentText)
         }
     }

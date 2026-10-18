@@ -1,11 +1,9 @@
 """Find missing cover art on MusicBrainz / Cover Art Archive."""
-import json
 import time
 import urllib.error
-import urllib.parse
 import urllib.request
 
-from . import net
+from . import musicbrainz, net
 from .lyrics import USER_AGENT
 
 MAX_BYTES = 8_000_000
@@ -23,6 +21,12 @@ def _get(url, timeout=10):
         return resp.read(MAX_BYTES)
 
 
+def _search(params, timeout=10):
+    """A MusicBrainz release search, through musicbrainz._get: every MusicBrainz request in the app shares its
+    one-a-second limit (cover lookups, Discord's and tag fixes alike), as MusicBrainz asks."""
+    return musicbrainz._get("release/", params, timeout=timeout)
+
+
 def _quote(s):
     return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
@@ -33,11 +37,9 @@ def find_releases(artist, album, limit=5, sleep=time.sleep):
     query = f"release:{_quote(album)}"
     if artist and artist.lower() not in ("unknown artist", "various artists"):
         query += f" AND artist:{_quote(artist)}"
-    url = "https://musicbrainz.org/ws/2/release/?" + urllib.parse.urlencode(
-        {"query": query, "fmt": "json", "limit": limit})
     for attempt in (1, 2):
         try:
-            data = json.loads(_get(url))
+            data = _search({"query": query, "limit": limit})
             break
         except urllib.error.HTTPError as exc:
             if exc.code < 500:

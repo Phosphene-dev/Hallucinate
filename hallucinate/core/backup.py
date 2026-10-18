@@ -104,7 +104,7 @@ ROWS = {
     "ratings": [("path", S, True), ("stars", I, True), ("rated_at", N, False)],
     "plays": [("path", S, True), ("count", I, True), ("last", N, False)],
     "skips": [("path", S, True), ("count", I, True), ("last", N, False)],
-    "play_log": [("ts", N, True), ("path", S, True), ("artist", S, False), ("title", S, False), ("album", S, False),
+    "play_log": [("ts", N, True), ("path", S, False), ("artist", S, False), ("title", S, False), ("album", S, False),
                  ("duration", N, False), ("source", S, False), ("s_artist", S, False), ("s_title", S, False),
                  ("s_album", S, False)],
     "smart_playlists": [("name", S, True), ("rules", S, True), ("created", N, False)],
@@ -216,10 +216,19 @@ def restore(data, library_db, streams_db):
                 cur.execute(f"INSERT INTO {table}(path, count, last) VALUES(?, ?, ?) ON CONFLICT(path) DO UPDATE SET "
                             "count=MAX(count, excluded.count), last=MAX(last, excluded.last)",
                             (r["path"], r["count"], r.get("last", 0)))
+        from .db import fold
+
         log_cols = LIBRARY_TABLES["play_log"]
         for r in data.get("play_log", []):
+            # Listens imported from Last.fm or ListenBrainz that matched no song have no path: keep them (as
+            # NULL, like the importer leaves them), and fold the names again when an older backup lacks them.
+            for c in ("artist", "title", "album"):
+                if not r.get("s_" + c):
+                    r["s_" + c] = fold(r.get(c, ""))
+            values = [r.get(c, "" if c not in ("ts", "duration") else 0) for c in log_cols]
+            values[log_cols.index("path")] = r.get("path")
             cur.execute(f"INSERT OR IGNORE INTO play_log({', '.join(log_cols)}) VALUES({', '.join('?' * len(log_cols))})",
-                        tuple(r.get(c, "" if c not in ("ts", "duration") else 0) for c in log_cols))
+                        values)
         for r in data.get("smart_playlists", []):
             if not cur.execute("SELECT 1 FROM smart_playlists WHERE name=?", (r["name"],)).fetchone():
                 cur.execute("INSERT INTO smart_playlists(name, rules, created) VALUES(?, ?, ?)",

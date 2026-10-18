@@ -419,3 +419,36 @@ def test_a_stream_still_opening_is_set_aside_not_waited_for(radio):
     for conn, _addr in held:
         conn.close()
     assert wait_for(lambda: not any(item[0] is old for item in player_module._set_aside), timeout=30)
+
+
+def test_a_logo_that_failed_isnt_fetched_on_every_refresh(radio, server, monkeypatch):
+    from hallucinate.stations import Stations
+
+    stations, _player, _ = radio
+    asked = []
+    real = Stations._fetch_icons
+    monkeypatch.setattr(Stations, "_fetch_icons", lambda self, found: (asked.append([s["favicon"] for s in found]),
+                                                                        real(self, found)))
+    stations._db.add_station({"name": "No Logo FM", "url": server.url("/live"), "favicon": server.url("/nope.png")})
+    stations.refresh()
+    assert wait_for(lambda: asked and stations._failed_icons)  # a 404
+    asked.clear()
+    stations.refresh()
+    assert not wait_for(lambda: asked, timeout=0.5)
+    stations._failed_icons[server.url("/nope.png")] -= 2 * 3600  # an hour on, it's tried again
+    stations.refresh()
+    assert wait_for(lambda: asked == [[server.url("/nope.png")]])
+
+
+def test_stop_network_stops_reading_song_titles(radio, server):
+    stations, player, _ = radio
+    stations.add(server.url("/live"), "Titles FM")
+    assert wait_for(lambda: stations.count == 1)
+    stations.play(stations.model._items[0]["id"])
+    assert wait_for(lambda: player.playing and stations._title_timer.isActive(), timeout=15), player.error
+    token = stations._title_token
+    stations.stopNetwork()
+    assert not stations._title_timer.isActive() and stations._title_token > token  # a reading under way is ignored
+    stations.resumeNetwork()
+    assert stations._title_timer.isActive()
+    player.stop()

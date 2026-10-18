@@ -69,7 +69,7 @@ Item {
                     font.pixelSize: Theme.fontSize(30)
                     font.weight: Font.Bold
                 }
-                Text { text: list.count + " songs"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                Text { objectName: "playlistCount"; text: list.count + (list.count === 1 ? " song" : " songs"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 Row {
                     spacing: 10
                     PillButton { primary: true; text: "Play"; enabled: list.count > 0; onClicked: page.liked ? userLib.playLiked(0) : userLib.playPlaylist(0, false) }

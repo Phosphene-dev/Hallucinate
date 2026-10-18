@@ -26,12 +26,39 @@ Menu {
         info = /^https?:\/\//.test(p) || podcasts.isEpisode(p) ? ({}) : library.trackInfo(p)
         popup()
     }
-    function showMany(list) {
-        paths = list.slice(); path = list[0]; trackTitle = ""; context = ""; index = -1
+    function showMany(list, c) {
+        paths = list.slice(); path = list[0]; trackTitle = ""; context = c || ""; index = -1
         info = ({})
         popup()
     }
     function done(message) { if (!single) Selection.clear(); if (message) Nav.notify(message) }
+
+    // Takes rows (by place) out of the playlist that's open, with Undo in the toast: they go back where they were.
+    // Each removal is by the list as it is now, and the writes run in order, so the places stay right.
+    function removeFromPlaylist(rows) {
+        var pid = userLib.currentPlaylist
+        var model = userLib.playlistTracks
+        var n = model.count
+        rows = rows.filter(function (i) { return i >= 0 && i < n }).sort(function (a, b) { return a - b })
+        if (pid < 0 || !rows.length) return
+        var removed = rows.map(function (i) { return model.get(i).path })
+        rows.forEach(function (i) { userLib.removeFromPlaylist(i) })
+        Nav.notifyAction(rows.length === 1 ? "Removed from the playlist" : rows.length + " songs removed from the playlist",
+                         "Undo", function () {
+            userLib.addPathsToPlaylist(pid, removed)  // back at the end...
+            if (userLib.currentPlaylist !== pid) return
+            var kept = n - rows.length  // ...then each to its old place, first to last
+            rows.forEach(function (at, k) { userLib.moveInPlaylist(kept + k, at) })
+        })
+    }
+    // the same, for songs picked by path (a selection): every row of the open playlist that holds one of them
+    function removePathsFromPlaylist(list) {
+        var model = userLib.playlistTracks
+        var rows = []
+        for (var i = 0; i < model.count; i++) if (list.indexOf(model.get(i).path) >= 0) rows.push(i)
+        removeFromPlaylist(rows)
+        Selection.clear()
+    }
 
     Item {
         objectName: "menuRating"
@@ -110,7 +137,10 @@ Menu {
     }
     MenuItem {
         id: goArtistItem
-        visible: menu.single && (menu.info.album_artist || menu.info.artist || "").length > 0 && menu.context !== "artist"
+        // on an artist's page it'd lead back there, unless the song is on someone else's record (a feature)
+        readonly property bool ownRecord: !menu.info.album_artist || menu.info.album_artist === menu.info.artist
+        visible: menu.single && (menu.info.album_artist || menu.info.artist || "").length > 0
+                 && !(menu.context === "artist" && ownRecord)
         height: visible ? implicitHeight : 0
         text: "Go to " + Theme.plain(menu.info.album_artist || menu.info.artist || "")
         icon.name: "artist"
@@ -161,12 +191,13 @@ Menu {
         onTriggered: { player.removeAt(menu.index); Nav.notifyAction("Removed from the queue", "Undo", function () { player.undoQueue() }) }
     }
     MenuItem {
-        visible: menu.single && menu.context === "playlist"
+        objectName: "trackRemoveFromPlaylist"
+        visible: menu.context === "playlist"
         height: visible ? implicitHeight : 0
         text: "Remove from this playlist"
         icon.name: "remove"
         icon.color: Theme.error
-        onTriggered: userLib.removeFromPlaylist(menu.index)
+        onTriggered: menu.single ? menu.removeFromPlaylist([menu.index]) : menu.removePathsFromPlaylist(menu.paths)
     }
     MenuSeparator { visible: !menu.stream; height: visible ? implicitHeight : 0 }
     MenuItem {

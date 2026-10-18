@@ -22,7 +22,25 @@ API_URL = "https://ws.audioscrobbler.com/2.0/"
 AUTH_URL = "https://www.last.fm/api/auth/"
 KEYRING_SERVICE = "Hallucinate Last.fm"
 MAX_RETRY_SECONDS = 900
+MAX_BATCH = 50  # scrobbles Last.fm takes in one track.scrobble
+MIN_TRACK_MS = 30_000  # a track this short or shorter never counts (Last.fm's rule)
+REPLAY_START_MS = 3_000  # back this close to the start after counting: the song is being heard again
+REJECTED_KEPT = 50  # rejected scrobbles remembered (for Settings to show), newest last
+# Last.fm's error codes: these mean the scrobble itself is wrong, and sending it again won't help...
+REJECTED_ERRORS = {6, 13}  # invalid parameters, invalid method signature
+SESSION_ERRORS = {9}  # ...and this one that the sign-in is no longer valid
+DAILY_LIMIT = 5  # an ignored scrobble's code when the daily limit was reached: sent again later
+IGNORED = {1: "Last.fm ignored the artist", 2: "Last.fm ignored the track", 3: "the timestamp is too old",
+           4: "the timestamp is too new", DAILY_LIMIT: "Last.fm's daily scrobble limit was reached"}
 logger = logging.getLogger(__name__)
+
+
+class LastFmError(RuntimeError):
+    """Last.fm answered with an error; `code` is its error number (0 when it couldn't be reached)."""
+
+    def __init__(self, code, text):
+        super().__init__(text)
+        self.code = code
 
 
 def _words(exc):
@@ -42,6 +60,59 @@ def scrobble_threshold(duration_ms: int) -> int:
     return min(duration_ms // 2, 240_000) if duration_ms > 0 else 240_000
 
 
+def listen_threshold(track, duration_ms):
+    """How long (ms) a track has to be heard to count, for Last.fm and ListenBrainz alike: Last.fm's rule (half
+    of it or four minutes, whichever is shorter), never for a track of 30 seconds or less, and a minute for a
+    song on the radio (its length is unknown). 0 means it never counts."""
+    if track_kind(track) == "station":
+        return 60_000
+    if 0 < duration_ms <= MIN_TRACK_MS:
+        return 0
+    return scrobble_threshold(duration_ms)
+
+
+def heard_ms(elapsed_s, advance_ms):
+    """Listening time (ms) one tick of about a second adds: only when the position moved on about as far as the
+    time that passed (a pause, a seek or a stall adds nothing)."""
+    elapsed = max(0.0, min(elapsed_s, 2.0))
+    return min(int(elapsed * 1000), 1500) if 0 < advance_ms <= elapsed * 2000 + 250 else 0
+
+
+def scrobble_params(batch):
+    """track.scrobble's fields for one scrobble, or for several as artist[0], track[0], artist[1]…"""
+    if len(batch) == 1:
+        return dict(batch[0])
+    return {f"{key}[{i}]": value for i, item in enumerate(batch) for key, value in item.items()}
+
+
+def scrobble_codes(result, count):
+    """For each of the `count` scrobbles sent: 0 if Last.fm accepted it, else why it was ignored (its
+    ignoredMessage code, -1 when it gave none). None when the answer doesn't say which were accepted."""
+    block = result.get("scrobbles") if isinstance(result, dict) else None
+    if not isinstance(block, dict):
+        raise LastFmError(0, "Last.fm returned an invalid response")
+    try:
+        accepted = int((block.get("@attr") or {}).get("accepted") or 0)
+    except (TypeError, ValueError):
+        accepted = 0
+    items = block.get("scrobble")
+    items = [items] if isinstance(items, dict) else items
+    if not isinstance(items, list) or len(items) != count:
+        if accepted == count:
+            return [0] * count
+        return [-1] if count == 1 else None
+    codes = []
+    for item in items:
+        message = item.get("ignoredMessage") if isinstance(item, dict) else None
+        try:
+            codes.append(int((message or {}).get("code") or 0) if isinstance(message, dict) else 0)
+        except (TypeError, ValueError):
+            codes.append(-1)
+    if accepted == 0 and not any(codes):
+        return [-1] * count  # none accepted, and no reason given
+    return codes
+
+
 def api_request(method, params, api_key, api_secret, session_key=None, signed=True):
     fields = {"method": method, "api_key": api_key, **params}
     if session_key:
@@ -56,12 +127,24 @@ def api_request(method, params, api_key, api_secret, session_key=None, signed=Tr
     try:
         with net.urlopen(req, timeout=15) as response:
             data = json.loads(response.read().decode("utf-8"))
-    except (HTTPError, URLError, TimeoutError, OSError, ValueError) as exc:
-        raise RuntimeError(f"Couldn't reach Last.fm: {_words(exc)}") from exc
+    except HTTPError as exc:
+        # Last.fm answers some errors (a bad session, bad parameters) with an HTTP error carrying its own code
+        try:
+            data = json.loads(exc.read().decode("utf-8"))
+        except (OSError, ValueError, AttributeError):
+            data = None
+        if not (isinstance(data, dict) and "error" in data):
+            raise LastFmError(0, f"Couldn't reach Last.fm: {_words(exc)}") from exc
+    except (URLError, TimeoutError, OSError, ValueError) as exc:
+        raise LastFmError(0, f"Couldn't reach Last.fm: {_words(exc)}") from exc
     if not isinstance(data, dict):
-        raise RuntimeError("Last.fm returned an invalid response")
+        raise LastFmError(0, "Last.fm returned an invalid response")
     if "error" in data:
-        raise RuntimeError(f"Last.fm error {data['error']}: {data.get('message', 'request rejected')}")
+        try:
+            code = int(data["error"])
+        except (TypeError, ValueError):
+            code = 0
+        raise LastFmError(code, f"Last.fm error {data['error']}: {data.get('message', 'request rejected')}")
     return data
 
 
@@ -95,8 +178,10 @@ class LastFmScrobbler(QObject):
     _jobFinished = Signal(str, object, str)
     syncChanged = Signal()
     lovesImported = Signal(object)  # [(artist, title)] loved on Last.fm, for the library to like
+    deliveryChanged = Signal()  # rejectedCount, rejected or lastError changed
     _loves_done = Signal(object)
     _keyring_late = Signal(object)
+    _stored = Signal(str, object)  # a keyring write finished: (what went wrong or "", what to do next)
 
     def __init__(self, player, data_dir, parent=None):
         super().__init__(parent)
@@ -125,10 +210,15 @@ class LastFmScrobbler(QObject):
         self._last_position = 0
         self._scrobbled_key = ""
         self._keyring_error = ""
+        self._rejected = []  # [{artist, track, reason}] Last.fm refused for good, newest last
+        self._rejected_count = 0
+        self._last_error = ""
+        self._single = False  # a batch was refused: send one at a time to find the scrobble at fault
         self._load_keyring()
         self._load_queue()
 
         self._jobFinished.connect(self._on_job_finished)
+        self._stored.connect(self._on_stored)
         from PySide6.QtCore import QSettings
 
         self._qsettings = QSettings("hallucinate", "hallucinate")
@@ -217,10 +307,60 @@ class LastFmScrobbler(QObject):
     def busy(self):
         return self._busy
 
+    @Property(int, notify=deliveryChanged)
+    def rejectedCount(self):
+        """Scrobbles Last.fm refused for good (since the app started): they were dropped from the queue."""
+        return self._rejected_count
+
+    @Property("QVariantList", notify=deliveryChanged)
+    def rejected(self):
+        """The latest of those, newest last: [{artist, track, reason}]."""
+        return list(self._rejected)
+
+    @Property(str, notify=deliveryChanged)
+    def lastError(self):
+        """What went wrong with the last request ("" once one works again)."""
+        return self._last_error
+
+    def _set_last_error(self, text):
+        if text != self._last_error:
+            self._last_error = text
+            self.deliveryChanged.emit()
+
+    def _reject(self, item, reason):
+        self._rejected.append({"artist": item.get("artist", ""), "track": item.get("track", ""), "reason": reason})
+        del self._rejected[:-REJECTED_KEPT]
+        self._rejected_count += 1
+        logger.info("Last.fm refused a scrobble (%s): dropped", reason)
+        self.deliveryChanged.emit()
+
+    @Slot()
+    def retryNow(self):
+        """Send what's waiting now instead of after the back-off."""
+        self._retry_at, self._retry_delay = 0.0, 5.0
+        if self._pending_nowplaying:
+            self._send_nowplaying()
+        self._send_pending()
+
     def _set_status(self, text):
         if text != self._status:
             self._status = text
             self.statusChanged.emit()
+
+    def _store(self, fn, then=None):
+        """Keyring writes on a thread of their own (a locked keyring mustn't freeze the window); then(error)
+        follows on this thread once it's done."""
+        def run():
+            self._stored.emit(keyringwait.call(fn), then)
+
+        threading.Thread(target=run, name="lastfm-keyring", daemon=True).start()
+
+    @Slot(str, object)
+    def _on_stored(self, error, then):
+        if then is not None:
+            then(error)
+        elif error:
+            logger.warning("Last.fm system keyring couldn't be updated: %s", error)
 
     def _set_authorization_url(self, url):
         if url != self._authorization_url:
@@ -236,14 +376,17 @@ class LastFmScrobbler(QObject):
         if self._keyring_error:
             self._set_status(f"Cannot store API credentials securely: {self._keyring_error}")
             return
-        error = keyringwait.call(lambda: (keyring.set_password(KEYRING_SERVICE, "api_key", api_key),
-                                          keyring.set_password(KEYRING_SERVICE, "api_secret", api_secret)))
-        if error:
-            self._set_status(f"Could not save API credentials to the system keyring: {error}")
-            return
-        self._api_key, self._api_secret = api_key, api_secret
-        self.statusChanged.emit()
-        self._set_status("Last.fm API credentials saved securely.")
+        def then(error):
+            if error:
+                self._set_status(f"Could not save API credentials to the system keyring: {error}")
+                return
+            self._api_key, self._api_secret = api_key, api_secret
+            self.statusChanged.emit()
+            self._set_status("Last.fm API credentials saved securely.")
+
+        self._set_status("Saving the API credentials…")
+        self._store(lambda: (keyring.set_password(KEYRING_SERVICE, "api_key", api_key),
+                             keyring.set_password(KEYRING_SERVICE, "api_secret", api_secret)), then)
 
     @Slot()
     def connectAccount(self):
@@ -285,21 +428,27 @@ class LastFmScrobbler(QObject):
         if self._busy:
             self._set_status("Wait for the current Last.fm request to finish before disconnecting.")
             return
-        def forget():
-            if keyring.get_password(KEYRING_SERVICE, "session"):
-                keyring.delete_password(KEYRING_SERVICE, "session")
+        self._forget_session()
+        self._set_authorization_url("")
+        self._set_status("Disconnected from Last.fm. Pending scrobbles are kept.")
 
-        error = keyringwait.call(forget)
-        if error:
-            self._set_status(f"Could not remove the Last.fm session from the system keyring: {error}")
-            return
+    def _forget_session(self):
+        """Sign out here at once, and take the session out of the keyring in the background."""
         self._session_key = ""
         self._auth_token = ""
         self._sent_nowplaying_key = ""
         self._attempted_nowplaying_key = ""
         self.connectionChanged.emit()
-        self._set_authorization_url("")
-        self._set_status("Disconnected from Last.fm. Pending scrobbles are kept.")
+
+        def forget():
+            if keyring.get_password(KEYRING_SERVICE, "session"):
+                keyring.delete_password(KEYRING_SERVICE, "session")
+
+        def then(error):
+            if error:
+                self._set_status(f"{self._status} (the session couldn't be removed from the system keyring: {error})")
+
+        self._store(forget, then)
 
     def _start_job(self, action, work, item=None):
         if self._busy:
@@ -310,9 +459,9 @@ class LastFmScrobbler(QObject):
         def run():
             try:
                 result = work()
-                self._jobFinished.emit(action, (result, item), "")
+                self._jobFinished.emit(action, (result, item, 0), "")
             except Exception as exc:
-                self._jobFinished.emit(action, (None, item), str(exc))
+                self._jobFinished.emit(action, (None, item, getattr(exc, "code", 0)), str(exc) or type(exc).__name__)
 
         threading.Thread(target=run, name=f"lastfm-{action}", daemon=True).start()
         return True
@@ -320,8 +469,31 @@ class LastFmScrobbler(QObject):
     def _on_job_finished(self, action, payload, error):
         self._busy = False
         self.busyChanged.emit()
-        result, item = payload
+        result, item, code = payload
         if error:
+            self._set_last_error(error)
+            if code in SESSION_ERRORS and action in ("nowplaying", "scrobble"):
+                # the session was revoked (or the app's access taken back): asking again won't help
+                self._forget_session()
+                self._set_status("Last.fm no longer accepts this sign-in: connect Last.fm again. "
+                                 "Pending scrobbles are kept.")
+                return
+            if code in REJECTED_ERRORS and action == "scrobble":
+                if len(item) > 1:
+                    self._single = True  # one of them is at fault: find it by sending them one at a time
+                elif self._pending and self._pending[0] == item[0]:
+                    self._pending.pop(0)
+                    self._save_queue()
+                    self.pendingCountChanged.emit()
+                    self._reject(item[0], error)
+                    self._single = False
+                self._set_status(error)
+                self._send_pending()
+                return
+            if code in REJECTED_ERRORS and action == "nowplaying":
+                self._pending_nowplaying = None  # this one won't ever be accepted; the next track's may
+                self._set_status(error)
+                return
             self._set_status(error)
             self._retry_delay = min(self._retry_delay * 2, MAX_RETRY_SECONDS)
             self._retry_at = time.monotonic() + self._retry_delay
@@ -330,6 +502,7 @@ class LastFmScrobbler(QObject):
             return
         self._retry_delay = 5.0
         self._retry_at = 0.0
+        self._set_last_error("")
         if action == "token":
             token = result.get("token")
             if not token:
@@ -345,28 +518,49 @@ class LastFmScrobbler(QObject):
             except (KeyError, TypeError, AttributeError):
                 self._set_status("Last.fm didn't return a session.")
                 return
-            error = keyringwait.call(lambda: keyring.set_password(KEYRING_SERVICE, "session", session_key))
-            if error:
-                self._set_status(f"Could not store Last.fm session securely: {error}")
-                return
-            self._session_key = session_key
-            self._auth_token = ""
-            self._set_authorization_url("")
-            self.connectionChanged.emit()
-            self._set_status(f"Connected to Last.fm{f' as {username}' if username else ''}.")
-            self._ensure_nowplaying()
-            self._send_pending()
+            def then(error):
+                if error:
+                    self._set_status(f"Could not store Last.fm session securely: {error}")
+                    return
+                self._session_key = session_key
+                self._auth_token = ""
+                self._set_authorization_url("")
+                self.connectionChanged.emit()
+                self._set_status(f"Connected to Last.fm{f' as {username}' if username else ''}.")
+                self._ensure_nowplaying()
+                self._send_pending()
+
+            self._set_status("Saving the Last.fm session…")
+            self._store(lambda: keyring.set_password(KEYRING_SERVICE, "session", session_key), then)
         elif action == "nowplaying":
             self._sent_nowplaying_key = item
             self._attempted_nowplaying_key = item
             self._pending_nowplaying = None
             self._set_status("Last.fm now-playing updated.")
         elif action == "scrobble":
-            if self._pending and self._pending[0] == item:
-                self._pending.pop(0)
+            batch, codes = item, result
+            if codes is None:  # refused, without saying which: send them one at a time to find out
+                self._single = True
+                self._send_pending()
+                return
+            if self._pending[:len(batch)] == batch:
+                later = [b for b, c in zip(batch, codes) if c == DAILY_LIMIT]  # sent again later
+                for b, c in zip(batch, codes):
+                    if c not in (0, DAILY_LIMIT):
+                        self._reject(b, IGNORED.get(c, "Last.fm didn't accept it"))
+                self._pending[:len(batch)] = later
                 self._save_queue()
                 self.pendingCountChanged.emit()
-            self._set_status(f"Scrobbled {item.get('artist', '')} — {item.get('track', '')}.")
+                if later:
+                    self._retry_at = time.monotonic() + 3600
+                    self._set_status(IGNORED[DAILY_LIMIT] + ": the rest are sent later.")
+                    return
+            if not self._pending:
+                self._single = False
+            if len(batch) == 1:
+                self._set_status(f"Scrobbled {batch[0].get('artist', '')} — {batch[0].get('track', '')}.")
+            else:
+                self._set_status(f"Scrobbled {sum(1 for c in codes if c == 0)} tracks.")
             self._send_pending()
 
     @Slot()
@@ -376,16 +570,28 @@ class LastFmScrobbler(QObject):
         if key != self._current_key:
             self._current_key = key
             self._current_track = track
-            self._listened_ms = 0
-            self._scrobbled_key = ""
-            self._started_at = int(time.time())
-            self._has_started_playback = bool(self.player.playing)
-            self._sent_nowplaying_key = ""
-            self._attempted_nowplaying_key = ""
-            self._pending_nowplaying = None
-            self._last_tick = time.monotonic()
-            self._last_position = self.player.position
+            self._new_listen()
+        else:
+            self._maybe_replay(self.player.position)  # the same song loaded again (repeat one)
         self._ensure_nowplaying()
+
+    def _new_listen(self):
+        """Start counting a listen afresh: a new song, or the same one heard again."""
+        self._listened_ms = 0
+        self._scrobbled_key = ""
+        self._started_at = int(time.time())
+        self._has_started_playback = bool(self.player.playing)
+        self._sent_nowplaying_key = ""
+        self._attempted_nowplaying_key = ""
+        self._pending_nowplaying = None
+        self._last_tick = time.monotonic()
+        self._last_position = self.player.position
+
+    def _maybe_replay(self, position):
+        """Back at the start of a song that was already scrobbled (repeat one, or played again from the top):
+        that's another listen, scrobbled again once enough of it is heard."""
+        if self._scrobbled_key and self._scrobbled_key == self._current_key and position < REPLAY_START_MS:
+            self._new_listen()
 
     @Slot()
     def _on_state_changed(self):
@@ -398,6 +604,7 @@ class LastFmScrobbler(QObject):
 
     @Slot(int)
     def _on_seeked(self, position):
+        self._maybe_replay(position)
         self._last_tick = time.monotonic()
         self._last_position = position
 
@@ -439,14 +646,11 @@ class LastFmScrobbler(QObject):
             self._on_track_changed()
         if self.connected and self.player.playing and self._current_track:
             position = self.player.position
-            elapsed = max(0.0, min(now - self._last_tick, 2.0))
-            advance = position - self._last_position
-            if 0 < advance <= elapsed * 2000 + 250:
-                self._listened_ms += min(int(elapsed * 1000), 1500)
+            if position < REPLAY_START_MS <= self._last_position:
+                self._maybe_replay(position)  # it went back to the start by itself (a gapless repeat)
+            self._listened_ms += heard_ms(now - self._last_tick, position - self._last_position)
             duration = int(self.player.duration or float(self._current_track.get("duration", 0)) * 1000)
-            threshold = scrobble_threshold(duration)
-            if track_kind(self._current_track) == "station":
-                threshold = 60_000  # a song on the radio: its length is unknown, a minute of it counts
+            threshold = listen_threshold(self._current_track, duration)
             key = self._track_key(self._current_track)
             if (key != self._scrobbled_key and threshold > 0 and self._listened_ms >= threshold
                     and counts_for_scrobbling(self._current_track)):
@@ -494,21 +698,18 @@ class LastFmScrobbler(QObject):
         if (not self.connected or self._busy or not self._pending or net.is_offline()
                 or time.monotonic() < self._retry_at):
             return
-        item = dict(self._pending[0])
+        batch = [dict(item) for item in self._pending[:1 if self._single else MAX_BATCH]]
 
         def submit():
             result = api_request(
-                "track.scrobble", item, self._api_key, self._api_secret, self._session_key
+                "track.scrobble", scrobble_params(batch), self._api_key, self._api_secret, self._session_key
             )
-            accepted = result.get("scrobbles", {}).get("@attr", {}).get("accepted")
-            if str(accepted) != "1":
-                raise RuntimeError("Last.fm did not accept the queued scrobble.")
-            return result
+            return scrobble_codes(result, len(batch))
 
         self._start_job(
             "scrobble",
             submit,
-            item=item,
+            item=batch,
         )
 
     def _save_queue(self):

@@ -21,10 +21,12 @@ def profile(db, name, now=None, top=5, months=12):
            FROM tracks WHERE s_aa = ?""",
         (key,),
     ).fetchone()
-    genres = {}
+    genres, names = {}, {}  # by folded name: differently cased spellings are one genre (the first one shown)
     for (g,) in db.conn.execute("SELECT genre FROM tracks WHERE s_aa = ? AND genre != ''", (key,)):
         for pos, part in enumerate(genre_names.split(g)):
-            genres[part] = genres.get(part, 0) + (2 if pos == 0 else 1)  # the main genre counts more
+            k = genre_names.fold(part)
+            names.setdefault(k, part)
+            genres[k] = genres.get(k, 0) + (2 if pos == 0 else 1)  # the main genre counts more
     listens = db.conn.execute(
         """SELECT COUNT(*) AS plays, COALESCE(SUM(duration), 0) AS seconds, MIN(ts) AS first, MAX(ts) AS last
            FROM play_log WHERE s_artist = ?""",
@@ -67,7 +69,7 @@ def profile(db, name, now=None, top=5, months=12):
     return {
         "tracks": row["tracks"], "albums": row["albums"], "seconds": float(row["seconds"]),
         "firstYear": row["first_year"] or 0, "lastYear": row["last_year"] or 0,
-        "genres": [g for g, _ in sorted(genres.items(), key=lambda kv: (-kv[1], kv[0]))[:3]],
+        "genres": [names[g] for g, _ in sorted(genres.items(), key=lambda kv: (-kv[1], kv[0]))[:3]],
         "plays": listens["plays"], "listenSeconds": float(listens["seconds"]),
         "firstPlayed": listens["first"] or 0, "lastPlayed": listens["last"] or 0, "rank": rank,
         "months": [{"month": k, "plays": v} for k, v in per_month.items()],

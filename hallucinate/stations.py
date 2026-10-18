@@ -7,6 +7,7 @@ side connection (Qt doesn't pass the titles on) and becomes the playing song's a
 downloaded once into the cache, so pictures never load from the web while offline mode is on."""
 import hashlib
 import logging
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -28,6 +29,7 @@ STATION_KEYS = ["id", "name", "url", "homepage", "tags", "country", "codec", "bi
 RESULT_KEYS = ["row", "name", "url", "homepage", "tags", "country", "codec", "bitrate", "artUrl", "saved", "detail",
                "votes"]
 MAX_ICON_BYTES = 1_000_000
+FAILED_ICON_TTL_S = 3600  # a logo that couldn't be fetched isn't tried again for this long
 
 
 def detail(station):
@@ -67,6 +69,8 @@ class Stations(QObject):
         self._status = ""
         self._busy = False
         self._title_token = 0
+        self._failed_icons = {}  # logo url -> when fetching it failed
+        self._icons_lock = threading.Lock()
         self._pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix="stations")
         self._done.connect(self._apply)
         self._title_timer = QTimer(self)
@@ -98,7 +102,11 @@ class Stations(QObject):
     def refresh(self):
         rows = self._db.stations()
         self._model.set_items([self._row(s) for s in rows])
-        missing = [s for s in rows if s.get("favicon") and not self._icon_file(s).exists()]
+        now = time.monotonic()
+        with self._icons_lock:
+            missing = [s for s in rows if s.get("favicon")
+                       and now - self._failed_icons.get(s["favicon"], -FAILED_ICON_TTL_S) >= FAILED_ICON_TTL_S
+                       and not self._icon_file(s).exists()]
         if missing and not net.is_offline():
             self._pool.submit(self._fetch_icons, missing)
         self._mark_saved()
@@ -113,13 +121,17 @@ class Stations(QObject):
                 with net.urlopen(request, timeout=8, limit=MAX_ICON_BYTES) as resp:
                     kind = (resp.headers.get("Content-Type") or "").lower()
                     data = resp.read()
-                if not kind.startswith("image/") or not data:
+                if kind.startswith("image/") and data:
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(data)
+                    got = True
                     continue
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes(data)
-                got = True
+            except net.OfflineError:
+                return  # offline mode came on: nothing failed
             except (OSError, ValueError) as exc:
                 logger.info("No logo for a station: %s", exc)
+            with self._icons_lock:
+                self._failed_icons[station["favicon"]] = time.monotonic()  # not asked for on every refresh
         if got:
             self._done.emit(("icons", None, None))
 
@@ -359,9 +371,21 @@ class Stations(QObject):
         self._on_player()
 
     @Slot()
+    def stopNetwork(self):
+        """Offline mode came on: stop reading the playing station's song titles (a reading under way is
+        ignored when it answers). resumeNetwork() starts them again."""
+        self._title_timer.stop()
+        self._title_token += 1
+
+    @Slot()
+    def resumeNetwork(self):
+        """Offline mode went off: read the playing station's titles again (if one is playing)."""
+        self._on_player()
+
+    @Slot()
     def _on_player(self):
         playing_station = (self._enabled and self._player.hasTrack and self._player.playing
-                           and track_kind(self._player.current) == "station")
+                           and track_kind(self._player.current) == "station" and not net.is_offline())
         if playing_station and not self._title_timer.isActive():
             self._title_timer.start()
             self._poll_title()

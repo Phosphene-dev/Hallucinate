@@ -105,7 +105,16 @@ class _WebOnlyRedirects(urllib.request.HTTPRedirectHandler):
         target = urllib.parse.urljoin(req.full_url, newurl)
         if not is_web_url(target):
             raise NotWebLink(newurl)
-        new = super().redirect_request(req, fp, code, msg, headers, newurl)
+        # Python 3.10 doesn't know 308 (a permanent 307): asked as a 307 it's followed the same way
+        new = super().redirect_request(req, fp, 307 if code == 308 else code, msg, headers, newurl)
+        if new is not None:
+            # Every hop, as (status, link), on the request the caller holds (`redirects`): a feed follows a
+            # move for good (301, 308) but not a temporary one
+            hops = getattr(req, "redirects", None)
+            if hops is None:
+                hops = req.redirects = []
+            hops.append((code, target))
+            new.redirects = hops
         old, to = urllib.parse.urlsplit(req.full_url), urllib.parse.urlsplit(target)
         if new is not None and (to.netloc != old.netloc or to.scheme.lower() != old.scheme.lower()):
             # urllib forwards every header: a token meant for one server mustn't reach the next one, nor go
@@ -117,6 +126,11 @@ class _WebOnlyRedirects(urllib.request.HTTPRedirectHandler):
                 if name.lower() in ("authorization", "cookie"):
                     del new.unredirected_hdrs[name]
         return new
+
+
+# (Python 3.11 and later already handle 308 themselves)
+if not hasattr(urllib.request.HTTPRedirectHandler, "http_error_308"):
+    _WebOnlyRedirects.http_error_308 = urllib.request.HTTPRedirectHandler.http_error_302
 
 
 urllib.request.install_opener(urllib.request.build_opener(_WebOnlyRedirects))

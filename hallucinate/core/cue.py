@@ -9,7 +9,7 @@ files that are already separate."""
 import os
 import re
 
-from . import tags
+from . import genres, tags
 
 FRAMES = 75  # CD frames per second, the unit of INDEX times
 
@@ -82,7 +82,7 @@ def parse(text):
             key, _, value = rest.strip().partition(" ")
             key = key.upper()
             if key == "GENRE" and track is None:
-                sheet["genre"] = _arg(value)
+                sheet["genre"] = genres.join(genres.split(_arg(value)))  # "Rock / Pop" as the library writes it
             elif key == "DATE" and track is None:
                 sheet["date"] = _arg(value)
             elif key == "DISCNUMBER" and track is None:

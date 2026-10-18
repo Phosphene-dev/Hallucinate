@@ -68,6 +68,16 @@ class _PlayerAdaptor(QDBusAbstractAdaptor):
     def _set_volume(self, v):
         self.p.setVolume(float(v))
 
+    def _get_rate(self):
+        return float(self.p.speed)
+
+    def _set_rate(self, v):
+        v = float(v)
+        if v <= 0:  # MPRIS: a rate of 0 means pause
+            self.p.pause()
+        else:
+            self.p.setSpeed(v)  # (clamped to what the player allows for what's playing)
+
     def _get_meta(self):
         return metadata(self.p)
 
@@ -76,9 +86,9 @@ class _PlayerAdaptor(QDBusAbstractAdaptor):
 
     PlaybackStatus = Property(str, _get_status)
     LoopStatus = Property(str, _get_loop, _set_loop)
-    Rate = Property(float, lambda self: 1.0)
-    MinimumRate = Property(float, lambda self: 1.0)
-    MaximumRate = Property(float, lambda self: 1.0)
+    Rate = Property(float, _get_rate, _set_rate)
+    MinimumRate = Property(float, lambda self: 0.5)
+    MaximumRate = Property(float, lambda self: 3.0)  # podcasts go up to 3x, music to 2x
     Shuffle = Property(bool, _get_shuffle, _set_shuffle)
     Metadata = Property("QVariantMap", _get_meta)
     Volume = Property(float, _get_volume, _set_volume)
@@ -161,6 +171,8 @@ class MprisService(QObject):
             player.shuffleChanged.connect(lambda: self._notify("Shuffle"))
             player.repeatChanged.connect(lambda: self._notify("LoopStatus"))
             player.volumeChanged.connect(lambda: self._notify("Volume"))
+            player.speedChanged.connect(lambda: self._notify("Rate"))
+            player.canSeekChanged.connect(self._notify_capabilities)  # a length that's only known once loaded
             player.queueChanged.connect(self._notify_capabilities)
             player.trackChanged.connect(self._notify_capabilities)
             player.stateChanged.connect(self._notify_capabilities)
@@ -173,6 +185,7 @@ class MprisService(QObject):
             "Shuffle": self._pl._get_shuffle,
             "LoopStatus": self._pl._get_loop,
             "Volume": self._pl._get_volume,
+            "Rate": self._pl._get_rate,
         }[name]
         msg = QDBusMessage.createSignal(PATH, "org.freedesktop.DBus.Properties", "PropertiesChanged")
         msg.setArguments([PLAYER_IFACE, {name: getter()}, []])

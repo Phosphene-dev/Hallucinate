@@ -121,6 +121,7 @@ class ThemeManager(QObject):
         self._album_accent = None
         self._art_colors = []
         self._current_art_url = ""
+        self._text_scale = 1.0  # your own text size, times the theme's
         self._accent_override = ""  # a colour of your own for the accent, over any theme ("" = the theme's)
         self._follow_system = False  # switch between a light and a dark theme with the system's setting
         self._light_theme, self._dark_theme = "Light", "Hallucinate"
@@ -203,6 +204,9 @@ class ThemeManager(QObject):
             accent = preferences.get("accent")
             self._accent_override = accent if isinstance(accent, str) and QColor(accent).isValid() else ""
             self._follow_system = preferences.get("follow_system") is True
+            scale = preferences.get("text_scale")
+            if isinstance(scale, (int, float)) and not isinstance(scale, bool) and 0.8 <= scale <= 1.5:
+                self._text_scale = float(scale)
             for key, attr in (("light_theme", "_light_theme"), ("dark_theme", "_dark_theme")):
                 if isinstance(preferences.get(key), str) and preferences[key] in self._themes:
                     setattr(self, attr, preferences[key])
@@ -220,6 +224,7 @@ class ThemeManager(QObject):
                 "album_art_accent": self._album_art_accent,
                 "accent": self._accent_override,
                 "follow_system": self._follow_system,
+                "text_scale": self._text_scale,
                 "light_theme": self._light_theme,
                 "dark_theme": self._dark_theme,
             }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -329,7 +334,23 @@ class ThemeManager(QObject):
 
     @Property(float, notify=themeChanged)
     def fontScale(self):
-        return float(self._theme()["fonts"]["scale"])
+        return float(self._theme()["fonts"]["scale"]) * self._text_scale
+
+    TEXT_SIZES = (0.9, 1.0, 1.1, 1.25, 1.4)
+
+    @Property(float, notify=themeChanged)
+    def textScale(self):
+        """Your own text size (1.0 = as the theme has it), for every theme."""
+        return self._text_scale
+
+    @Slot(float)
+    def setTextScale(self, scale):
+        scale = min(self.TEXT_SIZES, key=lambda s: abs(s - float(scale or 1.0)))
+        if scale != self._text_scale:
+            self._text_scale = scale
+            self._save_preferences()
+            self._apply_global_font()
+            self.themeChanged.emit()
 
     @Property(int, notify=themeChanged)
     def radius(self):

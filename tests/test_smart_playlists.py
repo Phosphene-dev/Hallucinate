@@ -186,3 +186,77 @@ def test_lossless_sample_rate_and_date_liked(lib):
     lib.conn.execute("UPDATE likes SET liked_at=? WHERE path<>'/m/blue'", (NOW - DAY,))
     recent = {"rules": [rule("liked_at", "in_last", 30)], "sort": "title"}
     assert set(paths(R.matching_tracks(lib, recent, NOW))) == {"/m/modern", "/m/metal"}
+
+
+def test_date_liked_not_recent_leaves_out_songs_never_liked(lib):
+    lib.conn.execute("UPDATE likes SET liked_at=? WHERE path='/m/blue'", (NOW - 200 * DAY,))
+    lib.conn.execute("UPDATE likes SET liked_at=? WHERE path<>'/m/blue'", (NOW - DAY,))
+    old = {"rules": [rule("liked_at", "not_in_last", 30)]}
+    assert paths(R.matching_tracks(lib, old, NOW)) == ["/m/blue"]  # not /m/giant or /m/cafe: never liked
+
+
+def test_genre_rules_look_at_every_genre(lib):
+    def match(*rs):
+        return set(paths(R.matching_tracks(lib, {"rules": list(rs)}, NOW)))
+
+    assert match(rule("genre", "starts_with", "hard")) == {"/m/giant"}  # the second genre of "Jazz; Hard Bop"
+    assert match(rule("genre", "starts_with", "JA")) == {"/m/blue", "/m/giant", "/m/modern", "/m/cafe"}
+    assert match(rule("genre", "is", "hard bop")) == {"/m/giant"}
+    assert match(rule("genre", "is", "bop")) == set()  # the cheap LIKE test passes, genre_has() says no
+    assert match(rule("genre", "is_not", "jazz")) == {"/m/metal"}
+
+
+def test_empty_tags_and_track_numbers(lib):
+    lib.conn.execute("UPDATE tracks SET genre='', s_genre='', track_no=3, disc_no=2 WHERE path='/m/cafe'")
+
+    def match(*rs):
+        return set(paths(R.matching_tracks(lib, {"rules": list(rs)}, NOW)))
+
+    assert match(rule("genre", "is_empty")) == {"/m/cafe"}
+    assert len(match(rule("genre", "is_not_empty"))) == 4
+    assert match(rule("track_no", "eq", 3), rule("disc_no", "ge", 2)) == {"/m/cafe"}
+    assert R.normalize({"rules": [rule("album", "is_empty", "ignored")]})["rules"][0]["value"] is None
+    assert R.describe({"rules": [rule("genre", "is_empty")]}).startswith("Genre is empty")
+    with pytest.raises(ValueError):
+        R.normalize({"rules": [rule("year", "is_empty")]})  # text fields only
+
+
+def test_plays_do_not_reshuffle_an_open_random_smart_playlist(qapp, lib):
+    from hallucinate.userlib import UserLibrary
+
+    ul = UserLibrary(lib.conn.execute("PRAGMA database_list").fetchone()["file"], FakePlayer())
+    loads = []
+    ul._smart_loaded.connect(lambda payload: loads.append(payload[0]))
+    try:
+        sid = ul.createSmartPlaylist("Shuffled", json.dumps({"rules": [], "sort": "random"}))
+        ul.openSmartPlaylist(sid)
+        assert wait_for(lambda: ul.smartTracks.count == 5)
+        loads.clear()
+        ul.recordPlay({"path": "/m/cafe"})
+        ul.recordSkip({"path": "/m/cafe"})
+        assert wait_for(lambda: any(t["path"] == "/m/cafe" for t in ul.mostPlayed.items()))
+        ul._reader.submit(lambda db: None).result(timeout=5)
+        qapp.processEvents()
+        assert loads == []  # neither a play nor a skip evaluated it again
+        ul.toggleLike("/m/cafe")  # a like still does: the rules may be about likes
+        assert wait_for(lambda: loads)
+        ul.closeSmartPlaylist(sid)
+        assert ul._smart_id == -1
+    finally:
+        ul.shutdown()
+
+
+def test_counting_rules_does_not_block(qapp, lib):
+    from hallucinate.userlib import UserLibrary
+
+    ul = UserLibrary(lib.conn.execute("PRAGMA database_list").fetchone()["file"], FakePlayer())
+    got = []
+    ul.rulesCounted.connect(lambda j, n: got.append((j, n)))
+    try:
+        liked = json.dumps({"rules": [rule("liked", "is_true")]})
+        ul.countRulesAsync(liked)
+        ul.countRulesAsync("not json")
+        assert wait_for(lambda: len(got) == 2)
+        assert sorted(got) == sorted([(liked, 3), ("not json", -1)])
+    finally:
+        ul.shutdown()

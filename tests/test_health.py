@@ -93,3 +93,19 @@ def test_library_removes_extra_copies(qapp, tmp_path):
         assert [t["path"] for t in lib.allTracks()] == ["/m/b.flac"]
     finally:
         lib.shutdown()
+
+
+def test_counts_are_not_capped_by_the_items_shown(db):
+    n = health.LIMIT + 50
+    for i in range(n):
+        add(db, f"/m/u/{i}", artist="Unknown Artist", album="Unknown Album", codec="MP3", bitrate=64_000,
+            title="Same", duration=100)
+    checks = by_id(health.report(db))
+    for check in ("untagged", "bitrate", "duplicates"):
+        assert checks[check]["count"] == n and len(checks[check]["items"]) == health.LIMIT, check
+
+
+def test_extra_copies_round_lengths_as_the_duplicate_query_does(db):
+    add(db, "/m/a.mp3", album="One", title="Song", codec="MP3", bitrate=128_000, duration=100.5)
+    add(db, "/m/b.flac", album="Two", title="Song", duration=101.4)  # SQL: both round to 101
+    assert health.extra_copies(db) == ["/m/a.mp3"]

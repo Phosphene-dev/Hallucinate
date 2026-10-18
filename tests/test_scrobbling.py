@@ -149,7 +149,7 @@ def test_auth_flow_stores_session_only_in_keyring(make_scrobbler, monkeypatch):
     monkeypatch.setattr(module, "api_request", fake_api)
     s = make()
     s.setApiCredentials("app-key", "app-secret")
-    assert s.configured
+    assert wait_for(lambda: s.configured, timeout=4)  # once the keyring has them
     s.connectAccount()
     assert wait_for(lambda: s.authorizationUrl != "", timeout=4)
     assert "a-token" in s.authorizationUrl and s.status.startswith("Authorize")
@@ -159,7 +159,7 @@ def test_auth_flow_stores_session_only_in_keyring(make_scrobbler, monkeypatch):
     assert scrobbling.keyring.get_password(scrobbling.KEYRING_SERVICE, "session") == "secure-session"
     s.disconnectAccount()
     assert not s.connected
-    assert scrobbling.keyring.get_password(scrobbling.KEYRING_SERVICE, "session") is None
+    assert wait_for(lambda: scrobbling.keyring.get_password(scrobbling.KEYRING_SERVICE, "session") is None)
     assert calls == ["auth.getToken", "auth.getSession"]
 
 
@@ -186,7 +186,7 @@ def test_nowplaying_and_scrobble_at_listen_threshold(make_scrobbler, memory_keyr
     s = make()
     player.set_track(
         {"path": "/music/song.flac", "title": "Song", "artist": "Artist", "album": "Album", "track_no": 4},
-        4000,
+        60_000,
     )
     assert wait_for(lambda: any(m == "track.updateNowPlaying" for m, _ in calls))
 
@@ -197,6 +197,7 @@ def test_nowplaying_and_scrobble_at_listen_threshold(make_scrobbler, memory_keyr
     assert s._listened_ms >= 1000
     assert s.pendingCount == 0
 
+    s._listened_ms = 29_500  # most of the 30 s that count for a one-minute track
     player.advance(1500)
     s._last_tick = time.monotonic() - 1.1
     s._last_position = 1500
@@ -264,6 +265,7 @@ def test_api_credentials_and_session_never_enter_queue_file(make_scrobbler, memo
     _player, make = make_scrobbler
     s = make()
     s.setApiCredentials("secret-app-key", "secret-app-secret")
+    assert wait_for(lambda: s.configured)
     s._queue_scrobble({"title": "Song", "artist": "Artist"}, 1)
     content = (tmp_path / "lastfm-scrobbles.json").read_text()
     assert "secret-app" not in content and "session" not in content
@@ -319,3 +321,149 @@ def test_loves_follow_likes_and_come_back_as_likes(make_scrobbler, memory_keyrin
     user.toggleLike("/m/a.flac")
     assert wait_for(lambda: announced == [([("Band", "Song A")], False)])
     user.shutdown()
+
+
+def _queue(s, n):
+    s._pending = [{"artist": f"Artist {i}", "track": f"Song {i}", "timestamp": 1000 + i} for i in range(n)]
+    s._save_queue()
+
+
+def test_scrobbles_go_in_batches_and_ignored_ones_are_dropped(make_scrobbler, memory_keyring, monkeypatch):
+    _player, make = make_scrobbler
+    memory_keyring["session"] = "session"
+    sent = []
+
+    def fake_api(method, fields, *_args, **_kwargs):
+        sent.append(dict(fields))
+        n = sum(1 for k in fields if k.startswith("artist["))
+        items = [{"ignoredMessage": {"code": "1" if i == 1 else "0", "#text": ""}} for i in range(n)]
+        return {"scrobbles": {"@attr": {"accepted": n - 1, "ignored": 1}, "scrobble": items}}
+
+    monkeypatch.setattr(scrobbling, "api_request", fake_api)
+    s = make()
+    _queue(s, 60)
+    s._send_pending()
+    assert wait_for(lambda: s.pendingCount == 0, timeout=4)
+    assert len(sent) == 2  # 50, then the other 10
+    assert sent[0]["artist[0]"] == "Artist 0" and sent[0]["track[49]"] == "Song 49" and "artist[50]" not in sent[0]
+    assert sent[1]["artist[0]"] == "Artist 50"
+    assert s.rejectedCount == 2 and s.rejected[0]["track"] == "Song 1" and "ignored" in s.rejected[0]["reason"]
+
+
+def test_a_scrobble_last_fm_refuses_doesnt_block_the_queue(make_scrobbler, memory_keyring, monkeypatch):
+    _player, make = make_scrobbler
+    memory_keyring["session"] = "session"
+    sent = []
+
+    def fake_api(method, fields, *_args, **_kwargs):
+        sent.append(dict(fields))
+        if any(v == "Song 2" for v in fields.values()):
+            raise scrobbling.LastFmError(6, "Last.fm error 6: Invalid parameters")
+        return {"scrobbles": {"@attr": {"accepted": "1"}}}
+
+    monkeypatch.setattr(scrobbling, "api_request", fake_api)
+    s = make()
+    _queue(s, 4)
+    s._send_pending()
+    assert wait_for(lambda: s.pendingCount == 0 and not s.busy, timeout=4)
+    assert s.rejectedCount == 1 and s.rejected[0]["track"] == "Song 2"
+    singles = [f["track"] for f in sent if "track" in f]
+    assert singles == ["Song 0", "Song 1", "Song 2", "Song 3"]  # the batch was refused: found one at a time
+    assert s._retry_at == 0.0
+
+
+def test_a_revoked_session_signs_out_instead_of_retrying(make_scrobbler, memory_keyring, monkeypatch):
+    _player, make = make_scrobbler
+    memory_keyring["session"] = "session"
+    calls = []
+
+    def fake_api(method, *_args, **_kwargs):
+        calls.append(method)
+        raise scrobbling.LastFmError(9, "Last.fm error 9: Invalid session key")
+
+    monkeypatch.setattr(scrobbling, "api_request", fake_api)
+    s = make()
+    _queue(s, 2)
+    s._send_pending()
+    assert wait_for(lambda: not s.connected, timeout=4)
+    assert "connect Last.fm again" in s.status and "Invalid session" in s.lastError
+    assert s.pendingCount == 2  # kept for when you sign in again
+    assert wait_for(lambda: "session" not in memory_keyring)
+    s._tick()
+    assert calls == ["track.scrobble"]
+
+
+def test_the_same_song_heard_twice_in_a_row_scrobbles_twice(make_scrobbler, memory_keyring, monkeypatch):
+    player, make = make_scrobbler
+    memory_keyring["session"] = "session"
+    monkeypatch.setattr(scrobbling, "api_request", lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("offline")))
+    s = make()
+    player.set_track({"path": "/song", "title": "Song", "artist": "Artist"}, 120_000)
+
+    def listen_to_the_end():
+        s._listened_ms = 59_500
+        player.advance(1000)
+        s._last_tick = time.monotonic() - 1.0
+        s._last_position = player.position - 1000
+        s._tick()
+
+    listen_to_the_end()
+    assert s.pendingCount == 1
+    player.position = 100_000
+    s._tick()
+    assert s.pendingCount == 1  # still the same listen
+    player.set_track({"path": "/song", "title": "Song", "artist": "Artist"}, 120_000)  # repeat one loads it again
+    assert s._listened_ms == 0
+    listen_to_the_end()
+    assert s.pendingCount == 2
+
+
+def test_tracks_of_30_seconds_or_less_never_scrobble():
+    assert scrobbling.listen_threshold({"path": "/a"}, 30_000) == 0
+    assert scrobbling.listen_threshold({"path": "/a"}, 31_000) == 15_500
+    assert scrobbling.listen_threshold({"path": "/a"}, 0) == 240_000
+    assert scrobbling.listen_threshold({"path": "http://radio", "kind": "station"}, 0) == 60_000
+
+
+def test_keyring_writes_dont_run_on_the_window_thread(make_scrobbler, memory_keyring, monkeypatch):
+    import threading
+
+    _player, make = make_scrobbler
+    threads = []
+    monkeypatch.setattr(scrobbling.keyring, "set_password",
+                        lambda service, name, value: (threads.append(threading.current_thread()),
+                                                      memory_keyring.__setitem__(name, value)))
+    s = make()
+    s.setApiCredentials("key", "secret")
+    assert wait_for(lambda: s.configured)
+    assert threads and threading.main_thread() not in threads
+
+
+def test_retry_now_skips_the_back_off(make_scrobbler, memory_keyring, monkeypatch):
+    _player, make = make_scrobbler
+    memory_keyring["session"] = "session"
+    answers = [RuntimeError("Couldn't reach Last.fm: timed out")]
+
+    def fake_api(*_a, **_k):
+        if answers:
+            raise answers.pop()
+        return {"scrobbles": {"@attr": {"accepted": "1"}}}
+
+    monkeypatch.setattr(scrobbling, "api_request", fake_api)
+    s = make()
+    _queue(s, 1)
+    s._send_pending()
+    assert wait_for(lambda: s.lastError and not s.busy, timeout=4)
+    assert s._retry_at > time.monotonic()
+    s.retryNow()
+    assert wait_for(lambda: s.pendingCount == 0, timeout=4)
+    assert s.lastError == ""
+
+
+def test_scrobble_codes_read_last_fm_answers():
+    assert scrobbling.scrobble_codes({"scrobbles": {"@attr": {"accepted": "1"}}}, 1) == [0]
+    assert scrobbling.scrobble_codes({"scrobbles": {"@attr": {"accepted": "0"}}}, 1) == [-1]
+    assert scrobbling.scrobble_codes({"scrobbles": {"@attr": {"accepted": "1"}}}, 2) is None
+    two = {"scrobbles": {"@attr": {"accepted": 1}, "scrobble": [{"ignoredMessage": {"code": "0"}},
+                                                                 {"ignoredMessage": {"code": "5"}}]}}
+    assert scrobbling.scrobble_codes(two, 2) == [0, 5]

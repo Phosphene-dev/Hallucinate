@@ -158,3 +158,38 @@ def test_display_shows_the_main_genre_or_all_of_them(qapp):
     finally:
         shell.shutdown()
         player.shutdown()
+
+
+def test_genres_spelled_differently_count_as_one(db):
+    import time
+
+    from hallucinate.core import albums, artists, genre_views, recap
+
+    _add(db, "/m/1", "Hip-Hop")
+    _add(db, "/m/2", "hip-hop; Jazz")
+    _add(db, "/m/3", "Jazz")
+    now = time.time()
+    for n, p in enumerate(("/m/1", "/m/2", "/m/3")):
+        db.record_play(p, now - 10 + n)
+    db.commit()
+    assert albums.liner_notes(db, "a|lp")["genres"][:2] == ["Hip-Hop", "Jazz"]
+    assert artists.profile(db, "A")["genres"][:2] == ["Hip-Hop", "Jazz"]
+    period = "month:" + time.strftime("%Y-%m", time.localtime(now - 10))
+    assert recap.recap(db, period, now=now)["genres"][:2] == ["Hip-Hop", "Jazz"]
+    # the genre page and its songs (with the cheap LIKE test before genre_has)
+    assert genre_views.page(db, "HIP-HOP")["tracks"] == 2
+    assert {t["path"] for t in genre_views.tracks(db, "jazz")} == {"/m/2", "/m/3"}
+    assert genre_views.tracks(db, "hop") == []
+
+
+def test_genre_prefilter_never_drops_a_match():
+    import sqlite3
+
+    for text, name in [("Hip  Hop", "hip hop"), ("Rock/Pop", "Rock/Pop"), ("Électro; IDM", "electro"),
+                       ("R_B", "r_b"), ("Folk, World, & Country", "folk, world, & country")]:
+        assert genres.has(text, name)
+        sql, params = genres.prefilter(name)
+        conn = sqlite3.connect(":memory:")
+        conn.execute("CREATE TABLE t(s_genre TEXT)")
+        conn.execute("INSERT INTO t VALUES(?)", (genres.fold(text),))
+        assert conn.execute(f"SELECT COUNT(*) FROM t WHERE {sql}", params).fetchone()[0] == 1, (text, name)

@@ -149,3 +149,21 @@ def test_controller_sends_presence_and_respects_privacy(qapp, tmp_path, monkeypa
     ctl._s.clear()
     srv.srv.close()
     assert os.path.exists(path)
+
+
+def test_a_failed_cover_lookup_isnt_repeated_on_every_update(monkeypatch):
+    asked = []
+
+    def broken(*args, limit=3):
+        asked.append(args)
+        raise OSError("MusicBrainz is down")
+
+    monkeypatch.setattr(dc.artfetch, "find_release_ids", broken)
+    monkeypatch.setattr(dc.net, "is_offline", lambda: False)
+    worker = dc._Worker(lambda status: None)
+    assert worker._cover(("Band", "Album")) is None
+    assert worker._cover(("Band", "Album")) is None
+    assert len(asked) == 1  # remembered as failed
+    worker._failed_covers[("Band", "Album")] -= 2 * dc.FAILED_COVER_TTL_S  # later on it's asked again
+    monkeypatch.setattr(dc.artfetch, "find_release_ids", lambda *a, limit=3: ["mbid"])
+    assert worker._cover(("Band", "Album")).endswith("/release/mbid/front-250")

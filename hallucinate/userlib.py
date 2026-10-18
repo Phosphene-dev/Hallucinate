@@ -71,6 +71,7 @@ class UserLibrary(QObject):
     _player_imported = Signal(object)
     _recap_loaded = Signal(object)
     _smart_loaded = Signal(object)
+    rulesCounted = Signal(str, int)  # (rules JSON, songs it matches now or -1): countRulesAsync's answer
     _refreshed = Signal(object)
     _playlist_loaded = Signal(object)
     _stats_loaded = Signal(object)
@@ -131,6 +132,7 @@ class UserLibrary(QObject):
         self._playlist_loaded.connect(self._apply_playlist)
         self._smart_loaded.connect(self._apply_smart)
         self._smart_id = -1
+        self._smart_open = {}  # smart playlist id -> how many of its pages are open
         self._smart_rules = None
         self._smart_revision = 0
         self._stats_loaded.connect(self._apply_stats)
@@ -181,11 +183,34 @@ class UserLibrary(QObject):
         player.skipped.connect(self.recordSkip)
 
     # --- refresh ------------------------------------------------------------
-    def refresh(self):
+    def refresh(self, light=False):
+        """Read everything the window shows of your library again. light: after a play, only what a play
+        changes (most played, recently played, Home), so finishing a song doesn't re-read every like, playlist
+        and smart playlist count. The open smart playlist is evaluated again too, unless it's in random order
+        and this is only a play: it would reshuffle under you after every song."""
         edits = self._edits
+        sid = self._smart_id
+        if light and (self._smart_rules or {}).get("sort") == "random":
+            sid = -1
 
         def work(db):
             try:
+                if light:
+                    data = {
+                        "light": True,
+                        "mostPlayed": decorate(db.most_played(10)),
+                        "recentPlayed": decorate(db.recently_played_albums(12)),
+                        "homeMix": decorate(db.home_mix(40)),
+                        "home": {
+                            "facts": insights.library_facts(db),
+                            "heatmap": insights.listening_heatmap(db),
+                            "topArtists": decorate(insights.top_artists(db)),
+                        },
+                    }
+                    self._refreshed.emit(data)
+                    if sid >= 0 and sid == self._smart_id:
+                        self._load_smart(db, sid)
+                    return
                 data = {
                     "edits": edits,
                     "liked_paths": db.liked_paths(),
@@ -208,17 +233,24 @@ class UserLibrary(QObject):
                 logger.exception("User library refresh failed")
                 return
             self._refreshed.emit(data)
-            if self._smart_id >= 0:
-                self._load_smart(db, self._smart_id)  # smart playlists are live: re-evaluate the open one
+            if sid >= 0 and sid == self._smart_id:
+                self._load_smart(db, sid)  # smart playlists are live: re-evaluate the open one
 
         self._reader.submit(work)
 
     @Slot(object)
     def _apply_refresh(self, data):
+        m = self._models
+        if data.get("light"):
+            m["mostPlayed"].set_items(data["mostPlayed"])
+            m["recentPlayed"].set_items(data["recentPlayed"])
+            m["homeMix"].set_items(data["homeMix"])
+            self._home = data["home"]
+            self.homeChanged.emit()
+            return
         if data["edits"] == self._edits:
             self._liked = data["liked_paths"]
             self._ratings = data["ratings"]
-        m = self._models
         m["playlists"].set_items(data["playlists"])
         m["liked"].set_items(data["liked"])
         m["mostPlayed"].set_items(data["mostPlayed"])
@@ -290,7 +322,7 @@ class UserLibrary(QObject):
     def playTopTrack(self, index):
         self._play(self._models["topTracks"].items(), index)
 
-    def _write(self, fn, *args, refresh=True, reload_playlist=False):
+    def _write(self, fn, *args, refresh=True, reload_playlist=False, light=False):
         def work(db):
             try:
                 fn(db, *args)
@@ -302,7 +334,7 @@ class UserLibrary(QObject):
 
         self._reader.submit(work)
         if refresh:
-            self.refresh()
+            self.refresh(light=light)
 
     # --- likes ---------------------------------------------------------------
     @Slot(str, result=bool)
@@ -602,6 +634,25 @@ class UserLibrary(QObject):
             return -1
         return self._reader.submit(lambda db: smart_rules.count_matching(db, rules)).result(timeout=10)
 
+    @Slot(str)
+    def countRulesAsync(self, rules_json):
+        """countRules without making the window wait: rulesCounted(rules_json, n) follows."""
+        try:
+            rules = smart_rules.normalize(rules_json)
+        except ValueError:
+            self.rulesCounted.emit(rules_json, -1)
+            return
+
+        def work(db):
+            try:
+                n = smart_rules.count_matching(db, rules)
+            except Exception:  # noqa: BLE001
+                logger.exception("Counting smart playlist songs failed")
+                n = -1
+            self.rulesCounted.emit(rules_json, n)
+
+        self._reader.submit(work)
+
     @Slot(str, str, result=int)
     def createSmartPlaylist(self, name, rules_json):
         """Returns the new id, or -1 if the name is empty or the rules are invalid."""
@@ -659,7 +710,20 @@ class UserLibrary(QObject):
     @Slot(int)
     def openSmartPlaylist(self, sid):
         self._smart_id = sid
+        self._smart_open[sid] = self._smart_open.get(sid, 0) + 1
         self._reader.submit(lambda db: self._load_smart(db, sid))
+
+    @Slot(int)
+    def closeSmartPlaylist(self, sid):
+        """Its page went away: stop evaluating it after every change (unless another page still shows it)."""
+        left = self._smart_open.get(sid, 0) - 1
+        if left > 0:
+            self._smart_open[sid] = left
+            return
+        self._smart_open.pop(sid, None)
+        if sid == self._smart_id:
+            self._smart_id = -1
+            self._smart_rules = None
 
     def _load_smart(self, db, sid):
         row = db.smart_playlist(sid)
@@ -870,7 +934,7 @@ class UserLibrary(QObject):
         path = track.get("path") if hasattr(track, "get") else None
         if not path or (track.get("kind") or "music") != "music":
             return  # radio and podcasts stay out of plays, stats and history
-        self._write(lambda db, p: db.record_play(p), path)
+        self._write(lambda db, p: db.record_play(p), path, light=True)
         self.refreshStats()
         self._reload_history()
 
@@ -878,7 +942,12 @@ class UserLibrary(QObject):
     def recordSkip(self, track):
         path = track.get("path") if hasattr(track, "get") else None
         if path:
-            self._write(lambda db, p: db.record_skip(p), path)
+            # nothing the window lists counts skips but smart playlists: only an open one (not in random
+            # order, which would reshuffle) is evaluated again
+            self._write(lambda db, p: db.record_skip(p), path, refresh=False)
+            if self._smart_id >= 0 and (self._smart_rules or {}).get("sort") != "random":
+                sid = self._smart_id
+                self._reader.submit(lambda db: self._load_smart(db, sid))
 
     def importPlays(self, items, source, done):
         """Merge external listens on the worker thread; call `done(result, error)` when finished."""

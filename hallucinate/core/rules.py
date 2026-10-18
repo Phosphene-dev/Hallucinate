@@ -12,6 +12,7 @@ Text comparisons are case- and accent-insensitive. Radio mode can use the same r
 import json
 import time
 
+from . import genres
 from .db import fold
 
 # field -> (kind, SQL expression, label)
@@ -24,6 +25,8 @@ FIELDS = {
     "format": ("text", "t.codec", "Format"),
     "path": ("text", "t.path", "File path"),
     "year": ("number", "t.year", "Year"),
+    "track_no": ("number", "t.track_no", "Track number"),
+    "disc_no": ("number", "t.disc_no", "Disc number"),
     "duration": ("number", "t.duration / 60.0", "Length (minutes)"),
     "bitrate": ("number", "t.bitrate / 1000.0", "Bitrate (kb/s)"),
     "plays": ("number", "COALESCE(p.count, 0)", "Play count"),
@@ -48,7 +51,8 @@ FIELDS["lossless"] = (FIELDS["lossless"][0], FIELDS["lossless"][1].format(lossle
 # kind -> {op: label}
 OPS = {
     "text": {"contains": "contains", "not_contains": "does not contain", "is": "is", "is_not": "is not",
-             "starts_with": "starts with", "ends_with": "ends with"},
+             "starts_with": "starts with", "ends_with": "ends with", "is_empty": "is empty",
+             "is_not_empty": "is not empty"},
     "number": {"eq": "is", "ne": "is not", "gt": "is more than", "lt": "is less than",
                "ge": "is at least", "le": "is at most", "between": "is between"},
     "date": {"in_last": "in the last (days)", "not_in_last": "not in the last (days)", "never": "never"},
@@ -114,7 +118,9 @@ def normalize(rules):
         if op not in OPS[kind] or (op == "never" and rule["field"] != "last_played"):
             raise ValueError(f"operator {op!r} does not apply to {rule['field']}")
         value = rule.get("value")
-        if kind == "text":
+        if op in ("is_empty", "is_not_empty"):
+            value = None
+        elif kind == "text":
             value = "" if value is None else str(value)
         elif op == "between":
             if not isinstance(value, (list, tuple)) or len(value) != 2:
@@ -143,6 +149,8 @@ FOLDED = {"t.title": "t.s_title", "t.artist": "t.s_artist", "t.album": "t.s_albu
 def _condition(rule, now):
     kind, expr, _label = FIELDS[rule["field"]]
     op, value = rule["op"], rule["value"]
+    if op in ("is_empty", "is_not_empty"):  # blank or only spaces: no such tag
+        return f"TRIM(COALESCE({expr}, '')) {'=' if op == 'is_empty' else '!='} ''", []
     if kind == "text":
         folded = fold(value)
         col = FOLDED.get(expr, f"fold({expr})")
@@ -151,7 +159,11 @@ def _condition(rule, now):
         if op == "not_contains":
             return f"{col} NOT LIKE ? ESCAPE '\\'", [_like(folded)]
         if expr == "t.genre" and op in ("is", "is_not"):  # one of an album's genres (it may have several)
-            return ("" if op == "is" else "NOT ") + "genre_has(t.genre, ?)", [value]
+            sql, args = genres.prefilter(value, "t.s_genre")  # the cheap test first: few rows reach Python
+            return ("" if op == "is" else "NOT ") + f"({sql} AND genre_has(t.genre, ?))", [*args, value]
+        if expr == "t.genre" and op == "starts_with":  # any of them, not only the main one
+            sql, args = genres.prefilter(value, "t.s_genre")
+            return f"({sql} AND genre_starts(t.genre, ?))", [*args, value]
         if op == "is":
             return f"{col} = ?", [folded]
         if op == "is_not":
@@ -170,7 +182,9 @@ def _condition(rule, now):
         since = now - value * DAY_S
         if op == "in_last":
             return f"{expr} >= ?", [since]
-        return f"({expr} IS NULL OR {expr} < ?)", [since]  # never played counts as "not in the last N days"
+        if rule["field"] == "last_played":  # never played counts as "not in the last N days"
+            return f"({expr} IS NULL OR {expr} < ?)", [since]
+        return f"{expr} < ?", [since]  # a song never liked wasn't liked "more than N days ago"
     return (expr if op == "is_true" else f"NOT ({expr})"), []
 
 
@@ -220,7 +234,7 @@ def describe(rules):
             parts.append(f"{label} {op_label}")
         elif rule["op"] == "never":
             parts.append("Never played")
-        elif kind == "bool":
+        elif kind == "bool" or rule["op"] in ("is_empty", "is_not_empty"):
             parts.append(f"{label} {op_label}")
         elif rule["op"] == "between":
             parts.append(f"{label} {op_label} {_format_number(value[0])} and {_format_number(value[1])}")

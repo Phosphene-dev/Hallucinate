@@ -254,6 +254,7 @@ Item {
             audioFormat: model.codec
             audioBitrate: model.bitrate
             rowIndex: index
+            context: "album"
             width: ListView.view.width - 12
             number: model.track_no > 0 ? model.track_no : index + 1
             title: model.title

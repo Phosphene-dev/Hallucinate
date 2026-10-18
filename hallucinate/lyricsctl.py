@@ -6,6 +6,7 @@ import time
 from PySide6.QtCore import Property, QObject, QSettings, Signal, Slot
 
 from .core import lyrics as lx
+from .core import net
 from .library import _Reader
 
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ class LyricsController(QObject):
         self._lines = []  # [{"t": ms, "text": str}]
         self._times = []
         self._plain = ""
-        self._status = "idle"  # idle | loading | found | none | offline
+        self._status = "idle"  # idle | loading | found | none | offline | offlinemode (Offline mode is on)
         self._source = ""
         self._line = -1
         self._token = 0
@@ -129,12 +130,19 @@ class LyricsController(QObject):
             self.reload()
 
     @Slot()
-    def reload(self):
+    def searchAgain(self):
+        """Look the playing song up on LRCLIB again now, even though it had no lyrics there last time (someone
+        may have added them since)."""
+        if self._path and self._status not in ("found", "loading"):
+            self.reload(force=True)
+
+    @Slot()
+    def reload(self, force=False):
         track = self._player.current if self._player.hasTrack and self._enabled else {}
         if (track.get("kind") or "music") != "music":
             track = {}  # radio and podcasts have no lyrics to find
         path = track.get("path", "")
-        if path == self._path and self._status in ("found", "loading"):
+        if path == self._path and self._status in ("found", "loading") and not force:
             return
         self._path = path
         self._token += 1
@@ -165,11 +173,17 @@ class LyricsController(QObject):
                     result.update(synced=cached["synced"], plain=cached["plain"], source=cached["source"], status="found")
                     return self._loaded.emit(result)
                 # LRCLIB had nothing last time: ask again only after a while, not every time the song plays
-                recently_missed = (cached and cached["source"] == NOT_FOUND
+                recently_missed = (cached and cached["source"] == NOT_FOUND and not force
                                    and time.time() - (cached["fetched"] or 0) < RETRY_MISSING_S)
                 if online and not recently_missed:
+                    if net.is_offline():
+                        result["status"] = "offlinemode"  # not a connection problem: you switched it off
+                        return self._loaded.emit(result)
                     try:
                         found = lx.fetch_lrclib(info["artist"], info["title"], info["album"], info["duration"])
+                    except net.OfflineError:
+                        result["status"] = "offlinemode"
+                        return self._loaded.emit(result)
                     except OSError:
                         result["status"] = "offline"
                         return self._loaded.emit(result)

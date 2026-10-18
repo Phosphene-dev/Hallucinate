@@ -33,8 +33,22 @@ def station(db):
 
 
 def test_genres_are_split_and_folded():
-    assert genres("Rock; Indie/Pop, Électro") == {"rock", "indie", "pop", "electro"}
+    assert genres("Rock; Indie/Électro") == {"rock", "indie", "electro"}
+    # a comma is part of a name, as everywhere else genres are split
+    assert genres("Folk, World, & Country; Pop") == {"folk, world, & country", "pop"}
     assert genres("") == set()
+
+
+def test_genre_wildcards_are_literal(db, monkeypatch):
+    add_track(db, "/m/seed", "A", "R_B; Folk, World, & Country", 2000)
+    db.commit()
+    queries = []
+    real = db._rows
+    monkeypatch.setattr(db, "_rows", lambda sql, params=(): queries.append((sql, params)) or real(sql, params))
+    radio_tracks(db, ["/m/seed"], limit=5, rng=random.Random(1), now=0)
+    sql, params = next(q for q in queries if "s_genre LIKE" in q[0])
+    assert "ESCAPE" in sql
+    assert "%r\\_b%" in params and "%folk, world, & country%" in params
 
 
 def test_radio_prefers_coplayed_and_similar_tracks(station):

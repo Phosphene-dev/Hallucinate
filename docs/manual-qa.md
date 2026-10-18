@@ -106,14 +106,26 @@ finding, following and playing podcasts.
 - [ ] The whole app from the keyboard alone: Tab through every page, arrows in lists, Enter to play, Menu key
   (or Shift+F10) for menus, Esc closes dialogs.
 
-### 10. New in 0.9.9.8
+### 10. New in 0.9.9.9
+- [ ] Settings: subsections start closed; open one, leave Settings and come back, it's still open. Search
+  "preamp" or "discogs": the subsection holding it opens. Text size changes the whole app.
+- [ ] Online & privacy → Offline mode while a radio station plays: it stops; a podcast download pauses and
+  carries on when offline mode is switched off.
+- [ ] Mute with the volume icon and with M; the volume comes back as it was.
+- [ ] Queue: Delete on a song removes it (Undo brings it back); "Clear upcoming"; the header shows time left.
+- [ ] Shuffle on, then Play next on a song: it plays next.
+- [ ] Move an album's folder within your music folder and rescan: its likes, plays and ratings are kept.
+- [ ] Song rows: click the artist or album; the artist and genre pages' ⋯ menus; Ctrl+K "genre name".
+- [ ] Keyboard only: Tab to a song row (it highlights), Space plays it; arrows move on an artist page.
+
+### 11. New in 0.9.9.8
 - [ ] An album with several genres: click each genre under Genres; its page lists the albums, artists and songs
   carrying it, and "Goes with" lists genres found alongside. Play all and Shuffle play every song of it.
 - [ ] The same from an artist page, from Now Playing (the view closes) and from a song's right-click menu.
 - [ ] Albums → Genres: a tile per genre; Most songs and A–Z reorder them.
 - [ ] Songs → Sort by genre: grouped by main genre, songs without one last; the order is kept after a restart.
 
-### 11. New in 0.9.9.7
+### 12. New in 0.9.9.7
 - [ ] Library health → Albums without a genre → **Find all online**: each album suggests up to three genres;
   click the genres found to add or remove them. Save: the album page shows them all, the first as the main one.
 - [ ] Songs → filter by one of an album's later genres: its songs are listed. A smart playlist "Genre is" that
@@ -131,13 +143,13 @@ finding, following and playing podcasts.
 - [ ] On an ultrawide screen (or a maximised window wider than about 2200 pixels): Home, an artist, an album,
   Stats and Settings stay centred at a readable width.
 
-### 12. New in 0.9.9.6
+### 13. New in 0.9.9.6
 - [ ] Library health → Albums without a genre → **Find all online**, then save them all: "Saving genres to your
   files: n of m albums" counts up, the number of albums without a genre goes down as it goes, and the library
   doesn't keep rescanning. **Stop** part-way keeps the ones done.
 - [ ] Edit a song's tags (a genre, a rating): it saves at once, and the song still plays.
 
-### 13. New in 0.9.9.5
+### 14. New in 0.9.9.5
 - [ ] Settings → **Measure songs without ReplayGain** (search "ReplayGain") on your whole library: the window keeps
   responding throughout, and it finishes (a few songs may count as failed). `htop` shows a second Hallucinate
   process while it measures, gone a minute after.
@@ -147,7 +159,7 @@ finding, following and playing podcasts.
   Settings runs off the right edge, and the player bar's title, badges, controls and time don't overlap.
 - [ ] Settings → Appearance → the Shrimp Boat accent (peach).
 
-### 14. New in 0.9.9.4
+### 15. New in 0.9.9.4
 - [ ] **Leave it open overnight** with a radio station restored from last time, not playing: still responding
   in the morning. Then press play: the station connects and plays what's on now.
 - [ ] Pause a station for a few minutes, then play: it reconnects without fuss.
@@ -163,7 +175,7 @@ finding, following and playing podcasts.
 - [ ] Lock your keyring (or log in without it unlocked) and start the app: it opens, and Last.fm says it's
   waiting for the keyring.
 
-### 15. New in 0.9.9.3
+### 16. New in 0.9.9.3
 - [ ] Sidebar: drag entries into a new order, right-click → Move up/down, Alt+Up/Down on a focused entry, and the
   list in Settings → Features (with Reset). The order survives a restart, and switching a page off and on keeps
   its place.

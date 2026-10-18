@@ -2,6 +2,14 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "0.9.9.9": [
+        "Settings is calmer: rarely needed options sit in subsections you can open, and Internet is now Online & "
+        "privacy and Scrobbling & sharing. There's a text size choice too.",
+        "Mute with the volume icon or M; the queue shows the time left and can clear what's coming up.",
+        "Song rows link to their artist and album, artist and genre pages have a ⋯ menu, and Ctrl+K finds genres.",
+        "Lots of fixes: moved files keep their plays and likes, scrobbles never get stuck, Play next works with "
+        "shuffle, and the equalizer can't distort.",
+    ],
     "0.9.9.8": [
         "Every genre has a page with its albums, artists and songs. Click a genre on an album, an artist, Now "
         "Playing or a song's menu to open it.",

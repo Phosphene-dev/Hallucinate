@@ -103,10 +103,14 @@ class StreamsDB:
         ecols = {r["name"] for r in self.conn.execute("PRAGMA table_info(episodes)")}
         if "up_next" not in ecols:  # its place in Up next (0: not in it)
             self.conn.execute("ALTER TABLE episodes ADD COLUMN up_next REAL NOT NULL DEFAULT 0")
+        if "download_queued" not in ecols:  # when its download was asked for and hasn't finished (0: it isn't)
+            self.conn.execute("ALTER TABLE episodes ADD COLUMN download_queued REAL NOT NULL DEFAULT 0")
         cols = {r["name"] for r in self.conn.execute("PRAGMA table_info(podcasts)")}
         for name, kind in (("newest_first", "INTEGER NOT NULL DEFAULT 1"), ("hide_played", "INTEGER NOT NULL DEFAULT 0"),
                            ("speed", "REAL NOT NULL DEFAULT 0"), ("skip_intro", "INTEGER NOT NULL DEFAULT 0"),
-                           ("skip_outro", "INTEGER NOT NULL DEFAULT 0")):
+                           ("skip_outro", "INTEGER NOT NULL DEFAULT 0"),
+                           # what the feed's server said last time (ETag, Last-Modified), to ask "anything new?"
+                           ("etag", "TEXT NOT NULL DEFAULT ''"), ("modified", "TEXT NOT NULL DEFAULT ''")):
             if name not in cols:
                 self.conn.execute(f"ALTER TABLE podcasts ADD COLUMN {name} {kind}")
 
@@ -255,7 +259,7 @@ class StreamsDB:
 
     def update_podcast(self, podcast_id, **fields):
         allowed = set(PODCAST_FIELDS) | {"checked", "error", "auto_download", "keep", "newest_first", "hide_played",
-                                         "speed", "skip_intro", "skip_outro"}
+                                         "speed", "skip_intro", "skip_outro", "etag", "modified"}
         fields = {k: v for k, v in fields.items() if k in allowed}
         if fields:
             sets = ", ".join(f"{k}=?" for k in fields)
@@ -367,6 +371,15 @@ class StreamsDB:
     def set_local_path(self, episode_id, path):
         self.conn.execute("UPDATE episodes SET local_path=? WHERE id=?", (path or "", episode_id))
         self.conn.commit()
+
+    def set_download_queued(self, episode_id, on):
+        self.conn.execute("UPDATE episodes SET download_queued=? WHERE id=?", (time.time() if on else 0, episode_id))
+        self.conn.commit()
+
+    def queued_downloads(self):
+        """Ids of the episodes whose download was asked for and didn't finish, oldest ask first."""
+        return [r[0] for r in self.conn.execute(
+            "SELECT id FROM episodes WHERE download_queued>0 ORDER BY download_queued")]
 
     def downloaded(self, podcast_id=None):
         sql = "SELECT * FROM episodes WHERE local_path<>''"

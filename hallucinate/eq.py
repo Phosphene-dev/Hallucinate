@@ -10,7 +10,7 @@ try:
 except ImportError:  # the equalizer is optional
     np = None
 
-from PySide6.QtCore import QObject, QTimer
+from PySide6.QtCore import QObject, QTimer, Signal
 from PySide6.QtMultimedia import QAudioBufferOutput, QAudioFormat, QAudioSink, QMediaDevices
 
 logger = logging.getLogger(__name__)
@@ -39,8 +39,9 @@ def available():
 def design_fir(gains_db, rate, taps=TAPS, curve=None):
     """Linear-phase FIR whose magnitude interpolates the band gains (log-frequency).
 
-    `curve` is an optional extra correction, [[freq, dB], ...] (a headphone profile), added under the bands;
-    with it, the whole response is lowered by its largest boost so the correction can't clip."""
+    `curve` is an optional extra correction, [[freq, dB], ...] (a headphone profile), added under the bands.
+    The whole response is lowered by its largest boost, so a boosted band (or the correction) can't push a
+    loud recording past full scale and clip: boosting the bass turns everything else down instead."""
     n = 16384
     freqs = np.fft.rfftfreq(n, 1.0 / rate)
     logf = np.log10(np.maximum(freqs, 1.0))
@@ -50,8 +51,8 @@ def design_fir(gains_db, rate, taps=TAPS, curve=None):
     if curve:
         pts = np.array(curve, dtype=float)
         mag_db = mag_db + np.interp(logf, np.log10(pts[:, 0]), pts[:, 1])
-        audible = (freqs >= 20) & (freqs <= 20000)
-        mag_db -= max(0.0, float(mag_db[audible].max()))
+    audible = (freqs >= 20) & (freqs <= 20000)
+    mag_db -= max(0.0, float(mag_db[audible].max()))
     mag = 10 ** (mag_db / 20)
     impulse = np.fft.fftshift(np.fft.irfft(mag, n))
     mid = n // 2
@@ -211,7 +212,13 @@ _FORMATS = {
 
 
 class EqTap(QObject):
-    """Per-voice tap: receives decoded buffers, filters them and plays them on its own QAudioSink."""
+    """Per-voice tap: receives decoded buffers, filters them and plays them on its own QAudioSink.
+
+    If its sink can't be opened (or the filtering fails) it gives up until the next reset (a seek or a new
+    source) and says so with `failedChanged`, so the player can play the sound directly meanwhile instead of
+    keeping its own output muted for a tap that plays nothing."""
+
+    failedChanged = Signal(str)  # why it gave up; "" when it's trying again
 
     def __init__(self, processor, parent=None):
         super().__init__(parent)
@@ -278,6 +285,8 @@ class EqTap(QObject):
             logger.warning("Equalizer disabled: %s", exc)
             self.failed = True
             self._close()
+            self._fmt = None  # opened afresh when it tries again
+            self.failedChanged.emit(str(exc) or type(exc).__name__)
             return
         self._pending += out.tobytes()
         self._drain()
@@ -315,8 +324,11 @@ class EqTap(QObject):
             self._sink.suspend()
 
     def reset(self):
-        """Drop buffered audio (seek, new source)."""
+        """Drop buffered audio (seek, new source). A tap that gave up tries again from here."""
         self._pending.clear()
+        if self.failed:
+            self.failed = False
+            self.failedChanged.emit("")
         self.processor.reset()
         if self._sink is not None:
             self._sink.reset()

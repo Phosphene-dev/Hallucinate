@@ -233,8 +233,12 @@ def test_session_roundtrip(make_player, clips, tmp_path):
     assert wait_for(lambda: is_playing(q))
 
 
-def test_session_drops_missing_files_and_remaps_index(make_player, clips, tmp_path):
+def test_session_keeps_missing_files_without_checking_each_one(make_player, clips, tmp_path, monkeypatch):
+    # Restoring doesn't look at every file (that would hold the window up on a slow disk): one that's gone is
+    # passed over when it comes up, as when playing.
     import shutil
+
+    from hallucinate import player as player_module
     d = tmp_path / "gone"
     d.mkdir()
     gone = [track(shutil.copy(c["path"], d / f"{i}.flac"), i) for i, c in enumerate(clips[:3])]
@@ -245,9 +249,15 @@ def test_session_drops_missing_files_and_remaps_index(make_player, clips, tmp_pa
     (d / "0.flac").unlink()
     (d / "2.flac").unlink()
     q = make_player()
+    checked = []
+    real_isfile = player_module.os.path.isfile
+    monkeypatch.setattr(player_module.os.path, "isfile", lambda f: checked.append(f) or real_isfile(f))
     assert q.restoreSession()
-    assert q.queueLength == 3
-    assert q.current["title"] == "T3" and q.currentIndex == 1
+    assert str(d / "0.flac") not in checked  # only the song being loaded is looked at
+    assert q.queueLength == 5
+    assert q.current["title"] == "T3" and q.currentIndex == 3
+    q.playIndex(2)  # gone: the next one that can play takes its place
+    assert wait_for(lambda: q.currentIndex == 3)
 
 
 def test_session_current_track_deleted(make_player, clips, tmp_path):
@@ -545,3 +555,171 @@ def test_switching_away_from_a_file_still_opening_sets_it_aside(make_player, cli
     status = QMediaPlayer.MediaStatus.LoadedMedia
     assert not player_mod.still_opening()
     assert wait_for(lambda: is_playing(player)), player.error
+
+
+# ---- queue and transport fixes ---------------------------------------------------------------------------
+def test_play_next_wins_over_shuffle(make_player, clips):
+    p = make_player(session=False)
+    p.setShuffle(True)
+    p.playList(clips[:4], 0)
+    p.pause()
+    for _ in range(3):  # a pick made before still gives way to "play next"
+        p._compute_next(auto=False)
+    p.playNext(clips[5])
+    assert p.queue[p.currentIndex + 1]["title"] == "T5"
+    p.next()
+    assert p.current["title"] == "T5"
+
+
+def test_removing_the_last_song_while_it_plays_stops_instead_of_replaying(make_player, clips):
+    p = make_player(session=False)
+    p.playList(clips[:3], 2)
+    assert wait_for(lambda: is_playing(p))
+    p.removeAt(2)
+    assert p.currentIndex == 1 and p.current["title"] == "T1"
+    assert not is_playing(p)
+    p.setRepeat(1)  # with repeat all it goes round to the first instead
+    p.playIndex(1)
+    assert wait_for(lambda: is_playing(p))
+    p.removeAt(1)
+    assert p.currentIndex == 0
+    assert wait_for(lambda: is_playing(p))
+
+
+def test_play_after_the_queue_ended_carries_on_with_songs_added_since(make_player, clips):
+    p = make_player(session=False)
+    p.playList(clips[:1], 0)
+    assert wait_for(lambda: p.state == "Stopped" and p._ended, 6)
+    p.enqueue(clips[1])
+    p.play()
+    assert p.current["title"] == "T1"
+    assert wait_for(lambda: is_playing(p))
+
+
+def test_sound_devices_changed_while_paused_apply_when_a_song_starts(make_player, clips):
+    p = make_player(session=False)
+    p.enqueueAll(clips[:2])  # loaded, not playing
+    calls = []
+    p._reapply_outputs = lambda: calls.append(1)
+    p._on_audio_outputs_changed()
+    assert calls == []
+    p.playIndex(1)  # starting a song (not only the play button) sets the output up first
+    assert calls == [1] and not p._outputs_changed
+
+
+def test_live_radio_cannot_be_seeked(make_player):
+    p = make_player(session=False)
+    seeks = []
+    p.seeked.connect(seeks.append)
+    p._queue = [{"path": "http://127.0.0.1:9/live", "kind": "station", "station": "S", "title": "S"}]
+    p._index = 0
+    assert not p.canSeek
+    p.seek(5000)
+    p.seekBy(5000)
+    assert seeks == []
+
+
+def test_can_seek_follows_the_length(make_player):
+    p = make_player(session=False)
+    changes = []
+    p.canSeekChanged.connect(lambda: changes.append(1))
+    p.durationChanged.emit()  # a length only known once the song has loaded
+    assert changes
+
+
+def test_mute_remembers_the_volume(make_player):
+    p = make_player(session=False)
+    p.setVolume(0.6)
+    p.toggleMute()
+    assert p.muted and p.volume == 0.0
+    p.toggleMute()
+    assert not p.muted and p.volume == pytest.approx(0.6)
+
+
+def test_sleep_timer_can_be_given_longer(make_player):
+    p = make_player(session=False)
+    p.addSleepMinutes(15)
+    assert p.sleepRemaining == -1  # no timer running: nothing to extend
+    p.setSleepMinutes(5)
+    p.addSleepMinutes(15)
+    assert p.sleepRemaining == 20 * 60
+    p.setSleepMinutes(0)
+
+
+def test_clear_upcoming_and_time_left(make_player, clips):
+    p = make_player(session=False)
+    p.playList(clips[:4], 1)
+    p.pause()
+    assert p.upcomingCount == 2 and p.upcomingSeconds == 2  # two songs of 1.2 s
+    p.clearUpcoming()
+    assert [t["title"] for t in p.queue] == ["T0", "T1"] and p.current["title"] == "T1"
+    assert p.upcomingCount == 0 and p.undoLabel == "Upcoming songs cleared"
+    p.undoQueue()
+    assert p.queueLength == 4 and p.current["title"] == "T1"
+
+
+# ---- session -------------------------------------------------------------------------------------------
+def test_session_saves_just_the_position_while_the_queue_is_unchanged(make_player, tmp_path):
+    clip = track(encode(tmp_path / "long.flac", "flac", seconds=3, title="L"), 9, 3)
+    p = make_player()
+    p.playList([clip], 0)
+    assert wait_for(lambda: is_playing(p) and p.position > 100), p.error
+    p.pause()
+    p.saveSession()
+    before = (tmp_path / "session.json").read_bytes()
+    p.seek(1500)
+    assert wait_for(lambda: abs(p.position - 1500) < 200)
+    p.saveSession()
+    assert (tmp_path / "session.json").read_bytes() == before  # the queue isn't written again
+    assert abs(json.loads((tmp_path / "session.pos").read_text())["position"] - 1500) < 200
+    p.shutdown()
+    q = make_player()
+    assert q.restoreSession()
+    assert wait_for(lambda: abs(q.position - 1500) < 250), q.position
+    q.enqueue(clips_like(clip))  # a changed queue is written in full again
+    q.saveSession()
+    assert len(json.loads((tmp_path / "session.json").read_text())["queue"]) == 2
+
+
+def clips_like(t):
+    return dict(t, id=t["id"] + 1, title="L2")
+
+
+def test_session_keeps_what_shuffle_has_played(make_player, clips):
+    p = make_player()
+    p.setShuffle(True)
+    p.playList(clips[:5], 0)
+    p.pause()
+    p.next()
+    p.next()
+    p.pause()
+    played = set(p._played)
+    assert len(played) == 3
+    p.saveSession()
+    p.shutdown()
+    q = make_player()
+    assert q.restoreSession()
+    assert q._played == played
+
+
+def test_restored_place_survives_a_slow_disk(make_player, tmp_path, monkeypatch):
+    import threading
+
+    import hallucinate.player as player_mod
+
+    clip = track(encode(tmp_path / "slow.flac", "flac", seconds=3, title="S"), 7, 3)
+    p = make_player()
+    p.playList([clip], 0)
+    assert wait_for(lambda: is_playing(p) and p.position > 100), p.error
+    p.seek(1800)
+    assert wait_for(lambda: abs(p.position - 1800) < 200)
+    p.pause()
+    p.saveSession()
+    p.shutdown()
+    real, gate = player_mod._playable, threading.Event()
+    monkeypatch.setattr(player_mod, "_playable", lambda path: gate.wait(5) and real(path))
+    q = make_player()
+    assert q.restoreSession()
+    assert q.error == "Opening…"
+    gate.set()
+    assert wait_for(lambda: abs(q.position - 1800) < 250), q.position

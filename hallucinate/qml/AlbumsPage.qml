@@ -349,6 +349,7 @@ Item {
             id: genresBox
             property bool az: shell.uiValue("genresOrder", "count") === "az"
             onAzChanged: shell.setUiValue("genresOrder", az ? "az" : "count")
+            CollectionMenu { id: genreTileMenu; objectName: "genreMenu" }
             readonly property var genres: az ? library.genreList.slice().sort(function (a, b) {
                 return a.name.localeCompare(b.name) }) : library.genreList
             Row {
@@ -410,9 +411,12 @@ Item {
                             }
                         }
                         HoverHandler { id: tileHover; cursorShape: Qt.PointingHandCursor }
-                        TapHandler { onTapped: Nav.openGenre(modelData.name) }
+                        // right-click (or a long press): play, queue or add the whole genre to a playlist
+                        TapHandler { onTapped: Nav.openGenre(modelData.name); onLongPressed: genreTileMenu.showGenre(modelData.name) }
+                        TapHandler { acceptedButtons: Qt.RightButton; onTapped: genreTileMenu.showGenre(modelData.name) }
                         Accessible.role: Accessible.Link
                         Accessible.name: "Genre: " + modelData.name
+                        Accessible.onPressAction: Nav.openGenre(modelData.name)
                     }
                 }
             }

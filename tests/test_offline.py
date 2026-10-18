@@ -62,10 +62,10 @@ def test_scrobbles_wait_while_offline(offline):
 
     started = []
     item = {"artist": "A", "track": "T", "timestamp": 1}
-    lastfm = SimpleNamespace(connected=True, _busy=False, _pending=[item], _retry_at=0.0,
+    lastfm = SimpleNamespace(connected=True, _busy=False, _pending=[item], _retry_at=0.0, _single=False,
                              _start_job=lambda *a, **k: started.append(a))
     scrobbling.LastFmScrobbler._send_pending(lastfm)
-    lb = SimpleNamespace(connected=True, _busy=False, _pending=[item], _retry_at=0.0, _base="", _token="",
+    lb = SimpleNamespace(connected=True, _busy=False, _pending=[item], _retry_at=0.0, _single=False, _base="", _token="",
                          _start=lambda *a, **k: started.append(a))
     listenbrainz.ListenBrainzScrobbler._flush(lb)
     assert not started  # nothing sent...

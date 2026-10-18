@@ -7,12 +7,13 @@ Item {
     id: page
     objectName: "settings"
     property string query: ""
-    readonly property var sectionIds: ["appearance", "features", "podcasts", "playback", "sound", "library", "servers", "sharing", "desktop", "about"]
-    readonly property var sectionTitles: ["Appearance", "Features", "Podcasts", "Playback", "Sound", "Library", "Music servers", "Internet & sharing", "Desktop", "About"]
+    readonly property var sectionIds: ["appearance", "features", "podcasts", "playback", "sound", "library", "servers", "sharing", "scrobbling", "desktop", "about"]
+    readonly property var sectionTitles: ["Appearance", "Features", "Podcasts", "Playback", "Sound", "Library", "Music servers", "Online & privacy", "Scrobbling & sharing", "Desktop", "About"]
 
-    function sectionItem(i) { return [sec_appearance, sec_features, sec_podcasts, sec_playback, sec_sound, sec_library, sec_servers, sec_sharing, sec_desktop, sec_about][i] }
+    function sectionItem(i) { return [sec_appearance, sec_features, sec_podcasts, sec_playback, sec_sound, sec_library, sec_servers, sec_sharing, sec_scrobbling, sec_desktop, sec_about][i] }
     function jumpToSidebar() {
         jumpTo(1)
+        sidebarGroup.open = true
         var y = sidebarOrderBox.mapToItem(flick.contentItem, 0, 0).y - 20
         flick.contentY = Math.max(0, Math.min(y, flick.contentHeight - flick.height))
     }
@@ -70,7 +71,8 @@ Item {
             textFormat: Text.PlainText
             visible: page.query.length > 0
             text: noMatches ? "No settings match “" + page.query + "”" : "Showing settings that match “" + page.query + "”"
-            readonly property bool noMatches: !(sec_appearance.matches || sec_features.matches || sec_podcasts.matches || sec_playback.matches || sec_sound.matches || sec_library.matches || sec_servers.matches || sec_sharing.matches || sec_desktop.matches || sec_about.matches)
+            // (a section hidden because its feature is off doesn't count, even if it matches)
+            readonly property bool noMatches: !(sec_appearance.visible || sec_features.visible || sec_podcasts.visible || sec_playback.visible || sec_sound.visible || sec_library.visible || sec_servers.visible || sec_sharing.visible || sec_scrobbling.visible || sec_desktop.visible || sec_about.visible)
             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
         }
     }
@@ -94,23 +96,11 @@ Item {
             id: sec_appearance
             objectName: "settings_appearance"
             title: "Appearance"
-            keywords: "theme colours font accent album art ambient motion reduce animation visualizer vinyl dark light system pride ribbon custom"
+            keywords: "theme colours colors font text size bigger smaller accent album art ambient motion reduce animation dark light system pride ribbon custom badges bitrate format"
             query: page.query
-            StyledCheck {
-                text: "Show audio format and average bitrate on tracks"
-                checked: player.showTrackInfo
-                onToggled: player.setShowTrackInfo(checked)
-                Accessible.name: "Show track audio format and average bitrate"
-            }
-            Text {
-                textFormat: Text.PlainText
-                width: parent.width
-                text: "Shows compact format and approximate average bitrate badges in song rows and the now-playing bar."
-                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
-                wrapMode: Text.WordWrap
-            }
             Row {
                 spacing: 12
+                visible: !themeManager.followSystem  // following the system, the Light and Dark choices below apply
                 Text {
                     textFormat: Text.PlainText
                     anchors.verticalCenter: parent.verticalCenter
@@ -124,7 +114,7 @@ Item {
                     objectName: "themePicker"
                     width: 260
                     model: themeManager.availableThemes
-                    currentIndex: Math.max(0, themeManager.availableThemes.indexOf(themeManager.currentTheme))
+                    selection: themeManager.availableThemes.indexOf(themeManager.currentTheme)
                     onActivated: themeManager.selectTheme(currentText)
                     contentItem: Text {
                         textFormat: Text.PlainText
@@ -191,8 +181,16 @@ Item {
                         text: themeManager.accentOverride
                         selectByMouse: true
                         Accessible.name: "Accent colour as a hex code"
+                        // typing breaks the binding above: follow the accent again once it changes elsewhere
+                        Connections { target: themeManager; function onThemeChanged() { if (!accentHex.activeFocus) accentHex.text = themeManager.accentOverride } }
                         onAccepted: themeManager.setAccentOverride(text)
                     }
+                }
+                StyledCheck {
+                    objectName: "albumArtAccent"
+                    text: "Tint the accent with each album's cover"
+                    checked: themeManager.albumArtAccent
+                    onToggled: themeManager.setAlbumArtAccent(checked)
                 }
                 StyledCheck {
                     objectName: "followSystemTheme"
@@ -208,7 +206,7 @@ Item {
                     StyledCombo {
                         width: 200
                         model: themeManager.availableThemes
-                        currentIndex: Math.max(0, themeManager.availableThemes.indexOf(themeManager.lightTheme))
+                        selection: themeManager.availableThemes.indexOf(themeManager.lightTheme)
                         onActivated: themeManager.setSystemThemes(currentText, themeManager.darkTheme)
                         Accessible.name: "Theme in light mode"
                     }
@@ -216,7 +214,7 @@ Item {
                     StyledCombo {
                         width: 200
                         model: themeManager.availableThemes
-                        currentIndex: Math.max(0, themeManager.availableThemes.indexOf(themeManager.darkTheme))
+                        selection: themeManager.availableThemes.indexOf(themeManager.darkTheme)
                         onActivated: themeManager.setSystemThemes(themeManager.lightTheme, currentText)
                         Accessible.name: "Theme in dark mode"
                     }
@@ -236,50 +234,51 @@ Item {
                 checked: shell.reduceMotion
                 onToggled: shell.setReduceMotion(checked)
             }
-            CheckBox {
-                id: albumAccentToggle
-                text: "Use album-art accent color"
-                checked: themeManager.albumArtAccent
-                onToggled: themeManager.setAlbumArtAccent(checked)
-                contentItem: Text {
-                    textFormat: Text.PlainText
-                    text: albumAccentToggle.text
-                    leftPadding: 30
-                    color: Theme.text
-                    font.family: Theme.fontFamily
-                    font.pixelSize: Theme.fontSize(14)
-                    verticalAlignment: Text.AlignVCenter
-                }
-                indicator: Rectangle {
-                    implicitWidth: 20
-                    implicitHeight: 20
-                    radius: Theme.radius / 2
-                    x: albumAccentToggle.leftPadding
-                    y: parent.height / 2 - height / 2
-                    color: albumAccentToggle.checked ? Theme.accent : Theme.surface
-                    border.color: albumAccentToggle.checked ? Theme.accent : Theme.border
-                    Text {
-                        textFormat: Text.PlainText
-                        anchors.centerIn: parent
-                        text: albumAccentToggle.checked ? "✓" : ""
-                        color: Theme.onAccent
-                        font.family: Theme.fontFamily
-                        font.pixelSize: Theme.fontSize(13)
+            SettingsGroup {
+                key: "appearanceMore"
+                title: "More appearance options"
+                summary: "Text size, track badges, theme files"
+                query: page.query
+                Flow {
+                    width: parent.width
+                    spacing: 12
+                    Text { textFormat: Text.PlainText; text: "Text size"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }
+                    StyledCombo {
+                        objectName: "textSize"
+                        width: 200
+                        readonly property var sizes: [0.9, 1.0, 1.1, 1.25, 1.4]
+                        model: ["Smaller", "As the theme has it", "Larger", "Larger still", "Largest"]
+                        selection: sizes.indexOf(themeManager.textScale)
+                        onActivated: function (i) { themeManager.setTextScale(sizes[i]) }
+                        Accessible.name: "Text size"
                     }
                 }
-            }
-            Text {
-                textFormat: Text.PlainText
-                width: parent.width
-                wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-                text: "Custom themes: " + themeManager.userThemeDirectory + "/*.json"
-                color: Theme.textDim
-                font.family: Theme.fontFamily
-                font.pixelSize: Theme.fontSize(12)
-            }
-            PillButton {
-                text: "Reload themes"
-                onClicked: themeManager.reloadThemes()
+                StyledCheck {
+                    text: "Show audio format and average bitrate on tracks"
+                    checked: player.showTrackInfo
+                    onToggled: player.setShowTrackInfo(checked)
+                    Accessible.name: "Show track audio format and average bitrate"
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    text: "Shows compact format and approximate average bitrate badges in song rows and the now-playing bar."
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                    wrapMode: Text.WordWrap
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+                    text: "Custom themes: " + themeManager.userThemeDirectory + "/*.json"
+                    color: Theme.textDim
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.fontSize(12)
+                }
+                PillButton {
+                    text: "Reload themes"
+                    onClicked: themeManager.reloadThemes()
+                }
             }
 
         }
@@ -337,65 +336,72 @@ Item {
                 items: [["homeRandom", "Random album"], ["homeListening", "Listening card"],
                         ["homeFacts", "Library facts"], ["homeShelves", "Album shelves"]]
             }
-            Column {
-                id: sidebarOrderBox
-                objectName: "sidebarOrder"
-                width: parent.width
-                spacing: 6
-                readonly property var names: ({ home: "Home", albums: "Albums", artists: "Artists", songs: "Songs",
-                    folders: "Folders", liked: "Liked Songs", stats: "Stats", history: "History", recap: "Recap",
-                    visualizer: "Visualizer", stations: "Internet radio", podcasts: "Podcasts" })
-                readonly property var shown: shell.sidebarOrder.filter(function (p) { return shell.features[p] !== false })
-                Row {
+            SettingsGroup {
+                id: sidebarGroup
+                key: "sidebarOrder"
+                title: "Sidebar order"
+                summary: "Move pages up or down"
+                query: page.query
+                Column {
+                    id: sidebarOrderBox
+                    objectName: "sidebarOrder"
                     width: parent.width
-                    spacing: 12
-                    Text {
-                        textFormat: Text.PlainText
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Sidebar order"
-                        color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
-                    }
-                    PillButton { objectName: "resetSidebarOrder"; height: 30; text: "Reset"; onClicked: shell.resetSidebarOrder() }
-                }
-                Text {
-                    textFormat: Text.PlainText
-                    width: parent.width
-                    wrapMode: Text.WordWrap
-                    text: "Move pages up or down here, drag them in the sidebar, or right-click one there. With a page focused, Alt+Up and Alt+Down move it too."
-                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
-                }
-                Repeater {
-                    model: sidebarOrderBox.shown
-                    Rectangle {
-                        required property string modelData
-                        required property int index
-                        objectName: "sidebarOrder_" + modelData
-                        width: Math.min(380, sidebarOrderBox.width)
-                        height: 34
-                        radius: Theme.radiusSmall
-                        color: Theme.surface
+                    spacing: 6
+                    readonly property var names: ({ home: "Home", albums: "Albums", artists: "Artists", songs: "Songs",
+                        folders: "Folders", liked: "Liked Songs", stats: "Stats", history: "History", recap: "Recap",
+                        visualizer: "Visualizer", stations: "Internet radio", podcasts: "Podcasts" })
+                    readonly property var shown: shell.sidebarOrder.filter(function (p) { return shell.features[p] !== false })
+                    Row {
+                        width: parent.width
+                        spacing: 12
                         Text {
                             textFormat: Text.PlainText
-                            anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
-                            text: (index + 1) + ".  " + sidebarOrderBox.names[modelData]
-                            color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Sidebar order"
+                            color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
                         }
-                        Row {
-                            anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
-                            spacing: 2
-                            IconButton {
-                                icon: "up"; size: 16
-                                enabled: index > 0
-                                opacity: enabled ? 1 : 0.35
-                                tip: "Move " + sidebarOrderBox.names[modelData] + " up"
-                                onClicked: shell.moveSidebarPage(modelData, -1)
+                        PillButton { objectName: "resetSidebarOrder"; height: 30; text: "Reset"; onClicked: shell.resetSidebarOrder() }
+                    }
+                    Text {
+                        textFormat: Text.PlainText
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: "Move pages up or down here, drag them in the sidebar, or right-click one there. With a page focused, Alt+Up and Alt+Down move it too."
+                        color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                    }
+                    Repeater {
+                        model: sidebarOrderBox.shown
+                        Rectangle {
+                            required property string modelData
+                            required property int index
+                            objectName: "sidebarOrder_" + modelData
+                            width: Math.min(380, sidebarOrderBox.width)
+                            height: 34
+                            radius: Theme.radiusSmall
+                            color: Theme.surface
+                            Text {
+                                textFormat: Text.PlainText
+                                anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
+                                text: (index + 1) + ".  " + sidebarOrderBox.names[modelData]
+                                color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                             }
-                            IconButton {
-                                icon: "down"; size: 16
-                                enabled: index < sidebarOrderBox.shown.length - 1
-                                opacity: enabled ? 1 : 0.35
-                                tip: "Move " + sidebarOrderBox.names[modelData] + " down"
-                                onClicked: shell.moveSidebarPage(modelData, 1)
+                            Row {
+                                anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
+                                spacing: 2
+                                IconButton {
+                                    icon: "up"; size: 16
+                                    enabled: index > 0
+                                    opacity: enabled ? 1 : 0.35
+                                    tip: "Move " + sidebarOrderBox.names[modelData] + " up"
+                                    onClicked: shell.moveSidebarPage(modelData, -1)
+                                }
+                                IconButton {
+                                    icon: "down"; size: 16
+                                    enabled: index < sidebarOrderBox.shown.length - 1
+                                    opacity: enabled ? 1 : 0.35
+                                    tip: "Move " + sidebarOrderBox.names[modelData] + " down"
+                                    onClicked: shell.moveSidebarPage(modelData, 1)
+                                }
                             }
                         }
                     }
@@ -425,31 +431,36 @@ Item {
                 onPicked: function (v) { podcasts.setOption("skipForward", v) }
             }
             OptionCombo {
-                label: "Check for new episodes"
-                values: [1, 2, 4, 8, 12, 24, 0]
-                labels: ["Every hour", "Every 2 hours", "Every 4 hours", "Every 8 hours", "Twice a day", "Once a day", "Only when I ask"]
-                current: sec_podcasts.o.refreshHours
-                onPicked: function (v) { podcasts.setOption("refreshHours", v) }
-            }
-            OptionCombo {
                 label: "After an episode"
                 values: ["next", "stop"]
                 labels: ["Play the show's next one", "Stop"]
                 current: sec_podcasts.o.afterEpisode
                 onPicked: function (v) { podcasts.setOption("afterEpisode", v) }
             }
-            OptionCombo {
-                label: "Played when this close to the end"
-                values: [10, 30, 45, 60, 120, 300]
-                labels: ["10 seconds", "30 seconds", "45 seconds", "1 minute", "2 minutes", "5 minutes"]
-                current: sec_podcasts.o.playedWindow
-                onPicked: function (v) { podcasts.setOption("playedWindow", v) }
-            }
             StyledCheck {
                 objectName: "notifyNewEpisodes"
                 text: "Tell me when a show I follow has a new episode (a desktop notification)"
                 checked: sec_podcasts.o.notifyNew === 1
                 onToggled: podcasts.setOption("notifyNew", checked ? 1 : 0)
+            }
+            SettingsGroup {
+                key: "podcastsMore"
+                title: "When to check, and when an episode counts as played"
+                query: page.query
+                OptionCombo {
+                    label: "Check for new episodes"
+                    values: [1, 2, 4, 8, 12, 24, 0]
+                    labels: ["Every hour", "Every 2 hours", "Every 4 hours", "Every 8 hours", "Twice a day", "Once a day", "Only when I ask"]
+                    current: sec_podcasts.o.refreshHours
+                    onPicked: function (v) { podcasts.setOption("refreshHours", v) }
+                }
+                OptionCombo {
+                    label: "Played when this close to the end"
+                    values: [10, 30, 45, 60, 120, 300]
+                    labels: ["10 seconds", "30 seconds", "45 seconds", "1 minute", "2 minutes", "5 minutes"]
+                    current: sec_podcasts.o.playedWindow
+                    onPicked: function (v) { podcasts.setOption("playedWindow", v) }
+                }
             }
             Text { textFormat: Text.PlainText; text: "Downloads"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold }
             OptionCombo {
@@ -504,15 +515,16 @@ Item {
             id: sec_playback
             objectName: "settings_playback"
             title: "Playback"
-            keywords: "output device audio replaygain loudness crossfade gapless speed sleep"
+            keywords: "output device audio replaygain loudness preamp measure crossfade gapless speed sleep timer"
             query: page.query
-            Row {
+            Flow {  // wraps in a narrow window
+                width: parent.width
                 spacing: 12
-                Text { anchors.verticalCenter: parent.verticalCenter; text: "Output device"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Output device"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledCombo {
                     id: deviceCombo
                     objectName: "outputDevice"
-                    width: 360
+                    width: Math.min(360, parent.width)
                     model: player.outputDevices
                     textRole: "name"
                     currentIndex: player.outputDevices.findIndex(d => d.key === player.outputDevice)
@@ -533,55 +545,65 @@ Item {
                 StyledCombo {
                     objectName: "rgMode"
                     model: ["Off", "Track", "Album"]
-                    currentIndex: ["off", "track", "album"].indexOf(player.replayGainMode)
+                    selection: ["off", "track", "album"].indexOf(player.replayGainMode)
                     onActivated: player.setReplayGainMode(["off", "track", "album"][currentIndex])
                 }
-                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Preamp " + player.replayGainPreamp.toFixed(1) + " dB"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
-                StyledSlider {
-                    width: 140
-                    from: -15; to: 15; stepSize: 0.5
-                    value: player.replayGainPreamp
-                    onMoved: player.setReplayGainPreamp(value)
+            }
+            SettingsGroup {
+                key: "replayGain"
+                title: "ReplayGain details"
+                summary: "Preamp, measuring songs without tags"
+                query: page.query
+                Flow {
+                    width: parent.width
+                    spacing: 12
+                    Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Preamp " + player.replayGainPreamp.toFixed(1) + " dB"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                    StyledSlider {
+                        width: 140
+                        from: -15; to: 15; stepSize: 0.5
+                        value: player.replayGainPreamp
+                        onMoved: player.setReplayGainPreamp(value)
+                    }
+                }
+                StyledCheck {
+                    objectName: "autoReplayGain"
+                    text: "Measure new music by itself after each scan"
+                    checked: replayGain.auto
+                    onToggled: replayGain.setAuto(checked)
+                }
+                Flow {  // wraps in a narrow window
+                    width: parent.width
+                    spacing: 12
+                    PillButton {
+                        objectName: "analyseReplayGain"
+                        text: replayGain.busy ? "Stop measuring" : "Measure songs without ReplayGain"
+                        onClicked: replayGain.busy ? replayGain.cancel() : replayGain.analyseMissing()
+                    }
+                    Text {
+                        textFormat: Text.PlainText
+                        width: Math.min(implicitWidth, parent.width)
+                        wrapMode: Text.WordWrap
+                        text: replayGain.busy ? "Measured " + replayGain.done + " of " + replayGain.total + " songs…"
+                            : "Measures loudness (EBU R128) for songs whose files have no ReplayGain tags. Files aren't changed."
+                        color: Theme.textDim
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.fontSize(12)
+                    }
                 }
             }
-            StyledCheck {
-                objectName: "autoReplayGain"
-                text: "Measure new music by itself after each scan"
-                checked: replayGain.auto
-                onToggled: replayGain.setAuto(checked)
-            }
-            Flow {  // wraps in a narrow window
+            Flow {
                 width: parent.width
                 spacing: 12
-                PillButton {
-                    objectName: "analyseReplayGain"
-                    text: replayGain.busy ? "Stop measuring" : "Measure songs without ReplayGain"
-                    onClicked: replayGain.busy ? replayGain.cancel() : replayGain.analyseMissing()
-                }
-                Text {
-                    textFormat: Text.PlainText
-                    width: Math.min(implicitWidth, parent.width)
-                    wrapMode: Text.WordWrap
-                    text: replayGain.busy ? "Measured " + replayGain.done + " of " + replayGain.total + " songs…"
-                        : "Measures loudness (EBU R128) for songs whose files have no ReplayGain tags. Files aren't changed."
-                    color: Theme.textDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: Theme.fontSize(12)
-                }
-            }
-            Row {
-                spacing: 12
-                Text { anchors.verticalCenter: parent.verticalCenter; text: "Crossfade " + (player.crossfade > 0 ? player.crossfade + " s" : "off"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Crossfade " + (player.crossfade > 0 ? player.crossfade + " s" : "off"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledSlider {
                     objectName: "crossfade"
-                    anchors.verticalCenter: parent.verticalCenter
                     width: 200
                     from: 0; to: 12; stepSize: 1
                     value: player.crossfade
                     onMoved: player.setCrossfade(value)
                 }
             }
-            Text { width: parent.width; wrapMode: Text.WordWrap; text: "Gapless playback is always on; with crossfade off, consecutive tracks play back to back."; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
+            Text { width: parent.width; wrapMode: Text.WordWrap; text: "Gapless playback is always on; with crossfade off, consecutive tracks play back to back. Playback speed and the sleep timer are in the ⋯ menu of the player bar."; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
         }
         SettingsSection {
             id: sec_sound
@@ -590,14 +612,15 @@ Item {
             keywords: "equalizer eq bass treble headphones autoeq crossfeed"
             query: page.query
             EqualizerPanel { width: parent.width }
-            Row {
+            Flow {
+                width: parent.width
                 spacing: 12
-                Text { anchors.verticalCenter: parent.verticalCenter; text: "Headphone crossfeed"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Headphone crossfeed"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledCombo {
                     objectName: "crossfeed"
                     enabled: player.eqAvailable
                     model: ["Off", "Light", "Medium", "Strong"]
-                    currentIndex: Math.max(0, player.crossfeedPresets.indexOf(player.crossfeed))
+                    selection: player.crossfeedPresets.indexOf(player.crossfeed)
                     onActivated: player.setCrossfeed(player.crossfeedPresets[currentIndex])
                 }
             }
@@ -622,43 +645,82 @@ Item {
                 text: "Folders are scanned in the background and watched for changes."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
-            StyledCheck {
-                objectName: "ratingsInFiles"
-                text: "Save star ratings in the songs' own tags too, so other players see them"
-                checked: userLib.ratingsInFiles
-                onToggled: userLib.setRatingsInFiles(checked)
+            Repeater {
+                model: library.folders
+                Rectangle {
+                    required property var modelData
+                    width: parent.width; height: 48; radius: Theme.radius
+                    color: Theme.surface
+                    Text {
+                        textFormat: Text.PlainText
+                        anchors { left: parent.left; leftMargin: 16; right: rm.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                        text: modelData
+                        color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); elide: Text.ElideMiddle
+                    }
+                    IconButton {
+                        id: rm
+                        anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                        icon: "close"; size: 14
+                        tip: "Remove this folder from the library"
+                        onClicked: Nav.removeFolder(modelData)
+                    }
+                }
             }
-            StyledCheck {
-                objectName: "coversToFolder"
-                text: "Save covers you add as cover.jpg in the album's folder"
-                checked: metaEditor.coversToFolder
-                onToggled: metaEditor.setCoversToFolder(checked)
+            Flow {  // wraps in a narrow window
+                width: parent.width
+                spacing: 10
+                TextField {
+                    id: pathField
+                    width: Math.min(420, parent.width); height: 38
+                    placeholderText: "/path/to/music"
+                    color: Theme.text
+                    placeholderTextColor: Theme.textDim
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.fontSize(14)
+                    leftPadding: 14
+                    background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: pathField.activeFocus ? Theme.accent : Theme.border }
+                    onAccepted: add.clicked()
+                }
+                PillButton {
+                    id: add
+                    primary: true
+                    text: "Add folder"
+                    onClicked: { library.addFolder(pathField.text); pathField.text = "" }
+                }
+                PillButton { text: "Choose folder…"; onClicked: picker.open() }
+                PillButton { text: "Rescan now"; onClicked: library.rescan() }
+                PillButton { objectName: "openHealth"; visible: shell.features.health !== false; text: "Library health"; onClicked: Nav.openHealth() }
             }
-            StyledCheck {
-                objectName: "embedCovers"
-                text: "Also embed covers you add in the songs themselves"
-                checked: metaEditor.embedCovers
-                onToggled: metaEditor.setEmbedCovers(checked)
+            FolderPicker { id: picker }
+            ScanBar { width: parent.width }
+            Text {
+                textFormat: Text.PlainText
+                visible: !library.scanning && library.status.length > 0
+                text: library.status
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
-            StyledCheck {
-                objectName: "allGenresAlbums"
-                text: "Show every genre on album and artist pages (not just the main one)"
-                checked: shell.allGenresAlbums
-                onToggled: shell.setAllGenresAlbums(checked)
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                visible: library.missingFolders.length > 0
+                wrapMode: Text.WordWrap
+                text: "Folder not found or unreadable: " + library.missingFolders.join(", ")
+                color: Theme.error; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
-            StyledCheck {
-                objectName: "allGenresSongs"
-                text: "Show every genre of the playing song (not just the main one)"
-                checked: shell.allGenresSongs
-                onToggled: shell.setAllGenresSongs(checked)
+            Text {
+                textFormat: Text.PlainText
+                visible: library.unreadableFiles > 0 && !library.scanning
+                text: library.unreadableFiles + " files could not be read and were skipped."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
-            Row {
+            Flow {
                 visible: library.hiddenCount > 0
+                width: parent.width
                 spacing: 12
                 Text {
                     textFormat: Text.PlainText
                     objectName: "hiddenCount"
-                    anchors.verticalCenter: parent.verticalCenter
+                    height: 32; verticalAlignment: Text.AlignVCenter
                     text: library.hiddenCount + (library.hiddenCount === 1 ? " file" : " files")
                           + " removed from the library (still on disk)"
                     color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
@@ -670,7 +732,97 @@ Item {
                     onClicked: { library.restoreHidden(); Nav.notify("Rescanning to bring them back…") }
                 }
             }
-
+            SettingsGroup {
+                key: "libraryFiles"
+                title: "Files and tags"
+                summary: "Ratings and covers in files, how many genres show"
+                query: page.query
+                StyledCheck {
+                    objectName: "ratingsInFiles"
+                    text: "Save star ratings in the songs' own tags too, so other players see them"
+                    checked: userLib.ratingsInFiles
+                    onToggled: userLib.setRatingsInFiles(checked)
+                }
+                StyledCheck {
+                    objectName: "coversToFolder"
+                    text: "Save covers you add as cover.jpg in the album's folder"
+                    checked: metaEditor.coversToFolder
+                    onToggled: metaEditor.setCoversToFolder(checked)
+                }
+                StyledCheck {
+                    objectName: "embedCovers"
+                    text: "Also embed covers you add in the songs themselves"
+                    checked: metaEditor.embedCovers
+                    onToggled: metaEditor.setEmbedCovers(checked)
+                }
+                StyledCheck {
+                    objectName: "allGenresAlbums"
+                    text: "Show every genre on album and artist pages (not just the main one)"
+                    checked: shell.allGenresAlbums
+                    onToggled: shell.setAllGenresAlbums(checked)
+                }
+                StyledCheck {
+                    objectName: "allGenresSongs"
+                    text: "Show every genre of the playing song (not just the main one)"
+                    checked: shell.allGenresSongs
+                    onToggled: shell.setAllGenresSongs(checked)
+                }
+            }
+            SettingsGroup {
+                key: "otherPlayer"
+                title: "From another player"
+                summary: "Strawberry, Clementine, Rhythmbox, MusicBee, iTunes, foobar2000"
+                query: page.query
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: "Bring over play counts, skips, ratings and playlists from Strawberry, Clementine, Rhythmbox, MusicBee "
+                        + "or iTunes. Songs are matched to your library; importing again never counts anything twice, and "
+                        + "ratings you set here are kept."
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                }
+                Flow {
+                    width: parent.width
+                    spacing: 10
+                    Repeater {
+                        id: foundPlayers
+                        model: userLib.otherPlayerLibraries()
+                        PillButton {
+                            required property var modelData
+                            text: "Import from " + modelData.name
+                            enabled: !userLib.playerImportBusy
+                            onClicked: userLib.importFromPlayer(modelData.path)
+                        }
+                    }
+                    PillButton {
+                        objectName: "importPlayerFile"
+                        text: foundPlayers.count ? "Choose another library file…" : "Choose a library file…"
+                        enabled: !userLib.playerImportBusy
+                        onClicked: playerFile.open()
+                    }
+                    PillButton {
+                        text: userLib.playerImportBusy ? "Importing…" : "foobar2000: play counts from tags"
+                        enabled: !userLib.playerImportBusy
+                        onClicked: userLib.importTagStatistics()
+                    }
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: "MusicBee: turn on Preferences → Library → “make library and playlists accessible to other "
+                        + "applications”, then choose its iTunes Music Library.xml. foobar2000 keeps its statistics to "
+                        + "itself, so write them to the files with foo_playcount first; its playlists come over as M3U files."
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                }
+                FileDialog {
+                    id: playerFile
+                    title: "Choose another player's library"
+                    nameFilters: ["Player libraries (*.db *.xml)", "All files (*)"]
+                    onAccepted: userLib.importFromPlayer(selectedFile.toString())
+                }
+            }
             Flow {  // wraps in a narrow window
                 width: parent.width
                 objectName: "backupRow"
@@ -697,128 +849,6 @@ Item {
                 nameFilters: ["Hallucinate backup (*.hallucinate-backup)", "All files (*)"]
                 onAccepted: Nav.notify(shell.importBackup(selectedFile.toString()))
             }
-            Repeater {
-                model: library.folders
-                Rectangle {
-                    required property var modelData
-                    width: parent.width; height: 48; radius: Theme.radius
-                    color: Theme.surface
-                    Text {
-                        textFormat: Text.PlainText
-                        anchors { left: parent.left; leftMargin: 16; right: rm.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                        text: modelData
-                        color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); elide: Text.ElideMiddle
-                    }
-                    IconButton {
-                        id: rm
-                        anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                        icon: "close"; size: 14
-                        tip: "Remove this folder from the library"
-                        onClicked: Nav.removeFolder(modelData)
-                    }
-                }
-            }
-
-            Flow {  // wraps in a narrow window
-                width: parent.width
-                spacing: 10
-                TextField {
-                    id: pathField
-                    width: 420; height: 38
-                    placeholderText: "/path/to/music"
-                    color: Theme.text
-                    placeholderTextColor: Theme.textDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: Theme.fontSize(14)
-                    leftPadding: 14
-                    background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: pathField.activeFocus ? Theme.accent : Theme.border }
-                    onAccepted: add.clicked()
-                }
-                PillButton {
-                    id: add
-                    primary: true
-                    text: "Add folder"
-                    onClicked: { library.addFolder(pathField.text); pathField.text = "" }
-                }
-                PillButton { text: "Rescan now"; onClicked: library.rescan() }
-                PillButton { objectName: "openHealth"; visible: shell.features.health !== false; text: "Library health"; onClicked: Nav.openHealth() }
-            }
-            ScanBar { width: parent.width }
-            Text {
-                textFormat: Text.PlainText
-                visible: !library.scanning && library.status.length > 0
-                text: library.status
-                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
-            }
-            Text {
-                textFormat: Text.PlainText
-                width: parent.width
-                visible: library.missingFolders.length > 0
-                wrapMode: Text.WordWrap
-                text: "Folder not found or unreadable: " + library.missingFolders.join(", ")
-                color: Theme.error; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
-            }
-            Text {
-                textFormat: Text.PlainText
-                visible: library.unreadableFiles > 0 && !library.scanning
-                text: library.unreadableFiles + " files could not be read and were skipped."
-                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
-            }
-            PillButton { text: "Choose folder…"; onClicked: picker.open() }
-            FolderPicker { id: picker }
-
-            Rectangle { width: parent.width; height: 1; color: Theme.border }
-            Rectangle { width: parent.width; height: 1; color: Theme.border }
-            Text { text: "From another player"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
-            Text {
-                textFormat: Text.PlainText
-                width: parent.width
-                wrapMode: Text.WordWrap
-                text: "Bring over play counts, skips, ratings and playlists from Strawberry, Clementine, Rhythmbox, MusicBee "
-                    + "or iTunes. Songs are matched to your library; importing again never counts anything twice, and "
-                    + "ratings you set here are kept."
-                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
-            }
-            Flow {
-                width: parent.width
-                spacing: 10
-                Repeater {
-                    id: foundPlayers
-                    model: userLib.otherPlayerLibraries()
-                    PillButton {
-                        required property var modelData
-                        text: "Import from " + modelData.name
-                        enabled: !userLib.playerImportBusy
-                        onClicked: userLib.importFromPlayer(modelData.path)
-                    }
-                }
-                PillButton {
-                    objectName: "importPlayerFile"
-                    text: foundPlayers.count ? "Choose another library file…" : "Choose a library file…"
-                    enabled: !userLib.playerImportBusy
-                    onClicked: playerFile.open()
-                }
-                PillButton {
-                    text: userLib.playerImportBusy ? "Importing…" : "foobar2000: play counts from tags"
-                    enabled: !userLib.playerImportBusy
-                    onClicked: userLib.importTagStatistics()
-                }
-            }
-            Text {
-                textFormat: Text.PlainText
-                width: parent.width
-                wrapMode: Text.WordWrap
-                text: "MusicBee: turn on Preferences → Library → “make library and playlists accessible to other "
-                    + "applications”, then choose its iTunes Music Library.xml. foobar2000 keeps its statistics to "
-                    + "itself, so write them to the files with foo_playcount first; its playlists come over as M3U files."
-                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
-            }
-            FileDialog {
-                id: playerFile
-                title: "Choose another player's library"
-                nameFilters: ["Player libraries (*.db *.xml)", "All files (*)"]
-                onAccepted: userLib.importFromPlayer(selectedFile.toString())
-            }
         }
         SettingsSection {
             id: sec_servers
@@ -843,7 +873,7 @@ Item {
                     spacing: 12
                     width: parent ? parent.width : 0
                     Column {
-                        width: serverRow.width - syncButton.width - removeButton.width - 24
+                        width: serverRow.width - syncButton.width - removeButton.width - (signInButton.visible ? signInButton.width + 12 : 0) - 24
                         anchors.verticalCenter: parent.verticalCenter
                         Text {
                             textFormat: Text.PlainText
@@ -869,6 +899,16 @@ Item {
                         }
                     }
                     PillButton {
+                        id: signInButton
+                        objectName: "signInAgain"
+                        visible: serverRow.modelData.needsSignIn === true
+                        anchors.verticalCenter: parent.verticalCenter
+                        height: 32
+                        primary: true
+                        text: "Sign in again…"
+                        onClicked: { signInDlg.serverId = serverRow.modelData.id; signInDlg.what = serverRow.modelData.name; signInDlg.open() }
+                    }
+                    PillButton {
                         id: syncButton
                         anchors.verticalCenter: parent.verticalCenter
                         height: 32
@@ -890,6 +930,43 @@ Item {
                 primary: true
                 text: "Add a server…"
                 onClicked: addServerDlg.open()
+            }
+            Dialog {
+                id: signInDlg
+                objectName: "signInDialog"
+                property string serverId: ""
+                property string what: ""
+                parent: Overlay.overlay
+                anchors.centerIn: parent
+                modal: true
+                width: Math.min(420, (parent ? parent.width : 420) - 40)
+                title: "Sign in to " + what + " again"
+                standardButtons: Dialog.Ok | Dialog.Cancel
+                onAboutToShow: newPassword.text = ""
+                onAccepted: servers.signInAgain(serverId, newPassword.text)
+                Column {
+                    width: signInDlg.availableWidth
+                    spacing: 10
+                    Text {
+                        textFormat: Text.PlainText
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: "The server turned down the saved sign-in. Enter the password again: your playlists, plays and ratings for its songs stay as they are."
+                        color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                    }
+                    TextField {
+                        id: newPassword
+                        width: parent.width
+                        echoMode: TextInput.Password
+                        placeholderText: "Password"
+                        placeholderTextColor: Theme.textDim
+                        color: Theme.text
+                        font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
+                        background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: newPassword.activeFocus ? Theme.accent : Theme.border }
+                        onAccepted: signInDlg.accept()
+                        Accessible.name: "Password"
+                    }
+                }
             }
             ConfirmDialog {
                 id: removeServerDlg
@@ -973,69 +1050,32 @@ Item {
         SettingsSection {
             id: sec_sharing
             objectName: "settings_sharing"
-            title: "Internet & sharing"
-            keywords: "offline mode internet network privacy connection lyrics lrclib last.fm lastfm listenbrainz scrobble discord rich presence history import account radio stations podcasts episodes genres bios biography wikipedia discogs token musicbrainz"
+            title: "Online & privacy"
+            keywords: "offline mode internet network privacy connection lyrics lrclib genres bios biography wikipedia discogs token musicbrainz last.fm tags"
             query: page.query
-            Text { text: "Offline mode"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
-            Text {
-                textFormat: Text.PlainText
-                width: parent.width
-                wrapMode: Text.WordWrap
-                text: "Hallucinate makes no internet connections at all: no lyrics, cover, genre or bio lookups, internet radio, podcast updates, scrobbling, headphone EQ downloads or update checks. Scrobbles wait and are sent when you turn it off. Discord status talks only to the Discord app on this computer, so it keeps its own switch below (it shows no cover art while offline)."
-                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
-            }
-            StyledCheck {
-                objectName: "lyricsOnline"
-                visible: shell.features.lyrics !== false
-                text: "Find lyrics online for songs that have none (sends the song's artist, title and album to LRCLIB)"
-                checked: lyricsCtl.onlineLookup
-                onToggled: lyricsCtl.setOnlineLookup(checked)
-            }
-            StyledCheck {
-                objectName: "scrobbleStations"
-                visible: shell.features.stations !== false
-                text: "Count songs heard on internet radio on Last.fm and ListenBrainz"
-                checked: stations.scrobble
-                onToggled: stations.setScrobble(checked)
-            }
-            StyledCheck {
-                objectName: "scrobblePodcasts"
-                visible: shell.features.podcasts !== false
-                text: "Count podcast episodes on Last.fm and ListenBrainz (as the show and the episode's title)"
-                checked: podcasts.scrobble
-                onToggled: podcasts.setScrobble(checked)
-            }
-            StyledCheck {
-                objectName: "syncLoves"
-                visible: scrobbler.connected && shell.features.liked !== false
-                text: "Liking a song loves it on Last.fm (and unliking unloves it)"
-                checked: scrobbler.syncLoves
-                onToggled: scrobbler.setSyncLoves(checked)
-            }
-            PillButton {
-                objectName: "importLoves"
-                visible: scrobbler.connected && shell.features.liked !== false
-                text: scrobbler.lovesBusy ? "Fetching your loves…" : "Like the songs I've loved on Last.fm"
-                enabled: !scrobbler.lovesBusy
-                onClicked: scrobbler.importLoves()
-            }
             StyledCheck {
                 objectName: "offlineMode"
                 text: "Offline mode"
                 checked: shell.offlineMode
                 onToggled: shell.setOfflineMode(checked)
             }
-            Text { text: "Genres and artist bios"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Genres are looked up on MusicBrainz, and also on Discogs and Last.fm when they're set up. Only albums without a genre are looked up, and nothing is written until you've checked it. Bios come from Wikipedia (found through MusicBrainz), Last.fm or Discogs; one you write yourself on an artist's page is always shown instead."
-                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                text: "With offline mode on, Hallucinate makes no internet connections at all: no lyrics, cover, genre or bio lookups, internet radio, podcast updates, scrobbling, headphone EQ downloads or update checks. Scrobbles wait and are sent when you turn it off. Discord status talks only to the Discord app on this computer, so it has its own switch under Scrobbling & sharing (it shows no cover art while offline)."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+            }
+            StyledCheck {
+                objectName: "lyricsOnline"
+                visible: shell.features.lyrics !== false
+                text: "Find lyrics online for songs that have none (asks LRCLIB with the artist, title and album)"
+                checked: lyricsCtl.onlineLookup
+                onToggled: lyricsCtl.setOnlineLookup(checked)
             }
             StyledCheck {
                 objectName: "fetchBios"
-                text: "Look up an artist's bio when their page opens (sends the artist's name and one of their albums)"
+                text: "Look up an artist's bio when their page opens (sends the artist and one of their albums)"
                 checked: sources.fetchBios
                 onToggled: sources.setFetchBios(checked)
             }
@@ -1049,124 +1089,146 @@ Item {
                     readonly property var names: ["", "Wikipedia", "Last.fm", "Discogs"]
                     model: ["Wikipedia, then Last.fm, then Discogs", "Wikipedia only", "Last.fm only" + (sources.lastfmAvailable ? "" : " (not set up)"),
                             "Discogs only" + (sources.discogsConnected ? "" : " (not set up)")]
-                    currentIndex: Math.max(0, names.indexOf(sources.bioSource))
+                    selection: names.indexOf(sources.bioSource)
                     onActivated: function (i) { sources.setBioSource(names[i]) }
                     Accessible.name: "Where artist bios come from"
                 }
             }
-            StyledCheck {
-                objectName: "genresFromLastfm"
-                text: sources.lastfmAvailable ? "Also use Last.fm's tags for genres (only the tags that are real genres)"
-                                              : "Also use Last.fm's tags for genres (needs the Last.fm API key below)"
-                enabled: sources.lastfmAvailable
-                checked: sources.genresFromLastfm
-                onToggled: sources.setGenresFromLastfm(checked)
-            }
-            StyledCheck {
-                objectName: "genresFromDiscogs"
-                text: "Also use Discogs' genres and styles"
-                enabled: sources.discogsConnected
-                checked: sources.genresFromDiscogs
-                onToggled: sources.setGenresFromDiscogs(checked)
-            }
-            Text {
-                textFormat: Text.PlainText
-                width: parent.width
-                wrapMode: Text.WordWrap
-                text: sources.discogsConnected
-                      ? "Discogs: connected" + (sources.discogsUser ? " as " + sources.discogsUser : "") + ". The token is kept in the system keyring."
-                      : "Discogs needs a personal access token: make one at discogs.com → Settings → Developers, then paste it here. It's kept in the system keyring."
-                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
-            }
-            Flow {
-                width: parent.width
-                spacing: 10
-                visible: !sources.discogsConnected
-                TextField {
-                    id: discogsToken
-                    objectName: "discogsToken"
-                    width: Math.min(340, parent.width)
-                    echoMode: TextInput.Password
-                    placeholderText: "Discogs personal access token"
-                    placeholderTextColor: Theme.textDim
-                    color: Theme.text
-                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
-                    background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: discogsToken.activeFocus ? Theme.accent : Theme.border }
-                    onAccepted: sources.connectDiscogs(text)
-                    Accessible.name: "Discogs personal access token"
+            SettingsGroup {
+                key: "genreSources"
+                title: "Genre and bio sources"
+                summary: "Discogs, Last.fm tags"
+                query: page.query
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: "Genres are looked up on MusicBrainz, and also on Discogs and Last.fm when they're set up. Only albums without a genre are looked up, and nothing is written until you've checked it. Bios come from Wikipedia (found through MusicBrainz), Last.fm or Discogs; one you write yourself on an artist's page is always shown instead."
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                }
+                StyledCheck {
+                    objectName: "genresFromLastfm"
+                    text: sources.lastfmAvailable ? "Also use Last.fm's tags for genres (only the tags that are real genres)"
+                                                  : "Also use Last.fm's tags for genres (needs the Last.fm API key below)"
+                    enabled: sources.lastfmAvailable
+                    checked: sources.genresFromLastfm
+                    onToggled: sources.setGenresFromLastfm(checked)
+                }
+                StyledCheck {
+                    objectName: "genresFromDiscogs"
+                    text: "Also use Discogs' genres and styles"
+                    enabled: sources.discogsConnected
+                    checked: sources.genresFromDiscogs
+                    onToggled: sources.setGenresFromDiscogs(checked)
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: sources.discogsConnected
+                          ? "Discogs: connected" + (sources.discogsUser ? " as " + sources.discogsUser : "") + ". The token is kept in the system keyring."
+                          : "Discogs needs a personal access token: make one at discogs.com → Settings → Developers, then paste it here. It's kept in the system keyring."
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                }
+                Flow {
+                    width: parent.width
+                    spacing: 10
+                    visible: !sources.discogsConnected
+                    TextField {
+                        id: discogsToken
+                        objectName: "discogsToken"
+                        width: Math.min(340, parent.width)
+                        echoMode: TextInput.Password
+                        placeholderText: "Discogs personal access token"
+                        placeholderTextColor: Theme.textDim
+                        color: Theme.text
+                        font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                        background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: discogsToken.activeFocus ? Theme.accent : Theme.border }
+                        onAccepted: sources.connectDiscogs(text)
+                        Accessible.name: "Discogs personal access token"
+                    }
+                    PillButton {
+                        objectName: "connectDiscogs"
+                        text: sources.discogsBusy ? "Checking…" : "Connect Discogs"
+                        enabled: !sources.discogsBusy && discogsToken.text.trim().length > 0 && !shell.offlineMode
+                        onClicked: { sources.connectDiscogs(discogsToken.text); discogsToken.text = "" }
+                    }
                 }
                 PillButton {
-                    objectName: "connectDiscogs"
-                    text: sources.discogsBusy ? "Checking…" : "Connect Discogs"
-                    enabled: !sources.discogsBusy && discogsToken.text.trim().length > 0 && !shell.offlineMode
-                    onClicked: { sources.connectDiscogs(discogsToken.text); discogsToken.text = "" }
+                    objectName: "forgetDiscogs"
+                    visible: sources.discogsConnected
+                    text: "Disconnect Discogs"
+                    onClicked: sources.forgetDiscogs()
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    visible: sources.discogsStatus.length > 0
+                    text: sources.discogsStatus
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
             }
-            PillButton {
-                objectName: "forgetDiscogs"
-                visible: sources.discogsConnected
-                text: "Disconnect Discogs"
-                onClicked: sources.forgetDiscogs()
-            }
-            Text {
-                textFormat: Text.PlainText
-                width: parent.width
-                wrapMode: Text.WordWrap
-                visible: sources.discogsStatus.length > 0
-                text: sources.discogsStatus
-                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
-            }
+        }
+        SettingsSection {
+            id: sec_scrobbling
+            objectName: "settings_scrobbling"
+            title: "Scrobbling & sharing"
+            keywords: "last.fm lastfm listenbrainz scrobble scrobbling loves discord rich presence history import account radio stations podcasts episodes queued"
+            query: page.query
             Text { text: "Last.fm"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Connect your Last.fm account to send now-playing updates and scrobbles after listening to half a track or four minutes, whichever comes first. API credentials are stored in the system keyring."
-                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                text: "Sends now-playing updates, and scrobbles after half a song or four minutes, whichever comes first. Last.fm asks each person for an API key of their own; it and your sign-in stay in the system keyring."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
-            Text {
-                textFormat: Text.PlainText
-                width: parent.width
-                wrapMode: Text.WordWrap
-                text: "Register an API application, then enter its key and secret. Last.fm account authorization opens in your browser."
-                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            SettingsGroup {
+                id: lastfmKeyGroup
+                key: "lastfmKey"
+                title: scrobbler.configured ? "Last.fm API key (saved)" : "Last.fm API key"
+                summary: scrobbler.configured ? "Change it" : "Needed before connecting"
+                query: page.query
+                Component.onCompleted: if (!scrobbler.configured) open = true
+                Flow {  // wraps in a narrow window
+                    width: parent.width
+                    spacing: 10
+                    TextField {
+                        id: apiKey
+                        width: Math.min(250, parent.width); height: 38
+                        placeholderText: "Last.fm API key"
+                        color: Theme.text; placeholderTextColor: Theme.textDim
+                        font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
+                        background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: apiKey.activeFocus ? Theme.accent : Theme.border }
+                    }
+                    TextField {
+                        id: apiSecret
+                        width: Math.min(250, parent.width); height: 38
+                        placeholderText: "Last.fm API secret"
+                        echoMode: TextInput.Password
+                        color: Theme.text; placeholderTextColor: Theme.textDim
+                        font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
+                        background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: apiSecret.activeFocus ? Theme.accent : Theme.border }
+                    }
+                    PillButton {
+                        text: "Get API credentials"
+                        onClicked: Qt.openUrlExternally("https://www.last.fm/api/account/create")
+                    }
+                    PillButton {
+                        text: "Save API credentials"
+                        primary: true
+                        enabled: apiKey.text.length > 0 && apiSecret.text.length > 0 && !scrobbler.busy
+                        onClicked: {
+                            scrobbler.setApiCredentials(apiKey.text, apiSecret.text)
+                            apiSecret.text = ""
+                        }
+                    }
+                }
             }
             Flow {  // wraps in a narrow window
                 width: parent.width
                 spacing: 10
-                TextField {
-                    id: apiKey
-                    width: 250; height: 38
-                    placeholderText: "Last.fm API key"
-                    color: Theme.text; placeholderTextColor: Theme.textDim
-                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
-                    background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: apiKey.activeFocus ? Theme.accent : Theme.border }
-                }
-                TextField {
-                    id: apiSecret
-                    width: 250; height: 38
-                    placeholderText: "Last.fm API secret"
-                    echoMode: TextInput.Password
-                    color: Theme.text; placeholderTextColor: Theme.textDim
-                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
-                    background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: apiSecret.activeFocus ? Theme.accent : Theme.border }
-                }
-                PillButton {
-                    text: "Save API credentials"
-                    primary: true
-                    enabled: apiKey.text.length > 0 && apiSecret.text.length > 0 && !scrobbler.busy
-                    onClicked: {
-                        scrobbler.setApiCredentials(apiKey.text, apiSecret.text)
-                        apiSecret.text = ""
-                    }
-                }
-            }
-            Row {
-                spacing: 10
-                PillButton {
-                    text: "Get API credentials"
-                    onClicked: Qt.openUrlExternally("https://www.last.fm/api/account/create")
-                }
                 PillButton {
                     visible: !scrobbler.connected
                     primary: true
@@ -1196,26 +1258,49 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
-                text: scrobbler.status + (scrobbler.pendingCount > 0 ? " · " + scrobbler.pendingCount + " queued scrobbles" : "")
+                text: scrobbler.status + (scrobbler.pendingCount > 0 ? " · " + scrobbler.pendingCount + " waiting to be sent" : "")
+                      + (scrobbler.rejectedCount > 0 ? " · " + scrobbler.rejectedCount + " turned down by Last.fm" : "")
+                      + (scrobbler.lastError ? " · last try: " + scrobbler.lastError : "")
                 color: scrobbler.connected ? Theme.accent : Theme.textDim
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(13)
                 wrapMode: Text.WordWrap
+            }
+            PillButton {
+                objectName: "scrobblerRetryNow"
+                visible: scrobbler.pendingCount > 0 && scrobbler.connected && !shell.offlineMode
+                height: 32
+                text: "Send now"
+                onClicked: scrobbler.retryNow()
+            }
+            StyledCheck {
+                objectName: "syncLoves"
+                visible: scrobbler.connected && shell.features.liked !== false
+                text: "Liking a song loves it on Last.fm (and unliking unloves it)"
+                checked: scrobbler.syncLoves
+                onToggled: scrobbler.setSyncLoves(checked)
+            }
+            PillButton {
+                objectName: "importLoves"
+                visible: scrobbler.connected && shell.features.liked !== false
+                text: scrobbler.lovesBusy ? "Fetching your loves…" : "Like the songs I've loved on Last.fm"
+                enabled: !scrobbler.lovesBusy
+                onClicked: scrobbler.importLoves()
             }
             Text { text: "ListenBrainz"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Connect with a ListenBrainz user token to send now-playing updates and listens. Tokens stay in the system keyring; failed submissions remain queued for retry."
-                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                text: "Connect with your ListenBrainz user token to send now-playing updates and listens. The token stays in the system keyring; listens that can't be sent wait and are tried again."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
             Flow {  // wraps in a narrow window
                 width: parent.width
                 spacing: 10
                 TextField {
                     id: lbToken
-                    width: 320; height: 38
+                    width: Math.min(320, parent.width); height: 38
                     visible: !listenbrainz.connected
                     placeholderText: "ListenBrainz user token"
                     echoMode: TextInput.Password
@@ -1231,6 +1316,11 @@ Item {
                     onClicked: { listenbrainz.connectToken(lbToken.text, ""); lbToken.text = "" }
                 }
                 PillButton {
+                    visible: !listenbrainz.connected
+                    text: "Get a token"
+                    onClicked: Qt.openUrlExternally("https://listenbrainz.org/settings/")
+                }
+                PillButton {
                     visible: listenbrainz.connected
                     text: "Disconnect ListenBrainz"
                     enabled: !listenbrainz.busy
@@ -1240,66 +1330,102 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
-                text: listenbrainz.status + (listenbrainz.pendingCount > 0 ? " · " + listenbrainz.pendingCount + " queued listens" : "")
+                text: listenbrainz.status + (listenbrainz.pendingCount > 0 ? " · " + listenbrainz.pendingCount + " waiting to be sent" : "")
+                      + (listenbrainz.rejectedCount > 0 ? " · " + listenbrainz.rejectedCount + " turned down by ListenBrainz" : "")
+                      + (listenbrainz.lastError ? " · last try: " + listenbrainz.lastError : "")
                 color: listenbrainz.connected ? Theme.accent : Theme.textDim
                 font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); wrapMode: Text.WordWrap
             }
-            Text { text: "Import listening history"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
-            Flow {  // wraps in a narrow window
+            PillButton {
+                objectName: "listenbrainzRetryNow"
+                visible: listenbrainz.pendingCount > 0 && listenbrainz.connected && !shell.offlineMode
+                height: 32
+                text: "Send now"
+                onClicked: listenbrainz.retryNow()
+            }
+            StyledCheck {
+                objectName: "scrobbleStations"
+                visible: shell.features.stations !== false && (scrobbler.connected || listenbrainz.connected)
+                text: "Count songs heard on internet radio on Last.fm and ListenBrainz"
+                checked: stations.scrobble
+                onToggled: stations.setScrobble(checked)
+            }
+            StyledCheck {
+                objectName: "scrobblePodcasts"
+                visible: shell.features.podcasts !== false && (scrobbler.connected || listenbrainz.connected)
+                text: "Count podcast episodes on Last.fm and ListenBrainz (as the show and the episode's title)"
+                checked: podcasts.scrobble
+                onToggled: podcasts.setScrobble(checked)
+            }
+            SettingsGroup {
+                key: "historyImport"
+                title: "Import listening history"
+                summary: "From ListenBrainz or Last.fm"
+                query: page.query
+                Flow {  // wraps in a narrow window
+                    width: parent.width
+                    spacing: 10
+                    StyledCombo {
+                        id: historySource
+                        width: 150
+                        model: ["ListenBrainz", "Last.fm"]
+                    }
+                    TextField {
+                        id: historyUser
+                        width: Math.min(260, parent.width); height: 38
+                        placeholderText: historySource.currentIndex === 0 && listenbrainz.connected ? "Username (blank = connected account)" : "Username"
+                        color: Theme.text; placeholderTextColor: Theme.textDim
+                        font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
+                        background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: historyUser.activeFocus ? Theme.accent : Theme.border }
+                    }
+                    PillButton {
+                        primary: true
+                        text: listenbrainz.importing ? "Importing…" : "Import history"
+                        enabled: !shell.offlineMode && !listenbrainz.importing
+                                 && (historyUser.text.length > 0 || (historySource.currentIndex === 0 && listenbrainz.connected))
+                                 && (historySource.currentIndex === 0 || scrobbler.configured)  // Last.fm needs your API key
+                        onClicked: listenbrainz.importHistory(historySource.currentIndex === 0 ? "listenbrainz" : "lastfm", historyUser.text)
+                    }
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    visible: listenbrainz.importStatus.length > 0
+                    width: parent.width
+                    text: listenbrainz.importStatus
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); wrapMode: Text.WordWrap
+                }
+            }
+            Text { text: "Discord"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
+            StyledCheck { objectName: "discordEnabled"; text: "Show what I'm listening to on my Discord profile"; checked: discord.enabled; onToggled: discord.setEnabled(checked) }
+            Column {
+                visible: discord.enabled
                 width: parent.width
-                spacing: 10
-                StyledCombo {
-                    id: historySource
-                    width: 150
-                    model: ["ListenBrainz", "Last.fm"]
+                spacing: 12
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: "Create an application at discord.com/developers, paste its Application ID below and upload your icon as an art asset named “hallucinate”. Status: " + discord.status
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
                 TextField {
-                    id: historyUser
-                    width: 260; height: 38
-                    placeholderText: historySource.currentIndex === 0 && listenbrainz.connected ? "Username (blank = connected account)" : "Username"
-                    color: Theme.text; placeholderTextColor: Theme.textDim
-                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
-                    background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: historyUser.activeFocus ? Theme.accent : Theme.border }
+                    id: discordAppId
+                    width: Math.min(320, parent.width)
+                    placeholderText: "Discord application ID"
+                    selectByMouse: true
+                    color: Theme.text
+                    placeholderTextColor: Theme.textDim
+                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
+                    background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: parent.activeFocus ? Theme.accent : Theme.border }
+                    onEditingFinished: discord.setAppId(text)
+                    Component.onCompleted: text = discord.appId
+                    Connections { target: discord; function onChanged() { if (!discordAppId.activeFocus) discordAppId.text = discord.appId } }
+                    Accessible.name: "Discord application ID"
                 }
-                PillButton {
-                    primary: true
-                    text: listenbrainz.importing ? "Importing…" : "Import history"
-                    enabled: !shell.offlineMode && !listenbrainz.importing
-                             && (historyUser.text.length > 0 || (historySource.currentIndex === 0 && listenbrainz.connected))
-                    onClicked: listenbrainz.importHistory(historySource.currentIndex === 0 ? "listenbrainz" : "lastfm", historyUser.text)
-                }
+                StyledCheck { text: "Hide when paused"; checked: discord.hidePaused; onToggled: discord.setPref("hidePaused", checked) }
+                StyledCheck { text: "Hide cover art"; checked: discord.hideCover; onToggled: discord.setPref("hideCover", checked) }
+                StyledCheck { text: "Privacy mode (don't share track details)"; checked: discord.privacy; onToggled: discord.setPref("privacy", checked) }
             }
-            Text {
-                textFormat: Text.PlainText
-                visible: listenbrainz.importStatus.length > 0
-                width: parent.width
-                text: listenbrainz.importStatus
-                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); wrapMode: Text.WordWrap
-            }
-            Text { text: "Discord Rich Presence"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
-            Text {
-                textFormat: Text.PlainText
-                width: parent.width
-                wrapMode: Text.WordWrap
-                text: "Show what you're listening to on your Discord profile. Create an application at discord.com/developers, paste its Application ID below and upload your icon as an art asset named “hallucinate”. Status: " + discord.status
-                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
-            }
-            StyledCheck { text: "Enable Discord Rich Presence"; checked: discord.enabled; onToggled: discord.setEnabled(checked) }
-            TextField {
-                width: 320
-                placeholderText: "Discord application ID"
-                text: discord.appId
-                selectByMouse: true
-                color: Theme.text
-                placeholderTextColor: Theme.textDim
-                font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
-                background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: parent.activeFocus ? Theme.accent : Theme.border }
-                onEditingFinished: discord.setAppId(text)
-            }
-            StyledCheck { text: "Hide when paused"; checked: discord.hidePaused; onToggled: discord.setPref("hidePaused", checked) }
-            StyledCheck { text: "Hide cover art"; checked: discord.hideCover; onToggled: discord.setPref("hideCover", checked) }
-            StyledCheck { text: "Privacy mode (don't share track details)"; checked: discord.privacy; onToggled: discord.setPref("privacy", checked) }
-
         }
         SettingsSection {
             id: sec_desktop
@@ -1324,7 +1450,7 @@ Item {
                     readonly property var labels: ({ ask: "Ask every time", quit: "Quit", minimize: "Minimize",
                                                      tray: "Keep playing in the tray" })
                     model: actions.map(a => labels[a])
-                    currentIndex: Math.max(0, actions.indexOf(shell.closeAction))
+                    selection: actions.indexOf(shell.closeAction)
                     onActivated: shell.setCloseAction(actions[currentIndex])
                 }
             }

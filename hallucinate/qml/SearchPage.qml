@@ -14,7 +14,22 @@ Item {
     // with radio and podcasts on, your stations, shows and episodes are found too
     readonly property var stationHits: shell.features.stations === true ? stations.find(query) : []
     readonly property var podcastHits: shell.features.podcasts === true ? podcasts.find(query) : ({ shows: [], episodes: [] })
+    // genres whose name holds what's typed (from the list the Albums page's Genres view shows)
+    readonly property var genreHits: {
+        var q = query.trim().toLowerCase()
+        if (!q.length) return []
+        return library.genreList.filter(function (g) { return g.name.toLowerCase().indexOf(q) >= 0 }).slice(0, 12)
+    }
     readonly property bool anyExtra: stationHits.length > 0 || podcastHits.shows.length > 0 || podcastHits.episodes.length > 0
+                                     || genreHits.length > 0
+    // what the search looks through, for the empty page's hint
+    function findsWhat() {
+        var kinds = ["songs", "albums", "artists", "genres"]
+        if (shell.features.stations === true) kinds.push("radio stations")
+        if (shell.features.podcasts === true) kinds.push("podcasts")
+        var s = kinds.slice(0, -1).join(", ") + " and " + kinds[kinds.length - 1]
+        return s.charAt(0).toUpperCase() + s.slice(1)
+    }
 
     Flickable {
         id: fl
@@ -39,7 +54,7 @@ Item {
                                                       && page.artists.length === 0 && !page.anyExtra)
                 icon: "search"
                 title: page.query.length === 0 ? "Search your library" : "No results for “" + page.query + "”"
-                hint: page.query.length === 0 ? "Songs, albums and artists. Ctrl+K also finds pages and commands."
+                hint: page.query.length === 0 ? page.findsWhat() + ". Ctrl+K also finds pages and commands."
                                               : "Check the spelling, or try fewer words."
             }
 
@@ -61,6 +76,29 @@ Item {
                     name: modelData.name
                     subtitle: modelData.albums + (modelData.albums === 1 ? " album" : " albums")
                     artUrl: modelData.artUrl
+                }
+            }
+
+            Text {
+                textFormat: Text.PlainText
+                visible: page.genreHits.length > 0
+                text: "Genres"
+                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
+            }
+            Flow {
+                objectName: "searchGenres"
+                visible: page.genreHits.length > 0
+                width: parent.width
+                spacing: 8
+                Repeater {
+                    model: page.genreHits
+                    Chip {
+                        required property var modelData
+                        text: modelData.name
+                        onClicked: Nav.openGenre(modelData.name)
+                        Accessible.name: "Genre: " + modelData.name
+                        Accessible.onPressAction: Nav.openGenre(modelData.name)
+                    }
                 }
             }
 

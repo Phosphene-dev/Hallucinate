@@ -165,8 +165,20 @@ def _num(s: str) -> int:
     return int(m.group(1)) if m else 0
 
 
+# A folder that is one disc of an album ("CD1", "Disc 2", "disk_3"): its album is the folder above's
+DISC_FOLDER = re.compile(r"^(?:cd|dis[ck])[\s._-]*\d+$", re.IGNORECASE)
+
+
+def album_folder(directory: str) -> str:
+    """The folder an album lives in: `directory`, or its parent when `directory` is one disc of it."""
+    if DISC_FOLDER.match(os.path.basename(directory.rstrip("/\\"))):
+        return os.path.dirname(directory.rstrip("/\\")) or directory
+    return directory
+
+
 def album_key(album_artist: str, album: str, directory: str) -> str:
-    base = album_artist.lower() if album_artist else directory
+    # without an album artist the folder tells albums apart, and CD1 and CD2 of one album are one album
+    base = album_artist.lower() if album_artist else album_folder(directory)
     return hashlib.sha1(f"{base}\x1f{album.lower()}".encode("utf-8", "replace"), usedforsecurity=False).hexdigest()[:16]
 
 

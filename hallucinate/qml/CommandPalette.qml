@@ -82,13 +82,33 @@ Popup {
             { t: "New playlist", s: "Playlists", i: "plus", run: () => w.newPlaylist() },
             { t: "New smart playlist", s: "Playlists", i: "smartlist", run: () => Nav.newSmartPlaylist() },
             { t: "Import playlist file", s: "Playlists  ·  M3U, M3U8, PLS", i: "playlist", run: () => Nav.importPlaylist() },
+            { t: "Back", s: "Go to  ·  Alt+Left", i: "back", run: () => w.goBack() },
+            { t: "Forward", s: "Go to  ·  Alt+Right", i: "next", run: () => w.goForward() },
+            { t: "Find duplicates", s: "Library  ·  songs that look the same", i: "duplicates", run: () => {
+                w.go("songs")
+                var p = w.findItem("pageStack").currentItem
+                if (p && p.duplicatesVisible !== undefined) { p.duplicatesVisible = true; library.findDuplicates() }
+            } },
         ]
+        if (player.hasTrack) {
+            c.push({ t: "Go to what's playing", s: "Go to  ·  its album, station or show", i: "album", run: () => Nav.goToPlaying() })
+            var cur = player.current
+            if (!(cur.kind || "").length && cur.path && shell.features.liked !== false) {
+                var liked = userLib.likesRevision >= 0 && userLib.isLiked(cur.path)
+                c.push({ t: liked ? "Unlike this song" : "Like this song", s: "Playback  ·  " + (cur.title || ""), i: "heart",
+                         run: () => userLib.toggleLike(cur.path) })
+            }
+        }
         var styles = [["liquid", "Liquid"], ["aurora", "Aurora"], ["nebula", "Nebula"], ["halo", "Halo"], ["waves", "Waves"], ["bars", "Bars"]]
         styles.forEach(st => c.push({ t: "Visualizer: " + st[1], s: "Style", i: "wave", run: () => shell.setVisualizerStyle(st[0]) }))
         themeManager.availableThemes.forEach(name => c.push({ t: "Theme: " + name, s: "Appearance", i: "settings", run: () => themeManager.selectTheme(name) }))
         for (var p = 0; p < userLib.playlists.count; p++) {
             var pl = userLib.playlists.get(p)
             c.push({ t: pl.name, s: "Playlist", i: "playlist", run: ((id) => () => Nav.openPlaylist(id))(pl.id) })
+        }
+        for (p = 0; p < userLib.smartPlaylists.count; p++) {
+            var sp = userLib.smartPlaylists.get(p)
+            c.push({ t: sp.name, s: "Smart playlist", i: "smartlist", run: ((id, n) => () => Nav.openSmartPlaylist(id, n))(sp.id, sp.name) })
         }
         return c.filter(x => !x.f || shell.features[x.f] !== false)
     }
@@ -128,6 +148,11 @@ Popup {
         } else {
             out = cmds.map(c => ({ c: c, s: score(c.t + " " + c.s, q) }))
                       .filter(x => x.s >= 0).sort((a, b) => b.s - a.s).slice(0, 6).map(x => x.c)
+            // genres, from the full list (the library search doesn't look at them)
+            library.genreList.map(g => ({ g: g, s: score(g.name, q) })).filter(x => x.s >= 0)
+                .sort((a, b) => b.s - a.s).slice(0, 3).forEach(x => out.push({
+                    t: x.g.name, s: "Genre  ·  " + x.g.tracks + (x.g.tracks === 1 ? " song" : " songs"), i: "note",
+                    run: ((n) => () => Nav.openGenre(n))(x.g.name) }))
             var m = library.searchAlbums
             for (var i = 0; i < Math.min(4, m.count); i++) {
                 var a = m.get(i)

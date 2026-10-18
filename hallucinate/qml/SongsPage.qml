@@ -29,8 +29,8 @@ Item {
         textFormat: Text.PlainText
         anchors { left: title.right; leftMargin: 14; baseline: title.baseline }
         text: duplicatesVisible ? library.duplicates.count + " probable duplicates"
-            : library.filtersActive ? library.filteredTracks.count + " filtered tracks"
-            : library.trackCount + " tracks"
+            : library.filtersActive ? library.filteredTracks.count + (library.filteredTracks.count === 1 ? " song" : " songs") + " shown"
+            : library.trackCount + (library.trackCount === 1 ? " song" : " songs")
         color: Theme.textDim
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSize(14)
@@ -58,6 +58,8 @@ Item {
             width: 180
             height: 38
             model: ["All genres"].concat(library.genres)
+            selection: library.activeFilters[0] ? model.indexOf(library.activeFilters[0]) : 0  // the filter in force
+            Accessible.name: "Genre to show"
             onActivated: page.applyFilters()
         }
         StyledCombo {
@@ -65,6 +67,8 @@ Item {
             width: 128
             height: 38
             model: ["All years"].concat(library.years.map(function(value) { return String(value) }))
+            selection: library.activeFilters[1] ? model.indexOf(String(library.activeFilters[1])) : 0
+            Accessible.name: "Year to show"
             onActivated: page.applyFilters()
         }
         StyledCombo {
@@ -72,6 +76,8 @@ Item {
             width: 130
             height: 38
             model: ["All formats"].concat(library.formats)
+            selection: library.activeFilters[2] ? model.indexOf(library.activeFilters[2]) : 0
+            Accessible.name: "Format to show"
             onActivated: page.applyFilters()
         }
         PillButton {
@@ -115,7 +121,7 @@ Item {
             width: ListView.view.width - 12
             title: model.title
             artist: model.artist + (page.duplicatesVisible ? " · " + model.duplicateCount + " copies" : "")
-            album: library.songSort === "genre" && model.genre ? model.album + "  ·  " + model.genre.split(";")[0].trim() : model.album
+            album: library.songSort === "genre" && model.genre ? model.album + "  ·  " + shell.genresText(model.genre, false) : model.album
             durText: model.durText
             artUrl: model.artUrl
             current: Rows.currentId === model.id

@@ -5,8 +5,9 @@ import "."
 
 // First run: where your music is, how the app should look, what's switched on (and what may go online), and
 // whether to scrobble. Opens over everything
-// until it is finished or skipped; every choice can be changed later in Settings.
-Item {
+// until it is finished or skipped; every choice can be changed later in Settings. While open it has the keyboard:
+// Tab goes through its own buttons and fields, and the window's shortcuts stand aside (main.qml).
+FocusScope {
     id: welcome
     objectName: "welcome"
     property int step: 0
@@ -18,6 +19,8 @@ Item {
     opacity: open ? 1 : 0
     enabled: open
     Behavior on opacity { NumberAnimation { duration: 420; easing.type: Easing.InOutCubic } }
+    onOpenChanged: if (open) Qt.callLater(function () { if (welcome.open) nextButton.forceActiveFocus() })
+    Component.onCompleted: if (open) Qt.callLater(function () { if (welcome.open) nextButton.forceActiveFocus() })
 
     function finish() {
         shell.setUiValue("welcome", "0")
@@ -410,13 +413,30 @@ Item {
                 Layout.fillWidth: true
                 spacing: 10
                 Text {
+                    id: skipLink
                     textFormat: Text.PlainText
                     objectName: "welcomeSkip"
                     text: "Skip setup"
-                    color: skipMouse.containsMouse ? Theme.text : Theme.textDim
+                    color: skipMouse.containsMouse || activeFocus ? Theme.text : Theme.textDim
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(13)
-                    MouseArea { id: skipMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: welcome.finish() }
+                    font.underline: activeFocus
+                    // a link that Tab reaches too: Enter or Space skips
+                    activeFocusOnTab: true
+                    Keys.onShortcutOverride: function (event) { event.accepted = event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter }
+                    Keys.onSpacePressed: welcome.finish()
+                    Keys.onReturnPressed: welcome.finish()
+                    Keys.onEnterPressed: welcome.finish()
+                    Accessible.role: Accessible.Button
+                    Accessible.name: "Skip setup"
+                    Accessible.description: "Close the welcome; everything can be set later in Settings"
+                    Accessible.onPressAction: welcome.finish()
+                    Rectangle {
+                        anchors { fill: parent; margins: -4 }
+                        radius: 6; color: "transparent"; border.width: 2; border.color: Theme.accent
+                        visible: skipLink.activeFocus
+                    }
+                    LinkArea { id: skipMouse; name: "Skip setup"; hoverEnabled: true; onClicked: welcome.finish() }
                 }
                 Item { Layout.fillWidth: true }
                 PillButton {
@@ -425,6 +445,7 @@ Item {
                     onClicked: welcome.step--
                 }
                 PillButton {
+                    id: nextButton
                     objectName: "welcomeNext"
                     primary: true
                     text: welcome.step < welcome.steps - 1 ? "Next" : "Start listening"

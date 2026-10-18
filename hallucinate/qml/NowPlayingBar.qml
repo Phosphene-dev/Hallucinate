@@ -116,15 +116,18 @@ Item {
                 elide: Text.ElideRight
                 Accessible.role: player.error.length > 0 ? Accessible.StaticText : Accessible.Link
                 Accessible.name: text
-                Accessible.onPressAction: if (!player.error && player.hasTrack) Nav.openArtist(player.current.album_artist)
+                // a song's artist links to their page; a station's or an episode's "artist" isn't one
+                readonly property bool linked: !player.error && player.hasTrack && !(player.current.kind || "").length
+                readonly property string artistName: player.hasTrack ? (player.current.album_artist || player.current.artist || "") : ""
+                Accessible.onPressAction: if (linked && artistName.length) Nav.openArtist(artistName)
                 MouseArea {
                     anchors.fill: parent
-                    enabled: !player.error && player.hasTrack && !(player.current.kind || "").length
+                    enabled: parent.linked && parent.artistName.length > 0
                     cursorShape: Qt.PointingHandCursor
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
                     onClicked: function (mouse) {
-                        if (mouse.button === Qt.RightButton) Nav.artistMenu(player.current.album_artist || player.current.artist)
-                        else Nav.openArtist(player.current.album_artist)
+                        if (mouse.button === Qt.RightButton) Nav.artistMenu(parent.artistName)
+                        else Nav.openArtist(parent.artistName)
                     }
                 }
             }
@@ -270,7 +273,36 @@ Item {
         IconButton { icon: "expand"; tip: "Mini player (Ctrl+M)"; visible: !bar.compact; onClicked: shell.toggleMini() }
         IconButton { visible: shell.features.lyrics !== false && !bar.tight; icon: "note"; active: bar.lyricsOpen; tip: "Lyrics"; onClicked: bar.toggleLyrics() }
         IconButton { icon: "queue"; active: bar.queueOpen; onClicked: bar.toggleQueue() }
-        Icon { visible: !bar.tight; anchors.verticalCenter: parent.verticalCenter; width: 18; height: 18; name: "volume"; color: Theme.textDim }
+        Icon {
+            objectName: "muteButton"
+            visible: !bar.tight
+            anchors.verticalCenter: parent.verticalCenter
+            width: 18; height: 18; name: "volume"
+            color: muteArea.containsMouse ? Theme.text : Theme.textDim
+            opacity: player.muted ? 0.45 : 1
+            Accessible.role: Accessible.Button
+            Accessible.name: player.muted ? "Unmute" : "Mute"
+            Accessible.checkable: true
+            Accessible.checked: player.muted
+            Accessible.onPressAction: player.toggleMute()
+            Rectangle {  // struck through while muted
+                visible: player.muted
+                anchors.centerIn: parent
+                width: parent.width * 1.2; height: 2; radius: 1
+                rotation: -45
+                color: Theme.textDim
+            }
+            MouseArea {
+                id: muteArea
+                anchors.fill: parent; anchors.margins: -6
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: player.toggleMute()
+                ToolTip.visible: containsMouse
+                ToolTip.delay: 400
+                ToolTip.text: player.muted ? "Unmute" : "Mute"
+            }
+        }
         StyledSlider {
             visible: !bar.tight  // hidden in a tight bar: the mouse wheel over the bar sets the volume then
             anchors.verticalCenter: parent.verticalCenter

@@ -474,3 +474,66 @@ def test_a_secure_link_redirecting_to_a_plain_one_drops_the_sign_in():
     req = urllib.request.Request("https://h.example/a", headers={"Authorization": "Token x"})
     new = handler.redirect_request(req, None, 302, "Found", {}, "http://h.example/b")
     assert new is not None and "Authorization" not in new.headers
+
+
+def test_a_refused_sign_in_isnt_retried_and_signing_in_again_keeps_the_server(service, server, tmp_path):
+    from conftest import wait_for
+
+    sid = _added(service, server)
+    server.password = "changed"  # the password was changed on the server
+    service.sync(sid)
+    assert wait_for(lambda: not service.servers[0]["busy"], timeout=10)
+    entry = service.servers[0]
+    assert entry["status"] == "error" and entry["needsSignIn"] and "Sign-in failed" in entry["error"]
+    assert not service._retry.isActive()  # the same password would only be refused again
+    messages = []
+    service.message.connect(messages.append)
+    service.signInAgain(sid, "wrong")
+    assert wait_for(lambda: messages, timeout=10)
+    assert "password is wrong" in messages[-1] and service.keyring.kept[("Hallucinate Music servers", sid)] == "secret"
+    service.signInAgain(sid, "changed")
+    assert wait_for(lambda: service.servers[0]["status"] == "ok" and not service.servers[0]["busy"], timeout=30)
+    assert service.servers[0]["id"] == sid and not service.servers[0]["needsSignIn"]
+    assert service.keyring.kept[("Hallucinate Music servers", sid)] == "changed"
+
+
+def test_a_locked_keyring_at_start_is_tried_again(service, server):
+    from conftest import wait_for
+
+    sid = _added(service, server)
+    service.setEnabled(False)
+
+    unlocked = service.keyring.get_password
+
+    def locked(*_a):
+        raise RuntimeError("Prompt dismissed")
+
+    service.keyring.get_password = locked
+    service.setEnabled(True)
+    assert wait_for(lambda: service.servers and not service.servers[0]["busy"], timeout=10)
+    entry = service.servers[0]
+    assert entry["status"] == "down" and "keyring is locked" in entry["error"] and not entry["needsSignIn"]
+    assert service._retry.isActive()
+    service.keyring.get_password = unlocked  # unlocked: the next try works
+    service._retry_down()
+    assert wait_for(lambda: service.servers[0]["status"] == "ok", timeout=30)
+    assert service.servers[0]["id"] == sid
+
+
+def test_keyring_reads_dont_wait_forever(monkeypatch):
+    import threading
+
+    from hallucinate import servers as servers_mod
+
+    release = threading.Event()
+
+    class Stuck:
+        def get_password(self, *_a):
+            release.wait(5)
+
+    monkeypatch.setattr(servers_mod, "_keyring", lambda: Stuck())
+    monkeypatch.setattr(servers_mod, "KEYRING_WAIT_S", 0.1)
+    try:
+        assert servers_mod._read_secret("ab") == (None, "locked")
+    finally:
+        release.set()
