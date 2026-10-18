@@ -195,6 +195,7 @@ Item {
                 readonly property var bio: about.bioRevision >= 0 && page.artistName ? artistBios.bio(page.artistName) : ({})
                 property bool editing: false
                 property bool expanded: false
+                function startEditing() { bioEdit.text = about.bio.text || ""; about.editing = true; bioEdit.forceActiveFocus() }
                 Connections {
                     target: artistBios
                     function onChanged(key) { about.bioRevision++ }
@@ -230,43 +231,75 @@ Item {
                                 onClicked: Qt.openUrlExternally(about.bio.url)
                             }
                         }
-                        Item { width: 1; height: 32 }
-                        PillButton {
-                            objectName: "editBio"
+                        IconButton {
+                            id: bioMenuButton
+                            objectName: "bioMenuButton"
                             visible: !about.editing
                             height: 32
-                            text: about.bio.own ? "Edit" : (about.bio.text ? "Write your own" : "Write one")
-                            onClicked: { bioEdit.text = about.bio.text || ""; about.editing = true; bioEdit.forceActiveFocus() }
+                            icon: "more"; size: 16; tip: "Bio options: write your own, look up again, choose the source"
+                            onClicked: bioMenu.popup(bioMenuButton, 0, bioMenuButton.height + 4)
                         }
-                        PillButton {
-                            objectName: "refreshBio"
-                            visible: !about.editing && !about.bio.own
-                            enabled: !shell.offlineMode && !about.bio.busy
-                            height: 32
-                            text: about.bio.busy ? "Looking…" : (about.bio.text ? "Look up again" : "Look up")
-                            onClicked: artistBios.refresh(page.artistName)
-                        }
-                        StyledCombo {
-                            objectName: "bioPick"
-                            visible: !about.editing && !about.bio.own
-                            width: 190
-                            readonly property var names: ["", "Wikipedia", "Last.fm", "Discogs"]
-                            model: ["Usual sources", "Wikipedia", "Last.fm" + (sources.lastfmAvailable ? "" : " (not set up)"),
-                                    "Discogs" + (sources.discogsConnected ? "" : " (not set up)")]
-                            currentIndex: Math.max(0, names.indexOf(about.bio.picked || ""))
-                            onActivated: function (i) { artistBios.pick(page.artistName, names[i]) }
-                            Accessible.name: "Where this artist's bio comes from"
+                        Menu {
+                            id: bioMenu
+                            objectName: "bioMenu"
+                            MenuItem {
+                                objectName: "editBio"
+                                text: about.bio.own ? "Edit your bio" : "Write your own"
+                                icon.name: "edit"
+                                onTriggered: about.startEditing()
+                            }
+                            MenuItem {
+                                objectName: "refreshBio"
+                                visible: !about.bio.own
+                                height: visible ? implicitHeight : 0
+                                enabled: !shell.offlineMode && !about.bio.busy
+                                text: about.bio.text ? "Look up again" : "Look one up"
+                                icon.name: "search"
+                                onTriggered: artistBios.refresh(page.artistName)
+                            }
+                            MenuItem {
+                                objectName: "clearBioMenu"
+                                visible: about.bio.own === true
+                                height: visible ? implicitHeight : 0
+                                text: "Remove yours, use the one found online"
+                                icon.name: "remove"
+                                onTriggered: { artistBios.setOwn(page.artistName, ""); artistBios.ensure(page.artistName) }
+                            }
+                            Menu {
+                                id: bioSourceMenu
+                                objectName: "bioPick"
+                                title: "Bio from"
+                                icon.name: "artist"
+                                Repeater {
+                                    model: [["", "Usual sources"], ["Wikipedia", "Wikipedia"],
+                                            ["Last.fm", "Last.fm" + (sources.lastfmAvailable ? "" : " (not set up)")],
+                                            ["Discogs", "Discogs" + (sources.discogsConnected ? "" : " (not set up)")]]
+                                    MenuItem {
+                                        required property var modelData
+                                        text: modelData[1]
+                                        checkable: true
+                                        checked: (about.bio.picked || "") === modelData[0]
+                                        enabled: modelData[0] === "" || modelData[0] === "Wikipedia"
+                                                 || (modelData[0] === "Last.fm" ? sources.lastfmAvailable : sources.discogsConnected)
+                                        onTriggered: artistBios.pick(page.artistName, modelData[0])
+                                    }
+                                }
+                            }
                         }
                     }
                     Text {
                         textFormat: Text.PlainText
                         objectName: "bioText"
                         width: parent.width
+                        TapHandler {  // right-click the bio for the same options as ⋯
+                            acceptedButtons: Qt.RightButton
+                            onTapped: bioMenu.popup()
+                        }
                         visible: !about.editing
                         text: about.bio.text ? about.bio.text
                               : about.bio.busy ? "Looking for a bio…"
                               : shell.offlineMode ? "No bio yet. Offline mode is on, so none can be looked up."
-                              : "No bio yet. Write your own, or look one up."
+                              : "No bio yet. Write your own, or look one up, from the ⋯ menu."
                         color: about.bio.text ? Theme.text : Theme.textDim
                         wrapMode: Text.Wrap
                         maximumLineCount: about.expanded ? 400 : 6

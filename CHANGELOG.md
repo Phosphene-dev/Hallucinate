@@ -5,6 +5,10 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Changed
+- An artist's About section is quieter: writing your own bio, looking it up again and choosing where it
+  comes from are in a ⋯ menu beside the heading (or right-click the bio), not a row of buttons.
+
 ## [0.9.9.8] - 2026-10-18
 
 Browse by genre.
