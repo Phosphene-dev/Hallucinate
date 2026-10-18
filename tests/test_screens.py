@@ -134,6 +134,11 @@ def app_window(qapp, tmp_path, monkeypatch, request):
         "servers": Servers(db_path, tmp_path / "art", player),
         "podcasts": Podcasts(tmp_path / "streams.db", tmp_path / "data", tmp_path / "cache", player),
     }
+    from hallucinate.bios import ArtistBios
+    from hallucinate.onlinesources import OnlineSources
+
+    objects["sources"] = OnlineSources(lambda: "")
+    objects["artistBios"] = ArtistBios(db_path, objects["sources"])
     engine = QQmlApplicationEngine()
     for key, value in objects.items():
         engine.rootContext().setContextProperty(key, value)
@@ -814,7 +819,7 @@ def overflowing(root):
 
 
 @pytest.mark.parametrize("app_window", ["varied"], indirect=True)
-@pytest.mark.parametrize("width", [760, 900, 1100, 1500])
+@pytest.mark.parametrize("width", [760, 900, 1100, 1500, 3840])
 def test_nothing_spills_out_of_its_card_at_any_width(qapp, app_window, width):
     """Tiled and half-screen windows: every card's contents stay inside the card on every page."""
     window, objects, warnings = app_window
@@ -827,6 +832,31 @@ def test_nothing_spills_out_of_its_card_at_any_width(qapp, app_window, width):
                 qapp.processEvents()
             problems += [f"{page}: {p}" for p in overflowing(window)]
     assert not problems, "\n".join(problems[:25])
+
+
+@pytest.mark.parametrize("app_window", ["varied"], indirect=True)
+def test_pages_keep_to_a_readable_width_on_an_ultrawide_screen(qapp, app_window):
+    """32:9 and 21:9 screens: pages of cards stay centred at a readable width instead of stretching."""
+    from PySide6.QtCore import QRectF
+    from PySide6.QtQuick import QQuickItem
+
+    window, objects, warnings = app_window
+    window.resize(3840, 1080)
+    for page, name in (("home", "homeColumn"), ("stats", "statsColumn"), ("settings", "settings_appearance")):
+        assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", page))
+        for _ in range(4):
+            qapp.processEvents()
+        from conftest import wait_for
+
+        stack = window.findChild(QQuickItem, "pageStack")
+        assert wait_for(lambda: stack.width() > 3000, 5)
+        # (an earlier copy of the page can linger until it's cleaned up: the one on screen is the widest)
+        assert wait_for(lambda: max((i.width() for i in window.findChildren(QQuickItem, name)), default=0) > 1500, 5), page
+        item = max(window.findChildren(QQuickItem, name), key=lambda i: i.width())
+        box = item.mapRectToScene(QRectF(0, 0, item.width(), item.height()))
+        assert box.width() <= 1960 + 1, (page, box)
+        area = stack.mapRectToScene(QRectF(0, 0, stack.width(), stack.height()))
+        assert abs((box.left() - area.left()) - (area.right() - box.right())) < 80, (page, box, area)
 
 
 def past_the_edge(window):
@@ -1277,7 +1307,7 @@ FEATURE_LABELS = {"liked": "Liked Songs", "folders": "Folders", "stats": "Stats"
                   "stations": "Internet radio", "podcasts": "Podcasts"}
 # Words that only describe something (Settings' notes about offline mode or backups), not a way into the feature.
 FEATURE_PROSE = ("folders that can't be found", "folders are scanned", "import history", "import listening history",
-                 "no lyrics or cover lookups", "playlists, history, stations", "music's stats")
+                 "no lyrics, cover, genre or bio lookups", "playlists, history, stations", "music's stats")
 
 
 def visible_texts(window):

@@ -5,6 +5,7 @@ import time
 import unicodedata
 from typing import Iterable, Optional
 
+from . import genres
 from .remote import SQL_LOCAL
 
 SCHEMA = """
@@ -71,6 +72,11 @@ CREATE TABLE IF NOT EXISTS lyrics(path TEXT PRIMARY KEY, synced TEXT NOT NULL DE
   plain TEXT NOT NULL DEFAULT '', source TEXT NOT NULL DEFAULT '', fetched REAL NOT NULL);
 -- a cover you chose for an album: it stays, whatever the files' own pictures are
 CREATE TABLE IF NOT EXISTS chosen_art(album_key TEXT PRIMARY KEY, art TEXT NOT NULL, chosen_at REAL NOT NULL);
+-- an artist's bio: one you wrote (own, always shown when there is one) and the last one fetched online (text,
+-- from source at url; fetched with no text: nothing was found then). picked: the source you chose for them
+CREATE TABLE IF NOT EXISTS artist_bios(s_aa TEXT PRIMARY KEY, own TEXT NOT NULL DEFAULT '',
+  text TEXT NOT NULL DEFAULT '', source TEXT NOT NULL DEFAULT '', url TEXT NOT NULL DEFAULT '',
+  fetched REAL NOT NULL DEFAULT 0, picked TEXT NOT NULL DEFAULT '');
 """
 
 FTS = (
@@ -138,6 +144,8 @@ class Database:
         self.conn = sqlite3.connect(str(path), timeout=30, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self.conn.create_function("fold", 1, fold, deterministic=True)
+        # genre_has(t.genre, 'IDM'): whether a song's genres (several, "IDM; Ambient") include that one
+        self.conn.create_function("genre_has", 2, genres.has, deterministic=True)
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.execute("PRAGMA synchronous=NORMAL")
         self.conn.executescript(SCHEMA)
@@ -475,11 +483,17 @@ class Database:
         )
         return rows
 
+    def all_genres(self):
+        """Every genre in the library, each once (an album's several counted apart), in alphabetical order."""
+        names = {}
+        for (text,) in self.conn.execute("SELECT DISTINCT genre FROM tracks WHERE genre != ''"):
+            for name in genres.split(text):
+                names.setdefault(fold(name), name)
+        return [names[k] for k in sorted(names)]
+
     def filter_values(self):
         return {
-            "genres": [r["genre"] for r in self.conn.execute(
-                "SELECT DISTINCT genre FROM tracks WHERE genre != '' ORDER BY genre COLLATE NOCASE"
-            )],
+            "genres": self.all_genres(),
             "years": [r["year"] for r in self.conn.execute(
                 "SELECT DISTINCT year FROM tracks WHERE year > 0 ORDER BY year DESC"
             )],
@@ -491,7 +505,7 @@ class Database:
     def filtered_tracks(self, genre="", year=0, fmt=""):
         clauses, params = [], []
         if genre:
-            clauses.append("genre = ?")
+            clauses.append("genre_has(genre, ?)")  # one of a song's genres
             params.append(genre)
         if year:
             clauses.append("year = ?")

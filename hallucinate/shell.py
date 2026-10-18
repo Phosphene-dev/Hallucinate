@@ -69,6 +69,9 @@ class DesktopShell(QObject):
         self._desktop_notifications = self._settings.value("shell/desktopNotifications", False, bool)
         self._sidebar_collapsed = self._settings.value("ui/sidebarCollapsed", False, bool)
         self._ambient_motion = self._settings.value("ui/ambientMotion", True, bool)
+        # An album may have several genres: albums and artists show them all, a song only its album's main one
+        self._all_genres_albums = self._settings.value("ui/allGenresAlbums", True, bool)
+        self._all_genres_songs = self._settings.value("ui/allGenresSongs", False, bool)
         self._reduce_motion = self._settings.value("ui/reduceMotion", False, bool)
         self._visualizer_style = str(self._settings.value("ui/visualizerStyle", "liquid"))
         self._now_playing_vinyl = self._settings.value("ui/nowPlayingVinyl", False, bool)
@@ -266,6 +269,36 @@ class DesktopShell(QObject):
         self._ambient_motion = bool(on)
         self._settings.setValue("ui/ambientMotion", self._ambient_motion)
         self.settingsChanged.emit()
+
+    @Property(bool, notify=settingsChanged)
+    def allGenresAlbums(self):
+        """Album and artist pages show every genre (off: only the main one)."""
+        return self._all_genres_albums
+
+    @Slot(bool)
+    def setAllGenresAlbums(self, on):
+        self._all_genres_albums = bool(on)
+        self._settings.setValue("ui/allGenresAlbums", self._all_genres_albums)
+        self.settingsChanged.emit()
+
+    @Property(bool, notify=settingsChanged)
+    def allGenresSongs(self):
+        """A song (in Now Playing) shows all its album's genres (off: only the main one)."""
+        return self._all_genres_songs
+
+    @Slot(bool)
+    def setAllGenresSongs(self, on):
+        self._all_genres_songs = bool(on)
+        self._settings.setValue("ui/allGenresSongs", self._all_genres_songs)
+        self.settingsChanged.emit()
+
+    @Slot(str, bool, result=str)
+    def genresText(self, text, all_of_them):
+        """How a song's or album's genres read: "IDM, Ambient, Electronic", or just the main one."""
+        from .core import genres
+
+        names = genres.split(text)
+        return ", ".join(names if all_of_them else names[:1])
 
     @Property(bool, notify=settingsChanged)
     def reduceMotion(self):

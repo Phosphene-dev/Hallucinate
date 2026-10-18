@@ -28,8 +28,9 @@ Item {
 
         Column {
             id: col
-            x: 28; y: 12
-            width: fl.width - 56
+            objectName: "homeColumn"
+            x: Theme.contentX(fl.width); y: 12
+            width: Theme.contentWidth(fl.width)
             spacing: 26
 
             Column {

@@ -5,6 +5,7 @@ album artist (`s_aa`) for their own albums, and track artist for songs on other 
 import datetime
 import time
 
+from . import genres as genre_names
 from .db import fold
 
 DAY = 86_400
@@ -22,10 +23,8 @@ def profile(db, name, now=None, top=5, months=12):
     ).fetchone()
     genres = {}
     for (g,) in db.conn.execute("SELECT genre FROM tracks WHERE s_aa = ? AND genre != ''", (key,)):
-        for part in g.replace(";", "/").split("/"):
-            part = part.strip()
-            if part:
-                genres[part] = genres.get(part, 0) + 1
+        for pos, part in enumerate(genre_names.split(g)):
+            genres[part] = genres.get(part, 0) + (2 if pos == 0 else 1)  # the main genre counts more
     listens = db.conn.execute(
         """SELECT COUNT(*) AS plays, COALESCE(SUM(duration), 0) AS seconds, MIN(ts) AS first, MAX(ts) AS last
            FROM play_log WHERE s_artist = ?""",

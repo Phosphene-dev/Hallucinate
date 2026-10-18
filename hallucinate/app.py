@@ -161,6 +161,17 @@ def main(argv=None) -> int:
     lyrics = LyricsController(paths.db_path(), player)
     scrobbler = LastFmScrobbler(player, paths.data_dir())
     listenbrainz = ListenBrainzScrobbler(player, paths.data_dir(), user_lib)
+    import weakref
+
+    from .onlinesources import OnlineSources
+
+    lastfm = weakref.ref(scrobbler)  # (the scrobbler is let go of first at the end)
+    sources = OnlineSources(lambda: lastfm()._api_key if lastfm() is not None else "")
+    scrobbler.connectionChanged.connect(sources.lastfmChanged)
+    meta_editor.setSources(sources, paths.data_dir())
+    from .bios import ArtistBios
+
+    artist_bios = ArtistBios(paths.db_path(), sources)
     theme_manager = ThemeManager(paths.config_dir(), player)
 
     discord = DiscordPresence(player)
@@ -229,6 +240,8 @@ def main(argv=None) -> int:
     ctx.setContextProperty("lyricsCtl", lyrics)
     ctx.setContextProperty("scrobbler", scrobbler)
     ctx.setContextProperty("listenbrainz", listenbrainz)
+    ctx.setContextProperty("sources", sources)
+    ctx.setContextProperty("artistBios", artist_bios)
     ctx.setContextProperty("shell", shell)
     ctx.setContextProperty("discord", discord)
     ctx.setContextProperty("themeManager", theme_manager)
@@ -304,6 +317,7 @@ def main(argv=None) -> int:
     servers.shutdown()
     podcasts.shutdown()
     meta_editor.shutdown()
+    artist_bios.shutdown()
     user_lib.shutdown()
     library.shutdown()
     dbguard.mark_clean(paths.db_path())  # every connection is closed now

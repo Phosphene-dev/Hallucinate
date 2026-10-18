@@ -183,8 +183,8 @@ Item {
 
         Column {
             id: col
-            x: 28; y: 22
-            width: fl.width - 56
+            x: Theme.contentX(fl.width); y: 22
+            width: Theme.contentWidth(fl.width)
             spacing: 22
 
             // Title, period kind and navigation

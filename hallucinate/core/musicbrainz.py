@@ -75,14 +75,14 @@ def _same(a, b):
     return bool(bare(a)) and bare(a) == bare(b)
 
 
-def _top(genres, n=3):
+def _top(genres, n=5):
     ranked = sorted((g for g in genres or [] if g.get("name")), key=lambda g: -int(g.get("count") or 0))
     return [genre_name(g["name"]) for g in ranked[:n]]
 
 
 def find_genre(artist, album, artist_cache=None):
     """The genre MusicBrainz gives an album: its release group's, or else its artist's. Returns
-    {"genre", "genres" (up to three, best first), "source": "album" | "artist", "release"} or None when the
+    {"genre", "genres" (up to five, best first), "source": "album" | "artist", "release"} or None when the
     album can't be matched with confidence (a wrong genre is worse than none). `artist_cache` (a dict) saves
     looking the same artist up again."""
     if not (album or "").strip():

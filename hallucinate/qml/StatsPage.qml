@@ -26,9 +26,10 @@ Item {
 
         Column {
             id: content
-            x: 28
+            objectName: "statsColumn"
+            x: Theme.contentX(parent.width)
             y: 22
-            width: parent.width - 56
+            width: Theme.contentWidth(parent.width)
             spacing: 18
 
             RowLayout {

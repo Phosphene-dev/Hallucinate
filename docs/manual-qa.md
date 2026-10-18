@@ -106,13 +106,31 @@ finding, following and playing podcasts.
 - [ ] The whole app from the keyboard alone: Tab through every page, arrows in lists, Enter to play, Menu key
   (or Shift+F10) for menus, Esc closes dialogs.
 
-### 10. New in 0.9.9.6
+### 10. New in 0.9.9.7
+- [ ] Library health → Albums without a genre → **Find all online**: each album suggests up to three genres;
+  click the genres found to add or remove them. Save: the album page shows them all, the first as the main one.
+- [ ] Songs → filter by one of an album's later genres: its songs are listed. A smart playlist "Genre is" that
+  genre finds them too.
+- [ ] Settings → Library: switch off "Show every genre on album and artist pages": only the main genre shows.
+  Switch on "Show every genre of the playing song": Now Playing lists them all.
+- [ ] Settings → Internet & sharing → paste a Discogs token → **Connect Discogs**: "Connected as <you>". Find a
+  genre in the tag editor: the note says which sources it came from.
+- [ ] A fresh start (move the config folder aside): the welcome's third step lists features and going-online
+  choices; internet radio, podcasts, music servers and bio lookups start off; what you tick is on afterwards.
+- [ ] Settings → Internet & sharing → switch on "Look up an artist's bio". Open an artist: About shows a bio
+  (from Wikipedia) with its source; click the source to open it. Pick
+  another source for them; **Write your own**, Save; it stays after a restart. **Remove mine** brings the
+  fetched one back. With "Look up an artist's bio" off, or offline mode on, nothing is looked up.
+- [ ] On an ultrawide screen (or a maximised window wider than about 2200 pixels): Home, an artist, an album,
+  Stats and Settings stay centred at a readable width.
+
+### 11. New in 0.9.9.6
 - [ ] Library health → Albums without a genre → **Find all online**, then save them all: "Saving genres to your
   files: n of m albums" counts up, the number of albums without a genre goes down as it goes, and the library
   doesn't keep rescanning. **Stop** part-way keeps the ones done.
 - [ ] Edit a song's tags (a genre, a rating): it saves at once, and the song still plays.
 
-### 11. New in 0.9.9.5
+### 12. New in 0.9.9.5
 - [ ] Settings → **Measure songs without ReplayGain** (search "ReplayGain") on your whole library: the window keeps
   responding throughout, and it finishes (a few songs may count as failed). `htop` shows a second Hallucinate
   process while it measures, gone a minute after.
@@ -122,7 +140,7 @@ finding, following and playing podcasts.
   Settings runs off the right edge, and the player bar's title, badges, controls and time don't overlap.
 - [ ] Settings → Appearance → the Shrimp Boat accent (peach).
 
-### 12. New in 0.9.9.4
+### 13. New in 0.9.9.4
 - [ ] **Leave it open overnight** with a radio station restored from last time, not playing: still responding
   in the morning. Then press play: the station connects and plays what's on now.
 - [ ] Pause a station for a few minutes, then play: it reconnects without fuss.
@@ -138,7 +156,7 @@ finding, following and playing podcasts.
 - [ ] Lock your keyring (or log in without it unlocked) and start the app: it opens, and Last.fm says it's
   waiting for the keyring.
 
-### 13. New in 0.9.9.3
+### 14. New in 0.9.9.3
 - [ ] Sidebar: drag entries into a new order, right-click → Move up/down, Alt+Up/Down on a focused entry, and the
   list in Settings → Features (with Reset). The order survives a restart, and switching a page off and on keeps
   its place.

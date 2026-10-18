@@ -5,6 +5,7 @@ week; weeks start on Monday), "month:YYYY-MM" or "year:YYYY"; `step` moves to th
 import datetime
 import time
 
+from . import genres as genre_names
 from . import history
 
 KINDS = ("week", "month", "year")
@@ -119,10 +120,8 @@ def recap(db, period, now=None, limit=5):
            WHERE l.ts >= ? AND l.ts < ? AND t.genre != '' GROUP BY t.genre""",
         (start, end),
     ):
-        for part in g.replace(";", "/").split("/"):
-            part = part.strip()
-            if part:
-                genres[part] = genres.get(part, 0) + n
+        for part in genre_names.split(g):
+            genres[part] = genres.get(part, 0) + n
 
     days = history.daily_totals(db, start=start, end=end)
     busiest = max(days.items(), key=lambda kv: (kv[1]["seconds"], kv[1]["plays"]), default=None)

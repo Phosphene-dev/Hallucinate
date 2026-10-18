@@ -48,6 +48,11 @@ def export(library_db, streams_db, target):
     try:
         for table, cols in LIBRARY_TABLES.items():
             data[table] = _rows(lib, table, cols)
+        try:  # only what you wrote or chose: fetched bios are fetched again
+            data["artist_bios"] = [{"s_aa": k, "own": own, "picked": picked} for k, own, picked in lib.execute(
+                "SELECT s_aa, own, picked FROM artist_bios WHERE own != '' OR picked != ''")]
+        except sqlite3.OperationalError:
+            data["artist_bios"] = []
         data["playlists"] = [
             {"name": name, "created": created,
              "paths": [r[0] for r in lib.execute("SELECT path FROM playlist_items WHERE playlist_id=? ORDER BY pos", (pid,))]}
@@ -104,6 +109,7 @@ ROWS = {
                  ("s_album", S, False)],
     "smart_playlists": [("name", S, True), ("rules", S, True), ("created", N, False)],
     "playlists": [("name", S, True), ("created", N, False), ("paths", "paths", False)],
+    "artist_bios": [("s_aa", S, True), ("own", S, False), ("picked", S, False)],
     "stations": [(c, I if c in ("bitrate", "plays") else N if c in ("added", "last_played") else S, c == "url")
                  for c in STATION_COLUMNS],
     "radio_log": [("ts", N, True), ("station", S, False), ("artist", S, False), ("title", S, False)],
@@ -228,6 +234,13 @@ def restore(data, library_db, streams_db):
                 if path not in have:
                     pos += 1
                     cur.execute("INSERT INTO playlist_items(playlist_id, path, pos) VALUES(?, ?, ?)", (pid, path, pos))
+        bios = data.get("artist_bios", [])
+        if bios and cur.execute("SELECT 1 FROM sqlite_master WHERE name='artist_bios'").fetchone():
+            for r in bios:  # a bio you've written here since wins
+                cur.execute("INSERT INTO artist_bios(s_aa, own, picked) VALUES(?, ?, ?) ON CONFLICT(s_aa) DO UPDATE SET "
+                            "own=CASE WHEN own='' THEN excluded.own ELSE own END, "
+                            "picked=CASE WHEN picked='' THEN excluded.picked ELSE picked END",
+                            (r["s_aa"], r.get("own", ""), r.get("picked", "")))
         lib.commit()
     finally:
         lib.close()

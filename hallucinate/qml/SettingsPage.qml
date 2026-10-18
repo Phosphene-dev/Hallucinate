@@ -25,8 +25,8 @@ Item {
     // Search and jump to a section; the page below scrolls
     Column {
         id: header
-        x: 28; y: 20
-        width: page.width - 56
+        x: Theme.contentX(page.width); y: 20
+        width: Theme.contentWidth(page.width)
         spacing: 12
         Row {
             width: parent.width
@@ -86,8 +86,8 @@ Item {
 
     Column {
         id: settingsColumn
-        x: 28
-        width: page.width - 56
+        x: Theme.contentX(page.width)
+        width: Theme.contentWidth(page.width)
         spacing: 18
 
         SettingsSection {
@@ -615,7 +615,7 @@ Item {
             id: sec_library
             objectName: "settings_library"
             title: "Library"
-            keywords: "music folders scan rescan health tags files ratings stars cover art cover.jpg embed import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums backup export your data move computer"
+            keywords: "genres genre music folders scan rescan health tags files ratings stars cover art cover.jpg embed import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums backup export your data move computer"
             query: page.query
             Text {
                 textFormat: Text.PlainText
@@ -639,6 +639,18 @@ Item {
                 text: "Also embed covers you add in the songs themselves"
                 checked: metaEditor.embedCovers
                 onToggled: metaEditor.setEmbedCovers(checked)
+            }
+            StyledCheck {
+                objectName: "allGenresAlbums"
+                text: "Show every genre on album and artist pages (not just the main one)"
+                checked: shell.allGenresAlbums
+                onToggled: shell.setAllGenresAlbums(checked)
+            }
+            StyledCheck {
+                objectName: "allGenresSongs"
+                text: "Show every genre of the playing song (not just the main one)"
+                checked: shell.allGenresSongs
+                onToggled: shell.setAllGenresSongs(checked)
             }
             Row {
                 visible: library.hiddenCount > 0
@@ -962,14 +974,14 @@ Item {
             id: sec_sharing
             objectName: "settings_sharing"
             title: "Internet & sharing"
-            keywords: "offline mode internet network privacy connection lyrics lrclib last.fm lastfm listenbrainz scrobble discord rich presence history import account radio stations podcasts episodes"
+            keywords: "offline mode internet network privacy connection lyrics lrclib last.fm lastfm listenbrainz scrobble discord rich presence history import account radio stations podcasts episodes genres bios biography wikipedia discogs token musicbrainz"
             query: page.query
             Text { text: "Offline mode"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Hallucinate makes no internet connections at all: no lyrics or cover lookups, internet radio, podcast updates, scrobbling, headphone EQ downloads or update checks. Scrobbles wait and are sent when you turn it off. Discord status talks only to the Discord app on this computer, so it keeps its own switch below (it shows no cover art while offline)."
+                text: "Hallucinate makes no internet connections at all: no lyrics, cover, genre or bio lookups, internet radio, podcast updates, scrobbling, headphone EQ downloads or update checks. Scrobbles wait and are sent when you turn it off. Discord status talks only to the Discord app on this computer, so it keeps its own switch below (it shows no cover art while offline)."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             StyledCheck {
@@ -1012,6 +1024,97 @@ Item {
                 text: "Offline mode"
                 checked: shell.offlineMode
                 onToggled: shell.setOfflineMode(checked)
+            }
+            Text { text: "Genres and artist bios"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: "Genres are looked up on MusicBrainz, and also on Discogs and Last.fm when they're set up. Only albums without a genre are looked up, and nothing is written until you've checked it. Bios come from Wikipedia (found through MusicBrainz), Last.fm or Discogs; one you write yourself on an artist's page is always shown instead."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            StyledCheck {
+                objectName: "fetchBios"
+                text: "Look up an artist's bio when their page opens (sends the artist's name and one of their albums)"
+                checked: sources.fetchBios
+                onToggled: sources.setFetchBios(checked)
+            }
+            Flow {
+                width: parent.width
+                spacing: 12
+                Text { textFormat: Text.PlainText; text: "Bios come from"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                StyledCombo {
+                    objectName: "bioSource"
+                    width: 220
+                    readonly property var names: ["", "Wikipedia", "Last.fm", "Discogs"]
+                    model: ["Wikipedia, then Last.fm, then Discogs", "Wikipedia only", "Last.fm only" + (sources.lastfmAvailable ? "" : " (not set up)"),
+                            "Discogs only" + (sources.discogsConnected ? "" : " (not set up)")]
+                    currentIndex: Math.max(0, names.indexOf(sources.bioSource))
+                    onActivated: function (i) { sources.setBioSource(names[i]) }
+                    Accessible.name: "Where artist bios come from"
+                }
+            }
+            StyledCheck {
+                objectName: "genresFromLastfm"
+                text: sources.lastfmAvailable ? "Also use Last.fm's tags for genres (only the tags that are real genres)"
+                                              : "Also use Last.fm's tags for genres (needs the Last.fm API key below)"
+                enabled: sources.lastfmAvailable
+                checked: sources.genresFromLastfm
+                onToggled: sources.setGenresFromLastfm(checked)
+            }
+            StyledCheck {
+                objectName: "genresFromDiscogs"
+                text: "Also use Discogs' genres and styles"
+                enabled: sources.discogsConnected
+                checked: sources.genresFromDiscogs
+                onToggled: sources.setGenresFromDiscogs(checked)
+            }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: sources.discogsConnected
+                      ? "Discogs: connected" + (sources.discogsUser ? " as " + sources.discogsUser : "") + ". The token is kept in the system keyring."
+                      : "Discogs needs a personal access token: make one at discogs.com → Settings → Developers, then paste it here. It's kept in the system keyring."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            Flow {
+                width: parent.width
+                spacing: 10
+                visible: !sources.discogsConnected
+                TextField {
+                    id: discogsToken
+                    objectName: "discogsToken"
+                    width: Math.min(340, parent.width)
+                    echoMode: TextInput.Password
+                    placeholderText: "Discogs personal access token"
+                    placeholderTextColor: Theme.textDim
+                    color: Theme.text
+                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                    background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: discogsToken.activeFocus ? Theme.accent : Theme.border }
+                    onAccepted: sources.connectDiscogs(text)
+                    Accessible.name: "Discogs personal access token"
+                }
+                PillButton {
+                    objectName: "connectDiscogs"
+                    text: sources.discogsBusy ? "Checking…" : "Connect Discogs"
+                    enabled: !sources.discogsBusy && discogsToken.text.trim().length > 0 && !shell.offlineMode
+                    onClicked: { sources.connectDiscogs(discogsToken.text); discogsToken.text = "" }
+                }
+            }
+            PillButton {
+                objectName: "forgetDiscogs"
+                visible: sources.discogsConnected
+                text: "Disconnect Discogs"
+                onClicked: sources.forgetDiscogs()
+            }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                visible: sources.discogsStatus.length > 0
+                text: sources.discogsStatus
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
             Text { text: "Last.fm"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {

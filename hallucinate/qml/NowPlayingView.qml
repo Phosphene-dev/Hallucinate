@@ -210,7 +210,9 @@ Item {
                     textFormat: Text.PlainText
                     Layout.fillWidth: true
                     visible: player.hasTrack && (player.current.album || "").length > 0 && !view.lyricsMode
-                    text: player.hasTrack ? player.current.album + (player.current.year > 0 ? "  ·  " + player.current.year : "") : ""
+                    text: player.hasTrack ? [player.current.album, player.current.year > 0 ? String(player.current.year) : "",
+                                             shell.genresText(player.current.genre || "", shell.allGenresSongs)]
+                                            .filter(s => s).join("  ·  ") : ""
                     color: Qt.rgba(1, 1, 1, 0.6)
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(15)

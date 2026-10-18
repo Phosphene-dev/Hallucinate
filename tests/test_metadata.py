@@ -491,7 +491,7 @@ def test_genres_found_for_albums_without_one_are_saved_only_when_kept(qapp, lib,
         assert asked == [("Band", "Disc")] and done[0].startswith("Found genres for 1 of 1 albums")
         proposals = ed.genreProposals
         assert [(p["album"], p["genre"], p["genres"], p["songs"]) for p in proposals] == \
-            [("Disc", "Dream Pop", ["Dream Pop", "Shoegaze"], 2)]
+            [("Disc", "Dream Pop; Shoegaze", ["Dream Pop", "Shoegaze"], 2)]
         assert ed.trackInfo(str(root / "01.mp3"))["genre"] == ""  # nothing written yet
         ed.saveGenres([{"album_key": proposals[0]["album_key"], "genre": "Shoegaze"}])
         assert wait_for(lambda: changed)
@@ -511,7 +511,7 @@ def test_one_albums_genre_is_found_without_writing(qapp, lib, monkeypatch):
     ed.genreFound.connect(lambda r: got.append(dict(r)))
     try:
         ed.findGenre("Band", "Disc")
-        assert wait_for(lambda: got, 10) and got[0]["error"] == "MusicBrainz has no genre for this album"
+        assert wait_for(lambda: got, 10) and got[0]["error"] == "No genre was found for this album"
         net.set_offline(True)
         ed.findGenre("Band", "Disc")
         assert got[1]["error"].startswith("Offline mode is on")
@@ -631,3 +631,28 @@ def test_hallucinates_own_tag_saves_dont_make_the_library_rescan(tmp_path):
     assert not tagedit.written_recently(str(tmp_path))
     tagedit.write_tags(str(song), {"genre": "IDM"})
     assert tagedit.written_recently(str(tmp_path)) and not tagedit.written_recently(str(tmp_path / "other"))
+
+
+def test_an_album_given_a_genre_since_the_lookup_keeps_yours(qapp, lib, monkeypatch):
+    from hallucinate.core import musicbrainz
+    from hallucinate.core.db import Database
+
+    tmp, root = lib
+    monkeypatch.setattr(musicbrainz, "find_genre", lambda artist, album, cache=None:
+                        {"genre": "Dream Pop", "genres": ["Dream Pop"], "source": "album", "release": album})
+    ed = MetadataEditor(tmp / "lib.db", tmp / "art")
+    done = []
+    ed.genresFinished.connect(done.append)
+    try:
+        ed.findMissingGenres()
+        assert wait_for(lambda: done, 10)
+        key = ed.genreProposals[0]["album_key"]
+        db = Database(tmp / "lib.db")
+        db.conn.execute("UPDATE tracks SET genre='Mine' WHERE album_key=?", (key,))
+        db.commit()
+        db.close()
+        ed.saveGenres([{"album_key": key, "genre": "Dream Pop"}])
+        assert wait_for(lambda: not ed.genresSaving, 10)
+        assert ed.trackInfo(str(root / "01.mp3"))["genre"] != "Dream Pop"
+    finally:
+        ed.shutdown()

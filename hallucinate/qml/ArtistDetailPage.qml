@@ -90,13 +90,13 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar {}
 
-        Bloom { tint: page.glow0; x: 28 + 110 - size / 2; y: 24 + 110 - size / 2 }
+        Bloom { tint: page.glow0; x: Theme.contentX(fl.width) + 110 - size / 2; y: 24 + 110 - size / 2 }
         Bloom { tint: page.glow1; size: 520; x: fl.width * 0.55 - size / 2; y: -size / 3 }
 
         Column {
             id: col
-            x: 28; y: 24
-            width: fl.width - 56
+            x: Theme.contentX(fl.width); y: 24
+            width: Theme.contentWidth(fl.width)
             spacing: 26
 
             // Header
@@ -155,7 +155,8 @@ Item {
                         text: [page.plural(page.profile.albums || 0, "album", "albums"),
                                page.plural(page.profile.tracks || 0, "song", "songs"),
                                page.profile.seconds ? Theme.fmtHours(page.profile.seconds) : "",
-                               page.yearsActive(), (page.profile.genres || []).join(", ")].filter(s => s).join("  ·  ")
+                               page.yearsActive(),
+                               (page.profile.genres || []).slice(0, shell.allGenresAlbums ? 3 : 1).join(", ")].filter(s => s).join("  ·  ")
                         color: Theme.textDim
                         wrapMode: Text.Wrap
                         font.family: Theme.fontFamily
@@ -174,6 +175,151 @@ Item {
                             objectName: "artistRadio"
                             text: "Radio"
                             onClicked: library.startArtistRadio(page.artistName)
+                        }
+                    }
+                }
+            }
+
+            // About them: your own bio if you've written one, else one looked up online
+            GlassPanel {
+                id: about
+                objectName: "artistAbout"
+                width: col.width
+                height: aboutCol.implicitHeight + 36
+                property int bioRevision: 0
+                readonly property var bio: about.bioRevision >= 0 && page.artistName ? artistBios.bio(page.artistName) : ({})
+                property bool editing: false
+                property bool expanded: false
+                Connections {
+                    target: artistBios
+                    function onChanged(key) { about.bioRevision++ }
+                }
+                Component.onCompleted: if (page.artistName) artistBios.ensure(page.artistName)
+                Column {
+                    id: aboutCol
+                    anchors { left: parent.left; right: parent.right; top: parent.top; margins: 18 }
+                    spacing: 10
+                    Flow {
+                        width: parent.width
+                        spacing: 10
+                        Text {
+                            textFormat: Text.PlainText
+                            height: 32; verticalAlignment: Text.AlignVCenter
+                            text: "About"
+                            color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(18); font.weight: Font.DemiBold
+                        }
+                        Text {
+                            textFormat: Text.PlainText
+                            objectName: "bioSource"
+                            height: 32; verticalAlignment: Text.AlignVCenter
+                            visible: text.length > 0 && !about.editing
+                            text: about.bio.own ? "written by you" : (about.bio.source ? "from " + about.bio.source : "")
+                            color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                            font.underline: !about.bio.own && sourceMouse.containsMouse
+                            MouseArea {
+                                id: sourceMouse
+                                anchors.fill: parent
+                                enabled: !about.bio.own && /^https?:\/\//.test(about.bio.url || "")
+                                hoverEnabled: true
+                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                onClicked: Qt.openUrlExternally(about.bio.url)
+                            }
+                        }
+                        Item { width: 1; height: 32 }
+                        PillButton {
+                            objectName: "editBio"
+                            visible: !about.editing
+                            height: 32
+                            text: about.bio.own ? "Edit" : (about.bio.text ? "Write your own" : "Write one")
+                            onClicked: { bioEdit.text = about.bio.text || ""; about.editing = true; bioEdit.forceActiveFocus() }
+                        }
+                        PillButton {
+                            objectName: "refreshBio"
+                            visible: !about.editing && !about.bio.own
+                            enabled: !shell.offlineMode && !about.bio.busy
+                            height: 32
+                            text: about.bio.busy ? "Looking…" : (about.bio.text ? "Look up again" : "Look up")
+                            onClicked: artistBios.refresh(page.artistName)
+                        }
+                        StyledCombo {
+                            objectName: "bioPick"
+                            visible: !about.editing && !about.bio.own
+                            width: 190
+                            readonly property var names: ["", "Wikipedia", "Last.fm", "Discogs"]
+                            model: ["Usual sources", "Wikipedia", "Last.fm" + (sources.lastfmAvailable ? "" : " (not set up)"),
+                                    "Discogs" + (sources.discogsConnected ? "" : " (not set up)")]
+                            currentIndex: Math.max(0, names.indexOf(about.bio.picked || ""))
+                            onActivated: function (i) { artistBios.pick(page.artistName, names[i]) }
+                            Accessible.name: "Where this artist's bio comes from"
+                        }
+                    }
+                    Text {
+                        textFormat: Text.PlainText
+                        objectName: "bioText"
+                        width: parent.width
+                        visible: !about.editing
+                        text: about.bio.text ? about.bio.text
+                              : about.bio.busy ? "Looking for a bio…"
+                              : shell.offlineMode ? "No bio yet. Offline mode is on, so none can be looked up."
+                              : "No bio yet. Write your own, or look one up."
+                        color: about.bio.text ? Theme.text : Theme.textDim
+                        wrapMode: Text.Wrap
+                        maximumLineCount: about.expanded ? 400 : 6
+                        elide: Text.ElideRight
+                        lineHeight: 1.15
+                        font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
+                    }
+                    PillButton {
+                        objectName: "bioMore"
+                        visible: !about.editing && (about.bio.text || "").length > 0 && (about.expanded || bioMeasure.lineCount > 6)
+                        height: 30
+                        text: about.expanded ? "Show less" : "Show more"
+                        onClicked: about.expanded = !about.expanded
+                    }
+                    Text {  // the whole bio laid out unseen, to tell whether "Show more" has anything to show
+                        id: bioMeasure
+                        visible: false
+                        width: parent.width
+                        textFormat: Text.PlainText
+                        text: about.bio.text || ""
+                        wrapMode: Text.Wrap
+                        lineHeight: 1.15
+                        font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
+                    }
+                    ScrollView {
+                        visible: about.editing
+                        width: parent.width
+                        height: Math.min(320, Math.max(140, bioEdit.implicitHeight))
+                        TextArea {
+                            id: bioEdit
+                            objectName: "bioEdit"
+                            wrapMode: TextArea.Wrap
+                            selectByMouse: true
+                            placeholderText: "Write about " + page.artistName
+                            placeholderTextColor: Theme.textDim
+                            color: Theme.text
+                            font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
+                            background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: bioEdit.activeFocus ? Theme.accent : Theme.border }
+                            Accessible.name: "Bio for " + page.artistName
+                            Keys.onEscapePressed: about.editing = false
+                        }
+                    }
+                    Flow {
+                        visible: about.editing
+                        width: parent.width
+                        spacing: 10
+                        PillButton {
+                            objectName: "saveBio"
+                            primary: true; height: 32; text: "Save"
+                            onClicked: { artistBios.setOwn(page.artistName, bioEdit.text); about.editing = false }
+                        }
+                        PillButton { height: 32; text: "Cancel"; onClicked: about.editing = false }
+                        PillButton {
+                            objectName: "clearBio"
+                            visible: about.bio.own
+                            height: 32
+                            text: "Remove mine, use the one found online"
+                            onClicked: { artistBios.setOwn(page.artistName, ""); about.editing = false; artistBios.ensure(page.artistName) }
                         }
                     }
                 }

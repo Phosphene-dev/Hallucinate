@@ -49,6 +49,25 @@ def _strs(v) -> list:
     return out
 
 
+def _genres(tags) -> str:
+    """Every genre in the tags, main one first, as one text ("IDM; Ambient"): a file may hold several (separate
+    values, or one with separators)."""
+    from . import genres
+
+    if tags is None:
+        return ""
+    for key in KEYS["genre"]:
+        try:
+            value = tags.get(key)
+            names = list(value.genres) if hasattr(value, "genres") else _strs(value)  # ID3's "(17)" codes too
+        except Exception:
+            continue
+        joined = genres.join(names)
+        if joined:
+            return joined
+    return ""
+
+
 def _get(tags, field: str) -> str:
     if tags is None:
         return ""
@@ -372,7 +391,7 @@ def _read_track(path, art_known):
         "track_no": _num(_get(tags, "track") or extra.get("track", "")),
         "disc_no": _num(_get(tags, "disc")),
         "year": _num(re.sub(r"^\D*", "", _get(tags, "year") or extra.get("year", ""))),
-        "genre": _get(tags, "genre") or extra.get("genre", ""),
+        "genre": _genres(tags) or extra.get("genre", ""),
         "duration": float(getattr(info, "length", 0) or 0),
         "fmt": os.path.splitext(path)[1].lstrip(".").upper(),
         "codec": audio_codec(f, ext),

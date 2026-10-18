@@ -17,7 +17,32 @@ Dialog {
     property var mbResults: []     // MusicBrainz releases found for this album
     property string mbStatus: ""
     property var trackTags: []     // per-song titles and numbers from the chosen release
-    property var genreChoices: []  // genres MusicBrainz suggested, best first
+    property var genreChoices: []  // genres found online, best first
+    property string genreText: ""  // the Genre field as it stands (for the chips)
+    // Several genres are one text, the main one first: "IDM; Ambient; Electronic"
+    function genreList(text) {
+        var out = [], seen = {}
+        var parts = String(text || "").split(/\s*[;\/|]\s*/)
+        for (var i = 0; i < parts.length; i++) {
+            var name = parts[i].trim(), key = name.toLowerCase()
+            if (name.length && !seen[key]) { seen[key] = true; out.push(name) }
+        }
+        return out
+    }
+    function hasGenre(name) {
+        var list = genreList(genreText)
+        for (var i = 0; i < list.length; i++) if (list[i].toLowerCase() === name.toLowerCase()) return true
+        return false
+    }
+    function toggleGenre(name) {
+        var list = genreList(fieldValue("genre")), out = [], found = false
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].toLowerCase() === name.toLowerCase()) found = true
+            else out.push(list[i])
+        }
+        if (!found) out.push(name)
+        setField("genre", out.join("; "), true)
+    }
     property string genreStatus: ""
 
     parent: Overlay.overlay
@@ -98,11 +123,11 @@ Dialog {
     }
     function findGenre() {
         genreChoices = []
-        genreStatus = "Asking MusicBrainz…"
+        genreStatus = "Looking it up…"
         metaEditor.findGenre(fieldValue("album_artist") || fieldValue("artist"), fieldValue("album"))
     }
-    function setField(key, value) {
-        for (var i = 0; i < rep.count; i++) if (rep.itemAt(i).key === key && value) rep.itemAt(i).value = String(value)
+    function setField(key, value, evenEmpty) {
+        for (var i = 0; i < rep.count; i++) if (rep.itemAt(i).key === key && (value || evenEmpty)) rep.itemAt(i).value = String(value)
     }
 
     Connections {
@@ -125,9 +150,10 @@ Dialog {
             if (r.error) { dlg.genreStatus = r.error; return }
             dlg.setField("genre", r.genre)
             dlg.genreChoices = r.genres
+            var from = (r.sources || ["MusicBrainz"]).join(", ")
             dlg.genreStatus = r.source === "artist"
-                ? "MusicBrainz has no genre for this album, so this is the artist's. Pick another below or type your own, then Save."
-                : "From MusicBrainz. Pick another below or type your own, then Save."
+                ? "No source has a genre for this album, so this is the artist's (from MusicBrainz). Click genres below to add or remove them, or type your own, then Save."
+                : "From " + from + ". The first genre is the main one. Click genres below to add or remove them, or type your own, then Save."
         }
         function onCoverResult(ok, msg) { dlg.message = msg; if (ok) dlg.artUrl = library.albumInfo(dlg.albumKey).artUrl || "" }
         function onFailed(msg) { dlg.message = msg }
@@ -168,6 +194,7 @@ Dialog {
                     Layout.fillWidth: true
                     selectByMouse: true
                     onAccepted: dlg.accept()  // Enter saves, as in the other dialogs
+                    onTextChanged: if (rowItem.key === "genre") dlg.genreText = text
                     Accessible.name: dlg.labels[rowItem.key]
                     color: Theme.text
                     font.family: Theme.fontFamily
@@ -197,15 +224,16 @@ Dialog {
         }
         Flow {
             Layout.fillWidth: true
-            visible: dlg.genreChoices.length > 1
+            visible: dlg.genreChoices.length > 0
             spacing: 6
             Repeater {
                 model: dlg.genreChoices
                 Chip {
                     required property string modelData
                     text: modelData
-                    selected: dlg.fieldValue("genre") === modelData
-                    onClicked: dlg.setField("genre", modelData)
+                    selected: dlg.hasGenre(modelData)
+                    onClicked: dlg.toggleGenre(modelData)
+                    Accessible.name: (selected ? "Remove " : "Add ") + modelData
                 }
             }
         }

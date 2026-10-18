@@ -171,3 +171,23 @@ def _isolated_qsettings(tmp_path_factory):
         QSettings.setPath(QSettings.Format.NativeFormat, scope, root)
         QSettings.setPath(QSettings.Format.IniFormat, scope, root)
     yield
+
+
+@pytest.fixture(autouse=True)
+def no_internet(monkeypatch):
+    """Tests never reach the internet (an artist page opened in a test would otherwise look up a bio): only
+    servers on this computer answer; anything else fails as an unreachable server would."""
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+
+    real = urllib.request.urlopen
+
+    def local_only(request, *args, **kwargs):
+        url = request.full_url if isinstance(request, urllib.request.Request) else str(request)
+        host = (urllib.parse.urlsplit(url).hostname or "").lower()
+        if host not in ("127.0.0.1", "localhost", "::1"):
+            raise urllib.error.URLError(OSError(f"tests don't go online ({host})"))
+        return real(request, *args, **kwargs)
+
+    monkeypatch.setattr(urllib.request, "urlopen", local_only)
