@@ -28,6 +28,9 @@ logger = logging.getLogger(__name__)
 SAVE_EVERY_MS = 5_000
 REFRESH_EVERY_MS = 4 * 3600 * 1000
 FIRST_REFRESH_MS = 20_000
+RESUME_DOWNLOADS_MS = 8_000  # downloads left unfinished last time carry on this long after start
+FAILED_ART_TTL_S = 3600  # a cover that couldn't be fetched isn't tried again for this long
+DOWNLOADS_AT_ONCE = 2
 PLAYED_REMAINING_S = 45  # stop this close to the end of a long episode (or past 97%) and it counts as played
 # Settings → Podcasts, with their defaults
 DEFAULTS = {
@@ -56,6 +59,16 @@ EPISODE_KEYS = ["id", "podcast_id", "title", "podcast", "description", "publishe
                 "up_next"]
 RESULT_KEYS = ["row", "title", "author", "genre", "artUrl", "followed", "feed_url"]
 MAX_IMAGE_BYTES = 4_000_000
+
+
+def _for_good(exc):
+    """Whether a download failed in a way that trying again won't fix: the server says the episode isn't there
+    (or refuses it), or what it sends isn't an episode."""
+    import urllib.error
+
+    if isinstance(exc, urllib.error.HTTPError):
+        return 400 <= exc.code < 500 and exc.code not in (408, 429)
+    return isinstance(exc, (ValueError, net.NotWebLink)) or not isinstance(exc, OSError)
 
 
 def nice_date(ts):
@@ -127,7 +140,11 @@ class Podcasts(QObject):
         self._chapters = []
         self._chapters_for = 0
         self._playing_id = 0
-        self._pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix="podcasts")
+        self._pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix="podcasts")  # feeds, search, chapters
+        # downloads have their own threads, so a few long ones never hold up a feed check or a search
+        self._dl_pool = ThreadPoolExecutor(max_workers=DOWNLOADS_AT_ONCE, thread_name_prefix="podcast-download")
+        self._paused = set()  # downloads stopped by stopNetwork(): kept queued (and their .part) to carry on
+        self._failed_art = {}  # cover url -> when fetching it failed (not tried again for FAILED_ART_TTL_S)
         self._done.connect(self._apply)
         self._save_timer = QTimer(self)
         self._save_timer.setInterval(SAVE_EVERY_MS)
@@ -146,6 +163,10 @@ class Podcasts(QObject):
         self._progress_timer = QTimer(self)
         self._progress_timer.setInterval(500)
         self._progress_timer.timeout.connect(self._reload_episodes)
+        self._resume_timer = QTimer(self)
+        self._resume_timer.setSingleShot(True)
+        self._resume_timer.setInterval(RESUME_DOWNLOADS_MS)
+        self._resume_timer.timeout.connect(self.resumeNetwork)
         player.trackChanged.connect(self._on_track)
         player.stateChanged.connect(self._on_state)
         player.seeked.connect(lambda *_: self._save_position())
@@ -153,6 +174,8 @@ class Podcasts(QObject):
         if hasattr(player, "showSpeedChanged"):
             player.showSpeedChanged.connect(lambda pid, rate: (self._db.update_podcast(pid, speed=rate), self.reload()))
         self.reload()
+        if self._db.queued_downloads():
+            self._resume_timer.start()
 
     # --- switching on and off ------------------------------------------------------------------------------
     def setEnabled(self, on):
@@ -162,10 +185,13 @@ class Podcasts(QObject):
             if not self._refresh_timer.isActive() and self._options["refreshHours"]:
                 self._refresh_timer.start()
                 QTimer.singleShot(FIRST_REFRESH_MS, self.refreshAll)
+            if self._db.queued_downloads():
+                self._resume_timer.start()
         else:
             self._refresh_timer.stop()
+            self._resume_timer.stop()
             with self._lock:
-                self._cancel.update(self._downloading)
+                self._paused.update(self._downloading)  # they carry on when podcasts are switched on again
             if self._player.hasTrack and track_kind(self._player.current) == "episode":
                 self._save_position()
                 self._player.stop()
@@ -220,7 +246,11 @@ class Podcasts(QObject):
         self._continue.set_items([self._episode_row(e) for e in self._db.in_progress(8)])
         self._up_next.set_items([self._episode_row(e) for e in self._db.up_next()])
         self._reload_episodes()
-        missing = [p["image"] for p in shows if p.get("image", "").startswith("http") and not self._image_file(p["image"]).exists()]
+        now = time.monotonic()
+        with self._lock:
+            missing = [p["image"] for p in shows if p.get("image", "").startswith("http")
+                       and now - self._failed_art.get(p["image"], -FAILED_ART_TTL_S) >= FAILED_ART_TTL_S
+                       and not self._image_file(p["image"]).exists()]
         if missing and not net.is_offline() and self._enabled:
             self._pool.submit(self._fetch_images, missing)
         self.changed.emit()
@@ -249,8 +279,13 @@ class Podcasts(QObject):
                     target.parent.mkdir(parents=True, exist_ok=True)
                     target.write_bytes(data)
                     got = True
+                    continue
+            except net.OfflineError:
+                return  # offline mode came on: nothing failed
             except (OSError, ValueError) as exc:
                 logger.info("No cover for a podcast: %s", exc)
+            with self._lock:
+                self._failed_art[url] = time.monotonic()  # not asked for again on every reload
         if got:
             self._done.emit(("images", None, None))
 
@@ -523,12 +558,15 @@ class Podcasts(QObject):
             try:
                 if p.get("folder"):
                     _info, episodes = pc.scan_folder(p["folder"])
-                    return ("refreshed", (p["id"], None, episodes, quiet), "")
-                info, episodes, final = pc.fetch_feed(p["feed_url"])
-                info["feed_url"] = final
-                return ("refreshed", (p["id"], info, episodes, quiet), "")
+                    return ("refreshed", (p["id"], None, episodes, quiet, None), "")
+                got = pc.fetch_feed_if_changed(p["feed_url"], p.get("etag") or "", p.get("modified") or "")
+                checked = {"feed_url": got["url"], "etag": got["etag"], "modified": got["modified"]}
+                if got["podcast"] is None:  # nothing new since last time
+                    return ("refreshed", (p["id"], None, [], quiet, checked), "")
+                info = {**got["podcast"], "feed_url": got["url"]}
+                return ("refreshed", (p["id"], info, got["episodes"], quiet, checked), "")
             except Exception as exc:  # noqa: BLE001 - a worker must always report back
-                return ("refreshed", (p["id"], None, None, quiet), net.describe(exc))
+                return ("refreshed", (p["id"], None, None, quiet, None), net.describe(exc))
 
         self._pool.submit(lambda: self._done.emit(work()))
 
@@ -633,7 +671,9 @@ class Podcasts(QObject):
 
     # --- downloads -----------------------------------------------------------------------------------------
     @Slot(int)
-    def download(self, episode_id):
+    def download(self, episode_id, quiet=False):
+        """Download an episode. It's remembered until it finishes, so one that's stopped (the app closed, offline
+        mode came on, the connection dropped) carries on from where it got to next time."""
         e = self._db.episode(episode_id)
         if not e or not e.get("url"):
             return
@@ -642,10 +682,14 @@ class Podcasts(QObject):
                 return
             self._downloading[episode_id] = 0.0
             self._cancel.discard(episode_id)
+            self._paused.discard(episode_id)
+        if not e.get("download_queued"):
+            self._db.set_download_queued(episode_id, True)
         if net.is_offline():
             with self._lock:
                 self._downloading.pop(episode_id, None)
-            self.message.emit("Offline mode is on, so episodes can't download")
+            if not quiet:
+                self.message.emit("Offline mode is on, so episodes can't download (they will when it's off)")
             return
         target = self._downloads / str(e["podcast_id"]) / f"{e['id']}{pc.extension_for(e['url'], e.get('mime', ''))}"
         self._progress_timer.start()
@@ -657,20 +701,64 @@ class Podcasts(QObject):
 
         def work():
             try:
-                path = pc.download(e["url"], target, progress, lambda: episode_id in self._cancel)
+                path = pc.download(e["url"], target, progress, lambda: episode_id in self._cancel,
+                                   paused=lambda: episode_id in self._paused)
                 return ("downloaded", episode_id, path)
             except InterruptedError:
                 return ("downloaded", episode_id, None)
             except Exception as exc:  # noqa: BLE001 - a worker must always report back
                 logger.warning("Episode download failed: %s", exc)
-                return ("downloaded", episode_id, OSError(str(exc)))
+                return ("downloaded", episode_id, exc)
 
-        self._pool.submit(lambda: self._done.emit(work()))
+        self._dl_pool.submit(lambda: self._done.emit(work()))
 
     @Slot(int)
     def cancelDownload(self, episode_id):
         with self._lock:
             self._cancel.add(episode_id)
+        self._db.set_download_queued(episode_id, False)
+        self._reload_episodes()
+
+    @Slot(int)
+    def downloadUnplayed(self, podcast_id):
+        """Download every episode of a show you haven't played that isn't downloaded yet."""
+        p = self._db.podcast(podcast_id)
+        if not p or p.get("folder"):
+            return
+        todo = [e for e in self._db.episodes(podcast_id, unplayed_only=True)
+                if e.get("url") and not (e.get("local_path") and os.path.isfile(e["local_path"]))]
+        if not todo:
+            self.message.emit("Every unplayed episode is downloaded already")
+            return
+        if net.is_offline():
+            for e in todo:
+                self._db.set_download_queued(e["id"], True)
+            self.message.emit("Offline mode is on: the episodes will download when it's off")
+            return
+        for e in todo:
+            self.download(e["id"], quiet=True)
+        self.message.emit(f"Downloading {len(todo)} episode{'s' if len(todo) != 1 else ''}")
+
+    @Slot()
+    def stopNetwork(self):
+        """Offline mode came on: stop the downloads under way. They stay queued (with what they'd got), and
+        carry on with resumeNetwork()."""
+        self._resume_timer.stop()
+        with self._lock:
+            self._paused.update(self._downloading)
+
+    @Slot()
+    def resumeNetwork(self):
+        """Carry on with the downloads that were asked for and didn't finish (at start, and when offline mode
+        goes off)."""
+        if not self._enabled or net.is_offline():
+            return
+        for episode_id in self._db.queued_downloads():
+            e = self._db.episode(episode_id)
+            if not e or not e.get("url") or (e.get("local_path") and os.path.isfile(e["local_path"])):
+                self._db.set_download_queued(episode_id, False)  # gone, or downloaded meanwhile
+                continue
+            self.download(episode_id, quiet=True)
 
     @Slot(int)
     def removeDownload(self, episode_id):
@@ -912,7 +1000,11 @@ class Podcasts(QObject):
                               else f"Following “{podcast['title']}”")
         elif kind == "refreshed":
             self._busy = max(0, self._busy - 1)
-            podcast_id, info, episodes, quiet = what
+            podcast_id, info, episodes, quiet, checked = what
+            if checked:
+                self._db.update_podcast(podcast_id, etag=checked["etag"], modified=checked["modified"])
+                if checked["feed_url"]:
+                    self._db.update_podcast(podcast_id, feed_url=checked["feed_url"])  # it moved for good
             if episodes is None:
                 self._db.update_podcast(podcast_id, error=value, checked=time.time())
                 if not quiet:
@@ -952,14 +1044,19 @@ class Podcasts(QObject):
             with self._lock:
                 self._downloading.pop(episode_id, None)
                 self._cancel.discard(episode_id)
+                self._paused.discard(episode_id)
             if isinstance(path, str):
                 self._db.set_local_path(episode_id, path)
+                self._db.set_download_queued(episode_id, False)
                 if self._options["keep"] == "latest":
                     e = self._db.episode(episode_id)
                     if e:
                         self._enforce_keep(e["podcast_id"])
-            elif isinstance(path, OSError):
-                self.message.emit(f"Download failed: {path}")
+            elif isinstance(path, Exception):
+                if not isinstance(path, net.OfflineError):
+                    self.message.emit(f"Download failed: {net.describe(path)}")
+                if _for_good(path):  # asking again won't help; anything else carries on next time
+                    self._db.set_download_queued(episode_id, False)
             self.reload()
         elif kind == "images":
             self.reload()
@@ -998,7 +1095,9 @@ class Podcasts(QObject):
         self._refresh_timer.stop()
         self._reload_timer.stop()
         self._progress_timer.stop()
+        self._resume_timer.stop()
         with self._lock:
-            self._cancel.update(self._downloading)
+            self._paused.update(self._downloading)  # carried on next time
         self._pool.shutdown(wait=False, cancel_futures=True)
+        self._dl_pool.shutdown(wait=False, cancel_futures=True)
         self._db.close()

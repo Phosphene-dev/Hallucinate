@@ -6,8 +6,9 @@ that hold no login (core/remote.py). The sign-in is kept in the system keyring o
 Jellyfin just the access token it gives), never in settings or the library, and is refused when the keyring
 would keep it in a plain file. A sync reads every song the server has, a page at a time, adds what's new,
 updates what changed and takes out what the server no longer has; covers are fetched once and kept with the
-others. A server that can't be reached makes its songs unavailable (the player moves past them) and is tried
-again every few minutes. Switched off in Settings → Features, every server song leaves the library (your
+others. A server that can't be reached (or a keyring that's still locked) makes its songs unavailable (the
+player moves past them) and is tried again every few minutes; a server that refuses the sign-in isn't, until
+you sign in again. Switched off in Settings → Features, every server song leaves the library (your
 plays, ratings and playlists keep them, and they come back when it's switched on again).
 
 Everything that touches the network or the keyring runs on this service's own worker thread, and nothing
@@ -22,6 +23,7 @@ import time
 
 from PySide6.QtCore import Property, QObject, QSettings, QTimer, Signal, Slot
 
+from . import keyringwait
 from .core import jellyfin, net, remote, subsonic, tags
 from .core.atomic import write_atomic
 from .library import _Reader
@@ -31,6 +33,9 @@ KEYRING_SERVICE = "Hallucinate Music servers"
 KINDS = ("subsonic", "jellyfin")
 RETRY_MS = 5 * 60 * 1000  # a server that didn't answer is tried again this often
 SYNC_EVERY_S = 12 * 3600  # synced again when the last sync is older than this
+KEYRING_WAIT_S = 10.0  # a keyring read that takes longer than this is taken for a locked keyring
+KEYRING_LOCKED = "the system keyring is locked (or didn't answer)"
+SIGN_IN_FAILED = "sign-in failed"
 PNG = b"\x89PNG\r\n\x1a\n"
 
 
@@ -92,6 +97,41 @@ def _client(entry, secret):
         return jellyfin.Server(entry["base"], kept.get("token", ""), kept.get("user_id", ""),
                                entry.get("device") or "hallucinate")
     return subsonic.Server(entry["base"], entry.get("user", ""), secret)
+
+
+def _read_secret(sid):
+    """(the kept sign-in or None, what's wrong): "" when it was read (or simply isn't there), "unsafe" when the
+    keyring would keep it in a plain file, "locked" when the keyring didn't answer or refused (worth trying
+    again later). Read through keyringwait, so a locked keyring can't hold the worker forever."""
+    try:
+        kr = _keyring()
+    except KeyringUnsafe:
+        return None, "unsafe"
+    except Exception:  # noqa: BLE001 - a keyring that won't open
+        return None, "locked"
+    got = keyringwait.read(lambda key: kr.get_password(KEYRING_SERVICE, key), (sid,), timeout=KEYRING_WAIT_S,
+                           patient=True)
+    if got is None or got["error"]:
+        return None, "locked"
+    return got["values"].get(sid) or None, ""
+
+
+def _write_secret(sid, secret):
+    """Keep a sign-in in the keyring: "" when it worked, else what went wrong."""
+    try:
+        kr = _keyring()
+    except KeyringUnsafe:
+        return "there's no safe system keyring to keep the sign-in in"
+    except Exception as exc:  # noqa: BLE001 - a keyring that won't open
+        return str(exc) or KEYRING_LOCKED
+    error = keyringwait.call(lambda: kr.set_password(KEYRING_SERVICE, sid, secret), timeout=KEYRING_WAIT_S)
+    return KEYRING_LOCKED if error == keyringwait.NO_ANSWER else error
+
+
+def _refused_sign_in(exc):
+    """Whether the server said the sign-in is wrong (asking again with it won't help)."""
+    return ((isinstance(exc, subsonic.SubsonicError) and exc.code in (40, 41))
+            or isinstance(exc, jellyfin.JellyfinAuthError))
 
 
 def _plain(exc):
@@ -165,7 +205,8 @@ class Servers(QObject):
             out.append({"id": s["id"], "name": s["name"] or s["base"], "base": s["base"], "user": s["user"],
                         "kind": s["kind"], "status": st.get("status", "waiting"), "busy": bool(st.get("busy")),
                         "songs": int(st.get("songs", s["songs"]) or 0), "error": st.get("error", ""),
-                        "synced": s["synced"], "secure": subsonic.is_private_link(s["base"])})
+                        "synced": s["synced"], "secure": subsonic.is_private_link(s["base"]),
+                        "needsSignIn": bool(st.get("signin"))})
         return out
 
     @Property(bool, notify=changed)
@@ -211,13 +252,15 @@ class Servers(QObject):
         entry = dict(s)
 
         def work(db):
-            try:
-                secret = _keyring().get_password(KEYRING_SERVICE, sid)
-            except Exception:  # noqa: BLE001 - KeyringUnsafe, or a keyring that won't open
-                secret = None
-            if secret is None:
+            secret, problem = _read_secret(sid)
+            if problem == "locked":  # tried again in a few minutes, like a server that's down
+                return {"op": "check", "id": sid, "ok": False, "error": KEYRING_LOCKED}
+            if problem == "unsafe":
                 return {"op": "check", "id": sid, "ok": False, "fatal": True,
-                        "error": "The sign-in isn't in the system keyring: remove the server and add it again"}
+                        "error": "There's no safe system keyring to read the sign-in from"}
+            if secret is None:
+                return {"op": "check", "id": sid, "ok": False, "fatal": True, "signin": True,
+                        "error": "The sign-in isn't in the system keyring: sign in again"}
             try:
                 client = _client(entry, secret)
             except (ValueError, KeyError, TypeError) as exc:
@@ -276,13 +319,12 @@ class Servers(QObject):
                 return {"op": "add", "id": sid, "error": f"Couldn't sign in: {exc}"}
             except (OSError, ValueError) as exc:
                 return {"op": "add", "id": sid, "error": f"Couldn't reach the server: {_plain(exc)}"}
-            try:
-                _keyring().set_password(KEYRING_SERVICE, sid, secret)
-            except Exception:  # noqa: BLE001 - KeyringUnsafe, or a keyring that won't take it
+            failed = _write_secret(sid, secret)
+            if failed:
                 if isinstance(client, jellyfin.Server):
                     _quietly(client.sign_out)  # don't leave a sign-in on the server that nothing here holds
                 return {"op": "add", "id": sid,
-                        "error": "There's no safe system keyring to keep the sign-in in, so the server wasn't added"}
+                        "error": f"The sign-in couldn't be kept ({failed}), so the server wasn't added"}
             if not entry["name"]:
                 entry["name"] = (info.get("type") or kind).title()
             return {"op": "add", "id": sid, "entry": entry}
@@ -302,18 +344,69 @@ class Servers(QObject):
         self._save_list()
 
         def work(db):
+            secret, problem = _read_secret(sid)
             try:
-                kr = _keyring()
-                secret = kr.get_password(KEYRING_SERVICE, sid)
                 if entry["kind"] == "jellyfin" and secret:
                     _quietly(_client(entry, secret).sign_out)
-                kr.delete_password(KEYRING_SERVICE, sid)
-            except Exception:  # noqa: BLE001 - not there, or no keyring: nothing to remove
+            except (ValueError, KeyError, TypeError):
                 pass
+            if not problem:
+                kr = _keyring()
+                keyringwait.call(lambda: kr.delete_password(KEYRING_SERVICE, sid), timeout=KEYRING_WAIT_S)
             return self._take_out(db, lambda kind, s: s == sid)
 
         self._run(work)
         self.changed.emit()
+
+    @Slot(str, str)
+    def signInAgain(self, sid, password):
+        """Sign in to a server you've added with a new password (it was changed, or the sign-in was revoked):
+        it's checked, kept in the keyring in place of the old one, and the server is read again. The server
+        keeps its id, so your plays, ratings and playlists of its songs stay with it."""
+        entry = self._entry(sid)
+        if entry is None:
+            return
+        if not password:
+            self.message.emit("Type the password you sign in to the server with")
+            return
+        if net.is_offline():
+            self.message.emit("Offline mode is on, so the server can't be checked")
+            return
+        if self._state.get(sid, {}).get("busy"):
+            return
+        self._state[sid] = {**self._state.get(sid, {}), "busy": True, "status": "checking"}
+        self.changed.emit()
+        entry = dict(entry)
+
+        def work(_db):
+            old, _problem = _read_secret(sid)
+            try:
+                if entry["kind"] == "jellyfin":
+                    client, token, user_id = jellyfin.Server.sign_in(entry["base"], entry["user"], password,
+                                                                    entry.get("device") or "hallucinate")
+                    client.ping()
+                    secret = json.dumps({"token": token, "user_id": user_id})
+                else:
+                    client = subsonic.Server(entry["base"], entry["user"], password)
+                    client.ping()
+                    secret = password
+            except (subsonic.SubsonicError, jellyfin.JellyfinError) as exc:
+                return {"op": "signin", "id": sid, "error": f"Couldn't sign in: {exc}"}
+            except (OSError, ValueError) as exc:
+                return {"op": "signin", "id": sid, "error": f"Couldn't reach the server: {_plain(exc)}"}
+            failed = _write_secret(sid, secret)
+            if failed:
+                if isinstance(client, jellyfin.Server):
+                    _quietly(client.sign_out)
+                return {"op": "signin", "id": sid, "error": f"The new sign-in couldn't be kept: {failed}"}
+            if entry["kind"] == "jellyfin" and old and old != secret:
+                try:
+                    _quietly(_client(entry, old).sign_out)  # the old token is no use to anyone now
+                except (ValueError, KeyError, TypeError):
+                    pass
+            return {"op": "signin", "id": sid, "ok": True}
+
+        self._run(work)
 
     @Slot(str)
     def sync(self, sid):
@@ -353,6 +446,9 @@ class Servers(QObject):
         except net.OfflineError:
             return {"op": "check", "id": sid, "ok": True, "client": client, "kind": kind, "offline": True}
         except (OSError, ValueError) as exc:
+            if _refused_sign_in(exc):  # not tried again: the same sign-in would only be refused again
+                return {"op": "check", "id": sid, "ok": False, "fatal": True, "signin": True, "kind": kind,
+                        "error": f"Sign-in failed: {exc}. Sign in again"}
             return {"op": "check", "id": sid, "ok": False, "client": client, "kind": kind, "error": _plain(exc)}
         result = {"op": "check", "id": sid, "ok": True, "client": client, "kind": kind}
         if sync:
@@ -468,6 +564,25 @@ class Servers(QObject):
                 self._connect(entry, sync=True)
             self.changed.emit()
             return
+        if op == "signin":
+            entry = self._entry(sid)
+            st = self._state.setdefault(sid, {})
+            st["busy"] = False
+            if entry is None:
+                return
+            if r.get("error"):
+                st["error"] = r["error"]
+                self.message.emit(r["error"])
+                self.changed.emit()
+                return
+            st.update(status="checking", error="", signin=False)
+            self.message.emit(f"Signed in to {entry['name'] or entry['base']} again: reading its songs…")
+            self._clients.pop(sid, None)
+            if self._enabled:
+                self._cancelled.discard(sid)
+                self._connect(entry, sync=True)
+            self.changed.emit()
+            return
         if op == "check":
             entry = self._entry(sid)
             if entry is None or not self._enabled:  # removed or switched off meanwhile: nothing to keep
@@ -483,6 +598,9 @@ class Servers(QObject):
                 remote.set_reachable(entry["kind"], sid, r["ok"])
                 st["status"] = "error" if r.get("fatal") else "ok" if r["ok"] else "down"
                 st["error"] = r.get("error", "")
+                st["signin"] = bool(r.get("signin"))
+                if r.get("signin"):
+                    self._clients.pop(sid, None)  # the sign-in it holds is refused
                 if not r["ok"] and not r.get("fatal"):
                     self._retry.start()
             if "songs" in r:

@@ -106,6 +106,14 @@ class _WebOnlyRedirects(urllib.request.HTTPRedirectHandler):
         if not is_web_url(target):
             raise NotWebLink(newurl)
         new = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new is not None:
+            # Every hop, as (status, link), on the request the caller holds (`redirects`): a feed follows a
+            # move for good (301, 308) but not a temporary one
+            hops = getattr(req, "redirects", None)
+            if hops is None:
+                hops = req.redirects = []
+            hops.append((code, target))
+            new.redirects = hops
         old, to = urllib.parse.urlsplit(req.full_url), urllib.parse.urlsplit(target)
         if new is not None and (to.netloc != old.netloc or to.scheme.lower() != old.scheme.lower()):
             # urllib forwards every header: a token meant for one server mustn't reach the next one, nor go

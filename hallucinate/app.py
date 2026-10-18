@@ -191,6 +191,26 @@ def main(argv=None) -> int:
     servers.libraryChanged.connect(library.reload)
     shell.settingsChanged.connect(servers.recheck)  # offline mode switched off: try servers again
 
+    offline = [net.is_offline()]
+
+    def offline_switched():
+        """Offline mode stops what's already going online too, not only new connections: a stream playing,
+        episode downloads (they wait, and carry on afterwards) and the radio's song-title checks."""
+        if net.is_offline() == offline[0]:
+            return
+        offline[0] = net.is_offline()
+        if offline[0]:
+            podcasts.stopNetwork()
+            stations.stopNetwork()
+            path = str(player.current.get("path", "")) if player.hasTrack else ""
+            if path.startswith(("http://", "https://", "subsonic://", "jellyfin://")):  # a stream, not a file here
+                player.stop()
+        else:
+            podcasts.resumeNetwork()
+            stations.resumeNetwork()
+
+    shell.settingsChanged.connect(offline_switched)
+
     def apply_features():
         lyrics.setEnabled(shell.featureOn("lyrics"))
         stations.setEnabled(shell.featureOn("stations"))

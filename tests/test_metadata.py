@@ -675,3 +675,32 @@ def test_an_album_given_a_genre_since_the_lookup_keeps_yours(qapp, lib, monkeypa
         assert ed.trackInfo(str(root / "01.mp3"))["genre"] != "Dream Pop"
     finally:
         ed.shutdown()
+
+
+def test_lyrics_say_offline_mode_and_can_be_searched_again(qapp, lib, monkeypatch):
+    from hallucinate.core import lyrics, net
+
+    tmp, root = lib
+    answers = []
+    monkeypatch.setattr(lyrics, "fetch_lrclib", lambda *a, **k: answers.pop(0) if answers else None)
+    pl = FakePlayer()
+    ctl = LyricsController(tmp / "lib.db", pl)
+    try:
+        ctl.setOnlineLookup(True)
+        net.set_offline(True)
+        try:
+            pl.current = {"path": str(root / "02.mp3"), "artist": "Band", "title": "Two", "album": "Disc", "duration": 3}
+            pl.trackChanged.emit()
+            assert wait_for(lambda: ctl.status == "offlinemode")  # not "couldn't reach LRCLIB"
+        finally:
+            net.set_offline(False)
+        pl.trackChanged.emit()
+        assert wait_for(lambda: ctl.status == "none")  # LRCLIB has nothing: remembered for a month
+        answers.append(("", "words at last"))
+        pl.trackChanged.emit()
+        assert wait_for(lambda: ctl.status == "none") and answers  # not asked again
+        ctl.searchAgain()
+        assert wait_for(lambda: ctl.status == "found")
+        assert ctl.plain == "words at last" and not answers
+    finally:
+        ctl.shutdown()

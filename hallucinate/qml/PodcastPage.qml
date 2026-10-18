@@ -155,6 +155,13 @@ Item {
                             }
                             PillButton { text: "Check for new"; enabled: !podcasts.busy; onClicked: podcasts.refresh(page.podcastId) }
                             PillButton { text: "Mark all played"; enabled: (page.info.unplayed || 0) > 0; onClicked: podcasts.markAllPlayed(page.podcastId) }
+                            PillButton {
+                                objectName: "downloadUnplayed"
+                                text: "Download all unplayed"
+                                visible: !(page.info.folder || "").length  // a folder's episodes are on disk already
+                                enabled: (page.info.unplayed || 0) > 0
+                                onClicked: podcasts.downloadUnplayed(page.podcastId)
+                            }
                             PillButton { objectName: "showSettingsButton"; text: "Show settings"; onClicked: showSettings.open() }
                         PillButton { text: "Unfollow"; onClicked: unfollowDlg.open() }
                         }

@@ -8,6 +8,7 @@ import json
 import os
 import re
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -26,6 +27,7 @@ NS = {
 }
 FEED_LIMIT = 30 * 1024 * 1024
 EPISODE_LIMIT = 4 * 1024 ** 3  # a four-hour lossless episode is still well under this
+PERMANENT_REDIRECTS = (301, 308)  # a feed that moved for good; 302, 303 and 307 are only for now
 AUDIO_EXTENSIONS = (".mp3", ".m4a", ".m4b", ".aac", ".ogg", ".opus", ".oga", ".flac", ".wav", ".mp4")
 
 
@@ -171,20 +173,57 @@ def _web_only(url):
     return url if net.is_web_url(url) else ""
 
 
-def fetch_feed(url, timeout=20):
-    """(podcast, episodes, final url) for a feed link; a redirect's new address is returned so the
-    subscription follows it."""
+def _feed_link(url):
     url = url.strip()
     if not url.startswith(("http://", "https://")):
         if url.startswith("feed://") or url.startswith("pcast://"):
             url = "https://" + url.split("://", 1)[1]
         else:
             raise OSError("A feed link starts with http:// or https://")
-    with net.urlopen(_request(url), timeout=timeout, limit=FEED_LIMIT) as resp:
-        final = resp.geturl() if hasattr(resp, "geturl") else url
-        data = resp.read()
+    return url
+
+
+def permanent_url(url, hops):
+    """Where a feed lives now for good: its link followed through the redirects `hops` [(status, link)] only
+    as long as each one is permanent (301, 308). A temporary one may point somewhere else next time (or be a
+    login page or a CDN's), so from there on the link you followed is kept."""
+    for code, target in hops:
+        if code not in PERMANENT_REDIRECTS:
+            break
+        url = target
+    return url
+
+
+def fetch_feed(url, timeout=20):
+    """(podcast, episodes, url to keep) for a feed link; when the feed moved for good (a permanent redirect)
+    its new address is returned so the subscription follows it."""
+    got = fetch_feed_if_changed(url, timeout=timeout)
+    return got["podcast"], got["episodes"], got["url"]
+
+
+def fetch_feed_if_changed(url, etag="", modified="", timeout=20):
+    """{"podcast", "episodes", "url" (to keep), "etag", "modified"} for a feed link. `etag` and `modified` are
+    what the feed's server said last time (its ETag and Last-Modified): given them, a server that has nothing
+    new answers "not modified" without sending the feed again, and podcast and episodes are None."""
+    url = _feed_link(url)
+    request = _request(url)
+    if etag:
+        request.add_header("If-None-Match", etag)
+    if modified:
+        request.add_header("If-Modified-Since", modified)
+    try:
+        with net.urlopen(request, timeout=timeout, limit=FEED_LIMIT) as resp:
+            final = resp.geturl() if hasattr(resp, "geturl") else url
+            data = resp.read()
+            headers = resp.headers
+    except urllib.error.HTTPError as exc:
+        if exc.code != 304:
+            raise
+        return {"podcast": None, "episodes": None, "url": permanent_url(url, getattr(request, "redirects", [])),
+                "etag": etag, "modified": modified}
     podcast, episodes = parse_feed(data, final or url)
-    return podcast, episodes, final or url
+    return {"podcast": podcast, "episodes": episodes, "url": permanent_url(url, getattr(request, "redirects", [])),
+            "etag": (headers.get("ETag") or "")[:200], "modified": (headers.get("Last-Modified") or "")[:100]}
 
 
 # --- OPML ------------------------------------------------------------------------------------------------
@@ -333,40 +372,78 @@ def extension_for(url, mime):
             "audio/aac": ".aac", "audio/ogg": ".ogg", "audio/opus": ".opus", "video/mp4": ".mp4"}.get(mime, ".mp3")
 
 
-def download(url, target, progress=None, cancelled=None, timeout=30):
-    """Save `url` at `target` (through a .part file, so a broken download never looks finished).
-    `progress(done, total)` is called as it goes; `cancelled()` returning True stops it (raising
-    InterruptedError)."""
+def _resume_from(resp, have):
+    """Where a ranged answer carries on from: `have` when the server sent the rest (206 from that byte), else 0
+    (it sent the whole file again)."""
+    if have and getattr(resp, "status", 200) == 206:
+        match = re.match(r"\s*bytes\s+(\d+)-", resp.headers.get("Content-Range") or "")
+        if match and int(match.group(1)) == have:
+            return have
+        raise OSError("The server sent a different part of the episode than asked for")
+    return 0
+
+
+def download(url, target, progress=None, cancelled=None, timeout=30, paused=None):
+    """Save `url` at `target` (through a .part file, so a broken download never looks finished). A .part left
+    by a download that broke off carries on where it stopped (an HTTP Range request) when the server can; a
+    server that can't sends it all again. `progress(done, total)` is called as it goes; `cancelled()` returning
+    True stops it (raising InterruptedError, and the .part goes); `paused()` returning True stops it the same
+    way but keeps the .part, to carry on later."""
     target = Path(target)
     target.parent.mkdir(parents=True, exist_ok=True)
     part = target.with_name(target.name + ".part")
+    keep_part = True  # a download that broke off is carried on next time, from what the .part holds
     try:
-        with net.urlopen(_request(url), timeout=timeout, limit=EPISODE_LIMIT) as resp, open(part, "wb") as out:
+        have = part.stat().st_size if part.is_file() else 0
+        request = _request(url)
+        if have:
+            request.add_header("Range", f"bytes={have}-")
+        try:
+            resp = net.urlopen(request, timeout=timeout, limit=EPISODE_LIMIT)
+        except urllib.error.HTTPError as exc:
+            if not (have and exc.code == 416):
+                raise
+            part.unlink()  # what's kept doesn't fit what the server has now: start again
+            have, resp = 0, net.urlopen(_request(url), timeout=timeout, limit=EPISODE_LIMIT)
+        with resp:
+            try:
+                start = _resume_from(resp, have)
+            except OSError:
+                keep_part = False
+                raise
             try:
                 total = max(0, int(resp.headers.get("Content-Length") or 0))
+                total = total + start if total else 0
             except ValueError:  # a garbled header: download anyway, without a percentage
                 total = 0
-            done, last = 0, 0.0
-            while True:
-                if cancelled is not None and cancelled():
-                    raise InterruptedError("Download cancelled")
-                chunk = resp.read(256 * 1024)
-                if not chunk:
-                    break
-                out.write(chunk)
-                done += len(chunk)
-                now = time.monotonic()
-                if progress is not None and now - last > 0.25:
-                    last = now
-                    progress(done, total)
+            with open(part, "ab" if start else "wb") as out:
+                done, last = start, 0.0
+                while True:
+                    if cancelled is not None and cancelled():
+                        keep_part = False
+                        raise InterruptedError("Download cancelled")
+                    if paused is not None and paused():
+                        raise InterruptedError("Download paused")
+                    chunk = resp.read(256 * 1024)
+                    if not chunk:
+                        break
+                    out.write(chunk)
+                    done += len(chunk)
+                    now = time.monotonic()
+                    if progress is not None and now - last > 0.25:
+                        last = now
+                        progress(done, total)
         if total and done < total:
             raise OSError("The download stopped before the end")
         os.replace(part, target)
         if progress is not None:
             progress(done, total or done)
         return str(target)
+    except net.ResponseTooLarge:
+        keep_part = False
+        raise
     finally:
-        if part.exists():
+        if not keep_part and part.exists():
             try:
                 part.unlink()
             except OSError:

@@ -14,11 +14,21 @@ from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
 from . import __version__, keyringwait
 from .core import net
 from .core.kinds import counts_for_scrobbling, scrobble_fields
+from .scrobbling import REJECTED_KEPT, REPLAY_START_MS, heard_ms, listen_threshold
 
 DEFAULT_URL = "https://api.listenbrainz.org"
 KEYRING_SERVICE = "Hallucinate ListenBrainz"
 MAX_RETRY_SECONDS = 900
+MAX_BATCH = 100  # listens sent in one submit-listens ("import" for more than one)
 logger = logging.getLogger(__name__)
+
+
+class Rejected(PermissionError):
+    """ListenBrainz refused the request for good (HTTP 400, 401 or 403): sending it again won't help."""
+
+    def __init__(self, code, text):
+        super().__init__(text)
+        self.code = code
 
 
 def _words(exc):
@@ -43,7 +53,7 @@ def lb_request(base, path, token=None, payload=None, params=None):
             return json.loads(body) if body else {}
     except HTTPError as exc:
         if exc.code in (400, 401, 403):  # rejected for good, retrying won't help
-            raise PermissionError(f"ListenBrainz rejected the request ({exc.code})") from exc
+            raise Rejected(exc.code, f"ListenBrainz rejected the request ({exc.code})") from exc
         raise RuntimeError(f"Couldn't reach ListenBrainz: {_words(exc)}") from exc
     except (URLError, TimeoutError, OSError, ValueError) as exc:
         raise RuntimeError(f"Couldn't reach ListenBrainz: {_words(exc)}") from exc
@@ -140,8 +150,10 @@ class ListenBrainzScrobbler(QObject):
     busyChanged = Signal()
     importChanged = Signal()
     importFinished = Signal(int)  # new listens added
+    deliveryChanged = Signal()  # rejectedCount, rejected or lastError changed
     _jobFinished = Signal(str, object, str)
     _importDone = Signal(object, str)
+    _stored = Signal(str, object)  # a keyring write finished: (what went wrong or "", what to do next)
 
     def __init__(self, player, data_dir, userlib=None, parent=None):
         super().__init__(parent)
@@ -158,21 +170,32 @@ class ListenBrainzScrobbler(QObject):
         self._retry_delay = 5.0
         self._now_key = ""
         self._started = int(time.time())
+        # the listen being counted (the same rule as Last.fm's: see scrobbling.listen_threshold)
+        self._listen_key = None
+        self._listened_ms = 0
+        self._counted = False
+        self._last_tick = time.monotonic()
+        self._last_position = 0
         self._import_status = ""
         self._importing = False
         self._closing = False
         self._keyring_error = ""
+        self._rejected = []  # [{artist, track, reason}] ListenBrainz refused for good, newest last
+        self._rejected_count = 0
+        self._last_error = ""
+        self._single = False  # a batch was refused: send one at a time to find the listen at fault
         self._load_keyring()
         self._load_queue()
         self._jobFinished.connect(self._on_job_finished)
         self._importDone.connect(self._on_import_done)
+        self._stored.connect(self._on_stored)
         self._timer = QTimer(self)
-        self._timer.setInterval(2000)
+        self._timer.setInterval(1000)
         self._timer.timeout.connect(self._tick)
         self._timer.start()
         player.trackChanged.connect(self._on_track_changed)
-        player.stateChanged.connect(self._send_now_playing)
-        player.played.connect(self._on_played)
+        player.stateChanged.connect(self._on_state_changed)
+        player.seeked.connect(self._on_seeked)
 
     # --- state ---------------------------------------------------------------
     def _load_keyring(self):
@@ -249,6 +272,57 @@ class ListenBrainzScrobbler(QObject):
     def busy(self):
         return self._busy
 
+    @Property(int, notify=deliveryChanged)
+    def rejectedCount(self):
+        """Listens ListenBrainz refused for good (since the app started): they were dropped from the queue."""
+        return self._rejected_count
+
+    @Property("QVariantList", notify=deliveryChanged)
+    def rejected(self):
+        """The latest of those, newest last: [{artist, track, reason}]."""
+        return list(self._rejected)
+
+    @Property(str, notify=deliveryChanged)
+    def lastError(self):
+        """What went wrong with the last request ("" once one works again)."""
+        return self._last_error
+
+    def _set_last_error(self, text):
+        if text != self._last_error:
+            self._last_error = text
+            self.deliveryChanged.emit()
+
+    def _reject(self, item, reason):
+        meta = item.get("track_metadata") or {}
+        self._rejected.append({"artist": meta.get("artist_name", ""), "track": meta.get("track_name", ""),
+                               "reason": reason})
+        del self._rejected[:-REJECTED_KEPT]
+        self._rejected_count += 1
+        logger.info("ListenBrainz refused a listen (%s): dropped", reason)
+        self.deliveryChanged.emit()
+
+    @Slot()
+    def retryNow(self):
+        """Send what's waiting now instead of after the back-off."""
+        self._retry_at, self._retry_delay = 0.0, 5.0
+        self._send_now_playing()
+        self._flush()
+
+    def _store(self, fn, then=None):
+        """Keyring writes on a thread of their own (a locked keyring mustn't freeze the window); then(error)
+        follows on this thread once it's done."""
+        def run():
+            self._stored.emit(keyringwait.call(fn), then)
+
+        threading.Thread(target=run, name="listenbrainz-keyring", daemon=True).start()
+
+    @Slot(str, object)
+    def _on_stored(self, error, then):
+        if then is not None:
+            then(error)
+        elif error:
+            logger.warning("ListenBrainz system keyring couldn't be updated: %s", error)
+
     @Property(str, notify=importChanged)
     def importStatus(self):
         return self._import_status
@@ -276,18 +350,25 @@ class ListenBrainzScrobbler(QObject):
         if self._busy:
             self._set_status("Wait for the current ListenBrainz request to finish before disconnecting.")
             return
+        self._forget_token()
+        self._set_status("Disconnected from ListenBrainz. Pending listens are kept.")
+
+    def _forget_token(self):
+        """Sign out here at once, and take the token out of the keyring in the background."""
+        self._token = self._user = ""
+        self._now_key = ""
+        self.connectionChanged.emit()
+
         def forget():
             for k in ("token", "user"):
                 if keyring.get_password(KEYRING_SERVICE, k):
                     keyring.delete_password(KEYRING_SERVICE, k)
 
-        error = keyringwait.call(forget)
-        if error:
-            self._set_status(f"Could not remove the token from the keyring: {error}")
-            return
-        self._token = self._user = ""
-        self.connectionChanged.emit()
-        self._set_status("Disconnected from ListenBrainz. Pending listens are kept.")
+        def then(error):
+            if error:
+                self._set_status(f"{self._status} (the token couldn't be removed from the keyring: {error})")
+
+        self._store(forget, then)
 
     def _start(self, action, work, item=None):
         if self._busy or self._closing:
@@ -297,11 +378,9 @@ class ListenBrainzScrobbler(QObject):
 
         def run():
             try:
-                self._jobFinished.emit(action, (work(), item), "")
-            except PermissionError as exc:
-                self._jobFinished.emit(action, (None, item), "!" + str(exc))
+                self._jobFinished.emit(action, (work(), item, 0), "")
             except Exception as exc:  # noqa: BLE001
-                self._jobFinished.emit(action, (None, item), str(exc))
+                self._jobFinished.emit(action, (None, item, getattr(exc, "code", 0)), str(exc) or type(exc).__name__)
 
         threading.Thread(target=run, name=f"listenbrainz-{action}", daemon=True).start()
         return True
@@ -309,36 +388,67 @@ class ListenBrainzScrobbler(QObject):
     def _on_job_finished(self, action, payload, error):
         self._busy = False
         self.busyChanged.emit()
-        result, item = payload
+        result, item, code = payload
         if error:
-            self._set_status(error.lstrip("!"))
+            self._set_status(error)
+            if action == "validate":
+                return
+            self._set_last_error(error)
+            if code in (401, 403):
+                # the token was revoked or changed: asking again won't help
+                self._forget_token()
+                self._set_status("ListenBrainz no longer accepts this token: connect ListenBrainz again. "
+                                 "Pending listens are kept.")
+                return
+            if code == 400 and action == "submit":
+                if len(item) > 1:
+                    self._single = True  # one of them is at fault: find it by sending them one at a time
+                elif self._pending and self._pending[0] == item[0]:
+                    self._pending.pop(0)
+                    self._save_queue()
+                    self.pendingCountChanged.emit()
+                    self._reject(item[0], error)
+                    self._single = False
+                self._flush()
+                return
             if action == "now":
+                if code == 400:
+                    return  # this one won't ever be accepted; the next track's may
                 self._now_key = ""
-            if action != "validate":
-                self._retry_delay = min(self._retry_delay * 2, MAX_RETRY_SECONDS)
-                self._retry_at = time.monotonic() + self._retry_delay
+            self._retry_delay = min(self._retry_delay * 2, MAX_RETRY_SECONDS)
+            self._retry_at = time.monotonic() + self._retry_delay
             return
         self._retry_delay, self._retry_at = 5.0, 0.0
+        if action != "validate":
+            self._set_last_error("")
         if action == "validate":
             if not result.get("valid"):
                 self._set_status("ListenBrainz says that token is not valid.")
                 return
-            error = keyringwait.call(lambda: (keyring.set_password(KEYRING_SERVICE, "token", item),
-                                              keyring.set_password(KEYRING_SERVICE, "user", result.get("user_name", ""))))
-            if error:
-                self._set_status(f"Could not store the token securely: {error}")
-                return
-            self._token, self._user = item, result.get("user_name", "")
-            self.connectionChanged.emit()
-            self._set_status(f"Connected to ListenBrainz as {self._user}.")
-            self._send_now_playing()
-            self._flush()
+            user = result.get("user_name", "")
+
+            def then(error):
+                if error:
+                    self._set_status(f"Could not store the token securely: {error}")
+                    return
+                self._token, self._user = item, user
+                self.connectionChanged.emit()
+                self._set_status(f"Connected to ListenBrainz as {self._user}.")
+                self._send_now_playing()
+                self._flush()
+
+            self._set_status("Saving the token…")
+            self._store(lambda: (keyring.set_password(KEYRING_SERVICE, "token", item),
+                                 keyring.set_password(KEYRING_SERVICE, "user", user)), then)
         elif action == "submit":
-            if self._pending and self._pending[0] == item:
-                self._pending.pop(0)
+            if self._pending[:len(item)] == item:
+                del self._pending[:len(item)]
                 self._save_queue()
                 self.pendingCountChanged.emit()
-            self._set_status("Listen submitted to ListenBrainz.")
+            if not self._pending:
+                self._single = False
+            self._set_status("Listen submitted to ListenBrainz." if len(item) == 1
+                             else f"{len(item)} listens submitted to ListenBrainz.")
             self._flush()
         elif action == "now":
             self._set_status("ListenBrainz now-playing updated.")
@@ -346,9 +456,59 @@ class ListenBrainzScrobbler(QObject):
 
     # --- scrobbling ------------------------------------------------------------
     def _on_track_changed(self):
+        track = dict(self.player.current or {})
+        key = self._key(track)
+        if key != self._listen_key:
+            self._listen_key = key
+            self._new_listen()
+        else:
+            self._maybe_replay(self.player.position)  # the same song loaded again (repeat one)
+        self._send_now_playing()
+
+    @staticmethod
+    def _key(track):
+        return "\x1f".join(str(track.get(k, "")) for k in ("path", "title", "artist", "album"))
+
+    def _new_listen(self):
+        """Start counting a listen afresh: a new song, or the same one heard again."""
         self._started = int(time.time())
         self._now_key = ""
+        self._listened_ms = 0
+        self._counted = False
+        self._last_tick = time.monotonic()
+        self._last_position = self.player.position
+
+    def _maybe_replay(self, position):
+        """Back at the start of a song that already counted (repeat one, or played again from the top)."""
+        if self._counted and position < REPLAY_START_MS:
+            self._new_listen()
+
+    def _on_state_changed(self):
+        self._last_tick = time.monotonic()
+        self._last_position = self.player.position
         self._send_now_playing()
+
+    def _on_seeked(self, position):
+        self._maybe_replay(position)
+        self._last_tick = time.monotonic()
+        self._last_position = position
+
+    def _count(self):
+        """Add the listening time since the last tick, and queue the listen once enough of it is heard."""
+        now, position = time.monotonic(), self.player.position
+        track = dict(self.player.current or {})
+        if self._key(track) != self._listen_key:
+            self._on_track_changed()
+        elif self.player.playing and track:
+            if position < REPLAY_START_MS <= self._last_position:
+                self._maybe_replay(position)  # it went back to the start by itself (a gapless repeat)
+            self._listened_ms += heard_ms(now - self._last_tick, position - self._last_position)
+            duration = int(self.player.duration or float(track.get("duration", 0) or 0) * 1000)
+            threshold = listen_threshold(track, duration)
+            if not self._counted and threshold and self._listened_ms >= threshold:
+                self._counted = True
+                self._queue_listen(track, self._started)
+        self._last_tick, self._last_position = now, position
 
     def _send_now_playing(self):
         track = dict(self.player.current or {})
@@ -368,17 +528,18 @@ class ListenBrainzScrobbler(QObject):
         self._start("now", lambda: lb_request(base, "/1/submit-listens", token, payload))
 
     def _tick(self):
+        self._count()
         self._send_now_playing()
         self._flush()
 
-    def _on_played(self, track):
+    def _queue_listen(self, track, listened_at):
         if not counts_for_scrobbling(dict(track)):
             return
         try:
             meta = track_metadata(dict(track))
         except ValueError:
             return
-        self._pending.append({"listened_at": self._started, "track_metadata": meta})
+        self._pending.append({"listened_at": int(listened_at), "track_metadata": meta})
         self._save_queue()
         self.pendingCountChanged.emit()
         self._flush()
@@ -387,8 +548,8 @@ class ListenBrainzScrobbler(QObject):
         if (not self.connected or self._busy or not self._pending or net.is_offline()
                 or time.monotonic() < self._retry_at):
             return
-        item = dict(self._pending[0])
-        payload = {"listen_type": "single", "payload": [item]}
+        batch = [dict(item) for item in self._pending[:1 if self._single else MAX_BATCH]]
+        payload = {"listen_type": "single" if len(batch) == 1 else "import", "payload": batch}
         base, token = self._base, self._token
 
         def submit():
@@ -397,7 +558,7 @@ class ListenBrainzScrobbler(QObject):
                 raise RuntimeError(f"ListenBrainz did not accept the queued listen: {result.get('status', 'invalid response')}")
             return result
 
-        self._start("submit", submit, item=self._pending[0])
+        self._start("submit", submit, item=batch)
 
     # --- history import ----------------------------------------------------------
     @Slot(str, str)

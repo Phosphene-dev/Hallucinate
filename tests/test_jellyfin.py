@@ -16,6 +16,7 @@ TOKEN = "abc123token"
 class FakeJellyfin:
     def __init__(self, songs=(), password="secret"):
         self.songs, self.password, self.seen, self.logged_out = list(songs), password, [], False
+        self.revoked = False  # the server took the token back
         fake = self
 
         class Handler(http.server.BaseHTTPRequestHandler):
@@ -30,7 +31,7 @@ class FakeJellyfin:
                 self.wfile.write(data)
 
             def _authed(self):
-                return f'Token="{TOKEN}"' in (self.headers.get("Authorization") or "")
+                return not fake.revoked and f'Token="{TOKEN}"' in (self.headers.get("Authorization") or "")
 
             def do_POST(self):
                 url = urllib.parse.urlsplit(self.path)
@@ -40,6 +41,7 @@ class FakeJellyfin:
                 if url.path == "/Users/AuthenticateByName":
                     if body.get("Pw") != fake.password:
                         return self._send(401, {})
+                    fake.revoked = False
                     return self._send(200, {"AccessToken": TOKEN, "User": {"Id": "u1"}})
                 if not self._authed():
                     return self._send(401, {})
@@ -145,3 +147,20 @@ def test_a_jellyfin_server_keeps_only_its_token(service, server, tmp_path):
     service.removeServer(entry["id"])
     assert wait_for(lambda: server.logged_out and not _rows(tmp_path), timeout=10)  # revoked, songs gone
     assert ("Hallucinate Music servers", entry["id"]) not in service.keyring.kept
+
+
+def test_a_revoked_jellyfin_token_asks_you_to_sign_in_again(service, server):
+    from conftest import wait_for
+
+    service.setEnabled(True)
+    service.addServer(server.base, "me", "secret", "Jelly", "jellyfin")
+    assert wait_for(lambda: service.servers and service.servers[0]["songs"] == 650, timeout=30)
+    sid = service.servers[0]["id"]
+    server.revoked = True
+    service.sync(sid)
+    assert wait_for(lambda: not service.servers[0]["busy"], timeout=10)
+    assert service.servers[0]["status"] == "error" and service.servers[0]["needsSignIn"]
+    assert not service._retry.isActive()
+    service.signInAgain(sid, "secret")
+    assert wait_for(lambda: service.servers[0]["status"] == "ok" and not service.servers[0]["busy"], timeout=30)
+    assert json.loads(service.keyring.kept[("Hallucinate Music servers", sid)])["token"] == TOKEN

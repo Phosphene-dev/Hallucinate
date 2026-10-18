@@ -29,18 +29,32 @@ Rectangle {
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSize(11)
     }
-    Text {
-        textFormat: Text.PlainText
+    Column {
         anchors.centerIn: parent
         width: parent.width - 48
+        spacing: 12
         visible: lyricsCtl.status !== "found"
-        horizontalAlignment: Text.AlignHCenter
-        wrapMode: Text.WordWrap
-        text: ({ idle: "Nothing playing", loading: "Looking for lyrics…", none: "No lyrics found for this track",
-                 offline: "Couldn’t reach LRCLIB — check your connection" })[lyricsCtl.status] || ""
-        color: Theme.textDim
-        font.family: Theme.fontFamily
-        font.pixelSize: Theme.fontSize(14)
+        Text {
+            textFormat: Text.PlainText
+            width: parent.width
+            horizontalAlignment: Text.AlignHCenter
+            wrapMode: Text.WordWrap
+            text: ({ idle: "Nothing playing", loading: "Looking for lyrics…", none: "No lyrics found for this track",
+                     offline: "Couldn’t reach LRCLIB — check your connection",
+                     offlinemode: "Offline mode is on, so lyrics can’t be looked up" })[lyricsCtl.status] || ""
+            color: Theme.textDim
+            font.family: Theme.fontFamily
+            font.pixelSize: Theme.fontSize(14)
+        }
+        PillButton {
+            objectName: "lyricsSearchAgain"
+            anchors.horizontalCenter: parent.horizontalCenter
+            height: 32
+            // LRCLIB had nothing last time (or couldn't be reached): look again now, not in a month
+            visible: lyricsCtl.onlineLookup && (lyricsCtl.status === "none" || lyricsCtl.status === "offline")
+            text: "Search again"
+            onClicked: lyricsCtl.searchAgain()
+        }
     }
 
     LyricsTiming {
@@ -76,7 +90,7 @@ Rectangle {
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize(index === lyricsCtl.currentLine ? 17 : 15)
             font.weight: index === lyricsCtl.currentLine ? Font.DemiBold : Font.Normal
-            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: player.seek(modelData.t) }
+            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: player.seek(Math.max(0, modelData.t - lyricsCtl.offset)) }
         }
     }
     Flickable {

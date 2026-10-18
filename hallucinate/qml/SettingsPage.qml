@@ -873,7 +873,7 @@ Item {
                     spacing: 12
                     width: parent ? parent.width : 0
                     Column {
-                        width: serverRow.width - syncButton.width - removeButton.width - 24
+                        width: serverRow.width - syncButton.width - removeButton.width - (signInButton.visible ? signInButton.width + 12 : 0) - 24
                         anchors.verticalCenter: parent.verticalCenter
                         Text {
                             textFormat: Text.PlainText
@@ -899,6 +899,16 @@ Item {
                         }
                     }
                     PillButton {
+                        id: signInButton
+                        objectName: "signInAgain"
+                        visible: serverRow.modelData.needsSignIn === true
+                        anchors.verticalCenter: parent.verticalCenter
+                        height: 32
+                        primary: true
+                        text: "Sign in again…"
+                        onClicked: { signInDlg.serverId = serverRow.modelData.id; signInDlg.what = serverRow.modelData.name; signInDlg.open() }
+                    }
+                    PillButton {
                         id: syncButton
                         anchors.verticalCenter: parent.verticalCenter
                         height: 32
@@ -920,6 +930,43 @@ Item {
                 primary: true
                 text: "Add a server…"
                 onClicked: addServerDlg.open()
+            }
+            Dialog {
+                id: signInDlg
+                objectName: "signInDialog"
+                property string serverId: ""
+                property string what: ""
+                parent: Overlay.overlay
+                anchors.centerIn: parent
+                modal: true
+                width: Math.min(420, (parent ? parent.width : 420) - 40)
+                title: "Sign in to " + what + " again"
+                standardButtons: Dialog.Ok | Dialog.Cancel
+                onAboutToShow: newPassword.text = ""
+                onAccepted: servers.signInAgain(serverId, newPassword.text)
+                Column {
+                    width: signInDlg.availableWidth
+                    spacing: 10
+                    Text {
+                        textFormat: Text.PlainText
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: "The server turned down the saved sign-in. Enter the password again: your playlists, plays and ratings for its songs stay as they are."
+                        color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                    }
+                    TextField {
+                        id: newPassword
+                        width: parent.width
+                        echoMode: TextInput.Password
+                        placeholderText: "Password"
+                        placeholderTextColor: Theme.textDim
+                        color: Theme.text
+                        font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
+                        background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: newPassword.activeFocus ? Theme.accent : Theme.border }
+                        onAccepted: signInDlg.accept()
+                        Accessible.name: "Password"
+                    }
+                }
             }
             ConfirmDialog {
                 id: removeServerDlg
@@ -1211,11 +1258,20 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
-                text: scrobbler.status + (scrobbler.pendingCount > 0 ? " · " + scrobbler.pendingCount + " queued scrobbles" : "")
+                text: scrobbler.status + (scrobbler.pendingCount > 0 ? " · " + scrobbler.pendingCount + " waiting to be sent" : "")
+                      + (scrobbler.rejectedCount > 0 ? " · " + scrobbler.rejectedCount + " turned down by Last.fm" : "")
+                      + (scrobbler.lastError ? " · last try: " + scrobbler.lastError : "")
                 color: scrobbler.connected ? Theme.accent : Theme.textDim
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(13)
                 wrapMode: Text.WordWrap
+            }
+            PillButton {
+                objectName: "scrobblerRetryNow"
+                visible: scrobbler.pendingCount > 0 && scrobbler.connected && !shell.offlineMode
+                height: 32
+                text: "Send now"
+                onClicked: scrobbler.retryNow()
             }
             StyledCheck {
                 objectName: "syncLoves"
@@ -1274,9 +1330,18 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
-                text: listenbrainz.status + (listenbrainz.pendingCount > 0 ? " · " + listenbrainz.pendingCount + " queued listens" : "")
+                text: listenbrainz.status + (listenbrainz.pendingCount > 0 ? " · " + listenbrainz.pendingCount + " waiting to be sent" : "")
+                      + (listenbrainz.rejectedCount > 0 ? " · " + listenbrainz.rejectedCount + " turned down by ListenBrainz" : "")
+                      + (listenbrainz.lastError ? " · last try: " + listenbrainz.lastError : "")
                 color: listenbrainz.connected ? Theme.accent : Theme.textDim
                 font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); wrapMode: Text.WordWrap
+            }
+            PillButton {
+                objectName: "listenbrainzRetryNow"
+                visible: listenbrainz.pendingCount > 0 && listenbrainz.connected && !shell.offlineMode
+                height: 32
+                text: "Send now"
+                onClicked: listenbrainz.retryNow()
             }
             StyledCheck {
                 objectName: "scrobbleStations"

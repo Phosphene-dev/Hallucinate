@@ -19,6 +19,10 @@ class JellyfinError(OSError):
     """The server answered but said no, in words people can read."""
 
 
+class JellyfinAuthError(JellyfinError):
+    """The server refused the sign-in (HTTP 401): a wrong password, or a token it revoked."""
+
+
 def _ascii(value):
     """Safe inside the Authorization header's quoted values."""
     return "".join(c for c in str(value) if c.isalnum() or c in " .-_")[:64]
@@ -108,7 +112,7 @@ class Server:
                 raw = resp.read()
         except urllib.error.HTTPError as exc:
             if exc.code == 401:
-                raise JellyfinError("the user name or password is wrong, or the sign-in was revoked") from exc
+                raise JellyfinAuthError("the user name or password is wrong, or the sign-in was revoked") from exc
             raise
         if not raw.strip():
             return {}

@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 OP_HANDSHAKE, OP_FRAME, OP_CLOSE = 0, 1, 2
 FALLBACK_ASSET = "hallucinate"  # name of the app-icon asset uploaded to the Discord application
 RECONNECT_SECONDS = 15
+FAILED_COVER_TTL_S = 3600  # a cover lookup that failed isn't tried again for this long
 
 
 def env_app_id():
@@ -177,6 +178,7 @@ class _Worker(threading.Thread):
         self._candidates = candidates
         self._reconnect = reconnect
         self._covers = {}
+        self._failed_covers = {}  # (artist, album) -> when its lookup failed
 
     def submit(self, want):
         with self._cv:
@@ -191,11 +193,15 @@ class _Worker(threading.Thread):
     def _cover(self, query):
         if not query or net.is_offline():  # a cover link would have Discord fetch it from the internet
             return None
+        failed = self._failed_covers.get(query)
+        if failed is not None and time.monotonic() - failed < FAILED_COVER_TTL_S:
+            return None  # it failed a moment ago: not asked again on every song change or pause
         if query not in self._covers:
             try:
                 ids = artfetch.find_release_ids(*query, limit=3)
                 self._covers[query] = f"https://coverartarchive.org/release/{ids[0]}/front-250" if ids else None
             except Exception:  # noqa: BLE001 - lookup is best effort
+                self._failed_covers[query] = time.monotonic()
                 return None
         return self._covers[query]
 
