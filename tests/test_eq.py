@@ -32,15 +32,27 @@ def gains_with(band, db):
 def test_band_boost_and_cut(freq, band):
     x = sine(freq)
     base = level(x)
+    # A boost is made by turning everything else down (see design_fir), so it's measured against a band
+    # far away from it: +9 dB is 2.8x louder than that.
+    far = sine(16000 if freq < 4000 else 62)
     boosted = level(run(gains_with(band, 9), x)) / base
+    rest = level(run(gains_with(band, 9), far)) / level(far)
     cut = level(run(gains_with(band, -9), x)) / base
-    assert 2.4 < boosted < 3.4  # +9 dB = 2.8x
-    assert 0.25 < cut < 0.45  # -9 dB = 0.355x
+    assert 0.85 < boosted <= 1.02  # the boosted band itself never goes past where it was
+    assert 2.4 < boosted / rest < 3.4  # +9 dB = 2.8x
+    assert 0.25 < cut < 0.45  # -9 dB = 0.355x (a cut needs no making room)
+
+
+def test_boost_cannot_clip():
+    x = sine(62) * 5  # a full-scale bass tone (0.2 * 5 = 1.0 peak)
+    out = run(gains_with(1, 12), x)
+    assert float(np.abs(out[RATE // 4:-RATE // 4]).max()) <= 1.02
 
 
 def test_other_bands_unaffected_and_flat_is_transparent():
     x = sine(1000)
-    assert level(run(gains_with(0, 12), x)) / level(x) == pytest.approx(1.0, abs=0.08)
+    lowered = 10 ** (-12 / 20)  # what a +12 dB band boost turns the rest down by
+    assert level(run(gains_with(0, 12), x)) / level(x) == pytest.approx(lowered, rel=0.1)
     assert level(run([0.0] * 10, x)) / level(x) == pytest.approx(1.0, abs=0.03)
 
 
@@ -131,3 +143,38 @@ def test_equalizer_settings_follow_the_output_device(qapp, tmp_path, monkeypatch
         p.setEqPerDevice(False)
     finally:
         p.shutdown()
+
+
+def test_failed_tap_falls_back_to_the_direct_output_and_tries_again(qapp):
+    # A tap whose sound device won't open plays nothing: the player then plays the sound directly (its own
+    # output is otherwise kept muted for the tap) and says why, and a new source or seek tries the tap again.
+    from PySide6.QtCore import QByteArray
+    from PySide6.QtMultimedia import QAudioBuffer, QAudioFormat
+
+    from hallucinate.player import Player
+
+    player = Player(session_file=None)
+    try:
+        player.setVolume(0.5)
+        player.setCrossfeed("light")
+        voice = player._voices[0]
+        tap = voice.tap
+        assert tap is not None and voice.audio.volume() == 0.0
+
+        def broken(rate, channels):
+            raise RuntimeError("no usable audio output device")
+
+        tap._open = broken
+        fmt = QAudioFormat()
+        fmt.setSampleRate(44100)
+        fmt.setChannelCount(2)
+        fmt.setSampleFormat(QAudioFormat.SampleFormat.Int16)
+        tap._on_buffer(QAudioBuffer(QByteArray(bytes(4096)), fmt))
+        assert tap.failed
+        assert voice.audio.volume() > 0  # heard directly meanwhile
+        assert "equalizer" in player.error.lower()
+        tap.reset()  # a seek or a new source: try the tap again
+        assert not tap.failed and voice.audio.volume() == 0.0 and player.error == ""
+    finally:
+        player.setCrossfeed("off")
+        player.shutdown()

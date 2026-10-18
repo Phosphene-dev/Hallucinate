@@ -26,6 +26,13 @@ Menu {
         icon.name: "history"
         title: "Sleep timer" + (player.sleepRemaining >= 0 ? " (" + Math.ceil(player.sleepRemaining / 60) + " min)" : player.sleepAfterTrack ? " (end of track)" : "")
         MenuItem { text: "Off"; onTriggered: player.setSleepMinutes(0) }
+        MenuItem {
+            objectName: "sleepMore"
+            visible: player.sleepRemaining >= 0  // a timer is running: give it longer without starting over
+            height: visible ? implicitHeight : 0
+            text: "+15 minutes"
+            onTriggered: player.addSleepMinutes(15)
+        }
         Repeater {
             model: [5, 10, 15, 30, 45, 60, 90]
             MenuItem {

@@ -329,6 +329,8 @@ class Player(QObject):
     speedChanged = Signal()
     sleepChanged = Signal()
     eqChanged = Signal()
+    canSeekChanged = Signal()  # the track or its length changed (a length only known once it has loaded)
+    upcomingChanged = Signal()
     showSpeedChanged = Signal(int, float)  # a podcast show's own speed was changed while one of its episodes played
     _host_looked_up = Signal(object)
     _file_checked = Signal(object)
@@ -374,6 +376,11 @@ class Player(QObject):
         for changed in (self.trackChanged, self.volumeChanged, self.audioSettingsChanged, self.speedChanged,
                         self.eqChanged, self.outputDevicesChanged):
             changed.connect(self.signalPathChanged)
+        self.trackChanged.connect(self.canSeekChanged)
+        self._upcoming_s = None
+        for changed in (self.queueChanged, self.trackChanged, self.shuffleChanged):
+            changed.connect(self._on_upcoming_changed)
+        self.durationChanged.connect(self.canSeekChanged)
 
         self._settings = QSettings("hallucinate", "hallucinate")
         self._show_track_info = str(self._settings.value("display/showTrackInfo", "false")).lower() == "true"
@@ -495,12 +502,23 @@ class Player(QObject):
         self.trackChanged.connect(self._save_timer.start)
         self.shuffleChanged.connect(self._save_timer.start)
         self.repeatChanged.connect(self._save_timer.start)
+        # The queue is only written again when it changed; while a song plays, just its position is (in a small
+        # file of its own), so a long queue isn't rewritten every few seconds.
+        self._session_dirty = True
+        self._session_token = ""
+        for changed in (self.queueChanged, self.trackChanged, self.shuffleChanged, self.repeatChanged):
+            changed.connect(self._mark_session_dirty)
+        self._unmuted_volume = self._float_setting("volumeBeforeMute", 0.0, 0.0, 1.0)
         self._last_saved_pos = 0
         self._listened = 0
         self._last_pos = 0
         self._play_counted = False
         self._transitioning = False
         self._ended = False
+
+    @Slot()
+    def _mark_session_dirty(self):
+        self._session_dirty = True
 
     def _float_setting(self, key, default, lo, hi):
         try:
@@ -648,6 +666,16 @@ class Player(QObject):
         else:
             self._sleep_left = -1
             self._sleep_timer.stop()
+        self.sleepChanged.emit()
+
+    @Slot(int)
+    def addSleepMinutes(self, minutes):
+        """Give a running sleep timer `minutes` more (and undo any fade-out it had started)."""
+        if self._sleep_left < 0 or minutes <= 0:
+            return
+        self._sleep_left += minutes * 60
+        self._sleep_gain = min(1.0, self._sleep_left / 15)
+        self._apply_volume()
         self.sleepChanged.emit()
 
     @Slot(bool)
@@ -1040,6 +1068,7 @@ class Player(QObject):
         for n, voice in enumerate(self._voices):
             if self._dsp_on() and voice.tap is None:
                 tap = eq.EqTap(eq.EqProcessor(), self)
+                tap.failedChanged.connect(self._on_tap_failed)
                 self._configure_processor(tap.processor)
                 tap.setDevice(self._output_audio_device())
                 voice.tap = tap
@@ -1204,11 +1233,21 @@ class Player(QObject):
         for voice in self._voices:
             gain = replaygain_factor(self._voice_track(voice), self._rg_mode, self._rg_preamp)
             level = min(1.0, self._volume ** 2 * gain * voice.fade * self._sleep_gain)
-            if voice.tap is not None:
+            if voice.tap is not None and not voice.tap.failed:
                 voice.audio.setVolume(0.0)  # still paces the decoder; the tap's sink plays the sound
                 voice.tap.setVolume(level)
             else:
                 voice.audio.setVolume(level)
+
+    @Slot(str)
+    def _on_tap_failed(self, reason):
+        """An equalizer tap gave up (its sound device wouldn't open) or is trying again: play the sound
+        directly meanwhile, rather than through a tap that plays nothing."""
+        self._apply_volume()
+        if reason:
+            self._set_error(f"The equalizer couldn't play ({reason}); playing without it")
+        elif self._error.startswith("The equalizer couldn't play"):
+            self._set_error("")
 
     def _start_fade(self, ms):
         self._fading = True
@@ -1331,23 +1370,31 @@ class Player(QObject):
     def canPause(self):
         return self.hasTrack
 
-    @Property(bool, notify=trackChanged)
+    @Property(bool, notify=canSeekChanged)
     def canSeek(self):
-        return self.hasTrack and self.duration > 0
+        return self.hasTrack and self.duration > 0 and track_kind(self.current) != "station"
 
     @property
     def queue(self):
         return list(self._queue)
 
     # --- transport ---------------------------------------------------------
-    @Slot()
-    def play(self):
+    def _apply_pending_outputs(self):
         if self._outputs_changed:  # the sound devices changed while nothing played
             self._outputs_changed = False
             self._reapply_outputs()
+
+    @Slot()
+    def play(self):
+        self._apply_pending_outputs()
         if self.hasTrack and self._parked:
             self._load(self._index, record=False)  # a stream that was only shown: connect to it now
             return
+        if self.hasTrack and self._ended:
+            nxt = self._compute_next(auto=True)
+            if nxt is not None and nxt != self._index:
+                self._load(nxt)  # songs were added after the queue ran out: carry on with them
+                return
         if self.hasTrack:
             if self._ended or self._player.mediaStatus() == QMediaPlayer.MediaStatus.EndOfMedia:
                 if self._voice.tap is not None:
@@ -1380,7 +1427,15 @@ class Player(QObject):
             return
         self._ended = False
         self._end_fade()
-        self._player.stop()
+        if self._voice.start > 0:
+            # A CUE sheet song starts part-way into the album's file: stopping the player would go back to
+            # the top of the file (the album's first song), so hold at this song's start instead.
+            self._player.pause()
+            if self._voice.tap is not None:
+                self._voice.tap.reset()
+            self._voice.set_position(0)
+        else:
+            self._player.stop()
         self.stateChanged.emit()
         self.saveSession()
 
@@ -1393,6 +1448,8 @@ class Player(QObject):
 
     @Slot(int)
     def seek(self, ms):
+        if not self.canSeek:
+            return  # nothing loaded, or live radio (no length): there's nowhere to seek to
         dur = self.duration
         ms = max(0, int(ms))
         if dur > 0:
@@ -1423,6 +1480,20 @@ class Player(QObject):
     @Slot(float)
     def changeVolume(self, delta):
         self.setVolume(self._volume + delta)
+
+    @Property(bool, notify=volumeChanged)
+    def muted(self):
+        return self._volume <= 0
+
+    @Slot()
+    def toggleMute(self):
+        """Mute, remembering the volume; unmuting brings it back (or a sensible level if there's none)."""
+        if self._volume > 0:
+            self._unmuted_volume = self._volume
+            self._settings.setValue("volumeBeforeMute", self._volume)
+            self.setVolume(0.0)
+        else:
+            self.setVolume(self._unmuted_volume if self._unmuted_volume > 0 else 0.8)
 
     @Slot()
     def toggleShuffle(self):
@@ -1506,10 +1577,12 @@ class Player(QObject):
     @Slot("QVariantMap")
     def playNext(self, track):
         self._queue.insert(self._index + 1, dict(track))
-        self._shift_indexes_after(self._index + 1, +1)
+        self._shift_indexes_after(self._index + 1, +1)  # (this forgets the shuffle's next pick)
         self._sync_queue()
         if not self.hasTrack:
             self._load(0, autoplay=False)
+        elif self._shuffle:
+            self._next_pick = self._index + 1  # "play next" means next, shuffle or not
 
     @Slot("QVariantList")
     def enqueueAll(self, tracks):
@@ -1537,8 +1610,14 @@ class Player(QObject):
         if i == self._index:
             was_playing = self.playing
             self._player.stop()
-            if self._queue:
-                self._load(min(i, len(self._queue) - 1), autoplay=was_playing, record=False)
+            if i < len(self._queue):
+                self._load(i, autoplay=was_playing, record=False)  # the song after it takes its place
+            elif self._queue and self._repeat == REPEAT_ALL:
+                self._load(0, autoplay=was_playing, record=False)  # it was the last: round to the first
+            elif self._queue:
+                # It was the last song: the queue is over. Show the one before it, stopped, rather than
+                # playing it again.
+                self._load(len(self._queue) - 1, autoplay=False, record=False)
             else:
                 self._reset_empty()
         elif i < self._index:
@@ -1587,6 +1666,60 @@ class Player(QObject):
         self._sync_queue()
         self._reset_empty()
 
+    def _upcoming(self):
+        """Queue indexes still to come after the current song: those after it, or with shuffle on, those
+        not played yet."""
+        if not self.hasTrack:
+            return []
+        if self._shuffle:
+            return [i for i in range(len(self._queue)) if i != self._index and i not in self._played]
+        return list(range(self._index + 1, len(self._queue)))
+
+    @Slot()
+    def clearUpcoming(self):
+        """Take out every song still to come, keeping the one playing (and what was played before it)."""
+        gone = set(self._upcoming())
+        if not gone:
+            return
+        self._remember_queue("Upcoming songs cleared")
+        keep = [i for i in range(len(self._queue)) if i not in gone]
+        new_index = {old: new for new, old in enumerate(keep)}
+        self._queue = [self._queue[i] for i in keep]
+        self._index = new_index[self._index]
+        self._voice.index = self._index
+        self._history = [new_index[h] for h in self._history if h in new_index]
+        self._played = {new_index[p] for p in self._played if p in new_index}
+        self._drop_standby()
+        self._invalidate_next()
+        self._sync_queue()
+        self.trackChanged.emit()
+
+    def _upcoming_totals(self):
+        if self._upcoming_s is None:
+            upcoming, total = self._upcoming(), 0.0
+            for i in upcoming:
+                try:
+                    total += float(self._queue[i].get("duration") or 0)
+                except (TypeError, ValueError):
+                    pass
+            self._upcoming_s = (len(upcoming), int(total))
+        return self._upcoming_s
+
+    @Property(int, notify=upcomingChanged)
+    def upcomingCount(self):
+        """How many songs are still to come after the current one."""
+        return self._upcoming_totals()[0]
+
+    @Property(int, notify=upcomingChanged)
+    def upcomingSeconds(self):
+        """How long the songs still to come after the current one last, in seconds (as far as known)."""
+        return self._upcoming_totals()[1]
+
+    @Slot()
+    def _on_upcoming_changed(self):
+        self._upcoming_s = None  # worked out again when next asked
+        self.upcomingChanged.emit()
+
     # --- undo ----------------------------------------------------------------
     def _remember_queue(self, label):
         """Keep the queue as it is now, so the change about to happen can be undone."""
@@ -1629,13 +1762,8 @@ class Player(QObject):
             self._index = self._voice.index = snap["index"]
             self.trackChanged.emit()
         elif target is not None:
-            self._load(snap["index"], autoplay=snap["playing"] or self.playing, record=False)  # keep the music going
-            if snap["position"] > 0:
-                self._restore_pos = snap["position"]
-                if self._player.mediaStatus() in (QMediaPlayer.MediaStatus.LoadedMedia,
-                                                  QMediaPlayer.MediaStatus.BufferedMedia):
-                    self._voice.set_position(snap["position"])
-                    self._restore_pos = 0
+            self._load(snap["index"], autoplay=snap["playing"] or self.playing, record=False,  # keep the music going
+                       start_ms=snap["position"])
         else:
             self._reset_empty()
         self.undoChanged.emit()
@@ -1702,7 +1830,9 @@ class Player(QObject):
             return None if (self._repeat == REPEAT_OFF and auto) else 0
         return nxt
 
-    def _load(self, i, autoplay=True, record=True, fade_ms=0, drain=False):
+    def _load(self, i, autoplay=True, record=True, fade_ms=0, drain=False, start_ms=0):
+        """Make queue entry `i` the current one, playing it unless not `autoplay`; `start_ms` is where in it to
+        start (a restored session's place), kept until it has loaded however long its file takes to answer."""
         if not 0 <= i < len(self._queue):
             return
         if record and self.hasTrack and i != self._index:
@@ -1730,7 +1860,7 @@ class Player(QObject):
         if track_kind(track) == "station" and track.get("station"):
             track.update(title=track["station"], artist="", stream_title="")  # the song it said last is over
         if not is_url(path) and not remote.is_remote(path):
-            answered, ok = self._check_file(path, i, autoplay, fade_ms, drain)
+            answered, ok = self._check_file(path, i, autoplay, fade_ms, drain, start_ms)
             if not answered:
                 return  # a slow disk: it carries on once the file has answered
         else:
@@ -1758,6 +1888,8 @@ class Player(QObject):
         if not _host_ready(name):
             self._await_host(name, i, autoplay, fade_ms, drain)
             return
+        if autoplay:
+            self._apply_pending_outputs()  # a device that changed while paused, before the sound starts
         self._end_fade()
         self._index = i
         if self._shuffle and len(self._played) >= len(self._queue):
@@ -1765,7 +1897,7 @@ class Player(QObject):
         self._played.add(i)
         self._invalidate_next()
         self._set_error("")
-        self._restore_pos = 0
+        self._restore_pos = max(0, int(start_ms))
         self._transitioning = False
         self._handoff_timer.stop()
         self._ended = False
@@ -1821,13 +1953,17 @@ class Player(QObject):
                 self._player.play()
             if sb.index not in (-1, i):
                 sb.clear()
+        if self._restore_pos and self._voice.seek_on_load < 0 and self._player.mediaStatus() in (
+                QMediaPlayer.MediaStatus.LoadedMedia, QMediaPlayer.MediaStatus.BufferedMedia):
+            self._voice.set_position(self._restore_pos)  # already loaded (a pre-rolled song): go there now
+            self._restore_pos = 0
         self._apply_volume()
         self.trackChanged.emit()
         self.stateChanged.emit()
         self.durationChanged.emit()
         self.positionChanged.emit()
 
-    def _check_file(self, path, i, autoplay, fade_ms, drain):
+    def _check_file(self, path, i, autoplay, fade_ms, drain, start_ms=0):
         """(answered, playable) for a song file, checked on a thread so a disk waking up or a network share
         that's gone away can't hold the window. Not answered quickly: "Opening…" shows and the song loads
         once it does (or, after FILE_TIMEOUT_MS, says it couldn't be opened)."""
@@ -1838,7 +1974,7 @@ class Player(QObject):
             owner = me()
             try:
                 if owner is not None:
-                    owner._file_checked.emit((token, ok, path, i, autoplay, fade_ms, drain))
+                    owner._file_checked.emit((token, ok, path, i, autoplay, fade_ms, drain, start_ms))
             except RuntimeError:  # the player is gone (the app closed meanwhile)
                 pass
 
@@ -1847,12 +1983,12 @@ class Player(QObject):
             return True, ok
         self._set_error("Opening…")
         QTimer.singleShot(FILE_TIMEOUT_MS, self, lambda: me() is not None and me()._on_file_checked(
-            (token, None, path, i, autoplay, fade_ms, drain)))
+            (token, None, path, i, autoplay, fade_ms, drain, start_ms)))
         return False, False
 
     @Slot(object)
     def _on_file_checked(self, r):
-        token, ok, path, i, autoplay, fade_ms, drain = r
+        token, ok, path, i, autoplay, fade_ms, drain, start_ms = r
         if token != self._host_wait or not 0 <= i < len(self._queue):
             return  # something else was chosen meanwhile (or this check already answered, or timed out)
         self._host_wait += 1
@@ -1865,7 +2001,7 @@ class Player(QObject):
             self.trackChanged.emit()
             self.stateChanged.emit()
             return
-        self._load(i, autoplay=autoplay, record=False, fade_ms=fade_ms, drain=drain)
+        self._load(i, autoplay=autoplay, record=False, fade_ms=fade_ms, drain=drain, start_ms=start_ms)
 
     def _maybe_playable(self, path):
         """For passing over songs that can't play: True unless it surely can't (a slow file counts as maybe,
@@ -2247,73 +2383,102 @@ class Player(QObject):
             v.clear()
 
     # --- session persistence ----------------------------------------------
+    def _position_file(self):
+        return self._session_file.with_suffix(".pos")
+
     @Slot()
     def saveSession(self):
+        """Save the queue, where it's at and the modes. Only the place in the song is written while the queue
+        is unchanged since the last save (see _session_dirty): a small file of its own, beside the session."""
         if not self._session_file:
             return
+        position = self._voice.position() if self.hasTrack else 0
+        if not self._session_dirty and self._session_token and self._session_file.exists():
+            self._write_session_file(self._position_file(), {"token": self._session_token, "position": position})
+            return
         queue, index = self._queue, self._index
+        start = 0
         if len(queue) > SESSION_MAX_TRACKS:
             start = max(0, min(index, len(queue) - 1) - SESSION_MAX_TRACKS // 5)
             queue = queue[start:start + SESSION_MAX_TRACKS]
             index = index - start if index >= 0 else index
+        token = f"{time.time_ns():x}"
         data = {
             "version": SESSION_VERSION,
+            "token": token,  # a position file saved later for this same queue carries it too
             "queue": queue,
             "index": index,
-            "position": self._voice.position() if self.hasTrack else 0,
+            "position": position,
             "shuffle": self._shuffle,
             "repeat": self._repeat,
+            "played": sorted(p - start for p in self._played if 0 <= p - start < len(queue)),  # shuffle's so far
         }
+        if self._write_session_file(self._session_file, data):
+            self._session_dirty = False
+            self._session_token = token
+
+    def _write_session_file(self, path, data):
         try:
-            tmp = self._session_file.with_suffix(".tmp")
+            tmp = path.with_suffix(path.suffix + ".tmp")
             tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-            os.replace(tmp, self._session_file)
+            os.replace(tmp, path)
+            return True
         except (OSError, TypeError, ValueError) as exc:
-            logger.warning("Could not save playback session to %s: %s", self._session_file, exc)
+            logger.warning("Could not save playback session to %s: %s", path, exc)
+            return False
+
+    def _saved_position(self, token, pos):
+        """The place in the song saved after the queue was (if it was saved for this same queue)."""
+        try:
+            data = json.loads(self._position_file().read_text(encoding="utf-8"))
+            if isinstance(data, dict) and token and data.get("token") == token:
+                return int(data.get("position", pos))
+        except (OSError, ValueError, TypeError):
+            pass
+        return pos
 
     @Slot()
     def restoreSession(self):
-        """Bring back the previous queue, position and modes (paused). Missing files are dropped."""
+        """Bring back the previous queue, position and modes (paused). A song whose file has gone is passed
+        over when it comes up, as when playing (checking every file here would hold the window up on a slow
+        disk)."""
         if not self._session_file or self.hasTrack:
             return False
         try:
             data = json.loads(self._session_file.read_text(encoding="utf-8"))
             if not isinstance(data, dict) or data.get("version") != SESSION_VERSION:
                 return False
-            queue = [
-                t for t in data["queue"]
-                if isinstance(t, dict) and isinstance(t.get("path"), str)
-                and (is_url(t["path"]) or remote.is_remote(t["path"]) or os.path.isfile(track_file(t)))
-            ]
+            old = data["queue"]
+            keep = [i for i, t in enumerate(old) if isinstance(t, dict) and isinstance(t.get("path"), str)]
+            queue = [old[i] for i in keep]
             index = int(data.get("index", -1))
-            pos = int(data.get("position", 0))
+            token = str(data.get("token") or "")
+            pos = self._saved_position(token, int(data.get("position", 0)))
             shuffle, repeat = bool(data.get("shuffle")), int(data.get("repeat", 0))
+            played = [int(p) for p in data.get("played") or [] if isinstance(p, int)]
         except (OSError, ValueError, KeyError, TypeError) as exc:
             logger.warning("Could not restore playback session from %s: %s", self._session_file, exc)
             return False
         if not queue:
             return False
-        old = data["queue"]
-        if 0 <= index < len(old):
-            keep = [i for i, t in enumerate(old) if isinstance(t, dict)
-                    and (is_url(t.get("path")) or remote.is_remote(t.get("path")) or os.path.isfile(track_file(t)))]
-            if index in keep:
-                index = keep.index(index)
-            else:  # the song that was playing is gone: start the one after it from the beginning
-                index, pos = min(sum(1 for i in keep if i < index), len(queue) - 1), 0
+        new_index = {old_i: new_i for new_i, old_i in enumerate(keep)}
+        if index in new_index:
+            index = new_index[index]
+        elif 0 <= index < len(old):  # not a song (a damaged entry): start the one after it from the beginning
+            index, pos = min(sum(1 for i in keep if i < index), len(queue) - 1), 0
         else:
             index, pos = 0, 0
         self._queue = queue
         self._shuffle = shuffle
         self._repeat = repeat if repeat in (0, 1, 2) else 0
+        self._played = {new_index[p] for p in played if p in new_index} if shuffle else set()
         self._sync_queue()
         self.shuffleChanged.emit()
         self.repeatChanged.emit()
-        self._load(index, autoplay=False, record=False)
+        start = max(pos, 0) if track_kind(self._queue[index]) != "station" else 0
+        self._load(index, autoplay=False, record=False, start_ms=start)
         if self._parked:  # a stream, only shown: play connects and picks up where it was
-            if pos > 0 and track_kind(self._queue[index]) != "station":
-                self._queue[index]["resume_ms"] = int(pos)
+            if start > 0:
+                self._queue[index]["resume_ms"] = int(start)
             self._restore_pos = 0
-        else:
-            self._restore_pos = max(pos, 0) if track_kind(self._queue[index]) != "station" else 0
         return True

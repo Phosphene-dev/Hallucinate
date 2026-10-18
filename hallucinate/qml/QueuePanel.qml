@@ -15,7 +15,26 @@ Rectangle {
         x: 18; y: 16
         spacing: 12
         Text { text: "Queue"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter; textFormat: Text.PlainText }
-        Text { text: player.queueModel.count + " tracks"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); anchors.verticalCenter: parent.verticalCenter; textFormat: Text.PlainText }
+        Text {
+            objectName: "queueSummary"
+            // how many, and how long until the queue runs out (the rest of this song and all those to come)
+            readonly property real leftSeconds: player.upcomingSeconds
+                + (player.hasTrack && player.current.kind !== "station" ? Math.max(0, player.duration - player.position) / 1000 : 0)
+            text: player.queueModel.count + " tracks" + (leftSeconds >= 60 ? " · " + panel.fmtLeft(leftSeconds) + " left" : "")
+            color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); anchors.verticalCenter: parent.verticalCenter; textFormat: Text.PlainText
+        }
+    }
+    function fmtLeft(seconds) {
+        var m = Math.round(seconds / 60), h = Math.floor(m / 60)
+        return h > 0 ? h + " h " + (m % 60) + " min" : m + " min"
+    }
+    function removeRow(i, keepFocus) {
+        player.removeAt(i)
+        Nav.notifyAction("Removed from the queue", "Undo", function () { player.undoQueue() })
+        if (keepFocus) Qt.callLater(function () {  // the keyboard stays on the row that took its place
+            var row = list.itemAtIndex(Math.min(i, list.count - 1))
+            if (row) row.forceActiveFocus()
+        })
     }
     // the buttons share the title's line when they fit, else they get a line of their own below it
     readonly property bool stacked: head.width + actions.width + 18 + 14 + 16 > panel.width
@@ -48,6 +67,14 @@ Rectangle {
             ToolTip.delay: 400
             HoverHandler { id: undoHover }
             onClicked: player.undoQueue()
+        }
+        PillButton {
+            objectName: "clearUpcoming"
+            height: 30
+            visible: player.upcomingCount > 0
+            text: "Clear upcoming"
+            Accessible.description: "Remove the songs still to come, keeping the one playing"
+            onClicked: { player.clearUpcoming(); Nav.notifyAction("Upcoming songs cleared", "Undo", function () { player.undoQueue() }) }
         }
         PillButton {
             height: 30
@@ -148,6 +175,7 @@ Rectangle {
             Keys.onPressed: function (e) {
                 if ((e.modifiers & Qt.AltModifier) && e.key === Qt.Key_Up && index > 0) { player.moveItem(index, index - 1); e.accepted = true }
                 else if ((e.modifiers & Qt.AltModifier) && e.key === Qt.Key_Down && index < ListView.view.count - 1) { player.moveItem(index, index + 1); e.accepted = true }
+                else if (e.key === Qt.Key_Delete && !e.modifiers) { panel.removeRow(index, true); e.accepted = true }
             }
             Accessible.role: Accessible.ListItem
             Accessible.name: model.title + ", " + model.artist
@@ -198,7 +226,7 @@ Rectangle {
                 anchors { right: parent.right; rightMargin: 2; verticalCenter: parent.verticalCenter }
                 icon: "close"; size: 12
                 opacity: hh.hovered ? 1 : 0
-                onClicked: { player.removeAt(index); Nav.notifyAction("Removed from the queue", "Undo", function () { player.undoQueue() }) }
+                onClicked: panel.removeRow(index)
             }
         }
     }

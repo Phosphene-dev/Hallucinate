@@ -276,8 +276,8 @@ Item {
                             Accessible.role: Accessible.Button
                             Accessible.name: text
                             Accessible.description: "Play from this line"
-                            Accessible.onPressAction: player.seek(modelData.t)
-                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: player.seek(modelData.t) }
+                            Accessible.onPressAction: player.seek(Math.max(0, modelData.t - lyricsCtl.offset))  // where the line shows, timing nudge and all
+                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: player.seek(Math.max(0, modelData.t - lyricsCtl.offset)) }
                         }
                     }
                     Flickable {

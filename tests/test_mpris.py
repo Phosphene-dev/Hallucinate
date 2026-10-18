@@ -117,3 +117,24 @@ wait "$pid"
     assert "Bus Song" in (tmp_path / "metadata").read_text()
     assert "Playlist" in (tmp_path / "loop").read_text()
     assert "true" in (tmp_path / "shuffle").read_text().lower()
+
+
+def test_mpris_rate_follows_the_player_speed(qapp):
+    from PySide6.QtCore import QObject
+
+    from hallucinate.mpris import _PlayerAdaptor
+    from hallucinate.player import Player
+
+    player = Player(session_file=None)
+    holder = QObject()
+    try:
+        adaptor = _PlayerAdaptor(holder, player)
+        player.setSpeed(1.0)
+        assert adaptor.Rate == 1.0 and adaptor.MinimumRate == 0.5 and adaptor.MaximumRate == 3.0
+        adaptor._set_rate(1.5)
+        assert player.speed == 1.5 and adaptor.Rate == 1.5
+        adaptor._set_rate(9)  # clamped to what music allows
+        assert player.speed == 2.0
+    finally:
+        player.setSpeed(1.0)
+        player.shutdown()

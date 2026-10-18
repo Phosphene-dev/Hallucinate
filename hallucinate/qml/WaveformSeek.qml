@@ -13,7 +13,7 @@ Item {
     property real position: Window.window && !Window.window.active ? player.position - player.position % 1000
                                                                     : player.position
     property real duration: Math.max(1, player.duration)
-    property bool interactive: player.hasTrack
+    property bool interactive: player.canSeek  // not live radio: there is nowhere to seek to
     readonly property int barWidth: 3
     readonly property int gap: 2
     readonly property int bars: Math.max(8, Math.floor((width + gap) / (barWidth + gap)))
