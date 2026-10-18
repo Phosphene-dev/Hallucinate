@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.9.9.9" date="2026-10-18">
+      <description>
+        <p>A calmer Settings page with subsections that open and close, a text size choice, mute, more in the queue, menus and Ctrl+K, and song rows that link to their artist and album.</p>
+        <p>Many fixes: moved files keep their plays and likes, backups keep imported history, scrobbles never get stuck, Play next works with shuffle, the equalizer can't distort, and keyboard use works throughout.</p>
+      </description>
+    </release>
     <release version="0.9.9.8" date="2026-10-18">
       <description>
         <p>Browse by genre: every genre has a page with its albums, artists and songs, genres are links wherever they're shown, Albums has a Genres view, and Songs can be sorted by genre, artist, album or year.</p>

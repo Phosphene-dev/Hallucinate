@@ -5,9 +5,74 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.9.9] - 2026-10-18
+
+A top-to-bottom pass: a calmer Settings page, and fixes and small additions all over.
+
 ### Changed
-- An artist's About section is quieter: writing your own bio, looking it up again and choosing where it
-  comes from are in a ⋯ menu beside the heading (or right-click the bio), not a row of buttons.
+- Settings is easier to take in. Options people rarely need sit in subsections that open and close (closed
+  at first, remembered, and opened by the Settings search when what you look for is inside): sidebar order,
+  theme files, ReplayGain details, podcast timing, library file and import options, genre and bio sources,
+  the Last.fm API key and history import. Internet & sharing is now Online & privacy (offline mode first) and
+  Scrobbling & sharing; Discord's setup shows once it's switched on. Library lists your folders first.
+- An artist's About options are in a ⋯ menu (or right-click the bio) instead of a row of buttons.
+- The equalizer lowers its overall level by its biggest boost, so boost presets can't distort.
+
+### Added
+- A text size choice (Settings → Appearance → More appearance options).
+- Mute: click the volume icon or press M.
+- Queue: Delete removes the focused song (with Undo), the time left is shown, and Clear upcoming.
+  Sleep timer: +15 minutes.
+- Menus: an artist page and a genre page have a ⋯ menu (play next, add to queue or a playlist); the album
+  menu has Shuffle, Like all, Go to genre and Show in folder; several selected songs can be removed from a
+  playlist at once, with Undo.
+- Song rows link to their artist and album. Search and Ctrl+K find genres; Ctrl+K also has smart playlists,
+  Back and Forward, Find duplicates, Go to what's playing and Like this song. The Artists page sorts A–Z or by
+  most songs.
+- Smart playlists: "is empty" and "is not empty", and track and disc number rules.
+- Scrobbling shows what's waiting to be sent, what the service turned down and why, with Send now.
+- Music servers: Sign in again when a server turns the saved password down (your playlists and plays for
+  its songs stay).
+- Podcasts: Download all unplayed; downloads resume where they broke off, also after a restart.
+- Lyrics: Search again.
+
+### Fixed
+- Library:
+  - Restoring a backup dropped listening history imported from Last.fm or ListenBrainz.
+  - A folder the scan couldn't read for a moment lost its songs from the library.
+  - Moving or renaming files lost their likes, plays, ratings and playlist places. They now keep them.
+  - Albums ripped into CD1/CD2 folders now show as one album.
+  - Compilations counted once per artist in Stats and Recap.
+  - Library health counts stopped at 1,200.
+  - Trashing one song of a CUE sheet left its file's other songs behind.
+- Smart playlists:
+  - "Liked not in the last N days" listed songs never liked.
+  - A random smart playlist reshuffled after every play.
+- Playback:
+  - Play next was ignored with shuffle on.
+  - The window could go silent if the equalizer's output failed. It now plays on without the equalizer.
+  - Stop on a CUE-sheet song went back to the start of the whole file.
+  - Seeking live radio restarted it.
+  - A sound device change made while paused could be missed.
+  - The resume position was lost when the disk was slow to answer.
+  - Removing the last, playing song replayed the one before it.
+- Scrobbling:
+  - One scrobble the service turned down blocked every scrobble behind it.
+  - ListenBrainz counted a song after 30 seconds instead of half the song or four minutes.
+  - Repeat-one wasn't scrobbled again on Last.fm.
+  - Saving to the system keyring could freeze the window.
+- Music servers: a wrong password was retried every few minutes for good.
+- Podcasts: a temporary redirect could replace a feed's address.
+- Offline mode now also stops a stream that's playing, pauses downloads and stops the radio's title checks.
+- Keyboard:
+  - Back from a search result went past the search.
+  - Focused song rows showed nothing.
+  - Arrow keys and Space didn't work on some lists.
+  - Artist cards couldn't be reached by keyboard.
+  - The welcome screen let keys through to the app behind it.
+- Settings dropdowns stopped following changes made elsewhere (Ctrl+K, dialogs, the system theme).
+- Clicking a lyric line ignored the timing offset.
+- "1 songs".
 
 ## [0.9.9.8] - 2026-10-18
 
