@@ -11,8 +11,8 @@ from PySide6.QtGui import QDesktopServices
 from .core import albums as album_views
 from .core import artists as artist_views
 from .core import folders as folder_views
+from .core import genre_views, remote
 from .core import health as health_checks
-from .core import remote
 from .core.db import Database, fold, group_index, search_groups
 from .core.radio import radio_tracks
 from .core.scanner import Scanner
@@ -213,6 +213,8 @@ class Library(QObject):
     wallChanged = Signal()
     foldersChanged = Signal()
     filtersChanged = Signal()
+    genreListChanged = Signal()
+    songSortChanged = Signal()
     duplicatesChanged = Signal()
     scanningChanged = Signal()
     statusChanged = Signal()
@@ -240,6 +242,7 @@ class Library(QObject):
             "sAlbums": DictModel(ALBUM_KEYS, self),
             "sArtists": DictModel(ARTIST_KEYS, self),
             "filteredTracks": DictModel(TRACK_KEYS, self, "id"),
+            "sortedSongs": DictModel(TRACK_KEYS, self, "id"),  # the Songs page in another order than by title
             "duplicates": DictModel(DUPLICATE_KEYS, self, "id"),
             "wall": DictModel(WALL_KEYS, self, "album_key"),
             # decade and year rows; a year's albums are handed over only when its row is on screen
@@ -265,6 +268,8 @@ class Library(QObject):
         self._artist_index = {}
         self._filter_values = {"genres": [], "years": [], "formats": []}
         self._filters = ("", 0, "")
+        self._song_sort = "title"
+        self._genre_list = []
         self._filter_gen = 0
         self._duplicate_gen = 0
         self._duplicates_loading = False
@@ -312,6 +317,62 @@ class Library(QObject):
         drawing them needs no further calls into Python (see Rows.qml for why that matters)."""
         return self._search_results
     filteredTracks = _model_prop("filteredTracks")
+    sortedSongs = _model_prop("sortedSongs")
+
+    # --- genres ------------------------------------------------------------
+    @Property("QVariantList", notify=genreListChanged)
+    def genreList(self):
+        """Every genre: [{name, albums, artists, tracks, seconds, artUrl, albumKey}], most songs first."""
+        return self._genre_list
+
+    @Slot(str, result="QVariantMap")
+    def genrePage(self, name):
+        """One genre's albums, artists, most played songs and related genres (see core.genre_views.page)."""
+        try:
+            data = genre_views.page(self._db, name)
+        except Exception:  # noqa: BLE001
+            logger.exception("Genre page failed")
+            return {}
+        decorate(data["albumList"])
+        decorate(data["artistList"])
+        data.pop("songs", None)  # (as a model: genreTracksModel)
+        return data
+
+    @Slot(str, result=QObject)
+    def genreTracksModel(self, name):
+        return self._cached(("gt", fold(name)), TRACK_KEYS, lambda: genre_views.page(self._db, name, 200)["songs"])
+
+    @Slot(str, bool)
+    def playGenre(self, name, shuffle=False):
+        tracks = decorate(genre_views.tracks(self._db, name))
+        self._play(tracks, random.randrange(len(tracks)) if shuffle and tracks else 0)
+
+    @Slot(str, int)
+    def playGenreSongs(self, name, index):
+        self._play(self.genreTracksModel(name).items(), index)
+
+    # --- the Songs page's order ----------------------------------------------
+    @Property(str, notify=songSortChanged)
+    def songSort(self):
+        return self._song_sort
+
+    @Slot(str)
+    def setSongSort(self, sort):
+        sort = sort if sort in genre_views.SONG_SORTS else "title"
+        if sort != self._song_sort:
+            self._song_sort = sort
+            self._sort_songs()
+            if any(self._filters):
+                self.filterTracks(*self._filters)
+            self.songSortChanged.emit()
+
+    def _sort_songs(self):
+        key = genre_views.song_sort_key(self._song_sort)
+        self._models["sortedSongs"].set_items(sorted(self._models["songs"].items(), key=key) if key else [])
+
+    @Slot(int)
+    def playSortedSongs(self, index):
+        self._play(self._models["sortedSongs"].items(), index)
     duplicates = _model_prop("duplicates")
 
     @Property(bool, notify=filtersChanged)
@@ -415,6 +476,7 @@ class Library(QObject):
             "songs": share_strings(decorate(db.song_list())),
             "counts": db.counts(),
             "filterValues": db.filter_values(),
+            "genreList": genre_views.overview(db),
         }
         data["timeline"] = Library._timeline_rows(data["albums"])
         data["artistIndex"] = {fold(a["name"]): a for a in data["artists"]}
@@ -435,7 +497,8 @@ class Library(QObject):
         snapshots = {n: self._models[n].snapshot_keys() for n in ("albums", "artists", "songs")}
         # shallow copies (cheap) so the worker can tell what changed; rows themselves are never edited in place
         current = {n: list(self._models[n].items()) for n in ("albums", "artists", "songs")}
-        state = {"timeline": self._timeline, "filterValues": self._filter_values, "counts": dict(self._counts)}
+        state = {"timeline": self._timeline, "filterValues": self._filter_values, "counts": dict(self._counts),
+                 "genreList": self._genre_list}
 
         def work(db):
             try:
@@ -475,6 +538,9 @@ class Library(QObject):
             self.timelineChanged.emit()
         self._counts = data["counts"]
         self._filter_values = data["filterValues"]
+        if changed["genreList"]:
+            self._genre_list = decorate(data["genreList"])
+            self.genreListChanged.emit()
         self._artist_index = data["artistIndex"]
         self._search_index = data["searchIndex"]
         self._retire(list(self._detail.values()))
@@ -489,6 +555,8 @@ class Library(QObject):
         if changed["filterValues"]:
             self.filtersChanged.emit()
         self.reloaded.emit()
+        if self._song_sort != "title" and changed["songs"]:
+            self._sort_songs()
         if any(self._filters):
             self.filterTracks(*self._filters)
 
@@ -657,10 +725,13 @@ class Library(QObject):
         if not any(self._filters):
             return
         snapshot = self._models["filteredTracks"].snapshot_keys()
+        key = genre_views.song_sort_key(self._song_sort)
 
         def work(db):
             try:
                 rows = decorate(db.filtered_tracks(*filters))
+                if key is not None:
+                    rows.sort(key=key)
                 ops = compute_ops(snapshot[1], [row["id"] for row in rows])
                 self._filtered.emit((gen, rows, ops, snapshot[0], ""))
             except Exception as exc:  # noqa: BLE001

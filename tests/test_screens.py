@@ -194,6 +194,15 @@ def test_every_page_in_every_theme(qapp, app_window):
         invoke("openArtist", "Aurora Vale")
         settle()
         yield "artist"
+        invoke("openGenre", "Dream Pop")
+        settle()
+        yield "genre"
+        objects["shell"].setUiValue("albumsView", "genres")  # a fresh Albums page opens on its Genres view
+        invoke("go", "home")
+        invoke("go", "albums")
+        settle()
+        yield "albums by genre"
+        objects["shell"].setUiValue("albumsView", "grid")
         invoke("go", "home")
         window.setProperty("queueOpen", True)
         settle()
@@ -207,7 +216,7 @@ def test_every_page_in_every_theme(qapp, app_window):
         now_playing.setProperty("open", False)
         now_playing.setProperty("lyricsMode", False)
         welcome = window.findChild(QObject, "welcome")
-        for step in (0, 1, 2):
+        for step in (0, 1, 2, 3):
             welcome.setProperty("open", True)
             welcome.setProperty("step", step)
             settle()
@@ -1400,3 +1409,43 @@ def test_music_servers_section_and_its_add_dialog(qapp, app_window):
         assert not [w for w in warnings if "SettingsPage" in w or "main.qml" in w], warnings[:3]
     finally:
         shell.setFeature("servers", False)
+
+
+def test_a_genre_opens_from_an_album_and_lists_what_carries_it(qapp, app_window):
+    """A genre's page lists its albums and artists and plays them all."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    library = objects["library"]
+    assert QMetaObject.invokeMethod(window, "openGenre", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "dream pop"))
+    assert wait_for(lambda: window.findChild(QObject, "genreTitle") is not None)
+    assert window.findChild(QObject, "genreTitle").property("text") == "Dream Pop"  # as the tags spell it
+    info = plain(library.genrePage("dream pop"))
+    assert info["albums"] == 2 and info["tracks"] == 8 and {a["album"] for a in info["albumList"]} == {"Northern Lights", "Tidal"}
+    played = []
+    library._play = lambda tracks, index=0: played.append((len(tracks), index))  # the seeded songs aren't real files
+    try:
+        library.playGenre("Dream Pop", False)
+    finally:
+        del library._play
+    assert played == [(8, 0)]
+    names = [g["name"] for g in plain(library.genreList)]
+    assert names[0] == "Dream Pop"
+    assert not [w for w in warnings if "Genre" in w], warnings
+
+
+def test_songs_sort_by_genre(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    library = objects["library"]
+    library.setSongSort("genre")
+    try:
+        assert wait_for(lambda: library.sortedSongs.count == library.songs.count > 0)
+        rows = library.sortedSongs.toList()
+        assert [r["genre"] for r in rows] == sorted((r["genre"] for r in rows), key=lambda g: (not g, g.casefold()))
+        library.setSongSort("artist")
+        rows = library.sortedSongs.toList()
+        assert [r["artist"].casefold() for r in rows] == sorted(r["artist"].casefold() for r in rows)
+    finally:
+        library.setSongSort("title")

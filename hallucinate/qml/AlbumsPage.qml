@@ -2,14 +2,15 @@ import QtQuick
 import QtQuick.Controls
 import "."
 
-// Albums three ways: A–Z, a wall ordered by cover colour, and a timeline by decade and year.
+// Albums four ways: A–Z, a wall ordered by cover colour, a timeline by decade and year, and by genre.
 Item {
     id: page
     objectName: "albums"
     readonly property real minCell: 190
     readonly property int cols: Math.max(2, Math.floor((width - 40) / minCell))
     property string view: shell.uiValue("albumsView", "grid")
-    readonly property var views: [{ id: "grid", t: "A–Z" }, { id: "colour", t: "Colour" }, { id: "timeline", t: "Timeline" }]
+    readonly property var views: [{ id: "grid", t: "A–Z" }, { id: "colour", t: "Colour" }, { id: "timeline", t: "Timeline" },
+                                 { id: "genres", t: "Genres" }]
     onViewChanged: {
         shell.setUiValue("albumsView", view)
         if (view === "colour") library.loadAlbumWall()
@@ -54,7 +55,8 @@ Item {
 
     Loader {
         anchors { top: header.bottom; topMargin: 14; left: parent.left; right: parent.right; bottom: parent.bottom }
-        sourceComponent: page.view === "colour" ? wallView : page.view === "timeline" ? timelineView : gridView
+        sourceComponent: page.view === "colour" ? wallView : page.view === "timeline" ? timelineView
+                       : page.view === "genres" ? genresView : gridView
     }
 
     Component {
@@ -338,5 +340,89 @@ Item {
                                      : "Add the folder where you keep your music and it shows up here."
         actionText: library.folders.length ? "" : "Open Settings"
         onAction: Nav.openSettings()
+    }
+
+    // Every genre as a tile with a cover from it, most songs first (or A–Z); click one for its page
+    Component {
+        id: genresView
+        Item {
+            id: genresBox
+            property bool az: shell.uiValue("genresOrder", "count") === "az"
+            onAzChanged: shell.setUiValue("genresOrder", az ? "az" : "count")
+            readonly property var genres: az ? library.genreList.slice().sort(function (a, b) {
+                return a.name.localeCompare(b.name) }) : library.genreList
+            Row {
+                id: genreOrder
+                x: 28
+                spacing: 6
+                Chip { text: "Most songs"; selected: !genresBox.az; onClicked: genresBox.az = false }
+                Chip { objectName: "genresAz"; text: "A–Z"; selected: genresBox.az; onClicked: genresBox.az = true }
+            }
+            GridView {
+                id: genreGrid
+                objectName: "genreGrid"
+                anchors { top: genreOrder.bottom; topMargin: 12; left: parent.left; right: parent.right; bottom: parent.bottom }
+                leftMargin: 20; rightMargin: 8
+                cellWidth: Math.floor((width - 28) / Math.max(2, Math.floor((width - 40) / 230)))
+                cellHeight: 92
+                clip: true
+                boundsBehavior: Flickable.StopAtBounds
+                model: genresBox.genres
+                ScrollBar.vertical: ScrollBar {}
+                delegate: Item {
+                    required property var modelData
+                    width: genreGrid.cellWidth; height: genreGrid.cellHeight
+                    Rectangle {
+                        anchors { fill: parent; margins: 6 }
+                        radius: Theme.radius
+                        color: tileHover.hovered ? Theme.glassHover : Theme.glass
+                        border.color: Theme.stroke
+                        Cover {
+                            id: tileCover
+                            x: 10; anchors.verticalCenter: parent.verticalCenter
+                            width: 60; height: 60
+                            radius: Theme.radiusSmall
+                            source: modelData.artUrl || ""
+                            fallback: modelData.name.charAt(0)
+                        }
+                        Column {
+                            anchors { left: tileCover.right; leftMargin: 12; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                            spacing: 3
+                            Text {
+                                textFormat: Text.PlainText
+                                width: parent.width
+                                text: modelData.name
+                                elide: Text.ElideRight
+                                color: Theme.text
+                                font.family: Theme.fontFamily
+                                font.pixelSize: Theme.fontSize(14)
+                                font.weight: Font.DemiBold
+                            }
+                            Text {
+                                textFormat: Text.PlainText
+                                width: parent.width
+                                text: modelData.albums + (modelData.albums === 1 ? " album" : " albums") + "  ·  "
+                                      + modelData.tracks + (modelData.tracks === 1 ? " song" : " songs")
+                                elide: Text.ElideRight
+                                color: Theme.textDim
+                                font.family: Theme.fontFamily
+                                font.pixelSize: Theme.fontSize(12)
+                            }
+                        }
+                        HoverHandler { id: tileHover; cursorShape: Qt.PointingHandCursor }
+                        TapHandler { onTapped: Nav.openGenre(modelData.name) }
+                        Accessible.role: Accessible.Link
+                        Accessible.name: "Genre: " + modelData.name
+                    }
+                }
+            }
+            EmptyState {
+                anchors.centerIn: genreGrid
+                visible: genreGrid.count === 0 && library.ready
+                icon: "note"
+                title: "No genres yet"
+                hint: "Songs' genre tags show up here. Library health can find genres online for albums without one."
+            }
+        }
     }
 }

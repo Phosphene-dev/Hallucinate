@@ -109,11 +109,31 @@ Menu {
         onTriggered: Nav.openAlbum(menu.info.album_key)
     }
     MenuItem {
+        id: goArtistItem
         visible: menu.single && (menu.info.album_artist || menu.info.artist || "").length > 0 && menu.context !== "artist"
         height: visible ? implicitHeight : 0
         text: "Go to " + Theme.plain(menu.info.album_artist || menu.info.artist || "")
         icon.name: "artist"
         onTriggered: Nav.openArtist(menu.info.album_artist || menu.info.artist)
+    }
+    // the song's genres, each to its page (up to three)
+    readonly property var genreNames: menu.single ? String(menu.info.genre || "").split(/\s*[;\/|]\s*/)
+                                                    .filter(function (g) { return g.length > 0 }).slice(0, 3) : []
+    Instantiator {
+        model: menu.genreNames
+        MenuItem {
+            required property string modelData
+            objectName: "trackGenre_" + modelData
+            text: "Go to genre " + Theme.plain(modelData)
+            icon.name: "note"
+            onTriggered: Nav.openGenre(modelData)
+        }
+        onObjectAdded: function (i, o) {
+            var at = 0
+            for (var k = 0; k < menu.count; k++) if (menu.itemAt(k) === goArtistItem) at = k + 1
+            menu.insertItem(at + i, o)
+        }
+        onObjectRemoved: (i, o) => menu.removeItem(o)
     }
     MenuItem {
         objectName: "trackShowInFolder"

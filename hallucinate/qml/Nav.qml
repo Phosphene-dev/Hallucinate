@@ -4,6 +4,7 @@ import QtQuick
 QtObject {
     signal openAlbum(string key)
     signal openArtist(string name)
+    signal openGenre(string name)
     signal openPodcast(int id)
     signal goToPlaying()  // the playing song's album, the station's page or the episode's show
     signal openSettings()

@@ -103,6 +103,7 @@ ApplicationWindow {
         if (!item) return null
         if (item.albumKey !== undefined && item.objectName !== "search" && item.albumKey) return { kind: "album", key: item.albumKey }
         if (item.artistName !== undefined && item.artistName) return { kind: "artist", name: item.artistName }
+        if (item.genreName !== undefined && item.genreName) return { kind: "genre", name: item.genreName }
         if (item.podcastId !== undefined && item.podcastId) return { kind: "podcast", id: item.podcastId }
         return depth === 0 ? route0 : null
     }
@@ -114,6 +115,7 @@ ApplicationWindow {
         else if (r.kind === "smart") openSmartPlaylist(r.id, r.name)
         else if (r.kind === "album") openAlbum(r.key)
         else if (r.kind === "artist") openArtist(r.name)
+        else if (r.kind === "genre") openGenre(r.name)
         else if (r.kind === "podcast") openPodcast(r.id)
         route = r
         replaying = false
@@ -228,6 +230,12 @@ ApplicationWindow {
     function newPlaylist() { createDlg.open() }
     function openAlbum(key) { remember({ kind: "album", key: key }); stack.push(albumDetail, { albumKey: key }) }
     function openArtist(name) { remember({ kind: "artist", name: name }); stack.push(artistDetail, { artistName: name }) }
+    function openGenre(name) {
+        if (!name) return
+        if (stack.currentItem && stack.currentItem.genreName === name) return
+        remember({ kind: "genre", name: name })
+        stack.push(genreDetail, { genreName: name })
+    }
     function openPodcast(id) {
         if (!featureOn("podcasts")) return
         if (section !== "podcasts") go("podcasts")
@@ -259,11 +267,13 @@ ApplicationWindow {
     Component { id: searchPage; SearchPage {} }
     Component { id: albumDetail; AlbumDetailPage {} }
     Component { id: artistDetail; ArtistDetailPage {} }
+    Component { id: genreDetail; GenrePage {} }
 
     Connections {
         target: Nav
         function onOpenAlbum(key) { window.openAlbum(key) }
         function onOpenArtist(name) { window.openArtist(name) }
+        function onOpenGenre(name) { window.openGenre(name) }
         function onOpenPodcast(id) { window.openPodcast(id) }
         function onGoToPlaying() {
             if (!player.hasTrack) return

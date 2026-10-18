@@ -210,8 +210,7 @@ Item {
                     textFormat: Text.PlainText
                     Layout.fillWidth: true
                     visible: player.hasTrack && (player.current.album || "").length > 0 && !view.lyricsMode
-                    text: player.hasTrack ? [player.current.album, player.current.year > 0 ? String(player.current.year) : "",
-                                             shell.genresText(player.current.genre || "", shell.allGenresSongs)]
+                    text: player.hasTrack ? [player.current.album, player.current.year > 0 ? String(player.current.year) : ""]
                                             .filter(s => s).join("  ·  ") : ""
                     color: Qt.rgba(1, 1, 1, 0.6)
                     font.family: Theme.fontFamily
@@ -226,6 +225,18 @@ Item {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: { view.open = false; Nav.openAlbum(player.current.album_key) }
                     }
+                }
+                GenreLinks {  // the song's genres: each opens its page
+                    objectName: "nowPlayingGenres"
+                    Layout.fillWidth: true
+                    visible: player.hasTrack && !view.lyricsMode && names.length > 0
+                    names: {
+                        var text = player.hasTrack ? shell.genresText(player.current.genre || "", shell.allGenresSongs) : ""
+                        return text ? text.split(", ") : []
+                    }
+                    color: Qt.rgba(1, 1, 1, 0.6)
+                    pixelSize: Theme.fontSize(14)
+                    onPicked: view.open = false
                 }
                 // Lyrics, karaoke style: the sung line large and bright, the others fading with distance
                 Item {
