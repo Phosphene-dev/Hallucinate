@@ -28,7 +28,10 @@ pages stay readable on ultrawide screens.
 - Artist bios on the artist page, from Wikipedia (found through MusicBrainz, so a band isn't mixed up with
   a film of the same name), Last.fm or Discogs. Choose where bios come from in Settings (all three in turn,
   or only one), or for one artist on their page, or write your own, which is always shown instead. Your own bios are in backups. Looking bios
-  up when a page opens can be switched off.
+  up when a page opens is off until you switch it on (Look up on the artist's page asks once).
+- The first-run welcome has a step for choosing what's on: internet radio, podcasts, music servers, lyrics,
+  the visualizer and the optional pages, and what may go online (lyrics, artist bios, update checks, or
+  offline mode for nothing at all).
 
 ### Changed
 - On ultrawide (21:9, 32:9) screens, pages of cards and text keep to a readable width, centred, instead of

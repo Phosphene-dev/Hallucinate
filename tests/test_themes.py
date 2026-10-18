@@ -449,16 +449,26 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     qapp.processEvents()
     assert QMetaObject.invokeMethod(window, "showSearch", Qt.ConnectionType.DirectConnection)
     qapp.processEvents()
-    # First-run welcome: closed unless the app marked this a fresh install; three steps, then home
+    # First-run welcome: closed unless the app marked this a fresh install; four steps, then home
     welcome = window.findChild(QObject, "welcome")
     assert not welcome.property("open")
     shell.setUiValue("welcome", "1")
     welcome.setProperty("open", True)
     welcome_next = window.findChild(QObject, "welcomeNext")
-    for step in (1, 2):
+    for step in (1, 2, 3):
         welcome_next.clicked.emit()
         qapp.processEvents()
         assert welcome.property("step") == step
+        if step == 2:  # what's on: features and the internet, nothing online ticked that wasn't already
+            radio, bios = window.findChild(QObject, "welcome_stations"), window.findChild(QObject, "welcomeBios")
+            assert radio is not None and not radio.property("checked")
+            assert bios is not None and not bios.property("checked")
+            radio.toggled.emit()
+            radio.setProperty("checked", True)
+            radio.toggled.emit()
+            assert shell.featureOn("stations")
+            shell.setFeature("stations", False)
+            del radio, bios
     theme_tiles = window.findChild(QObject, "welcomeThemes")
     assert theme_tiles is not None and theme_tiles.property("columns") == 3
     welcome_next.clicked.emit()

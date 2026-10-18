@@ -3,13 +3,14 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "."
 
-// First run: where your music is, how the app should look, and whether to scrobble. Opens over everything
+// First run: where your music is, how the app should look, what's switched on (and what may go online), and
+// whether to scrobble. Opens over everything
 // until it is finished or skipped; every choice can be changed later in Settings.
 Item {
     id: welcome
     objectName: "welcome"
     property int step: 0
-    readonly property int steps: 3
+    readonly property int steps: 4
     property bool open: shell.uiValue("welcome", "0") === "1"
     property bool triedListenBrainz: false
     signal finished()
@@ -245,7 +246,86 @@ Item {
                     }
                 }
 
-                // 3. Scrobbling
+                // 3. What's on, and what may go online
+                Flickable {
+                    id: choices
+                    objectName: "welcomeChoices"
+                    clip: true
+                    contentHeight: choiceCol.implicitHeight
+                    boundsBehavior: Flickable.StopAtBounds
+                    ScrollBar.vertical: ScrollBar { policy: choices.contentHeight > choices.height ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff }
+                    component Group: Text {
+                        textFormat: Text.PlainText
+                        topPadding: 6
+                        color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold
+                    }
+                    component Feature: StyledCheck {
+                        property string name
+                        objectName: "welcome_" + name
+                        width: Math.max(200, implicitWidth + 12)
+                        checked: shell.features[name] === true
+                        onToggled: shell.setFeature(name, checked)
+                    }
+                    ColumnLayout {
+                        id: choiceCol
+                        width: choices.width - 12
+                        spacing: 8
+                        Heading { text: "What would you like?" }
+                        Body {
+                            text: "Switch on what you'll use. Nothing here goes online unless you tick it, and it can all be "
+                                + "changed later in Settings → Features and Settings → Internet & sharing."
+                        }
+                        Group { text: "Features" }
+                        Flow {
+                            Layout.fillWidth: true
+                            spacing: 4
+                            Feature { name: "stations"; text: "Internet radio" }
+                            Feature { name: "podcasts"; text: "Podcasts" }
+                            Feature { name: "servers"; text: "Music servers (Jellyfin, Navidrome, Subsonic)" }
+                            Feature { name: "lyrics"; text: "Lyrics" }
+                            Feature { name: "visualizer"; text: "Visualizer" }
+                            Feature { name: "liked"; text: "Liked Songs" }
+                            Feature { name: "folders"; text: "Folders" }
+                            Feature { name: "stats"; text: "Stats" }
+                            Feature { name: "history"; text: "History" }
+                            Feature { name: "recap"; text: "Recap" }
+                            Feature { name: "health"; text: "Library health" }
+                        }
+                        Group { text: "Going online" }
+                        StyledCheck {
+                            objectName: "welcomeLyricsOnline"
+                            visible: shell.features.lyrics !== false
+                            text: "Find lyrics online for songs that have none (asks LRCLIB with the song's artist and title)"
+                            checked: lyricsCtl.onlineLookup
+                            onToggled: lyricsCtl.setOnlineLookup(checked)
+                        }
+                        StyledCheck {
+                            objectName: "welcomeBios"
+                            text: "Look up an artist's bio when their page opens (asks Wikipedia through MusicBrainz)"
+                            checked: sources.fetchBios
+                            onToggled: sources.setFetchBios(checked)
+                        }
+                        StyledCheck {
+                            objectName: "welcomeUpdates"
+                            visible: shell.updates.supported
+                            text: "Tell me when a new version is out (checks GitHub once a day)"
+                            checked: shell.updates.enabled
+                            onToggled: shell.updates.setEnabled(checked)
+                        }
+                        StyledCheck {
+                            objectName: "welcomeOffline"
+                            text: "Offline mode: never go online at all (overrides everything above, and radio, podcasts, servers and scrobbling)"
+                            checked: shell.offlineMode
+                            onToggled: shell.setOfflineMode(checked)
+                        }
+                        Body {
+                            text: "Covers, tags and genres are only looked up when you ask. Radio, podcasts and music servers "
+                                + "only connect to the stations, feeds and servers you add."
+                        }
+                    }
+                }
+
+                // 4. Scrobbling
                 ColumnLayout {
                     spacing: 12
                     Heading { text: "Keep a record of what you play?" }
@@ -321,31 +401,6 @@ Item {
                             : scrobbler.configured ? scrobbler.status
                             : "Last.fm asks each app user for an API key of their own. Add yours in Settings → Internet & sharing whenever you like."
                         color: scrobbler.connected ? Theme.accent : Theme.textDim
-                    }
-                    Text {
-                        textFormat: Text.PlainText
-                        Layout.topMargin: 6
-                        text: "Radio and podcasts"
-                        color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold
-                    }
-                    RowLayout {
-                        spacing: 18
-                        StyledCheck {
-                            objectName: "welcomeStations"
-                            text: "Internet radio"
-                            checked: shell.features.stations === true
-                            onToggled: shell.setFeature("stations", checked)
-                        }
-                        StyledCheck {
-                            objectName: "welcomePodcasts"
-                            text: "Podcasts"
-                            checked: shell.features.podcasts === true
-                            onToggled: shell.setFeature("podcasts", checked)
-                        }
-                    }
-                    Body {
-                        text: "Both stay out of the way until you want them. Settings → Features turns these, and anything else you don't use, on or off."
-                        color: Theme.textDim
                     }
                     Item { Layout.fillHeight: true }
                 }

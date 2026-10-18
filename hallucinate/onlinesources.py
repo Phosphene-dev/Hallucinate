@@ -98,7 +98,7 @@ class OnlineSources(QObject):
     @Property(bool, notify=changed)
     def fetchBios(self):
         """Look up an artist's bio when their page opens (one you wrote yourself is always shown instead)."""
-        return self._flag("fetchBios")
+        return self._flag("fetchBios", False)  # off until you switch it on
 
     @Slot(bool)
     def setFetchBios(self, on):

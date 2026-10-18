@@ -98,7 +98,7 @@
     <release version="0.9.9.7" date="2026-10-18">
       <description>
         <p>Albums can have several genres, the main one first, and filters and smart playlists match any of them. Genres can also come from Discogs and Last.fm; genres you set yourself are never replaced.</p>
-        <p>Artist pages have a bio from Wikipedia, Last.fm or Discogs, or one you write yourself. Pages keep a readable width on ultrawide screens.</p>
+        <p>Artist pages can show a bio from Wikipedia, Last.fm or Discogs, or one you write yourself. The first-run welcome lets you choose which features are on and what may go online. Pages keep a readable width on ultrawide screens.</p>
       </description>
     </release>
     <release version="0.9.9.6" date="2026-10-17">

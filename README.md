@@ -263,7 +263,7 @@ What does go online, and only when:
 |---|---|---|
 | Lyrics (LRCLIB) | A song with no lyrics of its own starts; switch off in Settings → Internet & sharing | Artist, title, album, length |
 | Covers, tags and genres (MusicBrainz, Cover Art Archive; Discogs and Last.fm if you set them up) | Only when you click Find online, Find all, or Look up | Album and artist |
-| Artist bios (Wikipedia through MusicBrainz; Last.fm or Discogs if you set them up) | When you open an artist's page; switch off in Settings → Internet & sharing. Never when you've written your own bio | The artist and one of their albums |
+| Artist bios (Wikipedia through MusicBrainz; Last.fm or Discogs if you set them up) | Off unless you switch it on (Settings → Internet & sharing, or the first-run welcome), then when you open an artist's page; or when you click Look up. Never when you've written your own bio | The artist and one of their albums |
 | Last.fm, ListenBrainz | Only after you connect your own account | What you play (scrobbles); keys stay in your system keyring |
 | Discord status | Only if you switch it on; talks to the Discord app on your computer | The song, or just "Listening to music" in privacy mode. To show the cover, the album and artist are looked up on MusicBrainz (not when the cover is hidden) |
 | Music servers | Only if you switch them on and add one | Requests to your own server only. The sign-in stays in your system keyring: for Subsonic, each request signs in with a one-time code; for Jellyfin, only the server's access token is kept, not your password |

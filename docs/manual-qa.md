@@ -115,7 +115,10 @@ finding, following and playing podcasts.
   Switch on "Show every genre of the playing song": Now Playing lists them all.
 - [ ] Settings → Internet & sharing → paste a Discogs token → **Connect Discogs**: "Connected as <you>". Find a
   genre in the tag editor: the note says which sources it came from.
-- [ ] Open an artist: About shows a bio (from Wikipedia) with its source; click the source to open it. Pick
+- [ ] A fresh start (move the config folder aside): the welcome's third step lists features and going-online
+  choices; internet radio, podcasts, music servers and bio lookups start off; what you tick is on afterwards.
+- [ ] Settings → Internet & sharing → switch on "Look up an artist's bio". Open an artist: About shows a bio
+  (from Wikipedia) with its source; click the source to open it. Pick
   another source for them; **Write your own**, Save; it stays after a restart. **Remove mine** brings the
   fetched one back. With "Look up an artist's bio" off, or offline mode on, nothing is looked up.
 - [ ] On an ultrawide screen (or a maximised window wider than about 2200 pixels): Home, an artist, an album,

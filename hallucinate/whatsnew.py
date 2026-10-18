@@ -7,7 +7,8 @@ HIGHLIGHTS = {
         "and Settings → Library chooses whether pages show all of them or just the main one.",
         "Genres can also come from Discogs (with a personal token) and Last.fm, next to MusicBrainz. Genres "
         "you set yourself are never replaced.",
-        "Artist pages have a bio from Wikipedia, Last.fm or Discogs, or one you write yourself.",
+        "Artist pages can show a bio from Wikipedia, Last.fm or Discogs (switch on looking them up in Settings → "
+        "Internet & sharing), or one you write yourself.",
         "Pages stay a readable width on ultrawide screens.",
     ],
     "0.9.9.6": [
