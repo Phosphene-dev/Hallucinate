@@ -217,19 +217,28 @@ def write_tags(path, fields):
         raise TagWriteError(f"Could not write tags: {exc}") from exc
 
 
+def _values(k, v):
+    """A field's values: an album's genres are written as separate values (main one first)."""
+    if k == "genre":
+        from . import genres
+
+        return genres.split(v)
+    return [v]
+
+
 def _w_id3(f, fields):
     for k, v in fields.items():
         frame = _ID3[k]
         f.tags.delall(frame.__name__)
         if v:
-            f.tags.add(frame(encoding=3, text=[v]))
+            f.tags.add(frame(encoding=3, text=_values(k, v)))
 
 
 def _w_vorbis(f, fields):
     for k, v in fields.items():
         key = _VORBIS[k]
         if v:
-            f.tags[key] = [v]
+            f.tags[key] = _values(k, v)
         elif key in f.tags:
             del f.tags[key]
 
@@ -246,7 +255,7 @@ def _w_mp4(f, fields):
             else:
                 tags.pop(key, None)
         elif v:
-            tags[_MP4[k]] = [v]
+            tags[_MP4[k]] = _values(k, v)
         else:
             tags.pop(_MP4[k], None)
 
@@ -254,7 +263,7 @@ def _w_mp4(f, fields):
 def _w_asf(f, fields):
     for k, v in fields.items():
         if v:
-            f.tags[_ASF[k]] = [v]
+            f.tags[_ASF[k]] = _values(k, v)
         elif _ASF[k] in f.tags:  # ASF tags have no pop(key, default)
             del f.tags[_ASF[k]]
 
@@ -262,7 +271,8 @@ def _w_asf(f, fields):
 def _w_ape(f, fields):
     for k, v in fields.items():
         if v:
-            f.tags[_APE[k]] = v
+            values = _values(k, v)
+            f.tags[_APE[k]] = values if len(values) > 1 else v
         elif _APE[k] in f.tags:
             del f.tags[_APE[k]]
 

@@ -5,6 +5,40 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [0.9.9.7] - 2026-10-18
+
+Albums can have several genres, genres can come from Discogs and Last.fm too, artist pages have bios, and
+pages stay readable on ultrawide screens.
+
+### Added
+- Several genres per album, the main one first ("IDM; Ambient; Electronic"). They're written to the files as
+  separate genres, so other players see them too, and a genre text another program wrote with separators
+  ("Rock/Pop") counts as the same list.
+  - Filtering songs by genre, and smart playlists with "Genre is …", match any of a song's genres.
+  - The album page shows all of an album's genres and the artist page their top three. Settings → Library
+    switches either back to the main genre only, and switches on every genre for the playing song.
+  - Find online in the tag editor and Find all in Library health suggest up to three genres. Click the
+    genres found to add or remove them, or type your own; the first is the main one.
+- Discogs and Last.fm as genre sources, next to MusicBrainz. Discogs needs a personal access token
+  (Settings → Internet & sharing, kept in the system keyring) and gives its specific styles first, then its
+  broad genres. Last.fm uses the API key set up for scrobbling, and only its tags that are real genres
+  (on MusicBrainz's genre list, and tagged by enough people) are used. Genres the sources agree on rank
+  higher. As before, only albums without a genre are looked up, and nothing is written until you've
+  checked it: genres you set yourself are never replaced.
+- Artist bios on the artist page, from Wikipedia (found through MusicBrainz, so a band isn't mixed up with
+  a film of the same name), Last.fm or Discogs. Choose where bios come from in Settings, or for one artist on
+  their page, or write your own, which is always shown instead. Your own bios are in backups. Looking bios
+  up when a page opens can be switched off.
+
+### Changed
+- On ultrawide (21:9, 32:9) screens, pages of cards and text keep to a readable width, centred, instead of
+  stretching across the whole screen. Album grids and song lists still use all of it.
+
+### Fixed
+- With a locked system keyring that shows no unlock prompt, the app could take nine seconds to open (three
+  waits of three seconds). It now waits once.
+- Tests can't reach the internet by accident.
+
 ## [0.9.9.6] - 2026-10-17
 
 Saving genres for many albums at once works properly: fast, with progress, and without endless rescans.

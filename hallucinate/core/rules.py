@@ -150,6 +150,8 @@ def _condition(rule, now):
             return f"{col} LIKE ? ESCAPE '\\'", [_like(folded)]
         if op == "not_contains":
             return f"{col} NOT LIKE ? ESCAPE '\\'", [_like(folded)]
+        if expr == "t.genre" and op in ("is", "is_not"):  # one of an album's genres (it may have several)
+            return ("" if op == "is" else "NOT ") + "genre_has(t.genre, ?)", [value]
         if op == "is":
             return f"{col} = ?", [folded]
         if op == "is_not":

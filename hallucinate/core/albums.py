@@ -4,6 +4,7 @@ Pure functions over a Database; cover colours themselves are measured by the cal
 in the album_colors table, keyed by the art file so a new cover is measured again."""
 from collections import Counter
 
+from . import genres as genre_names
 from .insights import LOSSLESS
 
 
@@ -20,7 +21,13 @@ def liner_notes(db, key):
     )
     if not rows:
         return {}
-    genres = Counter(g.strip() for r in rows for g in (r["genre"] or "").replace(";", "/").split("/") if g.strip())
+    # an album's genres, main one first: by how many songs carry each, then by where the songs list it
+    order, seen = Counter(), {}
+    for r in rows:
+        for pos, g in enumerate(genre_names.split(r["genre"])):
+            order[g] += 1
+            seen[g] = min(seen.get(g, pos), pos)
+    genres = sorted(order, key=lambda g: (-order[g], seen[g]))
     formats = Counter((r["codec"] or r["fmt"] or "").upper() for r in rows)
     rates = sorted({r["sample_rate"] for r in rows if r["sample_rate"]})
     bitrates = [r["bitrate"] for r in rows if r["bitrate"]]
@@ -29,7 +36,7 @@ def liner_notes(db, key):
     ).fetchone()[0]
     lasts = [r["last"] for r in rows if r["last"]]
     return {
-        "genres": [g for g, _ in genres.most_common(4)],
+        "genres": genres[:8],
         "discs": len({r["disc_no"] for r in rows if r["disc_no"] > 0}),
         "formats": [f for f, _ in formats.most_common() if f],
         "lossless": all(f in LOSSLESS for f in formats if f),

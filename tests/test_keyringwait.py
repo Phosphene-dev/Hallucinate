@@ -40,3 +40,22 @@ def test_call_reports_success_errors_and_no_answer():
     gate = threading.Event()
     assert keyringwait.call(lambda: gate.wait(5), timeout=0.05) == keyringwait.NO_ANSWER
     gate.set()
+
+
+def test_once_the_keyring_is_stuck_later_reads_dont_wait_for_it_too():
+    import threading
+    import time
+
+    from hallucinate import keyringwait
+
+    release = threading.Event()
+    assert keyringwait.read(lambda k: release.wait(5) and "x", ("a",), timeout=0.2) is None
+    started = time.monotonic()
+    assert keyringwait.read(lambda k: release.wait(5) and "y", ("b",), timeout=3) is None
+    assert time.monotonic() - started < 0.5  # not another three seconds
+    release.set()
+    deadline = time.monotonic() + 5
+    while keyringwait._unanswered[0] and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert keyringwait._unanswered[0] == 0
+    assert keyringwait.read(lambda k: "z", ("c",))["values"] == {"c": "z"}

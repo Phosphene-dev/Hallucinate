@@ -141,6 +141,7 @@ class MetadataEditor(QObject):
         self._save_refreshed = 0.0
         self._genres_thread = None
         self._genres_progress.connect(self._apply_genres_progress)
+        self._sources, self._data_dir = None, None  # Discogs and Last.fm, when set up (see setSources)
         settings = QSettings("hallucinate", "hallucinate")
         # Settings → Library: a cover you set is also saved as cover.jpg in the album's folder (on unless switched
         # off) and embedded in the songs if you ask (remembered from the last time)
@@ -440,26 +441,49 @@ class MetadataEditor(QObject):
         if finished:
             self.coverResult.emit(True, f"Found {self._covers['found']} of {self._covers['done']} covers")
 
-    # --- genres from MusicBrainz -------------------------------------------------------------------------
+    # --- genres from MusicBrainz, Discogs and Last.fm ----------------------------------------------------
+    def setSources(self, sources, data_dir):
+        """The OnlineSources (Discogs token, Last.fm key, which ones to ask) and where to keep the genre list."""
+        self._sources, self._data_dir = sources, data_dir
+
+    def _genre_lookup(self):
+        """find(artist, album, artist_cache) asking every source that's set up. Called on the window's thread
+        (it reads settings); the function it returns runs on a worker."""
+        from .core import genrefinder, genrelist
+
+        src = self._sources
+        use = src.genre_sources() if src else ("MusicBrainz",)
+        lastfm_key = src.lastfm_key() if src and "Last.fm" in use else ""
+        data_dir = self._data_dir
+        known = []
+
+        def find(artist, album, cache=None):
+            token = src.discogs_token() if src and "Discogs" in use else ""
+            if lastfm_key and data_dir and not known:
+                known.append(genrelist.known(data_dir))
+            return genrefinder.find(artist, album, discogs_token=token, lastfm_key=lastfm_key,
+                                    known=known[0] if known else None, artist_cache=cache, use=use)
+
+        return find
+
     @Slot(str, str)
     def findGenre(self, artist, album):
-        """Look up one album's genre; genreFound() reports back. Nothing is written: the editor fills its
+        """Look up one album's genres; genreFound() reports back. Nothing is written: the editor fills its
         Genre field and you save as usual."""
-        from .core import musicbrainz
-
         if net.is_offline():
-            self.genreFound.emit({"error": "Offline mode is on, so MusicBrainz can't be searched"})
+            self.genreFound.emit({"error": "Offline mode is on, so genres can't be looked up"})
             return
         if not (album or "").strip():
             self.genreFound.emit({"error": "The song needs an album name to look up its genre"})
             return
+        find = self._genre_lookup()
 
         def work():
             try:
-                found = musicbrainz.find_genre(artist, album)
-                self._mb_done.emit(("genre", found or {"error": "MusicBrainz has no genre for this album"}, ""))
+                found = find(artist, album)
+                self._mb_done.emit(("genre", found or {"error": "No genre was found for this album"}, ""))
             except (OSError, ValueError, KeyError) as exc:
-                self._mb_done.emit(("genre", {"error": f"Couldn't reach MusicBrainz: {net.describe(exc)}"}, ""))
+                self._mb_done.emit(("genre", {"error": f"Couldn't look it up: {net.describe(exc)}"}, ""))
 
         threading.Thread(target=work, name="musicbrainz-genre", daemon=True).start()
 
@@ -504,7 +528,8 @@ class MetadataEditor(QObject):
     @Property("QVariantList", notify=genresChanged)
     def genreProposals(self):
         """What the last "find all" turned up, waiting to be checked and saved:
-        [{album_key, album, artist, genre, genres, source, songs}]."""
+        [{album_key, album, artist, genre (the suggested ones, "IDM; Ambient"), genres (every one found),
+        source ("album" | "artist"), sources (where they came from), songs}]."""
         return list(self._genres["proposals"])
 
     @Slot()
@@ -516,7 +541,8 @@ class MetadataEditor(QObject):
         self._genres_stop.clear()
         self._genres = {"busy": True, "done": 0, "total": 0, "found": 0, "current": "", "proposals": []}
         self.genresChanged.emit()
-        self._genres_thread = threading.Thread(target=self._fetch_genres, name="genres", daemon=True)
+        self._genres_thread = threading.Thread(target=self._fetch_genres, args=(self._genre_lookup(),),
+                                               name="genres", daemon=True)
         self._genres_thread.start()
 
     @Slot()
@@ -528,9 +554,7 @@ class MetadataEditor(QObject):
         self._genres["proposals"] = []
         self.genresChanged.emit()
 
-    def _fetch_genres(self):
-        from .core import musicbrainz
-
+    def _fetch_genres(self, find):
         db = Database(self._db_path)
         found, proposals, artists = 0, [], {}
         try:
@@ -545,7 +569,7 @@ class MetadataEditor(QObject):
                 if artist == health.UNKNOWN_ARTIST:
                     artist = ""
                 try:
-                    hit = musicbrainz.find_genre(artist, album["album"], artists)
+                    hit = find(artist, album["album"], artists)
                 except (OSError, ValueError, KeyError) as exc:
                     logger.info("No genre found for an album: %s", exc)
                     hit = None
@@ -553,6 +577,7 @@ class MetadataEditor(QObject):
                     found += 1
                     proposals.append({"album_key": album["album_key"], "album": album["album"], "artist": artist,
                                       "genre": hit["genre"], "genres": hit["genres"], "source": hit["source"],
+                                      "sources": hit.get("sources", []),
                                       "songs": int(album.get("n") or 0)})
                 self._genres_progress.emit({"done": done, "found": found})
         except Exception:  # noqa: BLE001
@@ -583,7 +608,11 @@ class MetadataEditor(QObject):
     @Slot("QVariantList")
     def saveGenres(self, items):
         """Write each album's chosen genre to its songs: [{album_key, genre}]."""
-        items = [(str(i["album_key"]), str(i["genre"]).strip()) for i in items if str(i.get("genre") or "").strip()]
+        from .core import genres as genre_names
+
+        items = [(str(i["album_key"]), genre_names.join(genre_names.split(str(i.get("genre") or ""))))
+                 for i in items]
+        items = [(key, genre) for key, genre in items if genre]
 
         def save_all(db, pairs):
             total = {"kind": "tags", "saved": 0, "errors": []}

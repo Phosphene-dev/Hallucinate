@@ -93,8 +93,8 @@ Item {
 
         Column {
             id: content
-            x: 28; y: 22
-            width: parent.width - 56
+            x: Theme.contentX(parent.width); y: 22
+            width: Theme.contentWidth(parent.width)
             spacing: 18
 
             Row {

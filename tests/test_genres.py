@@ -1,0 +1,160 @@
+"""Several genres per album (the main one first): reading and writing them, filtering and smart playlists by
+any of them, and finding them on MusicBrainz, Discogs and Last.fm."""
+import mutagen
+import pytest
+from audio import FFMPEG, encode
+
+from hallucinate.core import discogs, genrefinder, genres, lastfm, musicbrainz, tagedit
+from hallucinate.core import rules as R
+from hallucinate.core.tags import read_track
+
+needs_ffmpeg = pytest.mark.skipif(not FFMPEG, reason="ffmpeg not installed")
+
+
+def test_a_genre_text_is_split_into_its_genres_main_one_first():
+    assert genres.split("IDM; Ambient;  Electronic") == ["IDM", "Ambient", "Electronic"]
+    assert genres.split("Rock/Pop") == ["Rock", "Pop"]
+    assert genres.split(["Hip-Hop; Rap", "rap", "Trip Hop"]) == ["Hip-Hop", "Rap", "Trip Hop"]
+    assert genres.split("") == [] and genres.main("") == ""
+    assert genres.join(["Shoegaze", "Dream Pop", "shoegaze"]) == "Shoegaze; Dream Pop"
+    assert genres.main("Jazz; Hard Bop") == "Jazz"
+    assert genres.has("Jazz; Hard Bop", "hard bop") and genres.has("Électronique", "electronique")
+    assert not genres.has("Jazz; Hard Bop", "Bop") and not genres.has("Jazz", "")
+
+
+@pytest.mark.parametrize("ext", ["mp3", "flac", "ogg", "opus", "m4a", "wma", "wv"])
+@needs_ffmpeg
+def test_several_genres_are_written_as_separate_values_and_read_back(tmp_path, ext):
+    path = encode(tmp_path / f"song.{ext}", ext, seconds=0.5, title="Song")
+    tagedit.write_tags(str(path), {"genre": "IDM; Ambient; Electronic"})
+    assert read_track(str(path))["genre"] == "IDM; Ambient; Electronic"
+    f = mutagen.File(path)
+    if ext == "flac" or ext in ("ogg", "opus"):
+        assert f.tags["GENRE"] == ["IDM", "Ambient", "Electronic"]  # other players see three genres
+    tagedit.write_tags(str(path), {"genre": "Ambient"})
+    assert read_track(str(path))["genre"] == "Ambient"
+
+
+def _add(db, path, genre):
+    db.upsert_track({
+        "path": path, "mtime": 0, "size": 1, "title": path, "artist": "A", "album_artist": "A", "aa_tag": 1,
+        "album": "LP", "album_key": "a|lp", "track_no": 0, "disc_no": 0, "year": 2000, "genre": genre,
+        "duration": 100, "fmt": "FLAC", "codec": "FLAC", "bitrate": 0, "sample_rate": 44100,
+    })
+
+
+def test_filters_and_smart_playlists_match_any_of_a_songs_genres(db):
+    _add(db, "/m/1", "IDM; Ambient")
+    _add(db, "/m/2", "Ambient")
+    _add(db, "/m/3", "Ambient Techno")
+    db.commit()
+    assert db.all_genres() == ["Ambient", "Ambient Techno", "IDM"]
+    assert {t["path"] for t in db.filtered_tracks(genre="ambient")} == {"/m/1", "/m/2"}
+    rule = {"match": "all", "rules": [{"field": "genre", "op": "is", "value": "Ambient"}]}
+    assert {t["path"] for t in R.matching_tracks(db, rule)} == {"/m/1", "/m/2"}
+    rule["rules"][0]["op"] = "is_not"
+    assert {t["path"] for t in R.matching_tracks(db, rule)} == {"/m/3"}
+
+
+def test_an_albums_genres_rank_by_how_many_songs_carry_them(db):
+    from hallucinate.core import albums
+
+    _add(db, "/m/1", "IDM; Ambient")
+    _add(db, "/m/2", "Ambient; IDM")
+    _add(db, "/m/3", "Ambient")
+    db.commit()
+    assert albums.liner_notes(db, "a|lp")["genres"][:2] == ["Ambient", "IDM"]
+
+
+def test_discogs_styles_come_before_its_broad_genres():
+    assert discogs.genre_list(["Downtempo", "Trip Hop"], ["Electronic", "Funk / Soul"]) == \
+        ["Downtempo", "Trip Hop", "Electronic", "Funk", "Soul"]
+    assert discogs.genre_list([], ["Folk, World, & Country", "Non-Music"]) == ["Folk", "World", "Country"]
+    assert discogs.plain_profile("[b]Founded[/b] by [a=Aphex Twin (2)] on [l=Warp]. [a12345] [url=http://x]site[/url]") \
+        == "Founded by Aphex Twin on Warp.  site".replace("  ", " ")
+
+
+def test_discogs_finds_an_album_by_its_title_and_artist(monkeypatch):
+    asked = []
+
+    def get(path, params, token, timeout=15):
+        asked.append((path, dict(params or {}), token))
+        if params.get("type") == "master":
+            return {"results": [{"title": "Other - Thing", "style": ["Rock"], "genre": ["Rock"]},
+                                {"title": "Boards Of Canada* - Music Has The Right To Children", "type": "master",
+                                 "id": 1, "style": ["IDM", "Downtempo"], "genre": ["Electronic"]}]}
+        return {"results": []}
+
+    monkeypatch.setattr(discogs, "_get", get)
+    hit = discogs.find_genre("Boards of Canada", "Music Has the Right to Children", "tok")
+    assert hit["genres"] == ["IDM", "Downtempo", "Electronic"] and hit["genre"] == "IDM"
+    assert asked[0][2] == "tok"
+    assert discogs.find_genre("Boards of Canada", "Music Has the Right to Children", "") is None  # no token, no ask
+    assert len(asked) == 1
+
+
+def test_only_last_fm_tags_that_are_genres_are_kept():
+    tags = [{"name": "electronic", "count": 100}, {"name": "seen live", "count": 90},
+            {"name": "albums i own", "count": 50}, {"name": "idm", "count": 40}, {"name": "2009", "count": 30},
+            {"name": "Boards of Canada", "count": 30}, {"name": "ambient", "count": 5}]
+    assert lastfm.filter_tags(tags, artist="Boards of Canada") == ["Electronic", "IDM"]
+    known = {"electronic", "ambient"}
+    assert lastfm.filter_tags(tags, known=known) == ["Electronic"]  # IDM isn't on that list; ambient too few
+
+
+def test_last_fm_bios_lose_their_link_and_markup():
+    text = 'Boards of Canada are a <b>Scottish</b> duo.<br/>Formed in 1986 &amp; more. <a href="https://www.last.fm/music/Boards+of+Canada">Read more on Last.fm</a>. User-contributed text is available under the Creative Commons By-SA License'
+    assert lastfm.plain_bio(text) == "Boards of Canada are a Scottish duo.\nFormed in 1986 & more."
+
+
+def test_sources_are_combined_with_agreement_ranking_higher(monkeypatch):
+    monkeypatch.setattr(musicbrainz, "find_genre", lambda a, b, cache=None:
+                        {"genre": "Electronic", "genres": ["Electronic", "IDM"], "source": "album", "release": b})
+    monkeypatch.setattr(discogs, "find_genre", lambda a, b, token:
+                        {"genre": "IDM", "genres": ["IDM", "Downtempo", "Electronic"], "source": "album", "release": b})
+    monkeypatch.setattr(lastfm, "find_genre", lambda a, b, key, known=None:
+                        {"genre": "IDM", "genres": ["IDM", "Ambient"], "source": "album", "release": b})
+    hit = genrefinder.find("BoC", "MHTRTC", discogs_token="t", lastfm_key="k")
+    assert hit["genres"][:2] == ["IDM", "Electronic"] and hit["genre"] == "IDM; Electronic; Downtempo"
+    assert hit["sources"] == ["MusicBrainz", "Discogs", "Last.fm"]
+    # without a token or key those sources aren't asked
+    only = genrefinder.find("BoC", "MHTRTC")
+    assert only["sources"] == ["MusicBrainz"] and only["genre"] == "Electronic; IDM"
+
+
+def test_the_artists_genre_is_only_used_when_no_source_has_the_albums(monkeypatch):
+    monkeypatch.setattr(musicbrainz, "find_genre", lambda a, b, cache=None:
+                        {"genre": "Rock", "genres": ["Rock"], "source": "artist", "release": b})
+    monkeypatch.setattr(discogs, "find_genre", lambda a, b, token:
+                        {"genre": "Shoegaze", "genres": ["Shoegaze"], "source": "album", "release": b})
+    assert genrefinder.find("A", "B", discogs_token="t")["genre"] == "Shoegaze"
+    assert genrefinder.find("A", "B")["source"] == "artist"
+
+
+def test_a_source_that_fails_doesnt_stop_the_others(monkeypatch):
+    def down(*a, **k):
+        raise OSError("down")
+
+    monkeypatch.setattr(musicbrainz, "find_genre", down)
+    monkeypatch.setattr(discogs, "find_genre", lambda a, b, token:
+                        {"genre": "Jazz", "genres": ["Jazz"], "source": "album", "release": b})
+    assert genrefinder.find("A", "B", discogs_token="t")["genre"] == "Jazz"
+    with pytest.raises(OSError):  # all of them down: not "nothing found"
+        genrefinder.find("A", "B")
+
+
+def test_display_shows_the_main_genre_or_all_of_them(qapp):
+    from PySide6.QtGui import QIcon
+
+    from hallucinate.player import Player
+    from hallucinate.shell import DesktopShell
+
+    player = Player()
+    shell = DesktopShell(qapp, player, QIcon())
+    try:
+        assert shell.genresText("IDM; Ambient", False) == "IDM"
+        assert shell.genresText("IDM; Ambient", True) == "IDM, Ambient"
+        assert shell.genresText("", True) == ""
+    finally:
+        shell.shutdown()
+        player.shutdown()

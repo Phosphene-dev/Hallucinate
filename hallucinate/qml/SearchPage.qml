@@ -27,8 +27,8 @@ Item {
 
         Column {
             id: col
-            x: 28; y: 20
-            width: fl.width - 56
+            x: Theme.contentX(fl.width); y: 20
+            width: Theme.contentWidth(fl.width)
             spacing: 14
 
             Item { width: 1; height: 40; visible: noResults.visible }

@@ -262,6 +262,13 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
 
     servers = Servers(tmp_path / "lib.db", tmp_path / "art", player)
     context.setContextProperty("servers", servers)
+    from hallucinate.bios import ArtistBios
+    from hallucinate.onlinesources import OnlineSources
+
+    sources = OnlineSources(lambda: "")
+    artist_bios = ArtistBios(tmp_path / "library.db", sources)
+    context.setContextProperty("sources", sources)
+    context.setContextProperty("artistBios", artist_bios)
     qml_dir = Path(__file__).parents[1] / "hallucinate" / "qml"
     engine.addImportPath(str(qml_dir))
     qml_warnings = []

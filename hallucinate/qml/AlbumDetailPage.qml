@@ -81,7 +81,9 @@ Item {
     ListView {
         id: list
         anchors.fill: parent
-        anchors.leftMargin: 20; anchors.rightMargin: 8
+        // centred on an ultrawide screen (see Theme.contentMax)
+        readonly property real side: Math.max(0, (parent.width - Theme.contentMax - 56) / 2)
+        anchors.leftMargin: 20 + side; anchors.rightMargin: 8 + side
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         model: page.tracks
@@ -205,7 +207,10 @@ Item {
                     id: notesFlow
                     anchors { left: parent.left; right: parent.right; top: parent.top; margins: 18 }
                     spacing: 32
-                    Note { label: "Genre"; value: (page.notes.genres || []).join(", ") }
+                    Note {
+                        label: shell.allGenresAlbums && (page.notes.genres || []).length > 1 ? "Genres" : "Genre"
+                        value: (page.notes.genres || []).slice(0, shell.allGenresAlbums ? 8 : 1).join(", ")
+                    }
                     Note { label: "Format"; value: page.formatLine() + (page.notes.lossless ? "  ·  lossless" : "") }
                     Note { label: "Discs"; value: page.multiDisc ? String(page.notes.discs) : "" }
                     Note { label: "Size"; value: page.notes.bytes ? Theme.fmtBytes(page.notes.bytes) : "" }

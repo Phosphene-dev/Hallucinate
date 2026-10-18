@@ -2,6 +2,14 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "0.9.9.7": [
+        "Albums can have several genres, the main one first. Filters and smart playlists match any of them, "
+        "and Settings → Library chooses whether pages show all of them or just the main one.",
+        "Genres can also come from Discogs (with a personal token) and Last.fm, next to MusicBrainz. Genres "
+        "you set yourself are never replaced.",
+        "Artist pages have a bio from Wikipedia, Last.fm or Discogs, or one you write yourself.",
+        "Pages stay a readable width on ultrawide screens.",
+    ],
     "0.9.9.6": [
         "Saving genres found online for many albums is much faster, shows how far it has got (with Stop), "
         "and no longer makes the library rescan over and over.",

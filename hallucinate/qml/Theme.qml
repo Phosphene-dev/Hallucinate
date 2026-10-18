@@ -5,6 +5,11 @@ QtObject {
     id: root
     // Colors cross-fade on theme and album-accent changes.
     readonly property int duration: 220
+    // Pages of cards and text keep to this width, centred, on ultrawide screens (a row of four stats or a bio
+    // stretched across 3000 pixels is hard to read); grids of albums and lists of songs use all of it.
+    readonly property int contentMax: 1960
+    function contentWidth(avail) { return Math.min(avail - 56, contentMax) }
+    function contentX(avail) { return Math.max(28, (avail - contentWidth(avail)) / 2) }
     // Values are plain properties (not bindings) so ColorAnimations can cross-fade them.
     Component.onCompleted: {
         bg = themeManager.bg

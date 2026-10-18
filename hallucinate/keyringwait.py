@@ -7,11 +7,18 @@ carries on and `late` is called (from that thread) once the keyring answers."""
 import threading
 
 WAIT_S = 3.0
+# Reads still waiting on a keyring that didn't answer: while there are any, the keyring is stuck (locked, with
+# no unlock prompt showing), so later reads don't wait for it too (three services at start would be 9 seconds)
+_unanswered = [0]
+_count_lock = threading.Lock()
 
 
-def read(get, keys, late=None, timeout=WAIT_S):
+def read(get, keys, late=None, timeout=WAIT_S, patient=False):
     """{"values": {key: value or ""}, "error": ""} from get(key) for each key, or None when the keyring
     didn't answer within `timeout` (then late(result) follows when it does)."""
+    with _count_lock:
+        if _unanswered[0] and not patient:  # (a write you asked for still waits its time)
+            timeout = min(timeout, 0.05)
     result = {}
     done = threading.Event()
     lock = threading.Lock()
@@ -26,8 +33,11 @@ def read(get, keys, late=None, timeout=WAIT_S):
             result.update(values=values, error=error)
             done.set()
             gave_up = bool(waited_out)
-        if gave_up and late is not None:
-            late(dict(result))
+        if gave_up:
+            with _count_lock:
+                _unanswered[0] -= 1
+            if late is not None:
+                late(dict(result))
 
     threading.Thread(target=run, name="keyring", daemon=True).start()
     done.wait(timeout)
@@ -35,6 +45,8 @@ def read(get, keys, late=None, timeout=WAIT_S):
         if done.is_set():
             return dict(result)
         waited_out.append(True)
+        with _count_lock:
+            _unanswered[0] += 1
         return None
 
 
@@ -45,5 +57,5 @@ NO_ANSWER = "the system keyring didn't answer (is it locked?)"
 def call(fn, timeout=WRITE_WAIT_S):
     """Run fn() (keyring writes) the same way: "" when it worked, the error's text when it failed, NO_ANSWER
     when the keyring didn't answer in time (it may still finish afterwards)."""
-    got = read(lambda _key: fn(), ("call",), timeout=timeout)
+    got = read(lambda _key: fn(), ("call",), timeout=timeout, patient=True)
     return NO_ANSWER if got is None else got["error"]

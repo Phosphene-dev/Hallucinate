@@ -52,6 +52,9 @@ Item {
         id: list
         objectName: "historyList"
         anchors.fill: parent
+        // centred on an ultrawide screen, like the other pages (see Theme.contentMax)
+        anchors.leftMargin: Math.max(0, (parent.width - Theme.contentMax - 56) / 2)
+        anchors.rightMargin: anchors.leftMargin
         model: userLib.historyModel
         clip: true
         boundsBehavior: Flickable.StopAtBounds

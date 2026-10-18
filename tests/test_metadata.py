@@ -491,7 +491,7 @@ def test_genres_found_for_albums_without_one_are_saved_only_when_kept(qapp, lib,
         assert asked == [("Band", "Disc")] and done[0].startswith("Found genres for 1 of 1 albums")
         proposals = ed.genreProposals
         assert [(p["album"], p["genre"], p["genres"], p["songs"]) for p in proposals] == \
-            [("Disc", "Dream Pop", ["Dream Pop", "Shoegaze"], 2)]
+            [("Disc", "Dream Pop; Shoegaze", ["Dream Pop", "Shoegaze"], 2)]
         assert ed.trackInfo(str(root / "01.mp3"))["genre"] == ""  # nothing written yet
         ed.saveGenres([{"album_key": proposals[0]["album_key"], "genre": "Shoegaze"}])
         assert wait_for(lambda: changed)
@@ -511,7 +511,7 @@ def test_one_albums_genre_is_found_without_writing(qapp, lib, monkeypatch):
     ed.genreFound.connect(lambda r: got.append(dict(r)))
     try:
         ed.findGenre("Band", "Disc")
-        assert wait_for(lambda: got, 10) and got[0]["error"] == "MusicBrainz has no genre for this album"
+        assert wait_for(lambda: got, 10) and got[0]["error"] == "No genre was found for this album"
         net.set_offline(True)
         ed.findGenre("Band", "Disc")
         assert got[1]["error"].startswith("Offline mode is on")
