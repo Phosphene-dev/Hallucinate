@@ -181,6 +181,13 @@ Item {
                             text: "Radio"
                             onClicked: library.startArtistRadio(page.artistName)
                         }
+                        IconButton {
+                            id: artistMoreButton
+                            objectName: "artistPageMore"
+                            height: 38
+                            icon: "more"; size: 18; tip: "More: play next, add to a playlist, remove…"
+                            onClicked: Nav.artistMenu(page.artistName)
+                        }
                     }
                 }
             }
@@ -442,11 +449,13 @@ Item {
                         required property var modelData
                         required property int index
                         rowIndex: index
+                        context: "artist"
                         width: col.width
                         number: index + 1
                         path: modelData.path
                         title: modelData.title
                         artist: modelData.plays ? page.plural(modelData.plays, "play", "plays") : modelData.album
+                        linkArtist: false  // the line holds plays, not the artist
                         album: modelData.album
                         showAlbum: false
                         durText: modelData.durText
@@ -526,7 +535,7 @@ Item {
                             cardWidth: 160
                             albumKey: modelData.album_key
                             title: modelData.album
-                            artist: page.artistName
+                            artist: modelData.album_artist || ""  // someone else's record: its menu goes to them
                             subtitle: (modelData.year > 0 ? modelData.year + "  ·  " : "") + modelData.album_artist
                             artUrl: modelData.artUrl
                         }
@@ -563,6 +572,7 @@ Item {
                         audioFormat: model.codec
                         audioBitrate: model.bitrate
                         rowIndex: index
+                        context: "artist"
                         width: col.width
                         title: model.title
                         artist: model.artist

@@ -24,6 +24,12 @@ Rectangle {
     property var selectionSource: null
     readonly property bool selected: path.length > 0 && Selection.count > 0 && Selection.paths.indexOf(path) >= 0
     signal enqueue()
+    // The second line and the album open the song's artist and album (looked up when clicked, as some lists add
+    // to the line, like a play count). Off where the line isn't the artist at all.
+    property bool linkArtist: true
+    readonly property bool linkable: path.length > 0 && !/^https?:\/\//.test(path)
+    // Mouse over the row or the keyboard on it: its buttons show
+    readonly property bool showButtons: hh.hovered || row.activeFocus
 
     height: 52
     radius: Theme.radiusSmall
@@ -33,7 +39,12 @@ Rectangle {
     HoverHandler { id: hh }
     activeFocusOnTab: true
     ListKeys { id: listKeys; row: row; onMenu: if (row.path.length) Nav.trackMenu(row.path, row.title, row.context, row.rowIndex) }
-    Keys.onShortcutOverride: function (event) { event.accepted = listKeys.handles(event) }
+    // Space, Enter and the moves are the row's while it has the focus (Space would otherwise play/pause)
+    Keys.onShortcutOverride: function (event) {
+        var plain = (event.modifiers & ~Qt.KeypadModifier) === Qt.NoModifier
+        event.accepted = listKeys.handles(event)
+            || (plain && [Qt.Key_Space, Qt.Key_Return, Qt.Key_Enter].indexOf(event.key) >= 0)
+    }
     Keys.onPressed: function (event) { if (listKeys.handles(event)) listKeys.press(event, row.rowIndex) }
     Keys.onSpacePressed: row.activated()
     Keys.onReturnPressed: row.activated()
@@ -49,17 +60,19 @@ Rectangle {
         cursorShape: Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onPressAndHold: if (row.path.length) Nav.trackMenu(row.path, row.title, row.context, row.rowIndex)
-        onClicked: function (mouse) {
-            if (mouse.button === Qt.RightButton) {
-                if (row.path.length) Nav.trackMenu(row.path, row.title, row.context, row.rowIndex)
-            } else if (row.path.length && (mouse.modifiers & Qt.ControlModifier)) {
-                Selection.toggle(row.selectionSource, row.rowIndex, row.path)
-            } else if (row.path.length && (mouse.modifiers & Qt.ShiftModifier)) {
-                Selection.extend(row.selectionSource, row.rowIndex, row.path)
-            } else {
-                Selection.clear()
-                row.activated()
-            }
+        onClicked: function (mouse) { row.click(mouse) }
+    }
+    // A click on the row (or on its artist or album link with Ctrl or Shift held, which select instead)
+    function click(mouse) {
+        if (mouse.button === Qt.RightButton) {
+            if (row.path.length) Nav.trackMenu(row.path, row.title, row.context, row.rowIndex)
+        } else if (row.path.length && (mouse.modifiers & Qt.ControlModifier)) {
+            Selection.toggle(row.selectionSource, row.rowIndex, row.path)
+        } else if (row.path.length && (mouse.modifiers & Qt.ShiftModifier)) {
+            Selection.extend(row.selectionSource, row.rowIndex, row.path)
+        } else {
+            Selection.clear()
+            row.activated()
         }
     }
     Item {
@@ -112,12 +125,26 @@ Rectangle {
             spacing: 6
             Text {
                 textFormat: Text.PlainText
+                objectName: "trackArtistLink"
                 width: Math.max(24, parent.width - (audioBadge.visible ? audioBadge.width : 0) - parent.spacing)
                 text: row.artist
-                color: Theme.textDim
+                color: artistLinkArea.containsMouse ? Theme.text : Theme.textDim
+                font.underline: artistLinkArea.containsMouse
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(12)
                 elide: Text.ElideRight
+                LinkArea {
+                    id: artistLinkArea
+                    // over the words only, not the empty space after them
+                    anchors.fill: undefined
+                    width: Math.min(parent.implicitWidth, parent.width); height: parent.height
+                    enabled: row.linkArtist && row.linkable && row.artist.length > 0
+                    hoverEnabled: true
+                    name: "Go to the artist"
+                    onClicked: function (mouse) {
+                        row.followLink(mouse, function () { var i = library.trackInfo(row.path); Nav.openArtist(i.artist || i.album_artist || "") })
+                    }
+                }
             }
             AudioInfoBadge {
                 id: audioBadge
@@ -135,17 +162,35 @@ Rectangle {
         x: titles.x + titles.width + 16
         width: row.width - x - 190
         text: row.album
-        color: Theme.textDim
+        color: albumLinkArea.containsMouse ? Theme.text : Theme.textDim
+        font.underline: albumLinkArea.containsMouse
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSize(13)
         elide: Text.ElideRight
+        LinkArea {
+            id: albumLinkArea
+            anchors.fill: undefined
+            width: Math.min(parent.implicitWidth, parent.width); height: parent.height
+            enabled: row.linkable && row.album.length > 0 && row.context !== "album"
+            hoverEnabled: true
+            name: "Go to the album"
+            onClicked: function (mouse) {
+                row.followLink(mouse, function () { var k = library.trackInfo(row.path).album_key; if (k) Nav.openAlbum(k) })
+            }
+        }
+    }
+    // A link in the row: a plain click follows it; with Ctrl or Shift it selects like a click on the row does
+    function followLink(mouse, follow) {
+        if (mouse && (mouse.modifiers & (Qt.ControlModifier | Qt.ShiftModifier))) row.click(mouse)
+        else { Selection.clear(); follow() }
     }
     IconButton {
         id: moreBtn
         anchors { right: dur.left; rightMargin: 2; verticalCenter: parent.verticalCenter }
         icon: "more"; size: 14
         visible: row.path.length > 0
-        opacity: hh.hovered ? 1 : 0
+        opacity: row.showButtons ? 1 : 0
+        activeFocusOnTab: false  // the Menu key opens the same menu
         onClicked: Nav.trackMenu(row.path, row.title, row.context, row.rowIndex)
     }
     IconButton {
@@ -154,14 +199,16 @@ Rectangle {
         icon: "heart"; size: 14
         active: row.liked
         visible: row.path.length > 0 && shell.features.liked !== false
-        opacity: (hh.hovered || row.liked) ? 1 : 0
+        opacity: (row.showButtons || row.liked) ? 1 : 0
+        activeFocusOnTab: false
         onClicked: userLib.toggleLike(row.path)
     }
     IconButton {
         id: addBtn
         anchors { right: heartBtn.visible ? heartBtn.left : dur.left; rightMargin: 0; verticalCenter: parent.verticalCenter }
         icon: "plus"; size: 14
-        opacity: hh.hovered ? 1 : 0
+        opacity: row.showButtons ? 1 : 0
+        activeFocusOnTab: false
         onClicked: row.enqueue()
     }
     Text {

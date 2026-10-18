@@ -3,6 +3,7 @@ import "."
 
 Item {
     id: card
+    objectName: "artistCard"
     property string name
     property string subtitle
     property url artUrl
@@ -12,6 +13,22 @@ Item {
     Accessible.role: Accessible.Button
     Accessible.name: name + (subtitle.length ? ", " + subtitle : "")
     Accessible.onPressAction: Nav.openArtist(card.name)
+    // From the keyboard, like an album card: Tab to it, Enter or Space opens it, the Menu key its menu
+    activeFocusOnTab: true
+    // A focused control takes Space and Enter itself; without this the window's Space (play/pause) wins
+    Keys.onShortcutOverride: function (event) { event.accepted = event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter }
+    Keys.onReturnPressed: Nav.openArtist(card.name)
+    Keys.onEnterPressed: Nav.openArtist(card.name)
+    Keys.onSpacePressed: Nav.openArtist(card.name)
+    Keys.onMenuPressed: Nav.artistMenu(card.name)
+    Keys.onPressed: function (event) {
+        if (event.key === Qt.Key_F10 && (event.modifiers & Qt.ShiftModifier)) { Nav.artistMenu(card.name); event.accepted = true }
+    }
+    Rectangle {
+        x: -4; y: -4; width: card.cardWidth + 8; height: card.cardWidth + 8
+        radius: width / 2; color: "transparent"; border.width: 2; border.color: Theme.accent
+        visible: card.activeFocus
+    }
 
     Cover {
         id: art

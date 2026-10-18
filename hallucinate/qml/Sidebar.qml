@@ -229,7 +229,7 @@ Item {
                         Instantiator {
                             model: userLib.playlists
                             delegate: MenuItem {
-                                text: model.name
+                                text: Theme.plain(model.name)
                                 icon.name: "playlist"
                                 onTriggered: side.openPlaylist(model.id, model.name)
                             }
@@ -239,7 +239,7 @@ Item {
                         Instantiator {
                             model: userLib.smartPlaylists
                             delegate: MenuItem {
-                                text: model.name
+                                text: Theme.plain(model.name)
                                 icon.name: "smartlist"
                                 onTriggered: side.openSmartPlaylist(model.id, model.name)
                             }

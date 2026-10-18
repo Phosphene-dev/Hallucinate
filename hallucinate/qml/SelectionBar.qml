@@ -7,7 +7,12 @@ Rectangle {
     id: bar
     objectName: "selectionBar"
     signal editTags(var paths)
+    signal removeFromPlaylist(var paths)
     readonly property bool shown: Selection.count > 0
+    // songs on a music server: no files here to edit or put in the trash
+    readonly property bool onServer: Selection.paths.some(function (p) { return /^(subsonic|jellyfin):\/\//.test(p) })
+    // selected in the playlist that's open (not Liked Songs or a smart playlist): they can be taken out of it
+    readonly property bool inPlaylist: Selection.source !== null && Selection.source === userLib.playlistTracks
 
     property real maxWidth: parent ? parent.width - 32 : 900
     readonly property bool tight: maxWidth < 860  // short labels in small windows
@@ -99,6 +104,8 @@ Rectangle {
                 }
             }
             Action {
+                objectName: "selectionEditTags"
+                visible: !bar.onServer
                 text: bar.tight ? "Tags…" : "Edit tags…"
                 enabled: Selection.paths.every(function (p) { return !/\.[A-Za-z0-9]+#\d+$/.test(p) })
                 onClicked: bar.editTags(bar.paths())
@@ -111,10 +118,20 @@ Rectangle {
                 Menu {
                     id: moreMenu
                     MenuItem {
+                        objectName: "selectionRemoveFromPlaylist"
+                        visible: bar.inPlaylist
+                        height: visible ? implicitHeight : 0
+                        text: "Remove from this playlist"; icon.name: "remove"; icon.color: Theme.error
+                        onTriggered: bar.removeFromPlaylist(bar.paths())
+                    }
+                    MenuItem {
                         text: "Remove from library…"; icon.name: "remove"; icon.color: Theme.error
                         onTriggered: Nav.removeSongs(bar.paths(), bar.songs(Selection.count))
                     }
                     MenuItem {
+                        objectName: "selectionTrash"
+                        visible: !bar.onServer
+                        height: visible ? implicitHeight : 0
                         text: "Move to trash…"; icon.name: "trash"; icon.color: Theme.error
                         onTriggered: Nav.trashSongs(bar.paths(), bar.songs(Selection.count))
                     }

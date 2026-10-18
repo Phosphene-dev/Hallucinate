@@ -27,6 +27,8 @@ Item {
     readonly property var artistList: info.artistList || []
     property bool allAlbums: false
     function plural(n, one, many) { return n + " " + (n === 1 ? one : many) }
+    // Play next, add to the queue or a playlist: every song of the genre
+    CollectionMenu { id: genreMenu; objectName: "genreMenu" }
 
     Flickable {
         id: fl
@@ -121,6 +123,13 @@ Item {
                             enabled: (page.info.tracks || 0) > 0
                             onClicked: { player.setShuffle(true); library.playGenre(page.genreName, true) }
                         }
+                        IconButton {
+                            objectName: "genrePageMore"
+                            height: 38
+                            enabled: (page.info.tracks || 0) > 0
+                            icon: "more"; size: 18; tip: "More: play next, add to the queue or a playlist"
+                            onClicked: genreMenu.showGenre(page.genreName)
+                        }
                     }
                 }
             }
@@ -184,9 +193,12 @@ Item {
                                 }
                             }
                             HoverHandler { id: artistHover; cursorShape: Qt.PointingHandCursor }
-                            TapHandler { onTapped: Nav.openArtist(parent.modelData.name) }
+                            // right-click (or a long press) for the artist's menu
+                            TapHandler { onTapped: Nav.openArtist(parent.modelData.name); onLongPressed: Nav.artistMenu(parent.modelData.name) }
+                            TapHandler { acceptedButtons: Qt.RightButton; onTapped: Nav.artistMenu(parent.modelData.name) }
                             Accessible.role: Accessible.Link
                             Accessible.name: modelData.name
+                            Accessible.onPressAction: Nav.openArtist(modelData.name)
                         }
                     }
                 }
