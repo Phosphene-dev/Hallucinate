@@ -854,7 +854,7 @@ Item {
             id: sec_servers
             objectName: "settings_servers"
             title: "Music servers"
-            keywords: "server servers subsonic navidrome gonic airsonic ampache jellyfin emby stream remote network nas sync"
+            keywords: "server servers subsonic navidrome gonic airsonic ampache jellyfin emby stream remote network nas sync offline copy copies download keep"
             query: page.query
             visible: matches && shell.features.servers === true
             Text {
@@ -930,6 +930,34 @@ Item {
                 primary: true
                 text: "Add a server…"
                 onClicked: addServerDlg.open()
+            }
+            // Songs kept on this computer, to play without the server (right-click an album, playlist or song)
+            Text {
+                textFormat: Text.PlainText
+                objectName: "serverCopies"
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: (serverCopies.count > 0
+                       ? serverCopies.count.toLocaleString(Qt.locale(), "f", 0) + (serverCopies.count === 1 ? " song" : " songs")
+                         + " kept on this computer (" + Theme.fmtBytes(serverCopies.bytes) + "): they play without the server, in offline mode too."
+                       : "To play a server's songs without it (on a train, say), right-click an album, playlist or song and choose Keep on this computer.")
+                      + (serverCopies.waiting > 0 ? "  Downloading " + serverCopies.waiting + " more"
+                         + (serverCopies.busy ? " (" + Math.round(serverCopies.progress * 100) + "% of the current one)" : shell.offlineMode ? ", once offline mode is off" : "") + "." : "")
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            PillButton {
+                objectName: "removeServerCopies"
+                visible: serverCopies.count > 0 || serverCopies.waiting > 0
+                text: "Remove all copies…"
+                onClicked: removeCopiesDlg.open()
+            }
+            ConfirmDialog {
+                id: removeCopiesDlg
+                title: "Remove the copies on this computer?"
+                confirmText: "Remove copies"
+                destructive: true
+                body: "The songs stay in your library and on the server; they stream again instead of playing from this computer."
+                onAccepted: serverCopies.removeAll()
             }
             Dialog {
                 id: signInDlg

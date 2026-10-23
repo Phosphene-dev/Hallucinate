@@ -243,7 +243,7 @@ def test_old_database_is_migrated(tmp_path):
     assert d.search("homogenic")["albums"] and d.artists()[0]["name"] == "Bjørk"
     migrated = d.track(1)
     assert migrated["codec"] == "MP3"
-    assert migrated["mtime"] == 1
+    assert migrated["mtime"] == 0  # read again at the next scan (1.0 reads composer, work, tempo and key)
     ambiguous = d.track(2)
     assert ambiguous["codec"] == "M4A"
     assert ambiguous["mtime"] == 0

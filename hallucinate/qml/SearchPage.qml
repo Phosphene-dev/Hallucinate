@@ -14,7 +14,6 @@ Item {
     // nothing matched what was typed, so these are for what was probably meant
     readonly property string corrected: results.corrected || ""
     readonly property string matchQuery: corrected || query
-    function esc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") }
     // with radio and podcasts on, your stations, shows and episodes are found too
     readonly property var stationHits: shell.features.stations === true ? stations.find(query) : []
     readonly property var podcastHits: shell.features.podcasts === true ? podcasts.find(query) : ({ shows: [], episodes: [] })
@@ -62,10 +61,9 @@ Item {
                 visible: page.corrected.length > 0 && page.query.length > 0
                 width: parent.width
                 wrapMode: Text.Wrap
-                textFormat: Text.StyledText
-                text: "Nothing matches “" + page.esc(page.query) + "”. Showing results for <b>" + page.esc(page.corrected) + "</b>."
+                textFormat: Text.PlainText
+                text: "Nothing matches “" + page.query + "”. Showing results for “" + page.corrected + "”."
                 color: Theme.textDim
-                linkColor: Theme.accent
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(14)
             }

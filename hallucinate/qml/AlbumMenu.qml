@@ -17,6 +17,7 @@ Menu {
     property bool allLiked: false
     property string firstPath: ""
     property string genre: ""
+    property var copies: ({ servers: 0, kept: 0, waiting: 0 })  // its songs from a music server, kept here or not
     readonly property bool onServer: /^(subsonic|jellyfin):\/\//.test(firstPath)
 
     // keys: the album keys to act on (the clicked album, or the whole selection when it was part of it)
@@ -26,6 +27,7 @@ Menu {
         allLiked = userLib.allLiked(p)
         firstPath = p.length ? p[0] : ""
         genre = single ? ((library.albumNotes(k[0]) || {}).genres || [])[0] || "" : ""
+        copies = serverCopies.status(p)
         popup()
     }
     function paths() { return library.albumPaths(menu.keys) }
@@ -101,6 +103,21 @@ Menu {
         text: "Show in folder"
         icon.name: "folder"
         onTriggered: library.showInFolder(menu.firstPath)
+    }
+    MenuItem {
+        objectName: "albumKeep"
+        visible: menu.copies.servers > 0 && menu.copies.kept + menu.copies.waiting < menu.copies.servers
+        height: visible ? implicitHeight : 0
+        text: "Keep on this computer"; icon.name: "download"
+        onTriggered: serverCopies.keep(menu.paths())
+    }
+    MenuItem {
+        objectName: "albumUnkeep"
+        visible: menu.copies.kept + menu.copies.waiting > 0
+        height: visible ? implicitHeight : 0
+        text: menu.copies.waiting > 0 && menu.copies.kept === 0 ? "Stop keeping on this computer" : "Remove the copies from this computer"
+        icon.name: "remove"
+        onTriggered: serverCopies.remove(menu.paths())
     }
     MenuSeparator {}
     MenuItem { objectName: "albumRemove"; text: "Remove from library…"; icon.name: "remove"; icon.color: Theme.error; onTriggered: Nav.removeAlbums(menu.keys, menu.what) }

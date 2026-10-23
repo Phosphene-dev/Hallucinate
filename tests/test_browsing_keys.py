@@ -199,3 +199,46 @@ def test_genre_and_album_menus(qapp, app_window):
     assert albums.findChild(QObject, "albumLikeAll").property("text") == "Like all songs"  # one of four is liked
     QMetaObject.invokeMethod(albums, "close")
     assert not warnings, warnings[:3]
+
+
+def test_a_composers_page_and_the_composers_view(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    library = objects["library"]
+    invoke = invoker(qapp, window)
+    paths = [t["path"] for t in library.allTracks()[:3]]
+    db = library._db
+    for n, p in enumerate(paths, 1):
+        db.conn.execute("UPDATE tracks SET composer='Erik Satie', s_composer='erik satie', work='Gymnopédies', "
+                        "movement=?, movement_no=? WHERE path=?", (f"Part {n}", n, p))
+    db.commit()
+    library.reload()
+    assert wait_for(lambda: [c["name"] for c in library.composerList] == ["Erik Satie"])
+    invoke("openComposer", "Erik Satie")
+    page = current(window)
+    assert page.objectName() == "composer"
+    assert wait_for(lambda: find_item(window, "composerTitle").property("text") == "Erik Satie")
+    assert "1 work" in find_item(window, "composerFacts").property("text")
+    assert find_item(window, "composerWorks").property("visible")
+    invoke("go", "artists")
+    artists = current(window)
+    QMetaObject.invokeMethod(artists, "setView", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", True))
+    qapp.processEvents()
+    assert artists.property("composers")
+    QMetaObject.invokeMethod(artists, "setView", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", False))
+    assert not warnings, warnings[:3]
+
+
+def test_a_playlist_in_a_folder_shows_in_the_sidebar(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    user_lib = objects["userLib"]
+    pid = user_lib.playlists.get(0)["id"]
+    user_lib.setPlaylistFolder(pid, False, "Moods")
+    assert wait_for(lambda: user_lib.playlists.get(0)["folder"] == "Moods")
+    assert wait_for(lambda: find_item(window, "playlistFolder_Moods") is not None)
+    user_lib.renamePlaylistFolder("Moods", "")
+    assert wait_for(lambda: find_item(window, "playlistFolder_Moods") is None)
+    assert not warnings, warnings[:3]

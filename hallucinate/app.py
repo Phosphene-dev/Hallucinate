@@ -15,7 +15,7 @@ from PySide6.QtWidgets import QApplication
 
 from . import __version__
 from .control import ControlServer, send_control
-from .core import atomic, paths  # noqa: F401 - atomic reads the umask before any threads start
+from .core import atomic, paths, remote  # noqa: F401 - atomic reads the umask before any threads start
 from .discord import DiscordPresence
 from .headphones import HeadphoneFinder
 from .library import Library
@@ -191,6 +191,11 @@ def main(argv=None) -> int:
     from .servers import Servers
 
     servers = Servers(paths.db_path(), paths.art_dir(), player)
+    from .offline import OfflineCopies
+
+    server_copies = OfflineCopies(paths.db_path(), paths.data_dir() / "server-copies")
+    library.changed.connect(server_copies.tidy)  # a server removed, or songs gone from it: their copies go too
+    server_copies.resumeNetwork()
     servers.libraryChanged.connect(library.reload)
     shell.settingsChanged.connect(servers.recheck)  # offline mode switched off: try servers again
 
@@ -205,12 +210,15 @@ def main(argv=None) -> int:
         if offline[0]:
             podcasts.stopNetwork()
             stations.stopNetwork()
+            server_copies.stopNetwork()
             path = str(player.current.get("path", "")) if player.hasTrack else ""
-            if path.startswith(("http://", "https://", "subsonic://", "jellyfin://")):  # a stream, not a file here
+            # a stream, not a file here (a server song kept on this computer plays on)
+            if path.startswith(("http://", "https://")) or remote.streamed(path):
                 player.stop()
         else:
             podcasts.resumeNetwork()
             stations.resumeNetwork()
+            server_copies.resumeNetwork()
 
     shell.settingsChanged.connect(offline_switched)
 
@@ -271,6 +279,7 @@ def main(argv=None) -> int:
     ctx.setContextProperty("themeManager", theme_manager)
     ctx.setContextProperty("stations", stations)
     ctx.setContextProperty("servers", servers)
+    ctx.setContextProperty("serverCopies", server_copies)
     ctx.setContextProperty("podcasts", podcasts)
     engine.addImportPath(str(HERE / "qml"))
     engine.load(QUrl.fromLocalFile(str(HERE / "qml" / "main.qml")))
@@ -339,6 +348,7 @@ def main(argv=None) -> int:
     lyrics.shutdown()
     stations.shutdown()
     servers.shutdown()
+    server_copies.shutdown()
     podcasts.shutdown()
     meta_editor.shutdown()
     artist_bios.shutdown()

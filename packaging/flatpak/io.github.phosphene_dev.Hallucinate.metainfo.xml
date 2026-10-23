@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.0.0" date="2026-10-23">
+      <description>
+        <p>Composer pages with classical works and their movements in order, tempo and key in the tags, sorting and smart playlists, playlist folders, server songs kept on your computer to play offline, similar artists from Last.fm, and search that forgives typos.</p>
+        <p>Also: search by genre, rename a genre, copy a playlist or remove its repeats, shuffle what's coming up, and sleep at the end of an album.</p>
+      </description>
+    </release>
     <release version="0.9.9.9" date="2026-10-18">
       <description>
         <p>A calmer Settings page with subsections that open and close, a text size choice, mute, more in the queue, menus and Ctrl+K, and song rows that link to their artist and album.</p>

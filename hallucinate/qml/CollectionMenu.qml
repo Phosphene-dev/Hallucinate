@@ -17,10 +17,12 @@ Menu {
                                  : composer ? "Every song " + name + " wrote"
                                                                           : "Everything in “" + name + "”"
 
-    function showArtist(n) { kind = "artist"; name = n; path = ""; popup() }
-    function showFolder(p, n) { kind = "folder"; path = p; name = n || p.split("/").pop(); popup() }
-    function showGenre(n) { kind = "genre"; name = n; path = ""; popup() }
-    function showComposer(n) { kind = "composer"; name = n; path = ""; popup() }
+    property var copies: ({ servers: 0, kept: 0, waiting: 0 })  // songs from a music server, kept here or not
+    function showNow() { copies = serverCopies.status(paths()); popup() }
+    function showArtist(n) { kind = "artist"; name = n; path = ""; showNow() }
+    function showFolder(p, n) { kind = "folder"; path = p; name = n || p.split("/").pop(); copies = ({ servers: 0, kept: 0, waiting: 0 }); popup() }
+    function showGenre(n) { kind = "genre"; name = n; path = ""; showNow() }
+    function showComposer(n) { kind = "composer"; name = n; path = ""; showNow() }
     signal genreRenamed(string oldName, string newName)  // its songs are being retagged
     function paths() {
         return artist ? library.artistPaths(name) : genre ? library.genrePaths(name)
@@ -95,6 +97,20 @@ Menu {
         height: visible ? implicitHeight : 0
         text: "Show in file manager"; icon.name: "folder"
         onTriggered: library.showInFolder(menu.path)
+    }
+    MenuItem {
+        objectName: "collectionKeep"
+        visible: menu.copies.servers > 0 && menu.copies.kept + menu.copies.waiting < menu.copies.servers
+        height: visible ? implicitHeight : 0
+        text: "Keep on this computer"; icon.name: "download"
+        onTriggered: serverCopies.keep(menu.paths())
+    }
+    MenuItem {
+        objectName: "collectionUnkeep"
+        visible: menu.copies.kept + menu.copies.waiting > 0
+        height: visible ? implicitHeight : 0
+        text: "Remove the copies from this computer"; icon.name: "remove"
+        onTriggered: serverCopies.remove(menu.paths())
     }
     MenuSeparator { visible: !menu.genre && !menu.composer; height: visible ? implicitHeight : 0 }
     // (not for a genre: its songs are spread over the whole library, too much to remove from one click)

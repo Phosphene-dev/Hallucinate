@@ -33,13 +33,13 @@
 - **A look of its own.** Frosted glass over a backdrop that slowly drifts in the colours of the current cover, a floating player, and a waveform seek bar drawn from each song's own loudness.
 - **Now Playing that fills the screen.** Press F: the cover, or the record sliding out of its sleeve, over GPU visualizers (Liquid, Aurora, Nebula, Halo, Waves) that move with the music in the cover's colours.
 - **Home is about your library.** A random album to play, your listening heatmap and streak, albums to rediscover, what you played on this day in past years, and library facts.
-- **Browse like a record shelf.** Album and artist pages, a colour wall that sorts every cover round the colour wheel, a timeline by decade and year, and your own folders.
+- **Browse like a record shelf.** Album and artist pages, a colour wall that sorts every cover round the colour wheel, a timeline by decade and year, genre and composer pages (classical works with their movements in order), and your own folders.
 - **Every listen remembered.** A searchable history of everything you played, recaps of every week, month and year, and your Last.fm, ListenBrainz or old player's history brought over.
 - **Plays everything well.** FLAC, MP3, AAC/ALAC, Ogg, Opus, WAV, WavPack, AIFF and more, CUE sheet albums too, with true gapless playback, ReplayGain (measured where tags are missing), a 10-band equalizer, headphone correction and crossfeed, and a signal path readout that tells you when the sound is untouched.
-- **Your music server too, if you have one.** Songs on a Jellyfin server, or a Navidrome, Gonic, Airsonic or other Subsonic server, join your library and play like your own files; songs from a server that can't be reached are skipped. Off until you switch it on in Settings → Features.
+- **Your music server too, if you have one.** Songs on a Jellyfin server, or a Navidrome, Gonic, Airsonic or other Subsonic server, join your library and play like your own files; keep an album or playlist on your computer to play it without the server, offline mode included. Off until you switch it on in Settings → Features.
 - **Internet radio and podcasts, if you want them.** Both are off until you switch them on in Settings → Features (where anything else you don't use can be switched off too). Stations come from their stream links or the Radio Browser directory and show the song they're playing; podcasts come from RSS feeds, the Apple Podcasts directory, OPML files from other apps or a folder of episodes, remember where you stopped, line up in an Up next list and have settings of their own, per show too. Neither ever counts toward your stats.
-- **Radio mode and smart playlists.** Similar songs from your library keep playing when the queue runs out (songs you keep skipping come up less); playlists update themselves from rules, ratings included.
-- **Fast to drive.** Instant search even across a quarter of a million songs, Ctrl+K for anything, Ctrl/Shift+click to act on many songs at once, and Ctrl+Z when the queue goes wrong.
+- **Radio mode and smart playlists.** Similar songs from your library keep playing when the queue runs out (songs you keep skipping come up less); playlists update themselves from rules (ratings, composer, tempo and key included) and sit in folders if you like. With Last.fm set up, artist pages can show similar artists: the ones you have to play a mix of, the rest to discover.
+- **Fast to drive.** Instant search even across a quarter of a million songs (it forgives a typo), Ctrl+K for anything, Ctrl/Shift+click to act on many songs at once, and Ctrl+Z when the queue goes wrong.
 - **Looks after your library.** A health check finds missing covers (and fetches them all at once), tags and folders, split albums and duplicates, with a fix next to each.
 - **Make it yours.** Eighteen themes, any accent colour, light and dark that follow the system, a theme editor, an equalizer for each output device, and reduce motion for a stiller window.
 - **No account, no cloud.** Your library, playlists and history stay on your computer. Scrobbling and Discord are opt-in, cover art is fetched only when you ask, and online lyrics lookup can be turned off. Back everything up to one file, and restore it anywhere.
@@ -51,8 +51,8 @@ right now. Things worth trying:
 - **Your desktop:** tiling window managers (Hyprland, Sway, i3), small windows, fractional scaling, Windows 10 and 11.
 - **Gapless albums** on your audio device (live albums, classical, DJ mixes).
 - **Imports** from Strawberry, Clementine, Rhythmbox, MusicBee, iTunes or foobar2000.
-- **New in 0.9:** offline mode, Update now in the AppImage and Windows installer, the Flatpak repository,
-  the restyled menus and dialogs, and crash reports.
+- **New in 1.0:** composer pages and tempo and key, playlist folders, keeping server songs on your computer,
+  similar artists from Last.fm, and search that forgives typos.
 
 Found something? [Open a bug report](https://github.com/Phosphene-dev/Hallucinate/issues/new/choose).
 If Hallucinate crashed, it offers a report to copy the next time it starts: paste that in.
@@ -389,9 +389,11 @@ FLAC, MP3, OGG/Vorbis, Opus, WAV, AAC/M4A, ALAC, WMA, WavPack, AIFF and APE
 (metadata; decoding depends on your Qt FFmpeg build).
 
 ## Roadmap
-- Signed Windows builds
+- Signed Windows builds, and signed and notarized macOS builds
 - The AUR packages, once AUR account sign-ups reopen
 - Real-device verification of APE playback and desktop media keys
+- Being considered: casting to Chromecast and DLNA/UPnP speakers, a remote for your phone, copying playlists to
+  a device, and bit-perfect output
 
 ## Contributing
 See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). The calls that shape what

@@ -58,6 +58,9 @@ Item {
     Menu {
         id: moreMenu
         objectName: "playlistMenu"
+        // its songs from a music server, kept on this computer or not (read as it opens)
+        property var copies: ({ servers: 0, kept: 0, waiting: 0 })
+        onAboutToShow: copies = page.tracksModel ? serverCopies.status(page.tracksModel.toList().map(function (t) { return t.path })) : copies
         MenuItem { objectName: "exportPlaylist"; text: "Export…"; icon.name: "download"; enabled: list.count > 0; onTriggered: Nav.exportPlaylist(page.liked ? "liked" : "playlist", page.liked ? "Liked Songs" : page.playlistName) }
         MenuItem { visible: !page.liked; height: visible ? implicitHeight : 0; text: "Rename…"; icon.name: "edit"; onTriggered: { nameField.text = page.playlistName; renameDlg.open() } }
         MenuItem {
@@ -73,6 +76,20 @@ Item {
             text: page.summary.twice > 0 ? "Remove " + page.summary.twice + (page.summary.twice === 1 ? " repeat" : " repeats") : "No songs repeat"
             icon.name: "duplicates"
             onTriggered: { var n = userLib.removePlaylistDuplicates(page.playlistId); Nav.notify(n + (n === 1 ? " repeat" : " repeats") + " taken out; each song is in it once") }
+        }
+        MenuItem {
+            objectName: "playlistKeep"
+            visible: moreMenu.copies.servers > 0 && moreMenu.copies.kept + moreMenu.copies.waiting < moreMenu.copies.servers
+            height: visible ? implicitHeight : 0
+            text: "Keep on this computer"; icon.name: "download"
+            onTriggered: serverCopies.keep(page.tracksModel.toList().map(function (t) { return t.path }))
+        }
+        MenuItem {
+            objectName: "playlistUnkeep"
+            visible: moreMenu.copies.kept + moreMenu.copies.waiting > 0
+            height: visible ? implicitHeight : 0
+            text: "Remove the copies from this computer"; icon.name: "remove"
+            onTriggered: serverCopies.remove(page.tracksModel.toList().map(function (t) { return t.path }))
         }
         MenuSeparator { visible: !page.liked; height: visible ? implicitHeight : 0 }
         MenuItem { objectName: "deletePlaylist"; visible: !page.liked; height: visible ? implicitHeight : 0; text: "Delete playlist…"; icon.name: "trash"; icon.color: Theme.error; onTriggered: deleteDlg.open() }

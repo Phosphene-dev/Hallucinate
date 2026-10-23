@@ -131,7 +131,7 @@ def _resolve(name):
 
 
 def _is_network(path):
-    return is_url(path) or remote.is_remote(path)
+    return is_url(path) or remote.streamed(path)
 
 
 def _resolve_in_background(name, done=None):

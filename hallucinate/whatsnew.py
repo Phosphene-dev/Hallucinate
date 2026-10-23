@@ -2,6 +2,14 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "1.0.0": [
+        "Composers: Artists → Composers, and a page for each with their works and movements in order. Tempo and "
+        "key from the tags too, to sort by and use in smart playlists.",
+        "Playlist folders in the sidebar (right-click a playlist → Move to folder).",
+        "Music server songs can be kept on this computer, to play without the server, offline mode included.",
+        "Search forgives typos, finds songs by genre and composer, and artist pages can show similar artists "
+        "from Last.fm. Your library reads its files once more, for the new tags.",
+    ],
     "0.9.9.9": [
         "Settings is calmer: rarely needed options sit in subsections you can open, and Internet is now Online & "
         "privacy and Scrobbling & sharing. There's a text size choice too.",
