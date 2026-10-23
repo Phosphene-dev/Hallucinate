@@ -649,6 +649,31 @@ class MetadataEditor(QObject):
             self._run(save_all, items)
         self.genresChanged.emit()
 
+    @Slot(str, str)
+    def renameGenre(self, old, new):
+        """Rename a genre in every song that has it, wherever it is in their list. A name already in use
+        merges the two; an empty one takes the genre off those songs."""
+        from .core import genre_views
+        from .core import genres as genre_names
+
+        def rename_all(db):
+            changes = {}
+            for t in genre_views.tracks(db, old):
+                if not os.path.isfile(t["path"]):  # songs from a server or a CUE sheet: their tags aren't ours
+                    continue
+                text = genre_names.rename(t["genre"], old, new)
+                if text != t["genre"]:
+                    changes.setdefault(text, []).append(t["path"])
+            total = {"kind": "tags", "saved": 0, "errors": []}
+            for text, paths in changes.items():
+                result = self._save_tags(db, paths, {"genre": text})
+                total["saved"] += result["saved"]
+                total["errors"] += result["errors"]
+            return total
+
+        if old.strip():
+            self._run(rename_all)
+
     def shutdown(self):
         self._covers_stop.set()
         self._genres_stop.set()

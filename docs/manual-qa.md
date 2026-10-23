@@ -106,7 +106,17 @@ finding, following and playing podcasts.
 - [ ] The whole app from the keyboard alone: Tab through every page, arrows in lists, Enter to play, Menu key
   (or Shift+F10) for menus, Esc closes dialogs.
 
-### 10. New in 0.9.9.9
+### 10. New in the next version
+- [ ] Search a genre name (say "shoegaze"): songs with that genre are listed, songs named for it first.
+- [ ] Songs → Most played and Recently added; Artists → the drop-down's four orders, kept after a restart.
+- [ ] A genre page → ⋯ → Rename genre…: type a new name; the page shows it once the songs are retagged. Rename
+  one to a genre you already have: the note says they join, and afterwards there's one page.
+- [ ] A playlist → ⋯ → Make a copy; add a song twice → Remove repeats; the header shows its length.
+- [ ] Queue → Shuffle (shuffle mode off): the songs to come are mixed, the playing one stays; Undo.
+- [ ] Sleep timer → End of this album: playback pauses when the next song is from another album.
+- [ ] Songs → filter by a genre → Shuffle: only the shown songs play. Search → Play all.
+
+### 10b. New in 0.9.9.9
 - [ ] Settings: subsections start closed; open one, leave Settings and come back, it's still open. Search
   "preamp" or "discogs": the subsection holding it opens. Text size changes the whole app.
 - [ ] Online & privacy → Offline mode while a radio station plays: it stops; a podcast download pauses and

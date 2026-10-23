@@ -367,7 +367,7 @@ class Library(QObject):
             self.songSortChanged.emit()
 
     def _sort_songs(self):
-        key = genre_views.song_sort_key(self._song_sort)
+        key = genre_views.song_sort_key(self._song_sort, self._db)
         self._models["sortedSongs"].set_items(sorted(self._models["songs"].items(), key=key) if key else [])
 
     @Slot(int)
@@ -730,10 +730,11 @@ class Library(QObject):
         if not any(self._filters):
             return
         snapshot = self._models["filteredTracks"].snapshot_keys()
-        key = genre_views.song_sort_key(self._song_sort)
+        sort = self._song_sort
 
         def work(db):
             try:
+                key = genre_views.song_sort_key(sort, db)
                 rows = decorate(db.filtered_tracks(*filters))
                 if key is not None:
                     rows.sort(key=key)

@@ -28,7 +28,17 @@ Item {
     property bool allAlbums: false
     function plural(n, one, many) { return n + " " + (n === 1 ? one : many) }
     // Play next, add to the queue or a playlist: every song of the genre
-    CollectionMenu { id: genreMenu; objectName: "genreMenu" }
+    CollectionMenu {
+        id: genreMenu; objectName: "genreMenu"
+        onGenreRenamed: function (oldName, newName) { page.renamedTo = newName }
+    }
+    // renamed here: once its songs are retagged (the library reloads), show the genre under its new name
+    property string renamedTo: ""
+    Connections {
+        target: metaEditor
+        function onChanged() { if (page.renamedTo) { page.genreName = page.renamedTo; page.renamedTo = ""; page.revision++ } }
+        function onFailed() { page.renamedTo = "" }
+    }
 
     Flickable {
         id: fl

@@ -449,6 +449,23 @@ class UserLibrary(QObject):
             self._models["playlistTracks"].set_items([])
         self._write(lambda db, i: db.delete_playlist(i), pid)
 
+    @Slot(int, str, result=int)
+    def duplicatePlaylist(self, pid, name):
+        """A copy of a playlist under `name`; returns its id."""
+        new = self._reader.submit(lambda db: db.duplicate_playlist(pid, name)).result(timeout=10)
+        self.refresh()
+        return new
+
+    @Slot(int, result=int)
+    def removePlaylistDuplicates(self, pid):
+        """Keep each song once (where it first comes); returns how many copies were taken out."""
+        gone = self._reader.submit(lambda db: db.playlist_dedupe(pid)).result(timeout=10)
+        if gone:
+            self.refresh()
+            if pid == self._playlist_id:
+                self.openPlaylist(pid)
+        return gone
+
     @Slot(int, str)
     def addToPlaylist(self, pid, path):
         if path:

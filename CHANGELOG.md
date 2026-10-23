@@ -5,6 +5,20 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Added
+- Search finds songs by their genres too (a song named for the words still comes first). The search index
+  is built again once, in a second or two, the first time this version opens the library.
+- Songs sort by Most played or Recently added; the Artists page sorts A–Z, by most songs, most played or
+  recently added (a drop-down now, as on Songs).
+- A genre can be renamed from its page's ⋯ menu (or right-click a genre): the new name is written to every
+  song with it. Renaming it to a genre you already have joins the two.
+- Playlists: Make a copy and Remove repeats (each song kept once, where it first comes), in a ⋯ menu with
+  Export, Rename and Delete; the header shows how long the playlist lasts.
+- Queue: Shuffle mixes up the songs still to come, once, with Undo (shuffle mode stays off).
+- Sleep timer: End of this album.
+- Songs page: Shuffle plays the songs shown (all, or those the filters leave) in a random order.
+- Search: Play all plays every song found.
+
 ## [0.9.9.9] - 2026-10-18
 
 A top-to-bottom pass: a calmer Settings page, and fixes and small additions all over.

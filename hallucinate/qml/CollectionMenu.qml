@@ -18,6 +18,7 @@ Menu {
     function showArtist(n) { kind = "artist"; name = n; path = ""; popup() }
     function showFolder(p, n) { kind = "folder"; path = p; name = n || p.split("/").pop(); popup() }
     function showGenre(n) { kind = "genre"; name = n; path = ""; popup() }
+    signal genreRenamed(string oldName, string newName)  // its songs are being retagged
     function paths() { return artist ? library.artistPaths(name) : genre ? library.genrePaths(name) : library.folderPaths(path) }
     function play(shuffle) {
         if (artist) library.playArtist(name, shuffle)
@@ -69,6 +70,13 @@ Menu {
         onTriggered: Nav.openGenre(menu.name)
     }
     MenuItem {
+        objectName: "collectionRenameGenre"
+        visible: menu.genre
+        height: visible ? implicitHeight : 0
+        text: "Rename genre…"; icon.name: "edit"
+        onTriggered: renameDlg.open()
+    }
+    MenuItem {
         visible: menu.kind === "folder"
         height: visible ? implicitHeight : 0
         text: "Show in file manager"; icon.name: "folder"
@@ -89,6 +97,46 @@ Menu {
         height: visible ? implicitHeight : 0
         text: "Move to trash…"; icon.name: "trash"; icon.color: Theme.error
         onTriggered: Nav.trashSongs(menu.paths(), menu.what)
+    }
+
+    // A genre's new name, written to every song that has it. A name you already use joins the two.
+    Dialog {
+        id: renameDlg
+        objectName: "renameGenreDialog"
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        modal: true
+        title: "Rename “" + Theme.plain(menu.name) + "”"
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        readonly property string newName: rf.text.trim()
+        readonly property bool joins: newName.length > 0 && newName.toLowerCase() !== menu.name.toLowerCase()
+                                      && library.genreList.some(function (g) { return g.name.toLowerCase() === renameDlg.newName.toLowerCase() })
+        onOpened: { rf.text = menu.name; rf.selectAll(); rf.forceActiveFocus() }
+        onAccepted: {
+            if (!newName.length || newName === menu.name) return
+            metaEditor.renameGenre(menu.name, newName)
+            Nav.notify("Renaming " + menu.name + " to " + newName + " in its songs…")
+            menu.genreRenamed(menu.name, newName)
+        }
+        Column {
+            spacing: 10
+            width: 320
+            TextField {
+                id: rf; width: parent.width; placeholderText: "Genre name"; selectByMouse: true
+                onAccepted: if (text.trim().length) renameDlg.accept()
+                onTextChanged: { var b = renameDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
+            }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.Wrap
+                text: renameDlg.joins ? "You already have " + renameDlg.newName + ": the two become one genre."
+                                      : "Written to the tags of every song with this genre."
+                color: renameDlg.joins ? Theme.accent : Theme.textDim
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.fontSize(12.5)
+            }
+        }
     }
 
     Dialog {

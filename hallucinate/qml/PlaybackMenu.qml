@@ -24,7 +24,7 @@ Menu {
     }
     Menu {
         icon.name: "history"
-        title: "Sleep timer" + (player.sleepRemaining >= 0 ? " (" + Math.ceil(player.sleepRemaining / 60) + " min)" : player.sleepAfterTrack ? " (end of track)" : "")
+        title: "Sleep timer" + (player.sleepRemaining >= 0 ? " (" + Math.ceil(player.sleepRemaining / 60) + " min)" : player.sleepAfterTrack ? " (end of track)" : player.sleepAfterAlbum ? " (end of album)" : "")
         MenuItem { text: "Off"; onTriggered: player.setSleepMinutes(0) }
         MenuItem {
             objectName: "sleepMore"
@@ -42,5 +42,12 @@ Menu {
             }
         }
         MenuItem { text: "End of current track"; onTriggered: player.setSleepAfterTrack(true) }
+        MenuItem {
+            objectName: "sleepAfterAlbum"
+            visible: player.hasTrack && !!player.current.album_key
+            height: visible ? implicitHeight : 0
+            text: "End of this album"
+            onTriggered: player.setSleepAfterAlbum(true)
+        }
     }
 }

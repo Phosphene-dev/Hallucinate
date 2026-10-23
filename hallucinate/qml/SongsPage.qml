@@ -6,6 +6,13 @@ Item {
     id: page
     objectName: "songs"
     property bool duplicatesVisible: false
+    // play the list as shown (duplicates, filtered, sorted or all), from `index`
+    function playShown(index) {
+        if (duplicatesVisible) library.playDuplicate(index)
+        else if (library.filtersActive) library.playFilteredSongs(index)
+        else if (library.songSort !== "title") library.playSortedSongs(index)
+        else library.playSongs(index)
+    }
 
     function applyFilters() {
         duplicatesVisible = false
@@ -46,8 +53,9 @@ Item {
             objectName: "songSort"
             width: 170
             height: 38
-            readonly property var keys: ["title", "artist", "album", "genre", "year"]
-            model: ["Sort by title", "Sort by artist", "Sort by album", "Sort by genre", "Sort by year"]
+            readonly property var keys: ["title", "artist", "album", "genre", "year", "plays", "added"]
+            model: ["Sort by title", "Sort by artist", "Sort by album", "Sort by genre", "Sort by year",
+                    "Most played", "Recently added"]
             currentIndex: Math.max(0, keys.indexOf(library.songSort))
             onActivated: function (i) { library.setSongSort(keys[i]); shell.setUiValue("songSort", keys[i]) }
             Component.onCompleted: library.setSongSort(shell.uiValue("songSort", "title"))
@@ -79,6 +87,15 @@ Item {
             selection: library.activeFilters[2] ? model.indexOf(library.activeFilters[2]) : 0
             Accessible.name: "Format to show"
             onActivated: page.applyFilters()
+        }
+        PillButton {
+            objectName: "shuffleSongs"
+            height: 38
+            text: "Shuffle"
+            visible: !page.duplicatesVisible
+            enabled: list.count > 0
+            Accessible.description: "Play the songs shown here in a random order"
+            onClicked: { player.setShuffle(true); page.playShown(Math.floor(Math.random() * list.count)) }
         }
         PillButton {
             height: 38
@@ -125,12 +142,7 @@ Item {
             durText: model.durText
             artUrl: model.artUrl
             current: Rows.currentId === model.id
-            onActivated: {
-                if (page.duplicatesVisible) library.playDuplicate(index)
-                else if (library.filtersActive) library.playFilteredSongs(index)
-                else if (library.songSort !== "title") library.playSortedSongs(index)
-                else library.playSongs(index)
-            }
+            onActivated: page.playShown(index)
             onEnqueue: player.enqueue(list.model.get(index))
         }
     }

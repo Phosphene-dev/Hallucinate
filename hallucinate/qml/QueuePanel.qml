@@ -69,6 +69,14 @@ Rectangle {
             onClicked: player.undoQueue()
         }
         PillButton {
+            objectName: "shuffleUpcoming"
+            height: 30
+            visible: player.upcomingCount > 1 && !player.shuffle
+            text: "Shuffle"
+            Accessible.description: "Mix up the order of the songs still to come"
+            onClicked: { player.shuffleUpcoming(); Nav.notifyAction("Upcoming songs shuffled", "Undo", function () { player.undoQueue() }) }
+        }
+        PillButton {
             objectName: "clearUpcoming"
             height: 30
             visible: player.upcomingCount > 0

@@ -6,20 +6,30 @@ Item {
     id: page
     objectName: "artists"
     readonly property int cols: Math.max(2, Math.floor((width - 40) / 170))
-    // A–Z (the library's own order) or most songs first, sorted here from the same list; remembered
-    property string order: shell.uiValue("artistsOrder", "az") === "songs" ? "songs" : "az"
+    // A–Z (the library's own order), most songs, most played or newest first: sorted here from the same list
+    // (its rows carry plays and when the artist's newest song was added); remembered
+    readonly property var orders: ["az", "songs", "plays", "added"]
+    property string order: orders.indexOf(shell.uiValue("artistsOrder", "az")) >= 0 ? shell.uiValue("artistsOrder", "az") : "az"
     onOrderChanged: shell.setUiValue("artistsOrder", order)
     property int revision: 0  // the artists changed (a scan): sort again
     Connections {
-        target: page.order === "songs" ? library.artists : null
+        target: page.order !== "az" ? library.artists : null
         function onModelReset() { page.revision++ }
         function onRowsInserted() { page.revision++ }
         function onRowsRemoved() { page.revision++ }
         function onDataChanged() { page.revision++ }
     }
-    readonly property var bySongs: order === "songs" && revision >= 0
-                                   ? library.artists.toList().sort(function (a, b) { return b.tracks - a.tracks || a.name.localeCompare(b.name) })
+    function compare(field) {
+        return function (a, b) { return (b[field] || 0) - (a[field] || 0) || a.name.localeCompare(b.name) }
+    }
+    readonly property var bySongs: order !== "az" && revision >= 0
+                                   ? library.artists.toList().sort(compare({songs: "tracks", plays: "plays", added: "added"}[order]))
                                    : null
+    function subtitle(a) {
+        if (order === "songs") return a.tracks + (a.tracks === 1 ? " song" : " songs")
+        if (order === "plays") return (a.plays || 0) + (a.plays === 1 ? " play" : " plays")
+        return a.albums + (a.albums === 1 ? " album" : " albums")
+    }
 
     Text {
         textFormat: Text.PlainText
@@ -31,12 +41,14 @@ Item {
         font.pixelSize: Theme.fontSize(25)
         font.weight: Font.Bold
     }
-    Row {
+    StyledCombo {
         objectName: "artistsOrder"
         anchors { left: title.right; leftMargin: 18; verticalCenter: title.verticalCenter }
-        spacing: 6
-        Chip { objectName: "artistsAz"; text: "A–Z"; selected: page.order === "az"; onClicked: page.order = "az" }
-        Chip { objectName: "artistsMostSongs"; text: "Most songs"; selected: page.order === "songs"; onClicked: page.order = "songs" }
+        width: 190; height: 36
+        model: ["A–Z", "Most songs", "Most played", "Recently added"]
+        selection: page.orders.indexOf(page.order)
+        onActivated: function (i) { page.order = page.orders[i] }
+        Accessible.name: "Order of the artists"
     }
     GridView {
         id: grid
@@ -57,8 +69,7 @@ Item {
                 x: 10; y: 8
                 cardWidth: grid.cellWidth - 28
                 name: parent.artist.name
-                subtitle: page.order === "songs" ? parent.artist.tracks + (parent.artist.tracks === 1 ? " song" : " songs")
-                                                 : parent.artist.albums + (parent.artist.albums === 1 ? " album" : " albums")
+                subtitle: page.subtitle(parent.artist)
                 artUrl: parent.artist.artUrl
             }
         }

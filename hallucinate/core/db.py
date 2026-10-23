@@ -82,8 +82,10 @@ CREATE TABLE IF NOT EXISTS artist_bios(s_aa TEXT PRIMARY KEY, own TEXT NOT NULL 
 
 FTS = (
     "CREATE VIRTUAL TABLE IF NOT EXISTS tracks_fts USING fts5("
-    "title, artist, album, tokenize='unicode61 remove_diacritics 2')"
+    "title, artist, album, genre, tokenize='unicode61 remove_diacritics 2')"
 )
+# Ranking weights for title, artist, album and genre: a song named for the word first, its genre last
+FTS_RANK = "bm25(tracks_fts, 10.0, 5.0, 4.0, 1.0)"
 
 COLS = (
     "path mtime size title artist album_artist aa_tag album album_key track_no disc_no "
@@ -172,7 +174,25 @@ class Database:
             self.has_fts = True
         except sqlite3.OperationalError:
             self.has_fts = False
+        if self.has_fts and not self._fts_has_genre():
+            # made before songs were found by genre too: build it again with that column (a second or two).
+            # Several connections open at start, so one does it while the others wait, then find it done.
+            self.conn.commit()
+            self.conn.execute("BEGIN IMMEDIATE")
+            try:
+                if not self._fts_has_genre():
+                    self.conn.execute("DROP TABLE tracks_fts")
+                    self.conn.execute(FTS)
+                    self.conn.execute("INSERT INTO tracks_fts(rowid, title, artist, album, genre) "
+                                      "SELECT id, title, artist, album, genre FROM tracks")
+                self.conn.commit()
+            except BaseException:
+                self.conn.rollback()
+                raise
         self.conn.commit()
+
+    def _fts_has_genre(self):
+        return "genre" in {r[1] for r in self.conn.execute("PRAGMA table_info(tracks_fts)")}
 
     def _migrate(self):
         cols = {r["name"] for r in self.conn.execute("PRAGMA table_info(tracks)")}
@@ -325,6 +345,27 @@ class Database:
             "WHERE i.playlist_id=? ORDER BY i.pos, i.id",
             (pid,),
         )
+
+    def duplicate_playlist(self, pid: int, name: str) -> int:
+        """A copy of a playlist, songs in the same order; returns the new one's id."""
+        new = self.create_playlist(name)
+        self.conn.execute(
+            "INSERT INTO playlist_items(playlist_id, path, pos) "
+            "SELECT ?, path, ROW_NUMBER() OVER (ORDER BY pos, id) - 1 FROM playlist_items WHERE playlist_id=?",
+            (new, pid))
+        self.conn.commit()
+        return new
+
+    def playlist_dedupe(self, pid: int) -> int:
+        """Take out the second and later copies of each song in a playlist (the first stays where it is);
+        returns how many went."""
+        cur = self.conn.execute(
+            """DELETE FROM playlist_items WHERE playlist_id=? AND id NOT IN (
+                 SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY path ORDER BY pos, id) AS n
+                                 FROM playlist_items WHERE playlist_id=?) WHERE n = 1)""",
+            (pid, pid))
+        self.conn.commit()
+        return cur.rowcount
 
     def playlist_remove_item(self, item_id: int):
         self.conn.execute("DELETE FROM playlist_items WHERE id=?", (item_id,))
@@ -661,8 +702,8 @@ class Database:
         if self.has_fts:
             self.conn.execute("DELETE FROM tracks_fts WHERE rowid=?", (tid,))
             self.conn.execute(
-                "INSERT INTO tracks_fts(rowid, title, artist, album) VALUES(?,?,?,?)",
-                (tid, t["title"], t["artist"], t["album"]),
+                "INSERT INTO tracks_fts(rowid, title, artist, album, genre) VALUES(?,?,?,?,?)",
+                (tid, t["title"], t["artist"], t["album"], t.get("genre") or ""),
             )
         return tid
 
@@ -887,9 +928,10 @@ class Database:
 
     def artists(self) -> list:
         return self._rows(
-            """SELECT MIN(album_artist) AS name, COUNT(DISTINCT album_key) AS albums,
-                      COUNT(*) AS tracks, MAX(art) AS art
-               FROM tracks GROUP BY s_aa ORDER BY MIN(s_aa)"""
+            """SELECT MIN(t.album_artist) AS name, COUNT(DISTINCT t.album_key) AS albums,
+                      COUNT(*) AS tracks, MAX(t.art) AS art, COALESCE(SUM(p.count), 0) AS plays,
+                      MAX(t.added) AS added
+               FROM tracks t LEFT JOIN plays p ON p.path = t.path GROUP BY t.s_aa ORDER BY MIN(t.s_aa)"""
         )
 
     def artist_albums(self, name: str) -> list:
@@ -914,14 +956,15 @@ class Database:
             match = " ".join(f'"{t}"*' for t in toks)
             tracks = self._rows(
                 "SELECT t.* FROM tracks_fts f JOIN tracks t ON t.id = f.rowid "
-                "WHERE tracks_fts MATCH ? ORDER BY bm25(tracks_fts), t.s_title LIMIT ?",
+                f"WHERE tracks_fts MATCH ? ORDER BY {FTS_RANK}, t.s_title LIMIT ?",
                 (match, track_limit),
             )
         else:
             clause = " AND ".join(
-                "(s_title LIKE ? ESCAPE '\\' OR s_artist LIKE ? ESCAPE '\\' OR s_album LIKE ? ESCAPE '\\')" for _ in toks
+                "(s_title LIKE ? ESCAPE '\\' OR s_artist LIKE ? ESCAPE '\\' OR s_album LIKE ? ESCAPE '\\'"
+                " OR s_genre LIKE ? ESCAPE '\\')" for _ in toks
             )
-            params = [_like(t) for t in toks for _ in range(3)]
+            params = [_like(t) for t in toks for _ in range(4)]
             tracks = self._rows(
                 f"SELECT * FROM tracks WHERE {clause} ORDER BY s_title LIMIT ?",
                 (*params, track_limit),

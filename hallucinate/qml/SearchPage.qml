@@ -128,11 +128,23 @@ Item {
                 }
             }
 
-            Text {
-                textFormat: Text.PlainText
+            Row {
                 visible: page.tracks.length > 0
-                text: "Songs"
-                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
+                spacing: 14
+                Text {
+                    textFormat: Text.PlainText
+                    text: "Songs"
+                    color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
+                }
+                Text {  // every song found, in the order shown
+                    textFormat: Text.PlainText
+                    objectName: "searchPlayAll"
+                    anchors.baseline: parent.children[0].baseline
+                    text: "Play all " + page.tracks.length
+                    color: Theme.accent
+                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); font.weight: Font.DemiBold
+                    LinkArea { name: "Play all songs found"; onClicked: library.playSearchTracks(0) }
+                }
             }
             Repeater {
                 model: page.tracks

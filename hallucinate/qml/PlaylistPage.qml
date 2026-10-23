@@ -43,6 +43,41 @@ Item {
         onAccepted: { var id = page.playlistId; userLib.deletePlaylist(id); Nav.goHome(); Nav.routeGone("playlist", id) }
     }
 
+    // how long it all lasts, and whether a song is in it more than once
+    readonly property var summary: {
+        var n = list.count, seconds = 0, seen = {}, twice = 0
+        var items = page.tracksModel ? page.tracksModel.toList() : []
+        for (var i = 0; i < items.length; i++) {
+            seconds += items[i].duration || 0
+            if (seen[items[i].path]) twice++
+            seen[items[i].path] = true
+        }
+        return { seconds: seconds, twice: twice, n: n }
+    }
+    readonly property real seconds: summary.seconds
+    Menu {
+        id: moreMenu
+        objectName: "playlistMenu"
+        MenuItem { objectName: "exportPlaylist"; text: "Export…"; icon.name: "download"; enabled: list.count > 0; onTriggered: Nav.exportPlaylist(page.liked ? "liked" : "playlist", page.liked ? "Liked Songs" : page.playlistName) }
+        MenuItem { visible: !page.liked; height: visible ? implicitHeight : 0; text: "Rename…"; icon.name: "edit"; onTriggered: { nameField.text = page.playlistName; renameDlg.open() } }
+        MenuItem {
+            objectName: "duplicatePlaylist"
+            visible: !page.liked; height: visible ? implicitHeight : 0
+            text: "Make a copy"; icon.name: "plus"
+            onTriggered: Nav.openPlaylist(userLib.duplicatePlaylist(page.playlistId, page.playlistName + " (copy)"))
+        }
+        MenuItem {
+            objectName: "dedupePlaylist"
+            visible: !page.liked; height: visible ? implicitHeight : 0
+            enabled: page.summary.twice > 0
+            text: page.summary.twice > 0 ? "Remove " + page.summary.twice + (page.summary.twice === 1 ? " repeat" : " repeats") : "No songs repeat"
+            icon.name: "duplicates"
+            onTriggered: { var n = userLib.removePlaylistDuplicates(page.playlistId); Nav.notify(n + (n === 1 ? " repeat" : " repeats") + " taken out; each song is in it once") }
+        }
+        MenuSeparator { visible: !page.liked; height: visible ? implicitHeight : 0 }
+        MenuItem { objectName: "deletePlaylist"; visible: !page.liked; height: visible ? implicitHeight : 0; text: "Delete playlist…"; icon.name: "trash"; icon.color: Theme.error; onTriggered: deleteDlg.open() }
+    }
+
     ListView {
         id: list
         anchors.fill: parent
@@ -69,14 +104,21 @@ Item {
                     font.pixelSize: Theme.fontSize(30)
                     font.weight: Font.Bold
                 }
-                Text { objectName: "playlistCount"; text: list.count + (list.count === 1 ? " song" : " songs"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                Text {
+                    objectName: "playlistCount"
+                    text: list.count + (list.count === 1 ? " song" : " songs") + (page.seconds >= 60 ? "  ·  " + Theme.fmtHours(page.seconds) : "")
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText
+                }
                 Row {
                     spacing: 10
                     PillButton { primary: true; text: "Play"; enabled: list.count > 0; onClicked: page.liked ? userLib.playLiked(0) : userLib.playPlaylist(0, false) }
                     PillButton { text: "Shuffle"; enabled: list.count > 0; onClicked: page.liked ? (player.setShuffle(true), userLib.playLiked(Math.floor(Math.random() * list.count))) : userLib.playPlaylist(0, true) }
-                    PillButton { objectName: "exportPlaylist"; text: "Export"; enabled: list.count > 0; onClicked: Nav.exportPlaylist(page.liked ? "liked" : "playlist", page.liked ? "Liked Songs" : page.playlistName) }
-                    PillButton { visible: !page.liked; text: "Rename"; onClicked: { nameField.text = page.playlistName; renameDlg.open() } }
-                    PillButton { visible: !page.liked; objectName: "deletePlaylist"; text: "Delete"; onClicked: deleteDlg.open() }
+                    IconButton {
+                        objectName: "playlistMore"
+                        height: 38
+                        icon: "more"; size: 18; tip: "More: export, rename, copy, tidy or delete"
+                        onClicked: moreMenu.popup()
+                    }
                 }
             }
         }
