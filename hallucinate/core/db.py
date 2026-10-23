@@ -265,6 +265,9 @@ class Database:
                 self.conn.execute(f"ALTER TABLE tracks ADD COLUMN {c} {kind}")
             # The next scan reads every file on this computer again for its composer, work, tempo and key
             self.conn.execute(f"UPDATE tracks SET mtime=0 WHERE {SQL_LOCAL}")
+        for table in ("playlists", "smart_playlists"):  # folders to group playlists in the sidebar ("" for none)
+            if "folder" not in {r["name"] for r in self.conn.execute(f"PRAGMA table_info({table})")}:
+                self.conn.execute(f"ALTER TABLE {table} ADD COLUMN folder TEXT NOT NULL DEFAULT ''")
         log_cols = {r["name"] for r in self.conn.execute("PRAGMA table_info(play_log)")}
         if "duration" not in log_cols:
             self.conn.execute("ALTER TABLE play_log ADD COLUMN duration REAL NOT NULL DEFAULT 0")
@@ -311,7 +314,7 @@ class Database:
 
     def playlists(self) -> list:
         return self._rows(
-            "SELECT p.id, p.name, COUNT(t.id) AS n FROM playlists p "
+            "SELECT p.id, p.name, p.folder, COUNT(t.id) AS n FROM playlists p "
             "LEFT JOIN playlist_items i ON i.playlist_id=p.id LEFT JOIN tracks t ON t.path=i.path "
             "GROUP BY p.id ORDER BY p.name COLLATE NOCASE"
         )
@@ -339,7 +342,7 @@ class Database:
         self.conn.commit()
 
     def smart_playlists(self) -> list:
-        return self._rows("SELECT id, name, rules FROM smart_playlists ORDER BY name COLLATE NOCASE, id")
+        return self._rows("SELECT id, name, rules, folder FROM smart_playlists ORDER BY name COLLATE NOCASE, id")
 
     def smart_playlist(self, sid: int) -> Optional[dict]:
         rows = self._rows("SELECT id, name, rules FROM smart_playlists WHERE id=?", (sid,))
@@ -366,9 +369,28 @@ class Database:
             (pid,),
         )
 
+    # --- playlist folders: a name each playlist may carry, to group them in the sidebar ---------------------
+    def set_playlist_folder(self, pid: int, smart: bool, folder: str):
+        table = "smart_playlists" if smart else "playlists"
+        self.conn.execute(f"UPDATE {table} SET folder=? WHERE id=?", (" ".join((folder or "").split()), pid))
+        self.conn.commit()
+
+    def rename_playlist_folder(self, old: str, new: str):
+        """Rename a folder (to one that exists: the two become one; to "": its playlists leave it)."""
+        new = " ".join((new or "").split())
+        for table in ("playlists", "smart_playlists"):
+            self.conn.execute(f"UPDATE {table} SET folder=? WHERE folder=?", (new, old))
+        self.conn.commit()
+
+    def playlist_folders(self) -> list:
+        return [r[0] for r in self.conn.execute(
+            "SELECT folder FROM playlists WHERE folder != '' UNION SELECT folder FROM smart_playlists "
+            "WHERE folder != '' ORDER BY 1 COLLATE NOCASE")]
+
     def duplicate_playlist(self, pid: int, name: str) -> int:
         """A copy of a playlist, songs in the same order; returns the new one's id."""
         new = self.create_playlist(name)
+        self.conn.execute("UPDATE playlists SET folder=(SELECT folder FROM playlists WHERE id=?) WHERE id=?", (pid, new))
         self.conn.execute(
             "INSERT INTO playlist_items(playlist_id, path, pos) "
             "SELECT ?, path, ROW_NUMBER() OVER (ORDER BY pos, id) - 1 FROM playlist_items WHERE playlist_id=?",

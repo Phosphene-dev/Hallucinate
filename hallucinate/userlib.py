@@ -18,8 +18,8 @@ from .library import _Reader, decorate
 from .models import ALBUM_KEYS, ARTIST_KEYS, TRACK_KEYS, DictModel
 
 logger = logging.getLogger(__name__)
-PLAYLIST_KEYS = ["id", "name", "n"]
-SMART_KEYS = ["id", "name", "n", "summary", "rules"]
+PLAYLIST_KEYS = ["id", "name", "n", "folder"]
+SMART_KEYS = ["id", "name", "n", "summary", "rules", "folder"]
 REASON_ALBUM_KEYS = [*ALBUM_KEYS, "reason"]
 STAT_ARTIST_KEYS = [*ARTIST_KEYS, "plays"]
 STAT_ALBUM_KEYS = [*ALBUM_KEYS, "plays"]
@@ -448,6 +448,17 @@ class UserLibrary(QObject):
             self._playlist_id = -1
             self._models["playlistTracks"].set_items([])
         self._write(lambda db, i: db.delete_playlist(i), pid)
+
+    # --- playlist folders -------------------------------------------------------------
+    @Slot(int, bool, str)
+    def setPlaylistFolder(self, pid, smart, folder):
+        """Put a playlist (or smart playlist) in a folder; "" takes it out of any."""
+        self._write(lambda db, i, sm, f: db.set_playlist_folder(i, sm, f), pid, smart, folder)
+
+    @Slot(str, str)
+    def renamePlaylistFolder(self, old, new):
+        """Rename a folder; to "" (Ungroup) its playlists stay, outside any folder."""
+        self._write(lambda db, a, b: db.rename_playlist_folder(a, b), old, new)
 
     @Slot(int, str, result=int)
     def duplicatePlaylist(self, pid, name):
