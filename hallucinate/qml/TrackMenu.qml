@@ -165,6 +165,16 @@ Menu {
         }
         onObjectRemoved: (i, o) => menu.removeItem(o)
     }
+    // who wrote it (the first composer it credits)
+    readonly property string composerName: menu.single ? String(menu.info.composer || "").split(/\s*[;|]\s*/)[0] : ""
+    MenuItem {
+        objectName: "trackComposer"
+        visible: menu.composerName.length > 0 && menu.context !== "composer"
+        height: visible ? implicitHeight : 0
+        text: "Go to composer " + Theme.plain(menu.composerName)
+        icon.name: "note"
+        onTriggered: Nav.openComposer(menu.composerName)
+    }
     MenuItem {
         objectName: "trackShowInFolder"
         visible: menu.single && !menu.stream && !menu.onServer

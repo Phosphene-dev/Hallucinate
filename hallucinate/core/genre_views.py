@@ -87,7 +87,7 @@ def tracks(db, name):
 
 
 # How the Songs page can be ordered: a key for sorting song rows (dicts as the Songs page holds them)
-SONG_SORTS = ("title", "artist", "album", "genre", "year", "plays", "added")
+SONG_SORTS = ("title", "artist", "album", "genre", "year", "plays", "added", "composer", "bpm")
 
 
 def play_counts(db):
@@ -106,6 +106,11 @@ def song_sort_key(sort, db=None):
         return lambda t: (-plays.get(t.get("path"), 0), text(t.get("title")))
     if sort == "added":
         return lambda t: -(t.get("id") or 0)
+    if sort == "composer":  # songs without one last
+        return lambda t: (not t.get("composer"), text(t.get("composer")), text(t.get("album")),
+                          t.get("disc_no") or 0, t.get("track_no") or 0)
+    if sort == "bpm":  # slowest first; songs whose tempo isn't known last
+        return lambda t: (not t.get("bpm"), t.get("bpm") or 0, text(t.get("title")))
 
     if sort == "artist":
         return lambda t: (text(t.get("artist")), text(t.get("album")), t.get("disc_no") or 0, t.get("track_no") or 0)

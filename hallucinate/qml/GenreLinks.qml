@@ -5,6 +5,7 @@ import "."
 Flow {
     id: links
     property var names: []
+    property bool composers: false  // composers' names: each opens the composer's page
     property int pixelSize: Theme.fontSize(14)
     property color color: Theme.text
     signal picked(string name)  // a genre was clicked (its page opens next)
@@ -22,10 +23,13 @@ Flow {
             font.underline: genreMouse.containsMouse
             LinkArea {
                 id: genreMouse
-                objectName: "genreLink_" + parent.modelData
-                name: "Genre: " + parent.modelData
+                objectName: (links.composers ? "composerLink_" : "genreLink_") + parent.modelData
+                name: (links.composers ? "Composer: " : "Genre: ") + parent.modelData
                 hoverEnabled: true
-                onClicked: { links.picked(parent.modelData); Nav.openGenre(parent.modelData) }
+                onClicked: {
+                    links.picked(parent.modelData)
+                    if (links.composers) Nav.openComposer(parent.modelData); else Nav.openGenre(parent.modelData)
+                }
             }
         }
     }

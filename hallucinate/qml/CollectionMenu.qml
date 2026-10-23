@@ -7,22 +7,29 @@ import "."
 Menu {
     id: menu
     objectName: "collectionMenu"
-    property string kind: "artist"  // or "folder", or "genre"
+    property string kind: "artist"  // or "folder", "genre" or "composer"
     property string name: ""        // the artist, the folder's name or the genre
     property string path: ""        // the folder
     readonly property bool artist: kind === "artist"
     readonly property bool genre: kind === "genre"
+    readonly property bool composer: kind === "composer"
     readonly property string what: artist ? "Every song by " + name : genre ? "Every " + name + " song"
+                                 : composer ? "Every song " + name + " wrote"
                                                                           : "Everything in “" + name + "”"
 
     function showArtist(n) { kind = "artist"; name = n; path = ""; popup() }
     function showFolder(p, n) { kind = "folder"; path = p; name = n || p.split("/").pop(); popup() }
     function showGenre(n) { kind = "genre"; name = n; path = ""; popup() }
+    function showComposer(n) { kind = "composer"; name = n; path = ""; popup() }
     signal genreRenamed(string oldName, string newName)  // its songs are being retagged
-    function paths() { return artist ? library.artistPaths(name) : genre ? library.genrePaths(name) : library.folderPaths(path) }
+    function paths() {
+        return artist ? library.artistPaths(name) : genre ? library.genrePaths(name)
+             : composer ? library.composerPaths(name) : library.folderPaths(path)
+    }
     function play(shuffle) {
         if (artist) library.playArtist(name, shuffle)
         else if (genre) { if (shuffle) player.setShuffle(true); library.playGenre(name, shuffle) }
+        else if (composer) { if (shuffle) player.setShuffle(true); library.playComposer(name, shuffle) }
         else library.playFolder(path, shuffle)
     }
     function songCount(list) { return list.length + (list.length === 1 ? " song" : " songs") }
@@ -70,6 +77,13 @@ Menu {
         onTriggered: Nav.openGenre(menu.name)
     }
     MenuItem {
+        objectName: "collectionGoToComposer"
+        visible: menu.composer
+        height: visible ? implicitHeight : 0
+        text: "Go to composer " + Theme.plain(menu.name); icon.name: "note"
+        onTriggered: Nav.openComposer(menu.name)
+    }
+    MenuItem {
         objectName: "collectionRenameGenre"
         visible: menu.genre
         height: visible ? implicitHeight : 0
@@ -82,18 +96,18 @@ Menu {
         text: "Show in file manager"; icon.name: "folder"
         onTriggered: library.showInFolder(menu.path)
     }
-    MenuSeparator { visible: !menu.genre; height: visible ? implicitHeight : 0 }
+    MenuSeparator { visible: !menu.genre && !menu.composer; height: visible ? implicitHeight : 0 }
     // (not for a genre: its songs are spread over the whole library, too much to remove from one click)
     MenuItem {
         objectName: "collectionRemove"
-        visible: !menu.genre
+        visible: !menu.genre && !menu.composer
         height: visible ? implicitHeight : 0
         text: "Remove from library…"; icon.name: "remove"; icon.color: Theme.error
         onTriggered: Nav.removeSongs(menu.paths(), menu.what)
     }
     MenuItem {
         objectName: "collectionTrash"
-        visible: !menu.genre
+        visible: !menu.genre && !menu.composer
         height: visible ? implicitHeight : 0
         text: "Move to trash…"; icon.name: "trash"; icon.color: Theme.error
         onTriggered: Nav.trashSongs(menu.paths(), menu.what)

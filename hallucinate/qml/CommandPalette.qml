@@ -153,6 +153,10 @@ Popup {
                 .sort((a, b) => b.s - a.s).slice(0, 3).forEach(x => out.push({
                     t: x.g.name, s: "Genre  ·  " + x.g.tracks + (x.g.tracks === 1 ? " song" : " songs"), i: "note",
                     run: ((n) => () => Nav.openGenre(n))(x.g.name) }))
+            library.composerList.map(c => ({ c: c, s: score(c.name, q) })).filter(x => x.s >= 0)
+                .sort((a, b) => b.s - a.s).slice(0, 2).forEach(x => out.push({
+                    t: x.c.name, s: "Composer  ·  " + x.c.tracks + (x.c.tracks === 1 ? " song" : " songs"), i: "note",
+                    run: ((n) => () => Nav.openComposer(n))(x.c.name) }))
             var m = library.searchAlbums
             for (var i = 0; i < Math.min(4, m.count); i++) {
                 var a = m.get(i)

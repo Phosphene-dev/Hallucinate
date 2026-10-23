@@ -13,7 +13,7 @@ def liner_notes(db, key):
 
     `trackPlays` maps each track's path to its play count."""
     rows = db._rows(
-        "SELECT t.path, t.genre, t.disc_no, t.codec, t.fmt, t.bitrate, t.sample_rate, t.size, t.added, "
+        "SELECT t.path, t.genre, t.composer, t.disc_no, t.codec, t.fmt, t.bitrate, t.sample_rate, t.size, t.added, "
         "COALESCE(p.count, 0) AS plays, p.last AS last, CASE WHEN l.path IS NULL THEN 0 ELSE 1 END AS liked "
         "FROM tracks t LEFT JOIN plays p ON p.path = t.path LEFT JOIN likes l ON l.path = t.path "
         "WHERE t.album_key = ?",
@@ -31,6 +31,14 @@ def liner_notes(db, key):
             order[k] += 1
             seen[k] = min(seen.get(k, pos), pos)
     genres = [names[k] for k in sorted(order, key=lambda k: (-order[k], seen[k]))]
+    # who wrote its songs, most songs first
+    from . import composers as composer_names
+
+    wrote, spelled = Counter(), {}
+    for r in rows:
+        for c in composer_names.split(r["composer"]):
+            spelled.setdefault(genre_names.fold(c), c)
+            wrote[genre_names.fold(c)] += 1
     formats = Counter((r["codec"] or r["fmt"] or "").upper() for r in rows)
     rates = sorted({r["sample_rate"] for r in rows if r["sample_rate"]})
     bitrates = [r["bitrate"] for r in rows if r["bitrate"]]
@@ -40,6 +48,7 @@ def liner_notes(db, key):
     lasts = [r["last"] for r in rows if r["last"]]
     return {
         "genres": genres[:8],
+        "composers": [spelled[k] for k, _ in wrote.most_common(6)],
         "discs": len({r["disc_no"] for r in rows if r["disc_no"] > 0}),
         "formats": [f for f, _ in formats.most_common() if f],
         "lossless": all(f in LOSSLESS for f in formats if f),

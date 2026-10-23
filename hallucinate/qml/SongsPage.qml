@@ -53,9 +53,9 @@ Item {
             objectName: "songSort"
             width: 170
             height: 38
-            readonly property var keys: ["title", "artist", "album", "genre", "year", "plays", "added"]
+            readonly property var keys: ["title", "artist", "album", "genre", "year", "composer", "bpm", "plays", "added"]
             model: ["Sort by title", "Sort by artist", "Sort by album", "Sort by genre", "Sort by year",
-                    "Most played", "Recently added"]
+                    "Sort by composer", "Sort by tempo", "Most played", "Recently added"]
             currentIndex: Math.max(0, keys.indexOf(library.songSort))
             onActivated: function (i) { library.setSongSort(keys[i]); shell.setUiValue("songSort", keys[i]) }
             Component.onCompleted: library.setSongSort(shell.uiValue("songSort", "title"))
@@ -138,7 +138,11 @@ Item {
             width: ListView.view.width - 12
             title: model.title
             artist: model.artist + (page.duplicatesVisible ? " · " + model.duplicateCount + " copies" : "")
-            album: library.songSort === "genre" && model.genre ? model.album + "  ·  " + shell.genresText(model.genre, false) : model.album
+            // what the list is ordered by, beside the album
+            album: library.songSort === "genre" && model.genre ? model.album + "  ·  " + shell.genresText(model.genre, false)
+                 : library.songSort === "composer" && model.composer ? model.album + "  ·  " + model.composer
+                 : library.songSort === "bpm" && model.bpm ? model.album + "  ·  " + model.bpm + " BPM" + (model.music_key ? "  ·  " + model.music_key : "")
+                 : model.album
             durText: model.durText
             artUrl: model.artUrl
             current: Rows.currentId === model.id

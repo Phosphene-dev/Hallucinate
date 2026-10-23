@@ -13,30 +13,37 @@ from mutagen.mp4 import MP4, MP4Cover
 
 from . import cue
 
-FIELDS = ("title", "artist", "album_artist", "album", "track_no", "disc_no", "year", "genre")
+FIELDS = ("title", "artist", "album_artist", "album", "track_no", "disc_no", "year", "genre",
+          "composer", "work", "movement", "bpm", "music_key")
 
 _ID3 = {
     "title": id3.TIT2, "artist": id3.TPE1, "album_artist": id3.TPE2, "album": id3.TALB,
     "track_no": id3.TRCK, "disc_no": id3.TPOS, "year": id3.TDRC, "genre": id3.TCON,
+    "composer": id3.TCOM, "movement": id3.MVNM, "bpm": id3.TBPM, "music_key": id3.TKEY,
 }
 _VORBIS = {
     "title": "title", "artist": "artist", "album_artist": "albumartist", "album": "album",
     "track_no": "tracknumber", "disc_no": "discnumber", "year": "date", "genre": "genre",
+    "composer": "composer", "work": "work", "movement": "movementname", "bpm": "bpm", "music_key": "initialkey",
 }
 # Other spellings other programs use, which reading also accepts (see tags.KEYS): gone whenever the field is
 # written, so clearing the album artist or the year doesn't leave an old "ALBUM ARTIST" or "YEAR" to come back
-_VORBIS_ALSO = {"album_artist": ("album_artist", "album artist"), "year": ("year",)}
+_VORBIS_ALSO = {"album_artist": ("album_artist", "album artist"), "year": ("year",), "music_key": ("key",)}
 _MP4 = {
     "title": "\xa9nam", "artist": "\xa9ART", "album_artist": "aART", "album": "\xa9alb",
     "year": "\xa9day", "genre": "\xa9gen",
+    "composer": "\xa9wrt", "work": "\xa9wrk", "movement": "\xa9mvn",
 }
+_MP4_KEY = "----:com.apple.iTunes:initialkey"
 _APE = {
     "title": "Title", "artist": "Artist", "album_artist": "Album Artist", "album": "Album",
     "track_no": "Track", "disc_no": "Disc", "year": "Year", "genre": "Genre",
+    "composer": "Composer", "work": "Work", "movement": "MovementName", "bpm": "BPM", "music_key": "InitialKey",
 }
 _ASF = {
     "title": "Title", "artist": "Author", "album_artist": "WM/AlbumArtist", "album": "WM/AlbumTitle",
     "track_no": "WM/TrackNumber", "disc_no": "WM/PartOfSet", "year": "WM/Year", "genre": "WM/Genre",
+    "composer": "WM/Composer", "bpm": "WM/BeatsPerMinute", "music_key": "WM/InitialKey",
 }
 
 
@@ -74,7 +81,7 @@ def _clean(fields):
     for k in FIELDS:
         if k in fields and fields[k] is not None:
             v = str(fields[k]).strip()
-            out[k] = "" if v == "0" and k in ("track_no", "disc_no", "year") else v
+            out[k] = "" if v == "0" and k in ("track_no", "disc_no", "year", "bpm") else v
     return out
 
 
@@ -231,6 +238,11 @@ def _values(k, v):
 
 def _w_id3(f, fields):
     for k, v in fields.items():
+        if k == "work":  # as Picard writes it (TIT1 is the grouping)
+            f.tags.delall("TXXX:WORK")
+            if v:
+                f.tags.add(id3.TXXX(encoding=3, desc="WORK", text=[v]))
+            continue
         frame = _ID3[k]
         f.tags.delall(frame.__name__)
         if v:
@@ -260,6 +272,18 @@ def _w_mp4(f, fields):
                 tags[key] = [(n, total)]
             else:
                 tags.pop(key, None)
+        elif k == "bpm":
+            if v.isdigit() and int(v):
+                tags["tmpo"] = [int(v)]
+            else:
+                tags.pop("tmpo", None)
+        elif k == "music_key":
+            if v:
+                from mutagen.mp4 import MP4FreeForm
+
+                tags[_MP4_KEY] = [MP4FreeForm(v.encode("utf-8"))]
+            else:
+                tags.pop(_MP4_KEY, None)
         elif v:
             tags[_MP4[k]] = _values(k, v)
         else:
@@ -268,6 +292,8 @@ def _w_mp4(f, fields):
 
 def _w_asf(f, fields):
     for k, v in fields.items():
+        if k not in _ASF:  # (WMA has no field for a work or movement)
+            continue
         if v:
             f.tags[_ASF[k]] = _values(k, v)
         elif _ASF[k] in f.tags:  # ASF tags have no pop(key, default)

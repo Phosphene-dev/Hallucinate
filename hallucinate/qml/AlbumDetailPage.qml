@@ -56,6 +56,7 @@ Item {
         property string label
         property string value
         property var links: []
+        property bool composers: false
         visible: value.length > 0
         spacing: 3
         width: Math.min(implicitWidth, 320)
@@ -81,6 +82,7 @@ Item {
         GenreLinks {  // genres: each opens its page
             visible: parent.links.length > 0
             names: parent.links
+            composers: parent.composers
             pixelSize: Theme.fontSize(13)
             width: Math.min(implicitWidth, 320)
         }
@@ -219,6 +221,13 @@ Item {
                         label: shell.allGenresAlbums && (page.notes.genres || []).length > 1 ? "Genres" : "Genre"
                         value: links.join(", ")
                         links: (page.notes.genres || []).slice(0, shell.allGenresAlbums ? 8 : 1)
+                    }
+                    Note {
+                        objectName: "albumComposers"
+                        label: (page.notes.composers || []).length > 1 ? "Composers" : "Composer"
+                        value: links.join(", ")
+                        links: page.notes.composers || []
+                        composers: true
                     }
                     Note { label: "Format"; value: page.formatLine() + (page.notes.lossless ? "  ·  lossless" : "") }
                     Note { label: "Discs"; value: page.multiDisc ? String(page.notes.discs) : "" }

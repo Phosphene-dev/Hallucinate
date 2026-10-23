@@ -10,8 +10,8 @@ from PySide6.QtGui import QDesktopServices
 
 from .core import albums as album_views
 from .core import artists as artist_views
+from .core import composers, genre_views, remote
 from .core import folders as folder_views
-from .core import genre_views, remote
 from .core import health as health_checks
 from .core.db import Database, fold, group_index, search_groups
 from .core.radio import radio_tracks
@@ -111,7 +111,8 @@ def decorate(rows):
 
 # Text fields that repeat across a library's songs (every song of an album shares its album, artist, genre and
 # cover); one shared copy each instead of one per song keeps a quarter-million-song list to a sensible size.
-SHARED_FIELDS = ("artist", "album", "album_artist", "album_key", "genre", "fmt", "codec", "art", "file")
+SHARED_FIELDS = ("artist", "album", "album_artist", "album_key", "genre", "fmt", "codec", "art", "file", "composer",
+                 "music_key")
 
 
 def share_strings(rows):
@@ -214,6 +215,7 @@ class Library(QObject):
     foldersChanged = Signal()
     filtersChanged = Signal()
     genreListChanged = Signal()
+    composerListChanged = Signal()
     songSortChanged = Signal()
     duplicatesChanged = Signal()
     scanningChanged = Signal()
@@ -270,6 +272,7 @@ class Library(QObject):
         self._filters = ("", 0, "")
         self._song_sort = "title"
         self._genre_list = []
+        self._composer_list = []
         self._filter_gen = 0
         self._duplicate_gen = 0
         self._duplicates_loading = False
@@ -324,6 +327,41 @@ class Library(QObject):
     def genreList(self):
         """Every genre: [{name, albums, artists, tracks, seconds, artUrl, albumKey}], most songs first."""
         return self._genre_list
+
+    # --- composers ---------------------------------------------------------------
+    @Property("QVariantList", notify=composerListChanged)
+    def composerList(self):
+        """Every composer: [{name, tracks, works, albums, seconds, artUrl, albumKey}], most songs first."""
+        return self._composer_list
+
+    @Slot(str, result="QVariantMap")
+    def composerPage(self, name):
+        """A composer's works (with their movements), other songs, albums and performers; every song is a plain
+        row, and `order` is all of them in the page's order (what Play all and a row's play go through)."""
+        try:
+            data = composers.page(self._db, name)
+        except Exception:  # noqa: BLE001
+            logger.exception("Composer page failed")
+            return {}
+        for w in data["works"]:
+            w["songs"] = decorate(w["songs"])
+        data["others"] = decorate(data["others"])
+        data["albumList"] = decorate(data["albumList"])
+        return data
+
+    @Slot(str, bool)
+    def playComposer(self, name, shuffle=False):
+        tracks = decorate(composers.tracks(self._db, name))
+        self._play(tracks, random.randrange(len(tracks)) if shuffle and tracks else 0)
+
+    @Slot(str, int)
+    def playComposerSongs(self, name, index):
+        """Play a composer's songs from `index` (in composers.tracks' order: the page's)."""
+        self._play(decorate(composers.tracks(self._db, name)), index)
+
+    @Slot(str, result="QVariantList")
+    def composerPaths(self, name):
+        return [t["path"] for t in composers.tracks(self._db, name)]
 
     @Slot(str, result="QVariantMap")
     def genrePage(self, name):
@@ -482,6 +520,7 @@ class Library(QObject):
             "counts": db.counts(),
             "filterValues": db.filter_values(),
             "genreList": genre_views.overview(db),
+            "composerList": composers.overview(db),
         }
         data["timeline"] = Library._timeline_rows(data["albums"])
         data["artistIndex"] = {fold(a["name"]): a for a in data["artists"]}
@@ -503,7 +542,7 @@ class Library(QObject):
         # shallow copies (cheap) so the worker can tell what changed; rows themselves are never edited in place
         current = {n: list(self._models[n].items()) for n in ("albums", "artists", "songs")}
         state = {"timeline": self._timeline, "filterValues": self._filter_values, "counts": dict(self._counts),
-                 "genreList": self._genre_list}
+                 "genreList": self._genre_list, "composerList": self._composer_list}
 
         def work(db):
             try:
@@ -546,6 +585,9 @@ class Library(QObject):
         if changed["genreList"]:
             self._genre_list = decorate(data["genreList"])
             self.genreListChanged.emit()
+        if changed["composerList"]:
+            self._composer_list = decorate(data["composerList"])
+            self.composerListChanged.emit()
         self._artist_index = data["artistIndex"]
         self._search_index = data["searchIndex"]
         self._retire(list(self._detail.values()))

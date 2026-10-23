@@ -20,11 +20,18 @@ Item {
         if (!q.length) return []
         return library.genreList.filter(function (g) { return g.name.toLowerCase().indexOf(q) >= 0 }).slice(0, 12)
     }
+    // composers whose name holds what's typed
+    readonly property var composerHits: {
+        var q = query.trim().toLowerCase()
+        if (!q.length) return []
+        return library.composerList.filter(function (c) { return c.name.toLowerCase().indexOf(q) >= 0 }).slice(0, 12)
+    }
     readonly property bool anyExtra: stationHits.length > 0 || podcastHits.shows.length > 0 || podcastHits.episodes.length > 0
-                                     || genreHits.length > 0
+                                     || genreHits.length > 0 || composerHits.length > 0
     // what the search looks through, for the empty page's hint
     function findsWhat() {
         var kinds = ["songs", "albums", "artists", "genres"]
+        if (library.composerList.length) kinds.push("composers")
         if (shell.features.stations === true) kinds.push("radio stations")
         if (shell.features.podcasts === true) kinds.push("podcasts")
         var s = kinds.slice(0, -1).join(", ") + " and " + kinds[kinds.length - 1]
@@ -98,6 +105,29 @@ Item {
                         onClicked: Nav.openGenre(modelData.name)
                         Accessible.name: "Genre: " + modelData.name
                         Accessible.onPressAction: Nav.openGenre(modelData.name)
+                    }
+                }
+            }
+
+            Text {
+                textFormat: Text.PlainText
+                visible: page.composerHits.length > 0
+                text: "Composers"
+                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
+            }
+            Flow {
+                objectName: "searchComposers"
+                visible: page.composerHits.length > 0
+                width: parent.width
+                spacing: 8
+                Repeater {
+                    model: page.composerHits
+                    Chip {
+                        required property var modelData
+                        text: modelData.name
+                        onClicked: Nav.openComposer(modelData.name)
+                        Accessible.name: "Composer: " + modelData.name
+                        Accessible.onPressAction: Nav.openComposer(modelData.name)
                     }
                 }
             }
