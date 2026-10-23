@@ -193,3 +193,101 @@ def test_genre_prefilter_never_drops_a_match():
         conn.execute("CREATE TABLE t(s_genre TEXT)")
         conn.execute("INSERT INTO t VALUES(?)", (genres.fold(text),))
         assert conn.execute(f"SELECT COUNT(*) FROM t WHERE {sql}", params).fetchone()[0] == 1, (text, name)
+
+
+def test_songs_are_found_by_their_genre_too_names_first(db):
+    _add(db, "/m/1", "Shoegaze; Dream Pop")
+    _add(db, "/m/2", "Jazz")
+    db.upsert_track({**db.track(1), "path": "/m/3", "title": "Shoegaze Song", "genre": "Jazz"})
+    db.commit()
+    found = [t["path"] for t in db.search("shoegaze", groups=False)["tracks"]]
+    assert found[0] == "/m/3" and "/m/1" in found and "/m/2" not in found
+    assert [t["path"] for t in db.search("dream pop", groups=False)["tracks"]] == ["/m/1"]
+
+
+def test_an_old_search_index_without_genres_is_built_again(tmp_path):
+    from hallucinate.core.db import Database
+
+    path = tmp_path / "lib.db"
+    old = Database(path)
+    _add(old, "/m/1", "Krautrock")
+    old.conn.execute("DROP TABLE tracks_fts")
+    old.conn.execute("CREATE VIRTUAL TABLE tracks_fts USING fts5(title, artist, album)")
+    old.conn.execute("INSERT INTO tracks_fts(rowid, title, artist, album) SELECT id, title, artist, album FROM tracks")
+    old.commit()
+    old.close()
+    db = Database(path)
+    assert [t["path"] for t in db.search("krautrock", groups=False)["tracks"]] == ["/m/1"]
+    db.close()
+
+
+def test_songs_sort_by_most_played_and_newest(db):
+    from hallucinate.core import genre_views
+
+    for p in ("/m/1", "/m/2", "/m/3"):
+        _add(db, p, "")
+    for _ in range(3):
+        db.record_play("/m/2")
+    db.record_play("/m/3")
+    db.commit()
+    songs = db.song_list()
+    assert [t["path"] for t in sorted(songs, key=genre_views.song_sort_key("plays", db))] == ["/m/2", "/m/3", "/m/1"]
+    assert [t["path"] for t in sorted(songs, key=genre_views.song_sort_key("added"))] == ["/m/3", "/m/2", "/m/1"]
+
+
+def test_artists_carry_their_plays_and_newest_addition(db):
+    _add(db, "/m/1", "")
+    db.record_play("/m/1")
+    db.record_play("/m/1")
+    db.commit()
+    (a,) = db.artists()
+    assert a["plays"] == 2 and a["added"] > 0 and a["tracks"] == 1
+
+
+def test_a_playlist_is_copied_and_its_repeats_taken_out(db):
+    for p in ("/m/1", "/m/2"):
+        _add(db, p, "")
+    db.commit()
+    pid = db.create_playlist("Mix")
+    db.playlist_add(pid, ["/m/2", "/m/1", "/m/2", "/m/1", "/m/2"])
+    copy = db.duplicate_playlist(pid, "Mix (copy)")
+    assert [t["path"] for t in db.playlist_tracks(copy)] == ["/m/2", "/m/1", "/m/2", "/m/1", "/m/2"]
+    assert db.playlist_dedupe(pid) == 3
+    assert [t["path"] for t in db.playlist_tracks(pid)] == ["/m/2", "/m/1"]
+    assert len(db.playlist_tracks(copy)) == 5  # the copy is its own
+
+
+def test_a_search_with_a_typo_shows_what_was_probably_meant(db):
+    from hallucinate.core.spelling import Speller, distance
+
+    assert distance("radiohed", "radiohead", 2) == 1 and distance("wroks", "works", 2) == 1  # a swap is one
+    assert distance("abc", "xyzuvw", 2) == 3
+    s = Speller(["Radiohead", "OK Computer", "Boards of Canada", "Béla Bartók", "Beethoven", "Beethoven"])
+    assert s.correct("radiohed") == "radiohead"
+    assert s.correct("bords of canda") == "boards of canada"
+    assert s.correct("bartok") == "" and s.correct("radioh") == ""  # found as it is
+    assert s.correct("beethovan") == "beethoven"
+    assert s.correct("qqqqqqq") == ""  # nothing close: no suggestion rather than a wild one
+
+
+def test_the_library_falls_back_to_the_corrected_search(qapp, tmp_path):
+    from conftest import wait_for
+
+    from hallucinate.core.db import Database
+    from hallucinate.library import Library
+
+    d = Database(tmp_path / "lib.db")
+    _add(d, "/m/1", "Shoegaze")
+    d.upsert_track({**d.track(1), "path": "/m/2", "title": "Paranoid Android", "artist": "Radiohead"})
+    d.commit()
+    d.close()
+    lib = Library(tmp_path / "lib.db", tmp_path / "art")
+    try:
+        lib.search("paranoid andriod")
+        assert wait_for(lambda: lib.searchResults.get("tracks"))
+        assert lib.searchResults["corrected"] == "paranoid android"
+        assert [t["path"] for t in lib.searchResults["tracks"]] == ["/m/2"]
+        lib.search("paranoid")
+        assert wait_for(lambda: lib.searchResults.get("tracks") and "corrected" not in lib.searchResults)
+    finally:
+        lib.shutdown()

@@ -131,7 +131,7 @@ def _resolve(name):
 
 
 def _is_network(path):
-    return is_url(path) or remote.is_remote(path)
+    return is_url(path) or remote.streamed(path)
 
 
 def _resolve_in_background(name, done=None):
@@ -403,6 +403,7 @@ class Player(QObject):
         self._podcast_speed = self._float_setting("podcastSpeed", 1.0, 0.5, 3.0)  # podcasts keep their own
         self._sleep_left = -1  # seconds until sleep; -1 when no timer is running
         self._sleep_after_track = False
+        self._sleep_album = ""  # pause when the songs of this album run out
         self._sleep_gain = 1.0
         self._sleep_timer = QTimer(self)
         self._sleep_timer.setInterval(1000)
@@ -654,10 +655,31 @@ class Player(QObject):
     def sleepAfterTrack(self):
         return self._sleep_after_track
 
+    @Property(bool, notify=sleepChanged)
+    def sleepAfterAlbum(self):
+        return bool(self._sleep_album)
+
+    @Slot(bool)
+    def setSleepAfterAlbum(self, on):
+        """Pause once the album playing now ends (when the next song is from another album, or none is)."""
+        key = self.current.get("album_key") or "" if self.hasTrack else ""
+        self.setSleepAfterTrack(False)
+        self._sleep_album = key if on else ""
+        self.sleepChanged.emit()
+
+    def _sleep_at_end(self, nxt):
+        """Whether the sleep timer stops playback when this song ends, `nxt` being the one that would follow."""
+        if self._sleep_after_track:
+            return True
+        if not self._sleep_album:
+            return False
+        return nxt is None or (self._queue[nxt].get("album_key") or "") != self._sleep_album
+
     @Slot(int)
     def setSleepMinutes(self, minutes):
         """Pause after `minutes` (fading out over the last 15 s); 0 cancels the timer."""
         self._sleep_after_track = False
+        self._sleep_album = ""
         self._sleep_gain = 1.0
         self._apply_volume()
         if minutes > 0:
@@ -685,6 +707,7 @@ class Player(QObject):
         self._sleep_gain = 1.0
         self._apply_volume()
         self._sleep_after_track = on
+        self._sleep_album = ""
         self.sleepChanged.emit()
 
     def _sleep_tick(self):
@@ -1694,6 +1717,23 @@ class Player(QObject):
         self._sync_queue()
         self.trackChanged.emit()
 
+    @Slot()
+    def shuffleUpcoming(self):
+        """Mix up the order of the songs still to come, once (shuffle mode stays as it is: with it on they
+        come in a random order anyway)."""
+        if self._shuffle or not self.hasTrack or len(self._queue) - self._index - 1 < 2:
+            return
+        self._remember_queue("Upcoming songs shuffled")
+        tail = self._queue[self._index + 1:]
+        random.shuffle(tail)
+        self._queue = self._queue[:self._index + 1] + tail
+        self._history = [h for h in self._history if h <= self._index]
+        self._played = {p for p in self._played if p <= self._index}
+        self._drop_standby()
+        self._invalidate_next()
+        self._sync_queue()
+        self.trackChanged.emit()
+
     def _upcoming_totals(self):
         if self._upcoming_s is None:
             upcoming, total = self._upcoming(), 0.0
@@ -2105,6 +2145,8 @@ class Player(QObject):
         if dur < 2 * xf or dur - pos > xf:
             return False
         nxt = self._compute_next(auto=True)
+        if self._sleep_album and self._sleep_at_end(nxt):
+            return False
         sb = self._standby
         if nxt is None or nxt == self._index or sb.index != nxt or not sb.player.source().isValid():
             return False
@@ -2151,8 +2193,9 @@ class Player(QObject):
 
     def _advance_at_end(self):
         nxt = self._compute_next(auto=True)
-        if self._sleep_after_track:
+        if self._sleep_at_end(nxt):
             self._sleep_after_track = False
+            self._sleep_album = ""
             self.sleepChanged.emit()
             if nxt is not None:
                 self._player.pause()

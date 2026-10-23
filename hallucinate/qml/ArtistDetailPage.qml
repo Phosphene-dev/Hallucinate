@@ -543,6 +543,89 @@ Item {
                 }
             }
 
+            // Similar artists (Last.fm): those you have, to go to or mix with this one; the rest to discover
+            Column {
+                id: similarBox
+                objectName: "similarArtists"
+                width: col.width
+                spacing: 12
+                property int revision: 0
+                readonly property var found: revision >= 0 && page.artistName ? similarArtists.similar(page.artistName) : ({})
+                readonly property var have: found.have || []
+                readonly property var discover: found.discover || []
+                visible: found.on === true && (found.busy || have.length > 0 || discover.length > 0)
+                Connections {
+                    target: similarArtists
+                    function onChanged(key) { similarBox.revision++ }
+                }
+                Connections {
+                    target: library
+                    function onChanged() { similarBox.revision++ }  // you may have some of them now
+                }
+                Component.onCompleted: if (page.artistName) similarArtists.ensure(page.artistName)
+                Row {
+                    spacing: 14
+                    SectionHeader {
+                        title: "Similar artists"
+                        subtitle: similarBox.found.busy ? "Asking Last.fm…" : "From Last.fm"
+                    }
+                    Text {
+                        textFormat: Text.PlainText
+                        objectName: "similarMix"
+                        visible: similarBox.have.length > 0
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Play a mix"
+                        color: Theme.accent
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.fontSize(13)
+                        font.weight: Font.DemiBold
+                        LinkArea {
+                            name: "Play a mix of " + page.artistName + " and similar artists you have"
+                            onClicked: library.playArtistMix([page.artistName].concat(similarBox.have.map(function (a) { return a.name })))
+                        }
+                    }
+                }
+                Flow {
+                    objectName: "similarHave"
+                    visible: similarBox.have.length > 0
+                    width: col.width
+                    spacing: 18
+                    Repeater {
+                        model: similarBox.have.slice(0, 12)
+                        ArtistCard {
+                            required property var modelData
+                            cardWidth: 130
+                            name: modelData.name
+                            subtitle: modelData.albums + (modelData.albums === 1 ? " album" : " albums")
+                            artUrl: modelData.artUrl || ""
+                        }
+                    }
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    visible: similarBox.discover.length > 0
+                    text: similarBox.have.length ? "Not in your library" : "None of them are in your library yet"
+                    color: Theme.textDim
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.fontSize(12.5)
+                }
+                Flow {
+                    objectName: "similarDiscover"
+                    visible: similarBox.discover.length > 0
+                    width: col.width
+                    spacing: 8
+                    Repeater {
+                        model: similarBox.discover
+                        Chip {
+                            required property var modelData
+                            text: modelData.name
+                            onClicked: Qt.openUrlExternally(modelData.url)
+                            Accessible.name: modelData.name + ", opens on Last.fm"
+                        }
+                    }
+                }
+            }
+
             // Every song
             Column {
                 width: col.width

@@ -5,6 +5,44 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-23
+
+Hallucinate 1.0: composers and classical works, tempo and key, playlist folders, server songs kept on your
+computer, similar artists, and search that forgives typos.
+
+### Added
+- Composers, works and movements. Composer (every one a song credits), work and movement are read from the tags
+  (and a CUE sheet's SONGWRITER), and can be edited under More fields in the tag editor. Artists → Composers
+  lists who wrote your music; a composer's page shows their works with the movements in order ("III. Allegro"),
+  their other songs, the albums they're on and who performs them. Album pages, a song's menu, search and Ctrl+K
+  link to composers.
+- Tempo and key (BPM, and the key as Am, F#, 8A…) are read from the tags and can be edited. Songs sort by
+  composer or tempo (shown beside the album), and smart playlists can use composer, work, key and tempo, with
+  Slowest first, Fastest first and Composer orders.
+- The first time 1.0 opens your library it reads every file once more, for these tags; it carries on in the
+  background, and the library can be used meanwhile.
+- Search forgives a typo: when nothing matches what you typed, it shows results for the closest words in your
+  library ("radiohed" finds Radiohead) and says so.
+- Playlist folders: right-click a playlist → Move to folder groups playlists (smart ones too) in folders in the
+  sidebar, which open and close; a folder can be renamed or ungrouped. Backups keep them.
+- Music servers: Keep on this computer (right-click an album, playlist, artist or song) downloads a server's
+  songs so they play without it, in offline mode too. A download that stops carries on later; Settings → Music
+  servers shows what's kept and removes the copies.
+- Similar artists from Last.fm on an artist's page (switch it on in Settings → Online & privacy; needs the
+  Last.fm key): the ones in your library to open or Play a mix of, the rest to look up on Last.fm.
+- Search finds songs by their genres too (a song named for the words still comes first). The search index
+  is built again once, in a second or two, the first time this version opens the library.
+- Songs sort by Most played or Recently added; the Artists page sorts A–Z, by most songs, most played or
+  recently added (a drop-down now, as on Songs).
+- A genre can be renamed from its page's ⋯ menu (or right-click a genre): the new name is written to every
+  song with it. Renaming it to a genre you already have joins the two.
+- Playlists: Make a copy and Remove repeats (each song kept once, where it first comes), in a ⋯ menu with
+  Export, Rename and Delete; the header shows how long the playlist lasts.
+- Queue: Shuffle mixes up the songs still to come, once, with Undo (shuffle mode stays off).
+- Sleep timer: End of this album.
+- Songs page: Shuffle plays the songs shown (all, or those the filters leave) in a random order.
+- Search: Play all plays every song found.
+
 ## [0.9.9.9] - 2026-10-18
 
 A top-to-bottom pass: a calmer Settings page, and fixes and small additions all over.

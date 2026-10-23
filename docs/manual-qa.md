@@ -106,7 +106,31 @@ finding, following and playing podcasts.
 - [ ] The whole app from the keyboard alone: Tab through every page, arrows in lists, Enter to play, Menu key
   (or Shift+F10) for menus, Esc closes dialogs.
 
-### 10. New in 0.9.9.9
+### 9b. New in 1.0
+- [ ] Tag a few songs with a composer, work and movement (tag editor → More fields): Artists → Composers lists
+  them; the composer's page shows the work with its movements in order. Play a work; Play all.
+- [ ] Album page: Composer links. Song menu: Go to composer. Search and Ctrl+K: a composer's name.
+- [ ] A FLAC with BPM and INITIALKEY: Songs → Sort by tempo shows "128 BPM · Am". A smart playlist "Tempo is
+  more than 120" finds it; one "Key is Am" too.
+- [ ] Search "radiohed" (or any name with a letter wrong): "Showing results for radiohead".
+- [ ] Right-click a playlist → Move to folder → New folder…; the sidebar shows the folder, which opens and
+  closes and is remembered. Rename the folder, then Ungroup it.
+- [ ] With a music server: right-click an album → Keep on this computer; Settings → Music servers counts it.
+  Switch offline mode on: the album still plays. Remove the copies.
+- [ ] With Last.fm set up, switch on similar artists: an artist page lists them; Play a mix plays songs by them.
+- [ ] Upgrading from 0.9.9.9: the library reads its files again once, and everything carries on working.
+
+### 10. New in 1.0 (earlier in the cycle)
+- [ ] Search a genre name (say "shoegaze"): songs with that genre are listed, songs named for it first.
+- [ ] Songs → Most played and Recently added; Artists → the drop-down's four orders, kept after a restart.
+- [ ] A genre page → ⋯ → Rename genre…: type a new name; the page shows it once the songs are retagged. Rename
+  one to a genre you already have: the note says they join, and afterwards there's one page.
+- [ ] A playlist → ⋯ → Make a copy; add a song twice → Remove repeats; the header shows its length.
+- [ ] Queue → Shuffle (shuffle mode off): the songs to come are mixed, the playing one stays; Undo.
+- [ ] Sleep timer → End of this album: playback pauses when the next song is from another album.
+- [ ] Songs → filter by a genre → Shuffle: only the shown songs play. Search → Play all.
+
+### 10b. New in 0.9.9.9
 - [ ] Settings: subsections start closed; open one, leave Settings and come back, it's still open. Search
   "preamp" or "discogs": the subsection holding it opens. Text size changes the whole app.
 - [ ] Online & privacy → Offline mode while a radio station plays: it stops; a podcast download pauses and

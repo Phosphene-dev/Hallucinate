@@ -6,7 +6,7 @@ import time
 import unicodedata
 from typing import Iterable, Optional
 
-from . import genres
+from . import composers, genres
 from .remote import SQL_LOCAL
 
 SCHEMA = """
@@ -41,7 +41,14 @@ CREATE TABLE IF NOT EXISTS tracks(
   s_artist TEXT NOT NULL DEFAULT '',
   file TEXT,
   cue_start REAL NOT NULL DEFAULT 0,
-  cue_end REAL NOT NULL DEFAULT 0
+  cue_end REAL NOT NULL DEFAULT 0,
+  composer TEXT NOT NULL DEFAULT '',
+  s_composer TEXT NOT NULL DEFAULT '',
+  work TEXT NOT NULL DEFAULT '',
+  movement TEXT NOT NULL DEFAULT '',
+  movement_no INTEGER NOT NULL DEFAULT 0,
+  bpm INTEGER NOT NULL DEFAULT 0,
+  music_key TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_tracks_album ON tracks(album_key);
 CREATE TABLE IF NOT EXISTS folders(path TEXT PRIMARY KEY);
@@ -82,8 +89,10 @@ CREATE TABLE IF NOT EXISTS artist_bios(s_aa TEXT PRIMARY KEY, own TEXT NOT NULL 
 
 FTS = (
     "CREATE VIRTUAL TABLE IF NOT EXISTS tracks_fts USING fts5("
-    "title, artist, album, tokenize='unicode61 remove_diacritics 2')"
+    "title, artist, album, genre, composer, tokenize='unicode61 remove_diacritics 2')"
 )
+# Ranking weights for title, artist, album, genre and composer: a song named for the word first, its genre last
+FTS_RANK = "bm25(tracks_fts, 10.0, 5.0, 4.0, 1.0, 3.0)"
 
 COLS = (
     "path mtime size title artist album_artist aa_tag album album_key track_no disc_no "
@@ -93,6 +102,9 @@ COLS = (
 # Folded copies (see fold) kept beside the originals, so queries never call the Python fold() per row: from
 # inside SQLite each call must take the GIL, which crawls whenever another thread is busy (a big library).
 SEARCH_COLS = ["s_title", "s_album", "s_aa", "s_artist", "s_genre"]
+
+# Who wrote a song, its work and movement (classical music), its tempo and key: "" or 0 when the tags don't say
+TAG_COLS = {"composer": "", "work": "", "movement": "", "movement_no": 0, "bpm": 0, "music_key": ""}
 
 _ORDER = "disc_no, track_no, s_title"
 
@@ -149,6 +161,8 @@ class Database:
         self.conn.create_function("genre_has", 2, genres.has, deterministic=True)
         # genre_starts(t.genre, 'amb'): whether one of a song's genres begins so
         self.conn.create_function("genre_starts", 2, genres.starts, deterministic=True)
+        # composer_has(t.composer, 'Bach'): whether that composer is one of those a song credits
+        self.conn.create_function("composer_has", 2, composers.has, deterministic=True)
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.execute("PRAGMA synchronous=NORMAL")
         self.conn.executescript(SCHEMA)
@@ -164,6 +178,7 @@ class Database:
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_stitle ON tracks(s_title)")
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_saa ON tracks(s_aa)")
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_sartist ON tracks(s_artist)")
+        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_scomposer ON tracks(s_composer)")
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_play_log_sartist ON play_log(s_artist)")
         # a song's or album's own listens (album page "first played", radio, history edits) without a full scan
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_play_log_path ON play_log(path)")
@@ -172,7 +187,26 @@ class Database:
             self.has_fts = True
         except sqlite3.OperationalError:
             self.has_fts = False
+        if self.has_fts and not self._fts_current():
+            # made before songs were found by genre too: build it again with that column (a second or two).
+            # Several connections open at start, so one does it while the others wait, then find it done.
+            self.conn.commit()
+            self.conn.execute("BEGIN IMMEDIATE")
+            try:
+                if not self._fts_current():
+                    self.conn.execute("DROP TABLE tracks_fts")
+                    self.conn.execute(FTS)
+                    self.conn.execute("INSERT INTO tracks_fts(rowid, title, artist, album, genre, composer) "
+                                      "SELECT id, title, artist, album, genre, composer FROM tracks")
+                self.conn.commit()
+            except BaseException:
+                self.conn.rollback()
+                raise
         self.conn.commit()
+
+    def _fts_current(self):
+        """Whether the search index has every column it's made with now (genre, then composer, came later)."""
+        return "composer" in {r[1] for r in self.conn.execute("PRAGMA table_info(tracks_fts)")}
 
     def _migrate(self):
         cols = {r["name"] for r in self.conn.execute("PRAGMA table_info(tracks)")}
@@ -225,6 +259,15 @@ class Database:
                      if album_folder(os.path.dirname(r[0])) != os.path.dirname(r[0])]
             self.conn.executemany("UPDATE tracks SET mtime=0 WHERE path=?", stale)
             self.conn.execute("PRAGMA user_version = 1")
+        if "composer" not in cols:
+            for c, empty in [*TAG_COLS.items(), ("s_composer", "")]:
+                kind = "INTEGER NOT NULL DEFAULT 0" if empty == 0 else "TEXT NOT NULL DEFAULT ''"
+                self.conn.execute(f"ALTER TABLE tracks ADD COLUMN {c} {kind}")
+            # The next scan reads every file on this computer again for its composer, work, tempo and key
+            self.conn.execute(f"UPDATE tracks SET mtime=0 WHERE {SQL_LOCAL}")
+        for table in ("playlists", "smart_playlists"):  # folders to group playlists in the sidebar ("" for none)
+            if "folder" not in {r["name"] for r in self.conn.execute(f"PRAGMA table_info({table})")}:
+                self.conn.execute(f"ALTER TABLE {table} ADD COLUMN folder TEXT NOT NULL DEFAULT ''")
         log_cols = {r["name"] for r in self.conn.execute("PRAGMA table_info(play_log)")}
         if "duration" not in log_cols:
             self.conn.execute("ALTER TABLE play_log ADD COLUMN duration REAL NOT NULL DEFAULT 0")
@@ -271,7 +314,7 @@ class Database:
 
     def playlists(self) -> list:
         return self._rows(
-            "SELECT p.id, p.name, COUNT(t.id) AS n FROM playlists p "
+            "SELECT p.id, p.name, p.folder, COUNT(t.id) AS n FROM playlists p "
             "LEFT JOIN playlist_items i ON i.playlist_id=p.id LEFT JOIN tracks t ON t.path=i.path "
             "GROUP BY p.id ORDER BY p.name COLLATE NOCASE"
         )
@@ -299,7 +342,7 @@ class Database:
         self.conn.commit()
 
     def smart_playlists(self) -> list:
-        return self._rows("SELECT id, name, rules FROM smart_playlists ORDER BY name COLLATE NOCASE, id")
+        return self._rows("SELECT id, name, rules, folder FROM smart_playlists ORDER BY name COLLATE NOCASE, id")
 
     def smart_playlist(self, sid: int) -> Optional[dict]:
         rows = self._rows("SELECT id, name, rules FROM smart_playlists WHERE id=?", (sid,))
@@ -325,6 +368,46 @@ class Database:
             "WHERE i.playlist_id=? ORDER BY i.pos, i.id",
             (pid,),
         )
+
+    # --- playlist folders: a name each playlist may carry, to group them in the sidebar ---------------------
+    def set_playlist_folder(self, pid: int, smart: bool, folder: str):
+        table = "smart_playlists" if smart else "playlists"
+        self.conn.execute(f"UPDATE {table} SET folder=? WHERE id=?", (" ".join((folder or "").split()), pid))
+        self.conn.commit()
+
+    def rename_playlist_folder(self, old: str, new: str):
+        """Rename a folder (to one that exists: the two become one; to "": its playlists leave it)."""
+        new = " ".join((new or "").split())
+        for table in ("playlists", "smart_playlists"):
+            self.conn.execute(f"UPDATE {table} SET folder=? WHERE folder=?", (new, old))
+        self.conn.commit()
+
+    def playlist_folders(self) -> list:
+        return [r[0] for r in self.conn.execute(
+            "SELECT folder FROM playlists WHERE folder != '' UNION SELECT folder FROM smart_playlists "
+            "WHERE folder != '' ORDER BY 1 COLLATE NOCASE")]
+
+    def duplicate_playlist(self, pid: int, name: str) -> int:
+        """A copy of a playlist, songs in the same order; returns the new one's id."""
+        new = self.create_playlist(name)
+        self.conn.execute("UPDATE playlists SET folder=(SELECT folder FROM playlists WHERE id=?) WHERE id=?", (pid, new))
+        self.conn.execute(
+            "INSERT INTO playlist_items(playlist_id, path, pos) "
+            "SELECT ?, path, ROW_NUMBER() OVER (ORDER BY pos, id) - 1 FROM playlist_items WHERE playlist_id=?",
+            (new, pid))
+        self.conn.commit()
+        return new
+
+    def playlist_dedupe(self, pid: int) -> int:
+        """Take out the second and later copies of each song in a playlist (the first stays where it is);
+        returns how many went."""
+        cur = self.conn.execute(
+            """DELETE FROM playlist_items WHERE playlist_id=? AND id NOT IN (
+                 SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY path ORDER BY pos, id) AS n
+                                 FROM playlist_items WHERE playlist_id=?) WHERE n = 1)""",
+            (pid, pid))
+        self.conn.commit()
+        return cur.rowcount
 
     def playlist_remove_item(self, item_id: int):
         self.conn.execute("DELETE FROM playlist_items WHERE id=?", (item_id,))
@@ -632,6 +715,9 @@ class Database:
         params["s_artist"] = fold(t["artist"])
         params["s_genre"] = fold(t.get("genre") or "")
         params["rg_measured"] = 0
+        for c, empty in TAG_COLS.items():
+            params[c] = t.get(c) or empty
+        params["s_composer"] = fold(params["composer"])
         if params.get("rg_track") is None and params.get("rg_album") is None:
             # No ReplayGain tags: use our own measurement if it is for this very file
             m = self.conn.execute(
@@ -640,7 +726,7 @@ class Database:
             ).fetchone()
             if m:
                 params.update(rg_track=m["track_gain"], rg_album=m["album_gain"], rg_peak=m["peak"], rg_measured=1)
-        extra = SEARCH_COLS + ["rg_measured"]
+        extra = SEARCH_COLS + ["rg_measured", "s_composer", *TAG_COLS]
         row = self.conn.execute("SELECT id, art FROM tracks WHERE path=?", (t["path"],)).fetchone()
         if row:
             tid = row["id"]
@@ -661,8 +747,8 @@ class Database:
         if self.has_fts:
             self.conn.execute("DELETE FROM tracks_fts WHERE rowid=?", (tid,))
             self.conn.execute(
-                "INSERT INTO tracks_fts(rowid, title, artist, album) VALUES(?,?,?,?)",
-                (tid, t["title"], t["artist"], t["album"]),
+                "INSERT INTO tracks_fts(rowid, title, artist, album, genre, composer) VALUES(?,?,?,?,?,?)",
+                (tid, t["title"], t["artist"], t["album"], t.get("genre") or "", params["composer"]),
             )
         return tid
 
@@ -849,7 +935,8 @@ class Database:
 
     # Columns the all-songs list doesn't carry: search-only folded copies and housekeeping. Everything that
     # playback, the signal path or the song rows read stays.
-    SONG_LIST_SKIP = ("s_title", "s_artist", "s_album", "s_aa", "aa_tag", "added", "mtime", "size")
+    SONG_LIST_SKIP = ("s_title", "s_artist", "s_album", "s_aa", "aa_tag", "added", "mtime", "size", "s_composer",
+                      "s_genre", "work", "movement", "movement_no")
 
     def song_list(self) -> list:
         """Every song, title order, as the Songs page needs them: tuples straight into dicts (faster than
@@ -887,9 +974,10 @@ class Database:
 
     def artists(self) -> list:
         return self._rows(
-            """SELECT MIN(album_artist) AS name, COUNT(DISTINCT album_key) AS albums,
-                      COUNT(*) AS tracks, MAX(art) AS art
-               FROM tracks GROUP BY s_aa ORDER BY MIN(s_aa)"""
+            """SELECT MIN(t.album_artist) AS name, COUNT(DISTINCT t.album_key) AS albums,
+                      COUNT(*) AS tracks, MAX(t.art) AS art, COALESCE(SUM(p.count), 0) AS plays,
+                      MAX(t.added) AS added
+               FROM tracks t LEFT JOIN plays p ON p.path = t.path GROUP BY t.s_aa ORDER BY MIN(t.s_aa)"""
         )
 
     def artist_albums(self, name: str) -> list:
@@ -914,14 +1002,15 @@ class Database:
             match = " ".join(f'"{t}"*' for t in toks)
             tracks = self._rows(
                 "SELECT t.* FROM tracks_fts f JOIN tracks t ON t.id = f.rowid "
-                "WHERE tracks_fts MATCH ? ORDER BY bm25(tracks_fts), t.s_title LIMIT ?",
+                f"WHERE tracks_fts MATCH ? ORDER BY {FTS_RANK}, t.s_title LIMIT ?",
                 (match, track_limit),
             )
         else:
             clause = " AND ".join(
-                "(s_title LIKE ? ESCAPE '\\' OR s_artist LIKE ? ESCAPE '\\' OR s_album LIKE ? ESCAPE '\\')" for _ in toks
+                "(s_title LIKE ? ESCAPE '\\' OR s_artist LIKE ? ESCAPE '\\' OR s_album LIKE ? ESCAPE '\\'"
+                " OR s_genre LIKE ? ESCAPE '\\' OR s_composer LIKE ? ESCAPE '\\')" for _ in toks
             )
-            params = [_like(t) for t in toks for _ in range(3)]
+            params = [_like(t) for t in toks for _ in range(5)]
             tracks = self._rows(
                 f"SELECT * FROM tracks WHERE {clause} ORDER BY s_title LIMIT ?",
                 (*params, track_limit),

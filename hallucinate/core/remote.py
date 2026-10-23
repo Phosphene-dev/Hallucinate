@@ -4,7 +4,11 @@ Such a song's path is `subsonic://<server>/<song id>`: an address only Hallucina
 in it, so the library, the session, backups and media controls never hold a password or token. It becomes a
 link to stream only when it's about to play (`stream_url`), from whichever server is registered for it, and
 `available` says whether that server can be reached right now (offline mode and a server that didn't answer
-make its songs unavailable, and the player moves past them)."""
+make its songs unavailable, and the player moves past them).
+
+A song you chose to keep on this computer (see offline.py) plays from its copy instead: no server, network or
+login needed, so it plays in offline mode too."""
+import os
 import threading
 import urllib.parse
 
@@ -15,6 +19,7 @@ SQL_LOCAL = "path NOT GLOB '[a-z]*://*'"
 _lock = threading.Lock()
 _servers = {}  # (scheme, server id) -> object with stream_url(item id); set by the Servers service
 _down = set()  # (scheme, server id) that didn't answer last time
+_copies = {}  # path -> the file kept on this computer
 
 
 def is_remote(path):
@@ -57,11 +62,34 @@ def set_reachable(scheme, server_id, ok):
         (_down.discard if ok else _down.add)((scheme, server_id))
 
 
+def set_copy(path, file):
+    """Remember (or with file "" forget) the copy of a server song kept on this computer."""
+    with _lock:
+        if file:
+            _copies[path] = file
+        else:
+            _copies.pop(path, None)
+
+
+def local_copy(path):
+    """The file a server song is kept in on this computer, or "" (none, or it has gone)."""
+    with _lock:
+        file = _copies.get(path, "")
+    return file if file and os.path.isfile(file) else ""
+
+
+def streamed(path):
+    """Whether playing this comes over the network: a server song without a copy here."""
+    return is_remote(path) and not local_copy(path)
+
+
 def available(path):
-    """Whether a server song can be played now: its server is set up, answered last time, and Hallucinate
-    isn't in offline mode."""
+    """Whether a server song can be played now: kept on this computer, or its server is set up, answered last
+    time, and Hallucinate isn't in offline mode."""
     from . import net
 
+    if local_copy(path):
+        return True
     parts = parse(path)
     if parts is None or net.is_offline():
         return False
@@ -72,6 +100,11 @@ def available(path):
 
 def stream_url(path):
     """The link to play a server song from (with this request's login in it), or "" if it can't be played."""
+    copy = local_copy(path)
+    if copy:
+        from pathlib import Path
+
+        return Path(copy).as_uri()
     parts = parse(path)
     if parts is None or not available(path):
         return ""
@@ -86,7 +119,7 @@ def stream_url(path):
 def host(path):
     """The host name a server song streams from (for checking it resolves before playing), or ""."""
     parts = parse(path)
-    if parts is None:
+    if parts is None or local_copy(path):
         return ""
     with _lock:
         server = _servers.get(parts[:2])

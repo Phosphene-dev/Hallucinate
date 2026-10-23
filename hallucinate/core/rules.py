@@ -22,12 +22,16 @@ FIELDS = {
     "album": ("text", "t.album", "Album"),
     "album_artist": ("text", "t.album_artist", "Album artist"),
     "genre": ("text", "t.genre", "Genre"),
+    "composer": ("text", "t.composer", "Composer"),
+    "work": ("text", "t.work", "Work"),
+    "music_key": ("text", "t.music_key", "Key"),
     "format": ("text", "t.codec", "Format"),
     "path": ("text", "t.path", "File path"),
     "year": ("number", "t.year", "Year"),
     "track_no": ("number", "t.track_no", "Track number"),
     "disc_no": ("number", "t.disc_no", "Disc number"),
     "duration": ("number", "t.duration / 60.0", "Length (minutes)"),
+    "bpm": ("number", "NULLIF(t.bpm, 0)", "Tempo (BPM)"),  # 0 is "not known": it matches no number
     "bitrate": ("number", "t.bitrate / 1000.0", "Bitrate (kb/s)"),
     "plays": ("number", "COALESCE(p.count, 0)", "Play count"),
     "added": ("date", "t.added", "Date added"),
@@ -64,6 +68,9 @@ SORTS = {
     "title": ("Title", "t.s_title, t.s_artist"),
     "artist": ("Artist", "t.s_artist, t.s_album, t.disc_no, t.track_no"),
     "album": ("Album", "t.s_album, t.disc_no, t.track_no"),
+    "composer": ("Composer", "t.s_composer = '', t.s_composer, t.work, t.movement_no, t.s_album, t.disc_no, t.track_no"),
+    "bpm_asc": ("Slowest first", "t.bpm = 0, t.bpm, t.s_title"),
+    "bpm_desc": ("Fastest first", "t.bpm = 0, t.bpm DESC, t.s_title"),
     "year_desc": ("Newest first", "t.year DESC, t.s_album, t.disc_no, t.track_no"),
     "year_asc": ("Oldest first", "t.year, t.s_album, t.disc_no, t.track_no"),
     "added_desc": ("Recently added", "t.added DESC"),
@@ -143,7 +150,7 @@ def normalize(rules):
 
 # Text fields with a folded copy in the table (compare that, not fold() per row: see db.SEARCH_COLS)
 FOLDED = {"t.title": "t.s_title", "t.artist": "t.s_artist", "t.album": "t.s_album", "t.album_artist": "t.s_aa",
-          "t.genre": "t.s_genre"}
+          "t.genre": "t.s_genre", "t.composer": "t.s_composer"}
 
 
 def _condition(rule, now):
@@ -164,6 +171,9 @@ def _condition(rule, now):
         if expr == "t.genre" and op == "starts_with":  # any of them, not only the main one
             sql, args = genres.prefilter(value, "t.s_genre")
             return f"({sql} AND genre_starts(t.genre, ?))", [*args, value]
+        if expr == "t.composer" and op in ("is", "is_not"):  # one of the composers a song credits
+            return ("" if op == "is" else "NOT ") + "(t.s_composer LIKE ? ESCAPE '\\' AND composer_has(t.composer, ?))", \
+                [_like(folded), value]
         if op == "is":
             return f"{col} = ?", [folded]
         if op == "is_not":

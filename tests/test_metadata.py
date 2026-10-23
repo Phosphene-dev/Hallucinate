@@ -704,3 +704,26 @@ def test_lyrics_say_offline_mode_and_can_be_searched_again(qapp, lib, monkeypatc
         assert ctl.plain == "words at last" and not answers
     finally:
         ctl.shutdown()
+
+
+def test_a_genre_is_renamed_in_every_song_and_can_join_another(qapp, lib):
+    from hallucinate.core import genres
+
+    assert genres.rename("IDM; Electronica", "electronica", "Electronic") == "IDM; Electronic"
+    assert genres.rename("Electronic; Electronica", "Electronica", "Electronic") == "Electronic"  # joined
+    assert genres.rename("Rock; Indie", "rock", "") == "Indie"
+    tmp, root = lib
+    ed = MetadataEditor(tmp / "lib.db", tmp / "art")
+    changed = []
+    ed.changed.connect(lambda: changed.append(1))
+    one, two = str(root / "01.mp3"), str(root / "02.mp3")
+    try:
+        ed.saveTags([one], {"genre": "Electronica; IDM"})
+        ed.saveTags([two], {"genre": "Electronic"})
+        assert wait_for(lambda: len(changed) == 2)
+        ed.renameGenre("electronica", "Electronic")
+        assert wait_for(lambda: len(changed) == 3)
+        assert ed.trackInfo(one)["genre"] == "Electronic; IDM"
+        assert ed.trackInfo(two)["genre"] == "Electronic"  # not touched: it didn't have the old name
+    finally:
+        ed.shutdown()

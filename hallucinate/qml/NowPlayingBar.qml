@@ -240,7 +240,7 @@ Item {
         IconButton {
             visible: !bar.tight
             icon: "more"; tip: "Speed and sleep timer"
-            active: player.speed !== 1 || player.sleepRemaining >= 0 || player.sleepAfterTrack
+            active: player.speed !== 1 || player.sleepRemaining >= 0 || player.sleepAfterTrack || player.sleepAfterAlbum
             onClicked: playbackMenu.popup()
             PlaybackMenu { id: playbackMenu }
         }

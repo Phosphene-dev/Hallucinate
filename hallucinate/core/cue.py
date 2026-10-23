@@ -45,9 +45,9 @@ def _gain(text):
 
 
 def parse(text):
-    """{"title", "performer", "genre", "date", "disc", "rg_album", "rg_album_peak",
-    "files": [{"name", "tracks": [{"number", "title", "performer", "start", "rg_track", "rg_peak"}]}]}."""
-    sheet = {"title": "", "performer": "", "genre": "", "date": "", "disc": 0, "rg_album": None,
+    """{"title", "performer", "songwriter", "genre", "date", "disc", "rg_album", "rg_album_peak",
+    "files": [{"name", "tracks": [{"number", "title", "performer", "songwriter", "start", "rg_track", "rg_peak"}]}]}."""
+    sheet = {"title": "", "performer": "", "songwriter": "", "genre": "", "date": "", "disc": 0, "rg_album": None,
              "rg_album_peak": None, "files": []}
     track = None
     for raw in text.splitlines():
@@ -69,10 +69,10 @@ def parse(text):
                 number = int(parts[0])
             except ValueError:
                 number = len(sheet["files"][-1]["tracks"]) + 1
-            track = {"number": number, "title": "", "performer": "", "start": None, "rg_track": None,
+            track = {"number": number, "title": "", "performer": "", "songwriter": "", "start": None, "rg_track": None,
                      "rg_peak": None}
             sheet["files"][-1]["tracks"].append(track)
-        elif cmd in ("TITLE", "PERFORMER"):
+        elif cmd in ("TITLE", "PERFORMER", "SONGWRITER"):
             target[cmd.lower()] = _arg(rest)
         elif cmd == "INDEX" and track:
             parts = rest.split()
@@ -194,6 +194,9 @@ def tracks(audio_track, sheet, entry, cue_mtime=0.0):
             "genre": sheet["genre"] or audio_track.get("genre") or "",
             "duration": round(length, 3),
             "rating": 0,  # a rating in the file's tags is for the whole file
+            "composer": song.get("songwriter") or sheet.get("songwriter") or audio_track.get("composer") or "",
+            # the whole file's movement, tempo and key aren't any one song's
+            "movement": "", "movement_no": 0, "bpm": 0, "music_key": "",
         })
         if song["rg_track"] is not None or sheet["rg_album"] is not None:
             row["rg_track"] = song["rg_track"] if song["rg_track"] is not None else sheet["rg_album"]

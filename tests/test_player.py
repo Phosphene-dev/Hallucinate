@@ -723,3 +723,29 @@ def test_restored_place_survives_a_slow_disk(make_player, tmp_path, monkeypatch)
     assert q.error == "Opening…"
     gate.set()
     assert wait_for(lambda: abs(q.position - 1800) < 250), q.position
+
+
+def test_sleep_after_album_pauses_when_the_next_song_is_from_another(make_player, clips):
+    p = make_player(session=False)
+    songs = [dict(c, album_key="a|one") for c in clips[:2]] + [dict(clips[2], album_key="b|two")]
+    p.playList(songs, 0)
+    assert wait_for(lambda: is_playing(p) and p.currentIndex == 0)
+    p.setSleepAfterAlbum(True)
+    assert p.sleepAfterAlbum and not p.sleepAfterTrack
+    assert wait_for(lambda: not p.sleepAfterAlbum, timeout=10)
+    assert p.currentIndex == 2 and wait_for(lambda: not is_playing(p))
+
+
+def test_the_songs_to_come_are_shuffled_once_and_can_be_put_back(make_player, clips):
+    import random
+
+    random.seed(3)
+    p = make_player(session=False)
+    p.playList(clips[:6], 1)
+    before = [t["path"] for t in p.queue]
+    p.shuffleUpcoming()
+    after = [t["path"] for t in p.queue]
+    assert after[:2] == before[:2] and sorted(after[2:]) == sorted(before[2:]) and after != before
+    assert p.currentIndex == 1 and not p.shuffle
+    p.undoQueue()
+    assert [t["path"] for t in p.queue] == before

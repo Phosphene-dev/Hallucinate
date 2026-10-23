@@ -10,8 +10,8 @@ from PySide6.QtGui import QDesktopServices
 
 from .core import albums as album_views
 from .core import artists as artist_views
+from .core import composers, genre_views, remote, spelling
 from .core import folders as folder_views
-from .core import genre_views, remote
 from .core import health as health_checks
 from .core.db import Database, fold, group_index, search_groups
 from .core.radio import radio_tracks
@@ -111,7 +111,8 @@ def decorate(rows):
 
 # Text fields that repeat across a library's songs (every song of an album shares its album, artist, genre and
 # cover); one shared copy each instead of one per song keeps a quarter-million-song list to a sensible size.
-SHARED_FIELDS = ("artist", "album", "album_artist", "album_key", "genre", "fmt", "codec", "art", "file")
+SHARED_FIELDS = ("artist", "album", "album_artist", "album_key", "genre", "fmt", "codec", "art", "file", "composer",
+                 "music_key")
 
 
 def share_strings(rows):
@@ -214,6 +215,7 @@ class Library(QObject):
     foldersChanged = Signal()
     filtersChanged = Signal()
     genreListChanged = Signal()
+    composerListChanged = Signal()
     songSortChanged = Signal()
     duplicatesChanged = Signal()
     scanningChanged = Signal()
@@ -270,6 +272,8 @@ class Library(QObject):
         self._filters = ("", 0, "")
         self._song_sort = "title"
         self._genre_list = []
+        self._composer_list = []
+        self._speller = None  # the library's words for "did you mean": made when first needed, until a reload
         self._filter_gen = 0
         self._duplicate_gen = 0
         self._duplicates_loading = False
@@ -325,6 +329,41 @@ class Library(QObject):
         """Every genre: [{name, albums, artists, tracks, seconds, artUrl, albumKey}], most songs first."""
         return self._genre_list
 
+    # --- composers ---------------------------------------------------------------
+    @Property("QVariantList", notify=composerListChanged)
+    def composerList(self):
+        """Every composer: [{name, tracks, works, albums, seconds, artUrl, albumKey}], most songs first."""
+        return self._composer_list
+
+    @Slot(str, result="QVariantMap")
+    def composerPage(self, name):
+        """A composer's works (with their movements), other songs, albums and performers; every song is a plain
+        row, and `order` is all of them in the page's order (what Play all and a row's play go through)."""
+        try:
+            data = composers.page(self._db, name)
+        except Exception:  # noqa: BLE001
+            logger.exception("Composer page failed")
+            return {}
+        for w in data["works"]:
+            w["songs"] = decorate(w["songs"])
+        data["others"] = decorate(data["others"])
+        data["albumList"] = decorate(data["albumList"])
+        return data
+
+    @Slot(str, bool)
+    def playComposer(self, name, shuffle=False):
+        tracks = decorate(composers.tracks(self._db, name))
+        self._play(tracks, random.randrange(len(tracks)) if shuffle and tracks else 0)
+
+    @Slot(str, int)
+    def playComposerSongs(self, name, index):
+        """Play a composer's songs from `index` (in composers.tracks' order: the page's)."""
+        self._play(decorate(composers.tracks(self._db, name)), index)
+
+    @Slot(str, result="QVariantList")
+    def composerPaths(self, name):
+        return [t["path"] for t in composers.tracks(self._db, name)]
+
     @Slot(str, result="QVariantMap")
     def genrePage(self, name):
         """One genre's albums, artists, most played songs and related genres (see core.genre_views.page)."""
@@ -367,7 +406,7 @@ class Library(QObject):
             self.songSortChanged.emit()
 
     def _sort_songs(self):
-        key = genre_views.song_sort_key(self._song_sort)
+        key = genre_views.song_sort_key(self._song_sort, self._db)
         self._models["sortedSongs"].set_items(sorted(self._models["songs"].items(), key=key) if key else [])
 
     @Slot(int)
@@ -482,6 +521,7 @@ class Library(QObject):
             "counts": db.counts(),
             "filterValues": db.filter_values(),
             "genreList": genre_views.overview(db),
+            "composerList": composers.overview(db),
         }
         data["timeline"] = Library._timeline_rows(data["albums"])
         data["artistIndex"] = {fold(a["name"]): a for a in data["artists"]}
@@ -503,7 +543,7 @@ class Library(QObject):
         # shallow copies (cheap) so the worker can tell what changed; rows themselves are never edited in place
         current = {n: list(self._models[n].items()) for n in ("albums", "artists", "songs")}
         state = {"timeline": self._timeline, "filterValues": self._filter_values, "counts": dict(self._counts),
-                 "genreList": self._genre_list}
+                 "genreList": self._genre_list, "composerList": self._composer_list}
 
         def work(db):
             try:
@@ -546,7 +586,11 @@ class Library(QObject):
         if changed["genreList"]:
             self._genre_list = decorate(data["genreList"])
             self.genreListChanged.emit()
+        if changed["composerList"]:
+            self._composer_list = decorate(data["composerList"])
+            self.composerListChanged.emit()
         self._artist_index = data["artistIndex"]
+        self._speller = None  # (the words may have changed: made again when next needed)
         self._search_index = data["searchIndex"]
         self._retire(list(self._detail.values()))
         self._detail.clear()
@@ -592,12 +636,35 @@ class Library(QObject):
                     r["tracks"] = decorate(r["tracks"])
                     albums, artists = search_groups(index, query)  # rows already decorated
                     r["albums"], r["artists"] = [dict(a) for a in albums], [dict(a) for a in artists]
+                if not (r["tracks"] or r["albums"] or r["artists"]) and gen == self._search_gen:
+                    r = self._search_corrected(db, query, index, r)
             except Exception:  # noqa: BLE001
                 logger.exception("Search failed")
                 r = {"tracks": [], "albums": [], "artists": []}
             self._searched.emit((gen, r))
 
         self._quick.submit(work)
+
+    def _search_corrected(self, db, query, index, found):
+        """Nothing matched `query`: search for what was probably meant (each word that's in no name swapped for
+        the closest one that is), returned with "corrected" set; else `found` as it was."""
+        speller = self._speller
+        if speller is None:
+            texts = [r[0] for r in db.conn.execute(
+                "SELECT title FROM tracks UNION SELECT album FROM tracks UNION SELECT artist FROM tracks "
+                "UNION SELECT album_artist FROM tracks UNION SELECT genre FROM tracks WHERE genre != '' "
+                "UNION SELECT composer FROM tracks WHERE composer != ''")]
+            speller = self._speller = spelling.Speller(texts)
+        meant = speller.correct(query)
+        if not meant:
+            return found
+        r = db.search(meant, groups=index is None)
+        r = {k: decorate(v) for k, v in r.items()}
+        if index is not None:
+            albums, artists = search_groups(index, meant)
+            r["albums"], r["artists"] = [dict(a) for a in albums], [dict(a) for a in artists]
+        r["corrected"] = meant
+        return r
 
     @Slot(object)
     def _apply_search(self, payload):
@@ -730,10 +797,11 @@ class Library(QObject):
         if not any(self._filters):
             return
         snapshot = self._models["filteredTracks"].snapshot_keys()
-        key = genre_views.song_sort_key(self._song_sort)
+        sort = self._song_sort
 
         def work(db):
             try:
+                key = genre_views.song_sort_key(sort, db)
                 rows = decorate(db.filtered_tracks(*filters))
                 if key is not None:
                     rows.sort(key=key)
@@ -1113,6 +1181,24 @@ class Library(QObject):
         if top:
             self._player.setRadio(True)
             self._player.playList(decorate(top), 0)
+
+    @Slot("QVariantList")
+    def playArtistMix(self, names):
+        """A shuffled mix of a few songs by each of these artists (an artist and the similar ones you have),
+        taken in turns so no one artist runs on."""
+        per = 8 if len(names) <= 6 else 5
+        picks = []
+        for name in dict.fromkeys(str(n) for n in names if n):
+            songs = self._db.artist_tracks(name, limit=2000)
+            random.shuffle(songs)
+            picks.append(songs[:per])
+        mix = []
+        for turn in range(per):
+            batch = [p[turn] for p in picks if turn < len(p)]
+            random.shuffle(batch)
+            mix.extend(batch)
+        if mix:
+            self._play(decorate(mix[:150]), 0)
 
     @Slot(str, result="QVariantMap")
     def albumNotes(self, key):

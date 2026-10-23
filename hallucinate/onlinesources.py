@@ -104,6 +104,15 @@ class OnlineSources(QObject):
     def setFetchBios(self, on):
         self._set_flag("fetchBios", on)
 
+    @Property(bool, notify=changed)
+    def fetchSimilar(self):
+        """Look up similar artists on Last.fm when an artist's page opens (needs the Last.fm key)."""
+        return self._flag("fetchSimilar", False)  # off until you switch it on
+
+    @Slot(bool)
+    def setFetchSimilar(self, on):
+        self._set_flag("fetchSimilar", on)
+
     @Property(str, notify=changed)
     def bioSource(self):
         """Where bios come from: "" (the first that has one: Wikipedia, then Last.fm, then Discogs) or only one."""

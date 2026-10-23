@@ -56,6 +56,16 @@ def has(text, name):
     return fold(text or "").strip() == wanted or any(fold(g) == wanted for g in split(text))
 
 
+def rename(text, old, new):
+    """`text`'s genres with `old` swapped for `new` where it stood (several, or none to take it out). A song
+    that already has `new` keeps it once: renaming is how two genres become one."""
+    wanted = fold(old or "").strip()
+    out = []
+    for g in split(text):
+        out.extend(split(new) if fold(g) == wanted else [g])
+    return join(out)
+
+
 def key(name):
     """For matching spellings of one genre: "Hip-Hop", "hip hop" and "HipHop" are the same."""
     return re.sub(r"[\s\-_.&]+", "", fold(name)).replace("and", "")

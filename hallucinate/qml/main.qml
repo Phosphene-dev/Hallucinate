@@ -104,6 +104,7 @@ ApplicationWindow {
         if (item.albumKey !== undefined && item.objectName !== "search" && item.albumKey) return { kind: "album", key: item.albumKey }
         if (item.artistName !== undefined && item.artistName) return { kind: "artist", name: item.artistName }
         if (item.genreName !== undefined && item.genreName) return { kind: "genre", name: item.genreName }
+        if (item.composerName !== undefined && item.composerName) return { kind: "composer", name: item.composerName }
         if (item.podcastId !== undefined && item.podcastId) return { kind: "podcast", id: item.podcastId }
         return depth === 0 ? route0 : null
     }
@@ -116,6 +117,7 @@ ApplicationWindow {
         else if (r.kind === "album") openAlbum(r.key)
         else if (r.kind === "artist") openArtist(r.name)
         else if (r.kind === "genre") openGenre(r.name)
+        else if (r.kind === "composer") openComposer(r.name)
         else if (r.kind === "podcast") openPodcast(r.id)
         route = r
         replaying = false
@@ -254,6 +256,12 @@ ApplicationWindow {
         remember({ kind: "genre", name: name })
         stack.push(genreDetail, { genreName: name })
     }
+    function openComposer(name) {
+        if (!name) return
+        if (stack.currentItem && stack.currentItem.composerName === name) return
+        remember({ kind: "composer", name: name })
+        stack.push(composerDetail, { composerName: name })
+    }
     function openPodcast(id) {
         if (!featureOn("podcasts")) return
         if (section !== "podcasts") go("podcasts")
@@ -286,12 +294,14 @@ ApplicationWindow {
     Component { id: albumDetail; AlbumDetailPage {} }
     Component { id: artistDetail; ArtistDetailPage {} }
     Component { id: genreDetail; GenrePage {} }
+    Component { id: composerDetail; ComposerPage {} }
 
     Connections {
         target: Nav
         function onOpenAlbum(key) { window.openAlbum(key) }
         function onOpenArtist(name) { window.openArtist(name) }
         function onOpenGenre(name) { window.openGenre(name) }
+        function onOpenComposer(name) { window.openComposer(name) }
         function onOpenPodcast(id) { window.openPodcast(id) }
         function onGoToPlaying() {
             if (!player.hasTrack) return
@@ -512,6 +522,10 @@ ApplicationWindow {
     Connections {
         target: userLib
         function onLovesMatched(n) { toast.show(n ? "Liked " + n + (n === 1 ? " song" : " songs") + " you'd loved on Last.fm" : "No new songs to like from your Last.fm loves") }
+    }
+    Connections {
+        target: serverCopies
+        function onMessage(text) { toast.show(text) }
     }
     Connections {
         target: stations

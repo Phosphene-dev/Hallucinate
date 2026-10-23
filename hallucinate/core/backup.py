@@ -24,7 +24,7 @@ LIBRARY_TABLES = {
     "plays": ("path", "count", "last"),
     "skips": ("path", "count", "last"),
     "play_log": ("ts", "path", "artist", "title", "album", "duration", "source", "s_artist", "s_title", "s_album"),
-    "smart_playlists": ("name", "rules", "created"),
+    "smart_playlists": ("name", "rules", "created", "folder"),
 }
 STATION_COLUMNS = ("name", "url", "homepage", "favicon", "tags", "country", "codec", "bitrate", "uuid", "added",
                    "last_played", "plays")
@@ -53,10 +53,12 @@ def export(library_db, streams_db, target):
                 "SELECT s_aa, own, picked FROM artist_bios WHERE own != '' OR picked != ''")]
         except sqlite3.OperationalError:
             data["artist_bios"] = []
+        folders = "folder" in {r[1] for r in lib.execute("PRAGMA table_info(playlists)")}
         data["playlists"] = [
-            {"name": name, "created": created,
+            {"name": name, "created": created, "folder": folder,
              "paths": [r[0] for r in lib.execute("SELECT path FROM playlist_items WHERE playlist_id=? ORDER BY pos", (pid,))]}
-            for pid, name, created in lib.execute("SELECT id, name, created FROM playlists ORDER BY id")
+            for pid, name, created, folder in lib.execute(
+                f"SELECT id, name, created, {'folder' if folders else chr(39) * 2} FROM playlists ORDER BY id")
         ]
     finally:
         lib.close()
@@ -107,8 +109,8 @@ ROWS = {
     "play_log": [("ts", N, True), ("path", S, False), ("artist", S, False), ("title", S, False), ("album", S, False),
                  ("duration", N, False), ("source", S, False), ("s_artist", S, False), ("s_title", S, False),
                  ("s_album", S, False)],
-    "smart_playlists": [("name", S, True), ("rules", S, True), ("created", N, False)],
-    "playlists": [("name", S, True), ("created", N, False), ("paths", "paths", False)],
+    "smart_playlists": [("name", S, True), ("rules", S, True), ("created", N, False), ("folder", S, False)],
+    "playlists": [("name", S, True), ("created", N, False), ("folder", S, False), ("paths", "paths", False)],
     "artist_bios": [("s_aa", S, True), ("own", S, False), ("picked", S, False)],
     "stations": [(c, I if c in ("bitrate", "plays") else N if c in ("added", "last_played") else S, c == "url")
                  for c in STATION_COLUMNS],
@@ -231,12 +233,12 @@ def restore(data, library_db, streams_db):
                         values)
         for r in data.get("smart_playlists", []):
             if not cur.execute("SELECT 1 FROM smart_playlists WHERE name=?", (r["name"],)).fetchone():
-                cur.execute("INSERT INTO smart_playlists(name, rules, created) VALUES(?, ?, ?)",
-                            (r["name"], r["rules"], r.get("created", time.time())))
+                cur.execute("INSERT INTO smart_playlists(name, rules, created, folder) VALUES(?, ?, ?, ?)",
+                            (r["name"], r["rules"], r.get("created", time.time()), r.get("folder") or ""))
         for p in data.get("playlists", []):
             row = cur.execute("SELECT id FROM playlists WHERE name=?", (p["name"],)).fetchone()
-            pid = row[0] if row else cur.execute("INSERT INTO playlists(name, created) VALUES(?, ?)",
-                                                 (p["name"], p.get("created", time.time()))).lastrowid
+            pid = row[0] if row else cur.execute("INSERT INTO playlists(name, created, folder) VALUES(?, ?, ?)",
+                                                 (p["name"], p.get("created", time.time()), p.get("folder") or "")).lastrowid
             have = {r[0] for r in cur.execute("SELECT path FROM playlist_items WHERE playlist_id=?", (pid,))}
             pos = cur.execute("SELECT COALESCE(MAX(pos), -1) FROM playlist_items WHERE playlist_id=?", (pid,)).fetchone()[0]
             for path in p.get("paths", []):

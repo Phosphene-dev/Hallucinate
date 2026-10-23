@@ -27,7 +27,35 @@ KEYS = {
     "disc": ("TPOS", "discnumber", "Disc", "disk", "WM/PartOfSet"),
     "year": ("TDRC", "TYER", "date", "year", "Year", "\xa9day", "WM/Year"),
     "genre": ("TCON", "genre", "Genre", "\xa9gen", "WM/Genre"),
+    # who wrote it, and for classical music the work and its movement (as Picard and iTunes write them)
+    "composer": ("TCOM", "composer", "Composer", "\xa9wrt", "WM/Composer"),
+    "work": ("TXXX:WORK", "work", "Work", "\xa9wrk", "WM/Work"),
+    "movement": ("MVNM", "movementname", "MovementName", "Movement Name", "\xa9mvn"),
+    "movement_no": ("MVIN", "movement", "movementnumber", "Movement", "\xa9mvi"),
+    "bpm": ("TBPM", "bpm", "BPM", "tmpo", "WM/BeatsPerMinute"),
+    "music_key": ("TKEY", "initialkey", "key", "InitialKey", "Key", "----:com.apple.iTunes:initialkey",
+                  "WM/InitialKey"),
 }
+
+# Keys written as sharps and flats, Camelot (8A) or Open Key (1m) codes, "Am" or "A minor": shown as written,
+# but one spelling each for sorting and finding (see music_key)
+_KEY_NOTE = re.compile(r"^\s*([A-Ga-g])\s*([#♯b♭]?)\s*(m(?:in(?:or)?)?|maj(?:or)?|-)?\s*$", re.I)
+
+
+def music_key(text: str) -> str:
+    """A tag's musical key in one spelling: "A minor", "Am", "a" (lower case is minor) → "Am"; "F#", "Gb major"
+    → "F#" / "Gb"; Camelot and Open Key codes ("8A", "1m") and anything else are kept as written."""
+    t = (text or "").strip()
+    m = _KEY_NOTE.match(t)
+    if not m:
+        return t[:12]
+    note, accidental, mode = m.groups()
+    if not mode:
+        minor = note.islower()  # "a" for A minor, as some taggers write it
+    else:
+        minor = mode == "-" or (mode != "M" and not mode.lower().startswith("maj"))
+    accidental = {"♯": "#", "♭": "b", "B": "b"}.get(accidental, accidental)
+    return note.upper() + accidental + ("m" if minor else "")
 
 
 def _strs(v) -> list:
@@ -78,6 +106,27 @@ def _get(tags, field: str) -> str:
             continue
         if s and s[0].strip():
             return s[0].strip()
+    return ""
+
+
+def _bpm(text: str) -> int:
+    """Beats per minute from a tag ("128", "127.98", "128 BPM"), 0 when not given or not believable."""
+    m = re.search(r"\d+(?:[.,]\d+)?", text or "")
+    bpm = round(float(m.group().replace(",", "."))) if m else 0
+    return bpm if 20 <= bpm <= 400 else 0
+
+
+def _get_all(tags, field: str) -> str:
+    """Every value of a field that may hold several (two composers), as one text: "Lennon; McCartney"."""
+    if tags is None:
+        return ""
+    for key in KEYS[field]:
+        try:
+            values = [v.strip() for v in _strs(tags.get(key)) if v.strip()]
+        except Exception:
+            continue
+        if values:
+            return "; ".join(dict.fromkeys(values))
     return ""
 
 
@@ -404,6 +453,12 @@ def _read_track(path, art_known):
         "disc_no": _num(_get(tags, "disc")),
         "year": _num(re.sub(r"^\D*", "", _get(tags, "year") or extra.get("year", ""))),
         "genre": _genres(tags) or extra.get("genre", ""),
+        "composer": _get_all(tags, "composer"),
+        "work": _get(tags, "work"),
+        "movement": _get(tags, "movement"),
+        "movement_no": _num(_get(tags, "movement_no")),
+        "bpm": _bpm(_get(tags, "bpm")),
+        "music_key": music_key(_get(tags, "music_key")),
         "duration": float(getattr(info, "length", 0) or 0),
         "fmt": os.path.splitext(path)[1].lstrip(".").upper(),
         "codec": audio_codec(f, ext),

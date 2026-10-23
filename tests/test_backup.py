@@ -123,3 +123,31 @@ def test_imported_listens_without_a_song_survive_a_restore(tmp_path):
     rows = [tuple(r) for r in dst.conn.execute("SELECT ts, path, s_artist, s_title, s_album FROM play_log ORDER BY ts")]
     assert rows == [(500, None, "bjork", "joga", "homogenic"), (600, None, "sigur ros", "hoppipolla", "takk")]
     dst.close()
+
+
+def test_playlist_folders_are_kept_renamed_and_backed_up(tmp_path):
+    src = make(tmp_path, "src")
+    run = src.create_playlist("Run")
+    walk = src.create_playlist("Walk")
+    calm = src.create_smart_playlist("Calm", '{"match": "all", "rules": []}')
+    src.set_playlist_folder(run, False, "  Workout ")
+    src.set_playlist_folder(calm, True, "Moods")
+    assert {p["name"]: p["folder"] for p in src.playlists()} == {"Run": "Workout", "Walk": ""}
+    assert src.playlist_folders() == ["Moods", "Workout"]
+    assert src.playlist_folders() == sorted(src.playlist_folders())
+    copy = src.duplicate_playlist(run, "Run (copy)")
+    assert {p["id"]: p["folder"] for p in src.playlists()}[copy] == "Workout"  # a copy sits beside it
+    src.rename_playlist_folder("Workout", "Moods")  # renamed to one that exists: the two are one
+    assert src.playlist_folders() == ["Moods"]
+    src.set_playlist_folder(walk, False, "Out")
+    src.close()
+    out = tmp_path / "b.hallucinate-backup"
+    backup.export(tmp_path / "src.db", None, out)
+    make(tmp_path, "dst").close()
+    backup.restore(backup.read(out), tmp_path / "dst.db", tmp_path / "dst-streams.db")
+    dst = Database(tmp_path / "dst.db")
+    assert {p["name"]: p["folder"] for p in dst.playlists()} == {"Run": "Moods", "Run (copy)": "Moods", "Walk": "Out"}
+    assert [s["folder"] for s in dst.smart_playlists()] == ["Moods"]
+    dst.rename_playlist_folder("Moods", "")  # Ungroup: the playlists stay, in no folder
+    assert dst.playlist_folders() == ["Out"] and len(dst.playlists()) == 3
+    dst.close()

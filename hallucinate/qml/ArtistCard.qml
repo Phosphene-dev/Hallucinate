@@ -8,21 +8,24 @@ Item {
     property string subtitle
     property url artUrl
     property real cardWidth: 150
+    property bool composer: false  // a composer's card: opens their page and menu instead
+    function openIt() { if (composer) Nav.openComposer(name); else Nav.openArtist(name) }
+    function menuIt() { if (!composer) Nav.artistMenu(name); else if (composerMenu.item) composerMenu.item.showComposer(name) }
     width: cardWidth
     height: cardWidth + 56
     Accessible.role: Accessible.Button
     Accessible.name: name + (subtitle.length ? ", " + subtitle : "")
-    Accessible.onPressAction: Nav.openArtist(card.name)
+    Accessible.onPressAction: card.openIt()
     // From the keyboard, like an album card: Tab to it, Enter or Space opens it, the Menu key its menu
     activeFocusOnTab: true
     // A focused control takes Space and Enter itself; without this the window's Space (play/pause) wins
     Keys.onShortcutOverride: function (event) { event.accepted = event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter }
-    Keys.onReturnPressed: Nav.openArtist(card.name)
-    Keys.onEnterPressed: Nav.openArtist(card.name)
-    Keys.onSpacePressed: Nav.openArtist(card.name)
-    Keys.onMenuPressed: Nav.artistMenu(card.name)
+    Keys.onReturnPressed: card.openIt()
+    Keys.onEnterPressed: card.openIt()
+    Keys.onSpacePressed: card.openIt()
+    Keys.onMenuPressed: card.menuIt()
     Keys.onPressed: function (event) {
-        if (event.key === Qt.Key_F10 && (event.modifiers & Qt.ShiftModifier)) { Nav.artistMenu(card.name); event.accepted = true }
+        if (event.key === Qt.Key_F10 && (event.modifiers & Qt.ShiftModifier)) { card.menuIt(); event.accepted = true }
     }
     Rectangle {
         x: -4; y: -4; width: card.cardWidth + 8; height: card.cardWidth + 8
@@ -70,7 +73,12 @@ Item {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onPressAndHold: Nav.artistMenu(card.name)
-        onClicked: function (mouse) { mouse.button === Qt.RightButton ? Nav.artistMenu(card.name) : Nav.openArtist(card.name) }
+        onPressAndHold: card.menuIt()
+        onClicked: function (mouse) { mouse.button === Qt.RightButton ? card.menuIt() : card.openIt() }
+    }
+    Loader {  // (made only for composers' cards: artists share the window's menu)
+        id: composerMenu
+        active: card.composer
+        sourceComponent: Component { CollectionMenu {} }
     }
 }

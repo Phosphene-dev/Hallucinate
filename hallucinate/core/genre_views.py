@@ -87,12 +87,30 @@ def tracks(db, name):
 
 
 # How the Songs page can be ordered: a key for sorting song rows (dicts as the Songs page holds them)
-SONG_SORTS = ("title", "artist", "album", "genre", "year")
+SONG_SORTS = ("title", "artist", "album", "genre", "year", "plays", "added", "composer", "bpm")
 
 
-def song_sort_key(sort):
+def play_counts(db):
+    """{path: times played} for the songs played at least once."""
+    return dict(db.conn.execute("SELECT path, count FROM plays WHERE count > 0"))
+
+
+def song_sort_key(sort, db=None):
+    """A sort key for `sort`, or None for title order (the list as it comes). "plays" asks `db` for play
+    counts; "added" puts the newest songs first (ids grow as songs are added)."""
     def text(v):
         return fold(v or "")
+
+    if sort == "plays":
+        plays = play_counts(db) if db is not None else {}
+        return lambda t: (-plays.get(t.get("path"), 0), text(t.get("title")))
+    if sort == "added":
+        return lambda t: -(t.get("id") or 0)
+    if sort == "composer":  # songs without one last
+        return lambda t: (not t.get("composer"), text(t.get("composer")), text(t.get("album")),
+                          t.get("disc_no") or 0, t.get("track_no") or 0)
+    if sort == "bpm":  # slowest first; songs whose tempo isn't known last
+        return lambda t: (not t.get("bpm"), t.get("bpm") or 0, text(t.get("title")))
 
     if sort == "artist":
         return lambda t: (text(t.get("artist")), text(t.get("album")), t.get("disc_no") or 0, t.get("track_no") or 0)

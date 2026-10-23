@@ -11,6 +11,55 @@ Item {
     readonly property bool collapsed: shell.sidebarCollapsed || squeezed
     property string section: ""
     property bool atRoot: true
+    // Playlists and smart playlists grouped by folder: {folders: [{name, items}], loose: [items]}, each item
+    // {id, name, smart, folder}. Worked out again whenever either list changes.
+    property int plRevision: 0
+    Connections {
+        target: userLib.playlists
+        function onModelReset() { side.plRevision++ }
+        function onRowsInserted() { side.plRevision++ }
+        function onRowsRemoved() { side.plRevision++ }
+        function onDataChanged() { side.plRevision++ }
+    }
+    Connections {
+        target: userLib.smartPlaylists
+        function onModelReset() { side.plRevision++ }
+        function onRowsInserted() { side.plRevision++ }
+        function onRowsRemoved() { side.plRevision++ }
+        function onDataChanged() { side.plRevision++ }
+    }
+    readonly property var plTree: {
+        var r = plRevision, byFolder = {}, names = [], loose = []
+        function add(list, smart) {
+            for (var i = 0; i < list.length; i++) {
+                var item = { id: list[i].id, name: list[i].name, smart: smart, folder: list[i].folder || "" }
+                if (!item.folder) { loose.push(item); continue }
+                var key = item.folder.toLowerCase()
+                if (!byFolder[key]) { byFolder[key] = { name: item.folder, items: [] }; names.push(key) }
+                byFolder[key].items.push(item)
+            }
+        }
+        add(userLib.playlists.toList(), false)
+        add(userLib.smartPlaylists.toList(), true)
+        names.sort(function (a, b) { return byFolder[a].name.localeCompare(byFolder[b].name) })
+        return { folders: names.map(function (k) { return byFolder[k] }), loose: loose }
+    }
+    readonly property var folderNames: plTree.folders.map(function (f) { return f.name })
+    property int folderRevision: 0  // (open and closed is kept in the settings: this makes it read again)
+    function folderOpen(name) { return folderRevision >= 0 && shell.uiValue("playlistFolderOpen/" + name, "1") === "1" }
+    function setFolderOpen(name, open) { shell.setUiValue("playlistFolderOpen/" + name, open ? "1" : "0"); folderRevision++ }
+
+    // A playlist in the list: opens it; right-click for its menu
+    component PlaylistEntry: RailButton {
+        property var entry: ({})
+        height: side.compact ? 32 : 36
+        text: entry.name || ""
+        icon: entry.smart ? "smartlist" : "playlist"
+        selected: side.section === (entry.smart ? "smart" : "pl") + entry.id && side.atRoot
+        hasMenu: true
+        onMenuRequested: plItemMenu.show(entry.id, entry.name, entry.smart, entry.folder)
+        onClicked: entry.smart ? side.openSmartPlaylist(entry.id, entry.name) : side.openPlaylist(entry.id, entry.name)
+    }
     signal navigate(string id)
     signal openPlaylist(int id, string name)
     signal openSmartPlaylist(int id, string name)
@@ -251,33 +300,37 @@ Item {
 
                 Column {
                     id: plList
+                    objectName: "playlistList"
                     visible: !side.collapsed
                     anchors { left: parent.left; right: parent.right; top: plHeader.bottom; topMargin: 4; leftMargin: 10; rightMargin: 10 }
+                    // folders first (each opens and closes, remembered), then the playlists in none
                     Repeater {
-                        model: userLib.playlists
-                        RailButton {
+                        model: side.plTree.folders
+                        Column {
+                            id: folderBlock
+                            required property var modelData
+                            readonly property bool open: side.folderOpen(modelData.name)
                             width: plList.width
-                            height: side.compact ? 32 : 36
-                            text: model.name
-                            icon: "playlist"
-                            selected: side.section === "pl" + model.id && side.atRoot
-                            hasMenu: true
-                            onMenuRequested: plItemMenu.show(model.id, model.name, false)
-                            onClicked: side.openPlaylist(model.id, model.name)
+                            RailButton {
+                                objectName: "playlistFolder_" + folderBlock.modelData.name
+                                width: plList.width
+                                height: side.compact ? 32 : 36
+                                text: folderBlock.modelData.name + "  (" + folderBlock.modelData.items.length + ")"
+                                icon: folderBlock.open ? "down" : "next"
+                                hasMenu: true
+                                Accessible.name: "Folder " + folderBlock.modelData.name + (folderBlock.open ? ", open" : ", closed")
+                                onMenuRequested: folderMenu.show(folderBlock.modelData.name)
+                                onClicked: side.setFolderOpen(folderBlock.modelData.name, !folderBlock.open)
+                            }
+                            Repeater {
+                                model: folderBlock.open ? folderBlock.modelData.items : []
+                                PlaylistEntry { x: 14; width: plList.width - 14; entry: modelData; required property var modelData }
+                            }
                         }
                     }
                     Repeater {
-                        model: userLib.smartPlaylists
-                        RailButton {
-                            width: plList.width
-                            height: side.compact ? 32 : 36
-                            text: model.name
-                            icon: "smartlist"
-                            selected: side.section === "smart" + model.id && side.atRoot
-                            hasMenu: true
-                            onMenuRequested: plItemMenu.show(model.id, model.name, true)
-                            onClicked: side.openSmartPlaylist(model.id, model.name)
-                        }
+                        model: side.plTree.loose
+                        PlaylistEntry { width: plList.width; entry: modelData; required property var modelData }
                     }
                 }
             }
@@ -350,7 +403,8 @@ Item {
         property int pid: -1
         property string name: ""
         property bool smart: false
-        function show(id, n, isSmart) { pid = id; name = n; smart = isSmart; popup() }
+        property string folder: ""
+        function show(id, n, isSmart, inFolder) { pid = id; name = n; smart = isSmart; folder = inFolder || ""; popup() }
         MenuItem {
             text: "Open"; icon.name: plItemMenu.smart ? "smartlist" : "playlist"
             onTriggered: plItemMenu.smart ? side.openSmartPlaylist(plItemMenu.pid, plItemMenu.name) : side.openPlaylist(plItemMenu.pid, plItemMenu.name)
@@ -367,11 +421,87 @@ Item {
             text: "Edit rules…"; icon.name: "edit"
             onTriggered: Nav.editSmartPlaylist(plItemMenu.pid, plItemMenu.name)
         }
+        Menu {
+            id: moveMenu
+            objectName: "moveToFolder"
+            title: "Move to folder"
+            icon.name: "folder"
+            MenuItem { text: "New folder…"; icon.name: "plus"; onTriggered: { folderField.text = ""; newFolder.open() } }
+            MenuItem {
+                visible: plItemMenu.folder.length > 0
+                height: visible ? implicitHeight : 0
+                text: "Out of “" + Theme.plain(plItemMenu.folder) + "”"
+                onTriggered: userLib.setPlaylistFolder(plItemMenu.pid, plItemMenu.smart, "")
+            }
+            MenuSeparator { visible: side.folderNames.length > 0; height: visible ? implicitHeight : 0 }
+            Instantiator {
+                model: side.folderNames
+                delegate: MenuItem {
+                    required property string modelData
+                    text: Theme.plain(modelData)
+                    checkable: true
+                    checked: modelData === plItemMenu.folder
+                    onTriggered: userLib.setPlaylistFolder(plItemMenu.pid, plItemMenu.smart, modelData)
+                }
+                onObjectAdded: (i, o) => moveMenu.addItem(o)
+                onObjectRemoved: (i, o) => moveMenu.removeItem(o)
+            }
+        }
         MenuSeparator {}
         MenuItem {
             text: "Delete…"; icon.name: "trash"; icon.color: Theme.error
             onTriggered: { deletePl.what = "“" + plItemMenu.name + "”"; deletePl.open() }
         }
+    }
+    Dialog {
+        id: newFolder
+        objectName: "newFolderDialog"
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        modal: true
+        title: "New folder"
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        onOpened: folderField.forceActiveFocus()
+        onAccepted: {
+            var name = folderField.text.trim()
+            if (!name.length) return
+            userLib.setPlaylistFolder(plItemMenu.pid, plItemMenu.smart, name)
+            side.setFolderOpen(name, true)
+        }
+        TextField {
+            id: folderField; width: 280; selectByMouse: true; placeholderText: "Folder name (Workout, Moods…)"
+            onAccepted: if (text.trim().length) newFolder.accept()
+            onTextChanged: { var b = newFolder.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
+        }
+    }
+    // Right-click on a folder: rename it, or let its playlists out (they stay, outside any folder)
+    Menu {
+        id: folderMenu
+        objectName: "playlistFolderMenu"
+        property string name: ""
+        function show(n) { name = n; popup() }
+        MenuItem { text: "Rename folder…"; icon.name: "edit"; onTriggered: { renameFolderField.text = folderMenu.name; renameFolder.open() } }
+        MenuItem {
+            objectName: "ungroupFolder"
+            text: "Ungroup"; icon.name: "remove"
+            onTriggered: { userLib.renamePlaylistFolder(folderMenu.name, ""); Nav.notify("The playlists in “" + folderMenu.name + "” are out of the folder") }
+        }
+    }
+    Dialog {
+        id: renameFolder
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        modal: true
+        title: "Rename folder"
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        onOpened: { renameFolderField.forceActiveFocus(); renameFolderField.selectAll() }
+        onAccepted: {
+            var name = renameFolderField.text.trim()
+            if (!name.length || name === folderMenu.name) return
+            side.setFolderOpen(name, side.folderOpen(folderMenu.name))
+            userLib.renamePlaylistFolder(folderMenu.name, name)
+        }
+        TextField { id: renameFolderField; width: 280; selectByMouse: true; onAccepted: if (text.trim().length) renameFolder.accept() }
     }
     Dialog {
         id: renamePl

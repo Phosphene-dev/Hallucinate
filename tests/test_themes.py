@@ -269,6 +269,14 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     artist_bios = ArtistBios(tmp_path / "library.db", sources)
     context.setContextProperty("sources", sources)
     context.setContextProperty("artistBios", artist_bios)
+    from hallucinate.similar import SimilarArtists
+
+    similar = SimilarArtists(tmp_path / "library.db", sources, library)
+    context.setContextProperty("similarArtists", similar)
+    from hallucinate.offline import OfflineCopies
+
+    copies = OfflineCopies(tmp_path / "library.db", tmp_path / "copies")
+    context.setContextProperty("serverCopies", copies)
     qml_dir = Path(__file__).parents[1] / "hallucinate" / "qml"
     engine.addImportPath(str(qml_dir))
     qml_warnings = []
@@ -491,6 +499,8 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     replay_gain.shutdown()
     headphone_finder.shutdown()
     user_lib.shutdown()
+    similar.shutdown()
+    copies.shutdown()
     library.shutdown()
     qapp.setFont(old_font)
 

@@ -53,10 +53,16 @@ Dialog {
     standardButtons: Dialog.Save | Dialog.Cancel
 
     readonly property var keys: albumMode || manyMode
-        ? ["album", "album_artist", "artist", "year", "genre"]
-        : ["title", "artist", "album", "album_artist", "track_no", "disc_no", "year", "genre"]
+        ? ["album", "album_artist", "artist", "year", "genre", "composer", "work"]
+        : ["title", "artist", "album", "album_artist", "track_no", "disc_no", "year", "genre",
+           "composer", "work", "movement", "bpm", "music_key"]
     readonly property var labels: ({ title: "Title", artist: "Artist", album: "Album", album_artist: "Album artist",
-                                     track_no: "Track #", disc_no: "Disc #", year: "Year", genre: "Genre" })
+                                     track_no: "Track #", disc_no: "Disc #", year: "Year", genre: "Genre",
+                                     composer: "Composer", work: "Work", movement: "Movement", bpm: "Tempo (BPM)",
+                                     music_key: "Key" })
+    // fields most songs leave empty: under "More fields" until wanted (or one of them has a value)
+    readonly property var extraKeys: ["composer", "work", "movement", "bpm", "music_key"]
+    property bool moreShown: false
 
     function editTrack(path) {
         var info = metaEditor.trackInfo(path)
@@ -75,7 +81,7 @@ Dialog {
         paths = infos.map(function (t) { return t.path })
         // a field shared by every song shows its value; one that differs starts empty and is left alone
         var shared = Object.assign({}, infos[0]), differ = []
-        var fields = ["album", "album_artist", "artist", "year", "genre"]
+        var fields = dlg.keys
         for (var k = 0; k < fields.length; k++) {
             for (var j = 1; j < infos.length; j++) {
                 if (String(infos[j][fields[k]] || "") !== String(infos[0][fields[k]] || "")) {
@@ -100,10 +106,12 @@ Dialog {
         original = info
         artUrl = info.artUrl || ""
         message = ""
+        moreShown = false
         for (var i = 0; i < rep.count; i++) {
             var f = rep.itemAt(i)
             var v = info[f.key]
             f.value = (v === undefined || v === null || v === 0) ? "" : String(v)
+            if (f.value.length && extraKeys.indexOf(f.key) >= 0) moreShown = true
         }
     }
     onAccepted: {
@@ -188,6 +196,7 @@ Dialog {
                 property string key: modelData
                 property alias value: field.text
                 Layout.fillWidth: true
+                visible: dlg.moreShown || dlg.extraKeys.indexOf(key) < 0
                 Text { Layout.preferredWidth: 96; text: dlg.labels[rowItem.key]; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); textFormat: Text.PlainText }
                 TextField {
                     id: field
@@ -199,7 +208,9 @@ Dialog {
                     color: Theme.text
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(14)
-                    placeholderText: dlg.mixed.indexOf(rowItem.key) >= 0 ? "mixed" : ""
+                    placeholderText: dlg.mixed.indexOf(rowItem.key) >= 0 ? "mixed"
+                                     : rowItem.key === "music_key" ? "Am, F#, 8A…" : rowItem.key === "bpm" ? "120" : ""
+                    validator: rowItem.key === "bpm" ? bpmValidator : null
                     placeholderTextColor: Theme.textDim
                     background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: field.activeFocus ? Theme.accent : Theme.border }
                 }
@@ -213,6 +224,16 @@ Dialog {
                     Accessible.name: "Find the genre online"
                 }
             }
+        }
+        IntValidator { id: bpmValidator; bottom: 0; top: 400 }
+        Text {
+            textFormat: Text.PlainText
+            objectName: "moreTagFields"
+            visible: !dlg.moreShown
+            text: dlg.albumMode || dlg.manyMode ? "More fields: composer, work" : "More fields: composer, work, movement, tempo, key"
+            color: Theme.accent
+            font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12.5); font.weight: Font.DemiBold
+            LinkArea { onClicked: dlg.moreShown = true }
         }
         Text {
             textFormat: Text.PlainText

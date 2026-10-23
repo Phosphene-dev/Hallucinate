@@ -19,16 +19,19 @@ Menu {
     readonly property bool stream: paths.some(function (p) { return /^https?:\/\//.test(p) || podcasts.isEpisode(p) })
     // a song on a music server: no file here to show, edit or put in the trash
     readonly property bool onServer: paths.some(function (p) { return /^(subsonic|jellyfin):\/\//.test(p) })
+    property var copies: ({ servers: 0, kept: 0, waiting: 0 })  // songs from a music server, kept here or not
     readonly property string what: single ? "“" + trackTitle + "”" : paths.length + " songs"
 
     function show(p, t, c, i) {
         path = p; trackTitle = t; context = c; index = i; paths = [p]
         info = /^https?:\/\//.test(p) || podcasts.isEpisode(p) ? ({}) : library.trackInfo(p)
+        copies = serverCopies.status(paths)
         popup()
     }
     function showMany(list, c) {
         paths = list.slice(); path = list[0]; trackTitle = ""; context = c || ""; index = -1
         info = ({})
+        copies = serverCopies.status(paths)
         popup()
     }
     function done(message) { if (!single) Selection.clear(); if (message) Nav.notify(message) }
@@ -164,6 +167,31 @@ Menu {
             menu.insertItem(at + i, o)
         }
         onObjectRemoved: (i, o) => menu.removeItem(o)
+    }
+    // who wrote it (the first composer it credits)
+    readonly property string composerName: menu.single ? String(menu.info.composer || "").split(/\s*[;|]\s*/)[0] : ""
+    MenuItem {
+        objectName: "trackComposer"
+        visible: menu.composerName.length > 0 && menu.context !== "composer"
+        height: visible ? implicitHeight : 0
+        text: "Go to composer " + Theme.plain(menu.composerName)
+        icon.name: "note"
+        onTriggered: Nav.openComposer(menu.composerName)
+    }
+    MenuItem {
+        objectName: "trackKeep"
+        visible: menu.copies.servers > 0 && menu.copies.kept + menu.copies.waiting < menu.copies.servers
+        height: visible ? implicitHeight : 0
+        text: "Keep on this computer"; icon.name: "download"
+        onTriggered: serverCopies.keep(menu.paths)
+    }
+    MenuItem {
+        objectName: "trackUnkeep"
+        visible: menu.copies.kept + menu.copies.waiting > 0
+        height: visible ? implicitHeight : 0
+        text: menu.copies.waiting > 0 && menu.copies.kept === 0 ? "Stop keeping on this computer" : "Remove the copies from this computer"
+        icon.name: "remove"
+        onTriggered: serverCopies.remove(menu.paths)
     }
     MenuItem {
         objectName: "trackShowInFolder"

@@ -11,20 +11,30 @@ Item {
     readonly property var tracks: results.tracks || []
     readonly property var albums: results.albums || []
     readonly property var artists: results.artists || []
+    // nothing matched what was typed, so these are for what was probably meant
+    readonly property string corrected: results.corrected || ""
+    readonly property string matchQuery: corrected || query
     // with radio and podcasts on, your stations, shows and episodes are found too
     readonly property var stationHits: shell.features.stations === true ? stations.find(query) : []
     readonly property var podcastHits: shell.features.podcasts === true ? podcasts.find(query) : ({ shows: [], episodes: [] })
     // genres whose name holds what's typed (from the list the Albums page's Genres view shows)
     readonly property var genreHits: {
-        var q = query.trim().toLowerCase()
+        var q = matchQuery.trim().toLowerCase()
         if (!q.length) return []
         return library.genreList.filter(function (g) { return g.name.toLowerCase().indexOf(q) >= 0 }).slice(0, 12)
     }
+    // composers whose name holds what's typed
+    readonly property var composerHits: {
+        var q = matchQuery.trim().toLowerCase()
+        if (!q.length) return []
+        return library.composerList.filter(function (c) { return c.name.toLowerCase().indexOf(q) >= 0 }).slice(0, 12)
+    }
     readonly property bool anyExtra: stationHits.length > 0 || podcastHits.shows.length > 0 || podcastHits.episodes.length > 0
-                                     || genreHits.length > 0
+                                     || genreHits.length > 0 || composerHits.length > 0
     // what the search looks through, for the empty page's hint
     function findsWhat() {
         var kinds = ["songs", "albums", "artists", "genres"]
+        if (library.composerList.length) kinds.push("composers")
         if (shell.features.stations === true) kinds.push("radio stations")
         if (shell.features.podcasts === true) kinds.push("podcasts")
         var s = kinds.slice(0, -1).join(", ") + " and " + kinds[kinds.length - 1]
@@ -46,6 +56,17 @@ Item {
             width: Theme.contentWidth(fl.width)
             spacing: 14
 
+            Text {
+                objectName: "searchCorrected"
+                visible: page.corrected.length > 0 && page.query.length > 0
+                width: parent.width
+                wrapMode: Text.Wrap
+                textFormat: Text.PlainText
+                text: "Nothing matches “" + page.query + "”. Showing results for “" + page.corrected + "”."
+                color: Theme.textDim
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.fontSize(14)
+            }
             Item { width: 1; height: 40; visible: noResults.visible }
             EmptyState {
                 id: noResults
@@ -104,6 +125,29 @@ Item {
 
             Text {
                 textFormat: Text.PlainText
+                visible: page.composerHits.length > 0
+                text: "Composers"
+                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
+            }
+            Flow {
+                objectName: "searchComposers"
+                visible: page.composerHits.length > 0
+                width: parent.width
+                spacing: 8
+                Repeater {
+                    model: page.composerHits
+                    Chip {
+                        required property var modelData
+                        text: modelData.name
+                        onClicked: Nav.openComposer(modelData.name)
+                        Accessible.name: "Composer: " + modelData.name
+                        Accessible.onPressAction: Nav.openComposer(modelData.name)
+                    }
+                }
+            }
+
+            Text {
+                textFormat: Text.PlainText
                 visible: page.albums.length > 0
                 text: "Albums"
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
@@ -128,11 +172,23 @@ Item {
                 }
             }
 
-            Text {
-                textFormat: Text.PlainText
+            Row {
                 visible: page.tracks.length > 0
-                text: "Songs"
-                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
+                spacing: 14
+                Text {
+                    textFormat: Text.PlainText
+                    text: "Songs"
+                    color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
+                }
+                Text {  // every song found, in the order shown
+                    textFormat: Text.PlainText
+                    objectName: "searchPlayAll"
+                    anchors.baseline: parent.children[0].baseline
+                    text: "Play all " + page.tracks.length
+                    color: Theme.accent
+                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); font.weight: Font.DemiBold
+                    LinkArea { name: "Play all songs found"; onClicked: library.playSearchTracks(0) }
+                }
             }
             Repeater {
                 model: page.tracks
