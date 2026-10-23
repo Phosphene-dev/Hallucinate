@@ -26,23 +26,26 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/demo.webp" width="860" alt="A tour of Hallucinate: Home, the colour wall, an album page and its menu, Now Playing, the timeline, the Trans Pride theme and the Nebula visualizer">
+  <img src="docs/screenshots/demo.webp" width="860" alt="A tour of Hallucinate: Home, the colour wall, an album page, a composer's page, Now Playing, the timeline, the Trans Pride theme and the Nebula visualizer">
 </p>
 
 ## Highlights
-- **A look of its own.** Frosted glass over a backdrop that slowly drifts in the colours of the current cover, a floating player, and a waveform seek bar drawn from each song's own loudness.
-- **Now Playing that fills the screen.** Press F: the cover, or the record sliding out of its sleeve, over GPU visualizers (Liquid, Aurora, Nebula, Halo, Waves) that move with the music in the cover's colours.
-- **Home is about your library.** A random album to play, your listening heatmap and streak, albums to rediscover, what you played on this day in past years, and library facts.
-- **Browse like a record shelf.** Album and artist pages, a colour wall that sorts every cover round the colour wheel, a timeline by decade and year, genre and composer pages (classical works with their movements in order), and your own folders.
-- **Every listen remembered.** A searchable history of everything you played, recaps of every week, month and year, and your Last.fm, ListenBrainz or old player's history brought over.
-- **Plays everything well.** FLAC, MP3, AAC/ALAC, Ogg, Opus, WAV, WavPack, AIFF and more, CUE sheet albums too, with true gapless playback, ReplayGain (measured where tags are missing), a 10-band equalizer, headphone correction and crossfeed, and a signal path readout that tells you when the sound is untouched.
-- **Your music server too, if you have one.** Songs on a Jellyfin server, or a Navidrome, Gonic, Airsonic or other Subsonic server, join your library and play like your own files; keep an album or playlist on your computer to play it without the server, offline mode included. Off until you switch it on in Settings → Features.
-- **Internet radio and podcasts, if you want them.** Both are off until you switch them on in Settings → Features (where anything else you don't use can be switched off too). Stations come from their stream links or the Radio Browser directory and show the song they're playing; podcasts come from RSS feeds, the Apple Podcasts directory, OPML files from other apps or a folder of episodes, remember where you stopped, line up in an Up next list and have settings of their own, per show too. Neither ever counts toward your stats.
-- **Radio mode and smart playlists.** Similar songs from your library keep playing when the queue runs out (songs you keep skipping come up less); playlists update themselves from rules (ratings, composer, tempo and key included) and sit in folders if you like. With Last.fm set up, artist pages can show similar artists: the ones you have to play a mix of, the rest to discover.
-- **Fast to drive.** Instant search even across a quarter of a million songs (it forgives a typo), Ctrl+K for anything, Ctrl/Shift+click to act on many songs at once, and Ctrl+Z when the queue goes wrong.
-- **Looks after your library.** A health check finds missing covers (and fetches them all at once), tags and folders, split albums and duplicates, with a fix next to each.
-- **Make it yours.** Eighteen themes, any accent colour, light and dark that follow the system, a theme editor, an equalizer for each output device, and reduce motion for a stiller window.
-- **No account, no cloud.** Your library, playlists and history stay on your computer. Scrobbling and Discord are opt-in, cover art is fetched only when you ask, and online lyrics lookup can be turned off. Back everything up to one file, and restore it anywhere.
+- **Looks like your music.** Frosted glass lit by the colours of the current cover, a waveform seek bar, and a full-screen Now Playing over GPU visualizers.
+- **Your library, browsed like a record shelf.** Albums, artists, genres and composers, a colour wall, a timeline, your own folders.
+- **Plays it properly.** True gapless, ReplayGain, a 10-band equalizer, headphone correction, CUE sheets, and a readout that shows when the sound is untouched.
+- **Remembers every listen.** History, weekly to yearly recaps, smart playlists, radio mode, and history brought over from Last.fm or your old player.
+- **Fast to drive.** Instant search that forgives typos, Ctrl+K for anything, multi-select, and Ctrl+Z for the queue.
+- **Only what you want.** Internet radio, podcasts and music servers (Jellyfin, Navidrome and other Subsonic servers) are there if you switch them on.
+- **Yours alone.** No account, no telemetry; everything online is opt-in, and offline mode turns it all off.
+
+### New in 1.0
+| Composers and their works | Playlist folders |
+|---|---|
+| ![A composer's page with a work and its movements in order](docs/screenshots/composer.png) | ![Playlists grouped in a folder in the sidebar](docs/screenshots/playlist-folders.png) |
+| **Similar artists** (from Last.fm, if you set it up) | **Search that forgives a typo** |
+| ![Similar artists on an artist page, with Play a mix](docs/screenshots/similar-artists.png) | ![Search showing results for the closest match](docs/screenshots/search-typo.png) |
+
+Also new: tempo and key in the tags (sort and filter by them), and songs from your music server kept on this computer to play offline. The [changelog](CHANGELOG.md) has the rest.
 
 ## Help test it
 Hallucinate is young and mostly tested by one person, so reports from other machines are the most useful thing
@@ -51,8 +54,7 @@ right now. Things worth trying:
 - **Your desktop:** tiling window managers (Hyprland, Sway, i3), small windows, fractional scaling, Windows 10 and 11.
 - **Gapless albums** on your audio device (live albums, classical, DJ mixes).
 - **Imports** from Strawberry, Clementine, Rhythmbox, MusicBee, iTunes or foobar2000.
-- **New in 1.0:** composer pages and tempo and key, playlist folders, keeping server songs on your computer,
-  similar artists from Last.fm, and search that forgives typos.
+- **Classical and soundtrack libraries,** for the new composer pages.
 
 Found something? [Open a bug report](https://github.com/Phosphene-dev/Hallucinate/issues/new/choose).
 If Hallucinate crashed, it offers a report to copy the next time it starts: paste that in.
@@ -67,33 +69,40 @@ Known rough edges:
   turns off every connection it does make.
 
 ## Screenshots
-| Now Playing | Vinyl mode |
+| Now Playing | Home |
 |---|---|
-| ![Now Playing over the Aurora visualizer](docs/screenshots/now-playing.png) | ![Vinyl mode over the Liquid visualizer](docs/screenshots/now-playing-vinyl.png) |
-| Home | Album page |
-| ![Home](docs/screenshots/home.png) | ![Album page with liner notes](docs/screenshots/album.png) |
-| Colour wall | Timeline |
-| ![Albums ordered by cover colour](docs/screenshots/albums-colour.png) | ![Albums by decade and year](docs/screenshots/albums-timeline.png) |
-| History | Visualizer |
-| ![Listening history](docs/screenshots/history.png) | ![Nebula visualizer](docs/screenshots/visualizer.png) |
+| ![Now Playing over the Aurora visualizer](docs/screenshots/now-playing.png) | ![Home](docs/screenshots/home.png) |
+| Album page | Colour wall |
+| ![Album page with liner notes](docs/screenshots/album.png) | ![Albums ordered by cover colour](docs/screenshots/albums-colour.png) |
+| Artist page | History |
+| ![Artist page](docs/screenshots/artist.png) | ![Listening history](docs/screenshots/history.png) |
+| Vinyl mode | Visualizer |
+| ![Vinyl mode over the Liquid visualizer](docs/screenshots/now-playing-vinyl.png) | ![Nebula visualizer](docs/screenshots/visualizer.png) |
+
+<details>
+<summary>More screenshots</summary>
+
+| Timeline | Recap |
+|---|---|
+| ![Albums by decade and year](docs/screenshots/albums-timeline.png) | ![A month of listening summed up](docs/screenshots/recap.png) |
 | Library health | Command palette |
 | ![Library health](docs/screenshots/health.png) | ![Command palette](docs/screenshots/palette.png) |
 | Right-click an album | Edit album |
 | ![An album's right-click menu](docs/screenshots/album-menu.png) | ![The Edit album dialog](docs/screenshots/edit-album.png) |
 | Queue with radio mode | Smart playlist rules |
 | ![Queue with radio mode](docs/screenshots/queue.png) | ![Smart playlist editor](docs/screenshots/smart-editor.png) |
-| Artist page | Recap |
-| ![Artist page](docs/screenshots/artist.png) | ![A month of listening summed up](docs/screenshots/recap.png) |
-| Several songs selected | Folders |
-| ![Songs selected with the selection bar](docs/screenshots/selection.png) | ![Folder view](docs/screenshots/folders.png) |
-| Settings | Pride themes |
-| ![Settings in searchable sections](docs/screenshots/settings.png) | ![The Trans Pride theme](docs/screenshots/theme-trans-pride.png) |
+| Composers | Several songs selected |
+| ![The Composers view of the Artists page](docs/screenshots/composers.png) | ![Songs selected with the selection bar](docs/screenshots/selection.png) |
+| Folders | Settings |
+| ![Folder view](docs/screenshots/folders.png) | ![Settings in searchable sections](docs/screenshots/settings.png) |
 | Internet radio | Podcasts |
 | ![Saved radio stations](docs/screenshots/stations.png) | ![Podcasts with Up next and Continue listening](docs/screenshots/podcasts.png) |
-| A show's page | The Ribbon theme |
-| ![A podcast's page and its episodes](docs/screenshots/podcast.png) | ![The Ribbon theme](docs/screenshots/theme-ribbon.png) |
+| A show's page | Pride themes |
+| ![A podcast's page and its episodes](docs/screenshots/podcast.png) | ![The Trans Pride theme](docs/screenshots/theme-trans-pride.png) |
 | Halo visualizer | Waves visualizer |
 | ![Halo visualizer](docs/screenshots/visualizer-halo.png) | ![Waves visualizer](docs/screenshots/visualizer-waves.png) |
+
+</details>
 
 ![Themes](docs/screenshots/themes.gif)
 
@@ -118,6 +127,9 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 | Ctrl+Q | Quit |
 
 ## All features
+<details>
+<summary>The full list, for the curious</summary>
+
 - Scans folders (mutagen tags + embedded/folder cover art) into SQLite with FTS5 instant search; incremental rescans (mtime/size), background scanning, file watching, and removal of moved/deleted paths.
 - Formats: FLAC, MP3, OGG/Vorbis, Opus, WAV, AAC/M4A, ALAC, WMA, APE, WavPack, AIFF and more (anything Qt's FFmpeg backend decodes). WAV/AIFF RIFF/FORM text tags are read; missing tags fall back to the filename and unknown values.
 - Features (Settings): switch off Liked Songs, Folders, Stats, History, Recap, Visualizer, Library health, lyrics or any card on Home; it leaves the sidebar, Ctrl+K, links, buttons and shortcuts. Internet radio and podcasts start switched off. Rearrange the sidebar by dragging its entries, from their right-click menu, or in Settings.
@@ -142,7 +154,7 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - Skip tracking: moving on from a song early counts as a skip; smart playlists can use skip counts and radio plays often-skipped songs less.
 - Import from other players: play counts, skips, ratings and playlists from Strawberry, Clementine, Rhythmbox, MusicBee and iTunes, and foobar2000 play counts written to tags.
 - Settings in searchable sections; Copy debug info for bug reports (no personal paths).
-- Offline mode (Settings → Internet & sharing): one switch and Hallucinate makes no internet connections at all. Lyrics and cover lookups, scrobbling, headphone EQ downloads and update checks stay off; scrobbles wait and are sent when you switch it off. Every request in the code goes through one gate, and a test fails if anything bypasses it.
+- Offline mode (Settings → Online & privacy): one switch and Hallucinate makes no internet connections at all. Lyrics and cover lookups, scrobbling, headphone EQ downloads and update checks stay off; scrobbles wait and are sent when you switch it off. Every request in the code goes through one gate, and a test fails if anything bypasses it.
 - Updates: an optional, off-by-default check (once a day, against GitHub). The Windows installer build and the AppImage can then update themselves with "Update now": the download is checked against the release's SHA-256 digest before it's installed. The Flatpak, AUR and other packages leave updates to their package manager.
 - Command palette (Ctrl+K) with fuzzy matching over pages and commands plus albums, artists and songs.
 - Global search grouped into Artists / Albums / Songs, plus Stations, Podcasts and Episodes when those are on; pages remember where you'd scrolled to; Home, Albums, Artists, Songs browse views; album and artist pages; editable queue; shuffle/repeat; seek; volume. Queue, current position, shuffle, repeat, and volume are restored after restart; missing queue files are discarded.
@@ -162,7 +174,7 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - Optional compact format/average-bitrate badges in track rows and the now-playing bar (Settings → Appearance); the display is off by default, shows approximate average kb/s, and leaves unavailable bitrates out rather than displaying zero.
 - Tag editor (single track or whole album; MP3, FLAC, Ogg/Opus, M4A, WMA, APE), with MusicBrainz lookup for a whole album's title, album artist, year, genre and track titles, a genre lookup for one album or (from Library health, reviewed before saving) every album without one, on MusicBrainz and, if you set them up, Discogs and Last.fm (albums can have several genres, the main one first), and cover art: set from an image file or fetch from MusicBrainz / Cover Art Archive, saved as `cover.jpg` in the album's folder and optionally embedded in the files. A cover you choose stays: the files' own pictures don't replace it.
 - Headphone correction from AutoEQ's profiles (search by model, or import a ParametricEQ / GraphicEQ file), applied under the equalizer bands, and headphone crossfeed (light, medium, strong). Optionally a separate equalizer for each output device, switched as devices come and go.
-- Lyrics panel with synced highlighting, and karaoke-style lyrics in Now Playing: embedded tags, sidecar `.lrc`, or LRCLIB (cached locally; switch it off in Settings → Internet & sharing). Nudge synced lyrics that run early or late and save the timing as an `.lrc` next to the song.
+- Lyrics panel with synced highlighting, and karaoke-style lyrics in Now Playing: embedded tags, sidecar `.lrc`, or LRCLIB (cached locally; switch it off in Settings → Online & privacy). Nudge synced lyrics that run early or late and save the timing as an `.lrc` next to the song.
 - Import M3U, M3U8 and PLS playlists (matched by path, then artist and title, then file name) and export any playlist, Liked Songs or the queue as M3U8.
 - Backup and restore (Settings → Library): likes, ratings, playlists, play counts, listening history, folders, stations and podcasts in one `.hallucinate-backup` file; restoring merges, never deletes.
 - Undo on the toasts after removing songs, clearing the queue, removing a station or marking a show played; a short What's new card after updates.
@@ -170,6 +182,8 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - Mini player (always-on-top, `Ctrl+M`, with LIVE for radio and skip buttons for podcasts) and a system tray icon with play/pause/next/previous, optional close-to-tray.
 - Keyboard focus rings, and a spoken name and role for everything you can click, type into or slide (a test walks every page as a screen reader sees it); renders crisply on HiDPI (tested at 2x).
 - Live-switchable, file-backed themes with album-art accent mode and keyboard-friendly UI.
+
+</details>
 
 ## Install
 ### AUR — **not yet published to AUR**
@@ -255,15 +269,15 @@ launch and the library has loaded in the background a few seconds later.
 
 ## Privacy
 
-Hallucinate has no accounts, no analytics, no usage pings and no install ID. Nothing is ever sent to the project. Your library, history, ratings and settings stay on your computer, in a data folder only your user account can open. Offline mode (Settings → Internet & sharing) stops every connection at once.
+Hallucinate has no accounts, no analytics, no usage pings and no install ID. Nothing is ever sent to the project. Your library, history, ratings and settings stay on your computer, in a data folder only your user account can open. Offline mode (Settings → Online & privacy) stops every connection at once.
 
 What does go online, and only when:
 
 | What | When | What's sent |
 |---|---|---|
-| Lyrics (LRCLIB) | A song with no lyrics of its own starts; switch off in Settings → Internet & sharing | Artist, title, album, length |
+| Lyrics (LRCLIB) | A song with no lyrics of its own starts; switch off in Settings → Online & privacy | Artist, title, album, length |
 | Covers, tags and genres (MusicBrainz, Cover Art Archive; Discogs and Last.fm if you set them up) | Only when you click Find online, Find all, or Look up | Album and artist |
-| Artist bios (Wikipedia through MusicBrainz; Last.fm or Discogs if you set them up) | Off unless you switch it on (Settings → Internet & sharing, or the first-run welcome), then when you open an artist's page; or when you click Look up. Never when you've written your own bio | The artist and one of their albums |
+| Artist bios (Wikipedia through MusicBrainz; Last.fm or Discogs if you set them up) | Off unless you switch it on (Settings → Online & privacy, or the first-run welcome), then when you open an artist's page; or when you click Look up. Never when you've written your own bio | The artist and one of their albums |
 | Last.fm, ListenBrainz | Only after you connect your own account | What you play (scrobbles); keys stay in your system keyring |
 | Discord status | Only if you switch it on; talks to the Discord app on your computer | The song, or just "Listening to music" in privacy mode. To show the cover, the album and artist are looked up on MusicBrainz (not when the cover is hidden) |
 | Music servers | Only if you switch them on and add one | Requests to your own server only. The sign-in stays in your system keyring: for Subsonic, each request signs in with a one-time code; for Jellyfin, only the server's access token is kept, not your password |

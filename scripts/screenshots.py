@@ -22,12 +22,13 @@ import tempfile
 import time
 from pathlib import Path
 
-from mutagen.id3 import APIC, ID3, TALB, TCON, TDRC, TIT2, TPE1, TPE2, TRCK
+from mutagen.id3 import APIC, ID3, MVIN, MVNM, TALB, TBPM, TCOM, TCON, TDRC, TIT2, TKEY, TPE1, TPE2, TRCK, TXXX
 from PySide6.QtCore import Q_ARG, QBuffer, QByteArray, QIODevice, QMetaObject, QPoint, Qt, QTimer
 from PySide6.QtGui import QBrush, QColor, QCursor, QImage, QLinearGradient, QPainter
 
-GENRES = ["Dream Pop", "Indie Folk", "Synthwave", "Ambient", "Folk", "Chamber Jazz", "Indie Folk", "Post-Rock"]
-YEARS = [2019, 2014, 1986, 2021, 2009, 1998, 2016, 2023]
+GENRES = ["Dream Pop", "Indie Folk", "Synthwave", "Ambient", "Folk", "Chamber Jazz", "Indie Folk", "Post-Rock",
+          "Classical"]
+YEARS = [2019, 2014, 1986, 2021, 2009, 1998, 2016, 2023, 2018]
 ALBUMS = [
     ("Aurora Vale", "Northern Lights", ["Echoes of Dawn", "Midnight Rain", "Glass Horizon", "Polar Drift"]),
     ("Blue Harbor", "Tidal", ["Salt & Rope", "Lantern Bay", "Low Tide", "Harbor Lights"]),
@@ -37,7 +38,11 @@ ALBUMS = [
     ("Fable Quartet", "Folio", ["Prologue", "Marginalia", "Colophon", "Epilogue"]),
     ("Glass Orchard", "Windfall", ["Cider", "Bough", "Orchard Rain", "Harvest Moon"]),
     ("Hollow Pines", "Evergreen", ["Needles", "Understory", "Timberline", "Frost"]),
+    ("Lumen Ensemble", "Nocturnes for Strings", ["Lento", "Andante cantabile", "Scherzo", "Adagio", "Allegro con fuoco"]),
 ]
+# A made-up composer for the classical album: the composer page shows the work with its movements in order
+COMPOSER, WORK = "Ilse Marten", "Nocturnes for Strings, Op. 3"
+KEYS = ["Am", "C", "F#m", "Eb", "G", "Dm", "Bb", "E"]
 
 
 def cover(seed):
@@ -95,12 +100,22 @@ def build_library(root: Path):
             t.add(TRCK(encoding=3, text=f"{i}/{len(tracks)}"))
             t.add(TCON(encoding=3, text=GENRES[n]))
             t.add(TDRC(encoding=3, text=str(YEARS[n])))
+            if artist == "Lumen Ensemble":
+                t.add(TCOM(encoding=3, text=COMPOSER))
+                t.add(TXXX(encoding=3, desc="WORK", text=WORK))
+                t.add(MVNM(encoding=3, text=title))
+                t.add(MVIN(encoding=3, text=f"{i}/{len(tracks)}"))
+            else:  # tempo and key, for sorting Songs by tempo
+                t.add(TBPM(encoding=3, text=str(70 + (n * 17 + i * 11) % 90)))
+                t.add(TKEY(encoding=3, text=KEYS[(n + i) % len(KEYS)]))
+            if artist == "Fable Quartet":  # a band that writes its own: a second composer
+                t.add(TCOM(encoding=3, text="Mira Fable"))
             t.add(APIC(encoding=3, mime="image/png", type=3, desc="", data=art))
             t.save(f)
 
 
 # The tour, in order; it loops back to the first shot.
-DEMO_SHOTS = ["home", "albums-colour", "album", "album-menu", "now-playing", "albums-timeline", "theme-trans-pride",
+DEMO_SHOTS = ["home", "albums-colour", "album", "composer", "now-playing", "albums-timeline", "theme-trans-pride",
               "visualizer"]
 
 
@@ -233,6 +248,27 @@ def main():
                 state["smart"] = user_lib.createSmartPlaylist("Late-night dreams", (
                     '{"match": "any", "rules": [{"field": "genre", "op": "contains", "value": "dream"},'
                     ' {"field": "genre", "op": "contains", "value": "ambient"}], "sort": "year_desc", "limit": 0}'))
+                # playlists, two of them in a folder (the sidebar shows it)
+                rnd2 = random.Random(3)
+                for name, folder in (("Morning run", "Workout"), ("Cool down", "Workout"), ("Rainy Sunday", "")):
+                    pid = user_lib.createPlaylist(name)
+                    user_lib.addPathsToPlaylist(pid, [t["path"] for t in rnd2.sample(tracks, 8)])
+                    if folder:
+                        user_lib.setPlaylistFolder(pid, False, folder)
+                shell.setUiValue("playlistFolderOpen/Workout", "1")
+                # similar artists as Last.fm would list them (stored, so nothing is asked)
+                import json as _json
+
+                sources = ctx.contextProperty("sources")
+                sources._lastfm_key = lambda: "demo"
+                sources.setFetchSimilar(True)
+                similar = ctx.contextProperty("similarArtists")
+                names = [{"name": n, "match": 1 - k / 10} for k, n in enumerate(
+                    ["Hollow Pines", "Echo Meadow", "Aurora Vale", "Paper Lanterns", "The Quiet Fields", "Moth Radio",
+                     "Saltwater Choir", "Kite Season"])]
+                similar._db.conn.execute("INSERT OR REPLACE INTO similar_artists(s_aa, names, fetched) VALUES(?, ?, ?)",
+                                         ("glass orchard", _json.dumps(names), time.time()))
+                similar._db.conn.commit()
                 user_lib.refresh()
                 user_lib.refreshStats()
                 shell.setUiValue("foldersPath", str(work / "Music"))  # the folder view opens inside the music
@@ -282,14 +318,18 @@ def main():
             timer.start(33)
             self._spectrum_timer = timer
 
+            def windfall():
+                return next(library.albums.get(i) for i in range(library.albums.count)
+                            if library.albums.get(i)["album"] == "Windfall")
+
             def albums_view(view):
                 return lambda: shell.setUiValue("albumsView", view)
 
             def open_album():
-                QMetaObject.invokeMethod(win, "openAlbum", Q_ARG("QVariant", library.albums.get(7)["album_key"]))
+                QMetaObject.invokeMethod(win, "openAlbum", Q_ARG("QVariant", windfall()["album_key"]))
 
             def album_menu():
-                a = library.albums.get(7)
+                a = windfall()
                 menu = child("albumMenu")
                 QMetaObject.invokeMethod(menu, "show", Q_ARG("QVariant", [a["album_key"]]),
                                          Q_ARG("QVariant", a["album"]), Q_ARG("QVariant", a["album_artist"]))
@@ -299,10 +339,10 @@ def main():
                 menu.setProperty("currentIndex", 1)  # one row hovered
 
             def edit_album():
-                QMetaObject.invokeMethod(child("tagEditor"), "editAlbum", Q_ARG("QVariant", library.albums.get(7)["album_key"]))
+                QMetaObject.invokeMethod(child("tagEditor"), "editAlbum", Q_ARG("QVariant", windfall()["album_key"]))
 
             def confirm_trash():
-                a = library.albums.get(7)
+                a = windfall()
                 dlg = child("trashAlbumsDialog")
                 dlg.setProperty("what", "“" + a["album"] + "”")
                 dlg.open()
@@ -433,6 +473,42 @@ def main():
                      shot("podcast")]
             todo += [lambda: managers[0].selectTheme("Ribbon"), go("home"), wait, wait, shot("theme-ribbon"),
                      lambda: managers[0].selectTheme(themes[0]), wait]
+            def open_composer():
+                QMetaObject.invokeMethod(win, "openComposer", Q_ARG("QVariant", COMPOSER))
+
+            def composers_view(on):
+                def set_view():
+                    QMetaObject.invokeMethod(win.findChild(QObject, "pageStack").property("currentItem"), "setView",
+                                             Q_ARG("QVariant", on))
+                return set_view
+
+            def search_typo(text):
+                return lambda: child("searchField").setProperty("text", text)
+
+            def scroll_to_similar():
+                # the artist page, scrolled so its similar artists show
+                page = win.findChild(QObject, "pageStack").property("currentItem")
+                box = page.findChild(QObject, "similarArtists")
+                flick = page.findChild(QObject, "artistFlick")
+                if box is not None and flick is not None:
+                    top = box.property("y") + box.parentItem().property("y")  # in the page's column
+                    flick.setProperty("contentY", max(0.0, min(top - 110, flick.property("contentHeight") - flick.property("height"))))
+
+            def open_folder_playlist():
+                pl = next(user_lib.playlists.get(i) for i in range(user_lib.playlists.count)
+                          if user_lib.playlists.get(i)["name"] == "Morning run")
+                QMetaObject.invokeMethod(win, "openPlaylist", Q_ARG("QVariant", pl["id"]), Q_ARG("QVariant", pl["name"]))
+
+            def sidebar_to_end():
+                nav = child("sidebarScroll")
+                nav.setProperty("contentY", max(0.0, nav.property("contentHeight") - nav.property("height")))
+
+            todo += [open_folder_playlist, wait, sidebar_to_end, wait, shot("playlist-folders"),
+                     lambda: child("sidebarScroll").setProperty("contentY", 0)]
+            todo += [open_composer, wait, wait, shot("composer")]
+            todo += [go("artists"), wait, composers_view(True), wait, shot("composers"), composers_view(False)]
+            todo += [go("artists"), open_artist, wait, scroll_to_similar, wait, shot("similar-artists")]
+            todo += [search_typo("glass orchrd"), wait, wait, shot("search-typo"), search_typo(""), wait]
             todo += [go("health"), wait, shot("health")]
             todo += [go("home"), palette_query, wait, palette_refresh, shot("palette"),
                      lambda: child("commandPalette").close(), wait]
