@@ -139,6 +139,9 @@ def app_window(qapp, tmp_path, monkeypatch, request):
 
     objects["sources"] = OnlineSources(lambda: "")
     objects["artistBios"] = ArtistBios(db_path, objects["sources"])
+    from hallucinate.similar import SimilarArtists
+
+    objects["similarArtists"] = SimilarArtists(db_path, objects["sources"], library)
     engine = QQmlApplicationEngine()
     for key, value in objects.items():
         engine.rootContext().setContextProperty(key, value)

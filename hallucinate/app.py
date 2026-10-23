@@ -172,6 +172,9 @@ def main(argv=None) -> int:
     from .bios import ArtistBios
 
     artist_bios = ArtistBios(paths.db_path(), sources)
+    from .similar import SimilarArtists
+
+    similar_artists = SimilarArtists(paths.db_path(), sources, library)
     theme_manager = ThemeManager(paths.config_dir(), player)
 
     discord = DiscordPresence(player)
@@ -262,6 +265,7 @@ def main(argv=None) -> int:
     ctx.setContextProperty("listenbrainz", listenbrainz)
     ctx.setContextProperty("sources", sources)
     ctx.setContextProperty("artistBios", artist_bios)
+    ctx.setContextProperty("similarArtists", similar_artists)
     ctx.setContextProperty("shell", shell)
     ctx.setContextProperty("discord", discord)
     ctx.setContextProperty("themeManager", theme_manager)
@@ -338,6 +342,7 @@ def main(argv=None) -> int:
     podcasts.shutdown()
     meta_editor.shutdown()
     artist_bios.shutdown()
+    similar_artists.shutdown()
     user_lib.shutdown()
     library.shutdown()
     dbguard.mark_clean(paths.db_path())  # every connection is closed now

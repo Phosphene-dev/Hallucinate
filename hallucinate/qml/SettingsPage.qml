@@ -1051,7 +1051,7 @@ Item {
             id: sec_sharing
             objectName: "settings_sharing"
             title: "Online & privacy"
-            keywords: "offline mode internet network privacy connection lyrics lrclib genres bios biography wikipedia discogs token musicbrainz last.fm tags"
+            keywords: "offline mode internet network privacy connection lyrics lrclib genres bios biography wikipedia discogs token musicbrainz last.fm tags similar artists discover"
             query: page.query
             StyledCheck {
                 objectName: "offlineMode"
@@ -1093,6 +1093,14 @@ Item {
                     onActivated: function (i) { sources.setBioSource(names[i]) }
                     Accessible.name: "Where artist bios come from"
                 }
+            }
+            StyledCheck {
+                objectName: "fetchSimilar"
+                text: "Show similar artists from Last.fm on an artist's page (sends the artist's name)"
+                      + (sources.lastfmAvailable ? "" : ". Needs the Last.fm API key, under Scrobbling & sharing")
+                enabled: sources.lastfmAvailable || checked
+                checked: sources.fetchSimilar
+                onToggled: sources.setFetchSimilar(checked)
             }
             SettingsGroup {
                 key: "genreSources"

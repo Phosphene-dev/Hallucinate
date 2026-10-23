@@ -1182,6 +1182,24 @@ class Library(QObject):
             self._player.setRadio(True)
             self._player.playList(decorate(top), 0)
 
+    @Slot("QVariantList")
+    def playArtistMix(self, names):
+        """A shuffled mix of a few songs by each of these artists (an artist and the similar ones you have),
+        taken in turns so no one artist runs on."""
+        per = 8 if len(names) <= 6 else 5
+        picks = []
+        for name in dict.fromkeys(str(n) for n in names if n):
+            songs = self._db.artist_tracks(name, limit=2000)
+            random.shuffle(songs)
+            picks.append(songs[:per])
+        mix = []
+        for turn in range(per):
+            batch = [p[turn] for p in picks if turn < len(p)]
+            random.shuffle(batch)
+            mix.extend(batch)
+        if mix:
+            self._play(decorate(mix[:150]), 0)
+
     @Slot(str, result="QVariantMap")
     def albumNotes(self, key):
         """Liner notes for an album's page (see core.albums.liner_notes)."""

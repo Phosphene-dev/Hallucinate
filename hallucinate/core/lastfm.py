@@ -100,3 +100,22 @@ def artist_bio(name, api_key, lang=""):
     if not text:
         return None
     return {"text": text, "url": artist.get("url", ""), "source": "Last.fm"}
+
+
+def similar_artists(name, api_key, limit=40):
+    """Artists Last.fm's listeners find like `name`, closest first: [{"name", "match" (0–1)}]."""
+    if not (name or "").strip() or not api_key:
+        return []
+    data = _get("artist.getSimilar", {"artist": name, "limit": str(limit)}, api_key)
+    out, seen = [], set()
+    for a in ((data.get("similarartists") or {}).get("artist") or []):
+        n = str(a.get("name") or "").strip()
+        if not n or n.casefold() in seen:
+            continue
+        seen.add(n.casefold())
+        try:
+            match = max(0.0, min(1.0, float(a.get("match") or 0)))
+        except (TypeError, ValueError):
+            match = 0.0
+        out.append({"name": n[:200], "match": match})
+    return out
