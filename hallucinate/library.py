@@ -10,7 +10,7 @@ from PySide6.QtGui import QDesktopServices
 
 from .core import albums as album_views
 from .core import artists as artist_views
-from .core import composers, genre_views, remote
+from .core import composers, genre_views, remote, spelling
 from .core import folders as folder_views
 from .core import health as health_checks
 from .core.db import Database, fold, group_index, search_groups
@@ -273,6 +273,7 @@ class Library(QObject):
         self._song_sort = "title"
         self._genre_list = []
         self._composer_list = []
+        self._speller = None  # the library's words for "did you mean": made when first needed, until a reload
         self._filter_gen = 0
         self._duplicate_gen = 0
         self._duplicates_loading = False
@@ -589,6 +590,7 @@ class Library(QObject):
             self._composer_list = decorate(data["composerList"])
             self.composerListChanged.emit()
         self._artist_index = data["artistIndex"]
+        self._speller = None  # (the words may have changed: made again when next needed)
         self._search_index = data["searchIndex"]
         self._retire(list(self._detail.values()))
         self._detail.clear()
@@ -634,12 +636,35 @@ class Library(QObject):
                     r["tracks"] = decorate(r["tracks"])
                     albums, artists = search_groups(index, query)  # rows already decorated
                     r["albums"], r["artists"] = [dict(a) for a in albums], [dict(a) for a in artists]
+                if not (r["tracks"] or r["albums"] or r["artists"]) and gen == self._search_gen:
+                    r = self._search_corrected(db, query, index, r)
             except Exception:  # noqa: BLE001
                 logger.exception("Search failed")
                 r = {"tracks": [], "albums": [], "artists": []}
             self._searched.emit((gen, r))
 
         self._quick.submit(work)
+
+    def _search_corrected(self, db, query, index, found):
+        """Nothing matched `query`: search for what was probably meant (each word that's in no name swapped for
+        the closest one that is), returned with "corrected" set; else `found` as it was."""
+        speller = self._speller
+        if speller is None:
+            texts = [r[0] for r in db.conn.execute(
+                "SELECT title FROM tracks UNION SELECT album FROM tracks UNION SELECT artist FROM tracks "
+                "UNION SELECT album_artist FROM tracks UNION SELECT genre FROM tracks WHERE genre != '' "
+                "UNION SELECT composer FROM tracks WHERE composer != ''")]
+            speller = self._speller = spelling.Speller(texts)
+        meant = speller.correct(query)
+        if not meant:
+            return found
+        r = db.search(meant, groups=index is None)
+        r = {k: decorate(v) for k, v in r.items()}
+        if index is not None:
+            albums, artists = search_groups(index, meant)
+            r["albums"], r["artists"] = [dict(a) for a in albums], [dict(a) for a in artists]
+        r["corrected"] = meant
+        return r
 
     @Slot(object)
     def _apply_search(self, payload):

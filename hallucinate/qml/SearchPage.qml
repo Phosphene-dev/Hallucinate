@@ -11,18 +11,22 @@ Item {
     readonly property var tracks: results.tracks || []
     readonly property var albums: results.albums || []
     readonly property var artists: results.artists || []
+    // nothing matched what was typed, so these are for what was probably meant
+    readonly property string corrected: results.corrected || ""
+    readonly property string matchQuery: corrected || query
+    function esc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") }
     // with radio and podcasts on, your stations, shows and episodes are found too
     readonly property var stationHits: shell.features.stations === true ? stations.find(query) : []
     readonly property var podcastHits: shell.features.podcasts === true ? podcasts.find(query) : ({ shows: [], episodes: [] })
     // genres whose name holds what's typed (from the list the Albums page's Genres view shows)
     readonly property var genreHits: {
-        var q = query.trim().toLowerCase()
+        var q = matchQuery.trim().toLowerCase()
         if (!q.length) return []
         return library.genreList.filter(function (g) { return g.name.toLowerCase().indexOf(q) >= 0 }).slice(0, 12)
     }
     // composers whose name holds what's typed
     readonly property var composerHits: {
-        var q = query.trim().toLowerCase()
+        var q = matchQuery.trim().toLowerCase()
         if (!q.length) return []
         return library.composerList.filter(function (c) { return c.name.toLowerCase().indexOf(q) >= 0 }).slice(0, 12)
     }
@@ -53,6 +57,18 @@ Item {
             width: Theme.contentWidth(fl.width)
             spacing: 14
 
+            Text {
+                objectName: "searchCorrected"
+                visible: page.corrected.length > 0 && page.query.length > 0
+                width: parent.width
+                wrapMode: Text.Wrap
+                textFormat: Text.StyledText
+                text: "Nothing matches “" + page.esc(page.query) + "”. Showing results for <b>" + page.esc(page.corrected) + "</b>."
+                color: Theme.textDim
+                linkColor: Theme.accent
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.fontSize(14)
+            }
             Item { width: 1; height: 40; visible: noResults.visible }
             EmptyState {
                 id: noResults

@@ -255,3 +255,39 @@ def test_a_playlist_is_copied_and_its_repeats_taken_out(db):
     assert db.playlist_dedupe(pid) == 3
     assert [t["path"] for t in db.playlist_tracks(pid)] == ["/m/2", "/m/1"]
     assert len(db.playlist_tracks(copy)) == 5  # the copy is its own
+
+
+def test_a_search_with_a_typo_shows_what_was_probably_meant(db):
+    from hallucinate.core.spelling import Speller, distance
+
+    assert distance("radiohed", "radiohead", 2) == 1 and distance("wroks", "works", 2) == 1  # a swap is one
+    assert distance("abc", "xyzuvw", 2) == 3
+    s = Speller(["Radiohead", "OK Computer", "Boards of Canada", "Béla Bartók", "Beethoven", "Beethoven"])
+    assert s.correct("radiohed") == "radiohead"
+    assert s.correct("bords of canda") == "boards of canada"
+    assert s.correct("bartok") == "" and s.correct("radioh") == ""  # found as it is
+    assert s.correct("beethovan") == "beethoven"
+    assert s.correct("qqqqqqq") == ""  # nothing close: no suggestion rather than a wild one
+
+
+def test_the_library_falls_back_to_the_corrected_search(qapp, tmp_path):
+    from conftest import wait_for
+
+    from hallucinate.core.db import Database
+    from hallucinate.library import Library
+
+    d = Database(tmp_path / "lib.db")
+    _add(d, "/m/1", "Shoegaze")
+    d.upsert_track({**d.track(1), "path": "/m/2", "title": "Paranoid Android", "artist": "Radiohead"})
+    d.commit()
+    d.close()
+    lib = Library(tmp_path / "lib.db", tmp_path / "art")
+    try:
+        lib.search("paranoid andriod")
+        assert wait_for(lambda: lib.searchResults.get("tracks"))
+        assert lib.searchResults["corrected"] == "paranoid android"
+        assert [t["path"] for t in lib.searchResults["tracks"]] == ["/m/2"]
+        lib.search("paranoid")
+        assert wait_for(lambda: lib.searchResults.get("tracks") and "corrected" not in lib.searchResults)
+    finally:
+        lib.shutdown()
