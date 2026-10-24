@@ -7,10 +7,10 @@ Item {
     id: page
     objectName: "settings"
     property string query: ""
-    readonly property var sectionIds: ["appearance", "features", "podcasts", "playback", "sound", "library", "servers", "sharing", "scrobbling", "desktop", "about"]
-    readonly property var sectionTitles: ["Appearance", "Features", "Podcasts", "Playback", "Sound", "Library", "Music servers", "Online & privacy", "Scrobbling & sharing", "Desktop", "About"]
+    readonly property var sectionIds: ["appearance", "features", "podcasts", "playback", "sound", "library", "servers", "remote", "sharing", "scrobbling", "desktop", "about"]
+    readonly property var sectionTitles: ["Appearance", "Features", "Podcasts", "Playback", "Sound", "Library", "Music servers", "Remote & web", "Online & privacy", "Scrobbling & sharing", "Desktop", "About"]
 
-    function sectionItem(i) { return [sec_appearance, sec_features, sec_podcasts, sec_playback, sec_sound, sec_library, sec_servers, sec_sharing, sec_scrobbling, sec_desktop, sec_about][i] }
+    function sectionItem(i) { return [sec_appearance, sec_features, sec_podcasts, sec_playback, sec_sound, sec_library, sec_servers, sec_remote, sec_sharing, sec_scrobbling, sec_desktop, sec_about][i] }
     function jumpToSidebar() {
         jumpTo(1)
         sidebarGroup.open = true
@@ -72,7 +72,7 @@ Item {
             visible: page.query.length > 0
             text: noMatches ? "No settings match “" + page.query + "”" : "Showing settings that match “" + page.query + "”"
             // (a section hidden because its feature is off doesn't count, even if it matches)
-            readonly property bool noMatches: !(sec_appearance.visible || sec_features.visible || sec_podcasts.visible || sec_playback.visible || sec_sound.visible || sec_library.visible || sec_servers.visible || sec_sharing.visible || sec_scrobbling.visible || sec_desktop.visible || sec_about.visible)
+            readonly property bool noMatches: !(sec_appearance.visible || sec_features.visible || sec_podcasts.visible || sec_playback.visible || sec_sound.visible || sec_library.visible || sec_servers.visible || sec_remote.visible || sec_sharing.visible || sec_scrobbling.visible || sec_desktop.visible || sec_about.visible)
             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
         }
     }
@@ -1072,6 +1072,143 @@ Item {
                         placeholderText: "Name (optional)"; Accessible.name: "Server name"
                         onAccepted: if (addServerDlg.ready) addServerDlg.accept()
                     }
+                }
+            }
+        }
+        SettingsSection {
+            id: sec_remote
+            objectName: "settings_remote"
+            title: "Remote & web"
+            keywords: "remote phone web browser interface control pair pairing device devices network lan wifi headless tablet"
+            query: page.query
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: "Control Hallucinate from your phone, a tablet or a browser: play, pause and skip, the queue, search and your library. Each device pairs once with a code from here, and can be removed any time. A remote can't change your files or settings."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            StyledCheck {
+                objectName: "remoteOn"
+                text: "Turn on the web interface and remote"
+                checked: webRemote.on
+                onToggled: webRemote.setOn(checked)
+            }
+            StyledCheck {
+                objectName: "remoteNetwork"
+                enabled: webRemote.on
+                text: "Let other devices on your network connect (your phone on the same Wi-Fi). Only on networks you trust, like your home's"
+                checked: webRemote.network
+                onToggled: webRemote.setNetwork(checked)
+            }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                visible: webRemote.problem.length > 0
+                text: webRemote.problem
+                color: Theme.error; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            Column {
+                visible: webRemote.isRunning
+                width: parent.width
+                spacing: 8
+                Text {
+                    textFormat: Text.PlainText
+                    text: webRemote.network ? "Open one of these on your phone or another computer:" : "Open this in a browser on this computer:"
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                }
+                Repeater {
+                    model: webRemote.links
+                    TextInput {  // selectable, to copy
+                        required property string modelData
+                        objectName: "remoteLink"
+                        text: modelData
+                        readOnly: true
+                        selectByMouse: true
+                        color: Theme.accent
+                        font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold
+                    }
+                }
+                Flow {
+                    width: parent.width
+                    spacing: 10
+                    PillButton {
+                        objectName: "pairDevice"
+                        primary: true
+                        text: webRemote.code.length ? "New code" : "Pair a device…"
+                        onClicked: webRemote.pairDevice()
+                    }
+                    PillButton {
+                        text: "Open in browser"
+                        onClicked: Qt.openUrlExternally(webRemote.links[webRemote.links.length - 1]
+                                                        + (webRemote.code.length ? "#pair=" + webRemote.code : ""))
+                    }
+                }
+                GlassPanel {
+                    visible: webRemote.code.length > 0
+                    width: Math.min(parent.width, 460)
+                    height: codeCol.implicitHeight + 32
+                    Column {
+                        id: codeCol
+                        anchors { left: parent.left; right: parent.right; top: parent.top; margins: 16 }
+                        spacing: 6
+                        Text {
+                            textFormat: Text.PlainText
+                            text: "Enter this code on the device"
+                            color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                        }
+                        Text {
+                            textFormat: Text.PlainText
+                            objectName: "pairingCode"
+                            text: webRemote.code.replace(/(\d{3})(\d{3})/, "$1 $2")
+                            color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(40); font.weight: Font.Bold
+                            font.letterSpacing: 4
+                        }
+                        Text {
+                            textFormat: Text.PlainText
+                            text: "Works once, for " + Math.max(0, Math.ceil(webRemote.codeSeconds / 60)) + " more minute" + (webRemote.codeSeconds > 60 ? "s" : "")
+                            color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                        }
+                        PillButton { height: 30; text: "Cancel"; onClicked: webRemote.cancelCode() }
+                    }
+                }
+            }
+            SettingsGroup {
+                key: "remoteDevices"
+                title: "Paired devices"
+                summary: webRemote.pairedDevices.length ? webRemote.pairedDevices.length + (webRemote.pairedDevices.length === 1 ? " device" : " devices") : "None yet"
+                query: page.query
+                Repeater {
+                    model: webRemote.pairedDevices
+                    Row {
+                        required property var modelData
+                        spacing: 12
+                        width: parent ? parent.width : 0
+                        Column {
+                            width: parent.width - forgetButton.width - 12
+                            anchors.verticalCenter: parent.verticalCenter
+                            Text { textFormat: Text.PlainText; text: modelData.name; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold }
+                            Text {
+                                textFormat: Text.PlainText
+                                text: "Paired " + new Date(modelData.paired * 1000).toLocaleDateString() + "  ·  last used " + new Date(modelData.seen * 1000).toLocaleString()
+                                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                            }
+                        }
+                        PillButton { id: forgetButton; height: 30; text: "Remove"; anchors.verticalCenter: parent.verticalCenter; onClicked: webRemote.forgetDevice(modelData.id) }
+                    }
+                }
+                PillButton {
+                    visible: webRemote.pairedDevices.length > 1
+                    text: "Remove all devices"
+                    onClicked: webRemote.forgetAllDevices()
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: "Lost a phone, or not sure who has access? Remove the device here: it can't connect again without a new code. Port: " + webRemote.portNumber + "."
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
             }
         }

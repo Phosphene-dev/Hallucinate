@@ -49,7 +49,7 @@ finding, following and playing podcasts.
 
 ### 4. Online accounts and services
 - [ ] Last.fm: connect, scrobble a few songs, check they appear on your profile once each.
-- [ ] Settings → Internet & sharing → **Liking a song loves it on Last.fm**: like a song, check it's loved on Last.fm;
+- [ ] Settings → Scrobbling & sharing → **Liking a song loves it on Last.fm**: like a song, check it's loved on Last.fm;
   unlike it, check the love goes. Then **Like the songs I've loved on Last.fm**: the toast's count looks right and those songs
   appear in Liked Songs.
 - [ ] ListenBrainz: connect with a token and check listens arrive.
@@ -156,11 +156,11 @@ finding, following and playing podcasts.
   genre finds them too.
 - [ ] Settings → Library: switch off "Show every genre on album and artist pages": only the main genre shows.
   Switch on "Show every genre of the playing song": Now Playing lists them all.
-- [ ] Settings → Internet & sharing → paste a Discogs token → **Connect Discogs**: "Connected as <you>". Find a
+- [ ] Settings → Online & privacy → paste a Discogs token → **Connect Discogs**: "Connected as <you>". Find a
   genre in the tag editor: the note says which sources it came from.
 - [ ] A fresh start (move the config folder aside): the welcome's third step lists features and going-online
   choices; internet radio, podcasts, music servers and bio lookups start off; what you tick is on afterwards.
-- [ ] Settings → Internet & sharing → switch on "Look up an artist's bio". Open an artist: About shows a bio
+- [ ] Settings → Online & privacy → switch on "Look up an artist's bio". Open an artist: About shows a bio
   (from Wikipedia) with its source; click the source to open it. Pick
   another source for them; **Write your own**, Save; it stays after a restart. **Remove mine** brings the
   fetched one back. With "Look up an artist's bio" off, or offline mode on, nothing is looked up.

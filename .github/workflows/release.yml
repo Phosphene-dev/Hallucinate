@@ -236,7 +236,7 @@ jobs:
       - name: Build
         if: steps.key.outputs.id
         run: |
-          dbus-run-session -- flatpak run org.flatpak.Builder --user --force-clean --install-deps-from=flathub \
+          dbus-run-session -- flatpak run org.flatpak.Builder --user --force-clean --disable-rofiles-fuse --install-deps-from=flathub \
             --default-branch=stable --repo=flatpak-repo flatpak-build \
             packaging/flatpak/io.github.phosphene_dev.Hallucinate.yml
       - name: Sign, update the repository and make the bundle
