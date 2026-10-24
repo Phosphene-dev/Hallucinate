@@ -40,10 +40,6 @@ class ArtProvider(QQuickImageProvider):
         path = QUrl(rest).toLocalFile() if rest.startswith("file:") else rest
         return px, path
 
-    def _cache_path(self, path: str, px: int, mtime: float) -> Path:
-        digest = hashlib.sha1(f"{path}|{mtime}|{px}".encode("utf-8", "surrogateescape"), usedforsecurity=False).hexdigest()
-        return self._dir / f"{digest}.jpg"
-
     def requestImage(self, image_id, size, requested_size):
         px, path = self.parse(image_id)
         image = QImage()
@@ -59,30 +55,39 @@ class ArtProvider(QQuickImageProvider):
         return image
 
     def load(self, path: str, px: int) -> QImage:
-        try:
-            mtime = os.stat(path).st_mtime
-        except OSError:
-            return QImage()
-        cached = self._cache_path(path, px, mtime)
-        if cached.exists():
-            image = QImage(str(cached))
-            if not image.isNull():
-                touch_if_stale(cached)  # recently used thumbnails survive cache trimming
-                return image
-        reader = QImageReader(path)
-        reader.setAutoTransform(True)
-        native = reader.size()
-        if native.isValid() and max(native.width(), native.height()) > px:
-            reader.setScaledSize(native.scaled(QSize(px, px), Qt.AspectRatioMode.KeepAspectRatio))
-        image = reader.read()
-        if image.isNull():
+        return load_thumbnail(self._dir, path, px)
+
+
+def load_thumbnail(cache_dir, path: str, px: int) -> QImage:
+    """`path`'s picture scaled to fit `px` (a bucket size), from the disk cache when it's there. Also used by the
+    web interface (see webserver.py), which has no QML engine."""
+    cache_dir = Path(cache_dir)
+    try:
+        mtime = os.stat(path).st_mtime
+    except OSError:
+        return QImage()
+    digest = hashlib.sha1(f"{path}|{mtime}|{px}".encode("utf-8", "surrogateescape"), usedforsecurity=False).hexdigest()
+    cached = cache_dir / f"{digest}.jpg"
+    if cached.exists():
+        image = QImage(str(cached))
+        if not image.isNull():
+            touch_if_stale(cached)  # recently used thumbnails survive cache trimming
             return image
-        if max(image.width(), image.height()) > px:
-            image = image.scaled(px, px, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-        try:
-            tmp = cached.with_suffix(".tmp")
-            if image.save(str(tmp), "JPG" if not image.hasAlphaChannel() else "PNG", 88):
-                os.replace(tmp, cached)
-        except OSError:
-            pass
+    reader = QImageReader(path)
+    reader.setAutoTransform(True)
+    native = reader.size()
+    if native.isValid() and max(native.width(), native.height()) > px:
+        reader.setScaledSize(native.scaled(QSize(px, px), Qt.AspectRatioMode.KeepAspectRatio))
+    image = reader.read()
+    if image.isNull():
         return image
+    if max(image.width(), image.height()) > px:
+        image = image.scaled(px, px, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+    try:
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        tmp = cached.with_suffix(".tmp")
+        if image.save(str(tmp), "JPG" if not image.hasAlphaChannel() else "PNG", 88):
+            os.replace(tmp, cached)
+    except OSError:
+        pass
+    return image

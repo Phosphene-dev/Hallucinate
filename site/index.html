@@ -62,7 +62,7 @@
       <div class="window">
         <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
         <video src="screenshots/demo.mp4" poster="screenshots/home.png" width="1280" height="800" autoplay muted loop playsinline
-               aria-label="A tour of Hallucinate: Home, the colour wall, an album page and its menu, Now Playing, the timeline, the Trans Pride theme and the Nebula visualizer"></video>
+               aria-label="A tour of Hallucinate: Home, the colour wall, an album page, a composer's page, Now Playing, the timeline, the Trans Pride theme and the Nebula visualizer"></video>
       </div>
       <div class="wave" aria-hidden="true">{{WAVE}}</div>
     </section>
@@ -84,7 +84,7 @@
         <article>
           <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
           <h3>Browse like a record shelf</h3>
-          <p>Album and artist pages with liner notes, a colour wall that sorts every cover round the colour wheel, a timeline by decade and year, and your own folders.</p>
+          <p>Album and artist pages with liner notes, genre and composer pages (classical works with their movements in order), a colour wall that sorts every cover round the colour wheel, a timeline by decade and year, and your own folders.</p>
         </article>
         <article>
           <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
@@ -98,13 +98,13 @@
         </article>
         <article>
           <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8"/></svg>
-          <h3>Stations, podcasts, smart playlists</h3>
-          <p>Internet radio and podcasts when you want them (off until you switch them on), similar songs from your own library when the queue runs out, and playlists that build themselves from rules. Coming from another player? Your play counts, ratings and playlists come with you.</p>
+          <h3>Radio, podcasts, your server</h3>
+          <p>Internet radio, podcasts and your Jellyfin or Subsonic server, off until you want them. Radio mode keeps the queue going from your own library, and smart playlists build themselves. Coming from another player? Your play counts, ratings and playlists come with you.</p>
         </article>
         <article>
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 21s-7-4.5-7-11a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 6.5-7 11-7 11z"/></svg>
           <h3>Looks after your library</h3>
-          <p>Instant search across a quarter of a million songs, Ctrl+K for anything, Ctrl/Shift+click to act on many songs at once, and a health check that finds missing covers, tags and duplicates, with a fix next to each. Album tags can come from MusicBrainz in one search.</p>
+          <p>Instant search across a quarter of a million songs that forgives a typo, Ctrl+K for anything, Ctrl/Shift+click to act on many songs at once, and a health check that finds missing covers, tags and duplicates, with a fix next to each. Album tags can come from MusicBrainz in one search.</p>
         </article>
         <article>
           <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
@@ -122,30 +122,18 @@
         <figcaption>Switch themes live, no restart needed.</figcaption>
       </figure>
       <div class="gallery">
-        <figure><img src="screenshots/now-playing-vinyl.png" width="1280" height="800" loading="lazy" alt="Now Playing in vinyl mode over the Liquid visualizer"><figcaption>Vinyl mode</figcaption></figure>
-        <figure><img src="screenshots/home.png" width="1280" height="800" loading="lazy" alt="Home: a random album, a listening heatmap and library facts"><figcaption>Home is about your library</figcaption></figure>
         <figure><img src="screenshots/now-playing.png" width="1280" height="800" loading="lazy" alt="Now Playing: a large album cover over an aurora visualizer tinted by the cover's colours"><figcaption>Now Playing</figcaption></figure>
+        <figure><img src="screenshots/home.png" width="1280" height="800" loading="lazy" alt="Home: a random album, a listening heatmap and library facts"><figcaption>Home is about your library</figcaption></figure>
         <figure><img src="screenshots/album.png" width="1280" height="800" loading="lazy" alt="An album page with the cover, liner notes and tracks"><figcaption>Album pages with liner notes</figcaption></figure>
-        <figure><img src="screenshots/album-menu.png" width="1280" height="800" loading="lazy" alt="An album's right-click menu with play, queue, playlist, edit, remove and trash"><figcaption>Right-click any album</figcaption></figure>
-        <figure><img src="screenshots/edit-album.png" width="1280" height="800" loading="lazy" alt="The Edit album dialog with tags and cover"><figcaption>Edit tags and covers</figcaption></figure>
+        <figure><img src="screenshots/composer.png" width="1280" height="800" loading="lazy" alt="A composer's page with a work and its movements in order"><figcaption>Composers and their works</figcaption></figure>
         <figure><img src="screenshots/albums-colour.png" width="1280" height="800" loading="lazy" alt="Album covers ordered round the colour wheel"><figcaption>The colour wall</figcaption></figure>
-        <figure><img src="screenshots/albums-timeline.png" width="1280" height="800" loading="lazy" alt="Albums by decade and year on a timeline"><figcaption>The timeline</figcaption></figure>
         <figure><img src="screenshots/history.png" width="1280" height="800" loading="lazy" alt="The listening history grouped by day with a year-long heatmap"><figcaption>Every listen, by day</figcaption></figure>
-        <figure><img src="screenshots/visualizer.png" width="1280" height="800" loading="lazy" alt="The Nebula visualizer filling the page"><figcaption>Visualizers in your cover's colours</figcaption></figure>
-        <figure><img src="screenshots/health.png" width="1280" height="800" loading="lazy" alt="The library health page with a score and checks"><figcaption>Library health, with fixes</figcaption></figure>
-        <figure><img src="screenshots/palette.png" width="1280" height="800" loading="lazy" alt="The command palette matching pages, commands and music"><figcaption>Ctrl+K for everything</figcaption></figure>
-        <figure><img src="screenshots/queue.png" width="1280" height="800" loading="lazy" alt="The queue panel filled with similar songs by radio mode"><figcaption>Radio mode keeps the queue going</figcaption></figure>
+        <figure><img src="screenshots/similar-artists.png" width="1280" height="800" loading="lazy" alt="Similar artists on an artist page, with Play a mix"><figcaption>Similar artists, if you want them</figcaption></figure>
+        <figure><img src="screenshots/playlist-folders.png" width="1280" height="800" loading="lazy" alt="Playlists grouped in a folder in the sidebar"><figcaption>Playlist folders</figcaption></figure>
+        <figure><img src="screenshots/now-playing-vinyl.png" width="1280" height="800" loading="lazy" alt="Now Playing in vinyl mode over the Liquid visualizer"><figcaption>Vinyl mode</figcaption></figure>
         <figure><img src="screenshots/smart-editor.png" width="1280" height="800" loading="lazy" alt="The smart playlist rule editor with a live preview"><figcaption>Smart playlist rules</figcaption></figure>
-        <figure><img src="screenshots/artist.png" width="1280" height="800" loading="lazy" alt="An artist page with listening facts and most played songs"><figcaption>Artist pages</figcaption></figure>
-        <figure><img src="screenshots/recap.png" width="1280" height="800" loading="lazy" alt="A month of listening summed up: minutes, top artists and songs"><figcaption>Your month, summed up</figcaption></figure>
-        <figure><img src="screenshots/selection.png" width="1280" height="800" loading="lazy" alt="Several songs selected with the selection bar's actions"><figcaption>Act on many songs at once</figcaption></figure>
-        <figure><img src="screenshots/folders.png" width="1280" height="800" loading="lazy" alt="The folder view with artist folders"><figcaption>Your own folders</figcaption></figure>
-        <figure><img src="screenshots/theme-trans-pride.png" width="1280" height="800" loading="lazy" alt="Home in the Trans Pride theme"><figcaption>Pride themes</figcaption></figure>
-        <figure><img src="screenshots/stations.png" width="1280" height="800" loading="lazy" alt="Saved internet radio stations"><figcaption>Internet radio, if you want it</figcaption></figure>
+        <figure><img src="screenshots/search-typo.png" width="1280" height="800" loading="lazy" alt="Search showing results for the closest match to a typo"><figcaption>Search that forgives typos</figcaption></figure>
         <figure><img src="screenshots/podcasts.png" width="1280" height="800" loading="lazy" alt="Podcasts with Up next, Continue listening and new episodes"><figcaption>Podcasts, with Up next</figcaption></figure>
-        <figure><img src="screenshots/podcast.png" width="1280" height="800" loading="lazy" alt="A podcast's page with its episodes and show settings"><figcaption>A show's page</figcaption></figure>
-        <figure><img src="screenshots/visualizer-halo.png" width="1280" height="800" loading="lazy" alt="The Halo visualizer: a glowing ring that swells with the music"><figcaption>The Halo visualizer</figcaption></figure>
-        <figure><img src="screenshots/settings.png" width="1280" height="800" loading="lazy" alt="Settings in searchable sections"><figcaption>Searchable settings</figcaption></figure>
       </div>
     </section>
 

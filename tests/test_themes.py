@@ -277,6 +277,10 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
 
     copies = OfflineCopies(tmp_path / "library.db", tmp_path / "copies")
     context.setContextProperty("serverCopies", copies)
+    from hallucinate.webserver import WebRemote
+
+    web_remote = WebRemote(tmp_path / "data", tmp_path / "thumbs", player, library, user_lib)
+    context.setContextProperty("webRemote", web_remote)
     qml_dir = Path(__file__).parents[1] / "hallucinate" / "qml"
     engine.addImportPath(str(qml_dir))
     qml_warnings = []
@@ -501,6 +505,7 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     user_lib.shutdown()
     similar.shutdown()
     copies.shutdown()
+    web_remote.shutdown()
     library.shutdown()
     qapp.setFont(old_font)
 

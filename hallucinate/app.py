@@ -197,6 +197,9 @@ def main(argv=None) -> int:
     library.changed.connect(server_copies.tidy)  # a server removed, or songs gone from it: their copies go too
     server_copies.resumeNetwork()
     servers.libraryChanged.connect(library.reload)
+    from .webserver import WebRemote
+
+    web_remote = WebRemote(paths.data_dir(), paths.data_dir() / "thumbs", player, library, user_lib)
     shell.settingsChanged.connect(servers.recheck)  # offline mode switched off: try servers again
 
     offline = [net.is_offline()]
@@ -280,6 +283,7 @@ def main(argv=None) -> int:
     ctx.setContextProperty("stations", stations)
     ctx.setContextProperty("servers", servers)
     ctx.setContextProperty("serverCopies", server_copies)
+    ctx.setContextProperty("webRemote", web_remote)
     ctx.setContextProperty("podcasts", podcasts)
     engine.addImportPath(str(HERE / "qml"))
     engine.load(QUrl.fromLocalFile(str(HERE / "qml" / "main.qml")))
@@ -334,6 +338,7 @@ def main(argv=None) -> int:
     crashlog.stop_watching()  # the window is gone: a slow shutdown isn't a freeze
     control.close()
     del engine
+    web_remote.shutdown()  # (before the player: remotes are told it's going)
     discord.shutdown()
     shell.shutdown()
     scrobbler.shutdown()

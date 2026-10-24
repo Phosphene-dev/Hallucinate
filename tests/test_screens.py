@@ -145,6 +145,9 @@ def app_window(qapp, tmp_path, monkeypatch, request):
     from hallucinate.offline import OfflineCopies
 
     objects["serverCopies"] = OfflineCopies(db_path, tmp_path / "copies")
+    from hallucinate.webserver import WebRemote
+
+    objects["webRemote"] = WebRemote(tmp_path / "data", tmp_path / "thumbs", player, library, user_lib)
     engine = QQmlApplicationEngine()
     for key, value in objects.items():
         engine.rootContext().setContextProperty(key, value)

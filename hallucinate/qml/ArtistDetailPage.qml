@@ -83,6 +83,7 @@ Item {
 
     Flickable {
         id: fl
+        objectName: "artistFlick"
         anchors.fill: parent
         contentWidth: width
         contentHeight: col.height + 40
