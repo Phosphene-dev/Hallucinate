@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d0a14">
+  <meta name="color-scheme" content="dark light">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Hallucinate</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="app.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="backdrop" id="backdrop" aria-hidden="true"></div>
+
+  <!-- Pairing: shown until this browser has a key -->
+  <section id="pair" class="pair" hidden>
+    <img src="icon-192.png" width="72" height="72" alt="">
+    <h1>Connect to Hallucinate</h1>
+    <p>On the computer, open <b>Settings → Remote &amp; web</b> and choose <b>Pair a device</b>
+       (or run <code>hallucinate --pair</code> on a headless one). Enter the code it shows.</p>
+    <form id="pairForm" autocomplete="off">
+      <input id="pairCode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="000000" aria-label="Pairing code" required>
+      <input id="pairName" maxlength="60" placeholder="This device's name (e.g. Phone)" aria-label="Device name">
+      <button type="submit" class="primary">Connect</button>
+    </form>
+    <p id="pairError" class="error" role="alert"></p>
+  </section>
+
+  <!-- The app -->
+  <div id="app" class="app" hidden>
+    <nav class="tabs" aria-label="Sections">
+      <div class="brand"><img src="icon-192.png" width="28" height="28" alt=""><span>Hallucinate</span></div>
+      <button data-view="now" class="tab active" aria-label="Now playing"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg><span>Playing</span></button>
+      <button data-view="queue" class="tab" aria-label="Queue"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Queue</span></button>
+      <button data-view="library" class="tab" aria-label="Library"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Library</span></button>
+      <button data-view="search" class="tab" aria-label="Search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Search</span></button>
+    </nav>
+
+    <main id="main">
+      <section id="view-now" class="view now">
+        <div class="now-art"><img id="nowArt" alt=""><div id="nowArtEmpty" class="art-empty">♪</div></div>
+        <div class="now-info">
+          <h1 id="nowTitle">Nothing playing</h1>
+          <p id="nowArtist" class="dim"></p>
+          <p id="nowAlbum" class="dim small"></p>
+        </div>
+        <div class="seek">
+          <span id="posText" class="small dim">0:00</span>
+          <input id="seek" type="range" min="0" max="1000" value="0" aria-label="Position">
+          <span id="durText" class="small dim">0:00</span>
+        </div>
+        <div class="controls">
+          <button id="btnShuffle" class="icon" aria-label="Shuffle"><svg viewBox="0 0 24 24"><path d="M4 7h3l10 10h3M4 17h3l3-3M14 10l3-3h3M17 4l3 3-3 3M17 14l3 3-3 3"/></svg></button>
+          <button id="btnPrev" class="icon" aria-label="Previous"><svg viewBox="0 0 24 24"><path d="M6 5v14M18 5L9 12l9 7z"/></svg></button>
+          <button id="btnPlay" class="play" aria-label="Play"><svg id="icoPlay" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg><svg id="icoPause" viewBox="0 0 24 24" hidden><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button>
+          <button id="btnNext" class="icon" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M18 5v14M6 5l9 7-9 7z"/></svg></button>
+          <button id="btnRepeat" class="icon" aria-label="Repeat"><svg viewBox="0 0 24 24"><path d="M4 11V9a3 3 0 0 1 3-3h12l-3-3M20 13v2a3 3 0 0 1-3 3H5l3 3"/></svg><b id="repeatOne" hidden>1</b></button>
+        </div>
+        <div class="extras">
+          <button id="btnLike" class="icon" aria-label="Like"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></button>
+          <div class="volume">
+            <button id="btnMute" class="icon" aria-label="Mute"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg></button>
+            <input id="volume" type="range" min="0" max="100" value="80" aria-label="Volume">
+          </div>
+          <button id="btnRadio" class="icon" aria-label="Radio mode"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8"/></svg></button>
+          <button id="btnSleep" class="icon" aria-label="Sleep timer"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg></button>
+        </div>
+        <p id="nowError" class="error small"></p>
+      </section>
+
+      <section id="view-queue" class="view" hidden>
+        <header class="view-head"><h2>Queue</h2>
+          <div class="actions"><button id="qShuffle">Shuffle</button><button id="qClear">Clear upcoming</button><button id="qUndo">Undo</button></div>
+        </header>
+        <ol id="queueList" class="list"></ol>
+      </section>
+
+      <section id="view-library" class="view" hidden>
+        <header class="view-head"><h2 id="libTitle">Library</h2>
+          <div class="chips" id="libChips">
+            <button data-lib="albums" class="chip active">Albums</button>
+            <button data-lib="artists" class="chip">Artists</button>
+            <button data-lib="playlists" class="chip">Playlists</button>
+            <button data-lib="genres" class="chip">Genres</button>
+            <button data-lib="liked" class="chip">Liked</button>
+          </div>
+        </header>
+        <div id="libBody"></div>
+      </section>
+
+      <section id="view-detail" class="view" hidden>
+        <header class="view-head detail-head">
+          <button id="detailBack" class="icon" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <img id="detailArt" class="detail-art" alt="" hidden>
+          <div><p id="detailKind" class="kicker"></p><h2 id="detailTitle"></h2><p id="detailSub" class="dim small"></p>
+            <div class="actions"><button id="detailPlay" class="primary">Play</button><button id="detailShuffle">Shuffle</button></div></div>
+        </header>
+        <div id="detailBody"></div>
+      </section>
+
+      <section id="view-search" class="view" hidden>
+        <header class="view-head"><input id="searchField" type="search" placeholder="Songs, albums, artists…" aria-label="Search" autocomplete="off"></header>
+        <p id="searchNote" class="dim small"></p>
+        <div id="searchBody"></div>
+      </section>
+    </main>
+
+    <footer class="mini" id="mini" hidden>
+      <img id="miniArt" alt="">
+      <div class="mini-text"><b id="miniTitle"></b><span id="miniArtist" class="dim small"></span></div>
+      <button id="miniPlay" class="icon" aria-label="Play or pause"><svg viewBox="0 0 24 24"><path id="miniIco" d="M8 5l11 7-11 7z"/></svg></button>
+    </footer>
+    <div id="toast" class="toast" role="status"></div>
+  </div>
+
+  <!-- Song actions -->
+  <dialog id="songMenu">
+    <h3 id="songMenuTitle"></h3>
+    <button data-act="play">Play</button>
+    <button data-act="next">Play next</button>
+    <button data-act="queue">Add to queue</button>
+    <button data-act="like">Like</button>
+    <button data-act="playlist">Add to playlist…</button>
+    <button data-act="album">Go to album</button>
+    <button data-act="artist">Go to artist</button>
+    <button data-act="close" class="dim">Cancel</button>
+  </dialog>
+  <dialog id="pickMenu"><h3 id="pickTitle"></h3><div id="pickBody"></div><button id="pickCancel" class="dim">Cancel</button></dialog>
+</body>
+</html>
