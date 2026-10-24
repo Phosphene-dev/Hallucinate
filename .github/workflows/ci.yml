@@ -77,7 +77,7 @@ jobs:
         run: |
           # The sandboxed builder installs dependencies through the host's flatpak over D-Bus. Mirroring the
           # screenshots into the repo is only for the linter below.
-          dbus-run-session -- flatpak run org.flatpak.Builder --user --force-clean --install-deps-from=flathub \
+          dbus-run-session -- flatpak run org.flatpak.Builder --user --force-clean --disable-rofiles-fuse --install-deps-from=flathub \
             --mirror-screenshots-url=https://dl.flathub.org/media/ --default-branch=stable \
             --repo=flatpak-repo flatpak-build \
             packaging/flatpak/io.github.phosphene_dev.Hallucinate.yml
