@@ -13,11 +13,18 @@ Window {
     maximumHeight: 112
     visible: shell.miniOpen
     title: "Hallucinate — Mini"
-    flags: Qt.Window | Qt.WindowStaysOnTopHint
+    flags: Qt.Window | Qt.WindowStaysOnTopHint | (shell.customTitleBar ? Qt.FramelessWindowHint : 0)
     color: Theme.panel
     onClosing: shell.showMain()
 
-    Rectangle { anchors.fill: parent; color: Theme.panel }
+    Rectangle {
+        anchors.fill: parent
+        color: Theme.panel
+        // with no system frame (the built-in title bar), an edge and a drag anywhere empty to move it by
+        border.width: shell.customTitleBar ? 1 : 0
+        border.color: Theme.stroke
+    }
+    TitleDrag { anchors.fill: parent }
 
     Cover {
         id: art
@@ -60,6 +67,11 @@ Window {
                 text: "LIVE"
                 color: Theme.accent; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); font.weight: Font.Bold
             }
+            VolumeButton {  // a click mutes, the wheel turns it up and down (no room here for a slider above it)
+                objectName: "miniVolume"
+                Layout.alignment: Qt.AlignVCenter
+                iconSize: 16
+            }
             IconButton { icon: "expand"; tip: "Back to full window"; onClicked: shell.showMain() }
         }
         StyledSlider {
@@ -74,4 +86,5 @@ Window {
     }
     Shortcut { sequence: "Space"; onActivated: player.toggle() }
     Shortcut { sequence: "Escape"; onActivated: shell.showMain() }
+    WindowEdges { grip: 5 }
 }

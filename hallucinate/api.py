@@ -104,6 +104,9 @@ class Api:
             "discNo": int(t.get("disc_no") or 0),
             "liked": liked,
             "rating": rating,
+            "explicit": int(t.get("explicit") or 0) == 1,
+            "bitDepth": int(t.get("bit_depth") or 0),  # lossless files only; 1 is DSD
+            "sampleRate": int(t.get("sample_rate") or 0),
         }
 
     @staticmethod
@@ -151,7 +154,8 @@ class Api:
         kind = t.get("kind") or "music"
         return {"id": t.get("id") if kind == "music" else None, "kind": kind, "title": t.get("title") or "",
                 "artist": t.get("artist") or "", "album": t.get("album") or "", "albumKey": t.get("album_key") or "",
-                "duration": float(t.get("duration") or 0)}
+                "duration": float(t.get("duration") or 0), "explicit": int(t.get("explicit") or 0) == 1,
+                "bitDepth": int(t.get("bit_depth") or 0)}
 
     def m_state(self):
         """What's playing and how: the song, position, volume, shuffle, repeat, radio and the sleep timer."""
@@ -162,7 +166,7 @@ class Api:
             song = self._queue_entry(cur)
             if cur.get("kind", "music") == "music" and cur.get("path"):
                 full = self._song(cur)
-                song.update({k: full[k] for k in ("liked", "rating", "year", "genre", "composer")})
+                song.update({k: full[k] for k in ("liked", "rating", "year", "genre", "composer", "sampleRate")})
             if cur.get("stream_title"):
                 song["streamTitle"] = cur.get("stream_title")
         return {

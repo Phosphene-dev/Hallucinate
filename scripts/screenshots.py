@@ -334,6 +334,28 @@ def main():
             def open_album():
                 QMetaObject.invokeMethod(win, "openAlbum", Q_ARG("QVariant", windfall()["album_key"]))
 
+            def mark_badges():
+                # an explicit, hi-res album, so its badges show (the demo files are MP3s)
+                key = windfall()["album_key"]
+                user_lib._reader.submit(lambda db: (db.conn.execute(
+                    "UPDATE tracks SET explicit=(track_no % 2), bit_depth=24, sample_rate=96000 WHERE album_key=?",
+                    (key,)), db.commit())).result()
+                library.reload()
+
+            def open_volume():  # the narrow player bar's volume button opens its slider above it
+                win.resize(700, 800)
+                QTimer.singleShot(400, lambda: child("muteButton").findChild(QObject, "volumePopup").open())
+
+            def close_volume():
+                child("muteButton").findChild(QObject, "volumePopup").close()
+                win.resize(1280, 800)
+
+            def mini_shot(name):
+                def grab():
+                    mini = next(w for w in self.topLevelWindows() if w.title().endswith("Mini"))
+                    mini.grabWindow().save(str(out / f"{name}{suffix}.png"))
+                return grab
+
             def album_menu():
                 a = windfall()
                 menu = child("albumMenu")
@@ -506,7 +528,13 @@ def main():
                      lambda: child("nowPlayingView").setProperty("open", False), deck_options("amber", False), wait,
                      go("home"), wait, shot("theme-hifi-deck"),
                      lambda: managers[0].selectTheme("Beige Box"), wait, wait, shot("theme-beige-box"),
-                     lambda: managers[0].selectTheme(themes[0]), wait]
+                     mark_badges, wait, wait, open_album, wait, wait, shot("badges-beige-box"),
+                     open_volume, wait, shot("volume-popup-beige-box"), close_volume,
+                     lambda: shell.toggleMini(), wait, wait, mini_shot("mini-beige-box"), lambda: shell.showMain(), wait,
+                     lambda: managers[0].selectTheme("Hi-Fi Deck"), wait, wait, open_album, wait, shot("badges-hifi-deck"),
+                     lambda: managers[0].selectTheme(themes[0]), wait, wait, open_album, wait, shot("badges"),
+                     open_volume, wait, shot("volume-popup"), close_volume,
+                     lambda: shell.toggleMini(), wait, wait, mini_shot("mini"), lambda: shell.showMain(), wait]
             def open_composer():
                 QMetaObject.invokeMethod(win, "openComposer", Q_ARG("QVariant", COMPOSER))
 

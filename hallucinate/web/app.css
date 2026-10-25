@@ -118,6 +118,13 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .row .num { width: 26px; text-align: right; color: var(--dim); flex: none; font-size: 13px; }
 .row .text { flex: 1; min-width: 0; display: grid; }
 .row .text * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .text .title { display: flex; align-items: center; gap: 6px; }
+.row .text .title > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.badge { flex: none; display: inline-block; font-size: 10px; font-weight: 700; line-height: 16px; padding: 0 5px;
+  border-radius: 4px; vertical-align: middle; margin-left: 6px; overflow: visible !important; }
+.row .text .badge { margin-left: 0; }
+.badge.explicit { background: var(--dim); color: var(--bg); }
+.badge.hires { border: 1px solid var(--accent); color: var(--accent); border-radius: 8px; }
 .row .time { color: var(--dim); font-size: 13px; flex: none; }
 .row button.icon { width: 36px; height: 36px; flex: none; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 18px; }

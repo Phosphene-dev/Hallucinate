@@ -12,7 +12,7 @@ import sys
 import time
 import unicodedata
 
-from .cli import CommandError, call, clock
+from .cli import CommandError, call, clock, marks
 
 VIEWS = [("queue", "Queue"), ("albums", "Albums"), ("artists", "Artists"), ("playlists", "Playlists"),
          ("liked", "Liked"), ("search", "Search")]
@@ -128,14 +128,14 @@ class Browser:
             self.searching = True
 
     def song_rows(self, songs):
-        return [Row(f"{s['title']} — {s['artist']}", clock(s["duration"], ms=False) if s.get("duration") else "",
+        return [Row(f"{s['title']}{marks(s)} — {s['artist']}", clock(s["duration"], ms=False) if s.get("duration") else "",
                     song_id=s["id"]) for s in songs]
 
     def load_queue(self, keep_cursor=False, follow=False):
         r = self.do("queue")
         if r is None:
             return
-        self.rows = [Row(f"{s['title']} — {s['artist']}" if s["artist"] else s["title"],
+        self.rows = [Row(f"{s['title']}{marks(s)} — {s['artist']}" if s["artist"] else s["title"] + marks(s),
                          clock(s["duration"], ms=False) if s["duration"] else "", song_id=s["id"], queue_index=i,
                          current=i == r["index"]) for i, s in enumerate(r["songs"])]
         if follow and r["index"] >= 0:
@@ -325,7 +325,7 @@ class Screen:
         song = st.get("song") or {}
         # what's playing
         if song:
-            title = song.get("streamTitle") or song.get("title") or "Unknown"
+            title = song.get("streamTitle") or ((song.get("title") or "Unknown") + marks(song))
             self.put(0, 0, ("▶ " if st.get("playing") else "⏸ ") + title, self.attr(1, c.A_BOLD))
             self.put(1, 2, " · ".join(x for x in (song.get("artist"), song.get("album"), str(song.get("year") or "")) if x))
             pos, dur = st.get("position", 0), st.get("duration", 0)
