@@ -20,29 +20,34 @@ Item {
         border.width: 1
         border.color: Theme.stroke
 
-        Visualizer {
-            id: vis
-            objectName: "pageVisualizer"
+        RoundClip {  // the frame's rounded corners, not the visualizer's square ones
             anchors.fill: parent
-            style: shell.visualizerStyle
-            active: page.visible && Window.window && Window.window.active !== false
-        }
-
-        // Legibility for the overlays
-        Rectangle {
-            anchors { left: parent.left; right: parent.right; top: parent.top }
-            height: 120
-            gradient: Gradient {
-                GradientStop { position: 0; color: Qt.rgba(0, 0, 0, 0.45) }
-                GradientStop { position: 1; color: "transparent" }
+            anchors.margins: frame.border.width
+            radius: Math.max(0, frame.radius - frame.border.width)
+            Visualizer {
+                id: vis
+                objectName: "pageVisualizer"
+                anchors.fill: parent
+                style: shell.visualizerStyle
+                active: page.visible && Window.window && Window.window.active !== false
             }
-        }
-        Rectangle {
-            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-            height: 150
-            gradient: Gradient {
-                GradientStop { position: 0; color: "transparent" }
-                GradientStop { position: 1; color: Qt.rgba(0, 0, 0, 0.55) }
+
+            // Legibility for the overlays
+            Rectangle {
+                anchors { left: parent.left; right: parent.right; top: parent.top }
+                height: 120
+                gradient: Gradient {
+                    GradientStop { position: 0; color: Qt.rgba(0, 0, 0, 0.45) }
+                    GradientStop { position: 1; color: "transparent" }
+                }
+            }
+            Rectangle {
+                anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                height: 150
+                gradient: Gradient {
+                    GradientStop { position: 0; color: "transparent" }
+                    GradientStop { position: 1; color: Qt.rgba(0, 0, 0, 0.55) }
+                }
             }
         }
 

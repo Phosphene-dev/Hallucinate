@@ -147,16 +147,25 @@ Item {
                     formatName: player.hasTrack ? player.current.codec || "" : ""
                     bitrate: player.hasTrack ? player.current.bitrate || 0 : 0
                 }
+                QualityBadges {
+                    id: barQuality
+                    objectName: "barQualityBadges"
+                    anchors.verticalCenter: parent.verticalCenter
+                    readonly property real used: visible ? width + 6 : 0
+                    explicitTag: player.hasTrack ? player.current.explicit || 0 : 0
+                    bitDepth: player.hasTrack ? player.current.bit_depth || 0 : 0
+                    sampleRate: player.hasTrack ? player.current.sample_rate || 0 : 0
+                }
                 StarRating {
                     id: infoStars
                     visible: !bar.narrow && !(player.current.kind || "").length
-                             && (infoBadge.visible ? infoBadge.width + 6 : 0) + implicitWidth <= infoRow.room
+                             && (infoBadge.visible ? infoBadge.width + 6 : 0) + barQuality.used + implicitWidth <= infoRow.room
                     anchors.verticalCenter: parent.verticalCenter; path: player.hasTrack ? player.current.path || "" : ""; size: 12
                 }
                 SignalPath {
                     visible: player.hasTrack && stages.length > 0
                              && (infoBadge.visible ? infoBadge.width + 6 : 0) + (infoStars.visible ? infoStars.width + 6 : 0)
-                                + implicitWidth <= infoRow.room
+                                + barQuality.used + implicitWidth <= infoRow.room
                 }
             }
         }

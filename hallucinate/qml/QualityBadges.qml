@@ -1,0 +1,73 @@
+import QtQuick
+import QtQuick.Controls
+import "."
+
+// A song's small badges, beside its title: E for explicit lyrics (from the file's tags), Hi-Res for lossless
+// audio of 24 bits or more (1 bit is DSD), and the bit depth itself when asked for. Each can be switched off
+// in Settings → Appearance; with nothing to show it takes no room.
+Row {
+    id: badges
+    property int explicitTag: 0      // 1 explicit, 2 clean, 0 not known
+    property int bitDepth: 0
+    property int sampleRate: 0
+    property bool light: false       // white, over Now Playing's dark backdrop
+    property real size: 16
+    readonly property bool showExplicit: Rows.explicitBadges && explicitTag === 1
+    readonly property bool hiRes: bitDepth >= 24 || bitDepth === 1
+    readonly property bool showHiRes: Rows.hiResBadges && hiRes
+    readonly property bool showDepth: Rows.bitDepth && bitDepth > 0
+    readonly property string depthText: bitDepth === 1 ? "DSD"
+        : bitDepth + "-bit" + (sampleRate > 0 ? " · " + (sampleRate / 1000).toFixed(sampleRate % 1000 ? 1 : 0) + " kHz" : "")
+    readonly property color ink: light ? Qt.rgba(1, 1, 1, 0.85) : Theme.textDim
+    spacing: 4
+    visible: showExplicit || showHiRes || showDepth
+
+    Rectangle {
+        objectName: "explicitBadge"
+        visible: badges.showExplicit
+        anchors.verticalCenter: parent.verticalCenter
+        width: badges.size; height: badges.size
+        radius: Theme.round(3)
+        color: badges.ink
+        Text {
+            textFormat: Text.PlainText
+            anchors.centerIn: parent
+            text: "E"
+            color: badges.light ? "black" : Theme.bg
+            font.family: Theme.fontFamily
+            font.pixelSize: Math.round(badges.size * 0.66)
+            font.weight: Font.Bold
+        }
+        Accessible.role: Accessible.StaticText
+        Accessible.name: "Explicit"
+        HoverHandler { id: eHover }
+        ToolTip.visible: eHover.hovered
+        ToolTip.text: "Explicit"
+    }
+    Rectangle {
+        objectName: "hiResBadge"
+        visible: badges.showHiRes || badges.showDepth
+        anchors.verticalCenter: parent.verticalCenter
+        width: depthLabel.implicitWidth + 10; height: badges.size
+        radius: Theme.round(height / 2)
+        color: badges.showHiRes ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, badges.light ? 0.35 : 0.16)
+                                : "transparent"
+        border.width: 1
+        border.color: badges.showHiRes ? Theme.accent : (badges.light ? Qt.rgba(1, 1, 1, 0.4) : Theme.border)
+        Text {
+            textFormat: Text.PlainText
+            id: depthLabel
+            anchors.centerIn: parent
+            text: badges.showHiRes ? (badges.showDepth ? "Hi-Res " + badges.depthText : "Hi-Res") : badges.depthText
+            color: badges.showHiRes ? (badges.light ? "white" : Theme.accent) : badges.ink
+            font.family: Theme.fontFamily
+            font.pixelSize: Math.round(badges.size * 0.6)
+            font.weight: Font.DemiBold
+        }
+        Accessible.role: Accessible.StaticText
+        Accessible.name: (badges.hiRes ? "Hi-Res audio, " : "") + (badges.bitDepth === 1 ? "DSD" : badges.bitDepth + "-bit")
+        HoverHandler { id: dHover }
+        ToolTip.visible: dHover.hovered
+        ToolTip.text: (badges.hiRes ? "Hi-Res: " : "") + (badges.bitDepth === 1 ? "DSD (1-bit)" : badges.depthText)
+    }
+}

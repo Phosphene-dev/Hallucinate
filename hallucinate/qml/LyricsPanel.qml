@@ -14,7 +14,7 @@ Rectangle {
     Text {
         textFormat: Text.PlainText
         id: head
-        x: 20; y: 16
+        x: 24; y: 18
         text: "Lyrics"
         color: Theme.text
         font.family: Theme.displayFamily
@@ -23,7 +23,7 @@ Rectangle {
     }
     Text {
         textFormat: Text.PlainText
-        anchors { right: parent.right; rightMargin: 20; baseline: head.baseline }
+        anchors { right: parent.right; rightMargin: 24; baseline: head.baseline }
         visible: lyricsCtl.source.length > 0
         text: lyricsCtl.source
         color: Theme.textDim
@@ -60,13 +60,18 @@ Rectangle {
 
     LyricsTiming {
         id: timingRow
-        anchors { right: parent.right; rightMargin: 12; bottom: parent.bottom; bottomMargin: 8 }
+        anchors { right: parent.right; rightMargin: 16; bottom: parent.bottom; bottomMargin: 12 }
     }
 
     ListView {
         id: synced
-        anchors { top: head.bottom; topMargin: 12; left: parent.left; right: parent.right; bottom: parent.bottom
-                  bottomMargin: timingRow.visible ? timingRow.height + 10 : 0 }
+        // Kept clear of the panel's rounded corners: lines scroll in under a margin, not against the edge
+        anchors { top: head.bottom; topMargin: 10; left: parent.left; right: parent.right; bottom: parent.bottom
+                  bottomMargin: timingRow.visible ? timingRow.height + 16 : 14 }
+        topMargin: 8
+        bottomMargin: 16
+        leftMargin: 24  // a ListView puts its rows at x 0 whatever they say: the margin goes here
+        rightMargin: 24
         visible: lyricsCtl.status === "found" && lyricsCtl.synced
         clip: true
         model: lyricsCtl.lines
@@ -82,8 +87,7 @@ Rectangle {
             textFormat: Text.PlainText
             required property var modelData
             required property int index
-            width: synced.width - 40
-            x: 20
+            width: synced.width - synced.leftMargin - synced.rightMargin
             text: modelData.text.length ? modelData.text : "♪"
             wrapMode: Text.WordWrap
             color: index === lyricsCtl.currentLine ? Theme.text : Theme.textDim
@@ -95,17 +99,19 @@ Rectangle {
         }
     }
     Flickable {
-        anchors { top: head.bottom; topMargin: 12; left: parent.left; right: parent.right; bottom: parent.bottom }
+        anchors { top: head.bottom; topMargin: 10; left: parent.left; right: parent.right; bottom: parent.bottom
+                  bottomMargin: 14 }
         visible: lyricsCtl.status === "found" && !lyricsCtl.synced
         clip: true
+        topMargin: 8
         contentHeight: plainText.implicitHeight + 24
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar {}
         Text {
             textFormat: Text.PlainText
             id: plainText
-            x: 20
-            width: parent.width - 40
+            x: 26
+            width: parent.width - 52
             text: lyricsCtl.plain
             wrapMode: Text.WordWrap
             color: Theme.text

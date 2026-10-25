@@ -104,6 +104,9 @@ Item {
                         width: parent.width
                         path: model.path
                         audioFormat: model.codec
+                        bitDepth: model.bit_depth || 0
+                        sampleRate: model.sample_rate || 0
+                        explicitTag: model.explicit || 0
                         audioBitrate: model.bitrate
                         rowIndex: index
                         number: index + 1
@@ -252,6 +255,9 @@ Item {
                         width: parent.width
                         path: model.path
                         audioFormat: model.codec
+                        bitDepth: model.bit_depth || 0
+                        sampleRate: model.sample_rate || 0
+                        explicitTag: model.explicit || 0
                         audioBitrate: model.bitrate
                         rowIndex: index
                         number: index + 1

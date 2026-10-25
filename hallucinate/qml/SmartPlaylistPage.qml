@@ -85,6 +85,9 @@ Item {
             selectionSource: ListView.view ? ListView.view.model : null
             path: model.path
             audioFormat: model.codec
+            bitDepth: model.bit_depth || 0
+            sampleRate: model.sample_rate || 0
+            explicitTag: model.explicit || 0
             audioBitrate: model.bitrate
             rowIndex: index
             context: "smart"

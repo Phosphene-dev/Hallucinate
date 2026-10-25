@@ -68,7 +68,8 @@ def track_row(server_id, song, kind="subsonic"):
         "album_key": tags.album_key(key_base, song["album"], ""),
         "track_no": song["track_no"], "disc_no": song["disc_no"], "year": song["year"], "genre": song["genre"],
         "duration": song["duration"], "fmt": fmt, "codec": fmt, "bitrate": song["bitrate"],
-        "sample_rate": song["sample_rate"], "art": None, "rg_track": song["rg_track"],
+        "sample_rate": song["sample_rate"], "bit_depth": song.get("bit_depth", 0),
+        "explicit": song.get("explicit", 0), "art": None, "rg_track": song["rg_track"],
         "rg_album": song["rg_album"], "rg_peak": song["rg_peak"], "file": None, "rating": song["rating"],
     }
 

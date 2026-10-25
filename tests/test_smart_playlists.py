@@ -260,3 +260,15 @@ def test_counting_rules_does_not_block(qapp, lib):
         assert sorted(got) == sorted([(liked, 3), ("not json", -1)])
     finally:
         ul.shutdown()
+
+
+def test_bit_depth_and_explicit_rules(lib):
+    lib.conn.execute("UPDATE tracks SET bit_depth=24 WHERE path IN ('/m/blue', '/m/modern')")
+    lib.conn.execute("UPDATE tracks SET bit_depth=16 WHERE path='/m/cafe'")
+    lib.conn.execute("UPDATE tracks SET explicit=1 WHERE path='/m/metal'")
+    lib.conn.execute("UPDATE tracks SET explicit=2 WHERE path='/m/cafe'")  # marked clean: not explicit
+    hi_res = {"rules": [rule("bit_depth", "ge", 24)], "sort": "title"}
+    assert set(paths(R.matching_tracks(lib, hi_res, NOW))) == {"/m/blue", "/m/modern"}
+    # a lossy song has no bit depth: "under 24" doesn't take it for a 0-bit one
+    assert paths(R.matching_tracks(lib, {"rules": [rule("bit_depth", "lt", 24)]}, NOW)) == ["/m/cafe"]
+    assert paths(R.matching_tracks(lib, {"rules": [rule("explicit", "is_true")]}, NOW)) == ["/m/metal"]

@@ -270,6 +270,9 @@ Item {
                         selectionSource: page.tracksModel
                         path: model.path
                         audioFormat: model.codec
+                        bitDepth: model.bit_depth || 0
+                        sampleRate: model.sample_rate || 0
+                        explicitTag: model.explicit || 0
                         audioBitrate: model.bitrate
                         rowIndex: index
                         width: col.width

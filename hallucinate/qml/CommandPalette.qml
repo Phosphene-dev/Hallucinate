@@ -227,14 +227,14 @@ Popup {
             width: parent.width
             height: palette.height - field.height
             topMargin: 8; bottomMargin: 8
+            leftMargin: 8; rightMargin: 8  // a ListView ignores its rows' own x
             clip: true
             model: palette.results
             boundsBehavior: Flickable.StopAtBounds
             delegate: Rectangle {
                 required property var modelData
                 required property int index
-                x: 8
-                width: list.width - 16
+                width: list.width - list.leftMargin - list.rightMargin
                 height: 50
                 radius: Theme.round(12)
                 color: index === palette.current ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.18) : "transparent"

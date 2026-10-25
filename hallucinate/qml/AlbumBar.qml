@@ -110,7 +110,7 @@ Rectangle {
             bar.done(bar.what(k.length) + " added to “" + name + "”")
         }
         TextField {
-            id: plName; width: 280; placeholderText: "Playlist name"; selectByMouse: true
+            id: plName; implicitWidth: 280; placeholderText: "Playlist name"; selectByMouse: true
             onAccepted: if (text.trim().length) newPl.accept()  // no nameless playlists
             onTextChanged: { var b = newPl.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
             onVisibleChanged: if (visible) { var b = newPl.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }

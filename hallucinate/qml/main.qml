@@ -699,10 +699,11 @@ ApplicationWindow {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: shell.canMinimize && shell.trayAvailable && shell.trayEnabled
-                      ? "Quit, or keep the music going with the window minimized or tucked away in the tray?"
-                      : shell.canMinimize ? "Quit, or keep the music going with the window minimized?"
-                                          : "Quit, or keep the music going with the window tucked away in the tray?"
+                text: (shell.canMinimize ? "Quit, minimize, or keep the music going in the background?"
+                                         : "Quit, or keep the music going in the background?")
+                      + (shell.trayAvailable && shell.trayEnabled
+                         ? " In the background it waits in the tray."
+                         : " To bring the window back, open Hallucinate again.")
                 color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             StyledCheck { id: rememberClose; text: "Remember my choice"; checked: false }
@@ -713,8 +714,7 @@ ApplicationWindow {
                 PillButton { objectName: "closeMinimize"; visible: shell.canMinimize; text: "Minimize"; onClicked: closeDlg.choose("minimize") }
                 PillButton {
                     objectName: "closeTray"
-                    visible: shell.trayAvailable && shell.trayEnabled
-                    text: "Keep playing in the tray"
+                    text: "Keep playing in the background"
                     onClicked: closeDlg.choose("tray")
                 }
                 PillButton { text: "Cancel"; onClicked: closeDlg.close() }
@@ -724,6 +724,7 @@ ApplicationWindow {
     }
     Dialog {
         id: createDlg
+        objectName: "createPlaylistDialog"
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true
@@ -732,7 +733,7 @@ ApplicationWindow {
         onOpened: { createField.text = ""; createField.forceActiveFocus() }
         onAccepted: if (createField.text.trim().length) window.openPlaylist(userLib.createPlaylist(createField.text.trim()), createField.text.trim())
         TextField {
-            id: createField; width: 280; placeholderText: "Playlist name"; selectByMouse: true
+            id: createField; objectName: "createPlaylistName"; implicitWidth: 280; placeholderText: "Playlist name"; selectByMouse: true
             onAccepted: if (text.trim().length) createDlg.accept()  // no nameless playlists
             onTextChanged: { var b = createDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
             onVisibleChanged: if (visible) { var b = createDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }

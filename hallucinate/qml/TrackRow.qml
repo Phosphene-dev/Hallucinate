@@ -19,6 +19,9 @@ Rectangle {
     property int rowIndex: -1
     property string audioFormat: ""
     property int audioBitrate: 0
+    property int bitDepth: 0
+    property int sampleRate: 0
+    property int explicitTag: 0
     readonly property bool liked: path.length > 0 && Rows.liked[path] === true
     // The list this row belongs to (its model, or an array of tracks): Ctrl/Shift+click select within it
     property var selectionSource: null
@@ -51,7 +54,8 @@ Rectangle {
     Keys.onEnterPressed: row.activated()
     Accessible.role: Accessible.ListItem
     Accessible.name: title + (artist.length ? ", " + artist : "") +
-                     (Rows.showTrackInfo && audioFormat.length ? ", " + audioFormat + " audio" : "")
+                     (Rows.showTrackInfo && audioFormat.length ? ", " + audioFormat + " audio" : "") +
+                     (quality.showExplicit ? ", explicit" : "") + (quality.showHiRes ? ", Hi-Res" : "")
     Accessible.onPressAction: row.activated()
     Accessible.selected: row.selected
     Rectangle { anchors.fill: parent; anchors.margins: -2; radius: Theme.radiusSmall; color: "transparent"; border.width: 2; border.color: Theme.accent; visible: row.activeFocus }
@@ -111,14 +115,26 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         width: Math.max(80, (row.showAlbum ? (row.width - x - 260) * 0.55 : row.width - x - 190))
         spacing: 2
-        Text {
-            textFormat: Text.PlainText
+        Row {
             width: parent.width
-            text: row.title
-            color: row.current ? Theme.accent : Theme.text
-            font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSize(14)
-            elide: Text.ElideRight
+            spacing: 6
+            Text {
+                textFormat: Text.PlainText
+                width: Math.min(implicitWidth, parent.width - (quality.visible ? quality.width + parent.spacing : 0))
+                text: row.title
+                color: row.current ? Theme.accent : Theme.text
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.fontSize(14)
+                elide: Text.ElideRight
+            }
+            QualityBadges {
+                id: quality
+                anchors.verticalCenter: parent.verticalCenter
+                explicitTag: row.explicitTag
+                bitDepth: row.bitDepth
+                sampleRate: row.sampleRate
+                size: Math.round(Theme.fontSize(14))
+            }
         }
         Row {
             width: parent.width

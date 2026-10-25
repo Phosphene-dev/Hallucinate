@@ -120,6 +120,8 @@ def song_from(item):
         "suffix": _text(item.get("suffix"), 16).lower(),
         "bitrate": _int(item.get("bitRate"), 0, 100_000),
         "sample_rate": _int(item.get("samplingRate"), 0, 10**6),
+        "bit_depth": _int(item.get("bitDepth"), 0, 64),  # OpenSubsonic servers say; others leave it out
+        "explicit": {"explicit": 1, "clean": 2}.get(_text(item.get("explicitStatus"), 16).lower(), 0),
         "size": _int(item.get("size")),
         "cover": _text(item.get("coverArt"), 200),
         "rating": _int(item.get("userRating"), 0, 5),

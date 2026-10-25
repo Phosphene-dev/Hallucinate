@@ -425,6 +425,9 @@ Item {
                             durText: modelData.durText || ""
                             artUrl: modelData.artUrl || ""
                             audioFormat: modelData.codec || modelData.fmt || ""
+                            bitDepth: modelData.bit_depth || 0
+                            sampleRate: modelData.sample_rate || 0
+                            explicitTag: modelData.explicit || 0
                             audioBitrate: modelData.bitrate || 0
                             onActivated: userLib.playRecapSong(index)
                         }

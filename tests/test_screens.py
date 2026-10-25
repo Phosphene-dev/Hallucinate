@@ -47,7 +47,9 @@ def seed(tmp_path):
                 "path": path, "mtime": 0, "size": 1, "title": f"Song {n}{i}", "artist": artist, "album_artist": artist,
                 "aa_tag": 1, "album": album, "album_key": f"k{n}", "track_no": i + 1, "disc_no": 0, "year": 2000 + n,
                 "genre": "Dream Pop", "duration": 180.0 + i, "fmt": "FLAC", "codec": "FLAC", "bitrate": 900_000,
-                "sample_rate": 44100,
+                "sample_rate": 96000 if (n, i) == (0, 0) else 44100,
+                # one hi-res, explicit song (its badges are drawn and can be switched off)
+                "bit_depth": 24 if (n, i) == (0, 0) else 16, "explicit": 1 if (n, i) == (0, 0) else 0,
             })
             for _ in range(i + 1):
                 db.record_play(path)
@@ -1486,3 +1488,48 @@ def test_songs_sort_by_genre(qapp, app_window):
         assert [r["artist"].casefold() for r in rows] == sorted(r["artist"].casefold() for r in rows)
     finally:
         library.setSongSort("title")
+
+
+def test_the_new_playlist_name_fits_its_dialog(qapp, app_window):
+    """The name field was 280 wide in a dialog sized from its (narrower) implicit width, so it stuck out."""
+    window, _objects, _warnings = app_window
+    dialog = window.findChild(QObject, "createPlaylistDialog")
+    QMetaObject.invokeMethod(dialog, "open")
+    for _ in range(5):
+        qapp.processEvents()
+    field = window.findChild(QObject, "createPlaylistName")
+    assert field.property("width") >= 200
+    assert field.property("width") <= dialog.property("availableWidth") + 0.5
+    QMetaObject.invokeMethod(dialog, "close")
+
+
+def test_explicit_and_hi_res_badges_show_and_switch_off(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    QMetaObject.invokeMethod(window, "openAlbum", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "k0"))
+
+    def shown(name):
+        stack, found = [window.contentItem()], []
+        while stack:
+            item = stack.pop()
+            if item.objectName() == name and item.isVisible():
+                found.append(item)
+            stack.extend(item.childItems())
+        return found
+
+    try:
+        # the one 24-bit explicit song: an E and a Hi-Res badge on its row, and in the player bar while it plays
+        # the one 24-bit explicit song: an E and a Hi-Res badge on its row
+        assert wait_for(lambda: len(shown("explicitBadge")) == 1 and len(shown("hiResBadge")) == 1)
+        shell.setSongBadge("bitDepth", True)  # every song's depth: the other three 16-bit songs say so too
+        assert wait_for(lambda: len(shown("hiResBadge")) == 4)
+        shell.setSongBadge("bitDepth", False)
+        shell.setSongBadge("explicitBadges", False)
+        shell.setSongBadge("hiResBadges", False)
+        assert wait_for(lambda: not shown("explicitBadge") and not shown("hiResBadge"))
+        assert not warnings, warnings[:3]
+    finally:
+        shell.setSongBadge("explicitBadges", True)
+        shell.setSongBadge("hiResBadges", True)

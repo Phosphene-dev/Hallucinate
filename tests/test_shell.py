@@ -88,8 +88,16 @@ def test_close_choices(make_shell, monkeypatch):
     shell.setCloseAction("minimize")
     assert shell.handleClose() == "kept" and win.calls[-1] == "minimize" and not quits
 
+    told = []
+    monkeypatch.setattr(DesktopShell, "notify", lambda self, title, body: told.append(title))
     shell.setCloseAction("tray")
-    assert shell.handleClose() == "quit" and quits  # no tray icon offscreen: quitting beats vanishing
+    assert shell.handleClose() == "kept" and not win.visible and not quits  # no tray icon: in the background
+    assert told == ["Hallucinate is still playing"]  # and says how to get it back, once
+    shell.showMain()
+    assert win.visible
+    shell.handleClose()
+    assert len(told) == 1
+    shell.showMain()
     monkeypatch.setattr(DesktopShell, "_tray_visible", lambda self: True)
     assert shell.handleClose() == "kept" and not win.visible
 
@@ -113,23 +121,37 @@ def test_close_choice_persists_and_old_tray_setting_carries_over(make_shell):
 def test_desktop_notifications_are_opt_in_and_skip_initial_track(make_shell, monkeypatch):
     shell, _, player = make_shell()
     shown = []
-    monkeypatch.setattr(
-        DesktopShell, "_send_notification", lambda self, title, artist: shown.append((title, artist))
-    )
+    monkeypatch.setattr(DesktopShell, "_send_notification",
+                        lambda self, title, body, key="", image="": shown.append((title, body, key, image)))
     shell._player = type(
         "Playback",
         (),
-        {"hasTrack": True, "current": {"title": "New song", "artist": "New artist"}},
+        {"hasTrack": True, "current": {"title": "New song", "artist": "New artist", "album": "Record",
+                                        "artUrl": "file:///covers/a.jpg"}},
     )()
-
+    shell.setDesktopNotifications(True)
+    shell._on_track_changed()
+    assert shown == []  # just started: the song brought back from last time
+    shell._started -= 10
+    shell.setDesktopNotifications(False)
     shell._on_track_changed()
     assert shown == []
     shell.setDesktopNotifications(True)
     shell._on_track_changed()
-    assert shown == [("New song", "New artist")]
-    shell.setDesktopNotifications(False)
-    shell._on_track_changed()
-    assert len(shown) == 1
+    assert shown == [("New song", "New artist — Record", "track", "file:///covers/a.jpg")]
+
+
+def test_notifications_go_out_with_the_types_the_spec_asks_for():
+    """QtDBus sent the id as int32 and the lists untyped, which strict daemons (mako, dunst, swaync) refuse."""
+    from jeepney import new_method_call
+
+    from hallucinate import notifications
+
+    args = notifications.notify_args("<b>Song</b>", "A & B <i>", replaces=7, image="file:///c.jpg")
+    assert args[1] == 7 and args[3] == "<b>Song</b>" and args[4] == "A &amp; B &lt;i&gt;"
+    assert args[6] == {"image-path": ("s", "file:///c.jpg")}
+    msg = new_method_call(notifications.NOTIFICATIONS, "Notify", "susssasa{sv}i", args)
+    assert b"susssasa{sv}i" in msg.serialise(serial=1)  # it serializes with the spec's signature
 
 
 def test_sidebar_and_ambient_motion_preferences_persist(make_shell):
@@ -187,10 +209,10 @@ def test_no_minimize_on_tiling_window_managers(make_shell, monkeypatch):
     shell, win, _player = make_shell()
     quits = []
     shell._app = fake_app(quits)
-    assert shell.handleClose() == "quit" and quits  # no minimize, no tray: nothing to ask about
-    monkeypatch.setattr(DesktopShell, "_tray_visible", lambda self: True)
-    assert shell.handleClose() == "ask"
-    assert shell.closeWith("minimize") == "kept" and not win.visible  # a remembered minimize falls back to the tray
+    monkeypatch.setattr(DesktopShell, "notify", lambda self, title, body: None)
+    # No minimize and no tray (Hyprland without a tray in the bar): it still asks, and can keep playing hidden
+    assert shell.handleClose() == "ask" and not quits
+    assert shell.closeWith("minimize") == "kept" and not win.visible  # a remembered minimize: the background
 
 
 def test_features_are_remembered_and_new_kinds_start_off(make_shell):

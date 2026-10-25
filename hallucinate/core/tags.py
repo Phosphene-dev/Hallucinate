@@ -116,6 +116,49 @@ def _bpm(text: str) -> int:
     return bpm if 20 <= bpm <= 400 else 0
 
 
+# Formats whose bit depth means something (lossy formats have none: they're decoded to whatever is asked for)
+_DEPTH_CODECS = {"FLAC", "ALAC", "WAV", "AIFF", "WAVPACK", "APE", "TTA", "DSD"}
+
+
+def bit_depth(f, codec: str) -> int:
+    """Bits per sample of a lossless file (16, 24, 32; 1 for DSD), 0 for lossy formats or when not known."""
+    if codec not in _DEPTH_CODECS:
+        return 0
+    bits = int(getattr(getattr(f, "info", None), "bits_per_sample", 0) or 0)
+    return bits if 1 <= bits <= 64 else 0
+
+
+# Tags that mark explicit lyrics: iTunes' advisory (MP4 "rtng" or ITUNESADVISORY: 1 or 4 explicit, 2 clean),
+# and the EXPLICIT/ADVISORY flags written by store downloads and taggers
+_ADVISORY_KEYS = {"rtng", "itunesadvisory", "explicit", "advisory", "parental_advisory", "parentaladvisory",
+                  "contentrating", "content rating"}
+
+
+def read_explicit(tags) -> int:
+    """1 when the tags mark the song explicit, 2 when they mark it clean (an edited version), else 0."""
+    if tags is None:
+        return 0
+    try:
+        items = list(tags.items()) if hasattr(tags, "items") else []
+    except Exception:
+        return 0
+    for key, value in items:
+        k = str(key).lower().removeprefix("txxx:").removeprefix("----:com.apple.itunes:")
+        if k not in _ADVISORY_KEYS:
+            continue
+        try:
+            raw = value[0] if isinstance(value, list) and value and isinstance(value[0], int) else None
+            text = str(raw) if raw is not None else (_strs(value) or [""])[0]
+        except Exception:  # noqa: BLE001 - an odd value: no answer from this tag
+            continue
+        text = text.strip().lower()
+        if text in ("1", "4", "explicit", "yes", "true", "e"):
+            return 1
+        if text in ("2", "clean", "edited", "c"):
+            return 2
+    return 0
+
+
 def _get_all(tags, field: str) -> str:
     """Every value of a field that may hold several (two composers), as one text: "Lennon; McCartney"."""
     if tags is None:
@@ -459,6 +502,7 @@ def _read_track(path, art_known):
         "movement_no": _num(_get(tags, "movement_no")),
         "bpm": _bpm(_get(tags, "bpm")),
         "music_key": music_key(_get(tags, "music_key")),
+        "explicit": read_explicit(tags),
         "duration": float(getattr(info, "length", 0) or 0),
         "fmt": os.path.splitext(path)[1].lstrip(".").upper(),
         "codec": audio_codec(f, ext),
@@ -468,6 +512,7 @@ def _read_track(path, art_known):
         "art": None,
         "_art": None,
     }
+    t["bit_depth"] = bit_depth(f, t["codec"])
     t["rg_track"], t["rg_album"], t["rg_peak"] = read_replaygain(tags)
     t["rating"] = read_rating(tags)
     t["_cuesheet"] = embedded_cuesheet(f, os.path.basename(path))

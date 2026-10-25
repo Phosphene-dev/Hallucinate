@@ -108,3 +108,49 @@ def test_embedded_art_in_flac_and_m4a(tmp_path):
                         str(out)], check=True)
         t = read_track(str(out))
         assert t and t["_art"], ext
+
+
+@needs_ffmpeg
+def test_bit_depth_of_lossless_files_only(tmp_path):
+    """The hi-res badge reads the bit depth: 24-bit FLAC and WAV say so, 16-bit says 16, lossy formats nothing."""
+    import subprocess
+
+    from audio import FFMPEG as ff
+
+    def make(name, *codec):
+        p = tmp_path / name
+        subprocess.run([ff, "-y", "-loglevel", "error", "-f", "lavfi", "-i", "sine=duration=1", "-ar", "96000",
+                        *codec, str(p)], check=True)
+        return read_track(str(p))
+
+    assert make("hi.flac", "-sample_fmt", "s32", "-bits_per_raw_sample", "24")["bit_depth"] == 24
+    assert make("hi.wav", "-c:a", "pcm_s24le")["bit_depth"] == 24
+    assert make("cd.flac", "-sample_fmt", "s16")["bit_depth"] == 16
+    assert make("a.mp3", "-ar", "44100")["bit_depth"] == 0
+
+
+def test_explicit_advisory_in_each_kind_of_tag(tmp_path):
+    from mutagen._vorbis import VCommentDict
+    from mutagen.id3 import ID3, TXXX
+    from mutagen.mp4 import MP4Tags
+
+    from hallucinate.core.tags import read_explicit
+
+    mp4 = MP4Tags()
+    mp4["rtng"] = [1]
+    assert read_explicit(mp4) == 1
+    mp4["rtng"] = [2]
+    assert read_explicit(mp4) == 2
+    mp4 = MP4Tags()
+    mp4["----:com.apple.iTunes:ITUNESADVISORY"] = [b"1"]
+    assert read_explicit(mp4) == 1
+    id3 = ID3()
+    id3.add(TXXX(encoding=3, desc="ITUNESADVISORY", text="1"))
+    assert read_explicit(id3) == 1
+    id3 = ID3()
+    id3.add(TXXX(encoding=3, desc="EXPLICIT", text="true"))
+    assert read_explicit(id3) == 1
+    vc = VCommentDict()  # FLAC, Ogg and Opus comments
+    vc["ItunesAdvisory"] = "2"
+    assert read_explicit(vc) == 2
+    assert read_explicit(VCommentDict()) == 0 and read_explicit(None) == 0

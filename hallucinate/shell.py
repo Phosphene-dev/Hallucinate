@@ -2,6 +2,7 @@
 import os
 import sqlite3
 import sys
+import time
 
 from PySide6.QtCore import Property, QObject, QSettings, Signal, Slot
 from PySide6.QtGui import QAction, QIcon
@@ -34,6 +35,8 @@ def sidebar_order(saved):
             order.insert(order.index(before[-1]) + 1 if before else 0, page)
     return order
 
+
+SONG_BADGES = {"explicitBadges": True, "hiResBadges": True, "bitDepth": False}
 
 # Tiling compositors and window managers that have no minimize: offering it there would do nothing.
 NO_MINIMIZE = ("hyprland", "sway", "i3", "niri", "river", "dwm", "bspwm", "qtile", "awesome")
@@ -73,6 +76,8 @@ class DesktopShell(QObject):
         self._all_genres_albums = self._settings.value("ui/allGenresAlbums", True, bool)
         self._all_genres_songs = self._settings.value("ui/allGenresSongs", False, bool)
         self._reduce_motion = self._settings.value("ui/reduceMotion", False, bool)
+        # Badges on songs: E for explicit lyrics, Hi-Res for 24-bit and up, and (off to begin with) every bit depth
+        self._badges = {name: self._settings.value(f"ui/{name}", on, bool) for name, on in SONG_BADGES.items()}
         self._visualizer_style = str(self._settings.value("ui/visualizerStyle", "liquid"))
         self._now_playing_vinyl = self._settings.value("ui/nowPlayingVinyl", False, bool)
         self._features = {name: self._settings.value(f"features/{name}", on, bool) for name, on in FEATURES.items()}
@@ -81,7 +86,11 @@ class DesktopShell(QObject):
         self._tray = None
         self._menu = None
         self._icon = icon
-        self._seen_track = False
+        self._started = time.monotonic()
+        self._told_background = False
+        from .notifications import Notifier
+
+        self._notifier = Notifier()
         from .updates import UpdateChecker
 
         self._updates = UpdateChecker(self)
@@ -312,6 +321,18 @@ class DesktopShell(QObject):
         self._settings.setValue("ui/reduceMotion", self._reduce_motion)
         self.settingsChanged.emit()
 
+    @Property("QVariantMap", notify=settingsChanged)
+    def songBadges(self):
+        """Which badges song rows and the player show: explicitBadges, hiResBadges, bitDepth."""
+        return dict(self._badges)
+
+    @Slot(str, bool)
+    def setSongBadge(self, name, on):
+        if name in SONG_BADGES:
+            self._badges[name] = bool(on)
+            self._settings.setValue(f"ui/{name}", bool(on))
+            self.settingsChanged.emit()
+
     @Property(str, notify=settingsChanged)
     def visualizerStyle(self):
         """The visualizer look: one of VISUALIZER_STYLES."""
@@ -433,14 +454,15 @@ class DesktopShell(QObject):
         self.settingsChanged.emit()
 
     def _on_track_changed(self):
-        if not self._seen_track:
-            self._seen_track = True
-            return
+        if time.monotonic() - self._started < 3:
+            return  # the song brought back from last time, not a change
         if not self._desktop_notifications or not self._player.hasTrack:
             return
         track = self._player.current
-        title, artist = track.get("title", "Unknown track"), track.get("artist", "")
-        self._send_notification(title, artist)
+        title = track.get("title") or "Unknown track"
+        body = " — ".join(x for x in (track.get("artist", ""), track.get("album", "")) if x)
+        art = str(track.get("artUrl") or "")
+        self._send_notification(title, body, key="track", image=art if art.startswith("file://") else "")
 
     # --- backup ---------------------------------------------------------------------------------------------
     def setBackupSources(self, library_db, streams_db, after_restore):
@@ -517,28 +539,9 @@ class DesktopShell(QObject):
         """A desktop notification (new podcast episodes); shown whatever the now-playing setting says."""
         self._send_notification(title, body)
 
-    def _send_notification(self, title, artist):
-        if sys.platform.startswith("linux"):
-            import html
-
-            # Most notification daemons read the body as markup: a song's tags mustn't format it, add links
-            # or have it fetch images
-            artist = html.escape(artist or "", quote=False)
-            from PySide6.QtDBus import QDBusConnection, QDBusMessage
-
-            bus = QDBusConnection.sessionBus()
-            if bus.isConnected():
-                message = QDBusMessage.createMethodCall(
-                    "org.freedesktop.Notifications",
-                    "/org/freedesktop/Notifications",
-                    "org.freedesktop.Notifications",
-                    "Notify",
-                )
-                message.setArguments([
-                    "Hallucinate", 0, "hallucinate", title, artist, [], {}, 5000,
-                ])
-                bus.asyncCall(message)
-                return
+    def _send_notification(self, title, artist, key="", image=""):
+        if sys.platform.startswith("linux") and self._notifier.send(title, artist, key=key, image=image):
+            return
         if self._tray is not None:
             self._tray.showMessage(
                 title, artist, QSystemTrayIcon.MessageIcon.Information, 5000
@@ -551,6 +554,7 @@ class DesktopShell(QObject):
             self._mini = False
             self.miniChanged.emit()
         if self._window is not None:
+            self._sync_quit_policy()  # back from the background: closing it can quit again
             self._window.show()
             self._window.raise_()
             self._window.requestActivate()
@@ -569,24 +573,28 @@ class DesktopShell(QObject):
     @Slot(result=str)
     def handleClose(self):
         """Called when the main window is closed. Returns "ask" (the window shows the choice and stays open),
-        "quit", or "kept" (the window was minimized or hidden to the tray)."""
+        "quit", or "kept" (the window was minimized or hidden, the music goes on)."""
         if self._close_action == "ask":
-            if self.canMinimize or self._tray_visible():
-                return "ask"
-            return self.closeWith("quit")  # nothing to choose between
+            return "ask"
         return self.closeWith(self._close_action)
 
     @Slot(str, result=str)
     def closeWith(self, action):
-        """Carry out a close choice: "minimize", "tray" (falls back to quitting without a tray icon) or "quit"."""
+        """Carry out a close choice: "minimize", "tray" (keep playing in the background: the window is hidden
+        and comes back from the tray icon, by opening Hallucinate again, or from the desktop's media controls)
+        or "quit"."""
         if action == "minimize" and not self.canMinimize:
-            action = "tray"  # chosen on another desktop; the tray is the nearest thing here
+            action = "tray"  # chosen on another desktop; hiding is the nearest thing here
         if action == "minimize" and self._window is not None:
             self._window.showMinimized()
             return "kept"
-        if action == "tray" and self._tray_visible():
-            if self._window is not None:
-                self._window.hide()
+        if action == "tray" and self._window is not None:
+            self._app.setQuitOnLastWindowClosed(False)
+            self._window.hide()
+            if not self._tray_visible() and not self._told_background:
+                self._told_background = True  # no icon to find it by: say once how to get it back
+                self.notify("Hallucinate is still playing",
+                            "Open Hallucinate again to bring the window back.")
             return "kept"
         self._app.quit()
         return "quit"

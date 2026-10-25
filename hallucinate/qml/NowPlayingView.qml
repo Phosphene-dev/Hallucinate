@@ -193,6 +193,14 @@ Item {
                     maximumLineCount: 3
                     elide: Text.ElideRight
                 }
+                QualityBadges {  // E and Hi-Res, as on the song's row
+                    objectName: "nowPlayingQuality"
+                    light: true
+                    size: 18
+                    explicitTag: player.hasTrack ? player.current.explicit || 0 : 0
+                    bitDepth: player.hasTrack ? player.current.bit_depth || 0 : 0
+                    sampleRate: player.hasTrack ? player.current.sample_rate || 0 : 0
+                }
                 Text {
                     textFormat: Text.PlainText
                     Layout.fillWidth: true
@@ -250,6 +258,8 @@ Item {
                     visible: view.lyricsMode
                     Layout.fillWidth: true
                     Layout.maximumWidth: 640
+                    Layout.topMargin: 14
+                    Layout.rightMargin: 24  // long lines wrap before the window's edge
                     Layout.preferredHeight: Math.min(view.height * 0.42, 380)
                     ListView {
                         id: lyricLines
@@ -259,6 +269,8 @@ Item {
                         interactive: false
                         model: lyricsCtl.lines
                         spacing: 10
+                        topMargin: 10
+                        bottomMargin: 10
                         highlightRangeMode: ListView.StrictlyEnforceRange
                         preferredHighlightBegin: height * 0.38
                         preferredHighlightEnd: height * 0.38 + 40
@@ -289,6 +301,8 @@ Item {
                         anchors.fill: parent
                         visible: lyricsCtl.status === "found" && !lyricsCtl.synced
                         clip: true
+                        topMargin: 10
+                        bottomMargin: 10
                         contentHeight: plainLyrics.implicitHeight
                         boundsBehavior: Flickable.StopAtBounds
                         Text {

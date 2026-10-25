@@ -31,7 +31,7 @@ Item {
         title: "Rename playlist"
         standardButtons: Dialog.Ok | Dialog.Cancel
         onAccepted: if (nameField.text.trim().length) { userLib.renamePlaylist(page.playlistId, nameField.text.trim()); page.playlistName = nameField.text.trim() }
-        TextField { id: nameField; width: 280; text: page.playlistName; selectByMouse: true; onAccepted: renameDlg.accept() }
+        TextField { id: nameField; implicitWidth: 280; text: page.playlistName; selectByMouse: true; onAccepted: renameDlg.accept() }
     }
     ConfirmDialog {
         id: deleteDlg
@@ -155,6 +155,9 @@ Item {
             selectionSource: ListView.view ? ListView.view.model : null
             path: model.path
             audioFormat: model.codec
+            bitDepth: model.bit_depth || 0
+            sampleRate: model.sample_rate || 0
+            explicitTag: model.explicit || 0
             audioBitrate: model.bitrate
             rowIndex: index
             context: page.liked ? "liked" : "playlist"
