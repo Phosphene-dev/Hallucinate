@@ -1,0 +1,35 @@
+# Hallucinate without a window as a system service, for a machine that only plays music (a Proxmox LXC, a
+# Raspberry Pi) and has no desktop session: a dedicated "hallucinate" account playing straight to the sound card
+# (ALSA). On a desktop machine use the user service (hallucinate.service) instead.
+#
+#   sudo useradd --system --create-home --home-dir /var/lib/hallucinate --groups audio hallucinate
+#   sudo cp hallucinate-system.service /etc/systemd/system/hallucinate.service
+#   sudo systemctl enable --now hallucinate
+#   sudo -u hallucinate HALLUCINATE_CONTROL_SOCKET=/var/lib/hallucinate/control hallucinate --pair
+#
+# Music is read from /music (edit ExecStart for another folder). See docs/headless.md.
+[Unit]
+Description=Hallucinate music player (no window)
+Documentation=https://github.com/Phosphene-dev/Hallucinate/blob/main/docs/headless.md
+After=network-online.target sound.target
+Wants=network-online.target
+
+[Service]
+User=hallucinate
+Group=audio
+Environment=HOME=/var/lib/hallucinate HALLUCINATE_CONTROL_SOCKET=/var/lib/hallucinate/control
+ExecStart=hallucinate --headless --network /music
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/hallucinate
+PrivateTmp=yes
+DeviceAllow=char-alsa rw
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

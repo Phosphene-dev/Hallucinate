@@ -379,16 +379,23 @@ screenshot by `python scripts/make_social.py`; rerun it after new screenshots. T
 on GitHub, use the repository's **Settings → General → Social preview** controls. The Windows installer uses
 the generated setup wizard image.
 
-## Command-line controls
-Start Hallucinate normally, then control that running instance from a terminal:
+## Command line, terminal and server
+Control a running Hallucinate (the window or a server) from a terminal:
 ```sh
-hallucinate --play-pause
-hallucinate --next
-hallucinate --prev
-hallucinate --status   # prints current track, state, position, duration, and queue length as JSON
+hallucinate cmd status                     # what's playing
+hallucinate cmd play-album Kind of Blue    # also play-artist, play-playlist, play-liked --shuffle…
+hallucinate cmd search coltrane            # songs show an id: hallucinate cmd add 123 --next
+hallucinate cmd volume 40                  # seek 1:30, next, prev, shuffle on, repeat one, sleep 30…
+hallucinate cmd --help                     # everything; add --json for scripts
+hallucinate tui                            # a full-screen player in the terminal
 ```
-The same local IPC activates the existing window when `hallucinate` is launched
-again. Control commands report an error if no instance is running.
+`--play-pause`, `--next`, `--prev` and `--status` (JSON) still work too. They all talk to the running app over a
+socket only your account can open, and launching `hallucinate` again brings its window forward.
+
+**Without a window** (a home server, a NAS, a Raspberry Pi, a container, a Proxmox LXC):
+`hallucinate --headless /path/to/music` plays through that machine's speakers and is driven from the web
+interface on your phone, `hallucinate cmd` or `hallucinate tui`; `hallucinate --pair` gives your phone a code.
+There's a container image, systemd services and Proxmox notes: [docs/headless.md](docs/headless.md).
 Track-change notifications are opt-in under Settings → Desktop; they use the
 Linux desktop notification service or the platform tray notification API.
 
@@ -424,7 +431,6 @@ FLAC, MP3, OGG/Vorbis, Opus, WAV, AAC/M4A, ALAC, WMA, WavPack, AIFF and APE
 - Signed Windows builds, and signed and notarized macOS builds
 - The AUR packages, once AUR account sign-ups reopen
 - Real-device verification of APE playback and desktop media keys
-- Running without a window on a home server (headless), and a terminal version
 - Being considered: casting to Chromecast and DLNA/UPnP speakers, copying playlists to a device, and
   bit-perfect output
 

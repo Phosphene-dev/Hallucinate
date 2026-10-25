@@ -542,6 +542,24 @@ class Api:
 
     m_liked._api_scope = "read"
 
+    def m_library_rescan(self):
+        """Look through the music folders again for new, changed and removed files (it watches them anyway)."""
+        if self.library is None:
+            raise ApiError("The library isn't open yet")
+        self.library.rescan()
+        return {"ok": True}
+
+    m_library_rescan._api_scope = "control"
+
+    def m_library_info(self):
+        """How big the library is, and whether it's busy scanning."""
+        if self.library is None:
+            raise ApiError("The library isn't open yet")
+        lib = self.library
+        return {"songs": int(lib.trackCount), "albums": int(lib.albumCount), "scanning": bool(lib.scanning)}
+
+    m_library_info._api_scope = "read"
+
     def art_file(self, album_key):
         """The cover file for an album key (for the art endpoint; never sent to a client)."""
         a = self._db.album(_str(album_key))

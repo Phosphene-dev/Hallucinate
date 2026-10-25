@@ -1,4 +1,8 @@
-"""Per-user local IPC for the CLI controls and single-instance window activation."""
+"""Per-user local IPC for the command line (`hallucinate cmd`, the terminal version, --next and friends) and
+single-instance window activation.
+
+The socket is private to your user account. Besides the few original commands it carries the same commands
+the web remote has ("api", see api.py), pairing codes for the web remote ("pair") and its settings ("remote")."""
 import json
 import os
 import time
@@ -82,8 +86,9 @@ CONNECT_TIMEOUT_MS = 300
 RESPONSE_TIMEOUT_MS = 1500
 
 
-def send_control(command, timeout_ms=CONNECT_TIMEOUT_MS, server_name=SERVER_NAME, **payload):
+def send_control(command, timeout_ms=CONNECT_TIMEOUT_MS, server_name=SERVER_NAME, response_ms=None, **payload):
     """Send one newline-delimited JSON request; return None when no instance responds."""
+    response_ms = RESPONSE_TIMEOUT_MS if response_ms is None else response_ms
     socket = QLocalSocket()
     socket.connectToServer(server_name)
     if not socket.waitForConnected(timeout_ms):
@@ -91,9 +96,9 @@ def send_control(command, timeout_ms=CONNECT_TIMEOUT_MS, server_name=SERVER_NAME
     try:
         request = {"command": command, **payload}
         socket.write(json.dumps(request).encode("utf-8") + b"\n")
-        if not socket.waitForBytesWritten(RESPONSE_TIMEOUT_MS):
+        if not socket.waitForBytesWritten(response_ms):
             return {"ok": False, "error": "Timed out sending the control request"}
-        deadline = time.monotonic() + RESPONSE_TIMEOUT_MS / 1000
+        deadline = time.monotonic() + response_ms / 1000
         response = bytearray()
         while b"\n" not in response:
             remaining = int((deadline - time.monotonic()) * 1000)
@@ -114,6 +119,8 @@ class ControlServer(QObject):
         self._player = player
         self._raise_callback = raise_callback
         self._library = None
+        self._api = None
+        self._web = None
         self._pending_folders = []
         self._name = server_name
         self._server = QLocalServer(self)
@@ -137,6 +144,14 @@ class ControlServer(QObject):
         for folder in self._pending_folders:
             library.addFolder(folder)
         self._pending_folders.clear()
+
+    def setApi(self, api):
+        """The commands `hallucinate cmd` and the terminal version use (api.Api)."""
+        self._api = api
+
+    def setWebRemote(self, web):
+        """For pairing codes and the web remote's settings from the command line (a headless server)."""
+        self._web = web
 
     def setRaiseCallback(self, callback):
         self._raise_callback = callback
@@ -163,7 +178,7 @@ class ControlServer(QObject):
         if buffer is None:
             return
         buffer.extend(bytes(socket.readAll()))
-        if len(buffer) > 16384:
+        if len(buffer) > 65536:
             socket.write(b'{"ok":false,"error":"Control request too large"}\n')
             socket.disconnectFromServer()
             return
@@ -202,6 +217,17 @@ class ControlServer(QObject):
             if self._raise_callback is not None:
                 self._raise_callback()
             return {"ok": True}
+        if command == "api":
+            return self._call_api(request)
+        if command == "pair":
+            if self._web is None:
+                return {"ok": False, "error": "The web remote isn't available"}
+            if not self._web.running:
+                return {"ok": False, "error": "The web remote is off; turn it on first (hallucinate cmd remote on)"}
+            code = self._web.new_code()
+            return {"ok": True, "code": code, "minutes": 5, "links": self._web.addresses()}
+        if command == "remote":
+            return self._remote(request)
         player = self._player
         if player is None:
             return {"ok": False, "error": "Hallucinate is still starting"}
@@ -229,3 +255,53 @@ class ControlServer(QObject):
         else:
             return {"ok": False, "error": "Unknown command"}
         return {"ok": True}
+
+    def _call_api(self, request):
+        from .api import ApiError
+
+        if self._api is None:
+            return {"ok": False, "error": "Hallucinate is still starting"}
+        try:
+            result = self._api.call(request.get("method"), request.get("params"))
+        except ApiError as exc:
+            return {"ok": False, "error": str(exc)}
+        except Exception:  # noqa: BLE001 - the command line is told, the app carries on
+            import logging
+
+            logging.getLogger(__name__).exception("A command-line command failed")
+            return {"ok": False, "error": "That didn't work"}
+        if self._web is not None:
+            self._web._soon()  # remotes see what the command changed
+        return {"ok": True, "result": result}
+
+    def _remote(self, request):
+        """The web remote's settings: {"on": bool, "lan": bool, "port": int}, any of them; answers with all."""
+        web = self._web
+        if web is None:
+            return {"ok": False, "error": "The web remote isn't available"}
+        port = request.get("port")
+        if port is not None and (not isinstance(port, int) or isinstance(port, bool) or not 1024 <= port <= 65535):
+            return {"ok": False, "error": "The port must be a number from 1024 to 65535"}
+        names = request.get("hostNames")
+        if names is not None:
+            if not isinstance(names, list) or not all(isinstance(n, str) for n in names) or len(names) > 20:
+                return {"ok": False, "error": "Host names are a list of names"}
+            import re
+
+            clean = [n.strip().lower() for n in names if n.strip()]
+            if not all(re.fullmatch(r"[a-z0-9.-]{1,253}", n) for n in clean):
+                return {"ok": False, "error": "A host name has only letters, digits, dots and dashes"}
+            web.set_host_names(clean)
+        forget = request.get("forget")
+        if forget == "all":
+            web.forgetAllDevices()
+        elif isinstance(forget, str) and forget:
+            if not any(d["id"] == forget for d in web.devices.listing()):
+                return {"ok": False, "error": "No paired device has that id"}
+            web.forgetDevice(forget)
+        on, lan = request.get("on"), request.get("lan")
+        if any(v is not None for v in (on, lan, port)):
+            web.configure(enabled=None if on is None else bool(on), lan=None if lan is None else bool(lan), port=port)
+        return {"ok": True, "remote": {"on": web.enabled, "lan": web.lan, "port": web.port, "running": web.running,
+                                       "problem": web.error, "links": web.addresses() if web.running else [],
+                                       "devices": web.devices.listing(), "hostNames": web.extra_host_names()}}

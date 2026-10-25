@@ -5,6 +5,25 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Added
+- Hallucinate without a window: `hallucinate --headless` for a home server, a NAS, a Raspberry Pi, a container
+  or a Proxmox LXC. It plays through that machine's sound output and is driven from the web interface,
+  `hallucinate cmd` or `hallucinate tui`; `hallucinate --pair` prints a pairing code for your phone. The library,
+  history, scrobbling, ReplayGain and music servers all work as in the app. There's a container image
+  (`packaging/server/Dockerfile`), user and system services for systemd, and a guide with Proxmox steps
+  (docs/headless.md). It stops cleanly on SIGTERM.
+- `hallucinate cmd`: every web remote command from the command line: what's playing, playback, volume, seek,
+  shuffle, repeat, radio mode and the sleep timer, the queue, search, playing albums, artists, genres, composers
+  and playlists by name, likes and ratings, a rescan, and the web interface's settings and paired devices.
+  `--json` for scripts.
+- `hallucinate tui`: a full-screen player in the terminal (or over SSH): what's playing with a progress bar, and
+  the queue, albums, artists, playlists, liked songs and search, all from the keyboard.
+- The web interface can be told other names it answers to (a reverse proxy, a DNS name):
+  `hallucinate cmd remote --host-name music.example.lan`.
+
+### Fixed
+- A first start no longer logs that the playback session couldn't be restored (there isn't one yet).
+
 ## [1.1.0] - 2026-10-25
 
 A web interface and phone remote, and a security pass.

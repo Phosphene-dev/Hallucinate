@@ -579,9 +579,15 @@ class WebRemote(QObject):
             names |= {host, host + ".local", host.split(".")[0], host.split(".")[0] + ".local"}
         except OSError:
             pass
+        return names | set(self.extra_host_names())
+
+    def extra_host_names(self):
+        """Names besides this computer's own that the web interface answers to (a reverse proxy, a DNS name)."""
         extra = str(self._settings.value("remote/hostNames", "") or "")
-        names |= {n.strip().lower() for n in extra.split(",") if n.strip()}
-        return names
+        return [n.strip().lower() for n in extra.split(",") if n.strip()]
+
+    def set_host_names(self, names):
+        self._settings.setValue("remote/hostNames", ",".join(names))
 
     def addresses(self):
         """Links that open the web interface: this computer's own, and (when allowed) its network addresses."""
