@@ -22,6 +22,7 @@ COPY packaging/server/build-tools.txt packaging/server/build-tools.txt
 RUN pip install --no-cache-dir --require-hashes -r packaging/build-requirements.txt \
  && pip install --no-cache-dir --require-hashes -r packaging/server/build-tools.txt
 COPY hallucinate hallucinate
+COPY musicplayer musicplayer
 RUN pip install --no-cache-dir --no-deps --no-build-isolation . && rm -rf /src
 
 # Its own user; everything it keeps lives in /data (a volume), the music is read from /music
