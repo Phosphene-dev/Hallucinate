@@ -2,6 +2,12 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "1.1.0": [
+        "Control Hallucinate from your phone or another computer's browser: Settings → Remote & web. It's off "
+        "until you switch it on, and only devices you pair with a one-time code can use it.",
+        "A security pass: every download is now in one signed checksum list, and notifications show song "
+        "titles as plain text.",
+    ],
     "1.0.0": [
         "Composers: Artists → Composers, and a page for each with their works and movements in order. Tempo and "
         "key from the tags too, to sort by and use in smart playlists.",

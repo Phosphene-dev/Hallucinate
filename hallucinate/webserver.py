@@ -4,7 +4,7 @@ live updates and album covers.
 Off until you switch it on. It listens on this computer only unless you allow other devices on your network, and
 everything but the pairing page needs a paired device:
 
-- Pairing: the app (or `hallucinate --pair` when headless) shows a one-time code for a few minutes; a browser
+- Pairing: the app shows a one-time code for a few minutes; a browser
   that enters it gets a long random key, kept as a cookie only the page's own requests send (HttpOnly,
   SameSite=Strict). Only a hash of each key is stored, and each paired device can be removed. Wrong codes are
   limited, and too many end the code.

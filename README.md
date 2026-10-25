@@ -35,6 +35,7 @@
 - **Plays it properly.** True gapless, ReplayGain, a 10-band equalizer, headphone correction, CUE sheets, and a readout that shows when the sound is untouched.
 - **Remembers every listen.** History, weekly to yearly recaps, smart playlists, radio mode, and history brought over from Last.fm or your old player.
 - **Fast to drive.** Instant search that forgives typos, Ctrl+K for anything, multi-select, and Ctrl+Z for the queue.
+- **From your phone too.** A web interface and phone remote, off until you switch it on, for paired devices only.
 - **Only what you want.** Internet radio, podcasts and music servers (Jellyfin, Navidrome and other Subsonic servers) are there if you switch them on.
 - **Yours alone.** No account, no telemetry; everything online is opt-in, and offline mode turns it all off.
 
@@ -45,7 +46,10 @@
 | **Similar artists** (from Last.fm, if you set it up) | **Search that forgives a typo** |
 | ![Similar artists on an artist page, with Play a mix](docs/screenshots/similar-artists.png) | ![Search showing results for the closest match](docs/screenshots/search-typo.png) |
 
-Also new: tempo and key in the tags (sort and filter by them), and songs from your music server kept on this computer to play offline. The [changelog](CHANGELOG.md) has the rest.
+New in 1.1: a web interface and phone remote (Settings → Remote & web), and a security pass with signed
+checksums for every download.
+
+Also new in 1.0: tempo and key in the tags (sort and filter by them), and songs from your music server kept on this computer to play offline. The [changelog](CHANGELOG.md) has the rest.
 
 ## Help test it
 Hallucinate is young and mostly tested by one person, so reports from other machines are the most useful thing
@@ -420,8 +424,9 @@ FLAC, MP3, OGG/Vorbis, Opus, WAV, AAC/M4A, ALAC, WMA, WavPack, AIFF and APE
 - Signed Windows builds, and signed and notarized macOS builds
 - The AUR packages, once AUR account sign-ups reopen
 - Real-device verification of APE playback and desktop media keys
-- Being considered: casting to Chromecast and DLNA/UPnP speakers, a remote for your phone, copying playlists to
-  a device, and bit-perfect output
+- Running without a window on a home server (headless), and a terminal version
+- Being considered: casting to Chromecast and DLNA/UPnP speakers, copying playlists to a device, and
+  bit-perfect output
 
 ## Contributing
 See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). The calls that shape what
