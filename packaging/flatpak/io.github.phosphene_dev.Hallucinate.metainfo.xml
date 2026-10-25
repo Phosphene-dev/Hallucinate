@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.2.0" date="2026-10-25">
+      <description>
+        <p>Two retro themes, Hi-Fi Deck and Beige Box, that restyle the whole app like 90s hardware, and the Deck: Now Playing as a hi-fi front panel with a cassette, a glowing display, a spectrum analyser and VU meters.</p>
+        <p>Also: Hallucinate without a window for a home server, control from the command line, and a full-screen terminal player.</p>
+      </description>
+    </release>
     <release version="1.1.0" date="2026-10-25">
       <description>
         <p>A web interface and phone remote: play, browse, search and manage the queue from a browser on your phone or another computer. It is off until you switch it on and only paired devices can use it.</p>

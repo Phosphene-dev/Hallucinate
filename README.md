@@ -46,6 +46,10 @@
 | **Similar artists** (from Last.fm, if you set it up) | **Search that forgives a typo** |
 | ![Similar artists on an artist page, with Play a mix](docs/screenshots/similar-artists.png) | ![Search showing results for the closest match](docs/screenshots/search-typo.png) |
 
+New in 1.2: retro themes (Hi-Fi Deck, Beige Box) and **the Deck**, a 90s hi-fi Now Playing ([see Themes](#themes));
+Hallucinate on a server without a window, `hallucinate cmd` and a terminal player
+([Command line, terminal and server](#command-line-terminal-and-server)).
+
 New in 1.1: a web interface and phone remote (Settings → Remote & web), and a security pass with signed
 checksums for every download.
 

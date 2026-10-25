@@ -5,6 +5,10 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-25
+
+Retro themes and the Deck, Hallucinate on a server without a window, and the command line and terminal version.
+
 ### Added
 - Hallucinate without a window: `hallucinate --headless` for a home server, a NAS, a Raspberry Pi, a container
   or a Proxmox LXC. It plays through that machine's sound output and is driven from the web interface,
