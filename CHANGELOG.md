@@ -18,6 +18,15 @@ All notable changes to this project are documented here. Format based on
   `--json` for scripts.
 - `hallucinate tui`: a full-screen player in the terminal (or over SSH): what's playing with a progress bar, and
   the queue, albums, artists, playlists, liked songs and search, all from the keyboard.
+- Retro themes: Hi-Fi Deck (gunmetal and amber) and Beige Box (an old PC's grey-beige and navy), with square
+  corners, raised and sunken bevels, solid panels and dot-matrix headings. A theme file can ask for this look
+  with `"style": "retro"`.
+- The Deck: Now Playing as a 90s hi-fi front panel, the default in a retro theme and a button away in any
+  other. The cover is a cassette label, the reels turn and the tape winds as the song plays; a glowing display
+  shows the time in seven-segment digits (click it for the time left), the track number, a scrolling title in
+  fourteen-segment letters and the format; a spectrum analyser with falling peaks and two VU meters move with
+  the music; chunky keys, a volume knob and a tape slider control it. Its display comes in amber, green, blue
+  or red, with an optional CRT look; motion stops with Reduce motion. Fonts: DSEG and VT323 (SIL OFL).
 - The web interface can be told other names it answers to (a reverse proxy, a DNS name):
   `hallucinate cmd remote --host-name music.example.lan`.
 

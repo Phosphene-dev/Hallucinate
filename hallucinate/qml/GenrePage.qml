@@ -100,7 +100,7 @@ Item {
                         text: page.info.name || page.genreName
                         color: Theme.text
                         font.family: Theme.displayFamily
-                        font.pixelSize: Theme.fontSize(36)
+                        font.pixelSize: (Theme.fontSize(36)) * Theme.displayScale
                         font.weight: Font.Bold
                         wrapMode: Text.Wrap
                         maximumLineCount: 2
@@ -181,7 +181,7 @@ Item {
                             required property var modelData
                             implicitWidth: artistRow.implicitWidth + 24
                             height: 44
-                            radius: height / 2
+                            radius: Theme.round(height / 2)
                             color: artistHover.hovered ? Theme.glassHover : Theme.glass
                             border.color: Theme.stroke
                             Row {
@@ -189,7 +189,7 @@ Item {
                                 x: 6; anchors.verticalCenter: parent.verticalCenter
                                 spacing: 10
                                 Cover {
-                                    width: 32; height: 32; radius: 16
+                                    width: 32; height: 32; radius: Theme.round(16)
                                     source: parent.parent.modelData.artUrl || ""
                                     fallback: (parent.parent.modelData.name || "?").charAt(0)
                                 }

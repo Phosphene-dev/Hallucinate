@@ -5,7 +5,7 @@ import "."
 Rectangle {
     id: panel
     color: Theme.glass
-    radius: 24
+    radius: Theme.round(24)
     border.width: 1
     border.color: Theme.stroke
     clip: true
@@ -17,7 +17,7 @@ Rectangle {
         text: "Lyrics"
         color: Theme.text
         font.family: Theme.displayFamily
-        font.pixelSize: Theme.fontSize(15)
+        font.pixelSize: (Theme.fontSize(15)) * Theme.displayScale
         font.weight: Font.DemiBold
     }
     Text {

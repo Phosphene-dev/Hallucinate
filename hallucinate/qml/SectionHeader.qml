@@ -11,7 +11,7 @@ Column {
         text: parent.title
         color: Theme.text
         font.family: Theme.displayFamily
-        font.pixelSize: Theme.fontSize(17)
+        font.pixelSize: (Theme.fontSize(17)) * Theme.displayScale
         font.weight: Font.DemiBold
     }
     Text {

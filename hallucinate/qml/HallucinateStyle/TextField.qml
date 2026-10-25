@@ -58,5 +58,6 @@ T.TextField {
         border.width: control.activeFocus ? 2 : 1
         border.color: control.activeFocus ? Theme.accent : Theme.border
         Behavior on border.color { ColorAnimation { duration: 120 } }
+        Bevel { sunken: true }
     }
 }

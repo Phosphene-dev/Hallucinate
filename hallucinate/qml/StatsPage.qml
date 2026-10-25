@@ -40,7 +40,7 @@ Item {
                     text: "Listening stats"
                     color: Theme.text
                     font.family: Theme.displayFamily
-                    font.pixelSize: Theme.fontSize(25)
+                    font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale
                     font.weight: Font.Bold
                 }
                 StyledCombo {
@@ -59,7 +59,7 @@ Item {
                     color: Theme.surface
                     Column {
                         anchors.centerIn: parent
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: userLib.statsSummary.listens || 0; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(21); font.weight: Font.Bold; textFormat: Text.PlainText }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: userLib.statsSummary.listens || 0; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(21)) * Theme.displayScale; font.weight: Font.Bold; textFormat: Text.PlainText }
                         Text { anchors.horizontalCenter: parent.horizontalCenter; text: "listens"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
                     }
                 }
@@ -79,7 +79,7 @@ Item {
                             }
                             color: Theme.text
                             font.family: Theme.displayFamily
-                            font.pixelSize: Theme.fontSize(21)
+                            font.pixelSize: (Theme.fontSize(21)) * Theme.displayScale
                             font.weight: Font.Bold
                         }
                         Text { anchors.horizontalCenter: parent.horizontalCenter; text: "estimated listening time"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
@@ -92,7 +92,7 @@ Item {
                 text: userLib.topTracks.count > 0 ? "Top tracks" : "No listening history for this period yet."
                 color: Theme.text
                 font.family: Theme.displayFamily
-                font.pixelSize: Theme.fontSize(16)
+                font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale
                 font.weight: Font.DemiBold
             }
             Column {
@@ -125,7 +125,7 @@ Item {
                 text: "Top artists"
                 color: Theme.text
                 font.family: Theme.displayFamily
-                font.pixelSize: Theme.fontSize(16)
+                font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale
                 font.weight: Font.DemiBold
             }
             Column {
@@ -172,7 +172,7 @@ Item {
                 text: "Top albums"
                 color: Theme.text
                 font.family: Theme.displayFamily
-                font.pixelSize: Theme.fontSize(16)
+                font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale
                 font.weight: Font.DemiBold
             }
             Column {

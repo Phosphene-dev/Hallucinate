@@ -72,7 +72,7 @@ GlassPanel {
             text: card.hasAlbum ? card.album.album : "Your albums will appear here"
             color: Theme.text
             font.family: Theme.displayFamily
-            font.pixelSize: Theme.fontSize(22)
+            font.pixelSize: (Theme.fontSize(22)) * Theme.displayScale
             font.weight: Font.Bold
             wrapMode: Text.Wrap
             maximumLineCount: 2

@@ -356,6 +356,11 @@ class ThemeManager(QObject):
     def radius(self):
         return self._theme()["radius"]
 
+    @Property(bool, notify=themeChanged)
+    def retro(self):
+        """A theme made after old hardware ("style": "retro"): Now Playing opens as the Deck unless you've chosen."""
+        return self._theme().get("style") == "retro"
+
     @Property(str, notify=themesChanged)
     def userThemeDirectory(self):
         return str(self._user_theme_dir)

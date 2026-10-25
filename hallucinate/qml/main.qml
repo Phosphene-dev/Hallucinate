@@ -555,7 +555,7 @@ ApplicationWindow {
         anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Selection.count > 0 || AlbumSelection.count > 0 ? 176 : 118 }
         width: toastText.width + 36 + (toastAction.visible ? toastAction.width + 14 : 0)
         height: Math.max(40, toastText.height + 22)
-        radius: 20
+        radius: Theme.round(20)
         color: Theme.glassStrong
         border.width: 1
         border.color: Theme.strokeHi
@@ -776,8 +776,8 @@ ApplicationWindow {
         objectName: "ambience"
         anchors.fill: parent
         z: -1
-        animated: shell.ambientMotion && !shell.reduceMotion && window.active && !nowPlaying.covering
-        visible: !nowPlaying.covering
+        animated: shell.ambientMotion && !shell.reduceMotion && window.active && !nowPlaying.covering && !Theme.retro
+        visible: !nowPlaying.covering && !Theme.retro  // a retro theme is flat, like the desktops it remembers
     }
 
     ColumnLayout {
@@ -838,7 +838,7 @@ ApplicationWindow {
                         rightPadding: 14
                         selectByMouse: true
                         background: Rectangle {
-                            radius: height / 2
+                            radius: Theme.round(height / 2)
                             color: searchField.activeFocus ? Theme.glassStrong : Theme.glass
                             border.width: 1
                             border.color: searchField.activeFocus ? Theme.strokeHi : Theme.stroke
@@ -983,7 +983,7 @@ ApplicationWindow {
             textFormat: Text.PlainText
             anchors.centerIn: parent
             text: "Drop to play"
-            color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(21); font.weight: Font.DemiBold
+            color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(21)) * Theme.displayScale; font.weight: Font.DemiBold
         }
     }
 

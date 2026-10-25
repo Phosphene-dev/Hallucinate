@@ -43,7 +43,7 @@ ComboBox {
             verticalAlignment: Text.AlignVCenter
         }
         background: Rectangle {
-            radius: 9
+            radius: Theme.round(9)
             color: entry.down ? Qt.darker(Theme.hoverTint, 1.15) : entry.highlighted ? Theme.hoverTint : "transparent"
         }
     }
@@ -62,7 +62,7 @@ ComboBox {
             ScrollIndicator.vertical: ScrollIndicator {}
         }
         background: Rectangle {
-            radius: 14
+            radius: Theme.round(14)
             color: Theme.popup
             border.width: 1
             border.color: Theme.stroke

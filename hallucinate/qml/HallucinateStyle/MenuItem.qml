@@ -74,7 +74,7 @@ T.MenuItem {
     background: Rectangle {
         implicitWidth: 220
         implicitHeight: 34
-        radius: 9
+        radius: Theme.round(9)
         color: control.down ? Qt.darker(Theme.hoverTint, 1.15)
              : control.highlighted ? Theme.hoverTint : "transparent"
         Behavior on color { ColorAnimation { duration: 90 } }

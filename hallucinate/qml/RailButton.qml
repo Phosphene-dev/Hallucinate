@@ -25,7 +25,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: height / 2
+        radius: Theme.round(height / 2)
         color: "transparent"
         border.width: 2
         border.color: Theme.accent
@@ -34,7 +34,7 @@ Item {
     Rectangle {
         id: pill
         anchors.fill: parent
-        radius: height / 2
+        radius: Theme.round(height / 2)
         opacity: item.selected ? 1 : (ma.containsMouse ? 0.7 : 0)
         Behavior on opacity { NumberAnimation { duration: 160 } }
         gradient: Gradient {

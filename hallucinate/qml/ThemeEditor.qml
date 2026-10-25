@@ -43,7 +43,7 @@ Dialog {
                 required property var modelData
                 spacing: 10
                 Rectangle {
-                    width: 30; height: 30; radius: 8
+                    width: 30; height: 30; radius: Theme.round(8)
                     anchors.verticalCenter: parent.verticalCenter
                     color: dlg.values[modelData[0]] || "transparent"
                     border.width: 1; border.color: Theme.border

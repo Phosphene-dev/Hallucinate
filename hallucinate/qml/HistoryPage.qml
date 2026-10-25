@@ -77,7 +77,7 @@ Item {
                     text: "History"
                     color: Theme.text
                     font.family: Theme.displayFamily
-                    font.pixelSize: Theme.fontSize(25)
+                    font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale
                     font.weight: Font.Bold
                 }
                 Text {
@@ -110,7 +110,7 @@ Item {
                             text: "The last 12 months"
                             color: Theme.text
                             font.family: Theme.displayFamily
-                            font.pixelSize: Theme.fontSize(15)
+                            font.pixelSize: (Theme.fontSize(15)) * Theme.displayScale
                             font.weight: Font.DemiBold
                         }
                         Text {
@@ -170,7 +170,7 @@ Item {
                     rightPadding: 12
                     selectByMouse: true
                     background: Rectangle {
-                        radius: height / 2
+                        radius: Theme.round(height / 2)
                         color: filterField.activeFocus ? Theme.glassStrong : Theme.glass
                         border.width: 1
                         border.color: filterField.activeFocus ? Theme.strokeHi : Theme.stroke
@@ -229,7 +229,7 @@ Item {
                 text: page.dayLabel(parent.day)
                 color: Theme.text
                 font.family: Theme.displayFamily
-                font.pixelSize: Theme.fontSize(15)
+                font.pixelSize: (Theme.fontSize(15)) * Theme.displayScale
                 font.weight: Font.DemiBold
             }
             Text {
@@ -360,7 +360,7 @@ Item {
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: row.model.source !== "local" || !row.available
-                    width: badge.implicitWidth + 16; height: 22; radius: 11
+                    width: badge.implicitWidth + 16; height: 22; radius: Theme.round(11)
                     color: "transparent"
                     border.width: 1
                     border.color: Theme.stroke

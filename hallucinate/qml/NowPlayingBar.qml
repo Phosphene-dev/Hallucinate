@@ -36,11 +36,12 @@ Item {
     Rectangle {
         id: glassPill
         anchors.fill: parent
-        radius: 26
+        radius: Theme.round(26)
         color: Theme.glassStrong
         border.width: 1
         border.color: Theme.stroke
         clip: true
+        Bevel {}
         // Cover-coloured light leaking in from the left
         Rectangle {
             anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
@@ -66,7 +67,7 @@ Item {
         Cover {
             id: art
             objectName: "barCover"
-            width: 60; height: 60; radius: 14
+            width: 60; height: 60; radius: Theme.round(14)
             source: player.hasTrack ? player.current.artUrl : ""
             Accessible.role: player.hasTrack ? Accessible.Button : Accessible.Graphic
             Accessible.name: player.hasTrack ? "Go to what's playing: " + (player.current.album || player.current.title || "") : "Nothing playing"
@@ -176,7 +177,7 @@ Item {
             IconButton { objectName: "skipBack"; visible: bar.episode; icon: "skipback:" + podcasts.options.skipBack; tip: "Back " + podcasts.options.skipBack + " seconds"; onClicked: player.seekBy(-1000 * podcasts.options.skipBack) }
             IconButton { icon: "prev"; onClicked: player.previous() }
             Rectangle {
-                width: 44; height: 44; radius: 22
+                width: 44; height: 44; radius: Theme.round(22)
                 Accessible.role: Accessible.Button
                 Accessible.name: player.playing ? "Pause" : "Play"
                 Accessible.onPressAction: player.toggle()

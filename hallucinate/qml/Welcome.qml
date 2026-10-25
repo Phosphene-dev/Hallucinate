@@ -35,7 +35,7 @@ FocusScope {
     component Heading: Text {
         color: Theme.text
         font.family: Theme.displayFamily
-        font.pixelSize: Theme.fontSize(24)
+        font.pixelSize: (Theme.fontSize(24)) * Theme.displayScale
         font.weight: Font.DemiBold
         wrapMode: Text.WordWrap
         Layout.fillWidth: true
@@ -55,7 +55,7 @@ FocusScope {
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSize(14)
         leftPadding: 14
-        background: Rectangle { radius: height / 2; color: Theme.surface; border.color: parent.activeFocus ? Theme.accent : Theme.border }
+        background: Rectangle { radius: Theme.round(height / 2); color: Theme.surface; border.color: parent.activeFocus ? Theme.accent : Theme.border }
     }
 
     GlassPanel {
@@ -84,7 +84,7 @@ FocusScope {
                     text: "Hallucinate"
                     color: Theme.text
                     font.family: Theme.displayFamily
-                    font.pixelSize: Theme.fontSize(17)
+                    font.pixelSize: (Theme.fontSize(17)) * Theme.displayScale
                     font.weight: Font.DemiBold
                 }
                 Item { Layout.fillWidth: true }
@@ -212,7 +212,7 @@ FocusScope {
                                     Rectangle {
                                         id: chip
                                         x: 12; anchors.verticalCenter: parent.verticalCenter
-                                        width: 26; height: 26; radius: 13
+                                        width: 26; height: 26; radius: Theme.round(13)
                                         color: swatch.c.accent || Theme.accent
                                     }
                                     Column {
@@ -433,7 +433,7 @@ FocusScope {
                     Accessible.onPressAction: welcome.finish()
                     Rectangle {
                         anchors { fill: parent; margins: -4 }
-                        radius: 6; color: "transparent"; border.width: 2; border.color: Theme.accent
+                        radius: Theme.round(6); color: "transparent"; border.width: 2; border.color: Theme.accent
                         visible: skipLink.activeFocus
                     }
                     LinkArea { id: skipMouse; name: "Skip setup"; hoverEnabled: true; onClicked: welcome.finish() }

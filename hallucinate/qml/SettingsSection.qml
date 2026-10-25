@@ -20,7 +20,7 @@ Rectangle {
     visible: matches
     width: parent ? parent.width : 600
     height: visible ? body.implicitHeight + 64 : 0
-    radius: 22
+    radius: Theme.round(22)
     color: Theme.glass
     border.width: 1
     border.color: Theme.stroke
@@ -41,7 +41,7 @@ Rectangle {
         text: section.title
         color: Theme.text
         font.family: Theme.displayFamily
-        font.pixelSize: Theme.fontSize(18)
+        font.pixelSize: (Theme.fontSize(18)) * Theme.displayScale
         font.weight: Font.DemiBold
     }
     Column {

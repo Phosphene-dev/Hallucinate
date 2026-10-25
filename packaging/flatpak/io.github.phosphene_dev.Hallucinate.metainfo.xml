@@ -2,7 +2,7 @@
 <component type="desktop-application">
   <id>io.github.phosphene_dev.Hallucinate</id>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>MIT</project_license>
+  <project_license>MIT AND OFL-1.1</project_license>
 
   <name>Hallucinate</name>
   <summary>Play the music you own, lit by its covers</summary>

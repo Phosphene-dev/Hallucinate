@@ -156,7 +156,7 @@ Item {
         signal menu()
         width: parent ? parent.width : 400
         height: 60
-        radius: 14
+        radius: Theme.round(14)
         color: rowMouse.containsMouse || playing ? Theme.glassHover : "transparent"
         border.width: playing ? 1 : 0
         border.color: Theme.accent
@@ -164,7 +164,7 @@ Item {
             id: logo
             x: 10
             anchors.verticalCenter: parent.verticalCenter
-            width: 40; height: 40; radius: 10
+            width: 40; height: 40; radius: Theme.round(10)
             source: row.artUrl
             fallback: (row.name || "?").charAt(0)
         }
@@ -231,7 +231,7 @@ Item {
                     Text {
                         textFormat: Text.PlainText
                         text: "Internet radio"
-                        color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(25); font.weight: Font.Bold
+                        color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale; font.weight: Font.Bold
                     }
                     Text {
                         textFormat: Text.PlainText
@@ -263,7 +263,7 @@ Item {
                 leftPadding: 16
                 selectByMouse: true
                 Accessible.name: "Find stations"
-                background: Rectangle { radius: height / 2; color: Theme.surface; border.color: search.activeFocus ? Theme.accent : Theme.border }
+                background: Rectangle { radius: Theme.round(height / 2); color: Theme.surface; border.color: search.activeFocus ? Theme.accent : Theme.border }
                 onAccepted: { page.query = text.trim(); stations.search(page.query) }
                 onTextChanged: if (!text.length) { page.query = ""; stations.search("") }
                 Keys.onEscapePressed: text = ""
@@ -372,7 +372,7 @@ Item {
                     leftPadding: 14
                     selectByMouse: true
                     Accessible.name: "Find a song you heard on the radio"
-                    background: Rectangle { radius: height / 2; color: Theme.surface; border.color: logSearch.activeFocus ? Theme.accent : Theme.border }
+                    background: Rectangle { radius: Theme.round(height / 2); color: Theme.surface; border.color: logSearch.activeFocus ? Theme.accent : Theme.border }
                     onTextChanged: stations.setLogQuery(text)
                     Keys.onEscapePressed: text = ""
                 }
@@ -417,7 +417,7 @@ Item {
                         Rectangle {
                             width: parent.width
                             height: 44
-                            radius: 12
+                            radius: Theme.round(12)
                             color: logMouse.containsMouse ? Theme.glassHover : "transparent"
                             Text {
                                 id: logTime

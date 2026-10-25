@@ -32,7 +32,7 @@ Item {
         Row {
             width: parent.width
             spacing: 16
-            Text { id: pageTitle; text: "Settings"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(25); font.weight: Font.Bold; textFormat: Text.PlainText }
+            Text { id: pageTitle; text: "Settings"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale; font.weight: Font.Bold; textFormat: Text.PlainText }
             TextField {
                 id: search
                 objectName: "settingsSearch"
@@ -46,7 +46,7 @@ Item {
                 font.pixelSize: Theme.fontSize(14)
                 leftPadding: 14
                 selectByMouse: true
-                background: Rectangle { radius: height / 2; color: Theme.surface; border.color: search.activeFocus ? Theme.accent : Theme.border }
+                background: Rectangle { radius: Theme.round(height / 2); color: Theme.surface; border.color: search.activeFocus ? Theme.accent : Theme.border }
                 onTextChanged: { page.query = text; flick.contentY = 0 }
                 Keys.onEscapePressed: text = ""
             }
@@ -151,7 +151,7 @@ Item {
                         Rectangle {
                             required property string modelData
                             readonly property bool chosen: themeManager.accentOverride === modelData
-                            width: 30; height: 30; radius: 15
+                            width: 30; height: 30; radius: Theme.round(15)
                             color: modelData.length ? modelData : "transparent"
                             border.width: chosen ? 3 : 1
                             border.color: chosen ? Theme.text : Theme.border
@@ -1162,7 +1162,7 @@ Item {
                             textFormat: Text.PlainText
                             objectName: "pairingCode"
                             text: webRemote.code.replace(/(\d{3})(\d{3})/, "$1 $2")
-                            color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(40); font.weight: Font.Bold
+                            color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(40)) * Theme.displayScale; font.weight: Font.Bold
                             font.letterSpacing: 4
                         }
                         Text {

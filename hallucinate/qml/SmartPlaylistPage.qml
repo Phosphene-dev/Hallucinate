@@ -47,7 +47,7 @@ Item {
                     elide: Text.ElideRight
                     color: Theme.text
                     font.family: Theme.displayFamily
-                    font.pixelSize: Theme.fontSize(30)
+                    font.pixelSize: (Theme.fontSize(30)) * Theme.displayScale
                     font.weight: Font.Bold
                 }
                 Text {

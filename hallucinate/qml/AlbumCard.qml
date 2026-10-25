@@ -70,7 +70,7 @@ Item {
     }
     Rectangle {
         objectName: "albumMore"
-        width: 30; height: 30; radius: 15
+        width: 30; height: 30; radius: Theme.round(15)
         color: Theme.glassStrong
         anchors { right: art.right; top: art.top; margins: 8 }
         opacity: hh.hovered ? 1 : 0
@@ -83,7 +83,7 @@ Item {
     }
     Rectangle {
         id: playBtn
-        width: 44; height: 44; radius: 22
+        width: 44; height: 44; radius: Theme.round(22)
         color: Theme.accent
         anchors { right: art.right; bottom: art.bottom; margins: 10 }
         scale: Theme.reduceMotion ? 1 : (hh.hovered ? 1 : 0.85)

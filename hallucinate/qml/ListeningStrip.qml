@@ -46,7 +46,7 @@ Column {
                 textFormat: Text.PlainText
                 text: strip.info.hours < 1 && strip.info.hours > 0 ? "under an hour"
                       : strip.info.hours === 1 ? "1 hour" : strip.info.hours + " hours"
-                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(20); font.weight: Font.DemiBold
+                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(20)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Text {
                 textFormat: Text.PlainText
@@ -59,7 +59,7 @@ Column {
             Text {
                 textFormat: Text.PlainText
                 text: String(strip.info[strip.countKey] || 0)
-                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(20); font.weight: Font.DemiBold
+                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(20)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Text {
                 textFormat: Text.PlainText

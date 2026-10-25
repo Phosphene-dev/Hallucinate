@@ -11,7 +11,7 @@ Rectangle {
     readonly property bool tight: maxWidth < 860
     width: Math.min(row.implicitWidth + 28, maxWidth)
     height: 52
-    radius: 26
+    radius: Theme.round(26)
     color: Theme.glassStrong
     border.width: 1
     border.color: Theme.strokeHi

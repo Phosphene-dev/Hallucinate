@@ -124,7 +124,7 @@ Item {
                 Cover {
                     objectName: "albumSleeve"
                     anchors.fill: parent
-                    radius: 18
+                    radius: Theme.round(18)
                     source: page.info.artUrl || ""
                     fallback: (page.info.album || "?").charAt(0)
                 }
@@ -147,7 +147,7 @@ Item {
                     text: page.info.album || ""
                     color: Theme.text
                     font.family: Theme.displayFamily
-                    font.pixelSize: Theme.fontSize(page.info.album && page.info.album.length > 28 ? 26 : 34)
+                    font.pixelSize: (Theme.fontSize(page.info.album && page.info.album.length > 28 ? 26 : 34)) * Theme.displayScale
                     font.weight: Font.Bold
                     wrapMode: Text.Wrap
                     maximumLineCount: 2
@@ -252,7 +252,7 @@ Item {
                 text: "Disc " + parent.disc
                 color: Theme.text
                 font.family: Theme.displayFamily
-                font.pixelSize: Theme.fontSize(15)
+                font.pixelSize: (Theme.fontSize(15)) * Theme.displayScale
                 font.weight: Font.DemiBold
             }
         }

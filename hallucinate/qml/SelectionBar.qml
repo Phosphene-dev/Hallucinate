@@ -18,7 +18,7 @@ Rectangle {
     readonly property bool tight: maxWidth < 860  // short labels in small windows
     width: Math.min(row.implicitWidth + 28, maxWidth)
     height: 52
-    radius: 26
+    radius: Theme.round(26)
     color: Theme.glassStrong
     border.width: 1
     border.color: Theme.strokeHi
@@ -148,7 +148,7 @@ Rectangle {
 
     Rectangle {  // more buttons to the right: scroll (wheel or drag) to reach them
         anchors { right: parent.right; rightMargin: 1; verticalCenter: parent.verticalCenter }
-        width: 36; height: parent.height - 2; radius: height / 2
+        width: 36; height: parent.height - 2; radius: Theme.round(height / 2)
         visible: scroller.contentWidth > scroller.width && !scroller.atXEnd
         gradient: Gradient {
             orientation: Gradient.Horizontal

@@ -52,9 +52,9 @@ def manager_factory(qapp, tmp_path):
 def test_builtin_themes_are_complete_and_switch_live(manager_factory):
     manager = manager_factory()
     assert manager.availableThemes == [
-        "Ace Pride", "Bi Pride", "Catppuccin Latte", "Catppuccin Mocha", "Dark", "Dracula", "Gruvbox",
-        "Hallucinate", "Lesbian Pride", "Light", "Nonbinary Pride", "Nord", "Pan Pride", "Pride", "Ribbon", "Tokyo Night",
-        "Trans Pride", "Trans Pride Light",
+        "Ace Pride", "Beige Box", "Bi Pride", "Catppuccin Latte", "Catppuccin Mocha", "Dark", "Dracula", "Gruvbox",
+        "Hallucinate", "Hi-Fi Deck", "Lesbian Pride", "Light", "Nonbinary Pride", "Nord", "Pan Pride", "Pride", "Ribbon",
+        "Tokyo Night", "Trans Pride", "Trans Pride Light",
     ]
     original = manager.bg
     assert manager.selectTheme("Nord")
@@ -543,3 +543,12 @@ def test_your_own_accent_system_mode_and_themes(manager_factory, tmp_path, monke
     assert manager.currentTheme == "Late Night" and manager.bg == QColor("#050507")
     saved = json.loads((tmp_path / "config" / "themes" / "late-night.json").read_text())
     assert saved["name"] == "Late Night" and saved["colors"]["accent"] == "#ff9f43"
+
+
+def test_retro_themes_say_so(manager_factory):
+    """Hi-Fi Deck and Beige Box are made after old hardware: square, bevelled, the Deck for Now Playing."""
+    manager = manager_factory()
+    for name, retro in (("Hi-Fi Deck", True), ("Beige Box", True), ("Hallucinate", False), ("Ribbon", False)):
+        assert manager.selectTheme(name)
+        assert manager.retro is retro, name
+    assert manager.selectTheme("Beige Box") and manager.radius == 0

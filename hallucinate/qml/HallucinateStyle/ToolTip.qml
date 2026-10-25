@@ -30,7 +30,7 @@ T.ToolTip {
     }
 
     background: Rectangle {
-        radius: 8
+        radius: Theme.round(8)
         color: Theme.popup
         border.width: 1
         border.color: Theme.stroke

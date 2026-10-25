@@ -23,7 +23,7 @@ T.Dialog {
     spacing: 4
 
     background: Rectangle {
-        radius: 20
+        radius: Theme.round(20)
         color: Theme.popup
         border.width: 1
         border.color: Theme.stroke

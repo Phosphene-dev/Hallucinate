@@ -1,0 +1,27 @@
+{
+  "name": "Beige Box",
+  "style": "retro",
+  "colors": {
+    "bg": "#c9c5ba",
+    "panel": "#d4d0c8",
+    "surface": "#e4e1da",
+    "surfaceHi": "#f1efea",
+    "border": "#8a877f",
+    "text": "#111111",
+    "textDim": "#46443f",
+    "accent": "#00007f",
+    "error": "#9e0000",
+    "onAccent": "#ffffff"
+  },
+  "palette": [
+    "#00007f",
+    "#008080",
+    "#c0c0c0",
+    "#ffffff"
+  ],
+  "radius": 0,
+  "fonts": {
+    "family": "Sans Serif",
+    "scale": 1.0
+  }
+}

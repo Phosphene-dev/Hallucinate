@@ -83,7 +83,7 @@ Item {
                 textFormat: Text.PlainText
                 visible: page.artists.length > 0
                 text: "Artists"
-                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
+                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             ListView {
                 visible: page.artists.length > 0
@@ -104,7 +104,7 @@ Item {
                 textFormat: Text.PlainText
                 visible: page.genreHits.length > 0
                 text: "Genres"
-                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
+                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Flow {
                 objectName: "searchGenres"
@@ -127,7 +127,7 @@ Item {
                 textFormat: Text.PlainText
                 visible: page.composerHits.length > 0
                 text: "Composers"
-                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
+                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Flow {
                 objectName: "searchComposers"
@@ -150,7 +150,7 @@ Item {
                 textFormat: Text.PlainText
                 visible: page.albums.length > 0
                 text: "Albums"
-                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
+                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             ListView {
                 visible: page.albums.length > 0
@@ -178,7 +178,7 @@ Item {
                 Text {
                     textFormat: Text.PlainText
                     text: "Songs"
-                    color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
+                    color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
                 }
                 Text {  // every song found, in the order shown
                     textFormat: Text.PlainText
@@ -220,12 +220,12 @@ Item {
                 signal activated()
                 width: col.width
                 height: 56
-                radius: 14
+                radius: Theme.round(14)
                 color: hitMouse.containsMouse ? Theme.glassHover : "transparent"
                 Cover {
                     id: hitArt
                     x: 10; anchors.verticalCenter: parent.verticalCenter
-                    width: 38; height: 38; radius: 10
+                    width: 38; height: 38; radius: Theme.round(10)
                     source: hit.artUrl
                     fallback: (hit.title || "?").charAt(0)
                 }
@@ -250,7 +250,7 @@ Item {
                 textFormat: Text.PlainText
                 visible: page.stationHits.length > 0
                 text: "Stations"
-                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
+                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Repeater {
                 model: page.stationHits
@@ -264,7 +264,7 @@ Item {
                 textFormat: Text.PlainText
                 visible: page.podcastHits.shows.length > 0
                 text: "Podcasts"
-                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
+                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Repeater {
                 model: page.podcastHits.shows
@@ -278,7 +278,7 @@ Item {
                 textFormat: Text.PlainText
                 visible: page.podcastHits.episodes.length > 0
                 text: "Episodes"
-                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
+                color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             EpisodeMenu { id: searchEpisodeMenu }
             Repeater {

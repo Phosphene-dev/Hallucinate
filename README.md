@@ -345,6 +345,18 @@ follow the system's light or dark mode with a theme picked for each, and **Make 
 editable copy of the current one. **Reduce motion** stops page transitions, zooms, the spinning record and
 the drifting backdrop.
 
+**Retro: Hi-Fi Deck and Beige Box.** Two themes made after late-90s hardware and desktops: square corners,
+raised and sunken bevels, solid panels and dot-matrix headings (Hi-Fi Deck in gunmetal and amber, Beige Box in
+the grey-beige and navy of an old PC). They open Now Playing as **the Deck**, a hi-fi front panel: the cover
+on a cassette whose reels turn and wind, a glowing display with segment digits and a scrolling title, a
+spectrum analyser and VU meters that move with the music, chunky keys and a volume knob. Pick the display's
+colour (amber, green, blue, red) and an optional CRT look; the cassette button in Now Playing switches to and
+from the Deck in any theme. A theme of your own can ask for this with `"style": "retro"`.
+
+| The Deck | Beige Box |
+|---|---|
+| ![The Deck: a cassette with turning reels, a glowing amber display, a spectrum analyser, VU meters and chunky keys](docs/screenshots/deck.png) | ![The Beige Box theme: bevelled grey-beige panels and navy, like an old PC desktop](docs/screenshots/theme-beige-box.png) |
+
 Add custom JSON files to `$XDG_CONFIG_HOME/hallucinate/themes/` (normally
 `~/.config/hallucinate/themes/`) and select **Reload themes** in Settings.
 Every theme requires all listed colors, a radius from 0 to 32, and a font family

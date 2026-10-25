@@ -80,7 +80,7 @@ Item {
             text: parent.rank
             color: Qt.rgba(1, 1, 1, 0.55)
             font.family: Theme.displayFamily
-            font.pixelSize: Theme.fontSize(15)
+            font.pixelSize: (Theme.fontSize(15)) * Theme.displayScale
             font.weight: Font.Bold
         }
         Cover {
@@ -128,7 +128,7 @@ Item {
             text: bars.title
             color: Theme.text
             font.family: Theme.displayFamily
-            font.pixelSize: Theme.fontSize(15)
+            font.pixelSize: (Theme.fontSize(15)) * Theme.displayScale
             font.weight: Font.DemiBold
         }
         Text {
@@ -198,7 +198,7 @@ Item {
                     text: "Recap"
                     color: Theme.text
                     font.family: Theme.displayFamily
-                    font.pixelSize: Theme.fontSize(25)
+                    font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale
                     font.weight: Font.Bold
                 }
                 Row {
@@ -243,7 +243,7 @@ Item {
                 objectName: "recapCard"
                 width: col.width
                 height: 380
-                radius: 26
+                radius: Theme.round(26)
                 clip: true
                 color: "#120c1c"
                 Bloom { tint: page.tint[0]; cx: 120; cy: 40 }
@@ -270,7 +270,7 @@ Item {
                         text: page.empty ? "—" : page.hoursText(page.summary.seconds || 0).n
                         color: "white"
                         font.family: Theme.displayFamily
-                        font.pixelSize: Theme.fontSize(76)
+                        font.pixelSize: (Theme.fontSize(76)) * Theme.displayScale
                         font.weight: Font.Bold
                     }
                     Text {
@@ -307,7 +307,7 @@ Item {
                                     text: modelData[0]
                                     color: "white"
                                     font.family: Theme.displayFamily
-                                    font.pixelSize: Theme.fontSize(20)
+                                    font.pixelSize: (Theme.fontSize(20)) * Theme.displayScale
                                     font.weight: Font.Bold
                                 }
                                 Text {
@@ -358,7 +358,7 @@ Item {
                     anchors { right: parent.right; rightMargin: 22; bottom: parent.bottom; bottomMargin: 16 }
                     spacing: 6
                     Image { anchors.verticalCenter: parent.verticalCenter; source: "../assets/hallucinate.png"; sourceSize: Qt.size(32, 32); width: 16; height: 16; smooth: true }
-                    Text { text: "Hallucinate"; color: Qt.rgba(1, 1, 1, 0.6); font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(11); textFormat: Text.PlainText }
+                    Text { text: "Hallucinate"; color: Qt.rgba(1, 1, 1, 0.6); font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(11)) * Theme.displayScale; textFormat: Text.PlainText }
                 }
             }
 
@@ -494,7 +494,7 @@ Item {
                                 color: Theme.text
                                 elide: Text.ElideRight
                                 font.family: Theme.displayFamily
-                                font.pixelSize: Theme.fontSize(20)
+                                font.pixelSize: (Theme.fontSize(20)) * Theme.displayScale
                                 font.weight: Font.Bold
                             }
                             Text {

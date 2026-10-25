@@ -5,6 +5,7 @@ pkgbase = hallucinate
 	url = https://github.com/Phosphene-dev/Hallucinate
 	arch = any
 	license = MIT
+	license = OFL-1.1
 	makedepends = python-build
 	makedepends = python-installer
 	makedepends = python-setuptools

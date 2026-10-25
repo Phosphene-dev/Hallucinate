@@ -42,7 +42,7 @@ T.DialogButtonBox {
             font.weight: Font.DemiBold
         }
         background: Rectangle {
-            radius: height / 2
+            radius: Theme.round(height / 2)
             color: btn.primary ? (btn.down ? Qt.darker(btn.fill, 1.15) : btn.hovered ? Qt.lighter(btn.fill, 1.1) : btn.fill)
                                : (btn.down ? Theme.surface : btn.hovered ? Theme.surfaceHi : Theme.surface)
             border.width: btn.primary ? 0 : 1
@@ -50,7 +50,7 @@ T.DialogButtonBox {
             Behavior on color { ColorAnimation { duration: 100 } }
             Rectangle {
                 anchors { fill: parent; margins: -3 }
-                radius: height / 2
+                radius: Theme.round(height / 2)
                 color: "transparent"
                 border.width: 2
                 border.color: Theme.accent

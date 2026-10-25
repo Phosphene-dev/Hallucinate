@@ -10,7 +10,7 @@ Rectangle {
     signal clicked()
     implicitWidth: chipLabel.implicitWidth + (closable ? 46 : 30)
     implicitHeight: 34
-    radius: height / 2
+    radius: Theme.round(height / 2)
     color: selected ? Theme.accent : (chipMouse.containsMouse ? Theme.glassHover : Theme.glass)
     border.width: selected ? 0 : 1
     border.color: Theme.stroke
@@ -35,5 +35,6 @@ Rectangle {
         name: "close"
         color: chip.selected ? Theme.onAccent : Theme.textDim
     }
+    Bevel { sunken: chip.selected || chipMouse.pressed }
     MouseArea { id: chipMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: chip.clicked() }
 }
