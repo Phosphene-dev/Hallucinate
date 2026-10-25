@@ -15,6 +15,7 @@ GlassPanel {
     // A bloom of the accent behind the cover
     Shape {
         id: bloom
+        visible: !Theme.retro  // no soft glows in a retro theme
         readonly property bool decoration: true  // a glow, meant to spill past edges
         readonly property real size: 360
         x: cover.x + cover.width / 2 - size / 2; y: cover.y + cover.height / 2 - size / 2

@@ -66,6 +66,7 @@ Item {
         background: Rectangle {
             radius: Theme.round(18)
             color: Theme.glassStrong
+            Bevel {}
             border.width: 1
             border.color: Theme.stroke
         }

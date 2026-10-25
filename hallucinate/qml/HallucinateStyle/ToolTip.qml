@@ -24,17 +24,19 @@ T.ToolTip {
         textFormat: Text.PlainText
         text: control.text
         wrapMode: Text.Wrap
-        color: Theme.text
+        color: Theme.retro && Theme.light ? "#000000" : Theme.text
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSize(12)
     }
 
     background: Rectangle {
         radius: Theme.round(8)
-        color: Theme.popup
+        // a retro light theme's tooltip is the pale yellow note of old desktops
+        color: Theme.retro && Theme.light ? "#ffffe1" : Theme.popup
         border.width: 1
-        border.color: Theme.stroke
+        border.color: Theme.retro ? (Theme.light ? "#000000" : Theme.border) : Theme.stroke
         SoftShadow { radius: parent.radius; spread: 10; offsetY: 3; strength: 0.22 }
+        Bevel {}
     }
 
     enter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 110 } }

@@ -316,8 +316,10 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     assert manager.selectTheme("Font Test")
     from PySide6.QtTest import QTest
 
-    QTest.qWait(300)
-    assert window.property("color") == manager.bg
+    # (the colours fade over a moment: wait for them rather than a fixed time, which a busy machine can overrun)
+    assert wait_for(lambda w=window, pk=picker: w.property("color") == manager.bg
+                    and pk.property("currentText") == "Font Test", timeout=5)
+    QTest.qWait(50)
     assert picker.property("currentText") == "Font Test"
     assert picker.property("currentIndex") == manager.availableThemes.index("Font Test")
     assert picker_text.property("font").family() == "DejaVu Sans"

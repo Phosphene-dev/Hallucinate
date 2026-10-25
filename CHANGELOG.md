@@ -18,9 +18,11 @@ All notable changes to this project are documented here. Format based on
   `--json` for scripts.
 - `hallucinate tui`: a full-screen player in the terminal (or over SSH): what's playing with a progress bar, and
   the queue, albums, artists, playlists, liked songs and search, all from the keyboard.
-- Retro themes: Hi-Fi Deck (gunmetal and amber) and Beige Box (an old PC's grey-beige and navy), with square
-  corners, raised and sunken bevels, solid panels and dot-matrix headings. A theme file can ask for this look
-  with `"style": "retro"`.
+- Retro themes: Hi-Fi Deck (gunmetal and amber) and Beige Box (an old PC's grey-beige and navy). The whole app
+  takes the look: square corners, raised panels and buttons, sunken fields, drop-downs with their own button,
+  white-well checkboxes, block slider thumbs, dialogs with a title bar, menus and the open page marked in solid
+  accent, the pale yellow tooltips of old desktops, dot-matrix headings, solid panels and no glows. The Recap
+  card becomes a blue screen. A theme file can ask for this look with `"style": "retro"`.
 - The Deck: Now Playing as a 90s hi-fi front panel, the default in a retro theme and a button away in any
   other. The cover is a cassette label, the reels turn and the tape winds as the song plays; a glowing display
   shows the time in seven-segment digits (click it for the time left), the track number, a scrolling title in

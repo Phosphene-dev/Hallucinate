@@ -19,7 +19,7 @@ T.Dialog {
                              + (implicitFooterHeight > 0 ? implicitFooterHeight + spacing : 0))
 
     padding: 22
-    topPadding: control.title !== "" ? 4 : 22
+    topPadding: control.title !== "" ? (Theme.retro ? 8 : 4) : 22
     spacing: 4
 
     background: Rectangle {
@@ -28,8 +28,10 @@ T.Dialog {
         border.width: 1
         border.color: Theme.stroke
         SoftShadow { radius: parent.radius; spread: 34; offsetY: 12; strength: 0.42 }
+        Bevel {}
         // a faint accent sheen along the top edge
         Rectangle {
+            visible: !Theme.retro
             x: parent.radius; y: 0
             width: parent.width - 2 * parent.radius; height: 1
             gradient: Gradient {
@@ -41,16 +43,33 @@ T.Dialog {
         }
     }
 
-    header: Text {
-        textFormat: Text.PlainText
-        text: control.title
+    header: Item {
         visible: control.title !== ""
-        elide: Text.ElideRight
-        leftPadding: 22; rightPadding: 22; topPadding: 20; bottomPadding: 10
-        color: Theme.text
-        font.family: Theme.displayFamily
-        font.weight: Font.DemiBold
-        font.pixelSize: Theme.fontSize(16)
+        implicitWidth: title.implicitWidth
+        implicitHeight: title.implicitHeight + (Theme.retro ? 14 : 0)
+        // In a retro theme, a title bar: the accent fading along it, the title in the accent's text colour
+        Rectangle {
+            visible: Theme.retro
+            anchors { fill: parent; margins: 4; bottomMargin: 8 }
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0; color: Theme.accent }
+                GradientStop { position: 1; color: Qt.lighter(Theme.accent, Theme.light ? 1.9 : 1.35) }
+            }
+        }
+        Text {
+            id: title
+            textFormat: Text.PlainText
+            text: control.title
+            width: parent.width
+            elide: Text.ElideRight
+            leftPadding: Theme.retro ? 12 : 22; rightPadding: 22
+            topPadding: Theme.retro ? 6 : 20; bottomPadding: 10
+            color: Theme.retro ? Theme.onAccent : Theme.text
+            font.family: Theme.displayFamily
+            font.weight: Font.DemiBold
+            font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale
+        }
     }
 
     footer: DialogButtonBox {

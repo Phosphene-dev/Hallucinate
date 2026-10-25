@@ -35,7 +35,7 @@ Item {
         id: pill
         anchors.fill: parent
         radius: Theme.round(height / 2)
-        opacity: item.selected ? 1 : (ma.containsMouse ? 0.7 : 0)
+        opacity: Theme.retro ? 0 : item.selected ? 1 : (ma.containsMouse ? 0.7 : 0)
         Behavior on opacity { NumberAnimation { duration: 160 } }
         gradient: Gradient {
             orientation: Gradient.Horizontal
@@ -45,6 +45,11 @@ Item {
         border.width: item.selected ? 1 : 0
         border.color: Theme.strokeHi
     }
+    Rectangle {  // a retro theme marks the open page in solid accent, and the one under the pointer plainly
+        anchors.fill: parent
+        visible: Theme.retro && (item.selected || ma.containsMouse)
+        color: item.selected ? Theme.selectedBg : Theme.surfaceHi
+    }
     Icon {
         id: glyph
         x: item.collapsed ? (item.width - width) / 2 : 14
@@ -52,7 +57,7 @@ Item {
         width: 20; height: 20
         name: item.icon
         filled: item.icon === "heart"
-        color: item.selected ? Theme.accentHi : (ma.containsMouse ? Theme.text : Theme.textDim)
+        color: item.selected ? (Theme.retro ? Theme.selectedText : Theme.accentHi) : (ma.containsMouse ? Theme.text : Theme.textDim)
         Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
     }
     Text {
@@ -62,7 +67,7 @@ Item {
         opacity: item.collapsed ? 0 : 1
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 140 } }
-        color: item.selected || ma.containsMouse ? Theme.text : Theme.textDim
+        color: item.selected && Theme.retro ? Theme.selectedText : item.selected || ma.containsMouse ? Theme.text : Theme.textDim
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSize(14)
         font.weight: item.selected ? Font.DemiBold : Font.Normal

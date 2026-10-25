@@ -29,6 +29,7 @@ Popup {
     background: Rectangle {
         radius: Theme.round(22)
         color: Theme.glassStrong
+        Bevel {}
         border.width: 1
         border.color: Theme.strokeHi
     }

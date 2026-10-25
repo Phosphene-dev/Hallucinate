@@ -226,7 +226,7 @@ def main():
             ctx = QQmlEngine.contextForObject(win)
             library, player, user_lib = (ctx.contextProperty(n) for n in ("library", "player", "userLib"))
             themes = [t.strip() for t in args.themes.split(",") if t.strip()]
-            todo = []
+            todo = [lambda: managers[0].selectTheme(themes[0])]  # every shot in the first theme asked for
 
             def shot(name):
                 return lambda: win.grabWindow().save(str(out / f"{name}{suffix}.png"))

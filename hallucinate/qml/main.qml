@@ -539,6 +539,7 @@ ApplicationWindow {
     Rectangle {
         id: toast
         objectName: "toast"
+        Bevel {}
         property string message: ""
         property string actionText: ""
         property var action: null
@@ -838,6 +839,7 @@ ApplicationWindow {
                         rightPadding: 14
                         selectByMouse: true
                         background: Rectangle {
+                            Bevel { sunken: true }
                             radius: Theme.round(height / 2)
                             color: searchField.activeFocus ? Theme.glassStrong : Theme.glass
                             border.width: 1

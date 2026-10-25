@@ -132,7 +132,7 @@ Dialog {
                 text: row.model.genre
                 onTextEdited: rows.setProperty(row.index, "genre", text)
                 color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
-                background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: genreBox.activeFocus ? Theme.accent : Theme.border }
+                background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: genreBox.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                 Accessible.name: "Genres for " + row.model.album
             }
             Flow {

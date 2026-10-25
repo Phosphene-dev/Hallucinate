@@ -20,6 +20,7 @@ Rectangle {
     height: 52
     radius: Theme.round(26)
     color: Theme.glassStrong
+    Bevel {}
     border.width: 1
     border.color: Theme.strokeHi
     opacity: shown ? 1 : 0

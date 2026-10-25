@@ -170,6 +170,7 @@ Item {
                     rightPadding: 12
                     selectByMouse: true
                     background: Rectangle {
+                        Bevel { sunken: true }
                         radius: Theme.round(height / 2)
                         color: filterField.activeFocus ? Theme.glassStrong : Theme.glass
                         border.width: 1

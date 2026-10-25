@@ -12,6 +12,7 @@ Item {
     readonly property int steps: 10
     anchors.fill: parent
     z: -1
+    visible: !Theme.retro  // hard-edged in a retro theme: the bevel does the work
     Repeater {
         model: shadow.steps
         Rectangle {

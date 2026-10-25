@@ -9,6 +9,7 @@ Shape {
     property color tint
     property real size: 700
     width: size; height: size
+    visible: !Theme.retro  // no soft glows in a retro theme
     preferredRendererType: Shape.CurveRenderer
     ShapePath {
         strokeWidth: 0; strokeColor: "transparent"

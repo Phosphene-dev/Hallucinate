@@ -212,7 +212,7 @@ Dialog {
                                      : rowItem.key === "music_key" ? "Am, F#, 8A…" : rowItem.key === "bpm" ? "120" : ""
                     validator: rowItem.key === "bpm" ? bpmValidator : null
                     placeholderTextColor: Theme.textDim
-                    background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: field.activeFocus ? Theme.accent : Theme.border }
+                    background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: field.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                 }
                 PillButton {
                     objectName: "findGenre"

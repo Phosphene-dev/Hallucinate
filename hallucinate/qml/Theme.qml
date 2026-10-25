@@ -89,6 +89,10 @@ QtObject {
     // Menus, dialogs and tooltips: nearly opaque glass above the page, a soft accent tint for the item under the
     // pointer (text stays the normal text colour, readable in every theme), and the dim laid over the page
     readonly property color popup: retro ? panel : Qt.rgba(panel.r, panel.g, panel.b, light ? 0.97 : 0.94)
+    // A chosen row or item (a menu's highlighted entry, the open page): a tint, or in a retro theme the solid
+    // accent with its own text colour, as old desktops marked a selection
+    readonly property color selectedBg: retro ? accent : hoverTint
+    readonly property color selectedText: retro ? onAccent : text
     readonly property color hoverTint: Qt.rgba(accent.r, accent.g, accent.b, light ? 0.14 : 0.22)
     readonly property color scrim: Qt.rgba(bg.r * 0.35, bg.g * 0.35, bg.b * 0.35, light ? 0.38 : 0.58)
 

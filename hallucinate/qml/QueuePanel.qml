@@ -5,6 +5,7 @@ import "."
 Rectangle {
     id: panel
     color: Theme.glass
+    Bevel {}
     radius: Theme.round(24)
     border.width: 1
     border.color: Theme.stroke

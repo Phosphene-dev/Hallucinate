@@ -37,7 +37,7 @@ Item {
         x: (card.cardWidth - size) / 2; y: (card.cardWidth - size) / 2 + 8
         width: size; height: size
         opacity: hh.hovered ? 1 : 0
-        visible: opacity > 0
+        visible: opacity > 0 && !Theme.retro  // no soft glows in a retro theme
         Behavior on opacity { NumberAnimation { duration: 220 } }
         preferredRendererType: Shape.CurveRenderer
         ShapePath {

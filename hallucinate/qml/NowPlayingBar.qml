@@ -23,7 +23,7 @@ Item {
 
     // Soft shadow from stacked translucent outlines (no shader needed)
     Repeater {
-        model: 4
+        model: Theme.retro ? 0 : 4  // (no soft shadow in a retro theme)
         Rectangle {
             required property int index
             anchors { fill: glassPill; margins: -(index + 1) * 3; topMargin: -(index + 1) * 2; bottomMargin: -(index + 1) * 4 }
@@ -47,6 +47,7 @@ Item {
             anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
             width: parent.width * 0.45
             radius: parent.radius
+            visible: !Theme.retro  // a retro theme's panel is plain
             opacity: player.hasTrack ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 600 } }
             gradient: Gradient {

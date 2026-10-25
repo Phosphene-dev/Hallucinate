@@ -23,13 +23,15 @@ CheckBox {
         radius: Theme.radius / 2
         x: box.leftPadding
         y: parent.height / 2 - height / 2
-        color: box.checked ? Theme.accent : Theme.surface
-        border.color: box.checked ? Theme.accent : Theme.border
+        // a retro theme's box is a white well with a dark tick, as old desktops drew them
+        color: Theme.retro ? Theme.surfaceHi : box.checked ? Theme.accent : Theme.surface
+        border.color: Theme.retro ? Theme.border : box.checked ? Theme.accent : Theme.border
+        Bevel { sunken: true }
         Text {
             textFormat: Text.PlainText
             anchors.centerIn: parent
             text: box.checked ? "✓" : ""
-            color: Theme.onAccent
+            color: Theme.retro ? Theme.text : Theme.onAccent
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize(13)
         }

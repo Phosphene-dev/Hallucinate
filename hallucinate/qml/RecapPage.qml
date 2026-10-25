@@ -47,6 +47,7 @@ Item {
     // centred at (cx, cy), so it can't spill past the rounded corners (clip only cuts to the square bounds).
     component Bloom: Shape {
         id: bloom
+        visible: !Theme.retro  // a retro theme's card is a plain screen
         property color tint
         property real size: 600
         property real cx
@@ -245,7 +246,9 @@ Item {
                 height: 380
                 radius: Theme.round(26)
                 clip: true
-                color: "#120c1c"
+                // a retro theme's card: a blue screen in a light theme, a dark panel in a dark one (white text reads on both)
+                color: Theme.retro ? (Theme.light ? Theme.accent : "#0d0e10") : "#120c1c"
+                Bevel {}
                 Bloom { tint: page.tint[0]; cx: 120; cy: 40 }
                 Bloom { tint: page.tint[1]; size: 520; cx: shareCard.width - 120; cy: 320 }
                 Bloom { tint: page.tint[2]; size: 420; cx: shareCard.width * 0.35 + 210; cy: 390 }

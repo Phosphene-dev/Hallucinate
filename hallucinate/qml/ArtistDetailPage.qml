@@ -345,7 +345,7 @@ Item {
                             placeholderTextColor: Theme.textDim
                             color: Theme.text
                             font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
-                            background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: bioEdit.activeFocus ? Theme.accent : Theme.border }
+                            background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: bioEdit.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                             Accessible.name: "Bio for " + page.artistName
                             Keys.onEscapePressed: about.editing = false
                         }

@@ -263,7 +263,7 @@ Item {
                 leftPadding: 16
                 selectByMouse: true
                 Accessible.name: "Find stations"
-                background: Rectangle { radius: Theme.round(height / 2); color: Theme.surface; border.color: search.activeFocus ? Theme.accent : Theme.border }
+                background: Rectangle { radius: Theme.round(height / 2); color: Theme.surface; border.color: search.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                 onAccepted: { page.query = text.trim(); stations.search(page.query) }
                 onTextChanged: if (!text.length) { page.query = ""; stations.search("") }
                 Keys.onEscapePressed: text = ""
@@ -372,7 +372,7 @@ Item {
                     leftPadding: 14
                     selectByMouse: true
                     Accessible.name: "Find a song you heard on the radio"
-                    background: Rectangle { radius: Theme.round(height / 2); color: Theme.surface; border.color: logSearch.activeFocus ? Theme.accent : Theme.border }
+                    background: Rectangle { radius: Theme.round(height / 2); color: Theme.surface; border.color: logSearch.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                     onTextChanged: stations.setLogQuery(text)
                     Keys.onEscapePressed: text = ""
                 }

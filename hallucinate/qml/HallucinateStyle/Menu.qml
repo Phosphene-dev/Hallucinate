@@ -37,6 +37,7 @@ T.Menu {
         border.width: 1
         border.color: Theme.stroke
         SoftShadow { radius: parent.radius; spread: 18; offsetY: 6; strength: 0.28 }
+        Bevel {}
     }
 
     enter: Transition {

@@ -143,7 +143,7 @@ Item {
                 leftPadding: 16
                 selectByMouse: true
                 Accessible.name: "Find shows"
-                background: Rectangle { radius: Theme.round(height / 2); color: Theme.surface; border.color: search.activeFocus ? Theme.accent : Theme.border }
+                background: Rectangle { radius: Theme.round(height / 2); color: Theme.surface; border.color: search.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                 onAccepted: { page.query = text.trim(); podcasts.search(page.query) }
                 onTextChanged: if (!text.length) { page.query = ""; podcasts.search("") }
                 Keys.onEscapePressed: text = ""

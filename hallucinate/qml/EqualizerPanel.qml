@@ -156,6 +156,7 @@ Column {
             leftPadding: 14
             selectByMouse: true
             background: Rectangle {
+                Bevel { sunken: true }
                 radius: Theme.round(height / 2)
                 color: hpSearch.activeFocus ? Theme.glassStrong : Theme.glass
                 border.width: 1
