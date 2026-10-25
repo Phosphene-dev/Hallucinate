@@ -136,6 +136,7 @@ Item {
                     id: brand
                     anchors { left: parent.left; right: parent.right; top: parent.top; topMargin: side.compact ? 8 : 12 }
                     height: side.compact ? 40 : 48
+                    TitleDrag { anchors.fill: parent }  // the name moves the window too (title bar built in)
                     Image {
                         id: logo
                         x: side.collapsed ? (parent.width - width) / 2 : 14

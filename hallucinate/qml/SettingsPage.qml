@@ -1629,13 +1629,36 @@ Item {
             id: sec_desktop
             objectName: "settings_desktop"
             title: "Desktop"
-            keywords: "tray notifications close quit minimize exit background mini player"
+            keywords: "tray notifications close quit minimize exit background mini player title bar window frame decorations frameless maximize"
             query: page.query
             StyledCheck {
                 visible: shell.trayAvailable
                 text: "Show system tray icon"
                 checked: shell.trayEnabled
                 onToggled: shell.setTrayEnabled(checked)
+            }
+            StyledCheck {
+                objectName: "customTitleBar"
+                text: "Use Hallucinate's own title bar, built into the window"
+                checked: shell.customTitleBar
+                onToggled: shell.setCustomTitleBar(checked)
+            }
+            StyledCheck {
+                objectName: "titleBarMinimize"
+                visible: shell.customTitleBar
+                leftPadding: 28
+                text: "Show the minimize button"
+                checked: shell.titleBarMinimize
+                onToggled: shell.setTitleBarMinimize(checked)
+            }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: shell.customTitleBar
+                      ? "Drag the top of the window (beside the search) to move it, double-click it to maximize. Turn this off for your system's own title bar."
+                      : "Your system draws the window's title bar."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
             Row {
                 spacing: 12

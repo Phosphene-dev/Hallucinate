@@ -12,6 +12,8 @@ ApplicationWindow {
     minimumWidth: 900
     minimumHeight: 600
     visible: true
+    // The title bar built into the window (Settings → Desktop) means no system frame around it
+    flags: shell.customTitleBar ? (Qt.Window | Qt.FramelessWindowHint) : Qt.Window
     title: player.hasTrack ? player.current.title + " — " + player.current.artist : "Hallucinate"
     color: Theme.bg
 
@@ -815,8 +817,10 @@ ApplicationWindow {
                 spacing: 0
 
                 Item {
+                    id: topRow
                     Layout.fillWidth: true
                     Layout.preferredHeight: 68
+                    TitleDrag { anchors.fill: parent }  // the empty part of the row moves the window
                     IconButton {
                         id: backBtn
                         anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
@@ -829,7 +833,7 @@ ApplicationWindow {
                         id: searchField
                         objectName: "searchField"
                         anchors { left: backBtn.visible ? backBtn.right : parent.left; leftMargin: backBtn.visible ? 8 : 24; verticalCenter: parent.verticalCenter }
-                        width: Math.min(520, parent.width - 120)
+                        width: Math.min(520, parent.width - 120 - (windowControls.visible ? windowControls.width + 16 : 0))
                         height: 42
                         placeholderText: "Search   ( / )        Ctrl+K  commands & pages"
                         placeholderTextColor: Theme.textDim
@@ -851,6 +855,11 @@ ApplicationWindow {
                         onTextChanged: searchTimer.restart()
                         Keys.onEscapePressed: { text = ""; focus = false; window.contentItem.forceActiveFocus() }
                         Keys.onReturnPressed: if (stack.currentItem && stack.currentItem.objectName === "search") window.contentItem.forceActiveFocus()
+                    }
+                    WindowControls {
+                        id: windowControls
+                        objectName: "windowControls"
+                        anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
                     }
                 }
 
@@ -991,4 +1000,5 @@ ApplicationWindow {
     }
 
     Component.onCompleted: go("home")
+    WindowEdges {}  // resizing by the edges when the title bar is built in (no system frame)
 }

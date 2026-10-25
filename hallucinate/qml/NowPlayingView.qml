@@ -401,6 +401,12 @@ Item {
                         tip: "Like"
                         onClicked: if (player.hasTrack) userLib.toggleLike(player.current.path)
                     }
+                    VolumeButton {  // a click opens the slider above it; scroll to change, middle-click to mute
+                        objectName: "nowPlayingVolume"
+                        anchors.verticalCenter: parent.verticalCenter
+                        popupSlider: true
+                        iconSize: 22
+                    }
                 }
             }
         }
@@ -419,6 +425,7 @@ Item {
         height: 76
         opacity: view.idle ? 0 : 1
         Behavior on opacity { NumberAnimation { duration: 400 } }
+        TitleDrag { anchors.fill: parent }  // Now Playing covers the window: its top row moves it
         IconButton {
             objectName: "closeNowPlaying"
             anchors { left: parent.left; leftMargin: 22; verticalCenter: parent.verticalCenter }
@@ -467,6 +474,10 @@ Item {
                 icon: "fullscreen"; active: Window.window && Window.window.visibility === Window.FullScreen
                 tip: "Full screen (F11)"
                 onClicked: view.toggleFullScreen()
+            }
+            WindowControls {
+                anchors.verticalCenter: parent.verticalCenter
+                light: true
             }
         }
     }

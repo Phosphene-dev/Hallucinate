@@ -5,6 +5,33 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Added
+- A title bar built into the window (on by default on Linux, where Qt otherwise draws its own plain one):
+  drag the top of the window or the sidebar's name to move it, double-click to maximize, and round minimize,
+  maximize and close buttons beside the search. The minimize button can be hidden, and Settings → Desktop goes
+  back to the system's title bar.
+- Badges on songs: an E for explicit songs (from the files' iTunes advisory or EXPLICIT tags) and Hi-Res for
+  24-bit and higher lossless files, in song lists, the player bar and Now Playing. Optionally every song's bit
+  depth and sample rate too (Settings → Appearance). Also read from OpenSubsonic and Jellyfin servers; smart
+  playlists can match on bit depth and explicit. Songs already in the library get both at the next scan.
+- The volume icon takes the mouse wheel (5% a notch) and mutes on a middle click. Now Playing has one too: a
+  click opens a slider above it. In a narrow player bar the icon opens the same slider.
+- "Keep playing in the background" when closing the window: it hides, and opening Hallucinate again brings it
+  back (it says so once when there's no tray icon to find it by).
+
+### Fixed
+- "Ask every time" when closing the window did nothing: the window stayed open and nothing asked. (Its answer
+  reached the window as `true` instead of "ask".) On Hyprland and other desktops without minimize or a tray it
+  also used to quit without asking.
+- Track-change notifications never showed with strict notification daemons (mako, dunst, swaync, GNOME's): the
+  request went out with the wrong argument types. They now show the album and cover, and a new song replaces
+  the last notification instead of stacking.
+- The name field of the new playlist, rename and save-queue dialogs stuck out of the dialog.
+- The lyrics side panel's lines ran right up against its left edge; Now Playing's lyrics get room around them
+  too. The command palette's rows were off-centre for the same reason.
+- The visualizer page and the cover glow on album, artist and podcast pages had square corners in a window of
+  rounded ones.
+
 ## [1.2.0] - 2026-10-25
 
 Retro themes and the Deck, Hallucinate on a server without a window, and the command line and terminal version.

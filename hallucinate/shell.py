@@ -76,6 +76,10 @@ class DesktopShell(QObject):
         self._all_genres_albums = self._settings.value("ui/allGenresAlbums", True, bool)
         self._all_genres_songs = self._settings.value("ui/allGenresSongs", False, bool)
         self._reduce_motion = self._settings.value("ui/reduceMotion", False, bool)
+        # The window's title bar drawn into the window itself (Linux, where Qt otherwise draws its own plain one on
+        # Wayland compositors without server-side decorations), or the system's; and whether it has a minimize
+        self._title_bar = self._settings.value("ui/customTitleBar", sys.platform.startswith("linux"), bool)
+        self._title_minimize = self._settings.value("ui/titleBarMinimize", can_minimize(), bool)
         # Badges on songs: E for explicit lyrics, Hi-Res for 24-bit and up, and (off to begin with) every bit depth
         self._badges = {name: self._settings.value(f"ui/{name}", on, bool) for name, on in SONG_BADGES.items()}
         self._visualizer_style = str(self._settings.value("ui/visualizerStyle", "liquid"))
@@ -319,6 +323,28 @@ class DesktopShell(QObject):
     def setReduceMotion(self, on):
         self._reduce_motion = bool(on)
         self._settings.setValue("ui/reduceMotion", self._reduce_motion)
+        self.settingsChanged.emit()
+
+    @Property(bool, notify=settingsChanged)
+    def customTitleBar(self):
+        """The title bar built into the window (move, maximize, minimize, close) instead of the system's."""
+        return self._title_bar
+
+    @Slot(bool)
+    def setCustomTitleBar(self, on):
+        self._title_bar = bool(on)
+        self._settings.setValue("ui/customTitleBar", self._title_bar)
+        self.settingsChanged.emit()
+
+    @Property(bool, notify=settingsChanged)
+    def titleBarMinimize(self):
+        """Whether the built-in title bar has a minimize button (off to begin with where minimize does nothing)."""
+        return self._title_minimize
+
+    @Slot(bool)
+    def setTitleBarMinimize(self, on):
+        self._title_minimize = bool(on)
+        self._settings.setValue("ui/titleBarMinimize", self._title_minimize)
         self.settingsChanged.emit()
 
     @Property("QVariantMap", notify=settingsChanged)
@@ -569,8 +595,7 @@ class DesktopShell(QObject):
         if self._window is not None:
             self._window.hide()
 
-    @Slot(result=bool)
-    @Slot(result=str)
+    @Slot(result=str)  # one signature only: with a second (result=bool) QML got True back, never "ask"
     def handleClose(self):
         """Called when the main window is closed. Returns "ask" (the window shows the choice and stays open),
         "quit", or "kept" (the window was minimized or hidden, the music goes on)."""
