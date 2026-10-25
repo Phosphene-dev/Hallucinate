@@ -17,8 +17,10 @@ RUN apt-get update \
 WORKDIR /src
 COPY pyproject.toml README.md LICENSE ./
 COPY packaging/build-requirements.txt packaging/build-requirements.txt
-# The exact, checksummed versions the release builds use
-RUN pip install --no-cache-dir --require-hashes -r packaging/build-requirements.txt
+COPY packaging/server/build-tools.txt packaging/server/build-tools.txt
+# The exact, checksummed versions the release builds use (and setuptools, to build Hallucinate itself)
+RUN pip install --no-cache-dir --require-hashes -r packaging/build-requirements.txt \
+ && pip install --no-cache-dir --require-hashes -r packaging/server/build-tools.txt
 COPY hallucinate hallucinate
 RUN pip install --no-cache-dir --no-deps --no-build-isolation . && rm -rf /src
 
