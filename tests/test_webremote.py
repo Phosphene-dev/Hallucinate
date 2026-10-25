@@ -80,7 +80,7 @@ APP = {"X-Hallucinate": "1"}
 
 def pair(server):
     code = server.new_code()
-    r = request(server, "POST", "/api/pair", {"code": code, "name": "Test phone"}, APP)
+    r = request(server, "POST", "/api/pair", {"code": code, "name": "Test phone", "token": True}, APP)
     assert r["status"] == 200, r
     cookie = r["headers"]["Set-Cookie"]
     assert "HttpOnly" in cookie and "SameSite=Strict" in cookie
@@ -177,6 +177,8 @@ def test_a_remote_can_browse_and_play_but_never_sees_paths(remote):
     assert call("state")["song"]["title"] == "Midnight Rain"
     found = call("search", query="midnight")
     assert [s["title"] for s in found["songs"]] == ["Midnight Rain"]
+    lib.speller()  # made off the window's thread (the first search with no match starts it)
+    assert wait_for(lambda: lib._speller is not None, timeout=10)
     assert call("search", query="midnigt")["corrected"] == "midnight"
     first = album["songs"][0]["id"]
     assert call("queue.add", ids=[first])["added"] == 1
@@ -233,3 +235,72 @@ def test_the_api_has_no_way_to_touch_files_or_settings():
         api.call("toggle", allowed=("read",))
     with pytest.raises(ApiError):
         api.call("art_file")  # helpers aren't commands
+
+
+def test_a_browser_never_sees_its_key_and_a_removed_device_stops_hearing(remote):
+    server, *_ = remote
+    server.configure(enabled=True)
+    code = server.new_code()
+    r = request(server, "POST", "/api/pair", {"code": code, "name": "Browser"}, APP)
+    assert r["status"] == 200 and "key" not in js(r)  # only in the HttpOnly cookie, away from scripts
+    key = r["headers"]["Set-Cookie"].split(";")[0].split("=", 1)[1]
+    ended = threading.Event()
+
+    def listen():
+        conn = http.client.HTTPConnection("127.0.0.1", server.port, timeout=30)
+        conn.request("GET", "/api/events", headers={"Host": f"127.0.0.1:{server.port}",
+                                                    "Cookie": f"{webserver.COOKIE}={key}"})
+        resp = conn.getresponse()
+        while resp.fp.readline():
+            pass
+        conn.close()
+        ended.set()
+
+    threading.Thread(target=listen, daemon=True).start()
+    assert wait_for(lambda: server._streams == 1, timeout=10)
+    server.forgetAllDevices()
+    assert wait_for(ended.is_set, timeout=10)
+
+
+def test_requests_without_a_plain_length_are_refused(remote):
+    server, *_ = remote
+    server.configure(enabled=True)
+    key = pair(server)
+    out = {}
+
+    def go():
+        with socket.create_connection(("127.0.0.1", server.port), timeout=10) as s:
+            s.sendall(f"POST /api/call HTTP/1.1\r\nHost: 127.0.0.1:{server.port}\r\nX-Hallucinate: 1\r\n"
+                      f"Authorization: Bearer {key}\r\nTransfer-Encoding: chunked\r\n\r\n"
+                      "10\r\n{\"method\":\"next\"}\r\n0\r\n\r\n".encode())
+            out["reply"] = s.recv(200)
+
+    t = threading.Thread(target=go)
+    t.start()
+    assert wait_for(lambda: not t.is_alive(), timeout=15)
+    assert out["reply"].startswith(b"HTTP/1.1 400")
+
+
+def test_a_flood_of_connections_is_turned_away(remote):
+    server, *_ = remote
+    server.configure(enabled=True)
+    held = [socket.create_connection(("127.0.0.1", server.port), timeout=5) for _ in range(webserver.MAX_CONNECTIONS)]
+    try:
+        extra = socket.create_connection(("127.0.0.1", server.port), timeout=5)
+        extra.settimeout(5)
+        assert extra.recv(10) == b""  # closed at once
+        extra.close()
+    finally:
+        for s in held:
+            s.close()
+    assert wait_for(lambda: request(server, "GET", "/api/hello").get("status") == 200, timeout=10)
+
+
+def test_odd_numbers_dont_reach_the_player(remote):
+    server, _lib, player = remote
+    api = server.api
+    for bad in ("nan", "inf", float("nan")):
+        with pytest.raises(ApiError):
+            api.call("volume", {"volume": bad})
+    api.call("volume", {"volume": 7})
+    assert player.volume <= 1.0

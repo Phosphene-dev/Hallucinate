@@ -645,9 +645,8 @@ class Library(QObject):
 
         self._quick.submit(work)
 
-    def _search_corrected(self, db, query, index, found):
-        """Nothing matched `query`: search for what was probably meant (each word that's in no name swapped for
-        the closest one that is), returned with "corrected" set; else `found` as it was."""
+    def _build_speller(self, db):
+        """The library's words for "did you mean" (made on a worker thread, once per reload)."""
         speller = self._speller
         if speller is None:
             texts = [r[0] for r in db.conn.execute(
@@ -655,7 +654,19 @@ class Library(QObject):
                 "UNION SELECT album_artist FROM tracks UNION SELECT genre FROM tracks WHERE genre != '' "
                 "UNION SELECT composer FROM tracks WHERE composer != ''")]
             speller = self._speller = spelling.Speller(texts)
-        meant = speller.correct(query)
+        return speller
+
+    def speller(self):
+        """The words for "did you mean" if they're made, else None (and they start being made on a worker
+        thread): for callers on the window's thread, which mustn't wait while a big library's are made."""
+        if self._speller is None:
+            self._quick.submit(self._build_speller)
+        return self._speller
+
+    def _search_corrected(self, db, query, index, found):
+        """Nothing matched `query`: search for what was probably meant (each word that's in no name swapped for
+        the closest one that is), returned with "corrected" set; else `found` as it was."""
+        meant = self._build_speller(db).correct(query)
         if not meant:
             return found
         r = db.search(meant, groups=index is None)

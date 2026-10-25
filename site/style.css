@@ -179,6 +179,7 @@ figcaption { color: var(--text-faint); font-size: 14px; text-align: center; marg
   font-size: 12px; font-weight: 600; color: #16101f; background: var(--lavender); border-radius: 999px; padding: 2px 9px;
 }
 .more { text-align: center; color: var(--text-faint); margin-top: 28px; font-size: 15px; }
+.verify { text-align: center; color: var(--text-faint); font-size: 14px; max-width: 720px; margin: 28px auto 0; overflow-wrap: anywhere; }
 
 .changes {
   max-width: 820px; margin: 0 auto; padding: 8px 32px 20px; border-radius: var(--radius);

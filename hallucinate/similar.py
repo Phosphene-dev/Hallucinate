@@ -134,4 +134,4 @@ class SimilarArtists(QObject):
 def _quote(name):
     import urllib.parse
 
-    return urllib.parse.quote(name.replace(" ", "+"), safe="+")
+    return urllib.parse.quote_plus(name)  # as Last.fm writes them: "Florence+%2B+the+Machine", "AC%2FDC"

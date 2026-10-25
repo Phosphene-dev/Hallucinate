@@ -22,6 +22,7 @@ import json
 import logging
 import secrets
 import socket
+import sys
 import threading
 import time
 import urllib.parse
@@ -54,6 +55,7 @@ CODE_LIFETIME_S = 300
 CODE_TRIES = 5  # wrong guesses before a pairing code stops working
 MAX_BODY = 64 * 1024
 MAX_EVENT_STREAMS = 16
+MAX_CONNECTIONS = 64  # open connections at once; more are closed straight away (no thread each)
 COOKIE = "hallucinate_key"
 SECURITY_HEADERS = {
     "Content-Security-Policy": "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; "
@@ -198,7 +200,11 @@ class _MainThread(QObject):
     def call(self, fn, timeout=10.0):
         future = Future()
         self._run.emit((fn, future))
-        return future.result(timeout=timeout)
+        try:
+            return future.result(timeout=timeout)
+        except FutureTimeout:
+            future.cancel()  # not run later, after whoever asked has been told it didn't work
+            raise
 
 
 class Events:
@@ -227,12 +233,30 @@ class Events:
 
 class _Server(ThreadingHTTPServer):
     daemon_threads = True
-    allow_reuse_address = True
+    # On Windows the same option lets another program bind the port alongside this one and take its requests
+    allow_reuse_address = sys.platform != "win32"
 
     def __init__(self, address, handler, owner, family=socket.AF_INET):
         self.address_family = family
         self.owner = owner
+        self._slots = threading.BoundedSemaphore(MAX_CONNECTIONS)
         super().__init__(address, handler)
+
+    def process_request(self, request, client_address):
+        if not self._slots.acquire(blocking=False):  # a flood of connections can't pile up threads
+            self.shutdown_request(request)
+            return
+        try:
+            super().process_request(request, client_address)
+        except BaseException:
+            self._slots.release()
+            raise
+
+    def process_request_thread(self, request, client_address):
+        try:
+            super().process_request_thread(request, client_address)
+        finally:
+            self._slots.release()
 
     def server_bind(self):
         if self.address_family == socket.AF_INET6:
@@ -279,7 +303,7 @@ class _Handler(BaseHTTPRequestHandler):
         parts = urllib.parse.urlsplit(origin)
         return parts.netloc.lower() == (self.headers.get("Host") or "").lower()
 
-    def _device(self):
+    def _key(self):
         key = ""
         auth = self.headers.get("Authorization") or ""
         if auth.startswith("Bearer "):
@@ -289,7 +313,10 @@ class _Handler(BaseHTTPRequestHandler):
                 k, _, v = part.strip().partition("=")
                 if k == COOKIE:
                     key = v
-        return self.owner.devices.check(key)
+        return key
+
+    def _device(self):
+        return self.owner.devices.check(self._key())
 
     # --- answers -------------------------------------------------------------------------------------------
     def _send(self, status, body=b"", ctype="application/json", extra=None, cache="no-store"):
@@ -313,11 +340,15 @@ class _Handler(BaseHTTPRequestHandler):
         self._send(status, {"error": message})
 
     def _read_json(self):
+        if self.headers.get("Transfer-Encoding"):  # only plain bodies of a stated length are read
+            self.close_connection = True
+            raise ApiError("Send a Content-Length")
         try:
             length = int(self.headers.get("Content-Length") or 0)
         except ValueError:
             length = -1
         if length < 0 or length > MAX_BODY:
+            self.close_connection = True  # the body isn't read, so the connection can't carry on
             raise ApiError("Request too large")
         raw = self.rfile.read(length) if length else b"{}"
         try:
@@ -395,7 +426,10 @@ class _Handler(BaseHTTPRequestHandler):
         key = self.owner.devices.add(str(data.get("name") or "")[:60])
         self.owner.paired()
         cookie = f"{COOKIE}={key}; Path=/; Max-Age={400 * 86400}; HttpOnly; SameSite=Strict"
-        return self._send(HTTPStatus.OK, {"ok": True, "key": key}, extra={"Set-Cookie": cookie})
+        # A browser keeps the key only as the cookie, out of reach of the page's scripts; a program (the
+        # terminal version) asks for it to send as a Bearer token.
+        body = {"ok": True, **({"key": key} if data.get("token") is True else {})}
+        return self._send(HTTPStatus.OK, body, extra={"Set-Cookie": cookie})
 
     def _art(self, album_key, query):
         from PySide6.QtCore import QBuffer, QByteArray, QIODevice
@@ -424,6 +458,7 @@ class _Handler(BaseHTTPRequestHandler):
         """Server-sent events: the state now, then again whenever it changes (and a heartbeat)."""
         if not self.owner.stream_opened():
             return self._error(HTTPStatus.SERVICE_UNAVAILABLE, "Too many open connections")
+        key = self._key()
         try:
             self.send_response(HTTPStatus.OK)
             for k, v in SECURITY_HEADERS.items():
@@ -436,6 +471,8 @@ class _Handler(BaseHTTPRequestHandler):
             seen, queue_seen = -1, -1
             while not self.owner.stopping:
                 version, state, queue_version = self.owner.events.wait(seen, 15)
+                if self.owner.devices.check(key) is None:
+                    break  # the device was removed: it hears nothing more
                 if version == seen:
                     self.wfile.write(b": keep-alive\n\n")
                 else:
@@ -482,7 +519,7 @@ class WebRemote(QObject):
         self._queue_dirty = False
         self._tick = QTimer(self)
         self._tick.setInterval(5000)  # the position, now and then while playing (remotes count on between)
-        self._tick.timeout.connect(self._soon)
+        self._tick.timeout.connect(self._tick_now)
         self._code_timer = QTimer(self)
         self._code_timer.setInterval(1000)
         self._code_timer.timeout.connect(self._code_tick)
@@ -630,11 +667,13 @@ class WebRemote(QObject):
     @Slot(str)
     def forgetDevice(self, device_id):
         self.devices.remove(device_id)
+        self.events.publish(self.events.state)  # its open event stream notices straight away
         self.changed.emit()
 
     @Slot()
     def forgetAllDevices(self):
         self.devices.remove_all()
+        self.events.publish(self.events.state)
         self.changed.emit()
 
     # --- running -------------------------------------------------------------------------------------------
@@ -710,6 +749,8 @@ class WebRemote(QObject):
         """At most 10 pairing attempts a minute from one address."""
         now = time.monotonic()
         with self._attempts_lock:
+            if len(self._attempts) > 1000:  # forget addresses that have gone quiet
+                self._attempts = {k: v for k, v in self._attempts.items() if v and now - v[-1] < 60}
             recent = [t for t in self._attempts.get(ip, []) if now - t < 60]
             if len(recent) >= 10:
                 self._attempts[ip] = recent
@@ -734,6 +775,12 @@ class WebRemote(QObject):
     def _soon(self):
         if self._httpd is not None and not self._publish_timer.isActive():
             self._publish_timer.start()
+
+    @Slot()
+    def _tick_now(self):
+        """Only while something plays and a remote is listening: otherwise there's nothing new to say."""
+        if self._streams and self._player is not None and self._player.playing:
+            self._soon()
 
     @Slot()
     def _queue_changed(self):

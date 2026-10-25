@@ -5,6 +5,20 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Security
+- Every release now has one `SHA256SUMS` covering all its downloads (it used to cover the AppImage only),
+  signed with the project key that also signs the Flatpak, and GitHub's signed build provenance for each file.
+  The README explains how to check a download; the website serves the public key.
+- The AppImage build installs its packaging tool at exact, checksummed versions, and CI checks the release
+  builds' pinned dependencies for known vulnerabilities too.
+- Desktop notifications show a song's title and artist as plain text: notification daemons read the body as
+  markup, so tags could format it or add links.
+
+### Fixed
+- Last.fm links for similar artists with "+" or "/" in their name (Florence + the Machine, AC/DC) opened the
+  wrong page.
+- The Flatpak build in CI and releases works on GitHub's newer runner image.
+
 ## [1.0.0] - 2026-10-23
 
 Hallucinate 1.0: composers and classical works, tempo and key, playlist folders, server songs kept on your

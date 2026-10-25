@@ -195,7 +195,7 @@ cd packaging/aur/hallucinate && makepkg -si       # or packaging/aur/hallucinate
 Maintainer and submission notes: [packaging/aur/README.md](packaging/aur/README.md).
 
 ### Windows
-Download the [installer](https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-windows-x64-setup.exe), or the portable `hallucinate-*-windows-x64.zip` (run `Hallucinate\Hallucinate.exe`) from [Releases](https://github.com/Phosphene-dev/Hallucinate/releases). Windows 10 or 11; media keys and the system media overlay work out of the box. Built with PyInstaller (`packaging/windows/build.ps1`). The installer isn't code-signed yet, so the first time you run it Windows SmartScreen says "Windows protected your PC": choose **More info → Run anyway**. You can check the download against the SHA-256 shown on the release page. Last.fm credentials use Windows Credential Manager; data lives in `%APPDATA%\hallucinate`.
+Download the [installer](https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-windows-x64-setup.exe), or the portable `hallucinate-*-windows-x64.zip` (run `Hallucinate\Hallucinate.exe`) from [Releases](https://github.com/Phosphene-dev/Hallucinate/releases). Windows 10 or 11; media keys and the system media overlay work out of the box. Built with PyInstaller (`packaging/windows/build.ps1`). The installer isn't code-signed yet, so the first time you run it Windows SmartScreen says "Windows protected your PC": choose **More info → Run anyway**. You can [check the download](#checking-a-download) first. Last.fm credentials use Windows Credential Manager; data lives in `%APPDATA%\hallucinate`.
 
 ### AppImage (any x86_64 Linux)
 Download the [AppImage](https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-x86_64.AppImage), then:
@@ -236,6 +236,20 @@ sudo pacman -S pyside6 python-mutagen python-keyring python-numpy qt6-multimedia
 git clone https://github.com/Phosphene-dev/Hallucinate.git && cd Hallucinate
 cd packaging/aur/hallucinate && makepkg -si      # or run from source (below)
 ```
+### Checking a download
+Every release has a `SHA256SUMS` file covering all its downloads, signed with the project's key
+([`hallucinate-repo.gpg`](packaging/flatpak/hallucinate-repo.gpg), fingerprint
+`617F 8316 D150 EC7C 1C19 AE07 659A 60CE E59B AC24`, the same key that signs the Flatpak repository):
+```sh
+gpg --import hallucinate-repo.gpg
+gpg --verify SHA256SUMS.asc SHA256SUMS && sha256sum --check --ignore-missing SHA256SUMS
+```
+Each download also carries GitHub's signed build provenance, which shows it was built from this repository by
+its release workflow: `gh attestation verify Hallucinate-x86_64.AppImage --repo Phosphene-dev/Hallucinate`.
+
+The Flatpak checks its own signatures on every install and update. GNOME Software and KDE Discover may still
+call it "unverified": that means it isn't a verified Flathub app, not that it's unsigned.
+
 ### pip (any OS)
 ```sh
 python -m venv .venv && . .venv/bin/activate
