@@ -5,6 +5,10 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-25
+
+The first round of tester feedback: fixes for closing the window and notifications, badges for explicit and Hi-Res songs, a built-in title bar and better volume controls.
+
 ### Added
 - A title bar built into the window (on by default on Linux, where Qt otherwise draws its own plain one):
   drag the top of the window or the sidebar's name to move it, double-click to maximize, and round minimize,
