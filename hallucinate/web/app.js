@@ -42,10 +42,16 @@ function el(tag, attrs = {}, ...kids) {
   return e;
 }
 
+// An album without a cover: a clear pixel, so the soft placeholder behind it shows instead of a broken image
+const NO_ART = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+function noArt(i) {
+  i.addEventListener("error", () => { if (i.src !== NO_ART) i.src = NO_ART; });
+}
+
 function img(albumKey, size, cls) {
   const i = el("img", { alt: "", loading: "lazy", class: cls });
-  if (albumKey) i.src = art(albumKey, size);
-  i.addEventListener("error", () => { i.removeAttribute("src"); });
+  noArt(i);
+  i.src = albumKey ? art(albumKey, size) : NO_ART;
   return i;
 }
 
@@ -128,7 +134,7 @@ function render() {
     $("nowArt").hidden = !key;
     $("nowArtEmpty").hidden = !!key;
     if (key) $("nowArt").src = art(key, 512);
-    $("miniArt").src = key ? art(key, 64) : "";
+    $("miniArt").src = key ? art(key, 64) : NO_ART;
     $("backdrop").style.backgroundImage = key ? `url("${art(key, 128)}")` : "none";
   }
   $("icoPlay").hidden = s.playing;
@@ -439,6 +445,10 @@ async function start() {
 }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 // a pairing link from the app ("…/#pair=123456") fills the code in; it's taken out of the address at once
+noArt($("miniArt"));
+$("detailArt").addEventListener("error", () => { $("detailArt").hidden = true; });
+$("nowArt").addEventListener("error", () => { $("nowArt").hidden = true; $("nowArtEmpty").hidden = false; });
+
 const linked = /pair=(\d{6})/.exec(location.hash);
 if (linked) { $("pairCode").value = linked[1]; history.replaceState(null, "", location.pathname); }
 start();

@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.1.0" date="2026-10-25">
+      <description>
+        <p>A web interface and phone remote: play, browse, search and manage the queue from a browser on your phone or another computer. It is off until you switch it on and only paired devices can use it.</p>
+        <p>Also a security pass: one signed checksum list for every download, notifications as plain text, and fixes.</p>
+      </description>
+    </release>
     <release version="1.0.0" date="2026-10-23">
       <description>
         <p>Composer pages with classical works and their movements in order, tempo and key in the tags, sorting and smart playlists, playlist folders, server songs kept on your computer to play offline, similar artists from Last.fm, and search that forgives typos.</p>

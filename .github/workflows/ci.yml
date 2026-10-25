@@ -24,6 +24,9 @@ jobs:
           python scripts/audit_deps.py audit
           pip-audit -r audit/deps.txt
           pip-audit --no-deps --disable-pip -r audit/flatpak.txt
+          # the exact versions the release builds install
+          pip-audit --no-deps --disable-pip -r packaging/build-requirements.txt
+          pip-audit --no-deps --disable-pip -r packaging/appimage/appimage-tools.txt
 
   test:
     # Pinned: on the newer ubuntu-latest image (PulseAudio 17), PySide6 6.12 crashes creating QMediaDevices

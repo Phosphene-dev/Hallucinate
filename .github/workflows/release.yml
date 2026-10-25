@@ -88,11 +88,10 @@ jobs:
         run: |
           # A fixed-name copy keeps releases/latest/download/... links (README, website) valid across versions.
           cp "hallucinate-${LABEL#v}-x86_64.AppImage" Hallucinate-x86_64.AppImage
-          sha256sum "hallucinate-${LABEL#v}-x86_64.AppImage" Hallucinate-x86_64.AppImage > SHA256SUMS
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --generate-notes || gh release view "$TAG" >/dev/null
           fi
-          gh release upload "$TAG" "hallucinate-${LABEL#v}-x86_64.AppImage" Hallucinate-x86_64.AppImage SHA256SUMS --clobber
+          gh release upload "$TAG" "hallucinate-${LABEL#v}-x86_64.AppImage" Hallucinate-x86_64.AppImage --clobber
 
   windows:
     needs: tag
@@ -264,6 +263,60 @@ jobs:
           tar -cf flatpak-repo.tar -C flatpak-repo .  # the website serves this; the next release builds on it
           gh release upload "$TAG" "hallucinate-${LABEL#v}-x86_64.flatpak" Hallucinate-x86_64.flatpak flatpak-repo.tar \
             --clobber
+
+  # Once every download is attached: one SHA256SUMS for all of them, signed with the project key (the one the
+  # Flatpak repository uses, packaging/flatpak/hallucinate-repo.gpg), and GitHub's signed build provenance for
+  # each file, so anyone can check a download came from this repository's release workflow:
+  #   gpg --verify SHA256SUMS.asc SHA256SUMS && sha256sum --check --ignore-missing SHA256SUMS
+  #   gh attestation verify hallucinate-<version>-x86_64.AppImage --repo Phosphene-dev/Hallucinate
+  checksums:
+    needs: [appimage, windows, macos, flatpak]
+    if: ${{ !cancelled() && (inputs.version != '' || startsWith(github.ref, 'refs/tags/v')) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+          persist-credentials: false
+      - name: Download every release file
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir dl
+          gh release download "$TAG" --dir dl --repo "$GITHUB_REPOSITORY" --pattern '*'
+          rm -f dl/SHA256SUMS dl/SHA256SUMS.asc
+          (cd dl && sha256sum -- * > ../SHA256SUMS)
+          cat SHA256SUMS
+      - name: Sign the checksums
+        env:
+          PRIVATE_KEY: ${{ secrets.FLATPAK_GPG_PRIVATE_KEY }}
+        run: |
+          if [ -z "$PRIVATE_KEY" ]; then
+            echo "::warning::No signing key (FLATPAK_GPG_PRIVATE_KEY): SHA256SUMS goes out unsigned"
+            exit 0
+          fi
+          export GNUPGHOME="$RUNNER_TEMP/gnupg"
+          mkdir -m 700 "$GNUPGHOME"
+          echo "$PRIVATE_KEY" | gpg --batch --import
+          key=$(gpg --batch --with-colons --list-secret-keys | awk -F: '$1 == "fpr" {print $10; exit}')
+          gpg --batch --with-colons --show-keys packaging/flatpak/hallucinate-repo.gpg | grep -q ":$key:" \
+            || { echo "::error::FLATPAK_GPG_PRIVATE_KEY doesn't match packaging/flatpak/hallucinate-repo.gpg"; exit 1; }
+          gpg --batch --local-user "$key" --armor --detach-sign --output SHA256SUMS.asc SHA256SUMS
+          # checked against the published public key, as a user would
+          export GNUPGHOME="$RUNNER_TEMP/verify" && mkdir -m 700 "$GNUPGHOME"
+          gpg --batch --import packaging/flatpak/hallucinate-repo.gpg
+          gpg --batch --verify SHA256SUMS.asc SHA256SUMS
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: "dl/*"
+      - name: Attach
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" SHA256SUMS $(ls SHA256SUMS.asc 2>/dev/null) --clobber --repo "$GITHUB_REPOSITORY"
 
   # Redeploy the website once every download is attached. A release created by this workflow's token doesn't
   # trigger other workflows, so call the Pages workflow directly.

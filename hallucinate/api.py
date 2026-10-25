@@ -234,9 +234,12 @@ class Api:
             p.setVolume(p.volume + delta if math.isfinite(delta) else p.volume)
         elif volume is not None:
             try:
-                p.setVolume(float(volume))
+                v = float(volume)
             except (TypeError, ValueError):
                 raise ApiError("volume must be a number") from None
+            if not math.isfinite(v):
+                raise ApiError("volume must be a number")
+            p.setVolume(max(0.0, min(1.0, v)))
         return {"volume": round(float(p.volume), 3)}
 
     m_volume._api_scope = "control"
@@ -422,15 +425,8 @@ class Api:
         r = self._db.search(q, track_limit=limit)
         corrected = ""
         if not (r["tracks"] or r["albums"] or r["artists"]) and self.library is not None:
-            from .core import spelling
-
-            speller = self.library._speller
-            if speller is None:
-                texts = [row[0] for row in self._db.conn.execute(
-                    "SELECT title FROM tracks UNION SELECT album FROM tracks UNION SELECT artist FROM tracks "
-                    "UNION SELECT album_artist FROM tracks")]
-                speller = self.library._speller = spelling.Speller(texts)
-            corrected = speller.correct(q)
+            speller = self.library.speller()  # (None the first time after a reload, while it's made)
+            corrected = speller.correct(q) if speller is not None else ""
             if corrected:
                 r = self._db.search(corrected, track_limit=limit)
         return {"songs": [self._song(t) for t in r["tracks"]], "albums": [self._album(a) for a in r["albums"]],
@@ -527,6 +523,8 @@ class Api:
     def m_playlist_add(self, id=0, ids=()):  # noqa: A002
         """Add songs to a (plain) playlist."""
         pid = _int(id)
+        if self.user_lib is None:
+            raise ApiError("Not ready yet")
         if not any(p["id"] == pid for p in self._db.playlists()):
             raise ApiError("No such playlist")
         paths = [t["path"] for t in self._tracks_by_ids(ids)]

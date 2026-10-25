@@ -519,6 +519,11 @@ class DesktopShell(QObject):
 
     def _send_notification(self, title, artist):
         if sys.platform.startswith("linux"):
+            import html
+
+            # Most notification daemons read the body as markup: a song's tags mustn't format it, add links
+            # or have it fetch images
+            artist = html.escape(artist or "", quote=False)
             from PySide6.QtDBus import QDBusConnection, QDBusMessage
 
             bus = QDBusConnection.sessionBus()

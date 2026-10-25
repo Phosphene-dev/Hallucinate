@@ -1,0 +1,2 @@
+# The AppImage build tool (packaging/appimage/build.sh); appimage-tools.txt pins it with checksums.
+python-appimage==1.4.6

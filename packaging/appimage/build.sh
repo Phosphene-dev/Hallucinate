@@ -21,7 +21,7 @@ pin() { grep -io "^$1==[^ ;]*" "$repo/packaging/build-requirements.txt"; }
 printf '%s\n' "$(pin pyside6)" "$(pin mutagen)" "$(pin keyring)" "$(pin numpy)" "$repo" > "$work/appdir/requirements.txt"
 
 python3 -m venv "$work/venv"
-"$work/venv/bin/pip" install -q python-appimage
+"$work/venv/bin/pip" install -q --require-hashes -r "$repo/packaging/appimage/appimage-tools.txt"
 # A fixed release of appimagetool, checked against its checksum: the "continuous" build changes under us.
 tool_version=1.9.0
 case "$(uname -m)" in

@@ -119,6 +119,8 @@ def build(out, flatpak_repo=None):
     shutil.copytree(ROOT / "site", out)
     shutil.copytree(ROOT / "docs" / "screenshots", out / "screenshots")
     shutil.copy2(ROOT / "assets" / "logo" / "social-preview.png", out / "img" / "social-preview.png")
+    if FLATPAK_KEY.is_file():  # the public key that signs the downloads' checksums and the Flatpak
+        shutil.copy2(FLATPAK_KEY, out / "hallucinate-signing-key.gpg")
 
     version = released_version()
     date, changes = changelog_entry(version)
@@ -130,9 +132,10 @@ def build(out, flatpak_repo=None):
     }
     if flatpak_files(out, flatpak_repo):
         values["LINUX_MORE"] = (
-            'Prefer Flatpak? <a href="hallucinate.flatpakref">Install it from our repository</a> and it updates '
-            f'with your other apps, or get the <a href="{REPO}/releases/latest/download/Hallucinate-x86_64.flatpak">'
-            f'single-file bundle</a>. Arch users can build the <a href="{REPO}#install">AUR package</a>.')
+            'Prefer Flatpak? <a href="hallucinate.flatpakref">Install it from our signed repository</a> and it '
+            f'updates with your other apps, or get the <a href="{REPO}/releases/latest/download/Hallucinate-x86_64.flatpak">'
+            'single-file bundle</a>. Software centres may call it "unverified": it isn\'t on Flathub, but it is '
+            f'signed. Arch users can build the <a href="{REPO}#arch-linux">package</a> from source.')
     else:
         values["LINUX_MORE"] = f'Flatpak and Arch (AUR) packages can be <a href="{REPO}#install">built from source</a>.'
 
