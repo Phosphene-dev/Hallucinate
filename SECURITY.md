@@ -28,7 +28,8 @@ Expect an initial response within a week.
   device's key is kept, and any device can be removed). Other web pages can't drive it (host, origin and
   header checks), and it can only play, queue, browse, like and rate: it can't read your files or paths, edit
   tags, delete anything or change settings.
-- **The control socket** used by `hallucinate --next` and friends is private to your user account.
+- **The control socket** used by `hallucinate cmd`, `hallucinate tui`, `--pair`, `--next` and friends is private to
+  your user account. A headless server in a container runs as its own unprivileged user.
 - **Your data is backed up**: the library database (likes, plays, playlists, history) is backed up
   daily; a damaged one is set aside and the backup restored. Removing albums is reversible, and
   "Move to trash" uses the system trash.

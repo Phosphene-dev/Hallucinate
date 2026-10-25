@@ -14,7 +14,7 @@ Item {
     Rectangle {
         id: frame
         anchors { fill: parent; margins: 14; topMargin: 6 }
-        radius: 26
+        radius: Theme.round(26)
         color: "#05030a"
         clip: true
         border.width: 1
@@ -72,7 +72,7 @@ Item {
             anchors { left: parent.left; bottom: parent.bottom; margins: 24 }
             spacing: 14
             Cover {
-                width: 56; height: 56; radius: 14
+                width: 56; height: 56; radius: Theme.round(14)
                 visible: player.hasTrack
                 source: player.hasTrack ? player.current.artUrl || "" : ""
             }
@@ -84,7 +84,7 @@ Item {
                     text: player.hasTrack ? player.current.title : "Nothing playing"
                     color: "white"
                     font.family: Theme.displayFamily
-                    font.pixelSize: Theme.fontSize(18)
+                    font.pixelSize: (Theme.fontSize(18)) * Theme.displayScale
                     font.weight: Font.DemiBold
                 }
                 Text {

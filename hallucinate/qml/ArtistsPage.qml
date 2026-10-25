@@ -45,7 +45,7 @@ Item {
         text: page.composers ? "Composers" : "Artists"
         color: Theme.text
         font.family: Theme.displayFamily
-        font.pixelSize: Theme.fontSize(25)
+        font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale
         font.weight: Font.Bold
     }
     Row {

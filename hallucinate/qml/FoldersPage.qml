@@ -44,7 +44,7 @@ Item {
                     text: "Folders"
                     color: page.path.length ? Theme.textDim : Theme.text
                     font.family: Theme.displayFamily
-                    font.pixelSize: Theme.fontSize(page.path.length ? 18 : 25)
+                    font.pixelSize: (Theme.fontSize(page.path.length ? 18 : 25)) * Theme.displayScale
                     font.weight: Font.Bold
                     LinkArea { enabled: page.path.length > 0; onClicked: page.path = "" }
                 }
@@ -69,7 +69,7 @@ Item {
                             text: modelData.name
                             color: last ? Theme.text : Theme.textDim
                             font.family: Theme.displayFamily
-                            font.pixelSize: Theme.fontSize(last ? 25 : 18)
+                            font.pixelSize: (Theme.fontSize(last ? 25 : 18)) * Theme.displayScale
                             font.weight: Font.Bold
                             LinkArea { enabled: !crumb.last; onClicked: page.path = modelData.path }
                         }
@@ -117,7 +117,7 @@ Item {
                         required property var modelData
                         width: Math.max(240, (col.width - 2 * 10) / 3 - 1)
                         height: 68
-                        radius: 16
+                        radius: Theme.round(16)
                         color: tileHover.hovered ? Theme.glassHover : Theme.glass
                         HoverHandler { id: tileHover }
                         border.width: 1
@@ -125,7 +125,7 @@ Item {
                         Cover {
                             id: folderArt
                             x: 10; anchors.verticalCenter: parent.verticalCenter
-                            width: 48; height: 48; radius: 10
+                            width: 48; height: 48; radius: Theme.round(10)
                             source: tile.modelData.artUrl || ""
                             fallback: ""
                             Icon {

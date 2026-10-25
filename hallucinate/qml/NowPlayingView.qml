@@ -15,6 +15,10 @@ Item {
     // Fully faded in: the window underneath can't be seen, so it needn't be drawn (main.qml)
     readonly property bool covering: open && !melt.running && opacity === 1
     readonly property bool vinyl: shell.nowPlayingVinyl
+    // The Deck (a 90s hi-fi front panel) instead of the cover and visualizer: your choice, or a retro theme's
+    property string deckChoice: shell.uiValue("nowPlayingDeck", "")
+    readonly property bool deck: deckChoice === "1" || (deckChoice === "" && Theme.retro)
+    function setDeck(on) { deckChoice = on ? "1" : "0"; shell.setUiValue("nowPlayingDeck", deckChoice) }
     property bool idle: false
     property bool lyricsMode: shell.uiValue("nowPlayingLyrics", "0") === "1"
     onLyricsModeChanged: shell.setUiValue("nowPlayingLyrics", lyricsMode ? "1" : "0")
@@ -37,6 +41,7 @@ Item {
     Item {
         id: stage
         anchors.fill: parent
+        visible: !view.deck
         // the melt: the scene settles from a slight zoom as it fades in
         scale: view.open || Theme.reduceMotion ? 1 : 1.06
         Behavior on scale { NumberAnimation { duration: 700; easing.type: Easing.OutCubic } }
@@ -182,7 +187,7 @@ Item {
                     text: player.hasTrack ? player.current.title : "Nothing playing"
                     color: "white"
                     font.family: Theme.displayFamily
-                    font.pixelSize: Theme.fontSize(view.lyricsMode ? 24 : Math.max(26, Math.min(46, view.width / 30)))
+                    font.pixelSize: (Theme.fontSize(view.lyricsMode ? 24 : Math.max(26, Math.min(46, view.width / 30)))) * Theme.displayScale
                     font.weight: Font.Bold
                     wrapMode: Text.Wrap
                     maximumLineCount: 3
@@ -270,7 +275,7 @@ Item {
                             color: "white"
                             opacity: distance === 0 ? 1 : Math.max(0.12, 0.62 - 0.14 * distance)
                             font.family: Theme.displayFamily
-                            font.pixelSize: Theme.fontSize(distance === 0 ? 26 : 20)
+                            font.pixelSize: (Theme.fontSize(distance === 0 ? 26 : 20)) * Theme.displayScale
                             font.weight: distance === 0 ? Font.Bold : Font.DemiBold
                             Behavior on opacity { NumberAnimation { duration: 260 } }
                             Accessible.role: Accessible.Button
@@ -349,7 +354,7 @@ Item {
                     IconButton { anchors.verticalCenter: parent.verticalCenter; visible: parent.episode; icon: "skipback:" + podcasts.options.skipBack; size: 24; tip: "Back " + podcasts.options.skipBack + " seconds"; onClicked: player.seekBy(-1000 * podcasts.options.skipBack) }
                     IconButton { anchors.verticalCenter: parent.verticalCenter; icon: "prev"; size: 24; onClicked: player.previous() }
                     Rectangle {
-                        width: 64; height: 64; radius: 32
+                        width: 64; height: 64; radius: Theme.round(32)
                         scale: Theme.reduceMotion ? 1 : (bigPlay.pressed ? 0.94 : (bigPlay.containsMouse ? 1.06 : 1))
                         Behavior on scale { NumberAnimation { duration: 120 } }
                         color: "white"
@@ -387,6 +392,12 @@ Item {
         }
     }
 
+    Loader {
+        anchors.fill: parent
+        active: view.deck && view.shown
+        sourceComponent: DeckView { active: view.open }
+    }
+
     // Top bar: leave, styles, vinyl, full screen. Fades out with the pointer at rest.
     Item {
         id: chrome
@@ -405,7 +416,7 @@ Item {
             anchors { right: parent.right; rightMargin: 22; verticalCenter: parent.verticalCenter }
             spacing: 8
             Repeater {
-                model: view.styles
+                model: view.deck ? [] : view.styles
                 Chip {
                     required property var modelData
                     text: modelData.t
@@ -415,8 +426,15 @@ Item {
             }
             Item { width: 6; height: 1 }
             IconButton {
+                objectName: "deckToggle"
+                anchors.verticalCenter: parent.verticalCenter
+                icon: "deck"; active: view.deck
+                tip: view.deck ? "Leave the Deck" : "The Deck: a 90s hi-fi"
+                onClicked: view.setDeck(!view.deck)
+            }
+            IconButton {
                 objectName: "lyricsToggle"
-                visible: shell.features.lyrics !== false
+                visible: shell.features.lyrics !== false && !view.deck
                 anchors.verticalCenter: parent.verticalCenter
                 icon: "note"; active: view.lyricsMode
                 tip: view.lyricsMode ? "Hide lyrics" : "Show lyrics (L)"
@@ -424,6 +442,7 @@ Item {
             }
             IconButton {
                 objectName: "vinylToggle"
+                visible: !view.deck
                 anchors.verticalCenter: parent.verticalCenter
                 icon: "vinyl"; active: view.vinyl
                 tip: view.vinyl ? "Show the cover" : "Show the record"
@@ -440,7 +459,7 @@ Item {
     Text {
         textFormat: Text.PlainText
         anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 22 }
-        visible: !player.visualizerEnabled && player.visualizerAvailable && shell.visualizerStyle !== "bars"
+        visible: !view.deck && !player.visualizerEnabled && player.visualizerAvailable && shell.visualizerStyle !== "bars"
         opacity: view.idle ? 0 : 0.6
         Behavior on opacity { NumberAnimation { duration: 400 } }
         text: "Turn on “React to the music” on the Visualizer page to make the backdrop move with the sound"

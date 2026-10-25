@@ -10,13 +10,13 @@ Item {
     visible: colors.length > 0
     Rectangle {  // rounded ends without a layer: a rounded bar under square bands, inset by the radius
         anchors.fill: parent
-        radius: height / 2
+        radius: Theme.round(height / 2)
         color: stripe.colors.length ? stripe.colors[0] : "transparent"
     }
     Rectangle {
         anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
         width: parent.height
-        radius: height / 2
+        radius: Theme.round(height / 2)
         color: stripe.colors.length ? stripe.colors[stripe.colors.length - 1] : "transparent"
     }
     Row {

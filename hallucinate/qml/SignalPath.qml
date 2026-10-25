@@ -18,7 +18,7 @@ Item {
         id: pill
         height: 20
         width: pillRow.implicitWidth + 16
-        radius: 10
+        radius: Theme.round(10)
         color: sp.path.untouched ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.16) : "transparent"
         border.width: 1
         border.color: sp.path.untouched ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.55)
@@ -64,8 +64,9 @@ Item {
         padding: 18
         margins: 10
         background: Rectangle {
-            radius: 18
+            radius: Theme.round(18)
             color: Theme.glassStrong
+            Bevel {}
             border.width: 1
             border.color: Theme.stroke
         }
@@ -76,7 +77,7 @@ Item {
                 text: "Signal path"
                 color: Theme.text
                 font.family: Theme.displayFamily
-                font.pixelSize: Theme.fontSize(15)
+                font.pixelSize: (Theme.fontSize(15)) * Theme.displayScale
                 font.weight: Font.DemiBold
                 bottomPadding: 4
             }
@@ -107,7 +108,7 @@ Item {
                         color: Theme.stroke
                     }
                     Rectangle {
-                        x: 0; y: 15; width: 12; height: 12; radius: 6
+                        x: 0; y: 15; width: 12; height: 12; radius: Theme.round(6)
                         color: modelData.active ? Theme.accent : Theme.surface
                         border.width: 2
                         border.color: modelData.active ? Theme.accentHi : Theme.stroke

@@ -2499,6 +2499,8 @@ class Player(QObject):
             pos = self._saved_position(token, int(data.get("position", 0)))
             shuffle, repeat = bool(data.get("shuffle")), int(data.get("repeat", 0))
             played = [int(p) for p in data.get("played") or [] if isinstance(p, int)]
+        except FileNotFoundError:
+            return False  # a first start: there's no session yet
         except (OSError, ValueError, KeyError, TypeError) as exc:
             logger.warning("Could not restore playback session from %s: %s", self._session_file, exc)
             return False

@@ -111,7 +111,7 @@ Item {
                 Text {
                     textFormat: Text.PlainText
                     text: "Podcasts"
-                    color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(25); font.weight: Font.Bold
+                    color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale; font.weight: Font.Bold
                 }
                 Text {
                     textFormat: Text.PlainText
@@ -143,7 +143,7 @@ Item {
                 leftPadding: 16
                 selectByMouse: true
                 Accessible.name: "Find shows"
-                background: Rectangle { radius: height / 2; color: Theme.surface; border.color: search.activeFocus ? Theme.accent : Theme.border }
+                background: Rectangle { radius: Theme.round(height / 2); color: Theme.surface; border.color: search.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                 onAccepted: { page.query = text.trim(); podcasts.search(page.query) }
                 onTextChanged: if (!text.length) { page.query = ""; podcasts.search("") }
                 Keys.onEscapePressed: text = ""
@@ -166,7 +166,7 @@ Item {
                         required property var model
                         width: col.width
                         height: 56
-                        radius: 14
+                        radius: Theme.round(14)
                         color: resultMouse.containsMouse ? Theme.glassHover : "transparent"
                         Column {
                             anchors { left: parent.left; leftMargin: 14; right: followBtn.left; rightMargin: 10; verticalCenter: parent.verticalCenter }
@@ -269,13 +269,13 @@ Item {
                         height: width + 54
                         Cover {
                             id: showArt
-                            width: parent.width; height: parent.width; radius: 16
+                            width: parent.width; height: parent.width; radius: Theme.round(16)
                             source: tile.model.artUrl
                             fallback: (tile.model.title || "?").charAt(0)
                             Rectangle {
                                 visible: tile.model.unplayed > 0
                                 anchors { right: parent.right; top: parent.top; margins: 8 }
-                                width: Math.max(24, newCount.implicitWidth + 12); height: 24; radius: 12
+                                width: Math.max(24, newCount.implicitWidth + 12); height: 24; radius: Theme.round(12)
                                 color: Theme.accent
                                 Text { id: newCount; anchors.centerIn: parent; text: tile.model.unplayed; color: Theme.onAccent; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.Bold; textFormat: Text.PlainText }
                             }

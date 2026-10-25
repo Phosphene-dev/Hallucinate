@@ -15,6 +15,7 @@ GlassPanel {
     // A bloom of the accent behind the cover
     Shape {
         id: bloom
+        visible: !Theme.retro  // no soft glows in a retro theme
         readonly property bool decoration: true  // a glow, meant to spill past edges
         readonly property real size: 360
         x: cover.x + cover.width / 2 - size / 2; y: cover.y + cover.height / 2 - size / 2
@@ -72,7 +73,7 @@ GlassPanel {
             text: card.hasAlbum ? card.album.album : "Your albums will appear here"
             color: Theme.text
             font.family: Theme.displayFamily
-            font.pixelSize: Theme.fontSize(22)
+            font.pixelSize: (Theme.fontSize(22)) * Theme.displayScale
             font.weight: Font.Bold
             wrapMode: Text.Wrap
             maximumLineCount: 2

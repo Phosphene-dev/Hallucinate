@@ -5,6 +5,40 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-25
+
+Retro themes and the Deck, Hallucinate on a server without a window, and the command line and terminal version.
+
+### Added
+- Hallucinate without a window: `hallucinate --headless` for a home server, a NAS, a Raspberry Pi, a container
+  or a Proxmox LXC. It plays through that machine's sound output and is driven from the web interface,
+  `hallucinate cmd` or `hallucinate tui`; `hallucinate --pair` prints a pairing code for your phone. The library,
+  history, scrobbling, ReplayGain and music servers all work as in the app. There's a container image
+  (`packaging/server/Dockerfile`), user and system services for systemd, and a guide with Proxmox steps
+  (docs/headless.md). It stops cleanly on SIGTERM.
+- `hallucinate cmd`: every web remote command from the command line: what's playing, playback, volume, seek,
+  shuffle, repeat, radio mode and the sleep timer, the queue, search, playing albums, artists, genres, composers
+  and playlists by name, likes and ratings, a rescan, and the web interface's settings and paired devices.
+  `--json` for scripts.
+- `hallucinate tui`: a full-screen player in the terminal (or over SSH): what's playing with a progress bar, and
+  the queue, albums, artists, playlists, liked songs and search, all from the keyboard.
+- Retro themes: Hi-Fi Deck (gunmetal and amber) and Beige Box (an old PC's grey-beige and navy). The whole app
+  takes the look: square corners, raised panels and buttons, sunken fields, drop-downs with their own button,
+  white-well checkboxes, block slider thumbs, dialogs with a title bar, menus and the open page marked in solid
+  accent, the pale yellow tooltips of old desktops, dot-matrix headings, solid panels and no glows. The Recap
+  card becomes a blue screen. A theme file can ask for this look with `"style": "retro"`.
+- The Deck: Now Playing as a 90s hi-fi front panel, the default in a retro theme and a button away in any
+  other. The cover is a cassette label, the reels turn and the tape winds as the song plays; a glowing display
+  shows the time in seven-segment digits (click it for the time left), the track number, a scrolling title in
+  fourteen-segment letters and the format; a spectrum analyser with falling peaks and two VU meters move with
+  the music; chunky keys, a volume knob and a tape slider control it. Its display comes in amber, green, blue
+  or red, with an optional CRT look; motion stops with Reduce motion. Fonts: DSEG and VT323 (SIL OFL).
+- The web interface can be told other names it answers to (a reverse proxy, a DNS name):
+  `hallucinate cmd remote --host-name music.example.lan`.
+
+### Fixed
+- A first start no longer logs that the playback session couldn't be restored (there isn't one yet).
+
 ## [1.1.0] - 2026-10-25
 
 A web interface and phone remote, and a security pass.

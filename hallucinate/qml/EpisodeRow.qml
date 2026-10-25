@@ -21,10 +21,10 @@ Rectangle {
     Keys.onPressed: function (event) { if (listKeys.handles(event)) listKeys.press(event, row.ListView.view ? row.ListView.view.indexAt(row.x + 1, row.y + 1) : 0) }
     Keys.onReturnPressed: row.playing ? player.toggle() : (row.upNextRow ? podcasts.playUpNext(row.episode.id) : podcasts.play(row.episode.id))
     Keys.onEnterPressed: row.playing ? player.toggle() : (row.upNextRow ? podcasts.playUpNext(row.episode.id) : podcasts.play(row.episode.id))
-    Rectangle { anchors.fill: parent; anchors.margins: -2; radius: 14; color: "transparent"; border.width: 2; border.color: Theme.accent; visible: row.activeFocus }
+    Rectangle { anchors.fill: parent; anchors.margins: -2; radius: Theme.round(14); color: "transparent"; border.width: 2; border.color: Theme.accent; visible: row.activeFocus }
     width: parent ? parent.width : 400
     height: 64
-    radius: 14
+    radius: Theme.round(14)
     color: rowMouse.containsMouse || playing ? Theme.glassHover : "transparent"
     border.width: playing ? 1 : 0
     border.color: Theme.accent
@@ -33,7 +33,7 @@ Rectangle {
         id: art
         x: 10
         anchors.verticalCenter: parent.verticalCenter
-        width: 44; height: 44; radius: 10
+        width: 44; height: 44; radius: Theme.round(10)
         source: row.episode.artUrl || ""
         fallback: (row.episode.podcast || row.episode.title || "?").charAt(0)
     }

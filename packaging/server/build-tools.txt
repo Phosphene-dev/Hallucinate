@@ -1,0 +1,5 @@
+# What building Hallucinate itself needs inside the image (the slim Python has no setuptools): the same version and
+# checksums as packaging/build-requirements.txt pins for the release builds.
+setuptools==84.1.0 \
+    --hash=sha256:5231689c6ac8156cd155cfb98c3fd6fb252c3e7e9bd3d78b64d3c55f132624c9 \
+    --hash=sha256:23657205b63d4d31395ab917815247f694aafad28cd21316bf5fd45a51048ea0

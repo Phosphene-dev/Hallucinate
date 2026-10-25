@@ -69,7 +69,7 @@ Item {
             text: parent.value
             color: Theme.text
             font.family: Theme.displayFamily
-            font.pixelSize: Theme.fontSize(20)
+            font.pixelSize: (Theme.fontSize(20)) * Theme.displayScale
             font.weight: Font.Bold
         }
         Text {
@@ -143,7 +143,7 @@ Item {
                         text: page.artistName
                         color: Theme.text
                         font.family: Theme.displayFamily
-                        font.pixelSize: Theme.fontSize(page.artistName.length > 24 ? 28 : 38)
+                        font.pixelSize: (Theme.fontSize(page.artistName.length > 24 ? 28 : 38)) * Theme.displayScale
                         font.weight: Font.Bold
                         wrapMode: Text.Wrap
                         maximumLineCount: 2
@@ -220,7 +220,7 @@ Item {
                             textFormat: Text.PlainText
                             height: 32; verticalAlignment: Text.AlignVCenter
                             text: "About"
-                            color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(18); font.weight: Font.DemiBold
+                            color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(18)) * Theme.displayScale; font.weight: Font.DemiBold
                         }
                         Text {
                             textFormat: Text.PlainText
@@ -345,7 +345,7 @@ Item {
                             placeholderTextColor: Theme.textDim
                             color: Theme.text
                             font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
-                            background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: bioEdit.activeFocus ? Theme.accent : Theme.border }
+                            background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: bioEdit.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                             Accessible.name: "Bio for " + page.artistName
                             Keys.onEscapePressed: about.editing = false
                         }
@@ -485,7 +485,7 @@ Item {
                         height: yearFlow.height + 8
                         Rectangle { x: 6; width: 2; height: parent.height; color: Theme.stroke }
                         Rectangle {
-                            x: 1; y: 8; width: 12; height: 12; radius: 6
+                            x: 1; y: 8; width: 12; height: 12; radius: Theme.round(6)
                             color: Theme.accent
                             border.width: 3; border.color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.3)
                         }
@@ -495,7 +495,7 @@ Item {
                             text: yearRow.modelData.year > 0 ? yearRow.modelData.year : "—"
                             color: Theme.text
                             font.family: Theme.displayFamily
-                            font.pixelSize: Theme.fontSize(15)
+                            font.pixelSize: (Theme.fontSize(15)) * Theme.displayScale
                             font.weight: Font.DemiBold
                         }
                         Flow {

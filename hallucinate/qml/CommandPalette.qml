@@ -27,8 +27,9 @@ Popup {
     }
     exit: Transition { NumberAnimation { property: "opacity"; to: 0; duration: 100 } }
     background: Rectangle {
-        radius: 22
+        radius: Theme.round(22)
         color: Theme.glassStrong
+        Bevel {}
         border.width: 1
         border.color: Theme.strokeHi
     }
@@ -235,7 +236,7 @@ Popup {
                 x: 8
                 width: list.width - 16
                 height: 50
-                radius: 12
+                radius: Theme.round(12)
                 color: index === palette.current ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.18) : "transparent"
                 Item {
                     id: lead

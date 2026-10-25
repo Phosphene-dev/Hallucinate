@@ -226,7 +226,7 @@ def main():
             ctx = QQmlEngine.contextForObject(win)
             library, player, user_lib = (ctx.contextProperty(n) for n in ("library", "player", "userLib"))
             themes = [t.strip() for t in args.themes.split(",") if t.strip()]
-            todo = []
+            todo = [lambda: managers[0].selectTheme(themes[0])]  # every shot in the first theme asked for
 
             def shot(name):
                 return lambda: win.grabWindow().save(str(out / f"{name}{suffix}.png"))
@@ -472,6 +472,27 @@ def main():
                      lambda: QMetaObject.invokeMethod(win, "openPodcast", Q_ARG("QVariant", state["show"])), wait, wait,
                      shot("podcast")]
             todo += [lambda: managers[0].selectTheme("Ribbon"), go("home"), wait, wait, shot("theme-ribbon"),
+                     lambda: managers[0].selectTheme(themes[0]), wait]
+            def deck_options(lcd, crt):
+                def set_options():
+                    shell.setUiValue("deckLcd", lcd)
+                    shell.setUiValue("deckCrt", "1" if crt else "0")
+                return set_options
+
+            def analyser_on():
+                player._visualizer_enabled = True  # (the spectrum itself is faked above)
+                player.visualizerChanged.emit()
+
+            # The Deck: a retro theme opens Now Playing as a 90s hi-fi front panel
+            todo += [analyser_on, deck_options("amber", False), lambda: managers[0].selectTheme("Hi-Fi Deck"),
+                     lambda: child("nowPlayingView").setProperty("open", True), wait, wait, wait, shot("deck"),
+                     lambda: child("nowPlayingView").setProperty("open", False), wait,
+                     deck_options("green", True), lambda: child("nowPlayingView").setProperty("open", True),
+                     wait, wait, wait, shot("deck-green-crt"),
+                     lambda: win.resize(820, 560), wait, wait, shot("deck-small"), lambda: win.resize(1280, 800), wait,
+                     lambda: child("nowPlayingView").setProperty("open", False), deck_options("amber", False), wait,
+                     go("home"), wait, shot("theme-hifi-deck"),
+                     lambda: managers[0].selectTheme("Beige Box"), wait, wait, shot("theme-beige-box"),
                      lambda: managers[0].selectTheme(themes[0]), wait]
             def open_composer():
                 QMetaObject.invokeMethod(win, "openComposer", Q_ARG("QVariant", COMPOSER))

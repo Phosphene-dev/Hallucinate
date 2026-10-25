@@ -32,7 +32,7 @@ Item {
         Row {
             width: parent.width
             spacing: 16
-            Text { id: pageTitle; text: "Settings"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(25); font.weight: Font.Bold; textFormat: Text.PlainText }
+            Text { id: pageTitle; text: "Settings"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale; font.weight: Font.Bold; textFormat: Text.PlainText }
             TextField {
                 id: search
                 objectName: "settingsSearch"
@@ -46,7 +46,7 @@ Item {
                 font.pixelSize: Theme.fontSize(14)
                 leftPadding: 14
                 selectByMouse: true
-                background: Rectangle { radius: height / 2; color: Theme.surface; border.color: search.activeFocus ? Theme.accent : Theme.border }
+                background: Rectangle { radius: Theme.round(height / 2); color: Theme.surface; border.color: search.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                 onTextChanged: { page.query = text; flick.contentY = 0 }
                 Keys.onEscapePressed: text = ""
             }
@@ -151,7 +151,7 @@ Item {
                         Rectangle {
                             required property string modelData
                             readonly property bool chosen: themeManager.accentOverride === modelData
-                            width: 30; height: 30; radius: 15
+                            width: 30; height: 30; radius: Theme.round(15)
                             color: modelData.length ? modelData : "transparent"
                             border.width: chosen ? 3 : 1
                             border.color: chosen ? Theme.text : Theme.border
@@ -678,7 +678,7 @@ Item {
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(14)
                     leftPadding: 14
-                    background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: pathField.activeFocus ? Theme.accent : Theme.border }
+                    background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: pathField.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                     onAccepted: add.clicked()
                 }
                 PillButton {
@@ -990,7 +990,7 @@ Item {
                         placeholderTextColor: Theme.textDim
                         color: Theme.text
                         font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
-                        background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: newPassword.activeFocus ? Theme.accent : Theme.border }
+                        background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: newPassword.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                         onAccepted: signInDlg.accept()
                         Accessible.name: "Password"
                     }
@@ -1162,7 +1162,7 @@ Item {
                             textFormat: Text.PlainText
                             objectName: "pairingCode"
                             text: webRemote.code.replace(/(\d{3})(\d{3})/, "$1 $2")
-                            color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(40); font.weight: Font.Bold
+                            color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(40)) * Theme.displayScale; font.weight: Font.Bold
                             font.letterSpacing: 4
                         }
                         Text {
@@ -1316,7 +1316,7 @@ Item {
                         placeholderTextColor: Theme.textDim
                         color: Theme.text
                         font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
-                        background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: discogsToken.activeFocus ? Theme.accent : Theme.border }
+                        background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: discogsToken.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                         onAccepted: sources.connectDiscogs(text)
                         Accessible.name: "Discogs personal access token"
                     }
@@ -1373,7 +1373,7 @@ Item {
                         placeholderText: "Last.fm API key"
                         color: Theme.text; placeholderTextColor: Theme.textDim
                         font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
-                        background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: apiKey.activeFocus ? Theme.accent : Theme.border }
+                        background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: apiKey.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                     }
                     TextField {
                         id: apiSecret
@@ -1382,7 +1382,7 @@ Item {
                         echoMode: TextInput.Password
                         color: Theme.text; placeholderTextColor: Theme.textDim
                         font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
-                        background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: apiSecret.activeFocus ? Theme.accent : Theme.border }
+                        background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: apiSecret.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                     }
                     PillButton {
                         text: "Get API credentials"
@@ -1479,7 +1479,7 @@ Item {
                     echoMode: TextInput.Password
                     color: Theme.text; placeholderTextColor: Theme.textDim
                     font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
-                    background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: lbToken.activeFocus ? Theme.accent : Theme.border }
+                    background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: lbToken.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                 }
                 PillButton {
                     visible: !listenbrainz.connected
@@ -1549,7 +1549,7 @@ Item {
                         placeholderText: historySource.currentIndex === 0 && listenbrainz.connected ? "Username (blank = connected account)" : "Username"
                         color: Theme.text; placeholderTextColor: Theme.textDim
                         font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
-                        background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: historyUser.activeFocus ? Theme.accent : Theme.border }
+                        background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: historyUser.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                     }
                     PillButton {
                         primary: true
@@ -1589,7 +1589,7 @@ Item {
                     color: Theme.text
                     placeholderTextColor: Theme.textDim
                     font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
-                    background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: parent.activeFocus ? Theme.accent : Theme.border }
+                    background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: parent.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                     onEditingFinished: discord.setAppId(text)
                     Component.onCompleted: text = discord.appId
                     Connections { target: discord; function onChanged() { if (!discordAppId.activeFocus) discordAppId.text = discord.appId } }

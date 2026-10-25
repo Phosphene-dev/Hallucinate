@@ -69,20 +69,30 @@ QtObject {
     // Display typeface for headings, numbers and the wordmark (Unbounded, SIL OFL; bundled in assets/fonts).
     property FontLoader displayBold: FontLoader { source: Qt.resolvedUrl("../assets/fonts/Unbounded-Bold.ttf") }
     property FontLoader displaySemiBold: FontLoader { source: Qt.resolvedUrl("../assets/fonts/Unbounded-SemiBold.ttf") }
-    readonly property string displayFamily: displayBold.status === FontLoader.Ready ? displayBold.font.family : fontFamily
+    property FontLoader pixel: FontLoader { source: Qt.resolvedUrl("../assets/fonts/VT323-Regular.ttf") }
+    // Headings: Unbounded, or in a retro theme the dot-matrix face of an old display
+    // the dot-matrix face is small for its size: headings in it are drawn larger
+    readonly property real displayScale: retro && pixel.status === FontLoader.Ready ? 1.45 : 1
+    readonly property string displayFamily: retro && pixel.status === FontLoader.Ready ? pixel.font.family
+        : displayBold.status === FontLoader.Ready ? displayBold.font.family : fontFamily
 
     // Light themes get softer glass and ambience
     readonly property bool reduceMotion: shell.reduceMotion
     readonly property bool light: (0.2126 * bg.r + 0.7152 * bg.g + 0.0722 * bg.b) > 0.5
     // Translucent surfaces that let the ambient backdrop glow through ("frosted glass")
-    readonly property color glass: Qt.rgba(panel.r, panel.g, panel.b, light ? 0.72 : 0.62)
-    readonly property color glassStrong: Qt.rgba(panel.r, panel.g, panel.b, light ? 0.88 : 0.82)
+    // Frosted glass; solid panels in a retro theme (nothing was see-through in 1998)
+    readonly property color glass: retro ? panel : Qt.rgba(panel.r, panel.g, panel.b, light ? 0.72 : 0.62)
+    readonly property color glassStrong: retro ? panel : Qt.rgba(panel.r, panel.g, panel.b, light ? 0.88 : 0.82)
     readonly property color glassHover: Qt.rgba(surfaceHi.r, surfaceHi.g, surfaceHi.b, 0.55)
     readonly property color stroke: Qt.rgba(text.r, text.g, text.b, light ? 0.10 : 0.08)
     readonly property color strokeHi: Qt.rgba(accent.r, accent.g, accent.b, 0.45)
     // Menus, dialogs and tooltips: nearly opaque glass above the page, a soft accent tint for the item under the
     // pointer (text stays the normal text colour, readable in every theme), and the dim laid over the page
-    readonly property color popup: Qt.rgba(panel.r, panel.g, panel.b, light ? 0.97 : 0.94)
+    readonly property color popup: retro ? panel : Qt.rgba(panel.r, panel.g, panel.b, light ? 0.97 : 0.94)
+    // A chosen row or item (a menu's highlighted entry, the open page): a tint, or in a retro theme the solid
+    // accent with its own text colour, as old desktops marked a selection
+    readonly property color selectedBg: retro ? accent : hoverTint
+    readonly property color selectedText: retro ? onAccent : text
     readonly property color hoverTint: Qt.rgba(accent.r, accent.g, accent.b, light ? 0.14 : 0.22)
     readonly property color scrim: Qt.rgba(bg.r * 0.35, bg.g * 0.35, bg.b * 0.35, light ? 0.38 : 0.58)
 
@@ -102,6 +112,9 @@ QtObject {
     Behavior on art2 { ColorAnimation { duration: 3200; easing.type: Easing.InOutQuad } }
     readonly property real fontScale: themeManager.fontScale
     readonly property int radius: themeManager.radius
+    readonly property bool retro: themeManager.retro
+    // In a theme made after old hardware, corners are as square as the theme says (it's `r` everywhere else)
+    function round(r) { return retro ? Math.min(r, radius) : r }
     readonly property real radiusSmall: Math.max(2, radius * 0.6)
     readonly property real radiusLarge: radius * 2
     readonly property int sidebarWidth: themeManager.sidebarWidth

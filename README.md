@@ -46,6 +46,10 @@
 | **Similar artists** (from Last.fm, if you set it up) | **Search that forgives a typo** |
 | ![Similar artists on an artist page, with Play a mix](docs/screenshots/similar-artists.png) | ![Search showing results for the closest match](docs/screenshots/search-typo.png) |
 
+New in 1.2: retro themes (Hi-Fi Deck, Beige Box) and **the Deck**, a 90s hi-fi Now Playing ([see Themes](#themes));
+Hallucinate on a server without a window, `hallucinate cmd` and a terminal player
+([Command line, terminal and server](#command-line-terminal-and-server)).
+
 New in 1.1: a web interface and phone remote (Settings → Remote & web), and a security pass with signed
 checksums for every download.
 
@@ -345,6 +349,18 @@ follow the system's light or dark mode with a theme picked for each, and **Make 
 editable copy of the current one. **Reduce motion** stops page transitions, zooms, the spinning record and
 the drifting backdrop.
 
+**Retro: Hi-Fi Deck and Beige Box.** Two themes made after late-90s hardware and desktops: square corners,
+raised and sunken bevels, solid panels and dot-matrix headings (Hi-Fi Deck in gunmetal and amber, Beige Box in
+the grey-beige and navy of an old PC). They open Now Playing as **the Deck**, a hi-fi front panel: the cover
+on a cassette whose reels turn and wind, a glowing display with segment digits and a scrolling title, a
+spectrum analyser and VU meters that move with the music, chunky keys and a volume knob. Pick the display's
+colour (amber, green, blue, red) and an optional CRT look; the cassette button in Now Playing switches to and
+from the Deck in any theme. A theme of your own can ask for this with `"style": "retro"`.
+
+| The Deck | Beige Box |
+|---|---|
+| ![The Deck: a cassette with turning reels, a glowing amber display, a spectrum analyser, VU meters and chunky keys](docs/screenshots/deck.png) | ![The Beige Box theme: bevelled grey-beige panels and navy, like an old PC desktop](docs/screenshots/theme-beige-box.png) |
+
 Add custom JSON files to `$XDG_CONFIG_HOME/hallucinate/themes/` (normally
 `~/.config/hallucinate/themes/`) and select **Reload themes** in Settings.
 Every theme requires all listed colors, a radius from 0 to 32, and a font family
@@ -379,16 +395,23 @@ screenshot by `python scripts/make_social.py`; rerun it after new screenshots. T
 on GitHub, use the repository's **Settings → General → Social preview** controls. The Windows installer uses
 the generated setup wizard image.
 
-## Command-line controls
-Start Hallucinate normally, then control that running instance from a terminal:
+## Command line, terminal and server
+Control a running Hallucinate (the window or a server) from a terminal:
 ```sh
-hallucinate --play-pause
-hallucinate --next
-hallucinate --prev
-hallucinate --status   # prints current track, state, position, duration, and queue length as JSON
+hallucinate cmd status                     # what's playing
+hallucinate cmd play-album Kind of Blue    # also play-artist, play-playlist, play-liked --shuffle…
+hallucinate cmd search coltrane            # songs show an id: hallucinate cmd add 123 --next
+hallucinate cmd volume 40                  # seek 1:30, next, prev, shuffle on, repeat one, sleep 30…
+hallucinate cmd --help                     # everything; add --json for scripts
+hallucinate tui                            # a full-screen player in the terminal
 ```
-The same local IPC activates the existing window when `hallucinate` is launched
-again. Control commands report an error if no instance is running.
+`--play-pause`, `--next`, `--prev` and `--status` (JSON) still work too. They all talk to the running app over a
+socket only your account can open, and launching `hallucinate` again brings its window forward.
+
+**Without a window** (a home server, a NAS, a Raspberry Pi, a container, a Proxmox LXC):
+`hallucinate --headless /path/to/music` plays through that machine's speakers and is driven from the web
+interface on your phone, `hallucinate cmd` or `hallucinate tui`; `hallucinate --pair` gives your phone a code.
+There's a container image, systemd services and Proxmox notes: [docs/headless.md](docs/headless.md).
 Track-change notifications are opt-in under Settings → Desktop; they use the
 Linux desktop notification service or the platform tray notification API.
 
@@ -424,7 +447,6 @@ FLAC, MP3, OGG/Vorbis, Opus, WAV, AAC/M4A, ALAC, WMA, WavPack, AIFF and APE
 - Signed Windows builds, and signed and notarized macOS builds
 - The AUR packages, once AUR account sign-ups reopen
 - Real-device verification of APE playback and desktop media keys
-- Running without a window on a home server (headless), and a terminal version
 - Being considered: casting to Chromecast and DLNA/UPnP speakers, copying playlists to a device, and
   bit-perfect output
 

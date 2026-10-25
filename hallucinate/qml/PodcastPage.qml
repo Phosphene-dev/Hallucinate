@@ -116,7 +116,7 @@ Item {
                     spacing: 20
                     Cover {
                         id: art
-                        width: Math.min(180, list.width * 0.28); height: width; radius: 18
+                        width: Math.min(180, list.width * 0.28); height: width; radius: Theme.round(18)
                         source: page.info.artUrl || ""
                         fallback: (page.info.title || "?").charAt(0)
                     }
@@ -132,7 +132,7 @@ Item {
                             maximumLineCount: 2
                             elide: Text.ElideRight
                             text: page.info.title || ""
-                            color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(28); font.weight: Font.Bold
+                            color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(28)) * Theme.displayScale; font.weight: Font.Bold
                         }
                         Text { textFormat: Text.PlainText; visible: text.length > 0; text: page.info.author || ""; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
                         Text {

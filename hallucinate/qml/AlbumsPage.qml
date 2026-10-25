@@ -34,7 +34,7 @@ Item {
             text: "Albums"
             color: Theme.text
             font.family: Theme.displayFamily
-            font.pixelSize: Theme.fontSize(25)
+            font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale
             font.weight: Font.Bold
         }
         Row {
@@ -116,12 +116,12 @@ Item {
                     z: tileMouse.containsMouse ? 2 : 0
                     Rectangle {
                         anchors { fill: parent; margins: 2 }
-                        radius: 6
+                        radius: Theme.round(6)
                         color: tile.color.length ? tile.color : Theme.surface
                     }
                     Cover {
                         anchors { fill: parent; margins: 2 }
-                        radius: 6
+                        radius: Theme.round(6)
                         source: tile.artUrl
                         fallback: tile.album.charAt(0)
                         scale: Theme.reduceMotion ? 1 : (tileMouse.containsMouse ? 1.12 : 1)
@@ -129,7 +129,7 @@ Item {
                     }
                     Rectangle {  // selected
                         anchors { fill: parent; margins: 1 }
-                        radius: 7
+                        radius: Theme.round(7)
                         color: "transparent"
                         border.width: 3
                         border.color: Theme.accent
@@ -206,7 +206,7 @@ Item {
                         text: parent.row.label
                         color: Theme.text
                         font.family: Theme.displayFamily
-                        font.pixelSize: Theme.fontSize(30)
+                        font.pixelSize: (Theme.fontSize(30)) * Theme.displayScale
                         font.weight: Font.Bold
                     }
                     Text {
@@ -239,7 +239,7 @@ Item {
                     // the year on a thread down the left, a dot for each year
                     Rectangle { x: 34; width: 2; height: parent.height; color: Theme.stroke }
                     Rectangle {
-                        x: 29; y: 22; width: 12; height: 12; radius: 6
+                        x: 29; y: 22; width: 12; height: 12; radius: Theme.round(6)
                         color: Theme.accent
                         border.width: 3; border.color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.3)
                     }
@@ -250,7 +250,7 @@ Item {
                         text: yearItem.row.year > 0 ? yearItem.row.year : "—"
                         color: Theme.text
                         font.family: Theme.displayFamily
-                        font.pixelSize: Theme.fontSize(16)
+                        font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale
                         font.weight: Font.DemiBold
                     }
                     Flow {
@@ -269,7 +269,7 @@ Item {
                                 Cover {
                                     id: tlCover
                                     width: timeline.coverSize; height: width
-                                    radius: 12
+                                    radius: Theme.round(12)
                                     source: entry.modelData.artUrl || ""
                                     fallback: (entry.modelData.album || "?").charAt(0)
                                     y: tlMouse.containsMouse ? -3 : 0

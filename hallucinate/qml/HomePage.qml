@@ -41,7 +41,7 @@ Item {
                     text: "Home"
                     color: Theme.text
                     font.family: Theme.displayFamily
-                    font.pixelSize: Theme.fontSize(25)
+                    font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale
                     font.weight: Font.Bold
                 }
                 Text {
@@ -86,7 +86,7 @@ Item {
                             : library.hasFolders ? "No music found" : "Welcome! Let's find your music"
                         color: Theme.text
                         font.family: Theme.displayFamily
-                        font.pixelSize: Theme.fontSize(16)
+                        font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale
                         font.weight: Font.DemiBold
                     }
                     Text {
@@ -148,7 +148,7 @@ Item {
                     Column {
                         anchors { left: parent.left; right: parent.right; leftMargin: 20; rightMargin: 12; verticalCenter: parent.verticalCenter }
                         spacing: 4
-                        Text { width: parent.width; elide: Text.ElideRight; text: value; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(21); font.weight: Font.Bold; textFormat: Text.PlainText }
+                        Text { width: parent.width; elide: Text.ElideRight; text: value; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(21)) * Theme.displayScale; font.weight: Font.Bold; textFormat: Text.PlainText }
                         Text { width: parent.width; elide: Text.ElideRight; text: label; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); textFormat: Text.PlainText }
                     }
                 }

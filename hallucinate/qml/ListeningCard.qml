@@ -22,7 +22,7 @@ GlassPanel {
                 text: "Listening"
                 color: Theme.text
                 font.family: Theme.displayFamily
-                font.pixelSize: Theme.fontSize(16)
+                font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale
                 font.weight: Font.DemiBold
                 LinkArea { name: "Listening history"; onClicked: Nav.openHistory("") }
             }
@@ -66,7 +66,7 @@ GlassPanel {
                     required property var modelData
                     spacing: 8
                     Cover {
-                        width: 28; height: 28; radius: 14
+                        width: 28; height: 28; radius: Theme.round(14)
                         source: modelData.artUrl || ""
                         fallback: (modelData.name || "?").charAt(0)
                     }

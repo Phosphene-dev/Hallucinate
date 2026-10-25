@@ -122,7 +122,7 @@ Item {
                         text: page.score
                         color: Theme.text
                         font.family: Theme.displayFamily
-                        font.pixelSize: Theme.fontSize(26)
+                        font.pixelSize: (Theme.fontSize(26)) * Theme.displayScale
                         font.weight: Font.Bold
                     }
                 }
@@ -134,7 +134,7 @@ Item {
                         text: "Library health"
                         color: Theme.text
                         font.family: Theme.displayFamily
-                        font.pixelSize: Theme.fontSize(25)
+                        font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale
                         font.weight: Font.Bold
                     }
                     Text {
@@ -208,7 +208,7 @@ Item {
                                 text: card.modelData.count === 0 ? "All good" : card.modelData.count
                                 color: card.modelData.count === 0 ? Theme.accent : Theme.text
                                 font.family: Theme.displayFamily
-                                font.pixelSize: Theme.fontSize(card.modelData.count === 0 ? 13 : 18)
+                                font.pixelSize: (Theme.fontSize(card.modelData.count === 0 ? 13 : 18)) * Theme.displayScale
                                 font.weight: Font.DemiBold
                             }
                             Icon {
@@ -358,7 +358,7 @@ Item {
                                     required property var modelData
                                     width: cardCol.width
                                     height: 48
-                                    radius: 10
+                                    radius: Theme.round(10)
                                     color: rowHover.hovered ? Theme.glassHover : "transparent"
                                     HoverHandler { id: rowHover }
                                     MouseArea {
@@ -379,7 +379,7 @@ Item {
                                         id: thumb
                                         visible: card.modelData.kind !== "folder"
                                         x: 6; anchors.verticalCenter: parent.verticalCenter
-                                        width: 36; height: 36; radius: 8
+                                        width: 36; height: 36; radius: Theme.round(8)
                                         source: itemRow.modelData.artUrl || ""
                                         fallback: ((itemRow.modelData.album || itemRow.modelData.title || "?") + "").charAt(0)
                                     }

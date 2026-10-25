@@ -2,6 +2,13 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "1.2.0": [
+        "Two retro themes, Hi-Fi Deck and Beige Box, restyle the whole app like 90s hardware. They open Now "
+        "Playing as the Deck: a hi-fi front panel with a cassette, a glowing display, an analyser and VU meters "
+        "(the cassette button there switches to it in any theme).",
+        "Run Hallucinate without a window on a home server (hallucinate --headless), and control it from the "
+        "command line (hallucinate cmd) or a terminal player (hallucinate tui).",
+    ],
     "1.1.0": [
         "Control Hallucinate from your phone or another computer's browser: Settings → Remote & web. It's off "
         "until you switch it on, and only devices you pair with a one-time code can use it.",

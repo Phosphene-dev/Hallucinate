@@ -28,6 +28,7 @@ Item {
         property real baseX
         property real baseY
         width: size; height: size
+        visible: !Theme.retro  // a retro theme's backdrop is plain
         x: baseX - size / 2 + driftX * Math.sin(t * 2 * Math.PI + phase)
         y: baseY - size / 2 + driftY * Math.cos(t * 2 * Math.PI * 0.7 + phase)
         property real t: (amb.clock % period) / period

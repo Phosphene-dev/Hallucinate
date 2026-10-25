@@ -15,8 +15,10 @@ T.MenuItem {
                              implicitContentHeight + topPadding + bottomPadding)
 
     readonly property bool tinted: control.icon.color.a > 0
+    // (a retro theme marks the row in solid accent, so its text and icon take the accent's text colour)
+    readonly property bool marked: Theme.retro && control.enabled && (control.highlighted || control.down)
     readonly property color ink: !control.enabled ? Qt.rgba(Theme.textDim.r, Theme.textDim.g, Theme.textDim.b, 0.6)
-                                 : tinted ? control.icon.color : Theme.text
+                                 : marked ? Theme.selectedText : tinted ? control.icon.color : Theme.text
 
     leftPadding: 12
     rightPadding: 12
@@ -34,7 +36,7 @@ T.MenuItem {
             id: icn
             visible: control.icon.name !== ""
             name: control.icon.name
-            color: control.tinted ? control.icon.color : Theme.textDim
+            color: control.marked ? Theme.selectedText : control.tinted ? control.icon.color : Theme.textDim
             width: 16; height: 16
             anchors.verticalCenter: parent.verticalCenter
         }
@@ -74,9 +76,9 @@ T.MenuItem {
     background: Rectangle {
         implicitWidth: 220
         implicitHeight: 34
-        radius: 9
-        color: control.down ? Qt.darker(Theme.hoverTint, 1.15)
-             : control.highlighted ? Theme.hoverTint : "transparent"
+        radius: Theme.round(9)
+        color: control.down ? Qt.darker(Theme.selectedBg, 1.15)
+             : control.highlighted ? Theme.selectedBg : "transparent"
         Behavior on color { ColorAnimation { duration: 90 } }
     }
 }

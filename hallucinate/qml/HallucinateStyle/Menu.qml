@@ -32,11 +32,12 @@ T.Menu {
     background: Rectangle {
         implicitWidth: 230
         implicitHeight: 40
-        radius: 14
+        radius: Theme.round(14)
         color: Theme.popup
         border.width: 1
         border.color: Theme.stroke
         SoftShadow { radius: parent.radius; spread: 18; offsetY: 6; strength: 0.28 }
+        Bevel {}
     }
 
     enter: Transition {

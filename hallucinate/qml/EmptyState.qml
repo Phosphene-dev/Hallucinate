@@ -26,7 +26,7 @@ Column {
         }
         Rectangle {
             anchors.centerIn: parent
-            width: 54; height: 54; radius: 27
+            width: 54; height: 54; radius: Theme.round(27)
             color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, Theme.light ? 0.14 : 0.18)
             border.width: 1
             border.color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.30)
@@ -56,7 +56,7 @@ Column {
         color: Theme.text
         font.family: Theme.displayFamily
         font.weight: Font.DemiBold
-        font.pixelSize: Theme.fontSize(16)
+        font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale
     }
     Text {
         textFormat: Text.PlainText

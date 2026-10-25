@@ -110,10 +110,11 @@ Item {
     Rectangle {
         id: panel
         anchors { fill: parent; leftMargin: 10; topMargin: 10; bottomMargin: 10 }
-        radius: 24
+        radius: Theme.round(24)
         color: Theme.glass
         border.width: 1
         border.color: Theme.stroke
+        Bevel {}
 
         Flickable {
             id: navFlick
@@ -160,7 +161,7 @@ Item {
                         Behavior on opacity { NumberAnimation { duration: 140 } }
                         color: Theme.text
                         font.family: Theme.displayFamily
-                        font.pixelSize: Theme.fontSize(15)
+                        font.pixelSize: (Theme.fontSize(15)) * Theme.displayScale
                         font.weight: Font.DemiBold
                         font.letterSpacing: 0.3
                     }

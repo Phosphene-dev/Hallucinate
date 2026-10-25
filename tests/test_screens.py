@@ -512,6 +512,34 @@ def test_nothing_is_drawn_under_now_playing(qapp, app_window):
     assert wait_for(lambda: page.property("visible") and ambience.property("visible"))
 
 
+def test_a_retro_theme_opens_now_playing_as_the_deck(qapp, app_window):
+    """Hi-Fi Deck and Beige Box open Now Playing as the Deck (a 90s hi-fi front panel); the cassette button
+    switches between it and the usual view, and its keys drive the player. No QML warnings on the way."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    player, manager = objects["player"], objects["themeManager"]
+    view = window.findChild(QObject, "nowPlayingView")
+    assert manager.selectTheme("Hi-Fi Deck")
+    view.setProperty("open", True)
+    assert wait_for(lambda: find_item(window, "deckView") is not None)
+    assert view.property("deck")
+    assert wait_for(lambda: find_item(window, "deckDisplay").property("visible"))  # (once it has faded in)
+    shuffled = player.shuffle
+    QMetaObject.invokeMethod(find_item(window, "deckShuffle"), "activated")
+    assert player.shuffle != shuffled
+    QMetaObject.invokeMethod(view, "setDeck", Q_ARG("QVariant", False))  # your choice beats the theme's
+    assert wait_for(lambda: find_item(window, "deckView") is None)
+    QMetaObject.invokeMethod(view, "setDeck", Q_ARG("QVariant", True))
+    assert wait_for(lambda: find_item(window, "deckView") is not None)
+    view.setProperty("open", False)
+    objects["shell"].setUiValue("nowPlayingDeck", "")  # back to "as the theme says", for the tests after
+    view.setProperty("deckChoice", "")
+    assert manager.selectTheme("Hallucinate")
+    qapp.processEvents()
+    assert not warnings, warnings
+
+
 def test_everything_clickable_has_a_name_for_screen_readers(qapp, app_window):
     """Walk every page the way a screen reader sees it: anything that can be clicked, typed into or slid must
     be (or sit within three levels of) an element with a role and a spoken name."""

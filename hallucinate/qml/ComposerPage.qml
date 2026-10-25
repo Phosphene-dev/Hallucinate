@@ -105,7 +105,7 @@ Item {
                         text: page.info.name || page.composerName
                         color: Theme.text
                         font.family: Theme.displayFamily
-                        font.pixelSize: Theme.fontSize(36)
+                        font.pixelSize: (Theme.fontSize(36)) * Theme.displayScale
                         font.weight: Font.Bold
                         wrapMode: Text.Wrap
                         maximumLineCount: 2
@@ -195,7 +195,7 @@ Item {
                                 text: workBlock.modelData.work
                                 color: Theme.text
                                 font.family: Theme.displayFamily
-                                font.pixelSize: Theme.fontSize(17)
+                                font.pixelSize: (Theme.fontSize(17)) * Theme.displayScale
                                 font.weight: Font.DemiBold
                             }
                             Text {

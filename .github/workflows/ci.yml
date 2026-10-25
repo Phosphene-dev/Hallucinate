@@ -27,6 +27,7 @@ jobs:
           # the exact versions the release builds install
           pip-audit --no-deps --disable-pip -r packaging/build-requirements.txt
           pip-audit --no-deps --disable-pip -r packaging/appimage/appimage-tools.txt
+          pip-audit --no-deps --disable-pip -r packaging/server/build-tools.txt
 
   test:
     # Pinned: on the newer ubuntu-latest image (PulseAudio 17), PySide6 6.12 crashes creating QMediaDevices
@@ -158,3 +159,24 @@ jobs:
         run: |
           sudo -u builder -H env QT_QPA_PLATFORM=offscreen HALLUCINATE_DISABLE_LEGACY_MIGRATION=1 \
             HALLUCINATE_CONTROL_SOCKET=hallucinate-aur-smoke timeout 60 hallucinate --quit-after 3000
+
+  container:
+    # The headless server image (packaging/server/Dockerfile): builds, starts without a window, answers the command
+    # line from outside, and stops cleanly.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build -f packaging/server/Dockerfile -t hallucinate .
+      - name: Run it headless, pair and ask what's playing, stop it
+        run: |
+          docker run -d --name hl -p 127.0.0.1:8483:8483 -v "$PWD/packaging/testclips:/music:ro" hallucinate
+          for i in $(seq 1 60); do docker logs hl 2>&1 | grep -q "running without a window" && break; sleep 1; done
+          docker logs hl 2>&1 | grep "running without a window"
+          docker exec hl hallucinate cmd library
+          docker exec hl hallucinate --pair | grep -E "Pairing code: [0-9]{6}"
+          docker exec hl hallucinate cmd status
+          curl -fsS http://127.0.0.1:8483/api/hello | grep -q '"paired": false'
+          docker stop -t 20 hl
+          docker logs hl 2>&1 | grep "Stopping"
+          test "$(docker inspect -f '{{.State.ExitCode}}' hl)" = 0

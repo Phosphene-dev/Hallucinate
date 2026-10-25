@@ -144,6 +144,12 @@ Canvas {
             ctx.beginPath(); ctx.arc(w*.5, h*.5, w*.4, 0, Math.PI*2); ctx.stroke()
             ctx.beginPath(); ctx.arc(w*.5, h*.5, w*.24, -0.6, 1.2); ctx.stroke()
             ctx.beginPath(); ctx.arc(w*.5, h*.5, w*.08, 0, Math.PI*2); ctx.fill(); break
+        case "deck":  // a cassette: the shell, its two reels and the tape window
+            ctx.beginPath(); ctx.moveTo(w*.08, h*.22); ctx.lineTo(w*.92, h*.22); ctx.lineTo(w*.92, h*.8)
+            ctx.lineTo(w*.08, h*.8); ctx.closePath(); ctx.stroke()
+            ctx.beginPath(); ctx.arc(w*.32, h*.46, w*.09, 0, Math.PI*2); ctx.stroke()
+            ctx.beginPath(); ctx.arc(w*.68, h*.46, w*.09, 0, Math.PI*2); ctx.stroke()
+            line([.24,.8,.3,.66,.7,.66,.76,.8]); break
         case "folder":
             line([.1,.26,.1,.82,.9,.82,.9,.34,.48,.34,.4,.22,.1,.22,.1,.3]); break
         case "history":  // a clock

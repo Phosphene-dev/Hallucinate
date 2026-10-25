@@ -5,7 +5,8 @@ import "."
 Rectangle {
     id: panel
     color: Theme.glass
-    radius: 24
+    Bevel {}
+    radius: Theme.round(24)
     border.width: 1
     border.color: Theme.stroke
     clip: true
@@ -14,7 +15,7 @@ Rectangle {
         id: head
         x: 18; y: 16
         spacing: 12
-        Text { text: "Queue"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter; textFormat: Text.PlainText }
+        Text { text: "Queue"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(15)) * Theme.displayScale; font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter; textFormat: Text.PlainText }
         Text {
             objectName: "queueSummary"
             // how many, and how long until the queue runs out (the rest of this song and all those to come)

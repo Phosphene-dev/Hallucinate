@@ -50,22 +50,48 @@ def main(argv=None) -> int:
         from .analysis import serve
 
         return serve()
-    ap = argparse.ArgumentParser(prog="hallucinate", description="Modern desktop music player")
+    if argv[:1] == ["cmd"]:  # control a running Hallucinate from the command line
+        from . import cli
+
+        return cli.main(argv[1:])
+    if argv[:1] == ["tui"]:  # the terminal version
+        from . import tui
+
+        return tui.main(argv[1:])
+    ap = argparse.ArgumentParser(
+        prog="hallucinate", description="A music player for the music you own.",
+        epilog="Also: `hallucinate cmd …` controls a running Hallucinate from the command line (try "
+               "`hallucinate cmd --help`), and `hallucinate tui` is the terminal version.")
     ap.add_argument("folders", nargs="*", help="music folders to add to the library")
     controls = ap.add_mutually_exclusive_group()
     controls.add_argument("--next", dest="control", action="store_const", const="next", help="skip to the next track")
     controls.add_argument("--prev", dest="control", action="store_const", const="prev", help="play the previous track")
     controls.add_argument("--play-pause", dest="control", action="store_const", const="play-pause", help="toggle playback")
     controls.add_argument("--status", dest="control", action="store_const", const="status", help="print current playback status as JSON")
+    controls.add_argument("--pair", dest="control", action="store_const", const="pair",
+                          help="show a code to pair a phone or browser with the web interface")
+    server = ap.add_argument_group("without a window (a home server, a container)")
+    server.add_argument("--headless", action="store_true",
+                        help="run without a window; use the web interface or `hallucinate cmd` to control it")
+    server.add_argument("--network", action="store_true", default=None,
+                        help="let other devices on your network reach the web interface (kept for next time)")
+    server.add_argument("--port", type=int, help="the web interface's port (kept for next time; default 8483)")
+    server.add_argument("--no-web", action="store_true", help="don't start the web interface")
     ap.add_argument("--quit-after", type=int, metavar="MS", help=argparse.SUPPRESS)
     ap.add_argument("--decode-check", nargs="+", metavar="FILE", help=argparse.SUPPRESS)  # packaging CI
     ap.add_argument("--version", action="version", version=__version__)
     args, qt_args = ap.parse_known_args(argv)
 
+    if args.port is not None and not 1024 <= args.port <= 65535:
+        ap.error("--port must be from 1024 to 65535")
     if args.decode_check:
         from . import decodecheck
 
         return decodecheck.main(args.decode_check)
+    if args.control == "pair":
+        from . import cli
+
+        return cli.main(["pair"])
     if args.control:
         response = send_control(args.control)
         if response is None:
@@ -77,6 +103,11 @@ def main(argv=None) -> int:
         if args.control == "status":
             print(json.dumps(response["status"], ensure_ascii=False))
         return 0
+
+    if args.headless:
+        from . import headless
+
+        return headless.run(args)
 
     existing = (
         send_control("add-folders", folders=args.folders)
@@ -200,6 +231,8 @@ def main(argv=None) -> int:
     from .webserver import WebRemote
 
     web_remote = WebRemote(paths.data_dir(), paths.data_dir() / "thumbs", player, library, user_lib)
+    control.setApi(web_remote.api)
+    control.setWebRemote(web_remote)
     shell.settingsChanged.connect(servers.recheck)  # offline mode switched off: try servers again
 
     offline = [net.is_offline()]

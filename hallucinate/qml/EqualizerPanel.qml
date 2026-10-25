@@ -69,7 +69,7 @@ Column {
                     handle: Rectangle {
                         x: sl.leftPadding + sl.availableWidth / 2 - width / 2
                         y: sl.topPadding + sl.visualPosition * (sl.availableHeight - height)
-                        width: 14; height: 14; radius: 7
+                        width: 14; height: 14; radius: Theme.round(7)
                         color: sl.pressed ? Theme.accentHi : Theme.accent
                     }
                     TapHandler { acceptedButtons: Qt.RightButton; onTapped: player.setEqBand(index, 0) }
@@ -156,7 +156,8 @@ Column {
             leftPadding: 14
             selectByMouse: true
             background: Rectangle {
-                radius: height / 2
+                Bevel { sunken: true }
+                radius: Theme.round(height / 2)
                 color: hpSearch.activeFocus ? Theme.glassStrong : Theme.glass
                 border.width: 1
                 border.color: hpSearch.activeFocus ? Theme.strokeHi : Theme.stroke
@@ -191,7 +192,7 @@ Column {
             required property int index
             width: hpResults.width - 8
             height: 38
-            radius: 10
+            radius: Theme.round(10)
             color: rowMouse.containsMouse ? Theme.glassHover : "transparent"
             Text {
                 textFormat: Text.PlainText

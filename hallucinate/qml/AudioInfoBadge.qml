@@ -30,7 +30,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: height / 2
+        radius: Theme.round(height / 2)
         color: Theme.surface
         border.width: 1
         border.color: Theme.border
