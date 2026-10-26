@@ -16,6 +16,13 @@ All notable changes to this project are documented here. Format based on
 - The signal path popup let the page behind show through its text. It also says why a song is "Processed" and
   what would leave it untouched: a 48 kHz output resamples 44.1 kHz songs (PipeWire can switch rates), and a
   volume under 100% scales the samples.
+- The queue's Export and Save buttons were cut off in a narrow queue panel; the buttons now wrap under the title.
+- Mouse wheel scrolling was slow and uneven (about 70 px a notch, quick notches lost, high-resolution wheels such
+  as the Logitech G502 X moving less than half as far). Every notch now moves the same distance and quick notches
+  add up; touchpads keep their smooth scrolling. Settings → Appearance → Scroll speed sets how far.
+- The Flatpak had no tray icon: the sandbox couldn't reach the desktop's tray (StatusNotifierWatcher). It can now,
+  so "Keep playing in the background" leaves an icon in KDE's tray, GNOME's AppIndicator extension, Waybar and
+  others.
 
 ### Added
 - The web remote, `hallucinate cmd` and the terminal player show E and Hi-Res too; an album's format line says
@@ -24,6 +31,7 @@ All notable changes to this project are documented here. Format based on
   "Hi-Res" pill: Settings → Appearance.
 - The mini player follows the built-in title bar (no frame; drag it by its background) and its volume icon takes
   the wheel and a middle click.
+- The tray icon's menu has Go to, with the sidebar's pages: it brings the window back on that page.
 
 ## [1.3.0] - 2026-10-25
 

@@ -38,6 +38,10 @@ ApplicationWindow {
             if (!window.featureOn("lyrics")) { window.lyricsOpen = false; nowPlaying.lyricsMode = false }
         }
     }
+    Connections {  // a page picked in the tray menu
+        target: shell
+        function onNavigateRequested(page) { nowPlaying.open = false; window.go(page) }
+    }
     Connections {  // music servers say how adding and syncing went
         target: servers
         function onMessage(text) { toast.show(text) }

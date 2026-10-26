@@ -16,6 +16,9 @@ finish-args:
   - --own-name=org.mpris.MediaPlayer2.hallucinate
   - --talk-name=org.freedesktop.secrets # Last.fm/ListenBrainz credentials in the system keyring
   - --talk-name=org.freedesktop.Notifications # opt-in track-change notifications
+  # The tray icon (StatusNotifierItem, as KDE, GNOME's AppIndicator extension, Waybar and noctalia show it);
+  # without it Qt finds no tray inside the sandbox and the icon never appears
+  - --talk-name=org.kde.StatusNotifierWatcher
   # Discord Rich Presence IPC socket. Flatpak Discord also links its socket here; mounting
   # xdg-run/app/... instead would collide with Flatpak's own $XDG_RUNTIME_DIR/app symlink.
   - --filesystem=xdg-run/discord-ipc-0

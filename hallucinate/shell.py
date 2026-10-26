@@ -56,6 +56,7 @@ def can_minimize(env=None, platform=None):
 class DesktopShell(QObject):
     miniChanged = Signal()
     settingsChanged = Signal()
+    navigateRequested = Signal(str)  # a page picked in the tray menu
 
     def __init__(self, app, player, icon: QIcon, parent=None):
         super().__init__(parent)
@@ -121,14 +122,39 @@ class DesktopShell(QObject):
         show.triggered.connect(self.showMain)
         mini.triggered.connect(self.toggleMini)
         quit_.triggered.connect(self._app.quit)
-        for a in (show, mini, None, self._act_toggle, prev, nxt, None, quit_):
+        # Go to: the sidebar's pages, in its order, without the ones switched off (rebuilt each time it opens)
+        self._goto = QMenu("Go to", menu)
+        self._goto.aboutToShow.connect(self._fill_goto)
+        self._fill_goto()
+        for a in (show, mini, None, self._act_toggle, prev, nxt, None):
             menu.addSeparator() if a is None else menu.addAction(a)
+        menu.addMenu(self._goto)
+        menu.addSeparator()
+        menu.addAction(quit_)
         self._menu = menu  # keep alive
         self._tray.setContextMenu(menu)
         self._tray.activated.connect(self._on_activated)
         self._tray.setVisible(self._tray_pref)
         self._refresh()
         self._sync_quit_policy()
+
+    PAGE_TITLES = {"home": "Home", "albums": "Albums", "artists": "Artists", "songs": "Songs", "folders": "Folders",
+                   "liked": "Liked Songs", "stats": "Stats", "history": "History", "recap": "Recap",
+                   "visualizer": "Visualizer", "stations": "Internet radio", "podcasts": "Podcasts",
+                   "settings": "Settings"}
+
+    def _fill_goto(self):
+        self._goto.clear()
+        for page in [*self.sidebarOrder, "settings"]:
+            if self._shown(page):
+                self._goto.addAction(self.PAGE_TITLES.get(page, page.title())).triggered.connect(
+                    lambda _=False, p=page: self.goTo(p))
+
+    @Slot(str)
+    def goTo(self, page):
+        """Bring the window back and open a page (the tray menu's Go to)."""
+        self.showMain()
+        self.navigateRequested.emit(page)
 
     def _on_activated(self, reason):
         if reason == QSystemTrayIcon.ActivationReason.Trigger:

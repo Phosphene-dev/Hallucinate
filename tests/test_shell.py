@@ -266,3 +266,24 @@ def test_sidebar_pages_can_be_rearranged(make_shell):
     assert sidebar_order(old) == ["stations", "podcasts", *old[1:-1]]  # podcasts usually follows stations
     assert sidebar_order(["songs", "home"])[:3] == ["songs", "folders", "liked"]
     assert sorted(sidebar_order(["songs"])) == sorted(SIDEBAR_PAGES)
+
+
+def test_the_tray_menu_goes_to_the_sidebar_pages(make_shell):
+    from PySide6.QtWidgets import QMenu
+
+    shell, win, _player = make_shell()
+    shell._goto = QMenu("Go to")  # the tray itself isn't built without a tray (as here, offscreen)
+    shell._fill_goto()
+    titles = [a.text() for a in shell._goto.actions()]
+    assert titles[0] == "Home" and titles[-1] == "Settings" and "Liked Songs" in titles
+    assert "Podcasts" not in titles  # switched off by default, as in the sidebar
+    shell.setFeature("podcasts", True)
+    shell._fill_goto()
+    assert "Podcasts" in [a.text() for a in shell._goto.actions()]
+
+    went = []
+    shell.navigateRequested.connect(went.append)
+    win.hide()
+    next(a for a in shell._goto.actions() if a.text() == "Stats").trigger()
+    assert went == ["stats"] and win.visible
+    shell._goto.deleteLater()
