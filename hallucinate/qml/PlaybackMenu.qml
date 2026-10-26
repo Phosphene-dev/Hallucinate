@@ -29,6 +29,13 @@ Menu {
             onObjectRemoved: (i, o) => plSub.removeItem(o)
         }
     }
+    MenuItem {
+        objectName: "nowPlayingSpectrum"
+        text: "Spectrum analyzer…"
+        icon.name: "wave"
+        enabled: playback.song && !/^(subsonic|jellyfin):\/\//.test(player.current.path || "")
+        onTriggered: Nav.openSpectrum(player.current.path)
+    }
     MenuSeparator {}
     Menu {
         id: speedMenu

@@ -207,6 +207,15 @@ Menu {
         onTriggered: library.showInFolder(songMenu.path)
     }
     MenuItem {
+        objectName: "trackSpectrum"
+        visible: songMenu.single && !songMenu.stream && !songMenu.onServer
+        height: visible ? implicitHeight : 0
+        enabled: songMenu.info.exists === true
+        text: "Spectrum analyzer…"
+        icon.name: "wave"
+        onTriggered: Nav.openSpectrum(songMenu.path)
+    }
+    MenuItem {
         visible: !songMenu.stream; height: visible ? implicitHeight : 0
         text: "Edit tags…"
         icon.name: "edit"

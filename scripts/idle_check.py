@@ -62,6 +62,7 @@ def main():
     from hallucinate.metaedit import MetadataEditor
     from hallucinate.player import Player
     from hallucinate.podcasts import Podcasts
+    from hallucinate.spectrogram import Spectrograms
     from hallucinate.replaygain import ReplayGainAnalyzer
     from hallucinate.scrobbling import LastFmScrobbler
     from hallucinate.servers import Servers
@@ -97,6 +98,7 @@ def main():
         "stations": Stations(tmp / "streams.db", tmp / "cache", player),
         "servers": Servers(db, tmp / "art", player),
         "podcasts": Podcasts(tmp / "streams.db", tmp / "data", tmp / "cache", player),
+        "spectrograms": Spectrograms(db, tmp / "cache"),
     }
     engine = QQmlApplicationEngine()
     engine.addImageProvider("art", ArtProvider(tmp / "thumbs"))

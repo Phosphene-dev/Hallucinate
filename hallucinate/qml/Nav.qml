@@ -25,7 +25,8 @@ QtObject {
     signal openSmartPlaylist(int id, string name)
     signal editSmartPlaylist(int id, string name)
     signal trackMenu(string path, string title, string context, int index)
-    signal newPlaylistWith(var paths)  // the new-playlist dialog, starting the playlist with these songs
+    signal newPlaylistWith(var paths)
+    signal openSpectrum(string path)  // the spectrum analyzer window, for a song  // the new-playlist dialog, starting the playlist with these songs
     signal editTags(string path)
     signal editTagsMany(var paths)
     signal editAlbum(string key)

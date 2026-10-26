@@ -102,6 +102,7 @@ def app_window(qapp, tmp_path, monkeypatch, request):
     from hallucinate.metaedit import MetadataEditor
     from hallucinate.player import Player
     from hallucinate.podcasts import Podcasts
+    from hallucinate.spectrogram import Spectrograms
     from hallucinate.replaygain import ReplayGainAnalyzer
     from hallucinate.scrobbling import LastFmScrobbler
     from hallucinate.servers import Servers
@@ -135,6 +136,7 @@ def app_window(qapp, tmp_path, monkeypatch, request):
         "stations": Stations(tmp_path / "streams.db", tmp_path / "cache", player),
         "servers": Servers(db_path, tmp_path / "art", player),
         "podcasts": Podcasts(tmp_path / "streams.db", tmp_path / "data", tmp_path / "cache", player),
+        "spectrograms": Spectrograms(db_path, tmp_path / "cache"),
     }
     from hallucinate.bios import ArtistBios
     from hallucinate.onlinesources import OnlineSources
@@ -1895,3 +1897,27 @@ def test_the_genres_page_lists_every_genre_and_a_genre_s_songs(qapp, app_window)
     page.setProperty("order", "songs")
     assert window.findChild(QObject, "genresList").property("count") == library.genreModel.count
     assert not [w for w in warnings if "GenresPage" in w], warnings
+
+
+def test_the_spectrum_analyzer_opens_from_a_song_s_menu(qapp, app_window, tmp_path):
+    """Issue 96: a song's menu (and the player's ⋯ menu) opens the spectrum analyzer window."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    spectrograms = objects["spectrograms"]
+    menu = window.findChild(QObject, "trackMenu")
+    item = menu.findChild(QObject, "trackSpectrum")
+    assert item is not None and window.findChild(QObject, "nowPlayingSpectrum") is not None
+    path = objects["library"].allTracks()[0]["path"]
+    QMetaObject.invokeMethod(menu, "show", Q_ARG("QVariant", path), Q_ARG("QVariant", "T"),
+                             Q_ARG("QVariant", "songs"), Q_ARG("QVariant", 0))
+    qapp.processEvents()
+    item.triggered.emit()
+    qapp.processEvents()
+    spectrum = [w for w in qapp.topLevelWindows() if w.objectName() == "spectrumWindow"]
+    assert spectrum and spectrum[0].isVisible()
+    assert wait_for(lambda: not spectrograms.busy, timeout=60)  # (the seeded files aren't real audio: it says so)
+    assert spectrograms.error or spectrograms.imageUrl
+    spectrum[0].close()
+    QMetaObject.invokeMethod(menu, "close")
+    assert not [w for w in warnings if "Spectrum" in w], warnings

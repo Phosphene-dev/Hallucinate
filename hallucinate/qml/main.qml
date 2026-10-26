@@ -341,6 +341,7 @@ ApplicationWindow {
         function onEditTagsMany(paths) { tagEditor.editTracks(paths) }
         function onArtistMenu(name) { if (name) collectionMenu.showArtist(name) }
         function onFolderMenu(path, name) { if (path) collectionMenu.showFolder(path, name) }
+        function onOpenSpectrum(path) { spectrumWindow.analyse(path) }
         function onNewPlaylistWith(paths) { createDlg.paths = paths; createDlg.open() }
         function onTrackMenu(path, title, context, index) {
             // on a song that's part of a selection, the menu acts on the whole selection
@@ -684,6 +685,7 @@ ApplicationWindow {
     }
     TagEditor { id: tagEditor; objectName: "tagEditor" }
     MiniPlayer {}
+    SpectrumWindow { id: spectrumWindow }
     onClosing: function (close) {
         var result = shell.handleClose()
         close.accepted = result === "quit"

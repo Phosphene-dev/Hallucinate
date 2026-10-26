@@ -224,6 +224,9 @@ def main(argv=None) -> int:
     stations = Stations(paths.data_dir() / "streams.db", paths.cache_dir(), player)
     stations.setLibraryDb(paths.db_path())
     podcasts = Podcasts(paths.data_dir() / "streams.db", paths.data_dir(), paths.cache_dir(), player)
+    from .spectrogram import Spectrograms
+
+    spectrograms = Spectrograms(paths.db_path(), paths.cache_dir())
     from .servers import Servers
 
     servers = Servers(paths.db_path(), paths.art_dir(), player)
@@ -326,6 +329,7 @@ def main(argv=None) -> int:
     ctx.setContextProperty("serverCopies", server_copies)
     ctx.setContextProperty("webRemote", web_remote)
     ctx.setContextProperty("podcasts", podcasts)
+    ctx.setContextProperty("spectrograms", spectrograms)
     engine.addImportPath(str(HERE / "qml"))
     engine.load(QUrl.fromLocalFile(str(HERE / "qml" / "main.qml")))
     if not engine.rootObjects():
@@ -396,6 +400,7 @@ def main(argv=None) -> int:
     servers.shutdown()
     server_copies.shutdown()
     podcasts.shutdown()
+    spectrograms.shutdown()
     meta_editor.shutdown()
     artist_bios.shutdown()
     similar_artists.shutdown()

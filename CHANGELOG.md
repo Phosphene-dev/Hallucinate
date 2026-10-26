@@ -23,6 +23,11 @@ All notable changes to this project are documented here. Format based on
   the song was added, and shows "Add to queue" on hover.
 
 ### Added
+- A spectrum analyzer (#96): "Spectrum analyzer…" in a song's menu, or the player's ⋯ menu for what's playing,
+  opens its spectrogram in a window, as Spek draws it: time across, frequency up to half the file's sample rate,
+  loudness in colour from -120 to 0 dB, and the format beside the title. A lossy file's cut-off (often 16 or
+  19 kHz) or an upsampled "hi-res" file shows at a glance. Decoded in the background helper, so a damaged file
+  can't hold up the window; "Save image" keeps a PNG in Pictures/Hallucinate.
 - A Genres page in the sidebar (#88): every genre in your songs' tags, A–Z, by songs or by plays, with a filter.
   A tag naming several genres ("Pop; Indie; Rock") counts for each. Pick one and every song tagged with it is
   listed beside it (in album order, by title, artist, year, plays or date added), with Play, Shuffle and the
