@@ -1898,9 +1898,9 @@ Item {
                 Text { textFormat: Text.PlainText; text: "Open on"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
                 StyledCombo {
                     objectName: "startPage"
-                    readonly property var pages: ["home", "last", "albums", "artists", "songs", "folders", "liked", "stats", "history"]
+                    readonly property var pages: ["home", "last", "albums", "artists", "genres", "songs", "folders", "liked", "stats", "history"]
                     width: 220
-                    model: ["Home", "The page I left it on", "Albums", "Artists", "Songs", "Folders", "Liked Songs", "Stats", "History"]
+                    model: ["Home", "The page I left it on", "Albums", "Artists", "Genres", "Songs", "Folders", "Liked Songs", "Stats", "History"]
                     selection: Math.max(0, pages.indexOf(shell.startPage))
                     onActivated: shell.setStartPage(pages[currentIndex])
                     Accessible.name: "Page Hallucinate opens on"

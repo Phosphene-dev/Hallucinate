@@ -10,17 +10,19 @@ from .db import fold
 
 
 def overview(db):
-    """[{name, albums, artists, tracks, seconds, art, albumKey}] for every genre, most songs first. `art` is a
+    """[{name, albums, artists, tracks, seconds, plays, art, albumKey}] for every genre, most songs first. `art` is a
     cover from the genre's biggest album."""
-    names, tracks, seconds, albums, artists = {}, Counter(), Counter(), {}, {}
+    names, tracks, seconds, albums, artists, plays = {}, Counter(), Counter(), {}, {}, Counter()
     album_size, cover = Counter(), {}
-    for genre, album_key, s_aa, duration, art in db.conn.execute(
-            "SELECT genre, album_key, s_aa, duration, art FROM tracks WHERE genre != ''"):
+    for genre, album_key, s_aa, duration, art, played in db.conn.execute(
+            """SELECT t.genre, t.album_key, t.s_aa, t.duration, t.art, COALESCE(p.count, 0)
+               FROM tracks t LEFT JOIN plays p ON p.path = t.path WHERE t.genre != ''"""):
         for name in genre_names.split(genre):
             key = fold(name)
             names.setdefault(key, name)
             tracks[key] += 1
             seconds[key] += duration or 0
+            plays[key] += played
             albums.setdefault(key, set()).add(album_key)
             artists.setdefault(key, set()).add(s_aa)
             album_size[(key, album_key)] += 1
@@ -29,7 +31,7 @@ def overview(db):
     out = []
     for key, name in names.items():
         best = max(albums[key], key=lambda a: (album_size[(key, a)], (key, a) in cover, a))
-        out.append({"name": name, "tracks": tracks[key], "seconds": float(seconds[key]),
+        out.append({"name": name, "tracks": tracks[key], "seconds": float(seconds[key]), "plays": plays[key],
                     "albums": len(albums[key]), "artists": len(artists[key]),
                     "art": cover.get((key, best), ""), "albumKey": best})
     out.sort(key=lambda g: (-g["tracks"], fold(g["name"])))

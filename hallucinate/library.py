@@ -22,6 +22,7 @@ from .models import ALBUM_KEYS, ARTIST_KEYS, TRACK_KEYS, DictModel, compute_ops
 
 LIVE_FIRST_S = 1.5  # the first songs of a first scan show this soon
 LIVE_EVERY_S = 4.0  # and more at least this far apart (longer when a reload takes longer)
+GENRE_KEYS = ["name", "tracks", "albums", "artists", "seconds", "plays", "art", "artUrl", "albumKey"]
 COMPOSER_KEYS = ["name", "tracks", "works", "albums", "seconds", "art", "artUrl", "albumKey"]
 
 logger = logging.getLogger(__name__)
@@ -260,6 +261,10 @@ class Library(QObject):
             # thousands handed to a view as plain JS objects froze the window for minutes, issue 90)
             "composers": DictModel(COMPOSER_KEYS, self, "name"),
             "composersAz": DictModel(COMPOSER_KEYS, self, "name"),
+            # the Genres page, in its three orders (#88)
+            "genres": DictModel(GENRE_KEYS, self, "name"),
+            "genresAz": DictModel(GENRE_KEYS, self, "name"),
+            "genresPlayed": DictModel(GENRE_KEYS, self, "name"),
         }
         self._timeline = []
         self._wall_loading = False
@@ -332,6 +337,9 @@ class Library(QObject):
     artists = _model_prop("artists")
     composers = _model_prop("composers")
     composersAz = _model_prop("composersAz")
+    genreModel = _model_prop("genres")
+    genresAz = _model_prop("genresAz")
+    genresPlayed = _model_prop("genresPlayed")
     songs = _model_prop("songs")
     searchTracks = _model_prop("sTracks")
     searchAlbums = _model_prop("sAlbums")
@@ -402,6 +410,23 @@ class Library(QObject):
     @Slot(str, result=QObject)
     def genreTracksModel(self, name):
         return self._cached(("gt", fold(name)), TRACK_KEYS, lambda: genre_views.page(self._db, name, 200)["songs"])
+
+    def _genre_songs(self, name, sort):
+        rows = decorate(genre_views.tracks(self._db, name))  # album by album
+        if sort == "title":
+            return sorted(rows, key=lambda t: (fold(t.get("title") or ""), fold(t.get("artist") or "")))
+        key = genre_views.song_sort_key(sort, self._db) if sort != "album" else None
+        return sorted(rows, key=key) if key else rows
+
+    @Slot(str, str, result=QObject)
+    def genreSongs(self, name, sort):
+        """Every song with this genre (the Genres page, #88), in `sort` order (one of genre_views.SONG_SORTS;
+        "album": album by album)."""
+        return self._cached(("gs", fold(name), sort), TRACK_KEYS, lambda: self._genre_songs(name, sort))
+
+    @Slot(str, str, int)
+    def playGenreSongsSorted(self, name, sort, index):
+        self._play(self.genreSongs(name, sort).items(), index)
 
     @Slot(str, bool)
     def playGenre(self, name, shuffle=False):
@@ -546,6 +571,8 @@ class Library(QObject):
             "composerList": composers.overview(db),
         }
         data["composersAz"] = sorted(data["composerList"], key=lambda c: fold(c["name"]))  # (decorated in place)
+        data["genresAz"] = sorted(data["genreList"], key=lambda g: fold(g["name"]))
+        data["genresPlayed"] = sorted(data["genreList"], key=lambda g: (-g["plays"], -g["tracks"], fold(g["name"])))
         data["timeline"] = Library._timeline_rows(data["albums"])
         data["artistIndex"] = {fold(a["name"]): a for a in data["artists"]}
         data["searchIndex"] = group_index(data["albums"], data["artists"])
@@ -611,6 +638,9 @@ class Library(QObject):
         self._filter_values = data["filterValues"]
         if changed["genreList"]:
             self._genre_list = decorate(data["genreList"])
+            self._models["genres"].set_items(self._genre_list)
+            self._models["genresAz"].set_items(data["genresAz"])
+            self._models["genresPlayed"].set_items(data["genresPlayed"])
             self.genreListChanged.emit()
         if changed["composerList"]:
             self._composer_list = decorate(data["composerList"])

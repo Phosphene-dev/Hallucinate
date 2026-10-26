@@ -77,7 +77,8 @@ Item {
 
     readonly property var allPages: [
         { id: "home", t: "Home", i: "home" }, { id: "albums", t: "Albums", i: "album" },
-        { id: "artists", t: "Artists", i: "artist" }, { id: "songs", t: "Songs", i: "songs" },
+        { id: "artists", t: "Artists", i: "artist" }, { id: "genres", t: "Genres", i: "genre" },
+        { id: "songs", t: "Songs", i: "songs" },
         { id: "folders", t: "Folders", i: "folder" },
         { id: "liked", t: "Liked Songs", i: "heart" }, { id: "stats", t: "Stats", i: "stats" },
         { id: "history", t: "History", i: "history" },

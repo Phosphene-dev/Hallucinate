@@ -51,6 +51,7 @@ ApplicationWindow {
         switch (name) {
         case "albums": return albumsPage
         case "artists": return artistsPage
+        case "genres": return genresPage
         case "songs": return songsPage
         case "stats": return statsPage
         case "history": return historyPage
@@ -292,6 +293,7 @@ ApplicationWindow {
     Component { id: visualizerPage; VisualizerPage {} }
     Component { id: settingsPage; SettingsPage {} }
     Component { id: likedPage; PlaylistPage { liked: true } }
+    Component { id: genresPage; GenresPage {} }
     Component { id: stationsPage; StationsPage {} }
     Component { id: podcastsPage; PodcastsPage {} }
     Component { id: podcastDetail; PodcastPage {} }

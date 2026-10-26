@@ -21,7 +21,7 @@ FEATURES = {
     "homeRandom": True, "homeListening": True, "homeFacts": True, "homeShelves": True,
 }
 # The sidebar's pages in their usual order; people can rearrange them (Settings → Appearance or right-click).
-SIDEBAR_PAGES = ("home", "albums", "artists", "songs", "folders", "liked", "stats", "history", "recap", "visualizer",
+SIDEBAR_PAGES = ("home", "albums", "artists", "genres", "songs", "folders", "liked", "stats", "history", "recap", "visualizer",
                  "stations", "podcasts")
 
 
@@ -169,7 +169,8 @@ class DesktopShell(QObject):
         self._sync_quit_policy()
         self.settingsChanged.emit()  # Settings shows the tray switch now
 
-    PAGE_TITLES = {"home": "Home", "albums": "Albums", "artists": "Artists", "songs": "Songs", "folders": "Folders",
+    PAGE_TITLES = {"home": "Home", "albums": "Albums", "artists": "Artists", "genres": "Genres", "songs": "Songs",
+                   "folders": "Folders",
                    "liked": "Liked Songs", "stats": "Stats", "history": "History", "recap": "Recap",
                    "visualizer": "Visualizer", "stations": "Internet Radio", "podcasts": "Podcasts",
                    "settings": "Settings"}

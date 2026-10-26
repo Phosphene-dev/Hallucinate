@@ -1861,3 +1861,37 @@ def test_now_playing_adds_its_song_to_a_playlist(qapp, app_window, tmp_path):
     assert wait_for(lambda: stored() == [str(song)])
     player.stop()
     assert not [w for w in warnings if "PlaybackMenu" in w or "incompatible" in w], warnings
+
+
+def test_the_genres_page_lists_every_genre_and_a_genre_s_songs(qapp, app_window):
+    """Issue 88: a Genres page in the sidebar. A tag naming several genres ("Pop; Indie") counts for each, and
+    picking a genre lists every song that names it."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    library = objects["library"]
+    db = library._db
+    paths = [t["path"] for t in library.allTracks()]
+    db.conn.execute("UPDATE tracks SET genre='Dream Pop; Shoegaze', s_genre='dream pop; shoegaze' WHERE path=?",
+                    (paths[0],))
+    db.conn.execute("UPDATE tracks SET genre='Shoegaze', s_genre='shoegaze' WHERE path=?", (paths[1],))
+    db.commit()
+    library.reload()
+    assert wait_for(lambda: any(library.genresAz.get(i)["name"] == "Shoegaze" for i in range(library.genresAz.count)))
+    names = [library.genresAz.get(i)["name"] for i in range(library.genresAz.count)]
+    assert names == sorted(names, key=str.lower) and "Dream Pop" in names  # A–Z, each genre of the tag its own
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "genres"))
+    for _ in range(20):
+        qapp.processEvents()
+    page = window.findChild(QObject, "pageStack").property("currentItem")
+    assert page.objectName() == "genres"
+    QMetaObject.invokeMethod(page, "pick", Q_ARG("QVariant", "Shoegaze"))
+    for _ in range(20):
+        qapp.processEvents()
+    songs = window.findChild(QObject, "genresSongs")
+    assert wait_for(lambda: songs.property("count") == 2)  # the song tagged with two genres too
+    page.setProperty("songSort", "title")
+    assert wait_for(lambda: songs.property("count") == 2)
+    page.setProperty("order", "songs")
+    assert window.findChild(QObject, "genresList").property("count") == library.genreModel.count
+    assert not [w for w in warnings if "GenresPage" in w], warnings

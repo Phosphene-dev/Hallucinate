@@ -290,7 +290,7 @@ def test_sidebar_pages_can_be_rearranged(make_shell):
     shell, _, _ = make_shell()
     assert shell.sidebarOrder == list(SIDEBAR_PAGES)
     shell.moveSidebarPage("songs", -1)
-    assert shell.sidebarOrder[:4] == ["home", "albums", "songs", "artists"]
+    assert shell.sidebarOrder[:5] == ["home", "albums", "artists", "songs", "genres"]
     shell.placeSidebarPage("history", 0)
     assert shell.sidebarOrder[0] == "history"
     # switched-off pages (radio and podcasts start off) keep their places and are stepped over

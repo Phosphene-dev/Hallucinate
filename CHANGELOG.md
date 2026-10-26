@@ -23,9 +23,15 @@ All notable changes to this project are documented here. Format based on
   the song was added, and shows "Add to queue" on hover.
 
 ### Added
+- A Genres page in the sidebar (#88): every genre in your songs' tags, A–Z, by songs or by plays, with a filter.
+  A tag naming several genres ("Pop; Indie; Rock") counts for each. Pick one and every song tagged with it is
+  listed beside it (in album order, by title, artist, year, plays or date added), with Play, Shuffle and the
+  genre's albums and artists a click away. On a narrow window it shows the list, then the songs.
 - "Add to playlist" in the player's ⋯ menu, for the song that's playing, with "New playlist…" too (#94).
 
 ### Changed
+- The signal path keeps the accent colour for "Untouched": a step that changes the sound is marked in the grey of
+  "Processed" (it was the accent, which read as the good news).
 - The tray menu's items are in title case, like other apps' tray menus (Mini Player, Go To, Internet Radio).
 
 ## [1.4.1] - 2026-10-26

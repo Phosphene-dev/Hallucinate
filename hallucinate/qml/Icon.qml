@@ -155,6 +155,9 @@ Canvas {
             ctx.beginPath(); ctx.arc(w*.32, h*.46, w*.09, 0, Math.PI*2); ctx.stroke()
             ctx.beginPath(); ctx.arc(w*.68, h*.46, w*.09, 0, Math.PI*2); ctx.stroke()
             line([.24,.8,.3,.66,.7,.66,.76,.8]); break
+        case "genre":  // a tag, with the hole it hangs by
+            line([.12,.5,.12,.2,.42,.2,.88,.6,.58,.9,.12,.5])
+            ctx.beginPath(); ctx.arc(w*.28, h*.36, w*.06, 0, Math.PI*2); ctx.stroke(); break
         case "folder":
             line([.1,.26,.1,.82,.9,.82,.9,.34,.48,.34,.4,.22,.1,.22,.1,.3]); break
         case "history":  // a clock
