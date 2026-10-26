@@ -314,7 +314,7 @@ def test_the_tray_menu_goes_to_the_sidebar_pages(make_shell):
     from PySide6.QtWidgets import QMenu
 
     shell, win, _player = make_shell()
-    shell._goto = QMenu("Go to")  # the tray itself isn't built without a tray (as here, offscreen)
+    shell._goto = QMenu("Go To")  # the tray itself isn't built without a tray (as here, offscreen)
     shell._fill_goto()
     titles = [a.text() for a in shell._goto.actions()]
     assert titles[0] == "Home" and titles[-1] == "Settings" and "Liked Songs" in titles

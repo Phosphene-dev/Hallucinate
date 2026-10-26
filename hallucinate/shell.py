@@ -148,12 +148,12 @@ class DesktopShell(QObject):
         prev, nxt = QAction("Previous", menu), QAction("Next", menu)
         prev.triggered.connect(self._player.previous)
         nxt.triggered.connect(self._player.next)
-        show, mini, quit_ = QAction("Show Hallucinate", menu), QAction("Mini player", menu), QAction("Quit", menu)
+        show, mini, quit_ = QAction("Show Hallucinate", menu), QAction("Mini Player", menu), QAction("Quit", menu)
         show.triggered.connect(self.showMain)
         mini.triggered.connect(self.toggleMini)
         quit_.triggered.connect(self._app.quit)
         # Go to: the sidebar's pages, in its order, without the ones switched off (rebuilt each time it opens)
-        self._goto = QMenu("Go to", menu)
+        self._goto = QMenu("Go To", menu)  # title case, as tray menus are (KDE, GNOME's AppIndicator)
         self._goto.aboutToShow.connect(self._fill_goto)
         self._fill_goto()
         for a in (show, mini, None, self._act_toggle, prev, nxt, None):
@@ -171,7 +171,7 @@ class DesktopShell(QObject):
 
     PAGE_TITLES = {"home": "Home", "albums": "Albums", "artists": "Artists", "songs": "Songs", "folders": "Folders",
                    "liked": "Liked Songs", "stats": "Stats", "history": "History", "recap": "Recap",
-                   "visualizer": "Visualizer", "stations": "Internet radio", "podcasts": "Podcasts",
+                   "visualizer": "Visualizer", "stations": "Internet Radio", "podcasts": "Podcasts",
                    "settings": "Settings"}
 
     def _fill_goto(self):

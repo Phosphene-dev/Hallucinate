@@ -3,6 +3,11 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Changed
+- The tray menu's items are in title case, like other apps' tray menus (Mini Player, Go To, Internet Radio).
+
 ## [1.4.1] - 2026-10-26
 
 Scrobbling choices from the tester's report, and the AppImage's icon in docks.
