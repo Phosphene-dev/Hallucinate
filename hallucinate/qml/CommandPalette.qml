@@ -54,6 +54,7 @@ Popup {
             { t: "Home", s: "Go to", i: "home", run: () => w.go("home") },
             { t: "Albums", s: "Go to", i: "album", run: () => w.go("albums") },
             { t: "Artists", s: "Go to", i: "artist", run: () => w.go("artists") },
+            { t: "Genres", s: "Go to", i: "genre", run: () => w.go("genres") },
             { t: "Songs", s: "Go to", i: "songs", run: () => w.go("songs") },
             { f: "folders", t: "Folders", s: "Go to  ·  browse by folder", i: "folder", run: () => w.go("folders") },
             { f: "liked", t: "Liked Songs", s: "Go to", i: "heart", run: () => w.go("liked") },

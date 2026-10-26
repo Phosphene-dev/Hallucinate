@@ -88,3 +88,16 @@ def art_dir() -> Path:
 
 def db_path() -> Path:
     return data_dir() / "library.db"
+
+
+def pictures_dir() -> Path:
+    """Where Hallucinate saves images (recap cards, spectrograms): a Hallucinate folder in Pictures. The Flatpak
+    may write there and nowhere else in Pictures (--filesystem=xdg-pictures/Hallucinate:create)."""
+    base = ""
+    try:
+        from PySide6.QtCore import QStandardPaths
+
+        base = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.PicturesLocation)
+    except ImportError:  # pragma: no cover - headless installs without Qt
+        pass
+    return Path(base or Path.home() / "Pictures") / "Hallucinate"

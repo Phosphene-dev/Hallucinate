@@ -106,6 +106,7 @@ def app_window(qapp, tmp_path, monkeypatch, request):
     from hallucinate.scrobbling import LastFmScrobbler
     from hallucinate.servers import Servers
     from hallucinate.shell import DesktopShell
+    from hallucinate.spectrogram import Spectrograms
     from hallucinate.stations import Stations
     from hallucinate.themes import ThemeManager
     from hallucinate.userlib import UserLibrary
@@ -135,6 +136,7 @@ def app_window(qapp, tmp_path, monkeypatch, request):
         "stations": Stations(tmp_path / "streams.db", tmp_path / "cache", player),
         "servers": Servers(db_path, tmp_path / "art", player),
         "podcasts": Podcasts(tmp_path / "streams.db", tmp_path / "data", tmp_path / "cache", player),
+        "spectrograms": Spectrograms(db_path, tmp_path / "cache"),
     }
     from hallucinate.bios import ArtistBios
     from hallucinate.onlinesources import OnlineSources
@@ -1792,3 +1794,130 @@ def test_the_mouse_wheel_scrolls_evenly_adds_up_and_takes_hi_res_steps(qapp, app
     finally:
         shell.setScrollSpeed(1.0)
     assert not warnings, warnings[:3]
+
+
+def test_adding_to_a_playlist_from_the_song_album_and_collection_menus(qapp, app_window):
+    """Issue 92: the playlist items of a submenu are MenuItems, whose own `menu` (the submenu) hid the menu's id
+    of the same name: "Add to playlist" failed with "incompatible arguments" and added nothing."""
+    from conftest import wait_for
+    from PySide6.QtQml import QQmlEngine, QQmlExpression
+
+    window, objects, warnings = app_window
+    user_lib = objects["userLib"]
+    pid = user_lib.createPlaylist("Mine")
+    assert wait_for(lambda: any(user_lib.playlists.get(i)["id"] == pid for i in range(user_lib.playlists.rowCount())))
+    path = objects["library"].albumPaths(["k0"])[0]
+
+    def pick(menu, name):
+        sub = menu.findChild(QObject, "addToPlaylistMenu")
+        ctx = QQmlEngine.contextForObject(sub)
+        script = ("(function () { for (var i = 0; i < count; i++) { var it = itemAt(i);"
+                  " if (it && it.text === '%s') it.triggered() } })()" % name)
+        QQmlExpression(ctx, sub, script).evaluate()
+
+    def count():
+        user_lib.openPlaylist(pid)
+        for _ in range(20):
+            qapp.processEvents()
+        return user_lib.playlistTracks.rowCount()
+
+    song_menu = window.findChild(QObject, "trackMenu")
+    QMetaObject.invokeMethod(song_menu, "show", Q_ARG("QVariant", path), Q_ARG("QVariant", "T"),
+                             Q_ARG("QVariant", "songs"), Q_ARG("QVariant", 0))
+    pick(song_menu, "Mine")
+    assert wait_for(lambda: count() == 1), "the song menu added nothing"
+    QMetaObject.invokeMethod(song_menu, "close")
+
+    album_menu = window.findChild(QObject, "albumMenu")
+    QMetaObject.invokeMethod(album_menu, "show", Q_ARG("QVariant", ["k0"]), Q_ARG("QVariant", "A"), Q_ARG("QVariant", ""))
+    pick(album_menu, "Mine")
+    assert wait_for(lambda: count() > 1), "the album menu added nothing"
+    QMetaObject.invokeMethod(album_menu, "close")
+    assert not [w for w in warnings if "incompatible arguments" in w], warnings
+
+
+def test_now_playing_adds_its_song_to_a_playlist(qapp, app_window, tmp_path):
+    """Issue 94: the player bar's ⋯ menu has Add to playlist, for the song that's playing."""
+    from conftest import wait_for
+    from PySide6.QtQml import QQmlEngine, QQmlExpression
+
+    window, objects, warnings = app_window
+    user_lib, player = objects["userLib"], objects["player"]
+    pid = user_lib.createPlaylist("Road")
+    from audio import encode
+
+    song = encode(tmp_path / "np.flac", "flac", seconds=3, title="Np")
+    player.playList([{"id": 99, "path": str(song), "title": "Np", "artist": "A", "album": "B", "duration": 3}], 0)
+    assert wait_for(lambda: player.hasTrack)
+    sub = window.findChild(QObject, "nowPlayingPlaylistMenu")
+    assert sub is not None and sub.property("enabled")
+    assert wait_for(lambda: any(user_lib.playlists.get(i)["name"] == "Road" for i in range(user_lib.playlists.rowCount())))
+    QQmlExpression(QQmlEngine.contextForObject(sub), sub, "(function () { for (var i = 0; i < count; i++) {"
+                   " var it = itemAt(i); if (it && it.text === 'Road') it.triggered() } })()").evaluate()
+
+    import sqlite3
+
+    def stored():
+        with sqlite3.connect(str(tmp_path / "library.db")) as db:
+            return [r[0] for r in db.execute("SELECT path FROM playlist_items WHERE playlist_id=?", (pid,))]
+    assert wait_for(lambda: stored() == [str(song)])
+    player.stop()
+    assert not [w for w in warnings if "PlaybackMenu" in w or "incompatible" in w], warnings
+
+
+def test_the_genres_page_lists_every_genre_and_a_genre_s_songs(qapp, app_window):
+    """Issue 88: a Genres page in the sidebar. A tag naming several genres ("Pop; Indie") counts for each, and
+    picking a genre lists every song that names it."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    library = objects["library"]
+    db = library._db
+    paths = [t["path"] for t in library.allTracks()]
+    db.conn.execute("UPDATE tracks SET genre='Dream Pop; Shoegaze', s_genre='dream pop; shoegaze' WHERE path=?",
+                    (paths[0],))
+    db.conn.execute("UPDATE tracks SET genre='Shoegaze', s_genre='shoegaze' WHERE path=?", (paths[1],))
+    db.commit()
+    library.reload()
+    assert wait_for(lambda: any(library.genresAz.get(i)["name"] == "Shoegaze" for i in range(library.genresAz.count)))
+    names = [library.genresAz.get(i)["name"] for i in range(library.genresAz.count)]
+    assert names == sorted(names, key=str.lower) and "Dream Pop" in names  # A–Z, each genre of the tag its own
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "genres"))
+    for _ in range(20):
+        qapp.processEvents()
+    page = window.findChild(QObject, "pageStack").property("currentItem")
+    assert page.objectName() == "genres"
+    QMetaObject.invokeMethod(page, "pick", Q_ARG("QVariant", "Shoegaze"))
+    for _ in range(20):
+        qapp.processEvents()
+    songs = window.findChild(QObject, "genresSongs")
+    assert wait_for(lambda: songs.property("count") == 2)  # the song tagged with two genres too
+    page.setProperty("songSort", "title")
+    assert wait_for(lambda: songs.property("count") == 2)
+    page.setProperty("order", "songs")
+    assert window.findChild(QObject, "genresList").property("count") == library.genreModel.count
+    assert not [w for w in warnings if "GenresPage" in w], warnings
+
+
+def test_the_spectrum_analyzer_opens_from_a_song_s_menu(qapp, app_window, tmp_path):
+    """Issue 96: a song's menu (and the player's ⋯ menu) opens the spectrum analyzer window."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    spectrograms = objects["spectrograms"]
+    menu = window.findChild(QObject, "trackMenu")
+    item = menu.findChild(QObject, "trackSpectrum")
+    assert item is not None and window.findChild(QObject, "nowPlayingSpectrum") is not None
+    path = objects["library"].allTracks()[0]["path"]
+    QMetaObject.invokeMethod(menu, "show", Q_ARG("QVariant", path), Q_ARG("QVariant", "T"),
+                             Q_ARG("QVariant", "songs"), Q_ARG("QVariant", 0))
+    qapp.processEvents()
+    item.triggered.emit()
+    qapp.processEvents()
+    spectrum = [w for w in qapp.topLevelWindows() if w.objectName() == "spectrumWindow"]
+    assert spectrum and spectrum[0].isVisible()
+    assert wait_for(lambda: not spectrograms.busy, timeout=60)  # (the seeded files aren't real audio: it says so)
+    assert spectrograms.error or spectrograms.imageUrl
+    spectrum[0].close()
+    QMetaObject.invokeMethod(menu, "close")
+    assert not [w for w in warnings if "Spectrum" in w], warnings

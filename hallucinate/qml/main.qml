@@ -51,6 +51,7 @@ ApplicationWindow {
         switch (name) {
         case "albums": return albumsPage
         case "artists": return artistsPage
+        case "genres": return genresPage
         case "songs": return songsPage
         case "stats": return statsPage
         case "history": return historyPage
@@ -292,6 +293,7 @@ ApplicationWindow {
     Component { id: visualizerPage; VisualizerPage {} }
     Component { id: settingsPage; SettingsPage {} }
     Component { id: likedPage; PlaylistPage { liked: true } }
+    Component { id: genresPage; GenresPage {} }
     Component { id: stationsPage; StationsPage {} }
     Component { id: podcastsPage; PodcastsPage {} }
     Component { id: podcastDetail; PodcastPage {} }
@@ -339,6 +341,8 @@ ApplicationWindow {
         function onEditTagsMany(paths) { tagEditor.editTracks(paths) }
         function onArtistMenu(name) { if (name) collectionMenu.showArtist(name) }
         function onFolderMenu(path, name) { if (path) collectionMenu.showFolder(path, name) }
+        function onOpenSpectrum(path) { spectrumWindow.analyse(path) }
+        function onNewPlaylistWith(paths) { createDlg.paths = paths; createDlg.open() }
         function onTrackMenu(path, title, context, index) {
             // on a song that's part of a selection, the menu acts on the whole selection
             if (Selection.count > 1 && Selection.paths.indexOf(path) >= 0) trackMenu.showMany(Selection.paths, context)
@@ -681,6 +685,7 @@ ApplicationWindow {
     }
     TagEditor { id: tagEditor; objectName: "tagEditor" }
     MiniPlayer {}
+    SpectrumWindow { id: spectrumWindow }
     onClosing: function (close) {
         var result = shell.handleClose()
         close.accepted = result === "quit"
@@ -738,8 +743,17 @@ ApplicationWindow {
         modal: true
         title: "New playlist"
         standardButtons: Dialog.Ok | Dialog.Cancel
+        property var paths: []  // songs to start it with (Now Playing's "Add to playlist"); none: open it, empty
         onOpened: { createField.text = ""; createField.forceActiveFocus() }
-        onAccepted: if (createField.text.trim().length) window.openPlaylist(userLib.createPlaylist(createField.text.trim()), createField.text.trim())
+        onClosed: paths = []
+        onAccepted: {
+            var name = createField.text.trim()
+            if (!name.length) return
+            if (paths.length) {
+                userLib.addPathsToNewPlaylist(name, paths)
+                toast.show((paths.length === 1 ? "Added to “" : paths.length + " songs added to “") + name + "”")
+            } else window.openPlaylist(userLib.createPlaylist(name), name)
+        }
         TextField {
             id: createField; objectName: "createPlaylistName"; implicitWidth: 280; placeholderText: "Playlist name"; selectByMouse: true
             onAccepted: if (text.trim().length) createDlg.accept()  // no nameless playlists

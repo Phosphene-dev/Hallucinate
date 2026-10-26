@@ -64,6 +64,7 @@ def launch(args):
     from hallucinate.scrobbling import LastFmScrobbler
     from hallucinate.servers import Servers
     from hallucinate.shell import DesktopShell
+    from hallucinate.spectrogram import Spectrograms
     from hallucinate.stations import Stations
     from hallucinate.themes import ThemeManager
     from hallucinate.thumbs import ArtProvider
@@ -117,6 +118,7 @@ def launch(args):
         "stations": Stations(work / "streams.db", work / "cache", player),
         "servers": Servers(db_path, work / "art", player),
         "podcasts": Podcasts(work / "streams.db", work / "data", work / "cache", player),
+        "spectrograms": Spectrograms(db_path, work / "cache"),
     }
     # the rest of what the app gives the window (as app.py does), so it loads without warnings
     from hallucinate.bios import ArtistBios

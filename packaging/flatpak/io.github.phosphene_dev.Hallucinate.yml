@@ -13,6 +13,7 @@ finish-args:
   - --socket=pulseaudio
   - --device=dri
   - --filesystem=xdg-music:ro
+  - --filesystem=xdg-pictures/Hallucinate:create # recap cards and spectrograms; nothing else in Pictures
   - --own-name=org.mpris.MediaPlayer2.hallucinate
   - --talk-name=org.freedesktop.secrets # Last.fm/ListenBrainz credentials in the system keyring
   - --talk-name=org.freedesktop.Notifications # opt-in track-change notifications

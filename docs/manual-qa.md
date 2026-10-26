@@ -106,6 +106,19 @@ finding, following and playing podcasts.
 - [ ] The whole app from the keyboard alone: Tab through every page, arrows in lists, Enter to play, Menu key
   (or Shift+F10) for menus, Esc closes dialogs.
 
+### 7a. New in 1.5
+- [ ] Genres page: every genre in the tags, A–Z / most songs / most played, the filter; a tag with several
+  genres ("Pop; Indie") shows its song under each; picking a genre lists all its songs, in each order; Play,
+  Shuffle and "Albums & artists". A narrow window shows the list, then the songs with a back button.
+- [ ] Spectrum analyzer from a song's ⋯ menu and the player's ⋯ menu: an MP3 shows its cut-off (16–19 kHz), a
+  CD-quality FLAC reaches 22 kHz; Save image lands in Pictures/Hallucinate (the Flatpak too) and Show in folder
+  opens it there.
+- [ ] Add to playlist from a song's, an album's, a genre's and the player's menus adds the songs; the + on a song
+  says it was queued.
+- [ ] Show in folder (song menu, album menu, recap) opens the file manager with the file selected, Flatpak too.
+- [ ] A first scan of a big folder: songs appear on Home, Albums, Artists and Songs while it runs.
+- [ ] Artists → Composers opens at once in a big library (thousands of composers).
+
 ### 8a. New in 1.4, on every desktop
 Run these on each desktop you have: KDE Plasma (Wayland and X11), GNOME (Wayland, with and without the
 AppIndicator extension), Cinnamon, XFCE, MATE, COSMIC, and the tiling compositors (Hyprland, niri, Sway with

@@ -1504,7 +1504,7 @@ Item {
             id: sec_scrobbling
             objectName: "settings_scrobbling"
             title: "Scrobbling & sharing"
-            keywords: "last.fm lastfm listenbrainz scrobble scrobbling loves discord rich presence history import account radio stations podcasts episodes queued when half percent threshold point listen end"
+            keywords: "last.fm lastfm listenbrainz maloja koito multi-scrobbler self-hosted server scrobble scrobbling loves discord rich presence history import account radio stations podcasts episodes queued when half percent threshold point listen end"
             query: page.query
             Text { text: "Last.fm"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {
@@ -1649,6 +1649,43 @@ Item {
                 text: "Connect with your ListenBrainz user token to send now-playing updates and listens. The token stays in the system keyring; listens that can't be sent wait and are tried again."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
+            // a server of your own that speaks the ListenBrainz API, instead of listenbrainz.org
+            StyledCheck {
+                id: lbOwnServer
+                objectName: "listenbrainzOwnServer"
+                visible: !listenbrainz.connected
+                text: "Use another server that speaks the ListenBrainz API (Maloja, Koito, Multi-Scrobbler…)"
+                checked: listenbrainz.server.length > 0
+            }
+            Column {
+                visible: lbOwnServer.checked && !listenbrainz.connected
+                width: parent.width
+                leftPadding: 28
+                spacing: 6
+                TextField {
+                    id: lbServer
+                    objectName: "listenbrainzServer"
+                    width: Math.min(420, parent.width - 28); height: 38
+                    text: listenbrainz.server
+                    placeholderText: "https://maloja.example.com/apis/listenbrainz"
+                    color: Theme.text; placeholderTextColor: Theme.textDim
+                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
+                    selectByMouse: true
+                    background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: lbServer.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width - 28
+                    wrapMode: Text.WordWrap
+                    // a token over plain http can be read along the way, unless the server is on this computer or at home
+                    readonly property bool plain: /^http:\/\//i.test(lbServer.text.trim())
+                        && !/^http:\/\/(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[?::1)/i.test(lbServer.text.trim())
+                    text: plain ? "This address isn't encrypted (http://): the token and your listens can be read on the way. Use https:// unless the server is on your own network."
+                                : "The server's ListenBrainz API address and a token from it. Maloja and Koito serve it at /apis/listenbrainz."
+                    color: plain ? Theme.error : Theme.textDim
+                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                }
+            }
             Flow {  // wraps in a narrow window
                 width: parent.width
                 spacing: 10
@@ -1665,12 +1702,12 @@ Item {
                 PillButton {
                     visible: !listenbrainz.connected
                     primary: true
-                    text: listenbrainz.busy ? "Validating…" : "Connect ListenBrainz"
-                    enabled: lbToken.text.length > 0 && !listenbrainz.busy
-                    onClicked: { listenbrainz.connectToken(lbToken.text, ""); lbToken.text = "" }
+                    text: listenbrainz.busy ? "Validating…" : lbOwnServer.checked ? "Connect" : "Connect ListenBrainz"
+                    enabled: lbToken.text.length > 0 && !listenbrainz.busy && (!lbOwnServer.checked || lbServer.text.trim().length > 0)
+                    onClicked: { listenbrainz.connectToken(lbToken.text, lbOwnServer.checked ? lbServer.text : ""); lbToken.text = "" }
                 }
                 PillButton {
-                    visible: !listenbrainz.connected
+                    visible: !listenbrainz.connected && !lbOwnServer.checked
                     text: "Get a token"
                     onClicked: Qt.openUrlExternally("https://listenbrainz.org/settings/")
                 }
@@ -1898,9 +1935,9 @@ Item {
                 Text { textFormat: Text.PlainText; text: "Open on"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
                 StyledCombo {
                     objectName: "startPage"
-                    readonly property var pages: ["home", "last", "albums", "artists", "songs", "folders", "liked", "stats", "history"]
+                    readonly property var pages: ["home", "last", "albums", "artists", "genres", "songs", "folders", "liked", "stats", "history"]
                     width: 220
-                    model: ["Home", "The page I left it on", "Albums", "Artists", "Songs", "Folders", "Liked Songs", "Stats", "History"]
+                    model: ["Home", "The page I left it on", "Albums", "Artists", "Genres", "Songs", "Folders", "Liked Songs", "Stats", "History"]
                     selection: Math.max(0, pages.indexOf(shell.startPage))
                     onActivated: shell.setStartPage(pages[currentIndex])
                     Accessible.name: "Page Hallucinate opens on"

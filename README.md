@@ -46,6 +46,8 @@
 | **Similar artists** (from Last.fm, if you set it up) | **Search that forgives a typo** |
 | ![Similar artists on an artist page, with Play a mix](docs/screenshots/similar-artists.png) | ![Search showing results for the closest match](docs/screenshots/search-typo.png) |
 
+New in 1.5: a Genres page and a spectrum analyzer (a song's spectrogram, as Spek draws it).
+
 New in 1.4: even mouse-wheel scrolling, the tray icon in the Flatpak, and more choices for playback, startup
 and the window.
 

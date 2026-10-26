@@ -3,6 +3,48 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.5.0] - 2026-10-26
+
+The tester's third round: a Genres page, a spectrum analyzer, and fixes for adding to playlists, Show in folder
+in the Flatpak, and a two-minute freeze opening Composers in a big library.
+
+### Fixed
+- "Add to playlist" in a song's, album's or collection's menu added nothing (#92): the playlist items looked for
+  the songs in the wrong menu. Now it adds them, and says so.
+- Opening Composers on the Artists page froze the window for minutes in a big library (#90: 4,000 composers took
+  two minutes here). The view now reads from a list Python prepares in the background, in both orders: it
+  opens in a fraction of a second.
+- The pages promise that songs appear as they're found, but during a first scan (or one bringing in a folder just
+  added) they came only at the end (#91). The library now refreshes every few seconds while such a scan runs,
+  spaced out further in a big library.
+- "Show in folder" did nothing in the Flatpak (#95): the sandbox can't open a folder the way Qt asks. It now asks
+  the desktop portal to show the song, selected in its folder; outside the Flatpak the file manager is asked to
+  select it too (Nautilus, Dolphin, Nemo, Thunar…), and the folder simply opens where none answers.
+- The Flatpak couldn't save recap images (#89): they now go to Pictures/Hallucinate, the one folder in
+  Pictures it may write to, with "Show in folder" once it's saved.
+- The + on a song added it to the queue without a word, so it looked like nothing happened (#93). It now says
+  the song was added, and shows "Add to queue" on hover.
+
+### Added
+- A spectrum analyzer (#96): "Spectrum analyzer…" in a song's menu, or the player's ⋯ menu for what's playing,
+  opens its spectrogram in a window, as Spek draws it: time across, frequency up to half the file's sample rate,
+  loudness in colour from -120 to 0 dB, and the format beside the title. A lossy file's cut-off (often 16 or
+  19 kHz) or an upsampled "hi-res" file shows at a glance. Decoded in the background helper, so a damaged file
+  can't hold up the window; "Save image" keeps a PNG in Pictures/Hallucinate.
+- Scrobble to a server of your own: ListenBrainz can point at anything that speaks its API (Maloja, Koito,
+  Multi-Scrobbler…), in Settings → Scrobbling & sharing. The server is remembered, so listens and the token keep
+  going there after a restart; an unencrypted address outside your own network is flagged.
+- A Genres page in the sidebar (#88): every genre in your songs' tags, A–Z, by songs or by plays, with a filter.
+  A tag naming several genres ("Pop; Indie; Rock") counts for each. Pick one and every song tagged with it is
+  listed beside it (in album order, by title, artist, year, plays or date added), with Play, Shuffle and the
+  genre's albums and artists a click away. On a narrow window it shows the list, then the songs.
+- "Add to playlist" in the player's ⋯ menu, for the song that's playing, with "New playlist…" too (#94).
+
+### Changed
+- The signal path keeps the accent colour for "Untouched": a step that changes the sound is marked in the grey of
+  "Processed" (it was the accent, which read as the good news).
+- The tray menu's items are in title case, like other apps' tray menus (Mini Player, Go To, Internet Radio).
+
 ## [1.4.1] - 2026-10-26
 
 Scrobbling choices from the tester's report, and the AppImage's icon in docks.

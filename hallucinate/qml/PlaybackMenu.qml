@@ -2,9 +2,41 @@ import QtQuick
 import QtQuick.Controls
 import "."
 
-// Playback speed and sleep timer.
+// Add the song to a playlist, playback speed and sleep timer.
 Menu {
-    id: menu
+    id: playback  // not "menu": the playlist items' own `menu` (their submenu) would hide it
+    readonly property bool song: player.hasTrack && !(player.current.kind || "").length && (player.current.path || "").length > 0
+    Menu {
+        id: plSub
+        objectName: "nowPlayingPlaylistMenu"
+        title: "Add to playlist"
+        icon.name: "playlist"
+        enabled: playback.song
+        MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: Nav.newPlaylistWith([player.current.path]) }
+        MenuSeparator {}
+        Instantiator {
+            model: userLib.playlists
+            delegate: MenuItem {
+                required property int id
+                required property string name
+                text: Theme.plain(name)
+                onTriggered: {
+                    userLib.addPathsToPlaylist(id, [player.current.path])
+                    Nav.notify("“" + (player.current.title || "This song") + "” added to “" + name + "”")
+                }
+            }
+            onObjectAdded: (i, o) => plSub.addItem(o)
+            onObjectRemoved: (i, o) => plSub.removeItem(o)
+        }
+    }
+    MenuItem {
+        objectName: "nowPlayingSpectrum"
+        text: "Spectrum analyzer…"
+        icon.name: "wave"
+        enabled: playback.song && !/^(subsonic|jellyfin):\/\//.test(player.current.path || "")
+        onTriggered: Nav.openSpectrum(player.current.path)
+    }
+    MenuSeparator {}
     Menu {
         id: speedMenu
         icon.name: "wave"

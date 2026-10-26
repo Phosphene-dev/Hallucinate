@@ -226,6 +226,9 @@ def test_a_composers_page_and_the_composers_view(qapp, app_window):
     QMetaObject.invokeMethod(artists, "setView", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", True))
     qapp.processEvents()
     assert artists.property("composers")
+    # Python's models, not composerList as JS objects (thousands of those froze the window for minutes, #90)
+    assert library.composers.count == 1 and library.composersAz.count == 1
+    assert artists.property("composerRows") is not None
     QMetaObject.invokeMethod(artists, "setView", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", False))
     assert not warnings, warnings[:3]
 

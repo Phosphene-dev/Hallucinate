@@ -38,6 +38,37 @@ def _words(exc):
     return net.describe(exc)
 
 
+def normalize_server(text):
+    """A server's ListenBrainz API address from what someone typed: "" for listenbrainz.org itself;
+    https:// added when there's no scheme; a pasted endpoint ("…/1/submit-listens") cut back to the base. Self-hosted
+    servers speak the same API under a path of their own (Maloja and Koito: https://host/apis/listenbrainz).
+    Raises ValueError for anything but an http(s) address."""
+    from urllib.parse import urlsplit
+
+    text = (text or "").strip()
+    if not text:
+        return ""
+    if "://" not in text:
+        text = "https://" + text
+    parts = urlsplit(text)
+    if parts.scheme not in ("http", "https") or not parts.hostname:
+        raise ValueError("Enter the server's address, such as https://maloja.example.com/apis/listenbrainz")
+    path = parts.path.rstrip("/")
+    for tail in ("/1/submit-listens", "/1/validate-token", "/1"):
+        if path.endswith(tail):
+            path = path[: -len(tail)]
+            break
+    base = f"{parts.scheme}://{parts.netloc}{path}"
+    return "" if base.rstrip("/") == DEFAULT_URL else base
+
+
+def server_label(base):
+    """How a server is named in messages: ListenBrainz, or its host."""
+    from urllib.parse import urlsplit
+
+    return "ListenBrainz" if not base or base == DEFAULT_URL else (urlsplit(base).hostname or base)
+
+
 def lb_request(base, path, token=None, payload=None, params=None):
     url = base.rstrip("/") + path + (("?" + urlencode(params)) if params else "")
     headers = {"User-Agent": "Hallucinate/0.3"}
@@ -161,7 +192,12 @@ class ListenBrainzScrobbler(QObject):
         self.player = player
         self.userlib = userlib
         self._queue_path = Path(data_dir) / "listenbrainz-listens.json"
-        self._base = DEFAULT_URL
+        # a server of your own that speaks the ListenBrainz API (Maloja, Koito, Multi-Scrobbler…): remembered,
+        # so listens and the token keep going there after a restart, never to listenbrainz.org
+        from PySide6.QtCore import QSettings as _QSettings
+
+        self._server = str(_QSettings("hallucinate", "hallucinate").value("listenbrainz/server", "") or "")
+        self._base = self._server or DEFAULT_URL
         self._token = ""
         self._user = ""
         self._status = ""
@@ -242,7 +278,7 @@ class ListenBrainzScrobbler(QObject):
         self._user = got["values"].get("user", "") or self._user
         self.connectionChanged.emit()
         self._set_status(f"System keyring unavailable: {self._keyring_error}" if self._keyring_error
-                         else ("Connected to ListenBrainz" + (f" as {self._user}." if self._user else "."))
+                         else (f"Connected to {server_label(self._server)}" + (f" as {self._user}." if self._user else "."))
                          if self._token else "Not connected to ListenBrainz.")
 
     def _load_queue(self):
@@ -358,6 +394,15 @@ class ListenBrainzScrobbler(QObject):
         return self._importing
 
     # --- account ---------------------------------------------------------------
+    @Property(str, notify=connectionChanged)
+    def server(self):
+        """The server listens go to: "" for listenbrainz.org, else its API address."""
+        return self._server
+
+    @Property(str, notify=connectionChanged)
+    def serverName(self):
+        return server_label(self._server)
+
     @Slot(str, str)
     def connectToken(self, token, server=""):
         token = token.strip()
@@ -366,8 +411,14 @@ class ListenBrainzScrobbler(QObject):
         if self._keyring_error:
             self._set_status(f"System keyring is required: {self._keyring_error}")
             return
-        self._base = server.strip() or DEFAULT_URL
-        self._set_status("Validating token…")
+        try:
+            wanted = normalize_server(server)
+        except ValueError as exc:
+            self._set_status(str(exc))
+            return
+        self._pending_server = wanted
+        self._base = wanted or DEFAULT_URL
+        self._set_status(f"Validating the token with {server_label(wanted)}…")
         base = self._base
         self._start("validate", lambda: lb_request(base, "/1/validate-token", token), item=token)
 
@@ -416,9 +467,11 @@ class ListenBrainzScrobbler(QObject):
         self.busyChanged.emit()
         result, item, code = payload
         if error:
-            self._set_status(error)
             if action == "validate":
+                self._base = self._server or DEFAULT_URL  # not connected there: back to the server in use
+                self._set_status(error.replace("ListenBrainz", server_label(getattr(self, "_pending_server", ""))))
                 return
+            self._set_status(error)
             self._set_last_error(error)
             if code in (401, 403):
                 # the token was revoked or changed: asking again won't help
@@ -449,7 +502,8 @@ class ListenBrainzScrobbler(QObject):
             self._set_last_error("")
         if action == "validate":
             if not result.get("valid"):
-                self._set_status("ListenBrainz says that token is not valid.")
+                self._base = self._server or DEFAULT_URL
+                self._set_status(f"{server_label(getattr(self, '_pending_server', ''))} says that token is not valid.")
                 return
             user = result.get("user_name", "")
 
@@ -458,8 +512,11 @@ class ListenBrainzScrobbler(QObject):
                     self._set_status(f"Could not store the token securely: {error}")
                     return
                 self._token, self._user = item, user
+                self._server = getattr(self, "_pending_server", "")
+                self._base = self._server or DEFAULT_URL
+                self._qsettings.setValue("listenbrainz/server", self._server)
                 self.connectionChanged.emit()
-                self._set_status(f"Connected to ListenBrainz as {self._user}.")
+                self._set_status(f"Connected to {server_label(self._server)} as {self._user}.")
                 self._send_now_playing()
                 self._flush()
 

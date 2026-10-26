@@ -1120,13 +1120,14 @@ class UserLibrary(QObject):
 
     @Slot("QVariant", result=str)
     def saveRecapImage(self, image):
-        """Save a rendered recap card under Pictures; returns the file path, or "" when it couldn't be written."""
+        """Save a rendered recap card in Pictures/Hallucinate; returns the file path, or "" when it couldn't be
+        written."""
         import os
         import re
 
-        from PySide6.QtCore import QStandardPaths
+        from .core import paths
 
-        folder = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.PicturesLocation) or os.path.expanduser("~")
+        folder = str(paths.pictures_dir())
         name = re.sub(r'[\\/:*?"<>|]', "-", self._recap.get("title") or "recap")
         period = (self._recap.get("period") or "").replace(":", " ")
         path = os.path.join(folder, f"Hallucinate recap - {name} ({period}).png" if period else f"Hallucinate recap - {name}.png")

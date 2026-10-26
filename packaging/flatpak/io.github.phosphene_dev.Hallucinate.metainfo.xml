@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.5.0" date="2026-10-26">
+      <description>
+        <p>A Genres page listing every genre in your tags with all of each genre's songs, and a spectrum analyzer that shows a song's spectrogram and saves it as an image.</p>
+        <p>Fixes: adding songs to a playlist from their menus, Show in folder and saving images in the Flatpak, a long freeze opening Composers in a big library, and songs now appear while the first scan runs.</p>
+      </description>
+    </release>
     <release version="1.4.1" date="2026-10-26">
       <description>
         <p>Choose when a song is scrobbled to Last.fm and counted on ListenBrainz (Last.fm's rule, a share of the song, or at its end), and switch off their "playing now" display.</p>

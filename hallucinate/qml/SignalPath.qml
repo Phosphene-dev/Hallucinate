@@ -107,11 +107,14 @@ Item {
                         height: index === sp.stages.length - 1 ? 21 : parent.height - (index === 0 ? 21 : 0)
                         color: Theme.stroke
                     }
+                    // A step that changes the sound is marked in the grey of "Processed", not the accent: the accent
+                    // means untouched (the tester found an accent on what spoils it backwards)
                     Rectangle {
+                        objectName: modelData.active ? "signalStepChanging" : "signalStep"
                         x: 0; y: 15; width: 12; height: 12; radius: Theme.round(6)
-                        color: modelData.active ? Theme.accent : Theme.surface
+                        color: modelData.active ? Theme.textDim : Theme.surface
                         border.width: 2
-                        border.color: modelData.active ? Theme.accentHi : Theme.stroke
+                        border.color: modelData.active ? Theme.text : Theme.stroke
                     }
                     Column {
                         x: 24; y: 5
@@ -128,7 +131,8 @@ Item {
                             textFormat: Text.PlainText
                             width: parent.width
                             text: modelData.detail
-                            color: modelData.active ? Theme.accent : Theme.textDim
+                            color: modelData.active ? Theme.text : Theme.textDim
+                            font.weight: modelData.active ? Font.DemiBold : Font.Normal
                             elide: Text.ElideRight
                             font.family: Theme.fontFamily
                             font.pixelSize: Theme.fontSize(11)

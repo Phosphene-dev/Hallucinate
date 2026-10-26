@@ -8,7 +8,7 @@ program (`hallucinate --analysis-worker`), one song at a time. It reports progre
 making progress for STALL_S, or dies, it's ended and the next song gets a fresh one. It quits by itself after
 IDLE_MS with nothing to do.
 
-The protocol is one JSON object per line. Asked: {"id", "path", "kind": "waveform" | "loudness",
+The protocol is one JSON object per line. Asked: {"id", "path", "kind": "waveform" | "loudness" | "spectrogram",
 "envelope": bool}. Answered: {"id", "beat": buffers decoded so far} while working, then {"id", "result"}
 (None when the file couldn't be decoded; {"silent": true} for loudness of a silent song)."""
 import base64
@@ -74,6 +74,7 @@ def serve():
 
     from . import loudness
     from .replaygain import channel_samples
+    from .spectrogram import Accumulator
     from .waveform import blocks_from_samples, mono_samples, peaks_from_blocks
 
     app = QCoreApplication(sys.argv[:1])
@@ -112,7 +113,8 @@ def serve():
             return
         job = state["job"] = queue.pop(0)
         state["buffers"] = 0
-        state.update(ms=[], peak=[], rate=0, meter=loudness.Meter() if job.get("kind") == "loudness" else None)
+        state.update(ms=[], peak=[], rate=0, meter=loudness.Meter() if job.get("kind") == "loudness" else None,
+                     spectrum=Accumulator() if job.get("kind") == "spectrogram" else None)
         decoder = state["decoder"] = QAudioDecoder()
         decoder.bufferReady.connect(on_buffer)
         decoder.finished.connect(on_finished)
@@ -134,6 +136,11 @@ def serve():
             if samples is not None and samples.size:
                 state["meter"].add(samples, rate)
             return
+        if state["spectrum"] is not None:
+            samples = channel_samples(buf)
+            if samples is not None and samples.size:
+                state["spectrum"].add(samples, rate)
+            return
         if not state["rate"]:
             state["rate"] = rate
         samples = mono_samples(buf)
@@ -146,7 +153,12 @@ def serve():
         job = state["job"]
         if job is None:
             return
-        if state["meter"] is not None:
+        if state["spectrum"] is not None:
+            got = state["spectrum"].result()
+            cols = got["columns"]
+            result = {"columns": _pack(cols, np.uint8), "count": int(cols.shape[0]), "rows": int(cols.shape[1]),
+                      "rate": got["rate"], "channels": got["channels"]}
+        elif state["meter"] is not None:
             got = loudness.track_result(state["meter"])
             result = {"silent": True} if got is None else {
                 "loudness": got["loudness"], "gain": got["gain"], "peak": got["peak"],
@@ -337,6 +349,9 @@ def _decode_result(kind, result):
     if not isinstance(result, dict):
         return None
     try:
+        if kind == "spectrogram":
+            cols = _unpack(result["columns"], np.uint8).reshape(int(result["count"]), int(result["rows"]))
+            return {**result, "columns": cols}
         if kind == "loudness":
             if result.get("silent"):
                 return {"silent": True}

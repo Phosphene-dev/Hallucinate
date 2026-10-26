@@ -66,6 +66,7 @@ def main():
     from hallucinate.scrobbling import LastFmScrobbler
     from hallucinate.servers import Servers
     from hallucinate.shell import DesktopShell
+    from hallucinate.spectrogram import Spectrograms
     from hallucinate.stations import Stations
     from hallucinate.themes import ThemeManager
     from hallucinate.thumbs import ArtProvider
@@ -97,6 +98,7 @@ def main():
         "stations": Stations(tmp / "streams.db", tmp / "cache", player),
         "servers": Servers(db, tmp / "art", player),
         "podcasts": Podcasts(tmp / "streams.db", tmp / "data", tmp / "cache", player),
+        "spectrograms": Spectrograms(db, tmp / "cache"),
     }
     engine = QQmlApplicationEngine()
     engine.addImageProvider("art", ArtProvider(tmp / "thumbs"))

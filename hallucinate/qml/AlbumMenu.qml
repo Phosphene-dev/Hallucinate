@@ -5,7 +5,7 @@ import "."
 // Right-click (or "…") on an album, or on a selection of albums: play or shuffle, queue, playlists, likes, its
 // folder and genre, tags, remove.
 Menu {
-    id: menu
+    id: albumMenu  // not "menu": a MenuItem's own `menu` (its submenu) would hide it in the playlist items
     objectName: "albumMenu"
     property var keys: []
     property string albumTitle: ""
@@ -30,7 +30,7 @@ Menu {
         copies = serverCopies.status(p)
         popup()
     }
-    function paths() { return library.albumPaths(menu.keys) }
+    function paths() { return library.albumPaths(albumMenu.keys) }
     // every song in a random order, with shuffle on so it carries on that way
     function shuffle() {
         var p = paths()
@@ -39,12 +39,13 @@ Menu {
         userLib.playPaths(p)
     }
 
-    MenuItem { text: "Play"; icon.name: "play"; onTriggered: menu.single ? library.playAlbum(menu.keys[0], 0) : userLib.playPaths(menu.paths()) }
-    MenuItem { objectName: "albumShuffle"; text: "Shuffle"; icon.name: "shuffle"; onTriggered: menu.shuffle() }
-    MenuItem { text: "Play next"; icon.name: "next"; onTriggered: { userLib.playNextPaths(menu.paths()); Nav.notify(menu.what + " will play next") } }
-    MenuItem { text: "Add to queue"; icon.name: "queue"; onTriggered: { userLib.enqueuePaths(menu.paths()); Nav.notify(menu.what + " added to the queue") } }
+    MenuItem { text: "Play"; icon.name: "play"; onTriggered: albumMenu.single ? library.playAlbum(albumMenu.keys[0], 0) : userLib.playPaths(albumMenu.paths()) }
+    MenuItem { objectName: "albumShuffle"; text: "Shuffle"; icon.name: "shuffle"; onTriggered: albumMenu.shuffle() }
+    MenuItem { text: "Play next"; icon.name: "next"; onTriggered: { userLib.playNextPaths(albumMenu.paths()); Nav.notify(albumMenu.what + " will play next") } }
+    MenuItem { text: "Add to queue"; icon.name: "queue"; onTriggered: { userLib.enqueuePaths(albumMenu.paths()); Nav.notify(albumMenu.what + " added to the queue") } }
     Menu {
         id: plMenu
+        objectName: "addToPlaylistMenu"
         title: "Add to playlist"
         icon.name: "playlist"
         MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: newDlg.open() }
@@ -55,7 +56,7 @@ Menu {
                 required property int id
                 required property string name
                 text: Theme.plain(name)
-                onTriggered: { userLib.addPathsToPlaylist(id, menu.paths()); Nav.notify(menu.what + " added to “" + name + "”") }
+                onTriggered: { userLib.addPathsToPlaylist(id, albumMenu.paths()); Nav.notify(albumMenu.what + " added to “" + name + "”") }
             }
             onObjectAdded: (i, o) => plMenu.addItem(o)
             onObjectRemoved: (i, o) => plMenu.removeItem(o)
@@ -65,63 +66,63 @@ Menu {
         objectName: "albumLikeAll"
         visible: shell.features.liked !== false
         height: visible ? implicitHeight : 0
-        text: menu.allLiked ? "Unlike all songs" : "Like all songs"
+        text: albumMenu.allLiked ? "Unlike all songs" : "Like all songs"
         icon.name: "heart"
         onTriggered: {
-            var p = menu.paths()
-            userLib.setLikedPaths(p, !menu.allLiked)
-            Nav.notify((menu.allLiked ? "Unliked" : "Liked") + " every song on " + menu.what)
+            var p = albumMenu.paths()
+            userLib.setLikedPaths(p, !albumMenu.allLiked)
+            Nav.notify((albumMenu.allLiked ? "Unliked" : "Liked") + " every song on " + albumMenu.what)
         }
     }
     MenuSeparator {}
     MenuItem {
-        visible: menu.single
+        visible: albumMenu.single
         height: visible ? implicitHeight : 0
         text: "Edit album info…"
         icon.name: "edit"
-        onTriggered: Nav.editAlbum(menu.keys[0])
+        onTriggered: Nav.editAlbum(albumMenu.keys[0])
     }
     MenuItem {
-        visible: menu.single && menu.artist.length > 0
+        visible: albumMenu.single && albumMenu.artist.length > 0
         height: visible ? implicitHeight : 0
-        text: "Go to " + Theme.plain(menu.artist)
+        text: "Go to " + Theme.plain(albumMenu.artist)
         icon.name: "artist"
-        onTriggered: Nav.openArtist(menu.artist)
+        onTriggered: Nav.openArtist(albumMenu.artist)
     }
     MenuItem {
         objectName: "albumGoToGenre"
-        visible: menu.single && menu.genre.length > 0
+        visible: albumMenu.single && albumMenu.genre.length > 0
         height: visible ? implicitHeight : 0
-        text: "Go to genre " + Theme.plain(menu.genre)
+        text: "Go to genre " + Theme.plain(albumMenu.genre)
         icon.name: "note"
-        onTriggered: Nav.openGenre(menu.genre)
+        onTriggered: Nav.openGenre(albumMenu.genre)
     }
     MenuItem {
         objectName: "albumShowInFolder"
-        visible: menu.single && menu.firstPath.length > 0 && !menu.onServer
+        visible: albumMenu.single && albumMenu.firstPath.length > 0 && !albumMenu.onServer
         height: visible ? implicitHeight : 0
         text: "Show in folder"
         icon.name: "folder"
-        onTriggered: library.showInFolder(menu.firstPath)
+        onTriggered: library.showInFolder(albumMenu.firstPath)
     }
     MenuItem {
         objectName: "albumKeep"
-        visible: menu.copies.servers > 0 && menu.copies.kept + menu.copies.waiting < menu.copies.servers
+        visible: albumMenu.copies.servers > 0 && albumMenu.copies.kept + albumMenu.copies.waiting < albumMenu.copies.servers
         height: visible ? implicitHeight : 0
         text: "Keep on this computer"; icon.name: "download"
-        onTriggered: serverCopies.keep(menu.paths())
+        onTriggered: serverCopies.keep(albumMenu.paths())
     }
     MenuItem {
         objectName: "albumUnkeep"
-        visible: menu.copies.kept + menu.copies.waiting > 0
+        visible: albumMenu.copies.kept + albumMenu.copies.waiting > 0
         height: visible ? implicitHeight : 0
-        text: menu.copies.waiting > 0 && menu.copies.kept === 0 ? "Stop keeping on this computer" : "Remove the copies from this computer"
+        text: albumMenu.copies.waiting > 0 && albumMenu.copies.kept === 0 ? "Stop keeping on this computer" : "Remove the copies from this computer"
         icon.name: "remove"
-        onTriggered: serverCopies.remove(menu.paths())
+        onTriggered: serverCopies.remove(albumMenu.paths())
     }
     MenuSeparator {}
-    MenuItem { objectName: "albumRemove"; text: "Remove from library…"; icon.name: "remove"; icon.color: Theme.error; onTriggered: Nav.removeAlbums(menu.keys, menu.what) }
-    MenuItem { objectName: "albumTrash"; text: "Move to trash…"; icon.name: "trash"; icon.color: Theme.error; onTriggered: Nav.trashAlbums(menu.keys, menu.what) }
+    MenuItem { objectName: "albumRemove"; text: "Remove from library…"; icon.name: "remove"; icon.color: Theme.error; onTriggered: Nav.removeAlbums(albumMenu.keys, albumMenu.what) }
+    MenuItem { objectName: "albumTrash"; text: "Move to trash…"; icon.name: "trash"; icon.color: Theme.error; onTriggered: Nav.trashAlbums(albumMenu.keys, albumMenu.what) }
 
     Dialog {
         id: newDlg
@@ -131,7 +132,7 @@ Menu {
         title: "New playlist"
         standardButtons: Dialog.Ok | Dialog.Cancel
         onOpened: { nf.text = ""; nf.forceActiveFocus() }
-        onAccepted: if (nf.text.trim().length) Nav.openPlaylist(userLib.addPathsToNewPlaylist(nf.text.trim(), menu.paths()))
+        onAccepted: if (nf.text.trim().length) Nav.openPlaylist(userLib.addPathsToNewPlaylist(nf.text.trim(), albumMenu.paths()))
         TextField {
             id: nf; implicitWidth: 280; placeholderText: "Playlist name"; selectByMouse: true
             onAccepted: if (text.trim().length) newDlg.accept()  // no nameless playlists
