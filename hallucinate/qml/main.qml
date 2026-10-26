@@ -339,6 +339,7 @@ ApplicationWindow {
         function onEditTagsMany(paths) { tagEditor.editTracks(paths) }
         function onArtistMenu(name) { if (name) collectionMenu.showArtist(name) }
         function onFolderMenu(path, name) { if (path) collectionMenu.showFolder(path, name) }
+        function onNewPlaylistWith(paths) { createDlg.paths = paths; createDlg.open() }
         function onTrackMenu(path, title, context, index) {
             // on a song that's part of a selection, the menu acts on the whole selection
             if (Selection.count > 1 && Selection.paths.indexOf(path) >= 0) trackMenu.showMany(Selection.paths, context)
@@ -738,8 +739,17 @@ ApplicationWindow {
         modal: true
         title: "New playlist"
         standardButtons: Dialog.Ok | Dialog.Cancel
+        property var paths: []  // songs to start it with (Now Playing's "Add to playlist"); none: open it, empty
         onOpened: { createField.text = ""; createField.forceActiveFocus() }
-        onAccepted: if (createField.text.trim().length) window.openPlaylist(userLib.createPlaylist(createField.text.trim()), createField.text.trim())
+        onClosed: paths = []
+        onAccepted: {
+            var name = createField.text.trim()
+            if (!name.length) return
+            if (paths.length) {
+                userLib.addPathsToNewPlaylist(name, paths)
+                toast.show((paths.length === 1 ? "Added to “" : paths.length + " songs added to “") + name + "”")
+            } else window.openPlaylist(userLib.createPlaylist(name), name)
+        }
         TextField {
             id: createField; objectName: "createPlaylistName"; implicitWidth: 280; placeholderText: "Playlist name"; selectByMouse: true
             onAccepted: if (text.trim().length) createDlg.accept()  // no nameless playlists

@@ -225,7 +225,9 @@ Rectangle {
         icon: "plus"; size: 14
         opacity: row.showButtons ? 1 : 0
         activeFocusOnTab: false
-        onClicked: row.enqueue()
+        tip: "Add to queue"
+        // says so: with the queue panel closed, nothing else on screen changes
+        onClicked: { row.enqueue(); Nav.notify("“" + row.title + "” added to the queue") }
     }
     Text {
         textFormat: Text.PlainText

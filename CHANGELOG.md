@@ -5,6 +5,15 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Fixed
+- "Add to playlist" in a song's, album's or collection's menu added nothing (#92): the playlist items looked for
+  the songs in the wrong menu. Now it adds them, and says so.
+- The + on a song added it to the queue without a word, so it looked like nothing happened (#93). It now says
+  the song was added, and shows "Add to queue" on hover.
+
+### Added
+- "Add to playlist" in the player's ⋯ menu, for the song that's playing, with "New playlist…" too (#94).
+
 ### Changed
 - The tray menu's items are in title case, like other apps' tray menus (Mini Player, Go To, Internet Radio).
 

@@ -5,7 +5,7 @@ import "."
 // Right-click on an artist (cards, lists, links), a folder or a genre: play or shuffle everything, queue it, add it
 // to a playlist, go to it, and (artists and folders) take its songs out of the library or move them to the trash.
 Menu {
-    id: menu
+    id: collectionMenu  // not "menu": a MenuItem's own `menu` (its submenu) would hide it in the playlist items
     objectName: "collectionMenu"
     property string kind: "artist"  // or "folder", "genre" or "composer"
     property string name: ""        // the artist, the folder's name or the genre
@@ -36,18 +36,19 @@ Menu {
     }
     function songCount(list) { return list.length + (list.length === 1 ? " song" : " songs") }
 
-    MenuItem { text: "Play"; icon.name: "play"; onTriggered: menu.play(false) }
-    MenuItem { text: "Shuffle"; icon.name: "shuffle"; onTriggered: menu.play(true) }
+    MenuItem { text: "Play"; icon.name: "play"; onTriggered: collectionMenu.play(false) }
+    MenuItem { text: "Shuffle"; icon.name: "shuffle"; onTriggered: collectionMenu.play(true) }
     MenuItem {
-        visible: menu.artist
+        visible: collectionMenu.artist
         height: visible ? implicitHeight : 0
         text: "Start radio"; icon.name: "radio"
-        onTriggered: library.startArtistRadio(menu.name)
+        onTriggered: library.startArtistRadio(collectionMenu.name)
     }
-    MenuItem { text: "Play next"; icon.name: "next"; onTriggered: { var p = menu.paths(); userLib.playNextPaths(p); Nav.notify(menu.songCount(p) + " will play next") } }
-    MenuItem { text: "Add to queue"; icon.name: "queue"; onTriggered: { var p = menu.paths(); userLib.enqueuePaths(p); Nav.notify(menu.songCount(p) + " added to the queue") } }
+    MenuItem { text: "Play next"; icon.name: "next"; onTriggered: { var p = collectionMenu.paths(); userLib.playNextPaths(p); Nav.notify(collectionMenu.songCount(p) + " will play next") } }
+    MenuItem { text: "Add to queue"; icon.name: "queue"; onTriggered: { var p = collectionMenu.paths(); userLib.enqueuePaths(p); Nav.notify(collectionMenu.songCount(p) + " added to the queue") } }
     Menu {
         id: plMenu
+        objectName: "addToPlaylistMenu"
         title: "Add to playlist"
         icon.name: "playlist"
         MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: newDlg.open() }
@@ -58,7 +59,7 @@ Menu {
                 required property int id
                 required property string name
                 text: Theme.plain(name)
-                onTriggered: { var p = menu.paths(); userLib.addPathsToPlaylist(id, p); Nav.notify(menu.songCount(p) + " added to “" + name + "”") }
+                onTriggered: { var p = collectionMenu.paths(); userLib.addPathsToPlaylist(id, p); Nav.notify(collectionMenu.songCount(p) + " added to “" + name + "”") }
             }
             onObjectAdded: (i, o) => plMenu.addItem(o)
             onObjectRemoved: (i, o) => plMenu.removeItem(o)
@@ -66,67 +67,67 @@ Menu {
     }
     MenuSeparator {}
     MenuItem {
-        visible: menu.artist
+        visible: collectionMenu.artist
         height: visible ? implicitHeight : 0
-        text: "Go to " + Theme.plain(menu.name); icon.name: "artist"
-        onTriggered: Nav.openArtist(menu.name)
+        text: "Go to " + Theme.plain(collectionMenu.name); icon.name: "artist"
+        onTriggered: Nav.openArtist(collectionMenu.name)
     }
     MenuItem {
         objectName: "collectionGoToGenre"
-        visible: menu.genre
+        visible: collectionMenu.genre
         height: visible ? implicitHeight : 0
-        text: "Go to genre " + Theme.plain(menu.name); icon.name: "note"
-        onTriggered: Nav.openGenre(menu.name)
+        text: "Go to genre " + Theme.plain(collectionMenu.name); icon.name: "note"
+        onTriggered: Nav.openGenre(collectionMenu.name)
     }
     MenuItem {
         objectName: "collectionGoToComposer"
-        visible: menu.composer
+        visible: collectionMenu.composer
         height: visible ? implicitHeight : 0
-        text: "Go to composer " + Theme.plain(menu.name); icon.name: "note"
-        onTriggered: Nav.openComposer(menu.name)
+        text: "Go to composer " + Theme.plain(collectionMenu.name); icon.name: "note"
+        onTriggered: Nav.openComposer(collectionMenu.name)
     }
     MenuItem {
         objectName: "collectionRenameGenre"
-        visible: menu.genre
+        visible: collectionMenu.genre
         height: visible ? implicitHeight : 0
         text: "Rename genre…"; icon.name: "edit"
         onTriggered: renameDlg.open()
     }
     MenuItem {
-        visible: menu.kind === "folder"
+        visible: collectionMenu.kind === "folder"
         height: visible ? implicitHeight : 0
         text: "Show in file manager"; icon.name: "folder"
-        onTriggered: library.showInFolder(menu.path)
+        onTriggered: library.showInFolder(collectionMenu.path)
     }
     MenuItem {
         objectName: "collectionKeep"
-        visible: menu.copies.servers > 0 && menu.copies.kept + menu.copies.waiting < menu.copies.servers
+        visible: collectionMenu.copies.servers > 0 && collectionMenu.copies.kept + collectionMenu.copies.waiting < collectionMenu.copies.servers
         height: visible ? implicitHeight : 0
         text: "Keep on this computer"; icon.name: "download"
-        onTriggered: serverCopies.keep(menu.paths())
+        onTriggered: serverCopies.keep(collectionMenu.paths())
     }
     MenuItem {
         objectName: "collectionUnkeep"
-        visible: menu.copies.kept + menu.copies.waiting > 0
+        visible: collectionMenu.copies.kept + collectionMenu.copies.waiting > 0
         height: visible ? implicitHeight : 0
         text: "Remove the copies from this computer"; icon.name: "remove"
-        onTriggered: serverCopies.remove(menu.paths())
+        onTriggered: serverCopies.remove(collectionMenu.paths())
     }
-    MenuSeparator { visible: !menu.genre && !menu.composer; height: visible ? implicitHeight : 0 }
+    MenuSeparator { visible: !collectionMenu.genre && !collectionMenu.composer; height: visible ? implicitHeight : 0 }
     // (not for a genre: its songs are spread over the whole library, too much to remove from one click)
     MenuItem {
         objectName: "collectionRemove"
-        visible: !menu.genre && !menu.composer
+        visible: !collectionMenu.genre && !collectionMenu.composer
         height: visible ? implicitHeight : 0
         text: "Remove from library…"; icon.name: "remove"; icon.color: Theme.error
-        onTriggered: Nav.removeSongs(menu.paths(), menu.what)
+        onTriggered: Nav.removeSongs(collectionMenu.paths(), collectionMenu.what)
     }
     MenuItem {
         objectName: "collectionTrash"
-        visible: !menu.genre && !menu.composer
+        visible: !collectionMenu.genre && !collectionMenu.composer
         height: visible ? implicitHeight : 0
         text: "Move to trash…"; icon.name: "trash"; icon.color: Theme.error
-        onTriggered: Nav.trashSongs(menu.paths(), menu.what)
+        onTriggered: Nav.trashSongs(collectionMenu.paths(), collectionMenu.what)
     }
 
     // A genre's new name, written to every song that has it. A name you already use joins the two.
@@ -136,17 +137,17 @@ Menu {
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true
-        title: "Rename “" + Theme.plain(menu.name) + "”"
+        title: "Rename “" + Theme.plain(collectionMenu.name) + "”"
         standardButtons: Dialog.Ok | Dialog.Cancel
         readonly property string newName: rf.text.trim()
-        readonly property bool joins: newName.length > 0 && newName.toLowerCase() !== menu.name.toLowerCase()
+        readonly property bool joins: newName.length > 0 && newName.toLowerCase() !== collectionMenu.name.toLowerCase()
                                       && library.genreList.some(function (g) { return g.name.toLowerCase() === renameDlg.newName.toLowerCase() })
-        onOpened: { rf.text = menu.name; rf.selectAll(); rf.forceActiveFocus() }
+        onOpened: { rf.text = collectionMenu.name; rf.selectAll(); rf.forceActiveFocus() }
         onAccepted: {
-            if (!newName.length || newName === menu.name) return
-            metaEditor.renameGenre(menu.name, newName)
-            Nav.notify("Renaming " + menu.name + " to " + newName + " in its songs…")
-            menu.genreRenamed(menu.name, newName)
+            if (!newName.length || newName === collectionMenu.name) return
+            metaEditor.renameGenre(collectionMenu.name, newName)
+            Nav.notify("Renaming " + collectionMenu.name + " to " + newName + " in its songs…")
+            collectionMenu.genreRenamed(collectionMenu.name, newName)
         }
         Column {
             spacing: 10
@@ -177,7 +178,7 @@ Menu {
         title: "New playlist"
         standardButtons: Dialog.Ok | Dialog.Cancel
         onOpened: { nf.text = ""; nf.forceActiveFocus() }
-        onAccepted: if (nf.text.trim().length) Nav.openPlaylist(userLib.addPathsToNewPlaylist(nf.text.trim(), menu.paths()))
+        onAccepted: if (nf.text.trim().length) Nav.openPlaylist(userLib.addPathsToNewPlaylist(nf.text.trim(), collectionMenu.paths()))
         TextField {
             id: nf; implicitWidth: 280; placeholderText: "Playlist name"; selectByMouse: true
             onAccepted: if (text.trim().length) newDlg.accept()  // no nameless playlists
