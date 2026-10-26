@@ -62,4 +62,13 @@ def describe(track, *, rg_factor=1.0, rg_mode="off", volume=1.0, speed=1.0, eq_e
     untouched = not changed
     summary = "Untouched" if untouched else "Changed by " + ", ".join(n.lower() for n in changed).replace(
         "output", "resampling")
-    return {"stages": stages, "untouched": untouched, "summary": summary}
+    # Why, in plain words, and what would leave the sound untouched (the two that surprise people most)
+    advice = []
+    if resampled:
+        advice.append(f"Your output runs at {_rate(device_rate)} and this song is {_rate(rate)}, so it's converted "
+                      f"on the way. Songs at {_rate(device_rate)} play untouched; on Linux, PipeWire can switch "
+                      "the output to each song's rate (its allowed-rates setting).")
+    if vol_on:
+        advice.append(f"Hallucinate's volume is at {round(volume * 100)}%, which scales the samples. Leave it at "
+                      "100% and turn your system or amplifier down instead for an untouched path.")
+    return {"stages": stages, "untouched": untouched, "summary": summary, "advice": advice}

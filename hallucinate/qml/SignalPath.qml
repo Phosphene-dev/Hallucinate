@@ -65,7 +65,7 @@ Item {
         margins: 10
         background: Rectangle {
             radius: Theme.round(18)
-            color: Theme.glassStrong
+            color: Theme.popup  // nearly opaque: the page behind mustn't show through the text
             Bevel {}
             border.width: 1
             border.color: Theme.stroke
@@ -134,6 +134,21 @@ Item {
                             font.pixelSize: Theme.fontSize(11)
                         }
                     }
+                }
+            }
+            Repeater {  // why it isn't untouched, and what would make it so
+                model: sp.path.advice || []
+                Text {
+                    required property string modelData
+                    width: 294
+                    topPadding: 10
+                    text: modelData
+                    textFormat: Text.PlainText
+                    wrapMode: Text.Wrap
+                    color: Theme.textDim
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.fontSize(11)
+                    lineHeight: 1.15
                 }
             }
         }

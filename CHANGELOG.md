@@ -11,6 +11,11 @@ All notable changes to this project are documented here. Format based on
   starts cleanly with no sound server at all; Copy debug info says which it chose.
 - Making the window narrower and wider again left album, playlist, podcast and history pages scrolled part way
   down, the cover cut off at the top, though nobody had scrolled. A page at the top now stays there.
+- The Flatpak logged "Failed to connect to pipewire instance: Host is down" at every start (it only reaches
+  PipeWire through its PulseAudio socket); it now goes straight to PulseAudio.
+- The signal path popup let the page behind show through its text. It also says why a song is "Processed" and
+  what would leave it untouched: a 48 kHz output resamples 44.1 kHz songs (PipeWire can switch rates), and a
+  volume under 100% scales the samples.
 
 ### Added
 - The web remote, `hallucinate cmd` and the terminal player show E and Hi-Res too; an album's format line says

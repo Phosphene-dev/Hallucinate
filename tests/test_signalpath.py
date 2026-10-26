@@ -46,3 +46,14 @@ def test_player_exposes_signal_path(qapp, tmp_path):
         assert seen
     finally:
         player.shutdown()
+
+
+def test_it_says_why_and_what_would_leave_the_sound_untouched():
+    """A tester saw "Processed" with speed, equalizer and ReplayGain off: a 48 kHz output resamples a 44.1 kHz
+    song, and a volume under 100% scales it. The popup says so in plain words."""
+    path = describe(FLAC, volume=0.8, device_name="HD Audio", device_rate=48000)
+    assert names(path) == ["Volume", "Output"]
+    resample, volume = path["advice"]
+    assert "48 kHz" in resample and "44.1 kHz" in resample and "PipeWire" in resample
+    assert "80%" in volume and "100%" in volume
+    assert describe(FLAC, device_rate=44100)["advice"] == []
