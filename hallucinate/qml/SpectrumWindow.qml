@@ -15,6 +15,7 @@ Window {
     flags: Qt.Window
 
     function analyse(path) {
+        savedNote.text = ""
         spectrograms.open(path)
         win.show()
         win.raise()
@@ -84,6 +85,5 @@ Window {
             onClicked: win.close()
         }
     }
-    Connections { target: spectrograms; function onChanged() { if (spectrograms.busy) savedNote.text = "" } }
     Shortcut { sequence: "Escape"; onActivated: win.close() }
 }

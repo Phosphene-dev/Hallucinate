@@ -258,6 +258,10 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
 
     podcasts = Podcasts(tmp_path / "streams.db", tmp_path / "data", tmp_path / "cache", player)
     context.setContextProperty("podcasts", podcasts)
+    from hallucinate.spectrogram import Spectrograms
+
+    spectrograms = Spectrograms(tmp_path / "library.db", tmp_path / "cache")
+    context.setContextProperty("spectrograms", spectrograms)
     from hallucinate.servers import Servers
 
     servers = Servers(tmp_path / "lib.db", tmp_path / "art", player)
@@ -501,6 +505,7 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     lyrics.shutdown()
     stations.shutdown()
     podcasts.shutdown()
+    spectrograms.shutdown()
     meta_editor.shutdown()
     replay_gain.shutdown()
     headphone_finder.shutdown()
