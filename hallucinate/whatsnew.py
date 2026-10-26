@@ -2,6 +2,10 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "1.4.1": [
+        "Choose when a song is scrobbled to Last.fm or counted on ListenBrainz (Settings → Scrobbling & sharing), "
+        "and whether they show it as playing now while it plays.",
+    ],
     "1.4.0": [
         "The mouse wheel scrolls evenly, high-resolution wheels too (Settings → Appearance → Scroll speed).",
         "The tray icon works in the Flatpak, with a Go to menu of your pages and the media controls.",

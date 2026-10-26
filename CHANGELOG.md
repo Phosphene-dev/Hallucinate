@@ -3,7 +3,9 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [1.4.1] - 2026-10-26
+
+Scrobbling choices, from the tester's report.
 
 ### Added
 - When a song is scrobbled to Last.fm, and when it counts as a listen on ListenBrainz, can each be chosen:
