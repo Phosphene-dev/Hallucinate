@@ -96,7 +96,7 @@ Item {
             id: sec_appearance
             objectName: "settings_appearance"
             title: "Appearance"
-            keywords: "theme colours colors font text size bigger smaller accent album art ambient motion reduce animation dark light system pride ribbon custom badges bitrate format"
+            keywords: "theme colours colors font text size bigger smaller accent album art ambient motion reduce animation dark light system pride ribbon custom badges bitrate format explicit hi-res hires bit depth 24-bit sample rate"
             query: page.query
             Row {
                 spacing: 12
@@ -263,6 +263,31 @@ Item {
                     textFormat: Text.PlainText
                     width: parent.width
                     text: "Shows compact format and approximate average bitrate badges in song rows and the now-playing bar."
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                    wrapMode: Text.WordWrap
+                }
+                StyledCheck {
+                    objectName: "explicitBadges"
+                    text: "Mark explicit songs with an E"
+                    checked: Rows.explicitBadges
+                    onToggled: shell.setSongBadge("explicitBadges", checked)
+                }
+                StyledCheck {
+                    objectName: "hiResBadges"
+                    text: "Show a Hi-Res badge on 24-bit and higher songs"
+                    checked: Rows.hiResBadges
+                    onToggled: shell.setSongBadge("hiResBadges", checked)
+                }
+                StyledCheck {
+                    objectName: "bitDepthBadges"
+                    text: "Show every song's bit depth and sample rate"
+                    checked: Rows.bitDepth
+                    onToggled: shell.setSongBadge("bitDepth", checked)
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    text: "Explicit comes from the files' tags (iTunes advisory or an EXPLICIT tag); bit depth from lossless files (FLAC, ALAC, WAV, AIFF, WavPack, APE, DSD). Songs added before this version get both at the next scan."
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                     wrapMode: Text.WordWrap
                 }
@@ -1604,13 +1629,36 @@ Item {
             id: sec_desktop
             objectName: "settings_desktop"
             title: "Desktop"
-            keywords: "tray notifications close quit minimize exit background mini player"
+            keywords: "tray notifications close quit minimize exit background mini player title bar window frame decorations frameless maximize"
             query: page.query
             StyledCheck {
                 visible: shell.trayAvailable
                 text: "Show system tray icon"
                 checked: shell.trayEnabled
                 onToggled: shell.setTrayEnabled(checked)
+            }
+            StyledCheck {
+                objectName: "customTitleBar"
+                text: "Use Hallucinate's own title bar, built into the window"
+                checked: shell.customTitleBar
+                onToggled: shell.setCustomTitleBar(checked)
+            }
+            StyledCheck {
+                objectName: "titleBarMinimize"
+                visible: shell.customTitleBar
+                leftPadding: 28
+                text: "Show the minimize button"
+                checked: shell.titleBarMinimize
+                onToggled: shell.setTitleBarMinimize(checked)
+            }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: shell.customTitleBar
+                      ? "Drag the top of the window (beside the search) to move it, double-click it to maximize. Turn this off for your system's own title bar."
+                      : "Your system draws the window's title bar."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
             Row {
                 spacing: 12
@@ -1619,9 +1667,9 @@ Item {
                     objectName: "closeAction"
                     width: 250
                     readonly property var actions: ["ask", "quit"].concat(shell.canMinimize ? ["minimize"] : [])
-                                                                  .concat(shell.trayAvailable ? ["tray"] : [])
+                                                                  .concat(["tray"])
                     readonly property var labels: ({ ask: "Ask every time", quit: "Quit", minimize: "Minimize",
-                                                     tray: "Keep playing in the tray" })
+                                                     tray: "Keep playing in the background" })
                     model: actions.map(a => labels[a])
                     selection: actions.indexOf(shell.closeAction)
                     onActivated: shell.setCloseAction(actions[currentIndex])
@@ -1632,7 +1680,7 @@ Item {
                 visible: !shell.canMinimize
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Your window manager has no minimize, so the choices are quitting or keeping it in the tray (when your bar shows tray icons)."
+                text: "Your window manager has no minimize, so the choices are quitting or keeping it playing in the background (in the tray when your bar shows tray icons; otherwise open Hallucinate again to bring the window back)."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             StyledCheck {

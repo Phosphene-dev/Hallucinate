@@ -76,6 +76,11 @@ Canvas {
             ctx.beginPath(); ctx.arc(w*.3, h*.75, w*.14, 0, Math.PI*2); ctx.fill(); line([.44,.75,.44,.15,.8,.25])
             break
         case "close": line([.22,.22,.78,.78]); line([.78,.22,.22,.78]); break
+        // the window's own buttons (the title bar built into the window)
+        case "winmin": line([.24,.62,.76,.62]); break
+        case "winmax": line([.24,.24,.76,.24,.76,.76,.24,.76,.24,.24]); break
+        case "winrestore":  // two windows, one behind the other
+            line([.36,.36,.36,.2,.8,.2,.8,.64,.64,.64]); line([.2,.36,.64,.36,.64,.8,.2,.8,.2,.36]); break
         case "trash":  // a bin with a lid
             line([.16,.26,.84,.26]); line([.4,.26,.4,.14,.6,.14,.6,.26])
             line([.24,.26,.3,.86,.7,.86,.76,.26]); line([.43,.42,.43,.7]); line([.57,.42,.57,.7]); break

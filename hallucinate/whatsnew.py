@@ -2,6 +2,13 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "1.3.0": [
+        "Songs can show an E when they're explicit and a Hi-Res badge when they're 24-bit or more "
+        "(Settings → Appearance, where you can also show every song's bit depth).",
+        "Scroll over the volume icon to change the volume, middle-click to mute; Now Playing has one too.",
+        "On Linux the window has its own title bar, built in (Settings → Desktop switches back). Closing the "
+        "window asks again, and can keep the music playing in the background.",
+    ],
     "1.2.0": [
         "Two retro themes, Hi-Fi Deck and Beige Box, restyle the whole app like 90s hardware. They open Now "
         "Playing as the Deck: a hi-fi front panel with a cassette, a glowing display, an analyser and VU meters "

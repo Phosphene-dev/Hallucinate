@@ -41,6 +41,8 @@ FIELDS = {
     "skips": ("number", "COALESCE(s.count, 0)", "Skip count"),
     "lossless": ("bool", "UPPER(COALESCE(t.codec, '')) IN ({lossless})", "Lossless"),
     "sample_rate": ("number", "t.sample_rate / 1000.0", "Sample rate (kHz)"),
+    "bit_depth": ("number", "NULLIF(t.bit_depth, 0)", "Bit depth"),  # 0: lossy, or not known
+    "explicit": ("bool", "t.explicit = 1", "Explicit"),
     "liked_at": ("date", "l.liked_at", "Date liked"),
 }
 

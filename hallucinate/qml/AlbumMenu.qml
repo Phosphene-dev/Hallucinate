@@ -133,7 +133,7 @@ Menu {
         onOpened: { nf.text = ""; nf.forceActiveFocus() }
         onAccepted: if (nf.text.trim().length) Nav.openPlaylist(userLib.addPathsToNewPlaylist(nf.text.trim(), menu.paths()))
         TextField {
-            id: nf; width: 280; placeholderText: "Playlist name"; selectByMouse: true
+            id: nf; implicitWidth: 280; placeholderText: "Playlist name"; selectByMouse: true
             onAccepted: if (text.trim().length) newDlg.accept()  // no nameless playlists
             onTextChanged: { var b = newDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
             onVisibleChanged: if (visible) { var b = newDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }

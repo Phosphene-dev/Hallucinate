@@ -12,6 +12,8 @@ ApplicationWindow {
     minimumWidth: 900
     minimumHeight: 600
     visible: true
+    // The title bar built into the window (Settings → Desktop) means no system frame around it
+    flags: shell.customTitleBar ? (Qt.Window | Qt.FramelessWindowHint) : Qt.Window
     title: player.hasTrack ? player.current.title + " — " + player.current.artist : "Hallucinate"
     color: Theme.bg
 
@@ -699,10 +701,11 @@ ApplicationWindow {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: shell.canMinimize && shell.trayAvailable && shell.trayEnabled
-                      ? "Quit, or keep the music going with the window minimized or tucked away in the tray?"
-                      : shell.canMinimize ? "Quit, or keep the music going with the window minimized?"
-                                          : "Quit, or keep the music going with the window tucked away in the tray?"
+                text: (shell.canMinimize ? "Quit, minimize, or keep the music going in the background?"
+                                         : "Quit, or keep the music going in the background?")
+                      + (shell.trayAvailable && shell.trayEnabled
+                         ? " In the background it waits in the tray."
+                         : " To bring the window back, open Hallucinate again.")
                 color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             StyledCheck { id: rememberClose; text: "Remember my choice"; checked: false }
@@ -713,8 +716,7 @@ ApplicationWindow {
                 PillButton { objectName: "closeMinimize"; visible: shell.canMinimize; text: "Minimize"; onClicked: closeDlg.choose("minimize") }
                 PillButton {
                     objectName: "closeTray"
-                    visible: shell.trayAvailable && shell.trayEnabled
-                    text: "Keep playing in the tray"
+                    text: "Keep playing in the background"
                     onClicked: closeDlg.choose("tray")
                 }
                 PillButton { text: "Cancel"; onClicked: closeDlg.close() }
@@ -724,6 +726,7 @@ ApplicationWindow {
     }
     Dialog {
         id: createDlg
+        objectName: "createPlaylistDialog"
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true
@@ -732,7 +735,7 @@ ApplicationWindow {
         onOpened: { createField.text = ""; createField.forceActiveFocus() }
         onAccepted: if (createField.text.trim().length) window.openPlaylist(userLib.createPlaylist(createField.text.trim()), createField.text.trim())
         TextField {
-            id: createField; width: 280; placeholderText: "Playlist name"; selectByMouse: true
+            id: createField; objectName: "createPlaylistName"; implicitWidth: 280; placeholderText: "Playlist name"; selectByMouse: true
             onAccepted: if (text.trim().length) createDlg.accept()  // no nameless playlists
             onTextChanged: { var b = createDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
             onVisibleChanged: if (visible) { var b = createDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
@@ -814,8 +817,10 @@ ApplicationWindow {
                 spacing: 0
 
                 Item {
+                    id: topRow
                     Layout.fillWidth: true
                     Layout.preferredHeight: 68
+                    TitleDrag { anchors.fill: parent }  // the empty part of the row moves the window
                     IconButton {
                         id: backBtn
                         anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
@@ -828,7 +833,7 @@ ApplicationWindow {
                         id: searchField
                         objectName: "searchField"
                         anchors { left: backBtn.visible ? backBtn.right : parent.left; leftMargin: backBtn.visible ? 8 : 24; verticalCenter: parent.verticalCenter }
-                        width: Math.min(520, parent.width - 120)
+                        width: Math.min(520, parent.width - 120 - (windowControls.visible ? windowControls.width + 16 : 0))
                         height: 42
                         placeholderText: "Search   ( / )        Ctrl+K  commands & pages"
                         placeholderTextColor: Theme.textDim
@@ -850,6 +855,11 @@ ApplicationWindow {
                         onTextChanged: searchTimer.restart()
                         Keys.onEscapePressed: { text = ""; focus = false; window.contentItem.forceActiveFocus() }
                         Keys.onReturnPressed: if (stack.currentItem && stack.currentItem.objectName === "search") window.contentItem.forceActiveFocus()
+                    }
+                    WindowControls {
+                        id: windowControls
+                        objectName: "windowControls"
+                        anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
                     }
                 }
 
@@ -990,4 +1000,5 @@ ApplicationWindow {
     }
 
     Component.onCompleted: go("home")
+    WindowEdges {}  // resizing by the edges when the title bar is built in (no system frame)
 }

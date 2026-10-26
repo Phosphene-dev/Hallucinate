@@ -136,6 +136,7 @@ Item {
                     id: brand
                     anchors { left: parent.left; right: parent.right; top: parent.top; topMargin: side.compact ? 8 : 12 }
                     height: side.compact ? 40 : 48
+                    TitleDrag { anchors.fill: parent }  // the name moves the window too (title bar built in)
                     Image {
                         id: logo
                         x: side.collapsed ? (parent.width - width) / 2 : 14
@@ -470,7 +471,7 @@ Item {
             side.setFolderOpen(name, true)
         }
         TextField {
-            id: folderField; width: 280; selectByMouse: true; placeholderText: "Folder name (Workout, Moods…)"
+            id: folderField; implicitWidth: 280; selectByMouse: true; placeholderText: "Folder name (Workout, Moods…)"
             onAccepted: if (text.trim().length) newFolder.accept()
             onTextChanged: { var b = newFolder.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
         }
@@ -502,7 +503,7 @@ Item {
             side.setFolderOpen(name, side.folderOpen(folderMenu.name))
             userLib.renamePlaylistFolder(folderMenu.name, name)
         }
-        TextField { id: renameFolderField; width: 280; selectByMouse: true; onAccepted: if (text.trim().length) renameFolder.accept() }
+        TextField { id: renameFolderField; implicitWidth: 280; selectByMouse: true; onAccepted: if (text.trim().length) renameFolder.accept() }
     }
     Dialog {
         id: renamePl
@@ -513,7 +514,7 @@ Item {
         standardButtons: Dialog.Ok | Dialog.Cancel
         onOpened: { renameField.forceActiveFocus(); renameField.selectAll() }
         onAccepted: if (renameField.text.trim().length) userLib.renamePlaylist(plItemMenu.pid, renameField.text.trim())
-        TextField { id: renameField; width: 280; selectByMouse: true; onAccepted: renamePl.accept() }
+        TextField { id: renameField; implicitWidth: 280; selectByMouse: true; onAccepted: renamePl.accept() }
     }
     ConfirmDialog {
         id: deletePl

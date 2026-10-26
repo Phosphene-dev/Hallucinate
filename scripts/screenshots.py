@@ -43,6 +43,11 @@ ALBUMS = [
 # A made-up composer for the classical album: the composer page shows the work with its movements in order
 COMPOSER, WORK = "Ilse Marten", "Nocturnes for Strings, Op. 3"
 KEYS = ["Am", "C", "F#m", "Eb", "G", "Dm", "Bb", "E"]
+# Made-up words for the lyrics view, a few long enough to wrap
+LYRICS = ["Under a sky the colour of the sea", "we left the lights on for the morning",
+          "and every street we never walked down was calling out our names, the long way home",
+          "Glass horizon", "hold on, hold on", "the night is softer than it seems from here, so stay a little longer",
+          "Under a sky the colour of the sea", ""]
 
 
 def cover(seed):
@@ -112,6 +117,7 @@ def build_library(root: Path):
                 t.add(TCOM(encoding=3, text="Mira Fable"))
             t.add(APIC(encoding=3, mime="image/png", type=3, desc="", data=art))
             t.save(f)
+            f.with_suffix(".lrc").write_text("".join(f"[00:{4 * k:02d}.00]{line}\n" for k, line in enumerate(LYRICS)))
 
 
 # The tour, in order; it loops back to the first shot.
@@ -457,12 +463,19 @@ def main():
             for view in ("grid", "colour", "timeline"):
                 todo += [albums_view(view), go("home"), go("albums"), wait, shot("albums" if view == "grid" else "albums-" + view)]
             todo += [albums_view("grid"), open_album, wait, shot("album")]
+            todo += [lambda: child("createPlaylistDialog").open(), wait, shot("new-playlist"),
+                     lambda: child("createPlaylistDialog").close(), wait]
             todo += [album_menu, wait, shot("album-menu"), lambda: child("albumMenu").close(), wait]
             todo += [edit_album, wait, shot("edit-album"), lambda: child("tagEditor").reject(), wait]
             todo += [confirm_trash, wait, shot("confirm-trash"), lambda: child("trashAlbumsDialog").reject(), wait]
             todo += [lambda: shell.setVisualizerStyle("nebula"), go("visualizer"), wait, shot("visualizer")]
             todo += [lambda: shell.setVisualizerStyle("aurora"), lambda: child("nowPlayingView").setProperty("open", True),
-                     wait, wait, shot("now-playing")]
+                     wait, wait, shot("now-playing"),
+                     lambda: child("nowPlayingView").setProperty("lyricsMode", True), wait, wait, wait,
+                     shot("now-playing-lyrics"), lambda: child("nowPlayingView").setProperty("lyricsMode", False),
+                     lambda: child("nowPlayingView").setProperty("open", False), go("home"),
+                     lambda: win.setProperty("lyricsOpen", True), wait, wait, shot("lyrics-panel"),
+                     lambda: win.setProperty("lyricsOpen", False), wait]
             todo += [lambda: shell.setNowPlayingVinyl(True), lambda: shell.setVisualizerStyle("liquid"), wait, wait,
                      shot("now-playing-vinyl"), lambda: shell.setNowPlayingVinyl(False),
                      lambda: child("nowPlayingView").setProperty("open", False), wait]

@@ -107,7 +107,7 @@ Rectangle {
             if (id >= 0) Nav.openPlaylist(id)
         }
         TextField {
-            id: saveField; width: 280; placeholderText: "Playlist name"; selectByMouse: true
+            id: saveField; implicitWidth: 280; placeholderText: "Playlist name"; selectByMouse: true
             onAccepted: if (text.trim().length) saveDlg.accept()  // no nameless playlists
             onTextChanged: { var b = saveDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
             onVisibleChanged: if (visible) { var b = saveDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }

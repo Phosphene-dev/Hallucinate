@@ -48,7 +48,9 @@ CREATE TABLE IF NOT EXISTS tracks(
   movement TEXT NOT NULL DEFAULT '',
   movement_no INTEGER NOT NULL DEFAULT 0,
   bpm INTEGER NOT NULL DEFAULT 0,
-  music_key TEXT NOT NULL DEFAULT ''
+  music_key TEXT NOT NULL DEFAULT '',
+  bit_depth INTEGER NOT NULL DEFAULT 0,
+  explicit INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_tracks_album ON tracks(album_key);
 CREATE TABLE IF NOT EXISTS folders(path TEXT PRIMARY KEY);
@@ -105,6 +107,8 @@ SEARCH_COLS = ["s_title", "s_album", "s_aa", "s_artist", "s_genre"]
 
 # Who wrote a song, its work and movement (classical music), its tempo and key: "" or 0 when the tags don't say
 TAG_COLS = {"composer": "", "work": "", "movement": "", "movement_no": 0, "bpm": 0, "music_key": ""}
+# Bits per sample (lossless files; see tags.bit_depth) and the explicit-lyrics advisory (1 explicit, 2 clean)
+QUALITY_COLS = {"bit_depth": 0, "explicit": 0}
 
 _ORDER = "disc_no, track_no, s_title"
 
@@ -259,6 +263,11 @@ class Database:
                      if album_folder(os.path.dirname(r[0])) != os.path.dirname(r[0])]
             self.conn.executemany("UPDATE tracks SET mtime=0 WHERE path=?", stale)
             self.conn.execute("PRAGMA user_version = 1")
+        if "bit_depth" not in cols:
+            for c in QUALITY_COLS:
+                self.conn.execute(f"ALTER TABLE tracks ADD COLUMN {c} INTEGER NOT NULL DEFAULT 0")
+            # The next scan reads every file on this computer again for its bit depth and explicit tag
+            self.conn.execute(f"UPDATE tracks SET mtime=0 WHERE {SQL_LOCAL}")
         if "composer" not in cols:
             for c, empty in [*TAG_COLS.items(), ("s_composer", "")]:
                 kind = "INTEGER NOT NULL DEFAULT 0" if empty == 0 else "TEXT NOT NULL DEFAULT ''"
@@ -715,7 +724,7 @@ class Database:
         params["s_artist"] = fold(t["artist"])
         params["s_genre"] = fold(t.get("genre") or "")
         params["rg_measured"] = 0
-        for c, empty in TAG_COLS.items():
+        for c, empty in {**TAG_COLS, **QUALITY_COLS}.items():
             params[c] = t.get(c) or empty
         params["s_composer"] = fold(params["composer"])
         if params.get("rg_track") is None and params.get("rg_album") is None:
@@ -726,7 +735,7 @@ class Database:
             ).fetchone()
             if m:
                 params.update(rg_track=m["track_gain"], rg_album=m["album_gain"], rg_peak=m["peak"], rg_measured=1)
-        extra = SEARCH_COLS + ["rg_measured", "s_composer", *TAG_COLS]
+        extra = SEARCH_COLS + ["rg_measured", "s_composer", *TAG_COLS, *QUALITY_COLS]
         row = self.conn.execute("SELECT id, art FROM tracks WHERE path=?", (t["path"],)).fetchone()
         if row:
             tid = row["id"]

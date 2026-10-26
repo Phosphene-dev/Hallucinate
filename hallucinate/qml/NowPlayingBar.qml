@@ -147,16 +147,25 @@ Item {
                     formatName: player.hasTrack ? player.current.codec || "" : ""
                     bitrate: player.hasTrack ? player.current.bitrate || 0 : 0
                 }
+                QualityBadges {
+                    id: barQuality
+                    objectName: "barQualityBadges"
+                    anchors.verticalCenter: parent.verticalCenter
+                    readonly property real used: visible ? width + 6 : 0
+                    explicitTag: player.hasTrack ? player.current.explicit || 0 : 0
+                    bitDepth: player.hasTrack ? player.current.bit_depth || 0 : 0
+                    sampleRate: player.hasTrack ? player.current.sample_rate || 0 : 0
+                }
                 StarRating {
                     id: infoStars
                     visible: !bar.narrow && !(player.current.kind || "").length
-                             && (infoBadge.visible ? infoBadge.width + 6 : 0) + implicitWidth <= infoRow.room
+                             && (infoBadge.visible ? infoBadge.width + 6 : 0) + barQuality.used + implicitWidth <= infoRow.room
                     anchors.verticalCenter: parent.verticalCenter; path: player.hasTrack ? player.current.path || "" : ""; size: 12
                 }
                 SignalPath {
                     visible: player.hasTrack && stages.length > 0
                              && (infoBadge.visible ? infoBadge.width + 6 : 0) + (infoStars.visible ? infoStars.width + 6 : 0)
-                                + implicitWidth <= infoRow.room
+                                + barQuality.used + implicitWidth <= infoRow.room
                 }
             }
         }
@@ -275,41 +284,20 @@ Item {
         IconButton { icon: "expand"; tip: "Mini player (Ctrl+M)"; visible: !bar.compact; onClicked: shell.toggleMini() }
         IconButton { visible: shell.features.lyrics !== false && !bar.tight; icon: "note"; active: bar.lyricsOpen; tip: "Lyrics"; onClicked: bar.toggleLyrics() }
         IconButton { icon: "queue"; active: bar.queueOpen; onClicked: bar.toggleQueue() }
-        Icon {
+        VolumeButton {
             objectName: "muteButton"
-            visible: !bar.tight
             anchors.verticalCenter: parent.verticalCenter
-            width: 18; height: 18; name: "volume"
-            color: muteArea.containsMouse ? Theme.text : Theme.textDim
-            opacity: player.muted ? 0.45 : 1
-            Accessible.role: Accessible.Button
-            Accessible.name: player.muted ? "Unmute" : "Mute"
-            Accessible.checkable: true
-            Accessible.checked: player.muted
-            Accessible.onPressAction: player.toggleMute()
-            Rectangle {  // struck through while muted
-                visible: player.muted
-                anchors.centerIn: parent
-                width: parent.width * 1.2; height: 2; radius: 1
-                rotation: -45
-                color: Theme.textDim
-            }
-            MouseArea {
-                id: muteArea
-                anchors.fill: parent; anchors.margins: -6
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: player.toggleMute()
-                ToolTip.visible: containsMouse
-                ToolTip.delay: 400
-                ToolTip.text: player.muted ? "Unmute" : "Mute"
-            }
+            // a tight bar has no room for the slider: the button opens one above it instead
+            popupSlider: bar.tight
+            iconSize: bar.tight ? 14 : 18
         }
         StyledSlider {
             visible: !bar.tight  // hidden in a tight bar: the mouse wheel over the bar sets the volume then
             anchors.verticalCenter: parent.verticalCenter
             width: bar.narrow ? 48 : bar.compact ? 64 : 100
             from: 0; to: 1
+            stepSize: 0.05
+            wheelEnabled: true  // the wheel over the slider too, as over the icon
             value: player.volume
             onMoved: player.setVolume(value)
         }

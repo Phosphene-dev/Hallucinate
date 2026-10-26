@@ -46,6 +46,8 @@ def song_from(item):
     has_cover = bool(item.get("AlbumPrimaryImageTag")) or bool((item.get("ImageTags") or {}).get("Primary")
                                                                 if isinstance(item.get("ImageTags"), dict) else False)
     gain = _gain(item.get("NormalizationGain"))
+    streams = source.get("MediaStreams") if isinstance(source.get("MediaStreams"), list) else []
+    audio = next((m for m in streams if isinstance(m, dict) and m.get("Type") == "Audio"), {})
     return {
         "id": sid,
         "title": _text(item.get("Name")) or "Unknown title",
@@ -60,7 +62,9 @@ def song_from(item):
         "duration": round(ticks / TICKS_PER_SECOND, 3),
         "suffix": _text(source.get("Container") or item.get("Container"), 16).lower(),
         "bitrate": _int(source.get("Bitrate"), 0, 10**9) // 1000,
-        "sample_rate": 0,
+        "sample_rate": _int(audio.get("SampleRate"), 0, 10**6),
+        "bit_depth": _int(audio.get("BitDepth"), 0, 64),
+        "explicit": 0,
         "size": _int(source.get("Size")),
         "cover": (album_id or sid) if has_cover else "",
         "rating": 0,

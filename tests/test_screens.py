@@ -47,7 +47,9 @@ def seed(tmp_path):
                 "path": path, "mtime": 0, "size": 1, "title": f"Song {n}{i}", "artist": artist, "album_artist": artist,
                 "aa_tag": 1, "album": album, "album_key": f"k{n}", "track_no": i + 1, "disc_no": 0, "year": 2000 + n,
                 "genre": "Dream Pop", "duration": 180.0 + i, "fmt": "FLAC", "codec": "FLAC", "bitrate": 900_000,
-                "sample_rate": 44100,
+                "sample_rate": 96000 if (n, i) == (0, 0) else 44100,
+                # one hi-res, explicit song (its badges are drawn and can be switched off)
+                "bit_depth": 24 if (n, i) == (0, 0) else 16, "explicit": 1 if (n, i) == (0, 0) else 0,
             })
             for _ in range(i + 1):
                 db.record_play(path)
@@ -1486,3 +1488,164 @@ def test_songs_sort_by_genre(qapp, app_window):
         assert [r["artist"].casefold() for r in rows] == sorted(r["artist"].casefold() for r in rows)
     finally:
         library.setSongSort("title")
+
+
+def test_the_new_playlist_name_fits_its_dialog(qapp, app_window):
+    """The name field was 280 wide in a dialog sized from its (narrower) implicit width, so it stuck out."""
+    window, _objects, _warnings = app_window
+    dialog = window.findChild(QObject, "createPlaylistDialog")
+    QMetaObject.invokeMethod(dialog, "open")
+    for _ in range(5):
+        qapp.processEvents()
+    field = window.findChild(QObject, "createPlaylistName")
+    assert field.property("width") >= 200
+    assert field.property("width") <= dialog.property("availableWidth") + 0.5
+    QMetaObject.invokeMethod(dialog, "close")
+
+
+def test_explicit_and_hi_res_badges_show_and_switch_off(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    QMetaObject.invokeMethod(window, "openAlbum", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "k0"))
+
+    def shown(name):
+        stack, found = [window.contentItem()], []
+        while stack:
+            item = stack.pop()
+            if item.objectName() == name and item.isVisible():
+                found.append(item)
+            stack.extend(item.childItems())
+        return found
+
+    try:
+        # the one 24-bit explicit song: an E and a Hi-Res badge on its row, and in the player bar while it plays
+        # the one 24-bit explicit song: an E and a Hi-Res badge on its row
+        assert wait_for(lambda: len(shown("explicitBadge")) == 1 and len(shown("hiResBadge")) == 1)
+        shell.setSongBadge("bitDepth", True)  # every song's depth: the other three 16-bit songs say so too
+        assert wait_for(lambda: len(shown("hiResBadge")) == 4)
+        shell.setSongBadge("bitDepth", False)
+        shell.setSongBadge("explicitBadges", False)
+        shell.setSongBadge("hiResBadges", False)
+        assert wait_for(lambda: not shown("explicitBadge") and not shown("hiResBadge"))
+        assert not warnings, warnings[:3]
+    finally:
+        shell.setSongBadge("explicitBadges", True)
+        shell.setSongBadge("hiResBadges", True)
+
+
+def test_volume_icon_scrolls_mutes_and_opens_a_slider(qapp, app_window):
+    """The wheel over the volume icon turns it up and down, a middle click mutes, and in Now Playing a click
+    opens a slider above the icon."""
+    from PySide6.QtCore import QPoint, QPointF
+    from PySide6.QtGui import QWheelEvent
+    from PySide6.QtTest import QTest
+
+    window, objects, warnings = app_window
+    player = objects["player"]
+    player.setVolume(0.5)
+    if player.muted:
+        player.toggleMute()
+
+    def centre(item):
+        p = item.mapToScene(QPointF(item.width() / 2, item.height() / 2))
+        return QPoint(int(p.x()), int(p.y()))
+
+    def settle():
+        for _ in range(4):
+            qapp.processEvents()
+
+    def wheel(item, notches):
+        pos = QPointF(centre(item))
+        qapp.sendEvent(window, QWheelEvent(pos, pos, QPoint(0, 0), QPoint(0, 120 * notches), Qt.MouseButton.NoButton,
+                                           Qt.KeyboardModifier.NoModifier, Qt.ScrollPhase.NoScrollPhase, False))
+        settle()
+
+    bar_volume = window.findChild(QObject, "muteButton")
+    wheel(bar_volume, 2)
+    assert abs(player.volume - 0.6) < 0.001
+    wheel(bar_volume, -4)
+    assert abs(player.volume - 0.4) < 0.001
+    QTest.mouseClick(window, Qt.MouseButton.MiddleButton, Qt.KeyboardModifier.NoModifier, centre(bar_volume))
+    settle()
+    assert player.muted
+    QTest.mouseClick(window, Qt.MouseButton.MiddleButton, Qt.KeyboardModifier.NoModifier, centre(bar_volume))
+    settle()
+    assert not player.muted
+
+    now_playing = window.findChild(QObject, "nowPlayingView")
+    now_playing.setProperty("open", True)
+    settle()
+    from conftest import wait_for
+
+    np_volume = window.findChild(QObject, "nowPlayingVolume")
+    assert wait_for(lambda: np_volume.isVisible() and np_volume.mapToScene(QPointF(0, 0)).y() > 0)
+    QTest.mouseClick(window, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, centre(np_volume))
+    settle()
+    assert np_volume.property("popupOpen")
+    popup = next((o for o in window.findChildren(QObject, "volumePopupSlider") if o.isVisible()), None)
+    assert popup is not None and abs(popup.property("value") - 0.4) < 0.001
+    assert popup.mapToScene(QPointF(0, popup.height())).y() < np_volume.mapToScene(QPointF(0, 0)).y()  # above it
+    wheel(np_volume, 1)
+    assert abs(player.volume - 0.45) < 0.001
+    now_playing.setProperty("open", False)
+    settle()
+    assert not warnings, warnings[:3]
+
+
+def test_built_in_title_bar_and_going_back_to_the_systems(qapp, app_window):
+    from PySide6.QtCore import QPoint, QPointF
+    from PySide6.QtTest import QTest
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+
+    def settle():
+        for _ in range(4):
+            qapp.processEvents()
+
+    def click(name):
+        item = window.findChild(QObject, name)
+        p = item.mapToScene(QPointF(item.width() / 2, item.height() / 2))
+        QTest.mouseClick(window, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QPoint(int(p.x()), int(p.y())))
+        settle()
+
+    shell.setCustomTitleBar(True)
+    shell.setTitleBarMinimize(True)
+    settle()
+    try:
+        assert window.flags() & Qt.WindowType.FramelessWindowHint
+        controls = window.findChild(QObject, "windowControls")
+        assert controls.isVisible() and window.findChild(QObject, "windowMinimize").isVisible()
+        shell.setTitleBarMinimize(False)  # the minimize button can go; maximize and close stay
+        settle()
+        assert not window.findChild(QObject, "windowMinimize").isVisible()
+        assert window.findChild(QObject, "windowMaximize").isVisible() and window.findChild(QObject, "windowClose").isVisible()
+        # the search field leaves room for the buttons
+        search = window.findChild(QObject, "searchField")
+        assert search.mapToScene(QPointF(search.width(), 0)).x() < controls.mapToScene(QPointF(0, 0)).x()
+        # close does what closing the window does: with "Ask every time", it asks. (QML read handleClose's
+        # answer as True, not "ask", while it had a second slot signature returning bool: closing did nothing.)
+        from PySide6.QtGui import QGuiApplication
+        from PySide6.QtQml import QQmlEngine, QQmlExpression
+
+        shell.setCloseAction("ask")
+        context = QQmlEngine.contextForObject(window)
+        answer, failed = QQmlExpression(context, window, "shell.handleClose()").evaluate()
+        assert not failed and answer == "ask"
+        if QGuiApplication.platformName() != "offscreen":  # offscreen windows get no close events at all
+            click("windowClose")
+            dialog = window.findChild(QObject, "closeDialog")
+            assert dialog.property("opened") or dialog.property("visible")
+            QMetaObject.invokeMethod(dialog, "close")
+            settle()
+
+        shell.setCustomTitleBar(False)  # back to the system's title bar
+        settle()
+        assert not window.flags() & Qt.WindowType.FramelessWindowHint
+        assert not controls.isVisible()
+        assert not warnings, warnings[:3]
+    finally:
+        shell.setCustomTitleBar(True)
+        shell.setTitleBarMinimize(True)

@@ -124,7 +124,7 @@ Item {
         onOpened: renameField.forceActiveFocus()
         onAccepted: if (renameField.text.trim().length) stations.rename(stationId, renameField.text.trim())
         TextField {
-            id: renameField; width: 280; selectByMouse: true; Accessible.name: "Station name"
+            id: renameField; implicitWidth: 280; selectByMouse: true; Accessible.name: "Station name"
             onAccepted: if (text.trim().length) renameDlg.accept()
             onTextChanged: { var b = renameDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
         }

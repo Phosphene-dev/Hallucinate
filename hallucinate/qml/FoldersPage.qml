@@ -208,6 +208,9 @@ Item {
                         durText: modelData.durText
                         showArt: false
                         audioFormat: modelData.codec
+                        bitDepth: modelData.bit_depth || 0
+                        sampleRate: modelData.sample_rate || 0
+                        explicitTag: modelData.explicit || 0
                         audioBitrate: modelData.bitrate
                         current: Rows.currentPath === modelData.path
                         onActivated: player.playList(page.tracks, index)
