@@ -37,6 +37,12 @@ This record starts at version 0.3.2. Versions in brackets are where each decisio
   and checked for memory leaks, without changing how it feels to use. [0.9.3]
 - **Libraries bigger than mine.** Hallucinate has to keep up with collections much larger than my own, not just
   with mine. [0.9.4]
+- **Options, and every desktop.** Where people could reasonably want different things, Hallucinate gives them the
+  choice in Settings rather than picking one for everybody, and it has to work properly on all the main Linux
+  desktops (GNOME, KDE Plasma, Xfce, Cinnamon, tiling window managers and the rest), not just mine.
+- **Choosing when a song counts.** When Last.fm's scrobbling broke, the app still said "Scrobbling now". I wanted
+  to choose when a song is scrobbled or counts as a listen, and to be able to switch the "Scrobbling now" notice
+  off. [1.4.1]
 - **Tiling window managers are first-class.** A tiling window manager (Hyprland) is my main desktop, so the app
   has to work properly there, not only on floating desktops. [0.6.1, 0.9.0]
 
@@ -63,7 +69,10 @@ From testing the app on my own library, on Linux (Hyprland) and Windows:
 - **Testers, ethically and for free.** Hallucinate goes in front of people to try without spending money or
   promoting it dishonestly. [0.9.0]
 - **No paid macOS signing.** I won't pay Apple's $99 a year to sign for a platform I don't use. Windows signing
-  is worth doing.
+  is worth doing, but it waits for now (SignPath).
+- **Packages for other distributions.** Besides the AppImage and Flatpak, Hallucinate ships a .deb, an .rpm and a
+  Nix flake, so people on Debian, Ubuntu, Fedora, openSUSE and NixOS can install it the way they're used to.
+  [1.5.1]
 - **The AUR package waits.** It goes up once AUR account sign-ups reopen.
 - **No Flathub; our own Flatpak repository instead.** I don't want to deal with Flathub's submission process,
   and I prefer AppImages anyway. Hallucinate ships its Flatpak from its own signed repository on the website,
@@ -74,3 +83,6 @@ From testing the app on my own library, on Linux (Hyprland) and Windows:
 - **projectM visualizer.** I asked about going all out on the visualizer with projectM (MilkDrop presets). I chose
   Hallucinate's own shader visualizers instead, tinted by the album cover, which was the alternative suggested to
   me. They fit the app's look better and need no extra library.
+- **No libre.fm.** A tester asked for libre.fm scrobbling. I looked at libre.fm's AI policy and decided against
+  supporting it.
+- **No Soulseek.** I'm keeping Soulseek integration out of Hallucinate.

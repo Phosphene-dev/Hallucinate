@@ -1,0 +1,6 @@
+#!/bin/sh
+# Hallucinate from the .deb or .rpm: the bundled Python and Qt under /opt/hallucinate.
+export HALLUCINATE_PACKAGE="${HALLUCINATE_PACKAGE:-system}"
+# no bytecode caches under /opt: the package manager doesn't own them, so removing the package would leave them
+export PYTHONDONTWRITEBYTECODE=1
+exec /opt/hallucinate/AppRun "$@"

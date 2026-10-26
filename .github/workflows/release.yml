@@ -63,7 +63,12 @@ jobs:
         run: |
           # appimagetool checks the desktop file with desktop-file-validate
           sudo apt-get update -qq && sudo apt-get install -y -qq desktop-file-utils
-          OUT="hallucinate-${LABEL#v}-x86_64.AppImage" packaging/appimage/build.sh
+          OUT="hallucinate-${LABEL#v}-x86_64.AppImage" KEEP_APPDIR=appdir packaging/appimage/build.sh
+      - name: Build the .deb and .rpm (from the same AppDir)
+        run: |
+          # the package version is the app's own (a build-only run's dev-N label isn't a version a package takes)
+          version="$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
+          packaging/linux/build.sh "$version" appdir linux-packages
       - name: Smoke test (offscreen)
         env:
           QT_QPA_PLATFORM: offscreen
@@ -81,6 +86,10 @@ jobs:
         with:
           name: AppImage
           path: hallucinate-*.AppImage
+      - uses: actions/upload-artifact@v6
+        with:
+          name: linux-packages
+          path: linux-packages/*
       - name: Attach to release
         if: env.RELEASE == 'true'
         env:
@@ -92,6 +101,77 @@ jobs:
             gh release create "$TAG" --generate-notes || gh release view "$TAG" >/dev/null
           fi
           gh release upload "$TAG" "hallucinate-${LABEL#v}-x86_64.AppImage" Hallucinate-x86_64.AppImage --clobber
+
+  # The .deb and .rpm, installed, run and removed on clean systems of each kind before they go out
+  linux-packages:
+    needs: appimage
+    if: ${{ !cancelled() && needs.appimage.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { image: "ubuntu:24.04", kind: deb }
+          - { image: "ubuntu:22.04", kind: deb }
+          - { image: "debian:12", kind: deb }
+          - { image: "fedora:latest", kind: rpm }
+          - { image: "opensuse/tumbleweed", kind: rpm }
+    container: ${{ matrix.image }}
+    env:
+      QT_QPA_PLATFORM: offscreen
+      HALLUCINATE_DISABLE_LEGACY_MIGRATION: "1"
+      HALLUCINATE_CONTROL_SOCKET: hallucinate-release-package-smoke
+      XDG_CONFIG_HOME: /tmp/hallucinate-config
+      XDG_DATA_HOME: /tmp/hallucinate-data
+      XDG_CACHE_HOME: /tmp/hallucinate-cache
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v6
+        with:
+          name: linux-packages
+          path: linux-packages
+      - name: Install
+        run: |
+          case "${{ matrix.image }}" in
+            ubuntu*|debian*)
+              apt-get update -qq
+              DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ./linux-packages/hallucinate_*.deb ;;
+            fedora*) dnf install -y -q ./linux-packages/hallucinate-*.rpm ;;
+            opensuse*) zypper --non-interactive install --allow-unsigned-rpm ./linux-packages/hallucinate-*.rpm ;;
+          esac
+          command -v hallucinate
+          test -f /usr/share/applications/hallucinate.desktop
+          test -f /usr/share/icons/hicolor/256x256/apps/hallucinate.png
+      - name: Run
+        run: |
+          timeout 45 hallucinate --quit-after 3000
+          timeout 90 hallucinate --decode-check packaging/testclips/*
+      - name: Remove
+        run: |
+          case "${{ matrix.kind }}" in
+            deb) apt-get remove -y -qq hallucinate ;;
+            rpm) rpm -e hallucinate ;;
+          esac
+          ! command -v hallucinate
+          test ! -e /opt/hallucinate
+
+  linux-packages-release:
+    needs: linux-packages
+    if: ${{ !cancelled() && needs.linux-packages.result == 'success' && (inputs.version != '' || startsWith(github.ref, 'refs/tags/v')) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v6
+        with:
+          name: linux-packages
+          path: linux-packages
+      - name: Attach to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" linux-packages/* --clobber --repo "$GITHUB_REPOSITORY"
 
   windows:
     needs: tag
@@ -270,7 +350,7 @@ jobs:
   #   gpg --verify SHA256SUMS.asc SHA256SUMS && sha256sum --check --ignore-missing SHA256SUMS
   #   gh attestation verify hallucinate-<version>-x86_64.AppImage --repo Phosphene-dev/Hallucinate
   checksums:
-    needs: [appimage, windows, macos, flatpak]
+    needs: [appimage, linux-packages-release, windows, macos, flatpak]
     if: ${{ !cancelled() && (inputs.version != '' || startsWith(github.ref, 'refs/tags/v')) }}
     runs-on: ubuntu-latest
     permissions:

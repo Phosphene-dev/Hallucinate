@@ -95,6 +95,11 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.5.1" date="2026-10-26">
+      <description>
+        <p>Hallucinate is now also available as a .deb, an .rpm and a Nix flake. The analysis helper starts on Nix too.</p>
+      </description>
+    </release>
     <release version="1.5.0" date="2026-10-26">
       <description>
         <p>A Genres page listing every genre in your tags with all of each genre's songs, and a spectrum analyzer that shows a song's spectrogram and saves it as an image.</p>

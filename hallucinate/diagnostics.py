@@ -87,6 +87,8 @@ def _install_kind():
         return "Flatpak"
     if os.environ.get("APPIMAGE"):
         return "AppImage"
+    if os.environ.get("HALLUCINATE_PACKAGE") in ("deb", "rpm", "nix"):  # set by the packages' hallucinate command
+        return os.environ["HALLUCINATE_PACKAGE"] + " package"
     if getattr(sys, "frozen", False):
         return "Windows build" if sys.platform == "win32" else "macOS app" if sys.platform == "darwin" else "bundle"
     return "Python package"

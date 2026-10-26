@@ -55,10 +55,11 @@ def fetch_latest(timeout=10):
 
 
 def system_package(frozen=None, module=__file__):
-    """True for a copy installed by the system package manager (AUR and other distro packages), which updates
-    it; the AppImage and the Windows and macOS builds are frozen or mounted elsewhere."""
+    """True for a copy installed by the system package manager (AUR and other distro packages, Nix), which
+    updates it; the AppImage and the Windows and macOS builds are frozen or mounted elsewhere. (The .deb and
+    .rpm from the releases live in /opt and aren't updated by a repository: they keep the check.)"""
     frozen = getattr(sys, "frozen", False) if frozen is None else frozen
-    return not frozen and not os.environ.get("APPIMAGE") and str(module).startswith("/usr/")
+    return not frozen and not os.environ.get("APPIMAGE") and str(module).startswith(("/usr/", "/nix/store/"))
 
 
 class UpdateChecker(QObject):

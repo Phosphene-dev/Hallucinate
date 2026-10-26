@@ -2,6 +2,10 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "1.5.1": [
+        "Hallucinate now comes as a .deb for Debian and Ubuntu, an .rpm for Fedora and openSUSE, and a Nix "
+        "flake, besides the AppImage and Flatpak.",
+    ],
     "1.5.0": [
         "A Genres page in the sidebar: every genre in your tags (a song with several counts for each), and all "
         "the songs of the one you pick.",

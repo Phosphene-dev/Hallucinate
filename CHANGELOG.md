@@ -3,6 +3,31 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.5.1] - 2026-10-26
+
+Hallucinate for more Linux distributions: a .deb, an .rpm and a Nix flake.
+
+### Added
+- A `.deb` (Debian, Ubuntu, Mint…) and an `.rpm` (Fedora, openSUSE…) on every release. They install the same
+  bundled Python and Qt as the AppImage under `/opt/hallucinate`, with a `hallucinate` command, a menu entry and
+  icons. Before a release, each is installed, started, made to decode every test format and removed again on
+  clean Ubuntu 24.04 and 22.04, Debian 12, Fedora and openSUSE Tumbleweed systems.
+- A Nix flake: `nix run github:Phosphene-dev/Hallucinate`, or add it to a NixOS or Home Manager configuration.
+  Built against nixpkgs' own PySide6 and Qt; CI builds and starts it on every change.
+- Copy debug info says which package it's running from (deb, rpm or nix).
+
+### Fixed
+- Started from a folder that holds a folder named `hallucinate` (the source code, say), the AppImage and its
+  analysis helper ran that code instead of their own.
+- The analysis helper (waveforms, ReplayGain, the spectrum analyzer) couldn't start when PySide6 is found
+  through a launcher script rather than `PYTHONPATH`, as on Nix. It now gets the app's own module path.
+
+### Changed
+- Nix copies don't run the update check: Nix updates them.
+- The README covers choosing when a song is scrobbled, and sending listens to your own ListenBrainz server;
+  the website lists the Genres page, the spectrum analyzer and the new Linux packages.
+- CI: package downloads time out and retry instead of hanging, and test jobs get 25 minutes.
+
 ## [1.5.0] - 2026-10-26
 
 The tester's third round: a Genres page, a spectrum analyzer, and fixes for adding to playlists, Show in folder

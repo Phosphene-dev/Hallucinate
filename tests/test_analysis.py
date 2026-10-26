@@ -112,5 +112,28 @@ def test_the_appimage_starts_the_python_inside_it(monkeypatch, tmp_path):
     inside.parent.mkdir()
     inside.write_text("")
     program, args = analysis.command()
-    assert program == str(inside) and args[:2] == ["-s", "-c"]
+    assert program == str(inside) and args[0] == "-s" and "-c" in args
+    if sys.version_info >= (3, 11):  # not the current folder first: a folder named hallucinate there isn't the app
+        assert "-P" in args
     assert os.path.basename(program).startswith("python")
+
+
+def test_helper_finds_the_modules_this_process_was_given(monkeypatch, tmp_path):
+    """Nix adds PySide6 and numpy to the module path inside its launcher, not through PYTHONPATH: the helper,
+    started as a plain Python, gets the same path. The user's own site-packages stay out (the helper runs -s)."""
+    import os
+    import site
+    from pathlib import Path
+
+    from hallucinate import analysis
+
+    store = tmp_path / "pyside6" / "site-packages"
+    store.mkdir(parents=True)
+    user = tmp_path / "user-site"
+    user.mkdir()
+    monkeypatch.setattr(sys, "path", [str(store), str(user), str(tmp_path / "gone")])
+    monkeypatch.setattr(site, "getusersitepackages", lambda: str(user))
+    monkeypatch.setattr(site, "ENABLE_USER_SITE", True)
+    paths = analysis._helper_path("/extra" + os.pathsep + "/extra")
+    assert paths[0] == str(Path(analysis.__file__).resolve().parent.parent)  # this copy of the app first
+    assert paths[1:] == ["/extra", str(store)]

@@ -99,3 +99,16 @@ def test_update_check_is_off_inside_flatpak(qapp, monkeypatch):
         assert not checker.busy and not checker.available
     finally:
         checker.shutdown()
+
+
+def test_install_kind_names_the_package(monkeypatch):
+    from hallucinate import diagnostics
+
+    for name in ("FLATPAK_ID", "APPIMAGE", "HALLUCINATE_PACKAGE"):
+        monkeypatch.delenv(name, raising=False)
+    assert diagnostics._install_kind() == "Python package"
+    for kind in ("deb", "rpm", "nix"):  # set by each package's hallucinate command
+        monkeypatch.setenv("HALLUCINATE_PACKAGE", kind)
+        assert diagnostics._install_kind() == kind + " package"
+    monkeypatch.setenv("HALLUCINATE_PACKAGE", "<b>made up</b>")
+    assert diagnostics._install_kind() == "Python package"
