@@ -289,8 +289,11 @@ def main(argv=None) -> int:
         music = Path.home() / "Music"
         if music.is_dir():
             library.addFolder(str(music))
-    QTimer.singleShot(0, library.rescan)
+    if library.scanAtStart or library.empty():
+        QTimer.singleShot(0, library.rescan)
     player.restoreSession()
+    if player.resumeOnStart and player.hasTrack:
+        QTimer.singleShot(600, player.play)  # carry on where it was (Settings → Playback)
 
     _mark("services")
     engine = QQmlApplicationEngine()

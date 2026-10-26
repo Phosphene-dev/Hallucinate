@@ -262,6 +262,7 @@ Item {
                     Layout.rightMargin: 24  // long lines wrap before the window's edge
                     Layout.preferredHeight: Math.min(view.height * 0.42, 380)
                     ListView {
+                        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
                         id: lyricLines
                         anchors.fill: parent
                         visible: lyricsCtl.status === "found" && lyricsCtl.synced
@@ -298,6 +299,7 @@ Item {
                         }
                     }
                     Flickable {
+                        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
                         anchors.fill: parent
                         visible: lyricsCtl.status === "found" && !lyricsCtl.synced
                         clip: true

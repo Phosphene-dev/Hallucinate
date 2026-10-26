@@ -17,6 +17,15 @@ Item {
         var y = sidebarOrderBox.mapToItem(flick.contentItem, 0, 0).y - 20
         flick.contentY = Math.max(0, Math.min(y, flick.contentHeight - flick.height))
     }
+    // the section at the top of the view, lit in the jump list
+    readonly property int currentSection: {
+        var y = flick.contentY + 40, at = 0
+        for (var i = 0; i < sectionIds.length; i++) {
+            var s = sectionItem(i)
+            if (s && s.visible && s.y <= y) at = i
+        }
+        return at
+    }
     function jumpTo(i) {
         page.query = ""
         search.text = ""
@@ -63,6 +72,7 @@ Item {
                     visible: (modelData !== "Podcasts" || shell.features.podcasts !== false)
                              && (modelData !== "Music servers" || shell.features.servers === true)
                     text: modelData
+                    selected: index === page.currentSection
                     onClicked: page.jumpTo(index)
                 }
             }
@@ -78,6 +88,7 @@ Item {
     }
 
     Flickable {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: flick
         anchors { left: parent.left; right: parent.right; top: header.bottom; topMargin: 14; bottom: parent.bottom }
         contentWidth: width
@@ -96,7 +107,7 @@ Item {
             id: sec_appearance
             objectName: "settings_appearance"
             title: "Appearance"
-            keywords: "theme colours colors font text size bigger smaller accent album art ambient motion reduce animation dark light system pride ribbon custom badges bitrate format explicit hi-res hires bit depth 24-bit sample rate"
+            keywords: "theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
             query: page.query
             Row {
                 spacing: 12
@@ -229,6 +240,29 @@ Item {
                 onToggled: shell.setAmbientMotion(checked)
             }
             StyledCheck {
+                objectName: "ambientOnlyPlaying"
+                visible: shell.ambientMotion
+                leftPadding: 28
+                text: "Only while music plays (it rests while paused, using no power)"
+                checked: shell.ambientOnlyPlaying
+                onToggled: shell.setAmbientOnlyPlaying(checked)
+            }
+            Flow {
+                visible: shell.features.visualizer !== false
+                width: parent.width
+                spacing: 10
+                Text { textFormat: Text.PlainText; text: "Visualizer while the window is in the background"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                StyledCombo {
+                    objectName: "visualizerBackground"
+                    readonly property var modes: ["full", "slower", "paused"]
+                    width: 220
+                    model: ["Full speed", "Slower (saves power)", "Paused"]
+                    selection: Math.max(0, modes.indexOf(shell.visualizerBackground))
+                    onActivated: shell.setVisualizerBackground(modes[currentIndex])
+                    Accessible.name: "Visualizer while the window is in the background"
+                }
+            }
+            StyledCheck {
                 objectName: "reduceMotion"
                 text: "Reduce motion (no page transitions, zooms, spinning record or growing buttons)"
                 checked: shell.reduceMotion
@@ -253,6 +287,19 @@ Item {
                         Accessible.name: "Text size"
                     }
                 }
+                Row {
+                    spacing: 12
+                    Text { textFormat: Text.PlainText; text: "Scroll speed"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }
+                    StyledCombo {
+                        objectName: "scrollSpeed"
+                        width: 200
+                        readonly property var speeds: [0.5, 0.75, 1.0, 1.5, 2.0, 3.0]
+                        model: ["Slowest", "Slow", "Normal", "Fast", "Faster", "Fastest"]
+                        selection: speeds.indexOf(shell.scrollSpeed) >= 0 ? speeds.indexOf(shell.scrollSpeed) : 2
+                        onActivated: function (i) { shell.setScrollSpeed(speeds[i]) }
+                        Accessible.name: "Scroll speed (mouse wheel)"
+                    }
+                }
                 StyledCheck {
                     text: "Show audio format and average bitrate on tracks"
                     checked: player.showTrackInfo
@@ -273,10 +320,30 @@ Item {
                     onToggled: shell.setSongBadge("explicitBadges", checked)
                 }
                 StyledCheck {
+                    objectName: "cleanBadges"
+                    text: "Mark clean (edited) versions with a C"
+                    checked: Rows.cleanBadges
+                    onToggled: shell.setSongBadge("cleanBadges", checked)
+                }
+                StyledCheck {
                     objectName: "hiResBadges"
                     text: "Show a Hi-Res badge on 24-bit and higher songs"
                     checked: Rows.hiResBadges
                     onToggled: shell.setSongBadge("hiResBadges", checked)
+                }
+                Row {
+                    visible: Rows.hiResBadges
+                    leftPadding: 28
+                    spacing: 12
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: "Hi-Res badge"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                    StyledCombo {
+                        objectName: "hiResBadgeStyle"
+                        width: 230
+                        model: ["\"Hi-Res\"", "A gold M (Master)"]
+                        selection: Rows.masterBadge ? 1 : 0
+                        onActivated: function (i) { shell.setSongBadge("masterBadge", i === 1) }
+                        Accessible.name: "Hi-Res badge style"
+                    }
                 }
                 StyledCheck {
                     objectName: "bitDepthBadges"
@@ -540,7 +607,7 @@ Item {
             id: sec_playback
             objectName: "settings_playback"
             title: "Playback"
-            keywords: "output device audio replaygain loudness preamp measure crossfade gapless speed sleep timer"
+            keywords: "output device audio replaygain loudness preamp measure crossfade gapless album fade pause resume start startup open volume step wheel maximum limit loud speed sleep timer"
             query: page.query
             Flow {  // wraps in a narrow window
                 width: parent.width
@@ -628,6 +695,56 @@ Item {
                     onMoved: player.setCrossfade(value)
                 }
             }
+            Flow {
+                width: parent.width
+                spacing: 12
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Volume step"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                StyledCombo {
+                    objectName: "volumeStep"
+                    readonly property var steps: [0.01, 0.02, 0.05, 0.1]
+                    width: 120
+                    model: ["1%", "2%", "5%", "10%"]
+                    selection: Math.max(0, steps.findIndex(s => Math.abs(s - player.volumeStep) < 0.001))
+                    onActivated: player.setVolumeStep(steps[currentIndex])
+                    Accessible.name: "Volume step for the mouse wheel and arrow keys"
+                }
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Maximum volume " + Math.round(player.maxVolume * 100) + "%"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                StyledSlider {
+                    objectName: "maxVolume"
+                    width: 160
+                    from: 0.1; to: 1; stepSize: 0.05
+                    value: player.maxVolume
+                    onMoved: player.setMaxVolume(value)
+                    Accessible.name: "Maximum volume"
+                }
+            }
+            StyledCheck {
+                objectName: "resumeOnStart"
+                text: "Start playing when Hallucinate opens (carry on where it was)"
+                checked: player.resumeOnStart
+                onToggled: player.setResumeOnStart(checked)
+            }
+            StyledCheck {
+                objectName: "crossfadeAlbums"
+                visible: player.crossfade > 0
+                text: "Crossfade between songs of the same album too (off: an album plays gaplessly, as it runs)"
+                checked: player.crossfadeAlbums
+                onToggled: player.setCrossfadeAlbums(checked)
+            }
+            Flow {
+                width: parent.width
+                spacing: 12
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Fade on pause and play"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                StyledCombo {
+                    objectName: "pauseFade"
+                    readonly property var lengths: [0, 150, 400, 1000]
+                    width: 200
+                    model: ["Off", "Quick", "Gentle", "Slow"]
+                    selection: Math.max(0, lengths.indexOf(player.pauseFade))
+                    onActivated: player.setPauseFade(lengths[currentIndex])
+                    Accessible.name: "Fade on pause and play"
+                }
+            }
             Text { width: parent.width; wrapMode: Text.WordWrap; text: "Gapless playback is always on; with crossfade off, consecutive tracks play back to back. Playback speed and the sleep timer are in the ⋯ menu of the player bar."; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
         }
         SettingsSection {
@@ -663,12 +780,27 @@ Item {
             id: sec_library
             objectName: "settings_library"
             title: "Library"
-            keywords: "genres genre music folders scan rescan health tags files ratings stars cover art cover.jpg embed import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums backup export your data move computer"
+            keywords: "genres genre music folders scan rescan start startup watch watching health tags files ratings stars cover art cover.jpg embed import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums backup export your data move computer"
             query: page.query
             Text {
                 textFormat: Text.PlainText
-                text: "Folders are scanned in the background and watched for changes."
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: "Folders are scanned in the background" + (library.scanAtStart ? " at every start" : "")
+                      + (library.watching ? " and watched for changes." : ". Rescan picks up what's new.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            StyledCheck {
+                objectName: "scanAtStart"
+                text: "Look for new and changed files when Hallucinate starts"
+                checked: library.scanAtStart
+                onToggled: library.setScanAtStart(checked)
+            }
+            StyledCheck {
+                objectName: "watchFolders"
+                text: "Watch the folders and pick up changes as they happen"
+                checked: library.watching
+                onToggled: library.setWatching(checked)
             }
             Repeater {
                 model: library.folders
@@ -1395,7 +1527,7 @@ Item {
                     TextField {
                         id: apiKey
                         width: Math.min(250, parent.width); height: 38
-                        placeholderText: "Last.fm API key"
+                        placeholderText: scrobbler.configured ? "Saved (type a new one to replace it)" : "Last.fm API key"
                         color: Theme.text; placeholderTextColor: Theme.textDim
                         font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
                         background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: apiKey.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
@@ -1403,7 +1535,7 @@ Item {
                     TextField {
                         id: apiSecret
                         width: Math.min(250, parent.width); height: 38
-                        placeholderText: "Last.fm API secret"
+                        placeholderText: scrobbler.configured ? "Saved" : "Last.fm API secret"
                         echoMode: TextInput.Password
                         color: Theme.text; placeholderTextColor: Theme.textDim
                         font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
@@ -1431,7 +1563,7 @@ Item {
                     visible: !scrobbler.connected
                     primary: true
                     text: scrobbler.busy ? "Connecting…" : "Connect Last.fm"
-                    enabled: scrobbler.configured && !scrobbler.busy && !shell.offlineMode
+                    enabled: scrobbler.configured && !scrobbler.busy  // offline, it says why instead
                     onClicked: scrobbler.connectAccount()
                 }
                 PillButton {
@@ -1485,6 +1617,7 @@ Item {
                 enabled: !scrobbler.lovesBusy
                 onClicked: scrobbler.importLoves()
             }
+            OfflineNote { visible: shell.offlineMode && (scrobbler.configured || scrobbler.connected); what: "Last.fm" }
             Text { text: "ListenBrainz"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {
                 textFormat: Text.PlainText
@@ -1534,6 +1667,7 @@ Item {
                 color: listenbrainz.connected ? Theme.accent : Theme.textDim
                 font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); wrapMode: Text.WordWrap
             }
+            OfflineNote { visible: shell.offlineMode; what: "ListenBrainz" }
             PillButton {
                 objectName: "listenbrainzRetryNow"
                 visible: listenbrainz.pendingCount > 0 && listenbrainz.connected && !shell.offlineMode
@@ -1629,7 +1763,7 @@ Item {
             id: sec_desktop
             objectName: "settings_desktop"
             title: "Desktop"
-            keywords: "tray notifications close quit minimize exit background mini player title bar window frame decorations frameless maximize"
+            keywords: "tray notifications focus close quit minimize exit background mini player title bar window frame decorations frameless maximize buttons left right side start page open on"
             query: page.query
             StyledCheck {
                 visible: shell.trayAvailable
@@ -1650,6 +1784,21 @@ Item {
                 text: "Show the minimize button"
                 checked: shell.titleBarMinimize
                 onToggled: shell.setTitleBarMinimize(checked)
+            }
+            Flow {
+                visible: shell.customTitleBar
+                width: parent.width
+                spacing: 10
+                leftPadding: 28
+                Text { textFormat: Text.PlainText; text: "Buttons on the"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                StyledCombo {
+                    objectName: "titleBarSide"
+                    width: 200
+                    model: ["Right", "Left"]
+                    selection: shell.titleBarSide === "left" ? 1 : 0
+                    onActivated: shell.setTitleBarSide(currentIndex === 1 ? "left" : "right")
+                    Accessible.name: "Title bar buttons side"
+                }
             }
             Text {
                 textFormat: Text.PlainText
@@ -1688,6 +1837,28 @@ Item {
                 text: "Show desktop notifications when tracks change"
                 checked: shell.desktopNotifications
                 onToggled: shell.setDesktopNotifications(checked)
+            }
+            StyledCheck {
+                objectName: "notifyAlways"
+                visible: shell.desktopNotifications
+                leftPadding: 28
+                text: "Even while Hallucinate's window is in front (off: only when you're elsewhere)"
+                checked: shell.notifyAlways
+                onToggled: shell.setNotifyAlways(checked)
+            }
+            Flow {
+                width: parent.width
+                spacing: 10
+                Text { textFormat: Text.PlainText; text: "Open on"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                StyledCombo {
+                    objectName: "startPage"
+                    readonly property var pages: ["home", "last", "albums", "artists", "songs", "folders", "liked", "stats", "history"]
+                    width: 220
+                    model: ["Home", "The page I left it on", "Albums", "Artists", "Songs", "Folders", "Liked Songs", "Stats", "History"]
+                    selection: Math.max(0, pages.indexOf(shell.startPage))
+                    onActivated: shell.setStartPage(pages[currentIndex])
+                    Accessible.name: "Page Hallucinate opens on"
+                }
             }
             PillButton { text: "Open mini player"; onClicked: shell.toggleMini() }
 

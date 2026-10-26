@@ -38,6 +38,10 @@ ApplicationWindow {
             if (!window.featureOn("lyrics")) { window.lyricsOpen = false; nowPlaying.lyricsMode = false }
         }
     }
+    Connections {  // a page picked in the tray menu
+        target: shell
+        function onNavigateRequested(page) { nowPlaying.open = false; window.go(page) }
+    }
     Connections {  // music servers say how adding and syncing went
         target: servers
         function onMessage(text) { toast.show(text) }
@@ -218,6 +222,7 @@ ApplicationWindow {
         remember({ kind: "section", name: name })
         route0 = route
         section = name
+        if (shell.startPage === "last") shell.setUiValue("lastPage", name)
         stack.clear()
         stack.push(pageFor(name))
         if (searchField.text.length > 0) searchField.text = ""
@@ -629,6 +634,7 @@ ApplicationWindow {
         standardButtons: Dialog.Ok
         onClosed: shell.dismissWhatsNew()
         Flickable {
+            WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
             implicitHeight: Math.min(whatsNewCol.height, window.height - 200)
             width: whatsNewDlg.availableWidth
             contentHeight: whatsNewCol.height
@@ -781,6 +787,7 @@ ApplicationWindow {
         anchors.fill: parent
         z: -1
         animated: shell.ambientMotion && !shell.reduceMotion && window.active && !nowPlaying.covering && !Theme.retro
+                  && (!shell.ambientOnlyPlaying || player.playing)
         visible: !nowPlaying.covering && !Theme.retro  // a retro theme is flat, like the desktops it remembers
     }
 
@@ -821,9 +828,11 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 68
                     TitleDrag { anchors.fill: parent }  // the empty part of the row moves the window
+                    // room for the window's buttons when they're on the left
+                    readonly property real leftButtons: windowControls.visible && shell.titleBarSide === "left" ? windowControls.width + 14 : 0
                     IconButton {
                         id: backBtn
-                        anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
+                        anchors { left: parent.left; leftMargin: 18 + topRow.leftButtons; verticalCenter: parent.verticalCenter }
                         icon: "back"
                         visible: window.backRoutes.length > 0 || (stack.currentItem && stack.currentItem.objectName === "search")
                         tip: "Back (Alt+Left)"
@@ -832,7 +841,7 @@ ApplicationWindow {
                     TextField {
                         id: searchField
                         objectName: "searchField"
-                        anchors { left: backBtn.visible ? backBtn.right : parent.left; leftMargin: backBtn.visible ? 8 : 24; verticalCenter: parent.verticalCenter }
+                        anchors { left: backBtn.visible ? backBtn.right : parent.left; leftMargin: backBtn.visible ? 8 : 24 + topRow.leftButtons; verticalCenter: parent.verticalCenter }
                         width: Math.min(520, parent.width - 120 - (windowControls.visible ? windowControls.width + 16 : 0))
                         height: 42
                         placeholderText: "Search   ( / )        Ctrl+K  commands & pages"
@@ -859,7 +868,8 @@ ApplicationWindow {
                     WindowControls {
                         id: windowControls
                         objectName: "windowControls"
-                        anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
+                        x: shell.titleBarSide === "left" ? 16 : parent.width - width - 16
+                        anchors.verticalCenter: parent.verticalCenter
                     }
                 }
 
@@ -931,8 +941,8 @@ ApplicationWindow {
     Shortcut { sequence: "Space"; enabled: !window.typing && !window.onControl; onActivated: player.toggle() }
     Shortcut { sequence: "Left"; enabled: !window.typing; onActivated: player.seekBy(-5000) }
     Shortcut { sequence: "Right"; enabled: !window.typing; onActivated: player.seekBy(5000) }
-    Shortcut { sequence: "Up"; enabled: !window.typing; onActivated: player.changeVolume(0.05) }
-    Shortcut { sequence: "Down"; enabled: !window.typing; onActivated: player.changeVolume(-0.05) }
+    Shortcut { sequence: "Up"; enabled: !window.typing; onActivated: player.nudgeVolume(1) }
+    Shortcut { sequence: "Down"; enabled: !window.typing; onActivated: player.nudgeVolume(-1) }
     // M mutes, and M again brings back the volume it had (the same remembered volume as the bar's button)
     Shortcut { sequence: "M"; enabled: !window.typing; onActivated: player.toggleMute() }
     Shortcut { sequence: "N"; enabled: !window.typing; onActivated: player.next() }
@@ -999,6 +1009,6 @@ ApplicationWindow {
         }
     }
 
-    Component.onCompleted: go("home")
+    Component.onCompleted: go(shell.openingPage())
     WindowEdges {}  // resizing by the edges when the title bar is built in (no system frame)
 }

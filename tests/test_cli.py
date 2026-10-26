@@ -236,3 +236,16 @@ def test_headless_starts_plays_its_part_and_stops(tmp_path):
     out = proc.stdout
     assert "running without a window" in out and "http://localhost:18999/" in out and "Stopping" in out
     assert (tmp_path / "d" / "hallucinate" / "library.db").exists()
+
+
+def test_badges_in_text(api):
+    from hallucinate.cli import marks, song_line
+
+    api.state["song"].update(explicit=True, bitDepth=24)
+    _, text = run("status")
+    assert "Playing: Blue in Green [E] [Hi-Res]" in text
+    assert song_line({"id": 3, "title": "A", "artist": "B", "bitDepth": 16}) == "[3] A — B"
+    assert marks({"bitDepth": 1}) == " [Hi-Res]"  # DSD
+    b = tui.Browser(api)
+    api.state["song"]["explicit"] = False
+    assert b.song_rows([{"id": 1, "title": "T", "artist": "A", "duration": 60, "explicit": True}])[0].text.startswith("T [E] — A")

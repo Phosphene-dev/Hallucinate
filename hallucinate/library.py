@@ -5,7 +5,7 @@ import random
 import threading
 from concurrent.futures import ThreadPoolExecutor
 
-from PySide6.QtCore import Property, QFile, QFileSystemWatcher, QObject, QTimer, QUrl, Signal, Slot
+from PySide6.QtCore import Property, QFile, QFileSystemWatcher, QObject, QSettings, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices
 
 from .core import albums as album_views
@@ -213,6 +213,7 @@ class Library(QObject):
     timelineChanged = Signal()
     wallChanged = Signal()
     foldersChanged = Signal()
+    scanPrefsChanged = Signal()
     filtersChanged = Signal()
     genreListChanged = Signal()
     composerListChanged = Signal()
@@ -294,6 +295,12 @@ class Library(QObject):
         self._hidden_count = len(self._db.hidden_paths())
         self._watcher = QFileSystemWatcher(self)
         self._watcher.directoryChanged.connect(self._on_dir_changed)
+        # Settings → Library: look for new and changed files at every start, and as they change. Either can be
+        # switched off (a slow network disk, a huge library); Rescan always works.
+        self._prefs = QSettings("hallucinate", "hallucinate")
+        self._scan_at_start = self._prefs.value("library/scanAtStart", True, bool)
+        self._watch = self._prefs.value("library/watch", True, bool)
+        self._watched_dirs = []
         self._debounce = QTimer(self)
         self._debounce.setSingleShot(True)
         self._debounce.setInterval(3000)
@@ -929,6 +936,38 @@ class Library(QObject):
         self._bulk.submit(purge)
         self.reload()
 
+    def empty(self):
+        """No songs stored yet (as at first start, or after adding the first folder): scan whatever the settings."""
+        return self._db.conn.execute("SELECT 1 FROM tracks LIMIT 1").fetchone() is None
+
+    @Property(bool, notify=scanPrefsChanged)
+    def scanAtStart(self):
+        return self._scan_at_start
+
+    @Slot(bool)
+    def setScanAtStart(self, on):
+        self._scan_at_start = bool(on)
+        self._prefs.setValue("library/scanAtStart", self._scan_at_start)
+        self.scanPrefsChanged.emit()
+
+    @Property(bool, notify=scanPrefsChanged)
+    def watching(self):
+        return self._watch
+
+    @Slot(bool)
+    def setWatching(self, on):
+        self._watch = bool(on)
+        self._prefs.setValue("library/watch", self._watch)
+        self._apply_watch()
+        self.scanPrefsChanged.emit()
+
+    def _apply_watch(self):
+        old = self._watcher.directories()
+        if old:
+            self._watcher.removePaths(old)
+        if self._watch and self._watched_dirs:
+            self._watcher.addPaths(self._watched_dirs)
+
     @Slot()
     def rescan(self):
         if self._scanning:
@@ -989,12 +1028,8 @@ class Library(QObject):
             self._set_status("")
         if stats.get("added") or stats.get("updated") or stats.get("removed") or not self._counts["tracks"]:
             self.reload()
-        old = self._watcher.directories()
-        if old:
-            self._watcher.removePaths(old)
-        dirs = stats.get("dirs", [])[:MAX_WATCHED_DIRS]
-        if dirs:
-            self._watcher.addPaths(dirs)
+        self._watched_dirs = stats.get("dirs", [])[:MAX_WATCHED_DIRS]
+        self._apply_watch()
         if self._pending:
             self._pending = False
             self.rescan()
@@ -1002,6 +1037,8 @@ class Library(QObject):
     def _on_dir_changed(self, path):
         from .core import tagedit
 
+        if not self._watch:
+            return
         if tagedit.written_recently(path):
             return  # Hallucinate's own tag saves (they update the library themselves): no need to scan again
         self._debounce.start()

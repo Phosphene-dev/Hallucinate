@@ -381,3 +381,14 @@ def test_a_refresh_writes_only_what_the_feed_changed(tmp_path):
     assert rows["0"]["title"] == "E0 (fixed)" and len(rows) == 50
     assert rows[first["guid"]]["position"] == 12  # where you stopped is kept
     db.close()
+
+
+def test_feeds_that_declare_entities_are_refused():
+    from hallucinate.core import podcasts as pc
+
+    bomb = ('<?xml version="1.0"?><!DOCTYPE lolz [<!ENTITY lol "lol"><!ENTITY lol2 "&lol;&lol;&lol;&lol;">]>'
+            '<rss><channel><title>&lol2;</title></channel></rss>')
+    with pytest.raises(ValueError):
+        pc.parse_feed(bomb)
+    with pytest.raises(ValueError):
+        pc.parse_opml(bomb.replace("rss", "opml"))

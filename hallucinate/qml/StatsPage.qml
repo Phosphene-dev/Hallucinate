@@ -17,6 +17,7 @@ Item {
     }
 
     Flickable {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         anchors.fill: parent
         contentWidth: width
         contentHeight: content.height + 48
@@ -223,6 +224,7 @@ Item {
                 title: "Recently played"
             }
             ListView {
+                WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
                 visible: userLib.recentPlayed.count > 0
                 width: parent.width
                 height: 248

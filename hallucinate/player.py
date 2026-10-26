@@ -389,6 +389,10 @@ class Player(QObject):
             self._volume = stored_volume if math.isfinite(stored_volume) else 0.8
         except (TypeError, ValueError):
             self._volume = 0.8
+        self._resume_on_start = str(self._settings.value("resumeOnStart", "false")).lower() == "true"
+        self._volume_step = self._float_setting("volumeStep", 0.05, 0.01, 0.2)  # one wheel notch or arrow key
+        self._max_volume = self._float_setting("maxVolume", 1.0, 0.1, 1.0)  # a cap, for loud amplifiers
+        self._volume = min(self._volume, self._max_volume)
         self._visualizer_enabled = (
             str(self._settings.value("visualizer/enabled", "false")).lower() == "true" and eq.available()
         )
@@ -399,6 +403,15 @@ class Player(QObject):
             self._rg_mode = "off"
         self._rg_preamp = self._float_setting("replaygain/preamp", 0.0, -15.0, 15.0)
         self._crossfade = int(self._float_setting("crossfade", 0, 0, 12))
+        # an album's songs run into each other as the album has them (a live album, a DJ mix): no crossfade
+        # between two songs of the same album unless asked for
+        self._crossfade_albums = str(self._settings.value("crossfadeAlbums", "false")).lower() == "true"
+        self._pause_fade = int(self._float_setting("pauseFade", 0, 0, 2000))  # ms to fade out on pause, in on play
+        self._pause_gain = 1.0
+        self._pause_goal = 1.0
+        self._pause_timer = QTimer(self)
+        self._pause_timer.setInterval(20)
+        self._pause_timer.timeout.connect(self._pause_fade_tick)
         self._speed = self._float_setting("speed", 1.0, 0.5, 2.0)
         self._podcast_speed = self._float_setting("podcastSpeed", 1.0, 0.5, 3.0)  # podcasts keep their own
         self._sleep_left = -1  # seconds until sleep; -1 when no timer is running
@@ -577,6 +590,50 @@ class Player(QObject):
             self._crossfade = seconds
             self._settings.setValue("crossfade", seconds)
             self.audioSettingsChanged.emit()
+
+    @Property(bool, notify=audioSettingsChanged)
+    def crossfadeAlbums(self):
+        return self._crossfade_albums
+
+    @Slot(bool)
+    def setCrossfadeAlbums(self, on):
+        if bool(on) != self._crossfade_albums:
+            self._crossfade_albums = bool(on)
+            self._settings.setValue("crossfadeAlbums", "true" if on else "false")
+            self.audioSettingsChanged.emit()
+
+    @Property(int, notify=audioSettingsChanged)
+    def pauseFade(self):
+        return self._pause_fade
+
+    @Slot(int)
+    def setPauseFade(self, ms):
+        ms = min(max(int(ms), 0), 2000)
+        if ms != self._pause_fade:
+            self._pause_fade = ms
+            self._settings.setValue("pauseFade", ms)
+            self.audioSettingsChanged.emit()
+
+    @property
+    def _pausing(self):
+        """Fading out on the way to a pause: still playing, but on its way to stopping."""
+        return self._pause_timer.isActive() and self._pause_goal == 0.0
+
+    def _pause_fade_tick(self):
+        step = self._pause_timer.interval() / max(1, self._pause_fade)
+        if self._pause_gain < self._pause_goal:
+            self._pause_gain = min(self._pause_goal, self._pause_gain + step)
+        else:
+            self._pause_gain = max(self._pause_goal, self._pause_gain - step)
+        self._apply_volume()
+        if self._pause_gain == self._pause_goal:
+            self._pause_timer.stop()
+            if self._pause_goal == 0.0:
+                self._pause_now()
+
+    def _reset_pause_fade(self):
+        self._pause_timer.stop()
+        self._pause_gain = self._pause_goal = 1.0
 
     # --- playback speed and sleep timer -----------------------------------------
     @Property(float, notify=speedChanged)
@@ -1255,7 +1312,7 @@ class Player(QObject):
     def _apply_volume(self):
         for voice in self._voices:
             gain = replaygain_factor(self._voice_track(voice), self._rg_mode, self._rg_preamp)
-            level = min(1.0, self._volume ** 2 * gain * voice.fade * self._sleep_gain)
+            level = min(1.0, self._volume ** 2 * gain * voice.fade * self._sleep_gain * self._pause_gain)
             if voice.tap is not None and not voice.tap.failed:
                 voice.audio.setVolume(0.0)  # still paces the decoder; the tap's sink plays the sound
                 voice.tap.setVolume(level)
@@ -1423,7 +1480,15 @@ class Player(QObject):
                 if self._voice.tap is not None:
                     self._voice.tap.reset()
                 self._voice.set_position(0)
+            if self._pausing:  # play pressed while fading out: come back up from where it is
+                self._pause_goal = 1.0
+                return
+            fade_in = self._pause_fade > 0 and not self.playing and not self._ended
             self._ended = False
+            if fade_in:
+                self._pause_gain, self._pause_goal = 0.0, 1.0
+                self._apply_volume()
+                self._pause_timer.start()
             self._player.play()
         elif self._queue:
             self._load(0)
@@ -1436,9 +1501,18 @@ class Player(QObject):
             self._park_station(self._index)
             self.saveSession()
             return
+        if self._pause_fade > 0 and self.playing and not self._fading:
+            self._pause_goal = 0.0  # fade out first; the tick pauses at the bottom
+            self._pause_timer.start()
+            return
+        self._pause_now()
+
+    def _pause_now(self):
         self._ended = False
         self._end_fade()
         self._player.pause()
+        self._reset_pause_fade()
+        self._apply_volume()
         self.stateChanged.emit()
         self.saveSession()
 
@@ -1450,6 +1524,8 @@ class Player(QObject):
             return
         self._ended = False
         self._end_fade()
+        self._reset_pause_fade()
+        self._apply_volume()
         if self._voice.start > 0:
             # A CUE sheet song starts part-way into the album's file: stopping the player would go back to
             # the top of the file (the album's first song), so hold at this song's start instead.
@@ -1464,7 +1540,7 @@ class Player(QObject):
 
     @Slot()
     def toggle(self):
-        if self.playing:
+        if self.playing and not self._pausing:
             self.pause()
         else:
             self.play()
@@ -1494,7 +1570,7 @@ class Player(QObject):
     @Slot(float)
     def setVolume(self, v):
         v = float(v)
-        v = min(max(v, 0.0), 1.0) if math.isfinite(v) else 0.0
+        v = min(max(v, 0.0), self._max_volume) if math.isfinite(v) else 0.0
         self._volume = v
         self._apply_volume()
         self._settings.setValue("volume", v)
@@ -1503,6 +1579,47 @@ class Player(QObject):
     @Slot(float)
     def changeVolume(self, delta):
         self.setVolume(self._volume + delta)
+
+    @Slot(float)
+    def nudgeVolume(self, steps):
+        """Notches of the wheel (or presses of an arrow key), each Settings → Playback's volume step. Turning it
+        up while muted unmutes: that means "I want sound"."""
+        if steps > 0 and self.muted:
+            self.toggleMute()
+        self.setVolume(self._volume + steps * self._volume_step)
+
+    @Property(bool, notify=audioSettingsChanged)
+    def resumeOnStart(self):
+        """Start playing what was playing when Hallucinate last closed, as soon as it opens."""
+        return self._resume_on_start
+
+    @Slot(bool)
+    def setResumeOnStart(self, on):
+        self._resume_on_start = bool(on)
+        self._settings.setValue("resumeOnStart", "true" if on else "false")
+        self.audioSettingsChanged.emit()
+
+    @Property(float, notify=audioSettingsChanged)
+    def volumeStep(self):
+        return self._volume_step
+
+    @Slot(float)
+    def setVolumeStep(self, step):
+        self._volume_step = min(max(float(step), 0.01), 0.2) if math.isfinite(float(step)) else 0.05
+        self._settings.setValue("volumeStep", self._volume_step)
+        self.audioSettingsChanged.emit()
+
+    @Property(float, notify=audioSettingsChanged)
+    def maxVolume(self):
+        return self._max_volume
+
+    @Slot(float)
+    def setMaxVolume(self, cap):
+        self._max_volume = min(max(float(cap), 0.1), 1.0) if math.isfinite(float(cap)) else 1.0
+        self._settings.setValue("maxVolume", self._max_volume)
+        self.audioSettingsChanged.emit()
+        if self._volume > self._max_volume:
+            self.setVolume(self._max_volume)
 
     @Property(bool, notify=volumeChanged)
     def muted(self):
@@ -1875,6 +1992,7 @@ class Player(QObject):
         start (a restored session's place), kept until it has loaded however long its file takes to answer."""
         if not 0 <= i < len(self._queue):
             return
+        self._reset_pause_fade()  # another song comes in at full volume (its own fade aside)
         if record and self.hasTrack and i != self._index:
             self._history.append(self._index)
             del self._history[:-200]
@@ -2150,6 +2268,9 @@ class Player(QObject):
         sb = self._standby
         if nxt is None or nxt == self._index or sb.index != nxt or not sb.player.source().isValid():
             return False
+        album = self.current.get("album_key") or ""
+        if not self._crossfade_albums and album and (self._queue[nxt].get("album_key") or "") == album:
+            return False  # the next song of the same album: gapless, as the album runs
         self._load(nxt, fade_ms=dur - pos)
         return True
 

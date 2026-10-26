@@ -222,6 +222,7 @@ Popup {
             Keys.onEscapePressed: palette.close()
         }
         ListView {
+            WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
             id: list
             objectName: "paletteResults"
             width: parent.width

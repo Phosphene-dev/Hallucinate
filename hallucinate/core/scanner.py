@@ -9,6 +9,7 @@ from .db import Database
 
 _CUE_SONG = re.compile(r"^(.*\.[A-Za-z0-9]+)#\d+$")
 COMMIT_EVERY_S = 0.2  # changes waiting longer than this are saved before the next file is read
+UPGRADE_PAUSE_S = 0.002  # between files read again after an update (see _migrate): the window comes first
 
 
 class Scanner:
@@ -115,6 +116,10 @@ class Scanner:
                     # (adding a folder, saving a play) would wait on this scan's lock until it's done.
                     self.db.commit()
                     pending, last_commit = 0, time.monotonic()
+                if old and old[0] == 0 and old[1] == st.st_size:
+                    # read again only for what a new version stores (all of a library, once, after an
+                    # update): leave the window a moment between files, so it stays smooth while it runs
+                    time.sleep(UPGRADE_PAUSE_S)
                 t = tags.read_track(path, art_known=lambda k: k in self._art)
                 if t is None:
                     stats["errors"] += 1

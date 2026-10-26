@@ -172,6 +172,11 @@ def test_a_remote_can_browse_and_play_but_never_sees_paths(remote):
     northern = next(a for a in albums if a["title"] == "Northern Lights")
     album = call("album", key=northern["key"])
     assert [s["title"] for s in album["songs"]] == ["Echoes of Dawn", "Midnight Rain"]
+    assert album["songs"][0]["explicit"] is False and album["songs"][0]["bitDepth"] == 0
+    lib._db.conn.execute("UPDATE tracks SET explicit=1, bit_depth=24 WHERE title='Echoes of Dawn'")
+    lib._db.commit()
+    echoes = call("search", query="echoes")["songs"][0]
+    assert echoes["explicit"] is True and echoes["bitDepth"] == 24  # the remote shows E and Hi-Res too
     call("play.album", key=northern["key"], index=1)
     assert wait_for(lambda: player.hasTrack and player.current.get("title") == "Midnight Rain")
     assert call("state")["song"]["title"] == "Midnight Rain"

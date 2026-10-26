@@ -62,6 +62,7 @@ Item {
     Component {
         id: gridView
         GridView {
+            WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
             id: grid
             leftMargin: 20; rightMargin: 8
             cellWidth: Math.floor((width - 28) / page.cols)
@@ -93,6 +94,7 @@ Item {
         id: wallView
         Item {
             GridView {
+                WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
                 id: wall
                 objectName: "colourWall"
                 anchors { fill: parent; leftMargin: 24; rightMargin: 12 }
@@ -179,6 +181,7 @@ Item {
     Component {
         id: timelineView
         ListView {
+            WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
             id: timeline
             objectName: "timeline"
             leftMargin: 28; rightMargin: 12
@@ -360,6 +363,7 @@ Item {
                 Chip { objectName: "genresAz"; text: "A–Z"; selected: genresBox.az; onClicked: genresBox.az = true }
             }
             GridView {
+                WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
                 id: genreGrid
                 objectName: "genreGrid"
                 anchors { top: genreOrder.bottom; topMargin: 12; left: parent.left; right: parent.right; bottom: parent.bottom }

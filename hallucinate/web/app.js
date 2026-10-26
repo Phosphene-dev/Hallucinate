@@ -125,7 +125,8 @@ function render() {
   const s = state;
   if (!s) return;
   const song = s.song;
-  $("nowTitle").textContent = song ? (song.streamTitle || song.title) : "Nothing playing";
+  $("nowTitle").replaceChildren(song ? (song.streamTitle || song.title) : "Nothing playing",
+    ...(song && !song.streamTitle ? badges(song) : []));
   $("nowArtist").textContent = song ? song.artist : "";
   $("nowAlbum").textContent = song ? [song.album, song.year || ""].filter(Boolean).join(" · ") : "";
   const key = song && song.albumKey;
@@ -215,7 +216,7 @@ function songRow(song, index, onPlay, opts = {}) {
   const row = el("li", { class: "row", tabindex: "0" });
   if (opts.number) row.append(el("span", { class: "num", text: String(opts.number) }));
   if (opts.art !== false) row.append(img(song.albumKey, 64));
-  row.append(el("div", { class: "text" }, el("span", { text: song.title }),
+  row.append(el("div", { class: "text" }, el("span", { class: "title" }, el("span", { text: song.title }), ...badges(song)),
     el("span", { class: "dim small", text: [song.artist, opts.showAlbum === false ? "" : song.album].filter(Boolean).join(" · ") })));
   if (song.duration) row.append(el("span", { class: "time", text: fmt(song.duration) }));
   if (song.id) {
@@ -225,6 +226,14 @@ function songRow(song, index, onPlay, opts = {}) {
   row.addEventListener("click", () => onPlay(index));
   row.addEventListener("keydown", (e) => { if (e.key === "Enter") onPlay(index); });
   return row;
+}
+
+// E for explicit, Hi-Res for 24-bit and up (1 bit is DSD), as the app shows them
+function badges(song) {
+  const out = [];
+  if (song && song.explicit) out.push(el("span", { class: "badge explicit", title: "Explicit", text: "E" }));
+  if (song && (song.bitDepth >= 24 || song.bitDepth === 1)) out.push(el("span", { class: "badge hires", text: "Hi-Res" }));
+  return out;
 }
 
 function svgDots() {

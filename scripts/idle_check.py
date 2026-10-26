@@ -100,6 +100,20 @@ def main():
     }
     engine = QQmlApplicationEngine()
     engine.addImageProvider("art", ArtProvider(tmp / "thumbs"))
+    # the rest of what the app gives the window (as app.py does), so it loads without warnings
+    from hallucinate.bios import ArtistBios
+    from hallucinate.offline import OfflineCopies
+    from hallucinate.onlinesources import OnlineSources
+    from hallucinate.similar import SimilarArtists
+    from hallucinate.webserver import WebRemote
+
+    sources = OnlineSources(lambda: "")
+    context.update({
+        "sources": sources, "artistBios": ArtistBios(db, sources),
+        "similarArtists": SimilarArtists(db, sources, library),
+        "serverCopies": OfflineCopies(db, tmp / "server-copies"),
+        "webRemote": WebRemote(tmp / "data", tmp / "thumbs", player, library, user_lib),
+    })
     for k, v in context.items():
         engine.rootContext().setContextProperty(k, v)
     engine.addImportPath(str(ROOT / "hallucinate" / "qml"))

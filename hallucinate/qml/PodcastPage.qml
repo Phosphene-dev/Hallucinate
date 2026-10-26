@@ -91,6 +91,7 @@ Item {
         anchors.fill: parent
         anchors.leftMargin: 20; anchors.rightMargin: 8
         ListView {
+            WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
             id: list
             objectName: "episodeList"
             anchors.fill: parent
@@ -99,6 +100,7 @@ Item {
             spacing: 2
             ScrollBar.vertical: ScrollBar {}
 
+            KeepAtTop { target: list }  // stays at the top when the header changes height
             header: Item {
                 width: list.width
                 height: headerColumn.height

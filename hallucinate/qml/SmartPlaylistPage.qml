@@ -25,6 +25,7 @@ Item {
     }
 
     ListView {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: list
         anchors.fill: parent
         anchors.leftMargin: 20; anchors.rightMargin: 8
@@ -33,6 +34,7 @@ Item {
         model: userLib.smartTracks
         ScrollBar.vertical: ScrollBar {}
 
+        KeepAtTop { target: list }  // stays at the top when the header changes height
         header: Item {
             width: list.width
             height: 176

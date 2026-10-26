@@ -49,7 +49,7 @@ def seed(tmp_path):
                 "genre": "Dream Pop", "duration": 180.0 + i, "fmt": "FLAC", "codec": "FLAC", "bitrate": 900_000,
                 "sample_rate": 96000 if (n, i) == (0, 0) else 44100,
                 # one hi-res, explicit song (its badges are drawn and can be switched off)
-                "bit_depth": 24 if (n, i) == (0, 0) else 16, "explicit": 1 if (n, i) == (0, 0) else 0,
+                "bit_depth": 24 if (n, i) == (0, 0) else 16, "explicit": 1 if (n, i) == (0, 0) else 2 if (n, i) == (0, 1) else 0,
             })
             for _ in range(i + 1):
                 db.record_play(path)
@@ -1355,7 +1355,7 @@ FEATURE_LABELS = {"liked": "Liked Songs", "folders": "Folders", "stats": "Stats"
                   "stations": "Internet radio", "podcasts": "Podcasts"}
 # Words that only describe something (Settings' notes about offline mode or backups), not a way into the feature.
 FEATURE_PROSE = ("folders that can't be found", "folders are scanned", "import history", "import listening history",
-                 "no lyrics, cover, genre or bio lookups", "playlists, history, stations", "music's stats")
+                 "no lyrics, cover, genre or bio lookups", "watch the folders", "playlists, history, stations", "music's stats")
 
 
 def visible_texts(window):
@@ -1520,12 +1520,20 @@ def test_explicit_and_hi_res_badges_show_and_switch_off(qapp, app_window):
         return found
 
     try:
-        # the one 24-bit explicit song: an E and a Hi-Res badge on its row, and in the player bar while it plays
         # the one 24-bit explicit song: an E and a Hi-Res badge on its row
         assert wait_for(lambda: len(shown("explicitBadge")) == 1 and len(shown("hiResBadge")) == 1)
+        assert not shown("cleanBadge")  # a C for the clean one only when asked for
+        shell.setSongBadge("cleanBadges", True)
+        assert wait_for(lambda: len(shown("cleanBadge")) == 1)
+        shell.setSongBadge("cleanBadges", False)
         shell.setSongBadge("bitDepth", True)  # every song's depth: the other three 16-bit songs say so too
         assert wait_for(lambda: len(shown("hiResBadge")) == 4)
+        # the Hi-Res badge as a gold M (issue 82): an M on the hi-res song, and every song keeps its depth pill
+        shell.setSongBadge("masterBadge", True)
+        assert wait_for(lambda: len(shown("masterBadge")) == 1 and len(shown("hiResBadge")) == 4)
         shell.setSongBadge("bitDepth", False)
+        assert wait_for(lambda: len(shown("masterBadge")) == 1 and not shown("hiResBadge"))
+        shell.setSongBadge("masterBadge", False)
         shell.setSongBadge("explicitBadges", False)
         shell.setSongBadge("hiResBadges", False)
         assert wait_for(lambda: not shown("explicitBadge") and not shown("hiResBadge"))
@@ -1625,6 +1633,14 @@ def test_built_in_title_bar_and_going_back_to_the_systems(qapp, app_window):
         # the search field leaves room for the buttons
         search = window.findChild(QObject, "searchField")
         assert search.mapToScene(QPointF(search.width(), 0)).x() < controls.mapToScene(QPointF(0, 0)).x()
+        # on the left: before the search, close first
+        shell.setTitleBarSide("left")
+        settle()
+        assert controls.mapToScene(QPointF(controls.width(), 0)).x() < search.mapToScene(QPointF(0, 0)).x()
+        close, maxi = window.findChild(QObject, "windowClose"), window.findChild(QObject, "windowMaximize")
+        assert close.mapToScene(QPointF(0, 0)).x() < maxi.mapToScene(QPointF(0, 0)).x()
+        shell.setTitleBarSide("right")
+        settle()
         # close does what closing the window does: with "Ask every time", it asks. (QML read handleClose's
         # answer as True, not "ask", while it had a second slot signature returning bool: closing did nothing.)
         from PySide6.QtGui import QGuiApplication
@@ -1649,3 +1665,130 @@ def test_built_in_title_bar_and_going_back_to_the_systems(qapp, app_window):
     finally:
         shell.setCustomTitleBar(True)
         shell.setTitleBarMinimize(True)
+
+
+def test_a_page_at_the_top_stays_there_when_the_window_is_resized(qapp, app_window):
+    """Narrowing the window wraps the album's notes and makes its header taller; the list kept its scroll
+    position, so the page ended up part way down with the cover cut off. A page you scrolled keeps its place."""
+
+    window, objects, warnings = app_window
+    window.resize(1280, 700)
+
+    def settle():  # until the page's layout stops moving (a busy machine takes several passes)
+        last = None
+        for _ in range(60):
+            for _ in range(4):
+                qapp.processEvents()
+            now = (lst.property("originY"), lst.property("contentY")) if lst is not None else None
+            if now is not None and now == last:
+                return
+            last = now
+
+    lst = None
+    QMetaObject.invokeMethod(window, "openAlbum", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "k0"))
+    for _ in range(8):
+        qapp.processEvents()
+    page = window.findChild(QObject, "pageStack").property("currentItem")
+    items = [page]
+    while items and lst is None:
+        item = items.pop()
+        lst = item if "ListView" in item.metaObject().className() else None
+        items.extend(item.childItems())
+
+    def gap():
+        return lst.property("contentY") - lst.property("originY")
+
+    settle()
+
+    for width in (700, 1280, 760, 1280):
+        window.resize(width, 700)
+        settle()
+        assert abs(gap()) < 1, (width, gap())
+    window.resize(700, 700)  # narrow: a smaller cover, a shorter header
+    settle()
+    lst.setProperty("contentY", lst.property("originY") + 40)  # scrolled a little
+    settle()
+    window.resize(1280, 700)  # the header grows again
+    settle()
+    # still scrolled, not snapped back to the top (how far exactly depends on how Qt clamps a page this short
+    # while it lays out again, so only "not at the top" is certain)
+    assert gap() > 1
+    assert not warnings, warnings[:3]
+
+
+@pytest.mark.parametrize("width", [1280, 900])
+def test_every_queue_button_is_inside_the_panel(qapp, app_window, width):
+    """Export and Save were pushed off the left of the queue panel by the buttons after them."""
+    from PySide6.QtCore import QRectF
+
+    window, objects, warnings = app_window
+    window.resize(width, 800)
+    window.setProperty("queueOpen", True)
+    for _ in range(8):
+        qapp.processEvents()
+    actions = window.findChild(QObject, "queueActions")
+    panel = actions.parentItem()
+    box = panel.mapRectToScene(QRectF(0, 0, panel.width(), panel.height()))
+    shown = [b for b in actions.childItems() if b.isVisible()]
+    assert len(shown) >= 3
+    for b in shown:
+        r = b.mapRectToScene(QRectF(0, 0, b.width(), b.height()))
+        assert box.contains(r), (b.property("text"), r, box)
+    window.setProperty("queueOpen", False)
+    assert not warnings, warnings[:3]
+
+
+def test_the_mouse_wheel_scrolls_evenly_adds_up_and_takes_hi_res_steps(qapp, app_window):
+    """Qt's own wheel handling moved Settings 72 px a notch, three quick notches only 99 px, and a high-resolution
+    wheel (a notch sent as eight steps of 15) 31 px. Every notch now goes the same way, whichever wheel."""
+    import time
+
+    from PySide6.QtCore import QPoint, QPointF
+    from PySide6.QtGui import QWheelEvent
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    window.resize(1280, 800)
+
+    def settle(ms):
+        end = time.monotonic() + ms / 1000
+        while time.monotonic() < end:
+            qapp.processEvents()
+            time.sleep(0.005)
+
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "settings"))
+    settle(300)
+    page = window.findChild(QObject, "pageStack").property("currentItem")
+    items, view = [page], None
+    while items and view is None:
+        item = items.pop()
+        name = item.metaObject().className()
+        if ("Flickable" in name or "ListView" in name) and item.property("contentHeight") > item.height():
+            view = item
+        items.extend(item.childItems())
+    clock, pos = [10_000], QPointF(700, 400)
+
+    def scroll(steps):
+        view.setProperty("contentY", view.property("originY"))
+        settle(100)
+        start = view.property("contentY")
+        for angle in steps:
+            clock[0] += 16
+            e = QWheelEvent(pos, pos, QPoint(0, 0), QPoint(0, -angle), Qt.MouseButton.NoButton,
+                            Qt.KeyboardModifier.NoModifier, Qt.ScrollPhase.NoScrollPhase, False)
+            e.setTimestamp(clock[0])
+            qapp.sendEvent(window, e)
+            settle(16)
+        settle(400)
+        return view.property("contentY") - start
+
+    one = scroll([120])
+    assert 100 <= one <= 120  # a notch: about three lines
+    assert abs(scroll([120] * 3) - 3 * one) < 2  # quick notches add up
+    assert abs(scroll([15] * 8) - one) < 2  # a high-resolution wheel's notch goes as far as any other
+    shell.setScrollSpeed(2.0)
+    try:
+        assert abs(scroll([120]) - 2 * one) < 2
+    finally:
+        shell.setScrollSpeed(1.0)
+    assert not warnings, warnings[:3]

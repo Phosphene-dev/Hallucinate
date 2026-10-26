@@ -54,8 +54,15 @@ def parse_time(text):
     return int(seconds * 1000)
 
 
+def marks(s):
+    """A song's badges as text, as the app shows them: " [E]" for explicit, " [Hi-Res]" for 24-bit and up."""
+    out = " [E]" if s.get("explicit") else ""
+    depth = int(s.get("bitDepth") or 0)
+    return out + (" [Hi-Res]" if depth >= 24 or depth == 1 else "")
+
+
 def song_line(s, with_id=True):
-    bits = [s.get("title") or "Unknown", s.get("artist") or ""]
+    bits = [(s.get("title") or "Unknown") + marks(s), s.get("artist") or ""]
     text = " — ".join(b for b in bits if b)
     if s.get("album"):
         text += f"  ({s['album']})"
@@ -68,7 +75,7 @@ def describe_state(st):
     if not st.get("song"):
         return "Nothing playing"
     song = st["song"]
-    title = song.get("streamTitle") or song.get("title") or "Unknown"
+    title = song.get("streamTitle") or ((song.get("title") or "Unknown") + marks(song))
     lines = [f"{'▶ Playing' if st['playing'] else '⏸ Paused'}: {title}"]
     who = " · ".join(b for b in (song.get("artist"), song.get("album"), str(song.get("year") or "")) if b)
     if who:

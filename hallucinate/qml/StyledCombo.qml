@@ -54,6 +54,7 @@ ComboBox {
         implicitHeight: Math.min(contentItem.implicitHeight + topPadding + bottomPadding, 360)
         padding: 6
         contentItem: ListView {
+            WheelScroll {}
             clip: true
             implicitHeight: contentHeight
             model: combo.popup.visible ? combo.delegateModel : null

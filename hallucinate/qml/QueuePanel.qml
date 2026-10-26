@@ -37,11 +37,20 @@ Rectangle {
             if (row) row.forceActiveFocus()
         })
     }
-    // the buttons share the title's line when they fit, else they get a line of their own below it
-    readonly property bool stacked: head.width + actions.width + 18 + 14 + 16 > panel.width
-    Row {
+    // the buttons share the title's line when they fit, else they go below it, wrapping onto as many lines as
+    // the panel's width needs (in one row, Export and Save were pushed out of sight off the left)
+    readonly property bool stacked: head.width + actions.naturalWidth + 18 + 14 + 16 > panel.width
+    Flow {
         id: actions
-        anchors { right: parent.right; rightMargin: 14 }
+        objectName: "queueActions"
+        readonly property real naturalWidth: {
+            var w = 0, n = 0
+            for (var i = 0; i < children.length; i++)
+                if (children[i].visible) { w += children[i].implicitWidth; n++ }
+            return w + Math.max(0, n - 1) * spacing
+        }
+        x: panel.stacked ? 14 : panel.width - 14 - width
+        width: panel.stacked ? panel.width - 28 : naturalWidth
         y: panel.stacked ? head.y + head.height + 10 : head.y + (head.height - height) / 2
         spacing: 8
         PillButton {
@@ -144,6 +153,7 @@ Rectangle {
         hint: "Play an album or a song, or turn on radio to keep the music going."
     }
     ListView {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: list
         anchors { top: panel.stacked ? actions.bottom : head.bottom; topMargin: 14; left: parent.left; right: parent.right; bottom: parent.bottom }
         anchors.leftMargin: 8; anchors.rightMargin: 4

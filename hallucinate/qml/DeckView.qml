@@ -771,7 +771,7 @@ Item {
                         property real startVol: 0
                         onPressed: mouse => { startY = mouse.y; startVol = player.volume }
                         onPositionChanged: mouse => player.setVolume(Math.max(0, Math.min(1, startVol + (startY - mouse.y) / 200)))
-                        onWheel: wheel => player.setVolume(Math.max(0, Math.min(1, player.volume + (wheel.angleDelta.y > 0 ? 0.04 : -0.04))))
+                        onWheel: wheel => player.nudgeVolume(wheel.angleDelta.y / 120)
                         onDoubleClicked: player.toggleMute()
                     }
                     Accessible.role: Accessible.Slider

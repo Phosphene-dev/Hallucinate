@@ -117,6 +117,7 @@ Item {
         Bevel {}
 
         Flickable {
+            WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
             id: navFlick
             objectName: "sidebarScroll"
             anchors { left: parent.left; right: parent.right; top: parent.top; bottom: footer.top; bottomMargin: 6 }

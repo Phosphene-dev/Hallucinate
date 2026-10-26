@@ -14,10 +14,7 @@ Item {
     implicitWidth: iconSize + 12
     implicitHeight: iconSize + 12
 
-    function nudge(steps) {  // one notch of the wheel: 5%
-        player.setVolume(Math.max(0, Math.min(1, player.volume + steps * 0.05)))
-        if (player.muted && steps > 0) player.toggleMute()  // turning it up while muted means "I want sound"
-    }
+    function nudge(steps) { player.nudgeVolume(steps) }  // one notch of the wheel: the volume step
 
     Accessible.role: Accessible.Button
     Accessible.name: vb.popupSlider ? "Volume " + Math.round(player.volume * 100) + "%" : (player.muted ? "Unmute" : "Mute")
@@ -101,7 +98,7 @@ Item {
                 height: pop.availableHeight - 24
                 width: 24
                 padding: 0
-                from: 0; to: 1
+                from: 0; to: player.maxVolume
                 value: player.volume
                 onMoved: {
                     player.setVolume(value)

@@ -4,7 +4,7 @@ import sqlite3
 import sys
 import time
 
-from PySide6.QtCore import Property, QObject, QSettings, Signal, Slot
+from PySide6.QtCore import Property, QObject, QSettings, QTimer, Signal, Slot
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import QMenu, QSystemTrayIcon
 
@@ -36,7 +36,8 @@ def sidebar_order(saved):
     return order
 
 
-SONG_BADGES = {"explicitBadges": True, "hiResBadges": True, "bitDepth": False}
+# masterBadge: the Hi-Res badge as a gold M ("Master", as some stores mark it) instead of a "Hi-Res" pill
+SONG_BADGES = {"explicitBadges": True, "cleanBadges": False, "hiResBadges": True, "bitDepth": False, "masterBadge": False}
 
 # Tiling compositors and window managers that have no minimize: offering it there would do nothing.
 NO_MINIMIZE = ("hyprland", "sway", "i3", "niri", "river", "dwm", "bspwm", "qtile", "awesome")
@@ -52,9 +53,26 @@ def can_minimize(env=None, platform=None):
     return not any(d in NO_MINIMIZE for d in desktops)
 
 
+# Desktops whose compositor draws good window frames itself (KDE's KWin, COSMIC), and X11, where every window
+# manager does: their own title bar is the better default there. GNOME on Wayland leaves frames to the app
+# (Qt's own is plain), and tiling compositors (Hyprland, niri, Sway) draw none: the built-in one is the default.
+OWN_FRAMES = ("kde", "cosmic", "lxqt")
+
+
+def default_title_bar(env=None, platform=None):
+    env = os.environ if env is None else env
+    if not (platform or sys.platform).startswith("linux"):
+        return False
+    if env.get("XDG_SESSION_TYPE", "").lower() == "x11" or (env.get("DISPLAY") and not env.get("WAYLAND_DISPLAY")):
+        return False
+    desktops = env.get("XDG_CURRENT_DESKTOP", "").lower().replace(";", ":").split(":")
+    return not any(d in OWN_FRAMES for d in desktops)
+
+
 class DesktopShell(QObject):
     miniChanged = Signal()
     settingsChanged = Signal()
+    navigateRequested = Signal(str)  # a page picked in the tray menu
 
     def __init__(self, app, player, icon: QIcon, parent=None):
         super().__init__(parent)
@@ -70,16 +88,25 @@ class DesktopShell(QObject):
         if self._close_action not in CLOSE_ACTIONS:
             self._close_action = "ask"
         self._desktop_notifications = self._settings.value("shell/desktopNotifications", False, bool)
+        # only while the window isn't in front (it already shows the song), or every time
+        self._notify_always = self._settings.value("shell/notifyAlways", False, bool)
         self._sidebar_collapsed = self._settings.value("ui/sidebarCollapsed", False, bool)
         self._ambient_motion = self._settings.value("ui/ambientMotion", True, bool)
+        self._ambient_playing = self._settings.value("ui/ambientOnlyPlaying", True, bool)  # still while paused
+        vb = str(self._settings.value("ui/visualizerBackground", "slower"))
+        self._visualizer_background = vb if vb in ("full", "slower", "paused") else "slower"
         # An album may have several genres: albums and artists show them all, a song only its album's main one
         self._all_genres_albums = self._settings.value("ui/allGenresAlbums", True, bool)
         self._all_genres_songs = self._settings.value("ui/allGenresSongs", False, bool)
         self._reduce_motion = self._settings.value("ui/reduceMotion", False, bool)
         # The window's title bar drawn into the window itself (Linux, where Qt otherwise draws its own plain one on
         # Wayland compositors without server-side decorations), or the system's; and whether it has a minimize
-        self._title_bar = self._settings.value("ui/customTitleBar", sys.platform.startswith("linux"), bool)
+        self._title_bar = self._settings.value("ui/customTitleBar", default_title_bar(), bool)
+        side = str(self._settings.value("ui/titleBarSide", "right"))
+        self._title_side = side if side in ("left", "right") else "right"
         self._title_minimize = self._settings.value("ui/titleBarMinimize", can_minimize(), bool)
+        # How far a notch of the mouse wheel scrolls, as a multiple of the usual distance (see WheelScroll.qml)
+        self._scroll_speed = self._float_ui("ui/scrollSpeed", 1.0, 0.25, 4.0)
         # Badges on songs: E for explicit lyrics, Hi-Res for 24-bit and up, and (off to begin with) every bit depth
         self._badges = {name: self._settings.value(f"ui/{name}", on, bool) for name, on in SONG_BADGES.items()}
         self._visualizer_style = str(self._settings.value("ui/visualizerStyle", "liquid"))
@@ -105,7 +132,14 @@ class DesktopShell(QObject):
 
     # --- tray -------------------------------------------------------------------------
     def _build_tray(self):
+        if self._tray is not None:
+            return
         if not QSystemTrayIcon.isSystemTrayAvailable():
+            # a bar whose tray starts after Hallucinate (Waybar, a panel still loading at login): look again
+            # for a couple of minutes
+            self._tray_tries = getattr(self, "_tray_tries", 0) + 1
+            if self._tray_tries <= 24:
+                QTimer.singleShot(5000, self, self._build_tray)
             return
         self._tray = QSystemTrayIcon(self._icon, self)
         menu = QMenu()
@@ -118,14 +152,40 @@ class DesktopShell(QObject):
         show.triggered.connect(self.showMain)
         mini.triggered.connect(self.toggleMini)
         quit_.triggered.connect(self._app.quit)
-        for a in (show, mini, None, self._act_toggle, prev, nxt, None, quit_):
+        # Go to: the sidebar's pages, in its order, without the ones switched off (rebuilt each time it opens)
+        self._goto = QMenu("Go to", menu)
+        self._goto.aboutToShow.connect(self._fill_goto)
+        self._fill_goto()
+        for a in (show, mini, None, self._act_toggle, prev, nxt, None):
             menu.addSeparator() if a is None else menu.addAction(a)
+        menu.addMenu(self._goto)
+        menu.addSeparator()
+        menu.addAction(quit_)
         self._menu = menu  # keep alive
         self._tray.setContextMenu(menu)
         self._tray.activated.connect(self._on_activated)
         self._tray.setVisible(self._tray_pref)
         self._refresh()
         self._sync_quit_policy()
+        self.settingsChanged.emit()  # Settings shows the tray switch now
+
+    PAGE_TITLES = {"home": "Home", "albums": "Albums", "artists": "Artists", "songs": "Songs", "folders": "Folders",
+                   "liked": "Liked Songs", "stats": "Stats", "history": "History", "recap": "Recap",
+                   "visualizer": "Visualizer", "stations": "Internet radio", "podcasts": "Podcasts",
+                   "settings": "Settings"}
+
+    def _fill_goto(self):
+        self._goto.clear()
+        for page in [*self.sidebarOrder, "settings"]:
+            if self._shown(page):
+                self._goto.addAction(self.PAGE_TITLES.get(page, page.title())).triggered.connect(
+                    lambda _=False, p=page: self.goTo(p))
+
+    @Slot(str)
+    def goTo(self, page):
+        """Bring the window back and open a page (the tray menu's Go to)."""
+        self.showMain()
+        self.navigateRequested.emit(page)
 
     def _on_activated(self, reason):
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
@@ -284,6 +344,30 @@ class DesktopShell(QObject):
         self.settingsChanged.emit()
 
     @Property(bool, notify=settingsChanged)
+    def ambientOnlyPlaying(self):
+        """The backdrop drifts only while music plays, and rests (drawing nothing new) while paused."""
+        return self._ambient_playing
+
+    @Slot(bool)
+    def setAmbientOnlyPlaying(self, on):
+        self._ambient_playing = bool(on)
+        self._settings.setValue("ui/ambientOnlyPlaying", self._ambient_playing)
+        self.settingsChanged.emit()
+
+    @Property(str, notify=settingsChanged)
+    def visualizerBackground(self):
+        """What the visualizer does while the window isn't in front: "full", "slower" (20 frames a second) or
+        "paused"."""
+        return self._visualizer_background
+
+    @Slot(str)
+    def setVisualizerBackground(self, mode):
+        if mode in ("full", "slower", "paused"):
+            self._visualizer_background = mode
+            self._settings.setValue("ui/visualizerBackground", mode)
+            self.settingsChanged.emit()
+
+    @Property(bool, notify=settingsChanged)
     def allGenresAlbums(self):
         """Album and artist pages show every genre (off: only the main one)."""
         return self._all_genres_albums
@@ -325,6 +409,24 @@ class DesktopShell(QObject):
         self._settings.setValue("ui/reduceMotion", self._reduce_motion)
         self.settingsChanged.emit()
 
+    def _float_ui(self, key, default, low, high):
+        try:
+            value = float(self._settings.value(key, default))
+        except (TypeError, ValueError):
+            return default
+        return min(high, max(low, value)) if value == value else default  # NaN: the default
+
+    @Property(float, notify=settingsChanged)
+    def scrollSpeed(self):
+        """How far the mouse wheel scrolls lists and pages: 1 is the usual distance a notch."""
+        return self._scroll_speed
+
+    @Slot(float)
+    def setScrollSpeed(self, speed):
+        self._scroll_speed = min(4.0, max(0.25, float(speed))) if speed == speed else 1.0
+        self._settings.setValue("ui/scrollSpeed", self._scroll_speed)
+        self.settingsChanged.emit()
+
     @Property(bool, notify=settingsChanged)
     def customTitleBar(self):
         """The title bar built into the window (move, maximize, minimize, close) instead of the system's."""
@@ -335,6 +437,37 @@ class DesktopShell(QObject):
         self._title_bar = bool(on)
         self._settings.setValue("ui/customTitleBar", self._title_bar)
         self.settingsChanged.emit()
+
+    @Property(str, notify=settingsChanged)
+    def startPage(self):
+        """The page Hallucinate opens on: a sidebar page, or "last" for wherever it was left."""
+        page = str(self._settings.value("ui/startPage", "home"))
+        return page if page == "last" or page in SIDEBAR_PAGES else "home"
+
+    @Slot(str)
+    def setStartPage(self, page):
+        if page == "last" or page in SIDEBAR_PAGES:
+            self._settings.setValue("ui/startPage", page)
+            self.settingsChanged.emit()
+
+    @Slot(result=str)
+    def openingPage(self):
+        page = self.startPage
+        if page == "last":
+            page = str(self._settings.value("ui/lastPage", "home"))
+        return page if page in SIDEBAR_PAGES or page == "settings" else "home"
+
+    @Property(str, notify=settingsChanged)
+    def titleBarSide(self):
+        """Where the built-in title bar's buttons go: "right" (Windows, KDE, GNOME) or "left" (macOS-style)."""
+        return self._title_side
+
+    @Slot(str)
+    def setTitleBarSide(self, side):
+        if side in ("left", "right"):
+            self._title_side = side
+            self._settings.setValue("ui/titleBarSide", side)
+            self.settingsChanged.emit()
 
     @Property(bool, notify=settingsChanged)
     def titleBarMinimize(self):
@@ -349,7 +482,7 @@ class DesktopShell(QObject):
 
     @Property("QVariantMap", notify=settingsChanged)
     def songBadges(self):
-        """Which badges song rows and the player show: explicitBadges, hiResBadges, bitDepth."""
+        """Which badges song rows and the player show: explicitBadges, hiResBadges, bitDepth, masterBadge."""
         return dict(self._badges)
 
     @Slot(str, bool)
@@ -479,10 +612,27 @@ class DesktopShell(QObject):
         self._settings.setValue("shell/desktopNotifications", on)
         self.settingsChanged.emit()
 
+    @Property(bool, notify=settingsChanged)
+    def notifyAlways(self):
+        return self._notify_always
+
+    @Slot(bool)
+    def setNotifyAlways(self, on):
+        self._notify_always = bool(on)
+        self._settings.setValue("shell/notifyAlways", self._notify_always)
+        self.settingsChanged.emit()
+
+    def _in_front(self):
+        """The main window is showing and has the keyboard: what's playing is already on screen."""
+        win = self._window
+        return bool(win is not None and not self._mini and win.isVisible() and win.isActive())
+
     def _on_track_changed(self):
         if time.monotonic() - self._started < 3:
             return  # the song brought back from last time, not a change
         if not self._desktop_notifications or not self._player.hasTrack:
+            return
+        if not self._notify_always and self._in_front():
             return
         track = self._player.current
         title = track.get("title") or "Unknown track"

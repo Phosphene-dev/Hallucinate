@@ -20,6 +20,7 @@ Item {
     onListingChanged: if (path.length && folders.length === 0 && tracks.length === 0 && library.trackCount > 0) path = ""
 
     Flickable {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: fl
         anchors.fill: parent
         contentWidth: width

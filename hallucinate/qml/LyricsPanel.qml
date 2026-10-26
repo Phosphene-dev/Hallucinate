@@ -64,6 +64,7 @@ Rectangle {
     }
 
     ListView {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: synced
         // Kept clear of the panel's rounded corners: lines scroll in under a margin, not against the edge
         anchors { top: head.bottom; topMargin: 10; left: parent.left; right: parent.right; bottom: parent.bottom
@@ -99,6 +100,7 @@ Rectangle {
         }
     }
     Flickable {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         anchors { top: head.bottom; topMargin: 10; left: parent.left; right: parent.right; bottom: parent.bottom
                   bottomMargin: 14 }
         visible: lyricsCtl.status === "found" && !lyricsCtl.synced

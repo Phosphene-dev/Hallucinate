@@ -3,7 +3,69 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [1.4.0] - 2026-10-26
+
+The second round of tester feedback: even mouse-wheel scrolling, the tray icon in the Flatpak, a crash fix for
+systems with PipeWire installed but not running, and many new settings.
+
+### Fixed
+- Hallucinate crashed on start where the PipeWire client library is installed but no PipeWire server runs (a
+  server, a container, a Proxmox LXC): Qt picked its PipeWire backend anyway. It uses PulseAudio then, which also
+  starts cleanly with no sound server at all; Copy debug info says which it chose.
+- Making the window narrower and wider again left album, playlist, podcast and history pages scrolled part way
+  down, the cover cut off at the top, though nobody had scrolled. A page at the top now stays there.
+- The Flatpak logged "Failed to connect to pipewire instance: Host is down" at every start (it only reaches
+  PipeWire through its PulseAudio socket); it now goes straight to PulseAudio.
+- The signal path popup let the page behind show through its text. It also says why a song is "Processed" and
+  what would leave it untouched: a 48 kHz output resamples 44.1 kHz songs (PipeWire can switch rates), and a
+  volume under 100% scales the samples.
+- With offline mode on, Last.fm's Connect button only went grey, with no word why (ListenBrainz said so). It now
+  says offline mode is on and where to turn it off, both Last.fm and ListenBrainz show a note while it's on, and
+  saved API credentials show as saved.
+- The queue's Export and Save buttons were cut off in a narrow queue panel; the buttons now wrap under the title.
+- Mouse wheel scrolling was slow and uneven (about 70 px a notch, quick notches lost, high-resolution wheels such
+  as the Logitech G502 X moving less than half as far). Every notch now moves the same distance and quick notches
+  add up; touchpads keep their smooth scrolling. Settings → Appearance → Scroll speed sets how far.
+- The Flatpak had no tray icon: the sandbox couldn't reach the desktop's tray (StatusNotifierWatcher). It can now,
+  so "Keep playing in the background" leaves an icon in KDE's tray, GNOME's AppIndicator extension, Waybar and
+  others.
+- A tray that starts after Hallucinate (Waybar or a panel still loading at login) got no icon; Hallucinate now
+  looks again for a couple of minutes. The icon stays while the window is open.
+
+- The first start after an update reads every music file again for what the new version stores; it now leaves
+  the window time between files, so it stays smooth while that runs in the background.
+
+### Security
+- Podcast feeds and OPML files that declare XML entities (the "billion laughs" trick, which makes a few bytes
+  expand into gigabytes) are refused before they're parsed.
+
+### Added
+- The web remote, `hallucinate cmd` and the terminal player show E and Hi-Res too; an album's format line says
+  its bit depth.
+- The Hi-Res badge can be a gold M ("Master", with "Master (Hi-Res)" and the bit depth on hover) instead of the
+  "Hi-Res" pill: Settings → Appearance.
+- The mini player follows the built-in title bar (no frame; drag it by its background) and its volume icon takes
+  the wheel and a middle click.
+- Crossfade leaves an album's songs gapless, as the album runs (a live album, a mix); Settings → Playback can
+  crossfade them too.
+- Fade on pause and play (Settings → Playback: off, quick, gentle or slow); pressing play while it fades out
+  brings it straight back.
+- Volume step (1–10% per wheel notch or arrow key) and a maximum volume, for a loud amplifier: Settings →
+  Playback. Every volume wheel (player bar, Now Playing, the deck) now moves by the same step.
+- Startup choices: start playing where it left off (Settings → Playback), and which page it opens on, or the
+  one it was left on (Settings → Desktop).
+- Library scanning can be quieter: switch off the scan at every start, or watching the folders for changes
+  (a slow network disk, a huge library); Rescan always works.
+- The ambient backdrop drifts only while music plays (switchable), and the visualizer can run at full speed,
+  slower or not at all while the window is in the background (Settings → Appearance).
+- An optional C badge for clean (edited) versions, beside the E for explicit.
+- Settings lights the section you're in, in the list at the top.
+- Track-change notifications skip songs that change while Hallucinate's window is in front (it shows them
+  already); Settings → Desktop can send them every time.
+- The built-in title bar's buttons can go on the left (close first). It's now on by default only where the
+  desktop leaves window frames to the app: GNOME on Wayland and tiling compositors (Hyprland, niri, Sway). KDE,
+  COSMIC and X11 desktops (Cinnamon, XFCE, MATE) keep their own frames unless you switch it on.
+- The tray icon's menu has Go to, with the sidebar's pages: it brings the window back on that page.
 
 ## [1.3.0] - 2026-10-25
 

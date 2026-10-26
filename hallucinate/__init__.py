@@ -1,1 +1,5 @@
-__version__ = "1.3.0"
+__version__ = "1.4.0"
+
+from . import audiobackend as _audiobackend  # noqa: E402
+
+_audiobackend.choose()  # before anything loads Qt Multimedia (see audiobackend)

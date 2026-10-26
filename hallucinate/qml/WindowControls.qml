@@ -10,6 +10,8 @@ Row {
     readonly property var win: Window.window
     readonly property bool maximized: win !== null && win.visibility === Window.Maximized
     spacing: 6
+    // on the left, close comes first (as on macOS and GNOME's left-hand layout)
+    layoutDirection: shell.titleBarSide === "left" ? Qt.RightToLeft : Qt.LeftToRight
     visible: shell.customTitleBar && win !== null && win.visibility !== Window.FullScreen
 
     component WinButton: Rectangle {

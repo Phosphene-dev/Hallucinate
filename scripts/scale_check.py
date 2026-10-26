@@ -118,6 +118,20 @@ def launch(args):
         "servers": Servers(db_path, work / "art", player),
         "podcasts": Podcasts(work / "streams.db", work / "data", work / "cache", player),
     }
+    # the rest of what the app gives the window (as app.py does), so it loads without warnings
+    from hallucinate.bios import ArtistBios
+    from hallucinate.offline import OfflineCopies
+    from hallucinate.onlinesources import OnlineSources
+    from hallucinate.similar import SimilarArtists
+    from hallucinate.webserver import WebRemote
+
+    sources = OnlineSources(lambda: "")
+    context.update({
+        "sources": sources, "artistBios": ArtistBios(db_path, sources),
+        "similarArtists": SimilarArtists(db_path, sources, library),
+        "serverCopies": OfflineCopies(db_path, work / "server-copies"),
+        "webRemote": WebRemote(work / "data", work / "thumbs", player, library, user_lib),
+    })
     for k, v in context.items():
         engine.rootContext().setContextProperty(k, v)
     qml = ROOT / "hallucinate" / "qml"

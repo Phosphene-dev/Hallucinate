@@ -49,6 +49,7 @@ Item {
     }
 
     ListView {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: list
         objectName: "historyList"
         anchors.fill: parent
@@ -62,6 +63,7 @@ Item {
         cacheBuffer: 600
         onAtYEndChanged: if (atYEnd && page.info.hasMore) userLib.loadMoreHistory()
 
+        KeepAtTop { target: list }  // stays at the top when the header changes height
         header: Column {
             x: 28
             width: list.width - 56

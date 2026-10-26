@@ -8,7 +8,10 @@ from hallucinate.shell import DesktopShell
 
 class FakeWindow:
     def __init__(self):
-        self.visible, self.calls = True, []
+        self.visible, self.calls, self.active = True, [], False
+
+    def isActive(self):
+        return self.active
 
     def isVisible(self):
         return self.visible
@@ -141,6 +144,45 @@ def test_desktop_notifications_are_opt_in_and_skip_initial_track(make_shell, mon
     assert shown == [("New song", "New artist — Record", "track", "file:///covers/a.jpg")]
 
 
+def test_no_notification_while_the_window_is_in_front_unless_asked(make_shell, monkeypatch):
+    shell, win, _player = make_shell()
+    shown = []
+    monkeypatch.setattr(DesktopShell, "_send_notification", lambda self, title, body, key="", image="": shown.append(title))
+    shell._player = type("Playback", (), {"hasTrack": True, "current": {"title": "Song"}})()
+    shell._started -= 10
+    shell.setDesktopNotifications(True)
+    win.active = True
+    shell._on_track_changed()
+    assert shown == []  # the window already shows it
+    shell.setNotifyAlways(True)
+    shell._on_track_changed()
+    assert shown == ["Song"]
+    shell.setNotifyAlways(False)
+    win.active = False
+    shell._on_track_changed()
+    assert shown == ["Song", "Song"]
+
+
+def test_the_title_bar_default_follows_the_desktop(make_shell):
+    from hallucinate.shell import default_title_bar
+
+    wl = {"XDG_SESSION_TYPE": "wayland", "WAYLAND_DISPLAY": "wayland-1"}
+    for desk in ("GNOME", "Hyprland", "niri", "sway", "ubuntu:GNOME"):
+        assert default_title_bar({**wl, "XDG_CURRENT_DESKTOP": desk}, "linux"), desk
+    for desk in ("KDE", "COSMIC"):
+        assert not default_title_bar({**wl, "XDG_CURRENT_DESKTOP": desk}, "linux"), desk
+    assert not default_title_bar({"XDG_SESSION_TYPE": "x11", "XDG_CURRENT_DESKTOP": "GNOME"}, "linux")
+    assert not default_title_bar({"DISPLAY": ":0", "XDG_CURRENT_DESKTOP": "XFCE"}, "linux")
+    assert not default_title_bar({}, "win32")
+
+    shell, _win, _player = make_shell()
+    assert shell.titleBarSide == "right"
+    shell.setTitleBarSide("left")
+    assert shell.titleBarSide == "left"
+    shell.setTitleBarSide("middle")
+    assert shell.titleBarSide == "left"
+
+
 def test_notifications_go_out_with_the_types_the_spec_asks_for():
     """QtDBus sent the id as int32 and the lists untyped, which strict daemons (mako, dunst, swaync) refuse."""
     from jeepney import new_method_call
@@ -266,3 +308,38 @@ def test_sidebar_pages_can_be_rearranged(make_shell):
     assert sidebar_order(old) == ["stations", "podcasts", *old[1:-1]]  # podcasts usually follows stations
     assert sidebar_order(["songs", "home"])[:3] == ["songs", "folders", "liked"]
     assert sorted(sidebar_order(["songs"])) == sorted(SIDEBAR_PAGES)
+
+
+def test_the_tray_menu_goes_to_the_sidebar_pages(make_shell):
+    from PySide6.QtWidgets import QMenu
+
+    shell, win, _player = make_shell()
+    shell._goto = QMenu("Go to")  # the tray itself isn't built without a tray (as here, offscreen)
+    shell._fill_goto()
+    titles = [a.text() for a in shell._goto.actions()]
+    assert titles[0] == "Home" and titles[-1] == "Settings" and "Liked Songs" in titles
+    assert "Podcasts" not in titles  # switched off by default, as in the sidebar
+    shell.setFeature("podcasts", True)
+    shell._fill_goto()
+    assert "Podcasts" in [a.text() for a in shell._goto.actions()]
+
+    went = []
+    shell.navigateRequested.connect(went.append)
+    win.hide()
+    next(a for a in shell._goto.actions() if a.text() == "Stats").trigger()
+    assert went == ["stats"] and win.visible
+    shell._goto.deleteLater()
+
+
+def test_start_page(make_shell):
+    shell, _win, _player = make_shell()
+    assert shell.startPage == "home" and shell.openingPage() == "home"
+    shell.setStartPage("albums")
+    assert shell.openingPage() == "albums"
+    shell.setStartPage("last")
+    shell.setUiValue("lastPage", "stats")
+    assert shell.openingPage() == "stats"
+    shell.setUiValue("lastPage", "nowhere")
+    assert shell.openingPage() == "home"
+    shell.setStartPage("bogus")
+    assert shell.startPage == "last"

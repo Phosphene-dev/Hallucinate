@@ -467,3 +467,24 @@ def test_scrobble_codes_read_last_fm_answers():
     two = {"scrobbles": {"@attr": {"accepted": 1}, "scrobble": [{"ignoredMessage": {"code": "0"}},
                                                                  {"ignoredMessage": {"code": "5"}}]}}
     assert scrobbling.scrobble_codes(two, 2) == [0, 5]
+
+
+def test_connecting_in_offline_mode_says_why(make_scrobbler, memory_keyring, monkeypatch):
+    """The tester saved their API key with offline mode on: Connect only went grey, with no word why."""
+    from hallucinate.core import net
+
+    _player, make = make_scrobbler
+    s = make()
+    net.set_offline(True)
+    try:
+        s.setApiCredentials("app-key", "app-secret")
+        assert wait_for(lambda: s.configured, timeout=4)
+        assert "offline mode" in s.status.lower()
+        monkeypatch.setattr(scrobbling, "api_request", lambda *a, **k: pytest.fail("went online"))
+        s.connectAccount()
+        assert "offline mode is on" in s.status.lower() and not s.busy
+        # and the credentials are kept for next time
+        again = make()
+        assert wait_for(lambda: again.configured, timeout=4)
+    finally:
+        net.set_offline(False)

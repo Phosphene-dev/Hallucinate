@@ -11,7 +11,7 @@ import re
 import sys
 import time
 
-from . import __version__
+from . import __version__, audiobackend
 
 LOG_LINES = 200
 _log = collections.deque(maxlen=LOG_LINES)
@@ -141,6 +141,10 @@ def report(player=None, library=None, theme_manager=None, window=None):
                          + (" [chosen in Settings]" if player.outputDevice else " [system default]"))
         except Exception:  # noqa: BLE001
             lines.append("Audio output: unknown")
+        if sys.platform.startswith("linux"):
+            lines.append("Sound system: " + (os.environ.get("QT_AUDIO_BACKEND") or "Qt's choice")
+                         + (" (no PipeWire server running)" if os.environ.get("QT_AUDIO_BACKEND") == "pulseaudio"
+                            and not audiobackend.pipewire_running() else ""))
         lines.append(f"Playback: ReplayGain {player.replayGainMode}, crossfade {player.crossfade:g} s, "
                      f"speed {player.speed:g}x, equalizer {'on' if player.eqEnabled else 'off'}"
                      + (f" ({player.eqPreset})" if player.eqEnabled else "")
