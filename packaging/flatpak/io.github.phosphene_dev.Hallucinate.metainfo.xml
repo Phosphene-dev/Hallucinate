@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.4.0" date="2026-10-26">
+      <description>
+        <p>Even mouse-wheel scrolling (high-resolution wheels too) with a scroll speed setting, the tray icon in the Flatpak with a Go to menu, and many new choices: crossfade that leaves albums gapless, a fade on pause and play, a volume step and maximum, the start page, quieter library scanning, and window buttons on the left.</p>
+        <p>Fixes: a crash at start where PipeWire is installed but not running, the queue's Export and Save buttons, pages scrolling down by themselves when resized, and a smoother first start after updating.</p>
+      </description>
+    </release>
     <release version="1.3.0" date="2026-10-25">
       <description>
         <p>Badges for explicit and Hi-Res (24-bit and higher) songs, the mouse wheel and a middle click on the volume icon, a volume slider in Now Playing, and a title bar built into the window.</p>

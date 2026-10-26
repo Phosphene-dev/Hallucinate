@@ -9,6 +9,7 @@ QtObject {
     readonly property bool showTrackInfo: player.showTrackInfo
     readonly property var badges: shell.songBadges
     readonly property bool explicitBadges: badges.explicitBadges === true
+    readonly property bool cleanBadges: badges.cleanBadges === true
     readonly property bool hiResBadges: badges.hiResBadges === true
     readonly property bool bitDepth: badges.bitDepth === true
     readonly property bool masterBadge: badges.masterBadge === true

@@ -329,3 +329,17 @@ def test_the_tray_menu_goes_to_the_sidebar_pages(make_shell):
     next(a for a in shell._goto.actions() if a.text() == "Stats").trigger()
     assert went == ["stats"] and win.visible
     shell._goto.deleteLater()
+
+
+def test_start_page(make_shell):
+    shell, _win, _player = make_shell()
+    assert shell.startPage == "home" and shell.openingPage() == "home"
+    shell.setStartPage("albums")
+    assert shell.openingPage() == "albums"
+    shell.setStartPage("last")
+    shell.setUiValue("lastPage", "stats")
+    assert shell.openingPage() == "stats"
+    shell.setUiValue("lastPage", "nowhere")
+    assert shell.openingPage() == "home"
+    shell.setStartPage("bogus")
+    assert shell.startPage == "last"

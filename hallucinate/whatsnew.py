@@ -2,6 +2,12 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "1.4.0": [
+        "The mouse wheel scrolls evenly, high-resolution wheels too (Settings → Appearance → Scroll speed).",
+        "The tray icon works in the Flatpak, with a Go to menu of your pages and the media controls.",
+        "More choices: crossfade that leaves albums gapless, a fade on pause, volume step and maximum, the page "
+        "it opens on, notifications only while you're elsewhere, and window buttons on the left.",
+    ],
     "1.3.0": [
         "Songs can show an E when they're explicit and a Hi-Res badge when they're 24-bit or more "
         "(Settings → Appearance, where you can also show every song's bit depth).",

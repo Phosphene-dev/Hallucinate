@@ -222,6 +222,7 @@ ApplicationWindow {
         remember({ kind: "section", name: name })
         route0 = route
         section = name
+        if (shell.startPage === "last") shell.setUiValue("lastPage", name)
         stack.clear()
         stack.push(pageFor(name))
         if (searchField.text.length > 0) searchField.text = ""
@@ -786,6 +787,7 @@ ApplicationWindow {
         anchors.fill: parent
         z: -1
         animated: shell.ambientMotion && !shell.reduceMotion && window.active && !nowPlaying.covering && !Theme.retro
+                  && (!shell.ambientOnlyPlaying || player.playing)
         visible: !nowPlaying.covering && !Theme.retro  // a retro theme is flat, like the desktops it remembers
     }
 
@@ -1007,6 +1009,6 @@ ApplicationWindow {
         }
     }
 
-    Component.onCompleted: go("home")
+    Component.onCompleted: go(shell.openingPage())
     WindowEdges {}  // resizing by the edges when the title bar is built in (no system frame)
 }

@@ -389,6 +389,7 @@ class Player(QObject):
             self._volume = stored_volume if math.isfinite(stored_volume) else 0.8
         except (TypeError, ValueError):
             self._volume = 0.8
+        self._resume_on_start = str(self._settings.value("resumeOnStart", "false")).lower() == "true"
         self._volume_step = self._float_setting("volumeStep", 0.05, 0.01, 0.2)  # one wheel notch or arrow key
         self._max_volume = self._float_setting("maxVolume", 1.0, 0.1, 1.0)  # a cap, for loud amplifiers
         self._volume = min(self._volume, self._max_volume)
@@ -1586,6 +1587,17 @@ class Player(QObject):
         if steps > 0 and self.muted:
             self.toggleMute()
         self.setVolume(self._volume + steps * self._volume_step)
+
+    @Property(bool, notify=audioSettingsChanged)
+    def resumeOnStart(self):
+        """Start playing what was playing when Hallucinate last closed, as soon as it opens."""
+        return self._resume_on_start
+
+    @Slot(bool)
+    def setResumeOnStart(self, on):
+        self._resume_on_start = bool(on)
+        self._settings.setValue("resumeOnStart", "true" if on else "false")
+        self.audioSettingsChanged.emit()
 
     @Property(float, notify=audioSettingsChanged)
     def volumeStep(self):

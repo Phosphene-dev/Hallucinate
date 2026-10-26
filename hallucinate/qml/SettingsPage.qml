@@ -17,6 +17,15 @@ Item {
         var y = sidebarOrderBox.mapToItem(flick.contentItem, 0, 0).y - 20
         flick.contentY = Math.max(0, Math.min(y, flick.contentHeight - flick.height))
     }
+    // the section at the top of the view, lit in the jump list
+    readonly property int currentSection: {
+        var y = flick.contentY + 40, at = 0
+        for (var i = 0; i < sectionIds.length; i++) {
+            var s = sectionItem(i)
+            if (s && s.visible && s.y <= y) at = i
+        }
+        return at
+    }
     function jumpTo(i) {
         page.query = ""
         search.text = ""
@@ -63,6 +72,7 @@ Item {
                     visible: (modelData !== "Podcasts" || shell.features.podcasts !== false)
                              && (modelData !== "Music servers" || shell.features.servers === true)
                     text: modelData
+                    selected: index === page.currentSection
                     onClicked: page.jumpTo(index)
                 }
             }
@@ -97,7 +107,7 @@ Item {
             id: sec_appearance
             objectName: "settings_appearance"
             title: "Appearance"
-            keywords: "theme colours colors font text size bigger smaller accent album art ambient motion reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
+            keywords: "theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
             query: page.query
             Row {
                 spacing: 12
@@ -230,6 +240,29 @@ Item {
                 onToggled: shell.setAmbientMotion(checked)
             }
             StyledCheck {
+                objectName: "ambientOnlyPlaying"
+                visible: shell.ambientMotion
+                leftPadding: 28
+                text: "Only while music plays (it rests while paused, using no power)"
+                checked: shell.ambientOnlyPlaying
+                onToggled: shell.setAmbientOnlyPlaying(checked)
+            }
+            Flow {
+                visible: shell.features.visualizer !== false
+                width: parent.width
+                spacing: 10
+                Text { textFormat: Text.PlainText; text: "Visualizer while the window is in the background"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                StyledCombo {
+                    objectName: "visualizerBackground"
+                    readonly property var modes: ["full", "slower", "paused"]
+                    width: 220
+                    model: ["Full speed", "Slower (saves power)", "Paused"]
+                    selection: Math.max(0, modes.indexOf(shell.visualizerBackground))
+                    onActivated: shell.setVisualizerBackground(modes[currentIndex])
+                    Accessible.name: "Visualizer while the window is in the background"
+                }
+            }
+            StyledCheck {
                 objectName: "reduceMotion"
                 text: "Reduce motion (no page transitions, zooms, spinning record or growing buttons)"
                 checked: shell.reduceMotion
@@ -285,6 +318,12 @@ Item {
                     text: "Mark explicit songs with an E"
                     checked: Rows.explicitBadges
                     onToggled: shell.setSongBadge("explicitBadges", checked)
+                }
+                StyledCheck {
+                    objectName: "cleanBadges"
+                    text: "Mark clean (edited) versions with a C"
+                    checked: Rows.cleanBadges
+                    onToggled: shell.setSongBadge("cleanBadges", checked)
                 }
                 StyledCheck {
                     objectName: "hiResBadges"
@@ -568,7 +607,7 @@ Item {
             id: sec_playback
             objectName: "settings_playback"
             title: "Playback"
-            keywords: "output device audio replaygain loudness preamp measure crossfade gapless album fade pause resume volume step wheel maximum limit loud speed sleep timer"
+            keywords: "output device audio replaygain loudness preamp measure crossfade gapless album fade pause resume start startup open volume step wheel maximum limit loud speed sleep timer"
             query: page.query
             Flow {  // wraps in a narrow window
                 width: parent.width
@@ -680,6 +719,12 @@ Item {
                 }
             }
             StyledCheck {
+                objectName: "resumeOnStart"
+                text: "Start playing when Hallucinate opens (carry on where it was)"
+                checked: player.resumeOnStart
+                onToggled: player.setResumeOnStart(checked)
+            }
+            StyledCheck {
                 objectName: "crossfadeAlbums"
                 visible: player.crossfade > 0
                 text: "Crossfade between songs of the same album too (off: an album plays gaplessly, as it runs)"
@@ -735,12 +780,27 @@ Item {
             id: sec_library
             objectName: "settings_library"
             title: "Library"
-            keywords: "genres genre music folders scan rescan health tags files ratings stars cover art cover.jpg embed import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums backup export your data move computer"
+            keywords: "genres genre music folders scan rescan start startup watch watching health tags files ratings stars cover art cover.jpg embed import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums backup export your data move computer"
             query: page.query
             Text {
                 textFormat: Text.PlainText
-                text: "Folders are scanned in the background and watched for changes."
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: "Folders are scanned in the background" + (library.scanAtStart ? " at every start" : "")
+                      + (library.watching ? " and watched for changes." : ". Rescan picks up what's new.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            StyledCheck {
+                objectName: "scanAtStart"
+                text: "Look for new and changed files when Hallucinate starts"
+                checked: library.scanAtStart
+                onToggled: library.setScanAtStart(checked)
+            }
+            StyledCheck {
+                objectName: "watchFolders"
+                text: "Watch the folders and pick up changes as they happen"
+                checked: library.watching
+                onToggled: library.setWatching(checked)
             }
             Repeater {
                 model: library.folders
@@ -1701,7 +1761,7 @@ Item {
             id: sec_desktop
             objectName: "settings_desktop"
             title: "Desktop"
-            keywords: "tray notifications focus close quit minimize exit background mini player title bar window frame decorations frameless maximize buttons left right side"
+            keywords: "tray notifications focus close quit minimize exit background mini player title bar window frame decorations frameless maximize buttons left right side start page open on"
             query: page.query
             StyledCheck {
                 visible: shell.trayAvailable
@@ -1783,6 +1843,20 @@ Item {
                 text: "Even while Hallucinate's window is in front (off: only when you're elsewhere)"
                 checked: shell.notifyAlways
                 onToggled: shell.setNotifyAlways(checked)
+            }
+            Flow {
+                width: parent.width
+                spacing: 10
+                Text { textFormat: Text.PlainText; text: "Open on"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                StyledCombo {
+                    objectName: "startPage"
+                    readonly property var pages: ["home", "last", "albums", "artists", "songs", "folders", "liked", "stats", "history"]
+                    width: 220
+                    model: ["Home", "The page I left it on", "Albums", "Artists", "Songs", "Folders", "Liked Songs", "Stats", "History"]
+                    selection: Math.max(0, pages.indexOf(shell.startPage))
+                    onActivated: shell.setStartPage(pages[currentIndex])
+                    Accessible.name: "Page Hallucinate opens on"
+                }
             }
             PillButton { text: "Open mini player"; onClicked: shell.toggleMini() }
 

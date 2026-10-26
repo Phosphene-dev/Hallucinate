@@ -46,6 +46,9 @@
 | **Similar artists** (from Last.fm, if you set it up) | **Search that forgives a typo** |
 | ![Similar artists on an artist page, with Play a mix](docs/screenshots/similar-artists.png) | ![Search showing results for the closest match](docs/screenshots/search-typo.png) |
 
+New in 1.4: even mouse-wheel scrolling, the tray icon in the Flatpak, and more choices for playback, startup
+and the window.
+
 New in 1.3: E and Hi-Res badges on songs, the mouse wheel on the volume icon, and a title bar built into the
 window.
 

@@ -49,7 +49,7 @@ def seed(tmp_path):
                 "genre": "Dream Pop", "duration": 180.0 + i, "fmt": "FLAC", "codec": "FLAC", "bitrate": 900_000,
                 "sample_rate": 96000 if (n, i) == (0, 0) else 44100,
                 # one hi-res, explicit song (its badges are drawn and can be switched off)
-                "bit_depth": 24 if (n, i) == (0, 0) else 16, "explicit": 1 if (n, i) == (0, 0) else 0,
+                "bit_depth": 24 if (n, i) == (0, 0) else 16, "explicit": 1 if (n, i) == (0, 0) else 2 if (n, i) == (0, 1) else 0,
             })
             for _ in range(i + 1):
                 db.record_play(path)
@@ -1355,7 +1355,7 @@ FEATURE_LABELS = {"liked": "Liked Songs", "folders": "Folders", "stats": "Stats"
                   "stations": "Internet radio", "podcasts": "Podcasts"}
 # Words that only describe something (Settings' notes about offline mode or backups), not a way into the feature.
 FEATURE_PROSE = ("folders that can't be found", "folders are scanned", "import history", "import listening history",
-                 "no lyrics, cover, genre or bio lookups", "playlists, history, stations", "music's stats")
+                 "no lyrics, cover, genre or bio lookups", "watch the folders", "playlists, history, stations", "music's stats")
 
 
 def visible_texts(window):
@@ -1520,9 +1520,12 @@ def test_explicit_and_hi_res_badges_show_and_switch_off(qapp, app_window):
         return found
 
     try:
-        # the one 24-bit explicit song: an E and a Hi-Res badge on its row, and in the player bar while it plays
         # the one 24-bit explicit song: an E and a Hi-Res badge on its row
         assert wait_for(lambda: len(shown("explicitBadge")) == 1 and len(shown("hiResBadge")) == 1)
+        assert not shown("cleanBadge")  # a C for the clean one only when asked for
+        shell.setSongBadge("cleanBadges", True)
+        assert wait_for(lambda: len(shown("cleanBadge")) == 1)
+        shell.setSongBadge("cleanBadges", False)
         shell.setSongBadge("bitDepth", True)  # every song's depth: the other three 16-bit songs say so too
         assert wait_for(lambda: len(shown("hiResBadge")) == 4)
         # the Hi-Res badge as a gold M (issue 82): an M on the hi-res song, and every song keeps its depth pill

@@ -106,6 +106,29 @@ finding, following and playing podcasts.
 - [ ] The whole app from the keyboard alone: Tab through every page, arrows in lists, Enter to play, Menu key
   (or Shift+F10) for menus, Esc closes dialogs.
 
+### 8a. New in 1.4, on every desktop
+Run these on each desktop you have: KDE Plasma (Wayland and X11), GNOME (Wayland, with and without the
+AppIndicator extension), Cinnamon, XFCE, MATE, COSMIC, and the tiling compositors (Hyprland, niri, Sway with
+Waybar's tray). Note which desktop and session (`echo $XDG_CURRENT_DESKTOP $XDG_SESSION_TYPE`) with any failure.
+- [ ] Tray icon, from the Flatpak too: it appears with the window open, stays while it's open, and turns up
+  even if the bar's tray starts after Hallucinate. Click brings the window back; the menu's Go to opens each
+  page; Play/Pause, Previous and Next work. GNOME without the AppIndicator extension: no icon, and closing to
+  the background says how to get the window back.
+- [ ] Title bar default on a fresh config: built in on GNOME Wayland, Hyprland, niri and Sway; the desktop's
+  own frame on KDE, COSMIC and X11 desktops. Buttons on the left (Settings → Desktop) put close first.
+- [ ] Mouse wheel: one notch moves the same distance on every page (Settings is the long one); quick notches
+  add up; a high-resolution wheel (Logitech G502 X and similar) moves as far as a normal one; Scroll speed
+  changes it. A touchpad still scrolls smoothly.
+- [ ] Notifications: none while Hallucinate's window is in front, one per song while you're in another window
+  (and every time with "Even while … in front").
+- [ ] Crossfade on: an album plays gaplessly; shuffle across albums crossfades. Fade on pause and play; play
+  pressed during the fade-out comes straight back.
+- [ ] Volume step and maximum volume (Settings → Playback) apply to the wheel on every volume control and to
+  the Up/Down keys.
+- [ ] Open on: Home, a page, or "the page I left it on"; Start playing when Hallucinate opens.
+- [ ] Library: switching off the start-up scan and the folder watcher; Rescan still finds new songs.
+- [ ] Visualizer in the background: full, slower, paused (watch CPU in a system monitor).
+
 ### 9a. New in 1.3 (the first tester's report)
 - [ ] Settings → Desktop → "Show desktop notifications when tracks change": the next song shows a notification
   with its album and cover (mako, dunst, swaync and GNOME/KDE alike); skipping through songs updates one

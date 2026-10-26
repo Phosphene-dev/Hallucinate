@@ -90,13 +90,24 @@ def _attr(node, path, name):
     return (found.get(name) or "").strip() if found is not None else ""
 
 
+def _xml(data, what):
+    """Parse XML from the internet (or a file someone sent). Feeds and OPML never need a DOCTYPE, and one
+    that declares entities is the way to make a parser expand a few bytes into gigabytes ("billion laughs"):
+    such documents are refused before parsing."""
+    raw = data.encode("utf-8") if isinstance(data, str) else bytes(data)
+    head = raw[:65536].upper()
+    if b"<!ENTITY" in head or b"<!DOCTYPE" in head:
+        raise ValueError(f"That isn't {what}")
+    try:
+        return ET.fromstring(raw)
+    except ET.ParseError as exc:
+        raise ValueError(f"That isn't {what}") from exc
+
+
 def parse_feed(data, feed_url=""):
     """(podcast, episodes) from an RSS or Atom feed. Episodes without audio are left out. Raises ValueError
     when it isn't a feed."""
-    try:
-        root = ET.fromstring(data)
-    except ET.ParseError as exc:
-        raise ValueError("That isn't a podcast feed") from exc
+    root = _xml(data, "a podcast feed")
     tag = root.tag.split("}")[-1]
     if tag == "rss":
         channel = root.find("channel")
@@ -229,10 +240,7 @@ def fetch_feed_if_changed(url, etag="", modified="", timeout=20):
 # --- OPML ------------------------------------------------------------------------------------------------
 def parse_opml(text):
     """[{title, feed_url}] from an OPML subscription list (what other podcast apps export)."""
-    try:
-        root = ET.fromstring(text.encode("utf-8") if isinstance(text, str) else text)
-    except ET.ParseError as exc:
-        raise ValueError("That isn't an OPML file") from exc
+    root = _xml(text, "an OPML file")
     feeds, seen = [], set()
     for outline in root.iter("outline"):
         url = (outline.get("xmlUrl") or outline.get("xmlurl") or "").strip()

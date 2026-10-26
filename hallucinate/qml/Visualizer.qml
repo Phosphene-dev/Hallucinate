@@ -8,6 +8,11 @@ Item {
     id: vis
     property string style: "liquid"
     property bool active: visible
+    property real maxFps: 0             // 0: every frame; otherwise at most this many (see visualizerBackground)
+    property real _wait: 0
+    // the window in the background: as fast, slower or paused (Settings → Appearance)
+    readonly property bool inFront: !Window.window || Window.window.active !== false
+    readonly property bool running: active && (inFront || shell.visualizerBackground !== "paused")
     property real quality: 0.5          // shader resolution relative to the item (they are soft anyway)
     readonly property bool gpu: GraphicsInfo.api !== GraphicsInfo.Software && GraphicsInfo.api !== GraphicsInfo.Unknown
     property var unusable: ({})         // styles whose shader this computer's graphics driver couldn't run
@@ -36,9 +41,13 @@ Item {
 
     // Paused, it settles and then stops drawing until the music starts again.
     FrameAnimation {
-        running: vis.active && vis.shaderStyle && (player.playing || vis.energy > 0.01 || vis.beat > 0.01)
+        running: vis.running && vis.shaderStyle && (player.playing || vis.energy > 0.01 || vis.beat > 0.01)
         onTriggered: {
-            var dt = Math.min(0.1, frameTime)
+            vis._wait += frameTime
+            var cap = vis.maxFps > 0 ? vis.maxFps : (!vis.inFront && shell.visualizerBackground === "slower" ? 20 : 0)
+            if (cap > 0 && vis._wait < 1 / cap) return  // nothing changes, so nothing is drawn this frame
+            var dt = Math.min(0.1, vis._wait)
+            vis._wait = 0
             var b = vis.avg(0, 4), m = vis.avg(4, 14), tr = vis.avg(14, 24)
             vis.bass = vis.follow(vis.bass, b, dt)
             vis.mid = vis.follow(vis.mid, m, dt)

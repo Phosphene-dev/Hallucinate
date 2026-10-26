@@ -3,7 +3,10 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [1.4.0] - 2026-10-26
+
+The second round of tester feedback: even mouse-wheel scrolling, the tray icon in the Flatpak, a crash fix for
+systems with PipeWire installed but not running, and many new settings.
 
 ### Fixed
 - Hallucinate crashed on start where the PipeWire client library is installed but no PipeWire server runs (a
@@ -23,6 +26,15 @@ All notable changes to this project are documented here. Format based on
 - The Flatpak had no tray icon: the sandbox couldn't reach the desktop's tray (StatusNotifierWatcher). It can now,
   so "Keep playing in the background" leaves an icon in KDE's tray, GNOME's AppIndicator extension, Waybar and
   others.
+- A tray that starts after Hallucinate (Waybar or a panel still loading at login) got no icon; Hallucinate now
+  looks again for a couple of minutes. The icon stays while the window is open.
+
+- The first start after an update reads every music file again for what the new version stores; it now leaves
+  the window time between files, so it stays smooth while that runs in the background.
+
+### Security
+- Podcast feeds and OPML files that declare XML entities (the "billion laughs" trick, which makes a few bytes
+  expand into gigabytes) are refused before they're parsed.
 
 ### Added
 - The web remote, `hallucinate cmd` and the terminal player show E and Hi-Res too; an album's format line says
@@ -37,6 +49,14 @@ All notable changes to this project are documented here. Format based on
   brings it straight back.
 - Volume step (1–10% per wheel notch or arrow key) and a maximum volume, for a loud amplifier: Settings →
   Playback. Every volume wheel (player bar, Now Playing, the deck) now moves by the same step.
+- Startup choices: start playing where it left off (Settings → Playback), and which page it opens on, or the
+  one it was left on (Settings → Desktop).
+- Library scanning can be quieter: switch off the scan at every start, or watching the folders for changes
+  (a slow network disk, a huge library); Rescan always works.
+- The ambient backdrop drifts only while music plays (switchable), and the visualizer can run at full speed,
+  slower or not at all while the window is in the background (Settings → Appearance).
+- An optional C badge for clean (edited) versions, beside the E for explicit.
+- Settings lights the section you're in, in the list at the top.
 - Track-change notifications skip songs that change while Hallucinate's window is in front (it shows them
   already); Settings → Desktop can send them every time.
 - The built-in title bar's buttons can go on the left (close first). It's now on by default only where the

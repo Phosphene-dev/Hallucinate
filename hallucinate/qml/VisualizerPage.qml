@@ -29,7 +29,7 @@ Item {
                 objectName: "pageVisualizer"
                 anchors.fill: parent
                 style: shell.visualizerStyle
-                active: page.visible && Window.window && Window.window.active !== false
+                active: page.visible
             }
 
             // Legibility for the overlays

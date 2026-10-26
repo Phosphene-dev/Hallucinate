@@ -4,7 +4,7 @@ import sqlite3
 import sys
 import time
 
-from PySide6.QtCore import Property, QObject, QSettings, Signal, Slot
+from PySide6.QtCore import Property, QObject, QSettings, QTimer, Signal, Slot
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import QMenu, QSystemTrayIcon
 
@@ -37,7 +37,7 @@ def sidebar_order(saved):
 
 
 # masterBadge: the Hi-Res badge as a gold M ("Master", as some stores mark it) instead of a "Hi-Res" pill
-SONG_BADGES = {"explicitBadges": True, "hiResBadges": True, "bitDepth": False, "masterBadge": False}
+SONG_BADGES = {"explicitBadges": True, "cleanBadges": False, "hiResBadges": True, "bitDepth": False, "masterBadge": False}
 
 # Tiling compositors and window managers that have no minimize: offering it there would do nothing.
 NO_MINIMIZE = ("hyprland", "sway", "i3", "niri", "river", "dwm", "bspwm", "qtile", "awesome")
@@ -92,6 +92,9 @@ class DesktopShell(QObject):
         self._notify_always = self._settings.value("shell/notifyAlways", False, bool)
         self._sidebar_collapsed = self._settings.value("ui/sidebarCollapsed", False, bool)
         self._ambient_motion = self._settings.value("ui/ambientMotion", True, bool)
+        self._ambient_playing = self._settings.value("ui/ambientOnlyPlaying", True, bool)  # still while paused
+        vb = str(self._settings.value("ui/visualizerBackground", "slower"))
+        self._visualizer_background = vb if vb in ("full", "slower", "paused") else "slower"
         # An album may have several genres: albums and artists show them all, a song only its album's main one
         self._all_genres_albums = self._settings.value("ui/allGenresAlbums", True, bool)
         self._all_genres_songs = self._settings.value("ui/allGenresSongs", False, bool)
@@ -129,7 +132,14 @@ class DesktopShell(QObject):
 
     # --- tray -------------------------------------------------------------------------
     def _build_tray(self):
+        if self._tray is not None:
+            return
         if not QSystemTrayIcon.isSystemTrayAvailable():
+            # a bar whose tray starts after Hallucinate (Waybar, a panel still loading at login): look again
+            # for a couple of minutes
+            self._tray_tries = getattr(self, "_tray_tries", 0) + 1
+            if self._tray_tries <= 24:
+                QTimer.singleShot(5000, self, self._build_tray)
             return
         self._tray = QSystemTrayIcon(self._icon, self)
         menu = QMenu()
@@ -157,6 +167,7 @@ class DesktopShell(QObject):
         self._tray.setVisible(self._tray_pref)
         self._refresh()
         self._sync_quit_policy()
+        self.settingsChanged.emit()  # Settings shows the tray switch now
 
     PAGE_TITLES = {"home": "Home", "albums": "Albums", "artists": "Artists", "songs": "Songs", "folders": "Folders",
                    "liked": "Liked Songs", "stats": "Stats", "history": "History", "recap": "Recap",
@@ -333,6 +344,30 @@ class DesktopShell(QObject):
         self.settingsChanged.emit()
 
     @Property(bool, notify=settingsChanged)
+    def ambientOnlyPlaying(self):
+        """The backdrop drifts only while music plays, and rests (drawing nothing new) while paused."""
+        return self._ambient_playing
+
+    @Slot(bool)
+    def setAmbientOnlyPlaying(self, on):
+        self._ambient_playing = bool(on)
+        self._settings.setValue("ui/ambientOnlyPlaying", self._ambient_playing)
+        self.settingsChanged.emit()
+
+    @Property(str, notify=settingsChanged)
+    def visualizerBackground(self):
+        """What the visualizer does while the window isn't in front: "full", "slower" (20 frames a second) or
+        "paused"."""
+        return self._visualizer_background
+
+    @Slot(str)
+    def setVisualizerBackground(self, mode):
+        if mode in ("full", "slower", "paused"):
+            self._visualizer_background = mode
+            self._settings.setValue("ui/visualizerBackground", mode)
+            self.settingsChanged.emit()
+
+    @Property(bool, notify=settingsChanged)
     def allGenresAlbums(self):
         """Album and artist pages show every genre (off: only the main one)."""
         return self._all_genres_albums
@@ -402,6 +437,25 @@ class DesktopShell(QObject):
         self._title_bar = bool(on)
         self._settings.setValue("ui/customTitleBar", self._title_bar)
         self.settingsChanged.emit()
+
+    @Property(str, notify=settingsChanged)
+    def startPage(self):
+        """The page Hallucinate opens on: a sidebar page, or "last" for wherever it was left."""
+        page = str(self._settings.value("ui/startPage", "home"))
+        return page if page == "last" or page in SIDEBAR_PAGES else "home"
+
+    @Slot(str)
+    def setStartPage(self, page):
+        if page == "last" or page in SIDEBAR_PAGES:
+            self._settings.setValue("ui/startPage", page)
+            self.settingsChanged.emit()
+
+    @Slot(result=str)
+    def openingPage(self):
+        page = self.startPage
+        if page == "last":
+            page = str(self._settings.value("ui/lastPage", "home"))
+        return page if page in SIDEBAR_PAGES or page == "settings" else "home"
 
     @Property(str, notify=settingsChanged)
     def titleBarSide(self):

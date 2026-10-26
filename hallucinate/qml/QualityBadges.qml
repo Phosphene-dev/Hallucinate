@@ -13,6 +13,7 @@ Row {
     property bool light: false       // white, over Now Playing's dark backdrop
     property real size: 16
     readonly property bool showExplicit: Rows.explicitBadges && explicitTag === 1
+    readonly property bool showClean: Rows.cleanBadges && explicitTag === 2
     readonly property bool hiRes: bitDepth >= 24 || bitDepth === 1
     readonly property bool showHiRes: Rows.hiResBadges && hiRes
     readonly property bool showDepth: Rows.bitDepth && bitDepth > 0
@@ -23,7 +24,7 @@ Row {
         : bitDepth + "-bit" + (sampleRate > 0 ? " · " + (sampleRate / 1000).toFixed(sampleRate % 1000 ? 1 : 0) + " kHz" : "")
     readonly property color ink: light ? Qt.rgba(1, 1, 1, 0.85) : Theme.textDim
     spacing: 4
-    visible: showExplicit || master || pill
+    visible: showExplicit || showClean || master || pill
 
     Rectangle {
         objectName: "explicitBadge"
@@ -46,6 +47,30 @@ Row {
         HoverHandler { id: eHover }
         ToolTip.visible: eHover.hovered
         ToolTip.text: "Explicit"
+    }
+    Rectangle {
+        objectName: "cleanBadge"
+        visible: badges.showClean
+        anchors.verticalCenter: parent.verticalCenter
+        width: badges.size; height: badges.size
+        radius: Theme.round(3)
+        color: "transparent"
+        border.width: 1
+        border.color: badges.ink
+        Text {
+            textFormat: Text.PlainText
+            anchors.centerIn: parent
+            text: "C"
+            color: badges.ink
+            font.family: Theme.fontFamily
+            font.pixelSize: Math.round(badges.size * 0.66)
+            font.weight: Font.Bold
+        }
+        Accessible.role: Accessible.StaticText
+        Accessible.name: "Clean version"
+        HoverHandler { id: cHover }
+        ToolTip.visible: cHover.hovered
+        ToolTip.text: "Clean version"
     }
     Rectangle {
         objectName: "masterBadge"
