@@ -65,7 +65,7 @@ Item {
         margins: 10
         background: Rectangle {
             radius: Theme.round(18)
-            color: Theme.popup  // nearly opaque: the page behind mustn't show through the text
+            color: Theme.panel  // solid: the page behind mustn't show through the text
             Bevel {}
             border.width: 1
             border.color: Theme.stroke
