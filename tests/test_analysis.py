@@ -112,7 +112,9 @@ def test_the_appimage_starts_the_python_inside_it(monkeypatch, tmp_path):
     inside.parent.mkdir()
     inside.write_text("")
     program, args = analysis.command()
-    assert program == str(inside) and args[:2] == ["-s", "-c"]
+    assert program == str(inside) and args[0] == "-s" and "-c" in args
+    if sys.version_info >= (3, 11):  # not the current folder first: a folder named hallucinate there isn't the app
+        assert "-P" in args
     assert os.path.basename(program).startswith("python")
 
 

@@ -17,6 +17,8 @@ Hallucinate for more Linux distributions: a .deb, an .rpm and a Nix flake.
 - Copy debug info says which package it's running from (deb, rpm or nix).
 
 ### Fixed
+- Started from a folder that holds a folder named `hallucinate` (the source code, say), the AppImage and its
+  analysis helper ran that code instead of their own.
 - The analysis helper (waveforms, ReplayGain, the spectrum analyzer) couldn't start when PySide6 is found
   through a launcher script rather than `PYTHONPATH`, as on Nix. It now gets the app's own module path.
 

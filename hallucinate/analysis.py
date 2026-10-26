@@ -46,7 +46,9 @@ def command():
         if not os.path.isfile(inside):
             return python, ["--analysis-worker"]
         python = inside
-    return python, ["-s", "-c", "import sys; from hallucinate.analysis import serve; sys.exit(serve())"]
+    # -P (3.11+): not the current folder first, where a folder named hallucinate would be imported instead
+    safe = ["-P"] if sys.version_info >= (3, 11) else []
+    return python, ["-s", *safe, "-c", "import sys; from hallucinate.analysis import serve; sys.exit(serve())"]
 
 
 def _helper_path(pythonpath=""):

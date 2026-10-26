@@ -22,6 +22,19 @@ tar -xzf "$work/nfpm.tgz" -C "$work" nfpm
 cp -a "$appdir" "$work/app"
 rm -f "$work/app/hallucinate.desktop" "$work/app/hallucinate.png" "$work/app/.DirIcon"
 
+# Every library the bundle links to and doesn't carry must be a dependency of the packages (nfpm.yaml's rpm list,
+# by soname), or a clean system installs them without it. Optional plugins' libraries are left out.
+optional='^(ld-linux-x86-64\.so\.2|lib(c|m|dl|rt|pthread|resolv|gcc_s)\.so\.[0-9]+|libQt6EglFsKmsGbmSupport\.so\.6|libgbm\.so\.1|libgtk-3\.so\.0|libgdk-3\.so\.0|libgdk_pixbuf-2\.0\.so\.0|libatk-1\.0\.so\.0|libcairo(-gobject)?\.so\.2|libpango(cairo)?-1\.0\.so\.0|libharfbuzz\.so\.0)$'
+find "$work/app" -name '*.so*' -type f -exec objdump -p {} + 2>/dev/null | awk '/NEEDED/{print $2}' | sort -u > "$work/needed"
+find "$work/app" -name '*.so*' -printf '%f\n' | sort -u > "$work/carried"
+missing="$(comm -23 "$work/needed" "$work/carried" | grep -Ev "$optional" | while read -r so; do
+  grep -qF -- "- $so()(64bit)" "$repo/packaging/linux/nfpm.yaml" || echo "$so"; done)"
+if [ -n "$missing" ]; then
+  echo "Libraries the bundle needs that the packages don't depend on (add them to packaging/linux/nfpm.yaml):" >&2
+  echo "$missing" >&2
+  exit 1
+fi
+
 for kind in deb rpm; do
   sed "s/system}\"/$kind}\"/" "$repo/packaging/linux/hallucinate" > "$work/hallucinate-$kind"
   # (nFPM expands variables only in a few fields: the paths are filled in here)
