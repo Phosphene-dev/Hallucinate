@@ -1703,3 +1703,25 @@ def test_a_page_at_the_top_stays_there_when_the_window_is_resized(qapp, app_wind
     # while it lays out again, so only "not at the top" is certain)
     assert gap() > 1
     assert not warnings, warnings[:3]
+
+
+@pytest.mark.parametrize("width", [1280, 900])
+def test_every_queue_button_is_inside_the_panel(qapp, app_window, width):
+    """Export and Save were pushed off the left of the queue panel by the buttons after them."""
+    from PySide6.QtCore import QRectF
+
+    window, objects, warnings = app_window
+    window.resize(width, 800)
+    window.setProperty("queueOpen", True)
+    for _ in range(8):
+        qapp.processEvents()
+    actions = window.findChild(QObject, "queueActions")
+    panel = actions.parentItem()
+    box = panel.mapRectToScene(QRectF(0, 0, panel.width(), panel.height()))
+    shown = [b for b in actions.childItems() if b.isVisible()]
+    assert len(shown) >= 3
+    for b in shown:
+        r = b.mapRectToScene(QRectF(0, 0, b.width(), b.height()))
+        assert box.contains(r), (b.property("text"), r, box)
+    window.setProperty("queueOpen", False)
+    assert not warnings, warnings[:3]
