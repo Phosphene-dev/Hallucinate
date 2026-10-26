@@ -214,6 +214,7 @@ class Library(QObject):
     wallChanged = Signal()
     foldersChanged = Signal()
     scanPrefsChanged = Signal()
+    _reveal_failed = Signal(str)  # no file manager took "show in folder": open the folder the plain way
     filtersChanged = Signal()
     genreListChanged = Signal()
     composerListChanged = Signal()
@@ -295,6 +296,7 @@ class Library(QObject):
         self._hidden_count = len(self._db.hidden_paths())
         self._watcher = QFileSystemWatcher(self)
         self._watcher.directoryChanged.connect(self._on_dir_changed)
+        self._reveal_failed.connect(self._open_folder)
         # Settings → Library: look for new and changed files at every start, and as they change. Either can be
         # switched off (a slow network disk, a huge library); Rescan always works.
         self._prefs = QSettings("hallucinate", "hallucinate")
@@ -1138,11 +1140,24 @@ class Library(QObject):
 
     @Slot(str)
     def showInFolder(self, path):
-        """Open the folder holding a song (or a folder itself) in the system's file manager."""
+        """Show a song in the system's file manager, selected in its folder (or a folder itself): through the
+        desktop portal in the Flatpak, the file manager's own interface outside it, and else by opening the
+        folder (see reveal)."""
         target = self._db.file_of(path) if path else ""
         folder = target if os.path.isdir(target) else os.path.dirname(target)
-        if folder and os.path.isdir(folder):
-            QDesktopServices.openUrl(QUrl.fromLocalFile(folder))
+        if not (folder and os.path.isdir(folder)):
+            return
+        from . import reveal
+
+        def work():
+            if not reveal.show(target if os.path.exists(target) else folder):
+                self._reveal_failed.emit(folder)
+
+        threading.Thread(target=work, daemon=True, name="reveal").start()
+
+    @Slot(str)
+    def _open_folder(self, folder):
+        QDesktopServices.openUrl(QUrl.fromLocalFile(folder))
 
     @Slot()
     def restoreHidden(self):

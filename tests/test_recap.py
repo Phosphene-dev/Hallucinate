@@ -96,6 +96,7 @@ def test_user_library_recap(qapp, db, tmp_path):
         os.environ["HOME"] = str(tmp_path)
         saved = ul.saveRecapImage(img)
         assert saved.endswith(".png") and os.path.exists(saved)
+        assert os.path.basename(os.path.dirname(saved)) == "Hallucinate"  # its own folder (the Flatpak may write only there)
         assert ul.saveRecapImage(QImage()) == ""
     finally:
         ul.shutdown()

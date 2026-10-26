@@ -8,6 +8,11 @@ All notable changes to this project are documented here. Format based on
 ### Fixed
 - "Add to playlist" in a song's, album's or collection's menu added nothing (#92): the playlist items looked for
   the songs in the wrong menu. Now it adds them, and says so.
+- "Show in folder" did nothing in the Flatpak (#95): the sandbox can't open a folder the way Qt asks. It now asks
+  the desktop portal to show the song, selected in its folder; outside the Flatpak the file manager is asked to
+  select it too (Nautilus, Dolphin, Nemo, Thunar…), and the folder simply opens where none answers.
+- The Flatpak couldn't save recap images (#89): they now go to Pictures/Hallucinate, the one folder in
+  Pictures it may write to, with "Show in folder" once it's saved.
 - The + on a song added it to the queue without a word, so it looked like nothing happened (#93). It now says
   the song was added, and shows "Add to queue" on hover.
 

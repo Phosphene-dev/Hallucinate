@@ -41,7 +41,7 @@ Item {
             savedTimer.restart()
         }, Qt.size(shareCard.width * 2, shareCard.height * 2))
     }
-    Timer { id: savedTimer; interval: 5000; onTriggered: page.savedTo = "" }
+    Timer { id: savedTimer; interval: 12000; onTriggered: page.savedTo = "" }
 
     // A soft glow inside the card. It is drawn as the card's own rounded shape, filled with a radial gradient
     // centred at (cx, cy), so it can't spill past the rounded corners (clip only cuts to the square bounds).
@@ -377,6 +377,12 @@ Item {
                     color: Theme.textDim
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(12)
+                }
+                PillButton {
+                    objectName: "showRecapImage"
+                    visible: page.savedTo.length > 1
+                    text: "Show in folder"
+                    onClicked: library.showInFolder(page.savedTo)
                 }
             }
 
