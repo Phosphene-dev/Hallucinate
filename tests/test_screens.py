@@ -1649,3 +1649,52 @@ def test_built_in_title_bar_and_going_back_to_the_systems(qapp, app_window):
     finally:
         shell.setCustomTitleBar(True)
         shell.setTitleBarMinimize(True)
+
+
+def test_a_page_at_the_top_stays_there_when_the_window_is_resized(qapp, app_window):
+    """Narrowing the window wraps the album's notes and makes its header taller; the list kept its scroll
+    position, so the page ended up part way down with the cover cut off. A page you scrolled keeps its place."""
+
+    window, objects, warnings = app_window
+    window.resize(1280, 700)
+
+    def settle():  # until the page's layout stops moving (a busy machine takes several passes)
+        last = None
+        for _ in range(60):
+            for _ in range(4):
+                qapp.processEvents()
+            now = (lst.property("originY"), lst.property("contentY")) if lst is not None else None
+            if now is not None and now == last:
+                return
+            last = now
+
+    lst = None
+    QMetaObject.invokeMethod(window, "openAlbum", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "k0"))
+    for _ in range(8):
+        qapp.processEvents()
+    page = window.findChild(QObject, "pageStack").property("currentItem")
+    items = [page]
+    while items and lst is None:
+        item = items.pop()
+        lst = item if "ListView" in item.metaObject().className() else None
+        items.extend(item.childItems())
+
+    def gap():
+        return lst.property("contentY") - lst.property("originY")
+
+    settle()
+
+    for width in (700, 1280, 760, 1280):
+        window.resize(width, 700)
+        settle()
+        assert abs(gap()) < 1, (width, gap())
+    window.resize(700, 700)  # narrow: a smaller cover, a shorter header
+    settle()
+    lst.setProperty("contentY", lst.property("originY") + 40)  # scrolled a little
+    settle()
+    window.resize(1280, 700)  # the header grows again
+    settle()
+    # still scrolled, not snapped back to the top (how far exactly depends on how Qt clamps a page this short
+    # while it lays out again, so only "not at the top" is certain)
+    assert gap() > 1
+    assert not warnings, warnings[:3]

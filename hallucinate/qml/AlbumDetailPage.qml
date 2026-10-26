@@ -37,6 +37,8 @@ Item {
     function formatLine() {
         var parts = []
         if ((notes.formats || []).length) parts.push(notes.formats.join(" / "))
+        if ((notes.bitDepths || []).length)
+            parts.push(notes.bitDepths.map(function (b) { return b === 1 ? "DSD" : b + "-bit" }).join(" / "))
         if ((notes.sampleRates || []).length) {
             var r = notes.sampleRates.map(function (x) { return (x / 1000).toFixed(x % 1000 ? 1 : 0) })
             parts.push(r.join(" / ") + " kHz")
@@ -102,6 +104,7 @@ Item {
             model: page.tracks
             ScrollBar.vertical: ScrollBar {}
 
+            KeepAtTop { target: list }  // stays at the top when the header changes height
             header: Item {
                 width: list.width
                 height: sleeve.height + notesPanel.height + 70

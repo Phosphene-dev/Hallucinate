@@ -13,7 +13,8 @@ def liner_notes(db, key):
 
     `trackPlays` maps each track's path to its play count."""
     rows = db._rows(
-        "SELECT t.path, t.genre, t.composer, t.disc_no, t.codec, t.fmt, t.bitrate, t.sample_rate, t.size, t.added, "
+        "SELECT t.path, t.genre, t.composer, t.disc_no, t.codec, t.fmt, t.bitrate, t.sample_rate, t.bit_depth, t.size, "
+        "t.added, "
         "COALESCE(p.count, 0) AS plays, p.last AS last, CASE WHEN l.path IS NULL THEN 0 ELSE 1 END AS liked "
         "FROM tracks t LEFT JOIN plays p ON p.path = t.path LEFT JOIN likes l ON l.path = t.path "
         "WHERE t.album_key = ?",
@@ -53,6 +54,7 @@ def liner_notes(db, key):
         "formats": [f for f, _ in formats.most_common() if f],
         "lossless": all(f in LOSSLESS for f in formats if f),
         "sampleRates": rates,
+        "bitDepths": sorted({r["bit_depth"] for r in rows if r["bit_depth"]}),  # lossless files only
         "bitrate": round(sum(bitrates) / len(bitrates)) if bitrates else 0,
         "bytes": sum(r["size"] or 0 for r in rows),
         "added": min((r["added"] for r in rows if r["added"]), default=0),

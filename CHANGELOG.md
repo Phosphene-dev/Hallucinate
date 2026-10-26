@@ -5,6 +5,19 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Fixed
+- Hallucinate crashed on start where the PipeWire client library is installed but no PipeWire server runs (a
+  server, a container, a Proxmox LXC): Qt picked its PipeWire backend anyway. It uses PulseAudio then, which also
+  starts cleanly with no sound server at all; Copy debug info says which it chose.
+- Making the window narrower and wider again left album, playlist, podcast and history pages scrolled part way
+  down, the cover cut off at the top, though nobody had scrolled. A page at the top now stays there.
+
+### Added
+- The web remote, `hallucinate cmd` and the terminal player show E and Hi-Res too; an album's format line says
+  its bit depth.
+- The mini player follows the built-in title bar (no frame; drag it by its background) and its volume icon takes
+  the wheel and a middle click.
+
 ## [1.3.0] - 2026-10-25
 
 The first round of tester feedback: fixes for closing the window and notifications, badges for explicit and Hi-Res songs, a built-in title bar and better volume controls.

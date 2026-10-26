@@ -18,8 +18,10 @@ def test_liner_notes(db):
     db.record_play("/m/a1", 2_000)
     db.record_play("/m/a2", 1_500)
     db.set_liked("/m/a2", True)
+    db.conn.execute("UPDATE tracks SET bit_depth=24 WHERE path='/m/a2'")
     db.commit()
     notes = album_views.liner_notes(db, "Band|Sleeve")
+    assert notes["bitDepths"] == [24]  # the 16-bit-or-unknown one says nothing
     assert notes["genres"] == ["Dream Pop", "Shoegaze"] and notes["discs"] == 2
     assert notes["formats"] == ["FLAC"] and notes["lossless"] and notes["sampleRates"] == [44100, 96000]
     assert notes["bytes"] == 2000 and notes["plays"] == 3 and notes["liked"] == 1

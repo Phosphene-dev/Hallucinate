@@ -33,6 +33,7 @@ Item {
         model: userLib.smartTracks
         ScrollBar.vertical: ScrollBar {}
 
+        KeepAtTop { target: list }  // stays at the top when the header changes height
         header: Item {
             width: list.width
             height: 176

@@ -62,6 +62,7 @@ Item {
         cacheBuffer: 600
         onAtYEndChanged: if (atYEnd && page.info.hasMore) userLib.loadMoreHistory()
 
+        KeepAtTop { target: list }  // stays at the top when the header changes height
         header: Column {
             x: 28
             width: list.width - 56
