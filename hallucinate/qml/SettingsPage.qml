@@ -1603,6 +1603,13 @@ Item {
                 text: "Send now"
                 onClicked: scrobbler.retryNow()
             }
+            StyledCheck {
+                objectName: "lastfmNowPlaying"
+                visible: scrobbler.connected
+                text: "Show \u201cScrobbling now\u201d on Last.fm while a song plays (the scrobble itself waits for the point below)"
+                checked: scrobbler.nowPlaying
+                onToggled: scrobbler.setNowPlaying(checked)
+            }
             Flow {
                 visible: scrobbler.connected
                 width: parent.width
@@ -1684,6 +1691,13 @@ Item {
                 font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); wrapMode: Text.WordWrap
             }
             OfflineNote { visible: shell.offlineMode; what: "ListenBrainz" }
+            StyledCheck {
+                objectName: "listenbrainzNowPlaying"
+                visible: listenbrainz.connected
+                text: "Show \u201cPlaying now\u201d on ListenBrainz while a song plays (the listen itself waits for the point below)"
+                checked: listenbrainz.nowPlaying
+                onToggled: listenbrainz.setNowPlaying(checked)
+            }
             Flow {
                 visible: listenbrainz.connected
                 width: parent.width

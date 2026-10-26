@@ -9,6 +9,8 @@ All notable changes to this project are documented here. Format based on
 - When a song is scrobbled to Last.fm, and when it counts as a listen on ListenBrainz, can each be chosen:
   Last.fm's rule (half way, or 4 minutes), a quarter, half (however long), three quarters, 90%, or at the end.
   Settings → Scrobbling & sharing.
+- "Scrobbling now" on Last.fm (and "Playing now" on ListenBrainz) as a song starts can be switched off, so the
+  profile shows only finished scrobbles.
 
 ## [1.4.0] - 2026-10-26
 

@@ -187,6 +187,7 @@ class ListenBrainzScrobbler(QObject):
         self._single = False  # a batch was refused: send one at a time to find the listen at fault
         self._qsettings = QSettings("hallucinate", "hallucinate")
         self._listen_point = listen_point(self._qsettings.value("listenbrainz/listenPoint", "rule"))
+        self._now_playing = self._qsettings.value("listenbrainz/nowPlaying", True, bool)  # "Playing now"
         self._load_keyring()
         self._load_queue()
         self._jobFinished.connect(self._on_job_finished)
@@ -205,6 +206,17 @@ class ListenBrainzScrobbler(QObject):
     def listenPoint(self):
         """When a song counts as a listen: one of scrobbling.LISTEN_POINTS."""
         return self._listen_point
+
+    @Property(bool, notify=listenPointChanged)
+    def nowPlaying(self):
+        """Tell ListenBrainz what's playing as it starts ("Playing now"). Off: only listens."""
+        return self._now_playing
+
+    @Slot(bool)
+    def setNowPlaying(self, on):
+        self._now_playing = bool(on)
+        self._qsettings.setValue("listenbrainz/nowPlaying", self._now_playing)
+        self.listenPointChanged.emit()
 
     @Slot(str)
     def setListenPoint(self, point):
@@ -526,7 +538,7 @@ class ListenBrainzScrobbler(QObject):
 
     def _send_now_playing(self):
         track = dict(self.player.current or {})
-        if not counts_for_scrobbling(track):
+        if not self._now_playing or not counts_for_scrobbling(track):
             return
         key = f"{track.get('path')}\x1f{track.get('stream_title', '')}"
         if (not (self.connected and self.player.playing and track and key != self._now_key)

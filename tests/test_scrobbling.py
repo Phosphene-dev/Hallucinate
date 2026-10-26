@@ -511,3 +511,21 @@ def test_the_listen_point_is_kept(make_scrobbler):
     s.setListenPoint("75")
     assert make().listenPoint == "75"
     s.setListenPoint("rule")
+
+
+def test_now_playing_can_be_switched_off(make_scrobbler, memory_keyring, monkeypatch):
+    """No "Scrobbling now" on the profile: only the scrobble, once enough is heard."""
+    player, make = make_scrobbler
+    memory_keyring["session"] = "session"
+    calls = []
+    monkeypatch.setattr(scrobbling, "api_request", lambda method, *a, **k: calls.append(method) or {"nowplaying": {}})
+    s = make()
+    s.setNowPlaying(False)
+    try:
+        player.set_track({"path": "/music/a.flac", "title": "Song", "artist": "Artist"}, 60_000)
+        for _ in range(5):
+            s._tick()
+        assert "track.updateNowPlaying" not in calls
+        assert not make().nowPlaying  # remembered
+    finally:
+        s.setNowPlaying(True)

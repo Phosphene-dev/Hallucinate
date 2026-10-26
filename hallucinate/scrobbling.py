@@ -240,6 +240,8 @@ class LastFmScrobbler(QObject):
         self._qsettings = QSettings("hallucinate", "hallucinate")
         self._sync_loves = self._qsettings.value("lastfm/syncLoves", False, bool)
         self._listen_point = listen_point(self._qsettings.value("lastfm/scrobblePoint", "rule"))
+        # "Scrobbling now" on the profile while a song plays (Last.fm's optional now-playing update)
+        self._now_playing = self._qsettings.value("lastfm/nowPlaying", True, bool)
         self._loves_busy = False
         self._loves_done.connect(self._on_loves_done)
         self._timer = QTimer(self)
@@ -635,7 +637,7 @@ class LastFmScrobbler(QObject):
         return "\x1f".join(str(track.get(k, "")) for k in ("path", "title", "artist", "album"))
 
     def _ensure_nowplaying(self):
-        if (not self.connected or not self.player.playing or not self._current_track
+        if (not self._now_playing or not self.connected or not self.player.playing or not self._current_track
                 or not counts_for_scrobbling(self._current_track)):
             return
         key = self._track_key(self._current_track)
@@ -754,6 +756,19 @@ class LastFmScrobbler(QObject):
     def setListenPoint(self, point):
         self._listen_point = listen_point(point)
         self._qsettings.setValue("lastfm/scrobblePoint", self._listen_point)
+        self.syncChanged.emit()
+
+    @Property(bool, notify=syncChanged)
+    def nowPlaying(self):
+        """Tell Last.fm what's playing as it starts ("Scrobbling now" on the profile). Off: only scrobbles."""
+        return self._now_playing
+
+    @Slot(bool)
+    def setNowPlaying(self, on):
+        self._now_playing = bool(on)
+        self._qsettings.setValue("lastfm/nowPlaying", self._now_playing)
+        if not self._now_playing:
+            self._pending_nowplaying = None
         self.syncChanged.emit()
 
     # --- loves ⇄ Liked Songs ---------------------------------------------------------------------------
