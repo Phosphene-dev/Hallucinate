@@ -31,6 +31,9 @@ in the Flatpak, and a two-minute freeze opening Composers in a big library.
   loudness in colour from -120 to 0 dB, and the format beside the title. A lossy file's cut-off (often 16 or
   19 kHz) or an upsampled "hi-res" file shows at a glance. Decoded in the background helper, so a damaged file
   can't hold up the window; "Save image" keeps a PNG in Pictures/Hallucinate.
+- Scrobble to a server of your own: ListenBrainz can point at anything that speaks its API (Maloja, Koito,
+  Multi-Scrobbler…), in Settings → Scrobbling & sharing. The server is remembered, so listens and the token keep
+  going there after a restart; an unencrypted address outside your own network is flagged.
 - A Genres page in the sidebar (#88): every genre in your songs' tags, A–Z, by songs or by plays, with a filter.
   A tag naming several genres ("Pop; Indie; Rock") counts for each. Pick one and every song tagged with it is
   listed beside it (in album order, by title, artist, year, plays or date added), with Play, Shuffle and the

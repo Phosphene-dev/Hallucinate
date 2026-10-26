@@ -291,3 +291,54 @@ def test_a_revoked_token_signs_out_instead_of_retrying(tmp_path, monkeypatch, qa
         assert wait_for(lambda: (listenbrainz.KEYRING_SERVICE, "token") not in secrets)
     finally:
         scrobbler.shutdown()
+
+
+def test_a_server_of_your_own_is_normalised_and_remembered(monkeypatch, qapp, tmp_path):
+    """Maloja, Koito and Multi-Scrobbler speak the ListenBrainz API under a path of their own; the server is kept, so
+    listens (and the token) never go to listenbrainz.org after a restart."""
+    import pytest
+
+    from hallucinate import listenbrainz as lb
+
+    assert lb.normalize_server("") == ""
+    assert lb.normalize_server("https://api.listenbrainz.org/") == ""
+    assert lb.normalize_server("maloja.home.lan/apis/listenbrainz/") == "https://maloja.home.lan/apis/listenbrainz"
+    assert lb.normalize_server("http://192.168.1.5:42010/apis/listenbrainz/1/submit-listens") == \
+        "http://192.168.1.5:42010/apis/listenbrainz"
+    with pytest.raises(ValueError):
+        lb.normalize_server("ftp://example.com")
+    assert lb.server_label("") == "ListenBrainz" and lb.server_label("https://koito.example/apis/listenbrainz") == "koito.example"
+
+    store = {}
+    monkeypatch.setattr(lb.keyring, "get_password", lambda s, k: store.get(k))
+    monkeypatch.setattr(lb.keyring, "set_password", lambda s, k, v: store.__setitem__(k, v))
+    calls = []
+
+    def fake(base, path, token=None, payload=None, params=None):
+        calls.append((base, path))
+        return {"valid": True, "user_name": "me"}
+    monkeypatch.setattr(lb, "lb_request", fake)
+
+    from conftest import wait_for
+    from PySide6.QtCore import QObject, Signal
+
+    class P(QObject):
+        trackChanged = Signal()
+        stateChanged = Signal()
+        seeked = Signal(int)
+        current, playing, position, duration = {}, False, 0, 0
+
+    player = P()
+    s = lb.ListenBrainzScrobbler(player, tmp_path)
+    try:
+        s.connectToken("tok", "maloja.example.com/apis/listenbrainz")
+        assert wait_for(lambda: s.connected, timeout=4)
+        assert calls[0] == ("https://maloja.example.com/apis/listenbrainz", "/1/validate-token")
+        assert s.server == "https://maloja.example.com/apis/listenbrainz" and s.serverName == "maloja.example.com"
+        assert "maloja.example.com" in s.status
+        again = lb.ListenBrainzScrobbler(player, tmp_path)  # after a restart
+        assert again._base == "https://maloja.example.com/apis/listenbrainz"
+        again.shutdown()
+    finally:
+        s._qsettings.remove("listenbrainz/server")
+        s.shutdown()
