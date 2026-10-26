@@ -11,6 +11,7 @@ QtObject {
     readonly property bool explicitBadges: badges.explicitBadges === true
     readonly property bool hiResBadges: badges.hiResBadges === true
     readonly property bool bitDepth: badges.bitDepth === true
+    readonly property bool masterBadge: badges.masterBadge === true
     readonly property var currentId: player.hasTrack ? player.current.id : -1
     readonly property string currentPath: player.hasTrack ? player.current.path : ""
     // path -> true for every liked song; refreshed when likes change

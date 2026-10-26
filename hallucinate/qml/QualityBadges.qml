@@ -16,11 +16,14 @@ Row {
     readonly property bool hiRes: bitDepth >= 24 || bitDepth === 1
     readonly property bool showHiRes: Rows.hiResBadges && hiRes
     readonly property bool showDepth: Rows.bitDepth && bitDepth > 0
+    readonly property bool master: showHiRes && Rows.masterBadge  // a gold M instead of the "Hi-Res" pill
+    readonly property bool pill: (showHiRes && !master) || showDepth
+    readonly property color gold: light ? "#f5cf5b" : (Theme.light ? "#b07d00" : "#e2b53e")
     readonly property string depthText: bitDepth === 1 ? "DSD"
         : bitDepth + "-bit" + (sampleRate > 0 ? " · " + (sampleRate / 1000).toFixed(sampleRate % 1000 ? 1 : 0) + " kHz" : "")
     readonly property color ink: light ? Qt.rgba(1, 1, 1, 0.85) : Theme.textDim
     spacing: 4
-    visible: showExplicit || showHiRes || showDepth
+    visible: showExplicit || master || pill
 
     Rectangle {
         objectName: "explicitBadge"
@@ -45,29 +48,54 @@ Row {
         ToolTip.text: "Explicit"
     }
     Rectangle {
+        objectName: "masterBadge"
+        visible: badges.master
+        anchors.verticalCenter: parent.verticalCenter
+        width: badges.size; height: badges.size
+        radius: Theme.round(3)
+        color: "transparent"
+        border.width: 1
+        border.color: badges.gold
+        Text {
+            textFormat: Text.PlainText
+            anchors.centerIn: parent
+            text: "M"
+            color: badges.gold
+            font.family: Theme.fontFamily
+            font.pixelSize: Math.round(badges.size * 0.66)
+            font.weight: Font.Bold
+        }
+        Accessible.role: Accessible.StaticText
+        Accessible.name: "Master (Hi-Res), " + (badges.bitDepth === 1 ? "DSD" : badges.bitDepth + "-bit")
+        HoverHandler { id: mHover }
+        ToolTip.visible: mHover.hovered
+        ToolTip.text: "Master (Hi-Res) · " + (badges.bitDepth === 1 ? "DSD (1-bit)" : badges.depthText)
+    }
+    Rectangle {
         objectName: "hiResBadge"
-        visible: badges.showHiRes || badges.showDepth
+        visible: badges.pill
         anchors.verticalCenter: parent.verticalCenter
         width: depthLabel.implicitWidth + 10; height: badges.size
         radius: Theme.round(height / 2)
-        color: badges.showHiRes ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, badges.light ? 0.35 : 0.16)
+        readonly property bool hiResLook: badges.showHiRes && !badges.master
+        color: hiResLook ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, badges.light ? 0.35 : 0.16)
                                 : "transparent"
         border.width: 1
-        border.color: badges.showHiRes ? Theme.accent : (badges.light ? Qt.rgba(1, 1, 1, 0.4) : Theme.border)
+        border.color: hiResLook ? Theme.accent : (badges.light ? Qt.rgba(1, 1, 1, 0.4) : Theme.border)
         Text {
             textFormat: Text.PlainText
             id: depthLabel
             anchors.centerIn: parent
-            text: badges.showHiRes ? (badges.showDepth ? "Hi-Res " + badges.depthText : "Hi-Res") : badges.depthText
-            color: badges.showHiRes ? (badges.light ? "white" : Theme.accent) : badges.ink
+            text: parent.hiResLook ? (badges.showDepth ? "Hi-Res " + badges.depthText : "Hi-Res") : badges.depthText
+            color: parent.hiResLook ? (badges.light ? "white" : Theme.accent) : badges.ink
             font.family: Theme.fontFamily
             font.pixelSize: Math.round(badges.size * 0.6)
             font.weight: Font.DemiBold
         }
         Accessible.role: Accessible.StaticText
-        Accessible.name: (badges.hiRes ? "Hi-Res audio, " : "") + (badges.bitDepth === 1 ? "DSD" : badges.bitDepth + "-bit")
+        Accessible.name: (hiResLook ? "Hi-Res audio, " : "") + (badges.bitDepth === 1 ? "DSD" : badges.bitDepth + "-bit")
         HoverHandler { id: dHover }
         ToolTip.visible: dHover.hovered
-        ToolTip.text: (badges.hiRes ? "Hi-Res: " : "") + (badges.bitDepth === 1 ? "DSD (1-bit)" : badges.depthText)
+        ToolTip.text: (hiResLook ? "Hi-Res: " : "") + (badges.bitDepth === 1 ? "DSD (1-bit)" : badges.depthText)
     }
 }

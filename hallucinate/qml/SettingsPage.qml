@@ -278,6 +278,20 @@ Item {
                     checked: Rows.hiResBadges
                     onToggled: shell.setSongBadge("hiResBadges", checked)
                 }
+                Row {
+                    visible: Rows.hiResBadges
+                    leftPadding: 28
+                    spacing: 12
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: "Hi-Res badge"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                    StyledCombo {
+                        objectName: "hiResBadgeStyle"
+                        width: 230
+                        model: ["\"Hi-Res\"", "A gold M (Master)"]
+                        selection: Rows.masterBadge ? 1 : 0
+                        onActivated: function (i) { shell.setSongBadge("masterBadge", i === 1) }
+                        Accessible.name: "Hi-Res badge style"
+                    }
+                }
                 StyledCheck {
                     objectName: "bitDepthBadges"
                     text: "Show every song's bit depth and sample rate"

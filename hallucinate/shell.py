@@ -36,7 +36,8 @@ def sidebar_order(saved):
     return order
 
 
-SONG_BADGES = {"explicitBadges": True, "hiResBadges": True, "bitDepth": False}
+# masterBadge: the Hi-Res badge as a gold M ("Master", as some stores mark it) instead of a "Hi-Res" pill
+SONG_BADGES = {"explicitBadges": True, "hiResBadges": True, "bitDepth": False, "masterBadge": False}
 
 # Tiling compositors and window managers that have no minimize: offering it there would do nothing.
 NO_MINIMIZE = ("hyprland", "sway", "i3", "niri", "river", "dwm", "bspwm", "qtile", "awesome")
@@ -349,7 +350,7 @@ class DesktopShell(QObject):
 
     @Property("QVariantMap", notify=settingsChanged)
     def songBadges(self):
-        """Which badges song rows and the player show: explicitBadges, hiResBadges, bitDepth."""
+        """Which badges song rows and the player show: explicitBadges, hiResBadges, bitDepth, masterBadge."""
         return dict(self._badges)
 
     @Slot(str, bool)

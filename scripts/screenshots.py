@@ -533,6 +533,8 @@ def main():
                      lambda: shell.toggleMini(), wait, wait, mini_shot("mini-beige-box"), lambda: shell.showMain(), wait,
                      lambda: managers[0].selectTheme("Hi-Fi Deck"), wait, wait, open_album, wait, shot("badges-hifi-deck"),
                      lambda: managers[0].selectTheme(themes[0]), wait, wait, open_album, wait, shot("badges"),
+                     lambda: shell.setSongBadge("masterBadge", True), wait, shot("badges-master"),
+                     lambda: shell.setSongBadge("masterBadge", False),
                      open_volume, wait, shot("volume-popup"), close_volume,
                      lambda: shell.toggleMini(), wait, wait, mini_shot("mini"), lambda: shell.showMain(), wait]
             def open_composer():

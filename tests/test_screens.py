@@ -1525,7 +1525,12 @@ def test_explicit_and_hi_res_badges_show_and_switch_off(qapp, app_window):
         assert wait_for(lambda: len(shown("explicitBadge")) == 1 and len(shown("hiResBadge")) == 1)
         shell.setSongBadge("bitDepth", True)  # every song's depth: the other three 16-bit songs say so too
         assert wait_for(lambda: len(shown("hiResBadge")) == 4)
+        # the Hi-Res badge as a gold M (issue 82): an M on the hi-res song, and every song keeps its depth pill
+        shell.setSongBadge("masterBadge", True)
+        assert wait_for(lambda: len(shown("masterBadge")) == 1 and len(shown("hiResBadge")) == 4)
         shell.setSongBadge("bitDepth", False)
+        assert wait_for(lambda: len(shown("masterBadge")) == 1 and not shown("hiResBadge"))
+        shell.setSongBadge("masterBadge", False)
         shell.setSongBadge("explicitBadges", False)
         shell.setSongBadge("hiResBadges", False)
         assert wait_for(lambda: not shown("explicitBadge") and not shown("hiResBadge"))

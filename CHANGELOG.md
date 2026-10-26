@@ -20,6 +20,8 @@ All notable changes to this project are documented here. Format based on
 ### Added
 - The web remote, `hallucinate cmd` and the terminal player show E and Hi-Res too; an album's format line says
   its bit depth.
+- The Hi-Res badge can be a gold M ("Master", with "Master (Hi-Res)" and the bit depth on hover) instead of the
+  "Hi-Res" pill: Settings → Appearance.
 - The mini player follows the built-in title bar (no frame; drag it by its background) and its volume icon takes
   the wheel and a middle click.
 
