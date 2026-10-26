@@ -1,0 +1,4 @@
+#!/bin/sh
+# Hallucinate from the .deb or .rpm: the bundled Python and Qt under /opt/hallucinate.
+export HALLUCINATE_PACKAGE="${HALLUCINATE_PACKAGE:-system}"
+exec /opt/hallucinate/AppRun "$@"

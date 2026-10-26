@@ -47,8 +47,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: System packages
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg libegl1 libgl1 libxkbcommon0 libdbus-1-3 libpulse0 libxcb-cursor0 dbus pulseaudio pulseaudio-utils
+          # A slow mirror once ran this past the job's time limit: give up on a stalled connection and retry, and
+          # leave out recommended packages (most of the download)
+          apt="sudo apt-get -o Acquire::Retries=4 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
+          $apt update
+          $apt install -y --no-install-recommends ffmpeg libegl1 libgl1 libxkbcommon0 libdbus-1-3 libpulse0 libxcb-cursor0 dbus pulseaudio pulseaudio-utils
       - run: pip install -e '.[test]'
       - run: dbus-run-session -- pytest -vv
 
@@ -159,6 +162,23 @@ jobs:
         run: |
           sudo -u builder -H env QT_QPA_PLATFORM=offscreen HALLUCINATE_DISABLE_LEGACY_MIGRATION=1 \
             HALLUCINATE_CONTROL_SOCKET=hallucinate-aur-smoke timeout 60 hallucinate --quit-after 3000
+
+  nix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v31
+      - name: Build the flake
+        run: nix build -L
+      - name: Smoke test (offscreen)
+        env:
+          QT_QPA_PLATFORM: offscreen
+          HALLUCINATE_DISABLE_LEGACY_MIGRATION: "1"
+          HALLUCINATE_CONTROL_SOCKET: hallucinate-nix-smoke
+        run: |
+          timeout 60 ./result/bin/hallucinate --quit-after 3000
+          timeout 120 ./result/bin/hallucinate --decode-check packaging/testclips/*
 
   container:
     # The headless server image (packaging/server/Dockerfile): builds, starts without a window, answers the command

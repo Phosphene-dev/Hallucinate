@@ -38,5 +38,7 @@ chmod +x "$work/appimagetool"
 # python-appimage names the AppDir after the desktop entry's Name field.
 mv "$work"/Hallucinate*-"$(uname -m)" "$work/AppDir"
 python3 "$repo/packaging/qt_prune.py" "$work/AppDir"  # drop the parts of Qt the app never uses
+# KEEP_APPDIR=dir: keep a copy of the finished AppDir (the .deb and .rpm are made from it: packaging/linux)
+if [ -n "${KEEP_APPDIR:-}" ]; then rm -rf "$KEEP_APPDIR" && cp -a "$work/AppDir" "$KEEP_APPDIR"; fi
 ARCH="$(uname -m)" "$work/appimagetool" --appimage-extract-and-run --no-appstream "$work/AppDir" "$out"
 ls -lh "$out"

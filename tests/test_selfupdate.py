@@ -158,6 +158,9 @@ def test_no_self_install_for_packaged_copies():
     assert updates.system_package(frozen=False, module="/usr/lib/python3.13/site-packages/hallucinate/updates.py")
     assert not updates.system_package(frozen=False, module="/home/me/src/hallucinate/updates.py")
     assert not updates.system_package(frozen=True, module="/usr/whatever")
+    # Nix updates its own; the .deb and .rpm from the releases (in /opt) are updated by downloading the next one
+    assert updates.system_package(frozen=False, module="/nix/store/abc-hallucinate-1.5.1/lib/hallucinate/updates.py")
+    assert not updates.system_package(frozen=False, module="/opt/hallucinate/opt/python3.12/lib/hallucinate/updates.py")
     checker = updates.UpdateChecker(kind="")
     assert not checker.canInstall
     checker.shutdown()

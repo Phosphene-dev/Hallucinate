@@ -49,6 +49,20 @@ def command():
     return python, ["-s", "-c", "import sys; from hallucinate.analysis import serve; sys.exit(serve())"]
 
 
+def _helper_path(pythonpath=""):
+    """Where the helper finds its modules: this copy of the app, then what's already on PYTHONPATH, then this
+    process's own module path. Nix puts PySide6 and numpy on the path from inside its launcher script, not
+    through PYTHONPATH, so a plain `python -c` wouldn't find them. The user's own site-packages stay out,
+    as the helper's -s keeps them out."""
+    import site
+    from pathlib import Path
+
+    user = site.getusersitepackages() if site.ENABLE_USER_SITE is not None else ""
+    paths = [str(Path(__file__).resolve().parent.parent)] + [p for p in pythonpath.split(os.pathsep) if p]
+    paths += [p for p in sys.path if p and p != user and os.path.isdir(p)]
+    return list(dict.fromkeys(paths))
+
+
 # --- the helper process ------------------------------------------------------------------------------------
 def _pipes():
     """The helper's stdin and stdout as binary files. A windowed Windows build has no sys.stdin/stdout even
@@ -252,13 +266,10 @@ class Analyser(QObject):
             return True
         proc = QProcess(self)
         if not getattr(sys, "frozen", False):  # find this copy of the app, wherever it was started from
-            from pathlib import Path
-
             from PySide6.QtCore import QProcessEnvironment
 
             env = QProcessEnvironment.systemEnvironment()
-            here = str(Path(__file__).resolve().parent.parent)
-            env.insert("PYTHONPATH", here + (os.pathsep + env.value("PYTHONPATH") if env.contains("PYTHONPATH") else ""))
+            env.insert("PYTHONPATH", os.pathsep.join(_helper_path(env.value("PYTHONPATH") if env.contains("PYTHONPATH") else "")))
             proc.setProcessEnvironment(env)
         proc.setStandardErrorFile(QProcess.nullDevice())  # FFmpeg's chatter about damaged files
         # Slots of this object, not lambdas: Qt cuts them off when it's deleted (a process going away with it
