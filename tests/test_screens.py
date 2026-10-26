@@ -1630,6 +1630,14 @@ def test_built_in_title_bar_and_going_back_to_the_systems(qapp, app_window):
         # the search field leaves room for the buttons
         search = window.findChild(QObject, "searchField")
         assert search.mapToScene(QPointF(search.width(), 0)).x() < controls.mapToScene(QPointF(0, 0)).x()
+        # on the left: before the search, close first
+        shell.setTitleBarSide("left")
+        settle()
+        assert controls.mapToScene(QPointF(controls.width(), 0)).x() < search.mapToScene(QPointF(0, 0)).x()
+        close, maxi = window.findChild(QObject, "windowClose"), window.findChild(QObject, "windowMaximize")
+        assert close.mapToScene(QPointF(0, 0)).x() < maxi.mapToScene(QPointF(0, 0)).x()
+        shell.setTitleBarSide("right")
+        settle()
         # close does what closing the window does: with "Ask every time", it asks. (QML read handleClose's
         # answer as True, not "ask", while it had a second slot signature returning bool: closing did nothing.)
         from PySide6.QtGui import QGuiApplication

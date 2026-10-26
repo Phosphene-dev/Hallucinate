@@ -53,6 +53,22 @@ def can_minimize(env=None, platform=None):
     return not any(d in NO_MINIMIZE for d in desktops)
 
 
+# Desktops whose compositor draws good window frames itself (KDE's KWin, COSMIC), and X11, where every window
+# manager does: their own title bar is the better default there. GNOME on Wayland leaves frames to the app
+# (Qt's own is plain), and tiling compositors (Hyprland, niri, Sway) draw none: the built-in one is the default.
+OWN_FRAMES = ("kde", "cosmic", "lxqt")
+
+
+def default_title_bar(env=None, platform=None):
+    env = os.environ if env is None else env
+    if not (platform or sys.platform).startswith("linux"):
+        return False
+    if env.get("XDG_SESSION_TYPE", "").lower() == "x11" or (env.get("DISPLAY") and not env.get("WAYLAND_DISPLAY")):
+        return False
+    desktops = env.get("XDG_CURRENT_DESKTOP", "").lower().replace(";", ":").split(":")
+    return not any(d in OWN_FRAMES for d in desktops)
+
+
 class DesktopShell(QObject):
     miniChanged = Signal()
     settingsChanged = Signal()
@@ -72,6 +88,8 @@ class DesktopShell(QObject):
         if self._close_action not in CLOSE_ACTIONS:
             self._close_action = "ask"
         self._desktop_notifications = self._settings.value("shell/desktopNotifications", False, bool)
+        # only while the window isn't in front (it already shows the song), or every time
+        self._notify_always = self._settings.value("shell/notifyAlways", False, bool)
         self._sidebar_collapsed = self._settings.value("ui/sidebarCollapsed", False, bool)
         self._ambient_motion = self._settings.value("ui/ambientMotion", True, bool)
         # An album may have several genres: albums and artists show them all, a song only its album's main one
@@ -80,7 +98,9 @@ class DesktopShell(QObject):
         self._reduce_motion = self._settings.value("ui/reduceMotion", False, bool)
         # The window's title bar drawn into the window itself (Linux, where Qt otherwise draws its own plain one on
         # Wayland compositors without server-side decorations), or the system's; and whether it has a minimize
-        self._title_bar = self._settings.value("ui/customTitleBar", sys.platform.startswith("linux"), bool)
+        self._title_bar = self._settings.value("ui/customTitleBar", default_title_bar(), bool)
+        side = str(self._settings.value("ui/titleBarSide", "right"))
+        self._title_side = side if side in ("left", "right") else "right"
         self._title_minimize = self._settings.value("ui/titleBarMinimize", can_minimize(), bool)
         # How far a notch of the mouse wheel scrolls, as a multiple of the usual distance (see WheelScroll.qml)
         self._scroll_speed = self._float_ui("ui/scrollSpeed", 1.0, 0.25, 4.0)
@@ -383,6 +403,18 @@ class DesktopShell(QObject):
         self._settings.setValue("ui/customTitleBar", self._title_bar)
         self.settingsChanged.emit()
 
+    @Property(str, notify=settingsChanged)
+    def titleBarSide(self):
+        """Where the built-in title bar's buttons go: "right" (Windows, KDE, GNOME) or "left" (macOS-style)."""
+        return self._title_side
+
+    @Slot(str)
+    def setTitleBarSide(self, side):
+        if side in ("left", "right"):
+            self._title_side = side
+            self._settings.setValue("ui/titleBarSide", side)
+            self.settingsChanged.emit()
+
     @Property(bool, notify=settingsChanged)
     def titleBarMinimize(self):
         """Whether the built-in title bar has a minimize button (off to begin with where minimize does nothing)."""
@@ -526,10 +558,27 @@ class DesktopShell(QObject):
         self._settings.setValue("shell/desktopNotifications", on)
         self.settingsChanged.emit()
 
+    @Property(bool, notify=settingsChanged)
+    def notifyAlways(self):
+        return self._notify_always
+
+    @Slot(bool)
+    def setNotifyAlways(self, on):
+        self._notify_always = bool(on)
+        self._settings.setValue("shell/notifyAlways", self._notify_always)
+        self.settingsChanged.emit()
+
+    def _in_front(self):
+        """The main window is showing and has the keyboard: what's playing is already on screen."""
+        win = self._window
+        return bool(win is not None and not self._mini and win.isVisible() and win.isActive())
+
     def _on_track_changed(self):
         if time.monotonic() - self._started < 3:
             return  # the song brought back from last time, not a change
         if not self._desktop_notifications or not self._player.hasTrack:
+            return
+        if not self._notify_always and self._in_front():
             return
         track = self._player.current
         title = track.get("title") or "Unknown track"

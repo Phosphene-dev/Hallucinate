@@ -350,6 +350,45 @@ def test_crossfade_overlaps_tracks(make_player, tmp_path):
     p.setCrossfade(0)
 
 
+def test_no_crossfade_between_songs_of_one_album_unless_asked(make_player, tmp_path):
+    p = make_player(session=False)
+    p.setCrossfade(1)
+    assert not p.crossfadeAlbums
+    tracks = [dict(track(encode(tmp_path / f"a{i}.flac", "flac", seconds=4, title=f"a{i}"), i, 4), album_key="b|a")
+              for i in range(2)]
+    p.playList(tracks, 0)
+    assert wait_for(lambda: is_playing(p) and p.position > 100)
+    p.seek(2500)
+    assert wait_for(lambda: p.currentIndex == 1, timeout=6)
+    assert not p._fading  # gapless, as the album runs
+    p.setCrossfadeAlbums(True)
+    assert p.crossfadeAlbums
+    p.setCrossfade(0)
+
+
+def test_pause_and_play_fade(make_player, tmp_path):
+    p = make_player(session=False)
+    p.setVolume(1.0)
+    p.setPauseFade(200)
+    assert p.pauseFade == 200
+    p.playList([track(encode(tmp_path / "f.flac", "flac", seconds=4), 0, 4)], 0)
+    assert wait_for(lambda: is_playing(p) and p.position > 100)
+    p.pause()
+    assert p._pausing and is_playing(p)  # still playing, getting quieter
+    p.toggle()  # changed their mind: back up from where it was
+    assert not p._pausing and p._pause_goal == 1.0
+    assert wait_for(lambda: p._pause_gain == 1.0)
+    p.pause()
+    assert wait_for(lambda: p.state == "Paused")
+    assert p._pause_gain == 1.0
+    p.play()
+    assert p._pause_gain < 1.0  # comes in from silence
+    assert wait_for(lambda: p._pause_gain == 1.0 and is_playing(p))
+    p.setPauseFade(0)
+    p.pause()
+    assert p.state == "Paused"  # at once, as before
+
+
 def test_eq_enabled_plays_and_seeks(make_player, tmp_path):
     from PySide6.QtMultimedia import QMediaDevices
     if QMediaDevices.defaultAudioOutput().isNull():
@@ -749,3 +788,22 @@ def test_the_songs_to_come_are_shuffled_once_and_can_be_put_back(make_player, cl
     assert p.currentIndex == 1 and not p.shuffle
     p.undoQueue()
     assert [t["path"] for t in p.queue] == before
+
+
+def test_volume_step_and_maximum(make_player):
+    p = make_player(session=False)
+    p.setVolume(0.5)
+    p.setVolumeStep(0.02)
+    p.nudgeVolume(1)
+    assert p.volume == pytest.approx(0.52)
+    p.nudgeVolume(-2)
+    assert p.volume == pytest.approx(0.48)
+    p.setMaxVolume(0.4)
+    assert p.volume == pytest.approx(0.4)  # brought down to the new cap
+    p.setVolume(1.0)
+    assert p.volume == pytest.approx(0.4)
+    p.toggleMute()
+    p.nudgeVolume(1)
+    assert not p.muted  # turning it up unmutes
+    p.setMaxVolume(1.0)
+    p.setVolumeStep(0.05)

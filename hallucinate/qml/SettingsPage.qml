@@ -568,7 +568,7 @@ Item {
             id: sec_playback
             objectName: "settings_playback"
             title: "Playback"
-            keywords: "output device audio replaygain loudness preamp measure crossfade gapless speed sleep timer"
+            keywords: "output device audio replaygain loudness preamp measure crossfade gapless album fade pause resume volume step wheel maximum limit loud speed sleep timer"
             query: page.query
             Flow {  // wraps in a narrow window
                 width: parent.width
@@ -654,6 +654,50 @@ Item {
                     from: 0; to: 12; stepSize: 1
                     value: player.crossfade
                     onMoved: player.setCrossfade(value)
+                }
+            }
+            Flow {
+                width: parent.width
+                spacing: 12
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Volume step"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                StyledCombo {
+                    objectName: "volumeStep"
+                    readonly property var steps: [0.01, 0.02, 0.05, 0.1]
+                    width: 120
+                    model: ["1%", "2%", "5%", "10%"]
+                    selection: Math.max(0, steps.findIndex(s => Math.abs(s - player.volumeStep) < 0.001))
+                    onActivated: player.setVolumeStep(steps[currentIndex])
+                    Accessible.name: "Volume step for the mouse wheel and arrow keys"
+                }
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Maximum volume " + Math.round(player.maxVolume * 100) + "%"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                StyledSlider {
+                    objectName: "maxVolume"
+                    width: 160
+                    from: 0.1; to: 1; stepSize: 0.05
+                    value: player.maxVolume
+                    onMoved: player.setMaxVolume(value)
+                    Accessible.name: "Maximum volume"
+                }
+            }
+            StyledCheck {
+                objectName: "crossfadeAlbums"
+                visible: player.crossfade > 0
+                text: "Crossfade between songs of the same album too (off: an album plays gaplessly, as it runs)"
+                checked: player.crossfadeAlbums
+                onToggled: player.setCrossfadeAlbums(checked)
+            }
+            Flow {
+                width: parent.width
+                spacing: 12
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Fade on pause and play"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                StyledCombo {
+                    objectName: "pauseFade"
+                    readonly property var lengths: [0, 150, 400, 1000]
+                    width: 200
+                    model: ["Off", "Quick", "Gentle", "Slow"]
+                    selection: Math.max(0, lengths.indexOf(player.pauseFade))
+                    onActivated: player.setPauseFade(lengths[currentIndex])
+                    Accessible.name: "Fade on pause and play"
                 }
             }
             Text { width: parent.width; wrapMode: Text.WordWrap; text: "Gapless playback is always on; with crossfade off, consecutive tracks play back to back. Playback speed and the sleep timer are in the ⋯ menu of the player bar."; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
@@ -1657,7 +1701,7 @@ Item {
             id: sec_desktop
             objectName: "settings_desktop"
             title: "Desktop"
-            keywords: "tray notifications close quit minimize exit background mini player title bar window frame decorations frameless maximize"
+            keywords: "tray notifications focus close quit minimize exit background mini player title bar window frame decorations frameless maximize buttons left right side"
             query: page.query
             StyledCheck {
                 visible: shell.trayAvailable
@@ -1678,6 +1722,21 @@ Item {
                 text: "Show the minimize button"
                 checked: shell.titleBarMinimize
                 onToggled: shell.setTitleBarMinimize(checked)
+            }
+            Flow {
+                visible: shell.customTitleBar
+                width: parent.width
+                spacing: 10
+                leftPadding: 28
+                Text { textFormat: Text.PlainText; text: "Buttons on the"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                StyledCombo {
+                    objectName: "titleBarSide"
+                    width: 200
+                    model: ["Right", "Left"]
+                    selection: shell.titleBarSide === "left" ? 1 : 0
+                    onActivated: shell.setTitleBarSide(currentIndex === 1 ? "left" : "right")
+                    Accessible.name: "Title bar buttons side"
+                }
             }
             Text {
                 textFormat: Text.PlainText
@@ -1716,6 +1775,14 @@ Item {
                 text: "Show desktop notifications when tracks change"
                 checked: shell.desktopNotifications
                 onToggled: shell.setDesktopNotifications(checked)
+            }
+            StyledCheck {
+                objectName: "notifyAlways"
+                visible: shell.desktopNotifications
+                leftPadding: 28
+                text: "Even while Hallucinate's window is in front (off: only when you're elsewhere)"
+                checked: shell.notifyAlways
+                onToggled: shell.setNotifyAlways(checked)
             }
             PillButton { text: "Open mini player"; onClicked: shell.toggleMini() }
 

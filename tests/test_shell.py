@@ -8,7 +8,10 @@ from hallucinate.shell import DesktopShell
 
 class FakeWindow:
     def __init__(self):
-        self.visible, self.calls = True, []
+        self.visible, self.calls, self.active = True, [], False
+
+    def isActive(self):
+        return self.active
 
     def isVisible(self):
         return self.visible
@@ -139,6 +142,45 @@ def test_desktop_notifications_are_opt_in_and_skip_initial_track(make_shell, mon
     shell.setDesktopNotifications(True)
     shell._on_track_changed()
     assert shown == [("New song", "New artist — Record", "track", "file:///covers/a.jpg")]
+
+
+def test_no_notification_while_the_window_is_in_front_unless_asked(make_shell, monkeypatch):
+    shell, win, _player = make_shell()
+    shown = []
+    monkeypatch.setattr(DesktopShell, "_send_notification", lambda self, title, body, key="", image="": shown.append(title))
+    shell._player = type("Playback", (), {"hasTrack": True, "current": {"title": "Song"}})()
+    shell._started -= 10
+    shell.setDesktopNotifications(True)
+    win.active = True
+    shell._on_track_changed()
+    assert shown == []  # the window already shows it
+    shell.setNotifyAlways(True)
+    shell._on_track_changed()
+    assert shown == ["Song"]
+    shell.setNotifyAlways(False)
+    win.active = False
+    shell._on_track_changed()
+    assert shown == ["Song", "Song"]
+
+
+def test_the_title_bar_default_follows_the_desktop(make_shell):
+    from hallucinate.shell import default_title_bar
+
+    wl = {"XDG_SESSION_TYPE": "wayland", "WAYLAND_DISPLAY": "wayland-1"}
+    for desk in ("GNOME", "Hyprland", "niri", "sway", "ubuntu:GNOME"):
+        assert default_title_bar({**wl, "XDG_CURRENT_DESKTOP": desk}, "linux"), desk
+    for desk in ("KDE", "COSMIC"):
+        assert not default_title_bar({**wl, "XDG_CURRENT_DESKTOP": desk}, "linux"), desk
+    assert not default_title_bar({"XDG_SESSION_TYPE": "x11", "XDG_CURRENT_DESKTOP": "GNOME"}, "linux")
+    assert not default_title_bar({"DISPLAY": ":0", "XDG_CURRENT_DESKTOP": "XFCE"}, "linux")
+    assert not default_title_bar({}, "win32")
+
+    shell, _win, _player = make_shell()
+    assert shell.titleBarSide == "right"
+    shell.setTitleBarSide("left")
+    assert shell.titleBarSide == "left"
+    shell.setTitleBarSide("middle")
+    assert shell.titleBarSide == "left"
 
 
 def test_notifications_go_out_with_the_types_the_spec_asks_for():

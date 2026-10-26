@@ -14,7 +14,7 @@ Item {
 
     WheelHandler {  // with no room for the volume slider, the wheel over the bar is the volume
         enabled: bar.tight
-        onWheel: event => player.setVolume(Math.max(0, Math.min(1, player.volume + event.angleDelta.y / 1200)))
+        onWheel: event => player.nudgeVolume(event.angleDelta.y / 120)
     }
     readonly property bool episode: player.hasTrack && player.current.kind === "episode"
     signal toggleQueue()
@@ -295,8 +295,8 @@ Item {
             visible: !bar.tight  // hidden in a tight bar: the mouse wheel over the bar sets the volume then
             anchors.verticalCenter: parent.verticalCenter
             width: bar.narrow ? 48 : bar.compact ? 64 : 100
-            from: 0; to: 1
-            stepSize: 0.05
+            from: 0; to: player.maxVolume
+            stepSize: player.volumeStep
             wheelEnabled: true  // the wheel over the slider too, as over the icon
             value: player.volume
             onMoved: player.setVolume(value)

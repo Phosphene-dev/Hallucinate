@@ -31,6 +31,17 @@ All notable changes to this project are documented here. Format based on
   "Hi-Res" pill: Settings → Appearance.
 - The mini player follows the built-in title bar (no frame; drag it by its background) and its volume icon takes
   the wheel and a middle click.
+- Crossfade leaves an album's songs gapless, as the album runs (a live album, a mix); Settings → Playback can
+  crossfade them too.
+- Fade on pause and play (Settings → Playback: off, quick, gentle or slow); pressing play while it fades out
+  brings it straight back.
+- Volume step (1–10% per wheel notch or arrow key) and a maximum volume, for a loud amplifier: Settings →
+  Playback. Every volume wheel (player bar, Now Playing, the deck) now moves by the same step.
+- Track-change notifications skip songs that change while Hallucinate's window is in front (it shows them
+  already); Settings → Desktop can send them every time.
+- The built-in title bar's buttons can go on the left (close first). It's now on by default only where the
+  desktop leaves window frames to the app: GNOME on Wayland and tiling compositors (Hyprland, niri, Sway). KDE,
+  COSMIC and X11 desktops (Cinnamon, XFCE, MATE) keep their own frames unless you switch it on.
 - The tray icon's menu has Go to, with the sidebar's pages: it brings the window back on that page.
 
 ## [1.3.0] - 2026-10-25
