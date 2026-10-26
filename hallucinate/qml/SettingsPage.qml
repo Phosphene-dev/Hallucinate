@@ -78,6 +78,7 @@ Item {
     }
 
     Flickable {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: flick
         anchors { left: parent.left; right: parent.right; top: header.bottom; topMargin: 14; bottom: parent.bottom }
         contentWidth: width
@@ -96,7 +97,7 @@ Item {
             id: sec_appearance
             objectName: "settings_appearance"
             title: "Appearance"
-            keywords: "theme colours colors font text size bigger smaller accent album art ambient motion reduce animation dark light system pride ribbon custom badges bitrate format explicit hi-res hires bit depth 24-bit sample rate"
+            keywords: "theme colours colors font text size bigger smaller accent album art ambient motion reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
             query: page.query
             Row {
                 spacing: 12
@@ -251,6 +252,19 @@ Item {
                         selection: sizes.indexOf(themeManager.textScale)
                         onActivated: function (i) { themeManager.setTextScale(sizes[i]) }
                         Accessible.name: "Text size"
+                    }
+                }
+                Row {
+                    spacing: 12
+                    Text { textFormat: Text.PlainText; text: "Scroll speed"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }
+                    StyledCombo {
+                        objectName: "scrollSpeed"
+                        width: 200
+                        readonly property var speeds: [0.5, 0.75, 1.0, 1.5, 2.0, 3.0]
+                        model: ["Slowest", "Slow", "Normal", "Fast", "Faster", "Fastest"]
+                        selection: speeds.indexOf(shell.scrollSpeed) >= 0 ? speeds.indexOf(shell.scrollSpeed) : 2
+                        onActivated: function (i) { shell.setScrollSpeed(speeds[i]) }
+                        Accessible.name: "Scroll speed (mouse wheel)"
                     }
                 }
                 StyledCheck {

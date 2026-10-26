@@ -49,6 +49,7 @@ Item {
     }
 
     ListView {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: list
         objectName: "historyList"
         anchors.fill: parent

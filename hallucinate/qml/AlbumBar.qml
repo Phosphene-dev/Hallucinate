@@ -26,6 +26,7 @@ Rectangle {
     function done(message) { AlbumSelection.clear(); if (message) Nav.notify(message) }
 
     Flickable {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: scroller
         anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
         contentWidth: row.implicitWidth

@@ -91,6 +91,7 @@ Item {
         anchors.fill: parent
         anchors.leftMargin: 20; anchors.rightMargin: 8
         ListView {
+            WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
             id: list
             objectName: "episodeList"
             anchors.fill: parent

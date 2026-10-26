@@ -84,6 +84,7 @@ Dialog {
         }
     }
     ListView {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: list
         objectName: "genreReviewList"
         anchors { left: parent.left; right: parent.right; top: head.bottom; topMargin: 12; bottom: parent.bottom }

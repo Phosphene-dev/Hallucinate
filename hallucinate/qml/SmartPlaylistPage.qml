@@ -25,6 +25,7 @@ Item {
     }
 
     ListView {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: list
         anchors.fill: parent
         anchors.leftMargin: 20; anchors.rightMargin: 8

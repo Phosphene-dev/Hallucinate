@@ -70,6 +70,7 @@ Item {
         }
     }
     GridView {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: grid
         anchors { top: title.bottom; topMargin: 14; left: parent.left; right: parent.right; bottom: parent.bottom }
         anchors.leftMargin: 20; anchors.rightMargin: 8

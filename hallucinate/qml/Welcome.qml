@@ -117,6 +117,7 @@ FocusScope {
                             + "thing, and keeps an eye out for new songs."
                     }
                     ListView {
+                        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
                         objectName: "welcomeFolders"
                         Layout.fillWidth: true
                         Layout.preferredHeight: Math.min(contentHeight, 150)
@@ -181,6 +182,7 @@ FocusScope {
                     Heading { text: "Pick a look" }
                     Body { text: "Themes change the whole app as you click. There are more options in Settings." }
                     Flickable {
+                        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
                         id: themeScroll
                         Layout.fillWidth: true
                         Layout.fillHeight: true
@@ -251,6 +253,7 @@ FocusScope {
 
                 // 3. What's on, and what may go online
                 Flickable {
+                    WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
                     id: choices
                     objectName: "welcomeChoices"
                     clip: true

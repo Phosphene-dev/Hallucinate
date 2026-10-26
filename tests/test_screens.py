@@ -1725,3 +1725,59 @@ def test_every_queue_button_is_inside_the_panel(qapp, app_window, width):
         assert box.contains(r), (b.property("text"), r, box)
     window.setProperty("queueOpen", False)
     assert not warnings, warnings[:3]
+
+
+def test_the_mouse_wheel_scrolls_evenly_adds_up_and_takes_hi_res_steps(qapp, app_window):
+    """Qt's own wheel handling moved Settings 72 px a notch, three quick notches only 99 px, and a high-resolution
+    wheel (a notch sent as eight steps of 15) 31 px. Every notch now goes the same way, whichever wheel."""
+    import time
+
+    from PySide6.QtCore import QPoint, QPointF
+    from PySide6.QtGui import QWheelEvent
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    window.resize(1280, 800)
+
+    def settle(ms):
+        end = time.monotonic() + ms / 1000
+        while time.monotonic() < end:
+            qapp.processEvents()
+            time.sleep(0.005)
+
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "settings"))
+    settle(300)
+    page = window.findChild(QObject, "pageStack").property("currentItem")
+    items, view = [page], None
+    while items and view is None:
+        item = items.pop()
+        name = item.metaObject().className()
+        if ("Flickable" in name or "ListView" in name) and item.property("contentHeight") > item.height():
+            view = item
+        items.extend(item.childItems())
+    clock, pos = [10_000], QPointF(700, 400)
+
+    def scroll(steps):
+        view.setProperty("contentY", view.property("originY"))
+        settle(100)
+        start = view.property("contentY")
+        for angle in steps:
+            clock[0] += 16
+            e = QWheelEvent(pos, pos, QPoint(0, 0), QPoint(0, -angle), Qt.MouseButton.NoButton,
+                            Qt.KeyboardModifier.NoModifier, Qt.ScrollPhase.NoScrollPhase, False)
+            e.setTimestamp(clock[0])
+            qapp.sendEvent(window, e)
+            settle(16)
+        settle(400)
+        return view.property("contentY") - start
+
+    one = scroll([120])
+    assert 100 <= one <= 120  # a notch: about three lines
+    assert abs(scroll([120] * 3) - 3 * one) < 2  # quick notches add up
+    assert abs(scroll([15] * 8) - one) < 2  # a high-resolution wheel's notch goes as far as any other
+    shell.setScrollSpeed(2.0)
+    try:
+        assert abs(scroll([120]) - 2 * one) < 2
+    finally:
+        shell.setScrollSpeed(1.0)
+    assert not warnings, warnings[:3]

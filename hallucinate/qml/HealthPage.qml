@@ -84,6 +84,7 @@ Item {
     }
 
     Flickable {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         anchors.fill: parent
         contentWidth: width
         contentHeight: content.height + 48

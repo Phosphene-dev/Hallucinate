@@ -97,6 +97,7 @@ Item {
         readonly property real side: Math.max(0, (page.width - Theme.contentMax - 56) / 2)
         anchors.leftMargin: 20 + side; anchors.rightMargin: 8 + side
         ListView {
+            WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
             id: list
             anchors.fill: parent
             readonly property real side: listClip.side

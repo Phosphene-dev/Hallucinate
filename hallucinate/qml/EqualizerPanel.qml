@@ -179,6 +179,7 @@ Column {
         font.pixelSize: Theme.fontSize(12)
     }
     ListView {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: hpResults
         objectName: "headphoneResults"
         width: 560

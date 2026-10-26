@@ -153,6 +153,7 @@ Rectangle {
         hint: "Play an album or a song, or turn on radio to keep the music going."
     }
     ListView {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: list
         anchors { top: panel.stacked ? actions.bottom : head.bottom; topMargin: 14; left: parent.left; right: parent.right; bottom: parent.bottom }
         anchors.leftMargin: 8; anchors.rightMargin: 4

@@ -84,6 +84,7 @@ Item {
     RoundClip {  // the photo's glow behind the page ends in rounded corners, like the panels around it
         anchors.fill: parent
         Flickable {
+            WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
             id: fl
             objectName: "artistFlick"
             anchors.fill: parent

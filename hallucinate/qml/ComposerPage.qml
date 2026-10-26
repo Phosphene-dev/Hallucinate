@@ -47,6 +47,7 @@ Item {
     CollectionMenu { id: composerMenu; objectName: "composerMenu" }
 
     Flickable {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: fl
         anchors.fill: parent
         contentWidth: width

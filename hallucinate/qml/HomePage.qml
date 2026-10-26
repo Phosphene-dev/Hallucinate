@@ -18,6 +18,7 @@ Item {
     }
 
     Flickable {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: fl
         anchors.fill: parent
         contentWidth: width
@@ -209,6 +210,7 @@ Item {
                 width: col.width
                 SectionHeader { title: parent.title; subtitle: parent.subtitle }
                 ListView {
+                    WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
                     id: shelf
                     width: parent.width
                     height: 262

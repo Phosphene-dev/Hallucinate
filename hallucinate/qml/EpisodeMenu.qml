@@ -101,6 +101,7 @@ Menu {
             }
         }
         Flickable {
+            WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
             anchors { left: parent.left; right: parent.right; top: notesHead.bottom; topMargin: 14; bottom: parent.bottom }
             contentHeight: notesText.height
             clip: true

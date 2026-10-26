@@ -629,6 +629,7 @@ ApplicationWindow {
         standardButtons: Dialog.Ok
         onClosed: shell.dismissWhatsNew()
         Flickable {
+            WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
             implicitHeight: Math.min(whatsNewCol.height, window.height - 200)
             width: whatsNewDlg.availableWidth
             contentHeight: whatsNewCol.height

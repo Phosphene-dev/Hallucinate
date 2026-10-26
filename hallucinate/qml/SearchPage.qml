@@ -42,6 +42,7 @@ Item {
     }
 
     Flickable {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: fl
         anchors.fill: parent
         contentWidth: width
@@ -86,6 +87,7 @@ Item {
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             ListView {
+                WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
                 visible: page.artists.length > 0
                 width: parent.width; height: 210
                 orientation: ListView.Horizontal
@@ -153,6 +155,7 @@ Item {
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             ListView {
+                WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
                 visible: page.albums.length > 0
                 width: parent.width; height: 240
                 orientation: ListView.Horizontal

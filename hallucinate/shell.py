@@ -81,6 +81,8 @@ class DesktopShell(QObject):
         # Wayland compositors without server-side decorations), or the system's; and whether it has a minimize
         self._title_bar = self._settings.value("ui/customTitleBar", sys.platform.startswith("linux"), bool)
         self._title_minimize = self._settings.value("ui/titleBarMinimize", can_minimize(), bool)
+        # How far a notch of the mouse wheel scrolls, as a multiple of the usual distance (see WheelScroll.qml)
+        self._scroll_speed = self._float_ui("ui/scrollSpeed", 1.0, 0.25, 4.0)
         # Badges on songs: E for explicit lyrics, Hi-Res for 24-bit and up, and (off to begin with) every bit depth
         self._badges = {name: self._settings.value(f"ui/{name}", on, bool) for name, on in SONG_BADGES.items()}
         self._visualizer_style = str(self._settings.value("ui/visualizerStyle", "liquid"))
@@ -324,6 +326,24 @@ class DesktopShell(QObject):
     def setReduceMotion(self, on):
         self._reduce_motion = bool(on)
         self._settings.setValue("ui/reduceMotion", self._reduce_motion)
+        self.settingsChanged.emit()
+
+    def _float_ui(self, key, default, low, high):
+        try:
+            value = float(self._settings.value(key, default))
+        except (TypeError, ValueError):
+            return default
+        return min(high, max(low, value)) if value == value else default  # NaN: the default
+
+    @Property(float, notify=settingsChanged)
+    def scrollSpeed(self):
+        """How far the mouse wheel scrolls lists and pages: 1 is the usual distance a notch."""
+        return self._scroll_speed
+
+    @Slot(float)
+    def setScrollSpeed(self, speed):
+        self._scroll_speed = min(4.0, max(0.25, float(speed))) if speed == speed else 1.0
+        self._settings.setValue("ui/scrollSpeed", self._scroll_speed)
         self.settingsChanged.emit()
 
     @Property(bool, notify=settingsChanged)

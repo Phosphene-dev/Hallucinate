@@ -33,6 +33,7 @@ Rectangle {
     function songs(n) { return n + (n === 1 ? " song" : " songs") }
 
     Flickable {
+        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: scroller
         anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
         contentWidth: row.implicitWidth
