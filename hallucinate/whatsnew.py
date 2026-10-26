@@ -5,6 +5,7 @@ HIGHLIGHTS = {
     "1.4.1": [
         "Choose when a song is scrobbled to Last.fm or counted on ListenBrainz (Settings → Scrobbling & sharing), "
         "and whether they show it as playing now while it plays.",
+        "The AppImage shows its icon in docks and taskbars, also when AppImageLauncher or Gear Lever added it.",
     ],
     "1.4.0": [
         "The mouse wheel scrolls evenly, high-resolution wheels too (Settings → Appearance → Scroll speed).",

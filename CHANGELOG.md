@@ -5,7 +5,7 @@ All notable changes to this project are documented here. Format based on
 
 ## [1.4.1] - 2026-10-26
 
-Scrobbling choices, from the tester's report.
+Scrobbling choices from the tester's report, and the AppImage's icon in docks.
 
 ### Added
 - When a song is scrobbled to Last.fm, and when it counts as a listen on ListenBrainz, can each be chosen:
