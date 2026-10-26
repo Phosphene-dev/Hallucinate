@@ -3,6 +3,7 @@ import logging
 import os
 import random
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 from PySide6.QtCore import Property, QFile, QFileSystemWatcher, QObject, QSettings, QTimer, QUrl, Signal, Slot
@@ -18,6 +19,10 @@ from .core.radio import radio_tracks
 from .core.scanner import Scanner
 from .core.tags import AUDIO_EXTS, find_folder_art, read_track
 from .models import ALBUM_KEYS, ARTIST_KEYS, TRACK_KEYS, DictModel, compute_ops
+
+LIVE_FIRST_S = 1.5  # the first songs of a first scan show this soon
+LIVE_EVERY_S = 4.0  # and more at least this far apart (longer when a reload takes longer)
+COMPOSER_KEYS = ["name", "tracks", "works", "albums", "seconds", "art", "artUrl", "albumKey"]
 
 logger = logging.getLogger(__name__)
 
@@ -251,6 +256,10 @@ class Library(QObject):
             "wall": DictModel(WALL_KEYS, self, "album_key"),
             # decade and year rows; a year's albums are handed over only when its row is on screen
             "timeline": DictModel(["kind", "label", "count", "year", "albums"], self),
+            # the Artists page's Composers view, most songs first and A–Z: models, not composerList (a list of
+            # thousands handed to a view as plain JS objects froze the window for minutes, issue 90)
+            "composers": DictModel(COMPOSER_KEYS, self, "name"),
+            "composersAz": DictModel(COMPOSER_KEYS, self, "name"),
         }
         self._timeline = []
         self._wall_loading = False
@@ -297,6 +306,8 @@ class Library(QObject):
         self._watcher = QFileSystemWatcher(self)
         self._watcher.directoryChanged.connect(self._on_dir_changed)
         self._reveal_failed.connect(self._open_folder)
+        self._live = self._grow = False  # reloads during a scan (see rescan)
+        self._next_live = self._live_reload_at = self._live_cost = 0.0
         # Settings → Library: look for new and changed files at every start, and as they change. Either can be
         # switched off (a slow network disk, a huge library); Rescan always works.
         self._prefs = QSettings("hallucinate", "hallucinate")
@@ -319,6 +330,8 @@ class Library(QObject):
     albumWall = _model_prop("wall")
     recentAlbums = _model_prop("recent")
     artists = _model_prop("artists")
+    composers = _model_prop("composers")
+    composersAz = _model_prop("composersAz")
     songs = _model_prop("songs")
     searchTracks = _model_prop("sTracks")
     searchAlbums = _model_prop("sAlbums")
@@ -532,6 +545,7 @@ class Library(QObject):
             "genreList": genre_views.overview(db),
             "composerList": composers.overview(db),
         }
+        data["composersAz"] = sorted(data["composerList"], key=lambda c: fold(c["name"]))  # (decorated in place)
         data["timeline"] = Library._timeline_rows(data["albums"])
         data["artistIndex"] = {fold(a["name"]): a for a in data["artists"]}
         data["searchIndex"] = group_index(data["albums"], data["artists"])
@@ -569,6 +583,9 @@ class Library(QObject):
     @Slot(object)
     def _apply_load(self, payload):
         gen, data = payload
+        if self._live_reload_at and gen == self._load_gen:  # a reload during a scan is done: the next may go
+            self._live_cost = time.monotonic() - self._live_reload_at
+            self._live_reload_at = 0.0
         if data is None or gen != self._load_gen:
             return
         m = self._models
@@ -597,6 +614,8 @@ class Library(QObject):
             self.genreListChanged.emit()
         if changed["composerList"]:
             self._composer_list = decorate(data["composerList"])
+            self._models["composers"].set_items(self._composer_list)
+            self._models["composersAz"].set_items(data["composersAz"])
             self.composerListChanged.emit()
         self._artist_index = data["artistIndex"]
         self._speller = None  # (the words may have changed: made again when next needed)
@@ -918,6 +937,7 @@ class Library(QObject):
         if os.path.isdir(path):
             self._db.add_folder(path)
             self.foldersChanged.emit()
+            self._grow = True  # its songs come in during the scan, not only at its end
             self.rescan()
 
     @Slot(str)
@@ -981,6 +1001,11 @@ class Library(QObject):
         self._scanning = True
         self._scan_seen = 0
         self._scan_hint = self._counts["tracks"]
+        # A first scan, or one bringing in a folder just added: show the songs as they're found (#91), with a
+        # reload now and then. An everyday rescan finds little that's new and reloads only at its end.
+        self._live = self._grow or self._counts["tracks"] == 0
+        self._grow = False
+        self._next_live = time.monotonic() + LIVE_FIRST_S
         self.scanProgressChanged.emit()
         self.scanningChanged.emit()
         self._set_status("Scanning…")
@@ -1004,6 +1029,12 @@ class Library(QObject):
     @Slot(int)
     def _on_progress(self, seen):
         self._scan_seen = seen
+        now = time.monotonic()
+        if self._live and self._scanning and not self._live_reload_at and now >= self._next_live:
+            # the last reload's cost sets the pace, so a big library isn't reloading all the time
+            self._live_reload_at = now
+            self._next_live = now + max(LIVE_EVERY_S, 4 * self._live_cost)
+            self.reload()
         self.scanProgressChanged.emit()
         self._set_status(f"Scanning… {seen:,} files")
 

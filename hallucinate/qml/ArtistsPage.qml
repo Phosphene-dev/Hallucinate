@@ -26,11 +26,10 @@ Item {
                                    ? library.artists.toList().sort(compare({songs: "tracks", plays: "plays", added: "added"}[order]))
                                    : null
     // Artists, or (when songs credit any) the composers who wrote them; remembered
-    property bool composers: shell.uiValue("artistsView", "artists") === "composers" && library.composerList.length > 0
+    property bool composers: shell.uiValue("artistsView", "artists") === "composers" && library.composers.count > 0
     function setView(c) { composers = c; shell.setUiValue("artistsView", c ? "composers" : "artists") }
-    readonly property var composerRows: !composers ? null : order === "az"
-        ? library.composerList.slice().sort(function (a, b) { return a.name.localeCompare(b.name) })
-        : library.composerList  // most songs first (as it comes)
+    // Python's models (made in the background): handing the view thousands of composers as a JS list froze it
+    readonly property var composerRows: !composers ? null : order === "az" ? library.composersAz : library.composers
     function subtitle(a) {
         if (composers) return a.works > 0 ? a.works + (a.works === 1 ? " work" : " works") : a.tracks + (a.tracks === 1 ? " song" : " songs")
         if (order === "songs") return a.tracks + (a.tracks === 1 ? " song" : " songs")
@@ -53,7 +52,7 @@ Item {
         spacing: 10
         Row {
             objectName: "artistsView"
-            visible: library.composerList.length > 0
+            visible: library.composers.count > 0
             anchors.verticalCenter: parent.verticalCenter
             spacing: 6
             Chip { objectName: "viewArtists"; text: "Artists"; selected: !page.composers; onClicked: page.setView(false) }
@@ -83,7 +82,7 @@ Item {
         ScrollBar.vertical: ScrollBar {}
         delegate: Item {
             // the library's list gives roles; the sorted copy is plain objects
-            readonly property var artist: page.bySongs || page.composers ? model.modelData : model
+            readonly property var artist: page.bySongs && !page.composers ? model.modelData : model
             width: grid.cellWidth; height: grid.cellHeight
             ArtistCard {
                 x: 10; y: 8

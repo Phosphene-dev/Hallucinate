@@ -8,6 +8,12 @@ All notable changes to this project are documented here. Format based on
 ### Fixed
 - "Add to playlist" in a song's, album's or collection's menu added nothing (#92): the playlist items looked for
   the songs in the wrong menu. Now it adds them, and says so.
+- Opening Composers on the Artists page froze the window for minutes in a big library (#90: 4,000 composers took
+  two minutes here). The view now reads from a list Python prepares in the background, in both orders: it
+  opens in a fraction of a second.
+- The pages promise that songs appear as they're found, but during a first scan (or one bringing in a folder just
+  added) they came only at the end (#91). The library now refreshes every few seconds while such a scan runs,
+  spaced out further in a big library.
 - "Show in folder" did nothing in the Flatpak (#95): the sandbox can't open a folder the way Qt asks. It now asks
   the desktop portal to show the song, selected in its folder; outside the Flatpak the file manager is asked to
   select it too (Nautilus, Dolphin, Nemo, Thunar…), and the folder simply opens where none answers.
