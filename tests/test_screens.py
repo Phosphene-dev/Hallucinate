@@ -102,11 +102,11 @@ def app_window(qapp, tmp_path, monkeypatch, request):
     from hallucinate.metaedit import MetadataEditor
     from hallucinate.player import Player
     from hallucinate.podcasts import Podcasts
-    from hallucinate.spectrogram import Spectrograms
     from hallucinate.replaygain import ReplayGainAnalyzer
     from hallucinate.scrobbling import LastFmScrobbler
     from hallucinate.servers import Servers
     from hallucinate.shell import DesktopShell
+    from hallucinate.spectrogram import Spectrograms
     from hallucinate.stations import Stations
     from hallucinate.themes import ThemeManager
     from hallucinate.userlib import UserLibrary
