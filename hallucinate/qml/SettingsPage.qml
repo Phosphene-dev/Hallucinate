@@ -1527,7 +1527,7 @@ Item {
                     TextField {
                         id: apiKey
                         width: Math.min(250, parent.width); height: 38
-                        placeholderText: "Last.fm API key"
+                        placeholderText: scrobbler.configured ? "Saved (type a new one to replace it)" : "Last.fm API key"
                         color: Theme.text; placeholderTextColor: Theme.textDim
                         font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
                         background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: apiKey.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
@@ -1535,7 +1535,7 @@ Item {
                     TextField {
                         id: apiSecret
                         width: Math.min(250, parent.width); height: 38
-                        placeholderText: "Last.fm API secret"
+                        placeholderText: scrobbler.configured ? "Saved" : "Last.fm API secret"
                         echoMode: TextInput.Password
                         color: Theme.text; placeholderTextColor: Theme.textDim
                         font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
@@ -1563,7 +1563,7 @@ Item {
                     visible: !scrobbler.connected
                     primary: true
                     text: scrobbler.busy ? "Connecting…" : "Connect Last.fm"
-                    enabled: scrobbler.configured && !scrobbler.busy && !shell.offlineMode
+                    enabled: scrobbler.configured && !scrobbler.busy  // offline, it says why instead
                     onClicked: scrobbler.connectAccount()
                 }
                 PillButton {
@@ -1617,6 +1617,7 @@ Item {
                 enabled: !scrobbler.lovesBusy
                 onClicked: scrobbler.importLoves()
             }
+            OfflineNote { visible: shell.offlineMode && (scrobbler.configured || scrobbler.connected); what: "Last.fm" }
             Text { text: "ListenBrainz"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {
                 textFormat: Text.PlainText
@@ -1666,6 +1667,7 @@ Item {
                 color: listenbrainz.connected ? Theme.accent : Theme.textDim
                 font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); wrapMode: Text.WordWrap
             }
+            OfflineNote { visible: shell.offlineMode; what: "ListenBrainz" }
             PillButton {
                 objectName: "listenbrainzRetryNow"
                 visible: listenbrainz.pendingCount > 0 && listenbrainz.connected && !shell.offlineMode

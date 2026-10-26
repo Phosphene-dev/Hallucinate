@@ -382,7 +382,9 @@ class LastFmScrobbler(QObject):
                 return
             self._api_key, self._api_secret = api_key, api_secret
             self.statusChanged.emit()
-            self._set_status("Last.fm API credentials saved securely.")
+            self._set_status("Last.fm API credentials saved securely. "
+                             + ("Turn off offline mode (Settings → Online & privacy) to connect your account."
+                                if net.is_offline() else "Next, connect your account."))
 
         self._set_status("Saving the API credentials…")
         self._store(lambda: (keyring.set_password(KEYRING_SERVICE, "api_key", api_key),
@@ -397,6 +399,10 @@ class LastFmScrobbler(QObject):
             return
         if self._keyring_error:
             self._set_status(f"System keyring is required: {self._keyring_error}")
+            return
+        if net.is_offline():
+            self._set_status("Offline mode is on, so Hallucinate can't reach Last.fm. Turn it off in Settings → "
+                             "Online & privacy to connect.")
             return
         self._set_authorization_url("")
         self._set_status("Requesting Last.fm authorization token…")

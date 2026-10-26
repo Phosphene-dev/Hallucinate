@@ -19,6 +19,9 @@ systems with PipeWire installed but not running, and many new settings.
 - The signal path popup let the page behind show through its text. It also says why a song is "Processed" and
   what would leave it untouched: a 48 kHz output resamples 44.1 kHz songs (PipeWire can switch rates), and a
   volume under 100% scales the samples.
+- With offline mode on, Last.fm's Connect button only went grey, with no word why (ListenBrainz said so). It now
+  says offline mode is on and where to turn it off, both Last.fm and ListenBrainz show a note while it's on, and
+  saved API credentials show as saved.
 - The queue's Export and Save buttons were cut off in a narrow queue panel; the buttons now wrap under the title.
 - Mouse wheel scrolling was slow and uneven (about 70 px a notch, quick notches lost, high-resolution wheels such
   as the Logitech G502 X moving less than half as far). Every notch now moves the same distance and quick notches
