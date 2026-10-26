@@ -33,7 +33,8 @@ jobs:
     # Pinned: on the newer ubuntu-latest image (PulseAudio 17), PySide6 6.12 crashes creating QMediaDevices
     # in CI's bare audio setup. Move back to ubuntu-latest once a newer PySide6 runs there.
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # the suite takes ~7 minutes; a slow package mirror has taken the rest of a 15-minute limit
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
