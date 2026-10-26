@@ -1906,6 +1906,33 @@ Item {
                     Accessible.name: "Page Hallucinate opens on"
                 }
             }
+            Flow {
+                visible: shell.appImageLauncher.length > 0
+                width: parent.width
+                spacing: 10
+                Text {
+                    textFormat: Text.PlainText
+                    width: Math.min(parent.width, 460)
+                    wrapMode: Text.WordWrap
+                    height: Math.max(38, implicitHeight)
+                    verticalAlignment: Text.AlignVCenter
+                    text: shell.appImageLauncher === "other" ? "This AppImage is in your app launcher (added by AppImageLauncher or a similar tool), so docks show its icon."
+                        : shell.appImageLauncher === "ours" ? "This AppImage is in your app launcher, so docks show its icon."
+                        : "This AppImage isn't in your app launcher, so docks and taskbars can't show its icon."
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                }
+                PillButton {
+                    objectName: "addToLauncher"
+                    visible: shell.appImageLauncher === "none"
+                    text: "Add to app launcher"
+                    onClicked: Nav.notify(shell.addToLauncher())
+                }
+                PillButton {
+                    visible: shell.appImageLauncher === "ours"
+                    text: "Remove from app launcher"
+                    onClicked: shell.removeFromLauncher()
+                }
+            }
             PillButton { text: "Open mini player"; onClicked: shell.toggleMini() }
 
         }
