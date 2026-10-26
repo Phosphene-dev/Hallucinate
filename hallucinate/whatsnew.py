@@ -2,6 +2,13 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "1.5.0": [
+        "A Genres page in the sidebar: every genre in your tags (a song with several counts for each), and all "
+        "the songs of the one you pick.",
+        "A spectrum analyzer: \"Spectrum analyzer…\" in a song's menu shows its spectrogram, as Spek does, and "
+        "saves it to Pictures/Hallucinate.",
+        "Add to playlist works again from song and album menus, and from the player's ⋯ menu too.",
+    ],
     "1.4.1": [
         "Choose when a song is scrobbled to Last.fm or counted on ListenBrainz (Settings → Scrobbling & sharing), "
         "and whether they show it as playing now while it plays.",

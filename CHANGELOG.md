@@ -3,7 +3,10 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [1.5.0] - 2026-10-26
+
+The tester's third round: a Genres page, a spectrum analyzer, and fixes for adding to playlists, Show in folder
+in the Flatpak, and a two-minute freeze opening Composers in a big library.
 
 ### Fixed
 - "Add to playlist" in a song's, album's or collection's menu added nothing (#92): the playlist items looked for
