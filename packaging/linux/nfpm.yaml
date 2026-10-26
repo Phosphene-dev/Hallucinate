@@ -122,6 +122,9 @@ overrides:
       - libwayland-cursor.so.0()(64bit)
       - libwayland-egl.so.1()(64bit)
 
+scripts:
+  postremove: ${REPO}/packaging/linux/postremove.sh
+
 deb:
   compression: zstd
 rpm:
