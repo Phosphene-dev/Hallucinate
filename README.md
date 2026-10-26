@@ -220,6 +220,27 @@ chmod +x Hallucinate-x86_64.AppImage && ./Hallucinate-x86_64.AppImage
 ```
 Bundles Python, PySide6 and the Qt Multimedia FFmpeg backend. Build it yourself with `packaging/appimage/build.sh`.
 
+### Debian, Ubuntu and Fedora (.deb, .rpm)
+Each release has a `.deb` (Debian 12+, Ubuntu 22.04+, Mint, Pop!_OS…) and an `.rpm` (Fedora, openSUSE…). They
+hold the same bundled Python and Qt as the AppImage, installed under `/opt/hallucinate`, with a `hallucinate`
+command, a menu entry and icons. Download them from [Releases](https://github.com/Phosphene-dev/Hallucinate/releases/latest), then:
+```sh
+sudo apt install ./hallucinate_*_amd64.deb        # Debian, Ubuntu
+sudo dnf install ./hallucinate-*.x86_64.rpm       # Fedora
+sudo zypper install ./hallucinate-*.x86_64.rpm    # openSUSE
+```
+They aren't in a package repository, so they don't update by themselves: switch on the update check (Settings →
+About) to hear about new versions. Built with `packaging/linux/build.sh`, and installed, started and removed on
+clean Ubuntu, Debian, Fedora and openSUSE systems before each release.
+
+### Nix and NixOS
+```sh
+nix run github:Phosphene-dev/Hallucinate
+```
+or add the flake as an input and put `inputs.hallucinate.packages.${pkgs.system}.default` in
+`environment.systemPackages` or `home.packages`. It's built from source against nixpkgs' own Python, PySide6
+and Qt (`flake.nix`).
+
 ### Flatpak
 Hallucinate has its own signed Flatpak repository (it isn't on Flathub; the runtime still comes from there).
 Install it once and it updates with your other Flatpak apps:
@@ -324,6 +345,10 @@ Credentials and the resulting account session are saved only through the system
 keyring; the pending scrobble queue contains track metadata only. Connect, open
 the authorization page in your browser, and confirm authorization in Settings.
 Scrobbles are queued while offline and retried with backoff when connected.
+
+When a song counts is up to you, separately for Last.fm and ListenBrainz (Settings → Scrobbling & sharing):
+Last.fm's rule (half the song or four minutes, whichever comes first), a quarter, half, three quarters, 90%,
+or at the end. The "Scrobbling now" notice as a song starts can be switched off too.
 On headless Linux, install and unlock a Secret Service-compatible keyring before
 connecting. The app does not fall back to plaintext credential storage.
 
@@ -331,8 +356,11 @@ connecting. The app does not fall back to plaintext credential storage.
 In Settings, paste a ListenBrainz user token from
 [listenbrainz.org/profile/](https://listenbrainz.org/profile/) and connect.
 The token and account name are kept in the system keyring. Hallucinate updates
-now-playing and submits listens when they meet the player listen threshold;
-offline listens are stored locally and retried. The same page can import recent
+now-playing and submits listens when they meet the listen threshold;
+offline listens are stored locally and retried. To send listens to a self-hosted server that speaks the
+ListenBrainz API (Maloja, Koito, Multi-Scrobbler…) instead of listenbrainz.org, tick "Use another server" and
+enter its address (plain `http://` works but warns, since the
+token would travel unencrypted). The same page can import recent
 listening history from either ListenBrainz or Last.fm by username. Imported
 history is deduplicated and matched tracks update local listening statistics.
 
