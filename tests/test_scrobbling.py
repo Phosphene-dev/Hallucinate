@@ -488,3 +488,44 @@ def test_connecting_in_offline_mode_says_why(make_scrobbler, memory_keyring, mon
         assert wait_for(lambda: again.configured, timeout=4)
     finally:
         net.set_offline(False)
+
+
+def test_the_listen_point_can_be_chosen():
+    song = {"path": "/a.flac", "title": "T", "artist": "A"}
+    ten_min = 600_000
+    assert scrobbling.listen_threshold(song, ten_min) == 240_000  # Last.fm's rule
+    assert scrobbling.listen_threshold(song, ten_min, "25") == 150_000
+    assert scrobbling.listen_threshold(song, ten_min, "50") == 300_000  # half, without the 4-minute cap
+    assert scrobbling.listen_threshold(song, ten_min, "90") == 540_000
+    assert scrobbling.listen_threshold(song, ten_min, "end") == 597_000
+    assert scrobbling.listen_threshold(song, 20_000, "25") == 0  # 30 s or less still never counts
+    assert scrobbling.listen_threshold(song, 0, "75") == 240_000  # length unknown: the rule
+    assert scrobbling.listen_threshold({"kind": "station"}, 0, "end") == 60_000
+    assert scrobbling.listen_point("nonsense") == "rule"
+
+
+def test_the_listen_point_is_kept(make_scrobbler):
+    _player, make = make_scrobbler
+    s = make()
+    assert s.listenPoint == "rule"
+    s.setListenPoint("75")
+    assert make().listenPoint == "75"
+    s.setListenPoint("rule")
+
+
+def test_now_playing_can_be_switched_off(make_scrobbler, memory_keyring, monkeypatch):
+    """No "Scrobbling now" on the profile: only the scrobble, once enough is heard."""
+    player, make = make_scrobbler
+    memory_keyring["session"] = "session"
+    calls = []
+    monkeypatch.setattr(scrobbling, "api_request", lambda method, *a, **k: calls.append(method) or {"nowplaying": {}})
+    s = make()
+    s.setNowPlaying(False)
+    try:
+        player.set_track({"path": "/music/a.flac", "title": "Song", "artist": "Artist"}, 60_000)
+        for _ in range(5):
+            s._tick()
+        assert "track.updateNowPlaying" not in calls
+        assert not make().nowPlaying  # remembered
+    finally:
+        s.setNowPlaying(True)

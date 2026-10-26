@@ -3,6 +3,21 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.1] - 2026-10-26
+
+Scrobbling choices from the tester's report, and the AppImage's icon in docks.
+
+### Added
+- When a song is scrobbled to Last.fm, and when it counts as a listen on ListenBrainz, can each be chosen:
+  Last.fm's rule (half way, or 4 minutes), a quarter, half (however long), three quarters, 90%, or at the end.
+  Settings → Scrobbling & sharing.
+- The AppImage's icon in docks and taskbars: on Wayland a dock finds it through the launcher matching the
+  window, and a launcher AppImageLauncher or Gear Lever writes has a name of its own, so the dock showed none.
+  Hallucinate now takes the name of whichever launcher starts it. With none at all, it offers once to add one
+  (also in Settings → Desktop), and keeps it pointing at the AppImage if that's moved.
+- "Scrobbling now" on Last.fm (and "Playing now" on ListenBrainz) as a song starts can be switched off, so the
+  profile shows only finished scrobbles.
+
 ## [1.4.0] - 2026-10-26
 
 The second round of tester feedback: even mouse-wheel scrolling, the tray icon in the Flatpak, a crash fix for

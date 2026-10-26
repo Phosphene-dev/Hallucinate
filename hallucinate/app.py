@@ -126,7 +126,12 @@ def main(argv=None) -> int:
     app.setApplicationName("Hallucinate")
     app.setOrganizationName("hallucinate")
     app.setApplicationDisplayName("Hallucinate")
-    app.setDesktopFileName(os.environ.get("FLATPAK_ID", "hallucinate"))  # must match the installed .desktop
+    # the window's app id: docks find its icon through the launcher of that name. An AppImage uses the launcher
+    # that starts it (AppImageLauncher's, Gear Lever's or our own: see desktopentry), when there is one.
+    from . import desktopentry
+
+    desktopentry.follow()
+    app.setDesktopFileName(os.environ.get("FLATPAK_ID") or desktopentry.launcher_id() or "hallucinate")
     if sys.platform == "win32":
         import ctypes
 

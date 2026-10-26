@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.4.1" date="2026-10-26">
+      <description>
+        <p>Choose when a song is scrobbled to Last.fm and counted on ListenBrainz (Last.fm's rule, a share of the song, or at its end), and switch off their "playing now" display.</p>
+        <p>The AppImage shows its icon in docks and taskbars.</p>
+      </description>
+    </release>
     <release version="1.4.0" date="2026-10-26">
       <description>
         <p>Even mouse-wheel scrolling (high-resolution wheels too) with a scroll speed setting, the tray icon in the Flatpak with a Go to menu, and many new choices: crossfade that leaves albums gapless, a fade on pause and play, a volume step and maximum, the start page, quieter library scanning, and window buttons on the left.</p>

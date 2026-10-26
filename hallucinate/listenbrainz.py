@@ -9,12 +9,12 @@ from urllib.parse import quote, urlencode
 from urllib.request import Request
 
 import keyring
-from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
+from PySide6.QtCore import Property, QObject, QSettings, QTimer, Signal, Slot
 
 from . import __version__, keyringwait
 from .core import net
 from .core.kinds import counts_for_scrobbling, scrobble_fields
-from .scrobbling import REJECTED_KEPT, REPLAY_START_MS, heard_ms, listen_threshold
+from .scrobbling import REJECTED_KEPT, REPLAY_START_MS, heard_ms, listen_point, listen_threshold
 
 DEFAULT_URL = "https://api.listenbrainz.org"
 KEYRING_SERVICE = "Hallucinate ListenBrainz"
@@ -151,6 +151,7 @@ class ListenBrainzScrobbler(QObject):
     importChanged = Signal()
     importFinished = Signal(int)  # new listens added
     deliveryChanged = Signal()  # rejectedCount, rejected or lastError changed
+    listenPointChanged = Signal()
     _jobFinished = Signal(str, object, str)
     _importDone = Signal(object, str)
     _stored = Signal(str, object)  # a keyring write finished: (what went wrong or "", what to do next)
@@ -184,6 +185,9 @@ class ListenBrainzScrobbler(QObject):
         self._rejected_count = 0
         self._last_error = ""
         self._single = False  # a batch was refused: send one at a time to find the listen at fault
+        self._qsettings = QSettings("hallucinate", "hallucinate")
+        self._listen_point = listen_point(self._qsettings.value("listenbrainz/listenPoint", "rule"))
+        self._now_playing = self._qsettings.value("listenbrainz/nowPlaying", True, bool)  # "Playing now"
         self._load_keyring()
         self._load_queue()
         self._jobFinished.connect(self._on_job_finished)
@@ -198,6 +202,28 @@ class ListenBrainzScrobbler(QObject):
         player.seeked.connect(self._on_seeked)
 
     # --- state ---------------------------------------------------------------
+    @Property(str, notify=listenPointChanged)
+    def listenPoint(self):
+        """When a song counts as a listen: one of scrobbling.LISTEN_POINTS."""
+        return self._listen_point
+
+    @Property(bool, notify=listenPointChanged)
+    def nowPlaying(self):
+        """Tell ListenBrainz what's playing as it starts ("Playing now"). Off: only listens."""
+        return self._now_playing
+
+    @Slot(bool)
+    def setNowPlaying(self, on):
+        self._now_playing = bool(on)
+        self._qsettings.setValue("listenbrainz/nowPlaying", self._now_playing)
+        self.listenPointChanged.emit()
+
+    @Slot(str)
+    def setListenPoint(self, point):
+        self._listen_point = listen_point(point)
+        self._qsettings.setValue("listenbrainz/listenPoint", self._listen_point)
+        self.listenPointChanged.emit()
+
     def _load_keyring(self):
 
         self._keyring_late.connect(self._apply_keyring)
@@ -504,7 +530,7 @@ class ListenBrainzScrobbler(QObject):
                 self._maybe_replay(position)  # it went back to the start by itself (a gapless repeat)
             self._listened_ms += heard_ms(now - self._last_tick, position - self._last_position)
             duration = int(self.player.duration or float(track.get("duration", 0) or 0) * 1000)
-            threshold = listen_threshold(track, duration)
+            threshold = listen_threshold(track, duration, self._listen_point)
             if not self._counted and threshold and self._listened_ms >= threshold:
                 self._counted = True
                 self._queue_listen(track, self._started)
@@ -512,7 +538,7 @@ class ListenBrainzScrobbler(QObject):
 
     def _send_now_playing(self):
         track = dict(self.player.current or {})
-        if not counts_for_scrobbling(track):
+        if not self._now_playing or not counts_for_scrobbling(track):
             return
         key = f"{track.get('path')}\x1f{track.get('stream_title', '')}"
         if (not (self.connected and self.player.playing and track and key != self._now_key)

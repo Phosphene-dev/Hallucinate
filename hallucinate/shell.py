@@ -438,6 +438,43 @@ class DesktopShell(QObject):
         self._settings.setValue("ui/customTitleBar", self._title_bar)
         self.settingsChanged.emit()
 
+    # --- the AppImage in the app launcher (see desktopentry) ----------------------------------------------
+    @Property(str, notify=settingsChanged)
+    def appImageLauncher(self):
+        """"" when not an AppImage; otherwise "ours" (added from here), "other" (AppImageLauncher, Gear Lever…)
+        or "none"."""
+        from . import desktopentry
+
+        if not desktopentry.appimage():
+            return ""
+        found = desktopentry.launcher_id()
+        if not found:
+            return "none"
+        return "ours" if found == desktopentry.APP_ID and desktopentry.ours() else "other"
+
+    @Slot(result=str)
+    def addToLauncher(self):
+        from . import desktopentry
+
+        error = desktopentry.install()
+        self.settingsChanged.emit()
+        return error or "Added to your app launcher; docks show its icon from the next start"
+
+    @Slot()
+    def removeFromLauncher(self):
+        from . import desktopentry
+
+        desktopentry.remove()
+        self.settingsChanged.emit()
+
+    @Slot(result=bool)
+    def offerLauncher(self):
+        """Once, at the first start of an AppImage that no launcher starts: offer to add one."""
+        if self.appImageLauncher != "none" or self._settings.value("ui/launcherOffered", False, bool):
+            return False
+        self._settings.setValue("ui/launcherOffered", True)
+        return True
+
     @Property(str, notify=settingsChanged)
     def startPage(self):
         """The page Hallucinate opens on: a sidebar page, or "last" for wherever it was left."""

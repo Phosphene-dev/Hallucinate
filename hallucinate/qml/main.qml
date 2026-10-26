@@ -1009,6 +1009,12 @@ ApplicationWindow {
         }
     }
 
-    Component.onCompleted: go(shell.openingPage())
+    Component.onCompleted: {
+        go(shell.openingPage())
+        // an AppImage nothing has added to the app launcher: docks can't show its icon (once; Settings → Desktop)
+        if (!welcomeView.open && shell.offerLauncher())
+            toast.show("Add Hallucinate to your app launcher? Docks and taskbars need it for its icon.", 15000,
+                       "Add", function () { toast.show(shell.addToLauncher()) })
+    }
     WindowEdges {}  // resizing by the edges when the title bar is built in (no system frame)
 }

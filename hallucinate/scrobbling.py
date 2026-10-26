@@ -60,15 +60,31 @@ def scrobble_threshold(duration_ms: int) -> int:
     return min(duration_ms // 2, 240_000) if duration_ms > 0 else 240_000
 
 
-def listen_threshold(track, duration_ms):
-    """How long (ms) a track has to be heard to count, for Last.fm and ListenBrainz alike: Last.fm's rule (half
-    of it or four minutes, whichever is shorter), never for a track of 30 seconds or less, and a minute for a
-    song on the radio (its length is unknown). 0 means it never counts."""
+# When a song counts as listened to (Settings → Scrobbling & sharing, for Last.fm and ListenBrainz each): Last.fm's
+# rule, a share of the song, or at its end
+LISTEN_POINTS = ("rule", "25", "50", "75", "90", "end")
+
+
+def listen_point(value):
+    value = str(value)
+    return value if value in LISTEN_POINTS else "rule"
+
+
+def listen_threshold(track, duration_ms, point="rule"):
+    """How long (ms) a track has to be heard to count, for Last.fm and ListenBrainz alike. By Last.fm's rule
+    ("rule", the default): half of it or four minutes, whichever is shorter. Or a share of it ("25" … "90") or
+    nearly all of it ("end": the last moment of a song can be lost in a gapless change). Never for a track of
+    30 seconds or less, and a minute for a song on the radio (its length is unknown). 0 means it never counts."""
     if track_kind(track) == "station":
         return 60_000
     if 0 < duration_ms <= MIN_TRACK_MS:
         return 0
-    return scrobble_threshold(duration_ms)
+    point = listen_point(point)
+    if point == "rule" or duration_ms <= 0:
+        return scrobble_threshold(duration_ms)
+    if point == "end":
+        return max(duration_ms // 2, duration_ms - 3000)
+    return duration_ms * int(point) // 100
 
 
 def heard_ms(elapsed_s, advance_ms):
@@ -223,6 +239,9 @@ class LastFmScrobbler(QObject):
 
         self._qsettings = QSettings("hallucinate", "hallucinate")
         self._sync_loves = self._qsettings.value("lastfm/syncLoves", False, bool)
+        self._listen_point = listen_point(self._qsettings.value("lastfm/scrobblePoint", "rule"))
+        # "Scrobbling now" on the profile while a song plays (Last.fm's optional now-playing update)
+        self._now_playing = self._qsettings.value("lastfm/nowPlaying", True, bool)
         self._loves_busy = False
         self._loves_done.connect(self._on_loves_done)
         self._timer = QTimer(self)
@@ -618,7 +637,7 @@ class LastFmScrobbler(QObject):
         return "\x1f".join(str(track.get(k, "")) for k in ("path", "title", "artist", "album"))
 
     def _ensure_nowplaying(self):
-        if (not self.connected or not self.player.playing or not self._current_track
+        if (not self._now_playing or not self.connected or not self.player.playing or not self._current_track
                 or not counts_for_scrobbling(self._current_track)):
             return
         key = self._track_key(self._current_track)
@@ -656,7 +675,7 @@ class LastFmScrobbler(QObject):
                 self._maybe_replay(position)  # it went back to the start by itself (a gapless repeat)
             self._listened_ms += heard_ms(now - self._last_tick, position - self._last_position)
             duration = int(self.player.duration or float(self._current_track.get("duration", 0)) * 1000)
-            threshold = listen_threshold(self._current_track, duration)
+            threshold = listen_threshold(self._current_track, duration, self._listen_point)
             key = self._track_key(self._current_track)
             if (key != self._scrobbled_key and threshold > 0 and self._listened_ms >= threshold
                     and counts_for_scrobbling(self._current_track)):
@@ -727,6 +746,30 @@ class LastFmScrobbler(QObject):
         except (OSError, TypeError, ValueError) as exc:
             logger.warning("Could not persist Last.fm offline queue to %s: %s", self._queue_path, exc)
             self._set_status(f"Could not persist offline scrobbles: {exc}")
+
+    @Property(str, notify=syncChanged)
+    def listenPoint(self):
+        """When a song is scrobbled: one of LISTEN_POINTS."""
+        return self._listen_point
+
+    @Slot(str)
+    def setListenPoint(self, point):
+        self._listen_point = listen_point(point)
+        self._qsettings.setValue("lastfm/scrobblePoint", self._listen_point)
+        self.syncChanged.emit()
+
+    @Property(bool, notify=syncChanged)
+    def nowPlaying(self):
+        """Tell Last.fm what's playing as it starts ("Scrobbling now" on the profile). Off: only scrobbles."""
+        return self._now_playing
+
+    @Slot(bool)
+    def setNowPlaying(self, on):
+        self._now_playing = bool(on)
+        self._qsettings.setValue("lastfm/nowPlaying", self._now_playing)
+        if not self._now_playing:
+            self._pending_nowplaying = None
+        self.syncChanged.emit()
 
     # --- loves ⇄ Liked Songs ---------------------------------------------------------------------------
     @Property(bool, notify=syncChanged)

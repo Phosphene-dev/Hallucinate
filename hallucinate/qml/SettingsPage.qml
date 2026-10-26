@@ -1504,7 +1504,7 @@ Item {
             id: sec_scrobbling
             objectName: "settings_scrobbling"
             title: "Scrobbling & sharing"
-            keywords: "last.fm lastfm listenbrainz scrobble scrobbling loves discord rich presence history import account radio stations podcasts episodes queued"
+            keywords: "last.fm lastfm listenbrainz scrobble scrobbling loves discord rich presence history import account radio stations podcasts episodes queued when half percent threshold point listen end"
             query: page.query
             Text { text: "Last.fm"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {
@@ -1604,6 +1604,29 @@ Item {
                 onClicked: scrobbler.retryNow()
             }
             StyledCheck {
+                objectName: "lastfmNowPlaying"
+                visible: scrobbler.connected
+                text: "Show \u201cScrobbling now\u201d on Last.fm while a song plays (the scrobble itself waits for the point below)"
+                checked: scrobbler.nowPlaying
+                onToggled: scrobbler.setNowPlaying(checked)
+            }
+            Flow {
+                visible: scrobbler.connected
+                width: parent.width
+                spacing: 10
+                Text { textFormat: Text.PlainText; text: "Scrobble a song after"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                StyledCombo {
+                    objectName: "scrobblePoint"
+                    readonly property var points: ["rule", "25", "50", "75", "90", "end"]
+                    width: 300
+                    model: ["Half way, or 4 minutes (Last.fm's rule)", "A quarter of the way", "Half way, however long",
+                            "Three quarters of the way", "90% of the way", "At the end"]
+                    selection: Math.max(0, points.indexOf(scrobbler.listenPoint))
+                    onActivated: scrobbler.setListenPoint(points[currentIndex])
+                    Accessible.name: "Scrobble a song after"
+                }
+            }
+            StyledCheck {
                 objectName: "syncLoves"
                 visible: scrobbler.connected && shell.features.liked !== false
                 text: "Liking a song loves it on Last.fm (and unliking unloves it)"
@@ -1668,6 +1691,29 @@ Item {
                 font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); wrapMode: Text.WordWrap
             }
             OfflineNote { visible: shell.offlineMode; what: "ListenBrainz" }
+            StyledCheck {
+                objectName: "listenbrainzNowPlaying"
+                visible: listenbrainz.connected
+                text: "Show \u201cPlaying now\u201d on ListenBrainz while a song plays (the listen itself waits for the point below)"
+                checked: listenbrainz.nowPlaying
+                onToggled: listenbrainz.setNowPlaying(checked)
+            }
+            Flow {
+                visible: listenbrainz.connected
+                width: parent.width
+                spacing: 10
+                Text { textFormat: Text.PlainText; text: "Count a listen after"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                StyledCombo {
+                    objectName: "listenPoint"
+                    readonly property var points: ["rule", "25", "50", "75", "90", "end"]
+                    width: 300
+                    model: ["Half way, or 4 minutes (Last.fm's rule)", "A quarter of the way", "Half way, however long",
+                            "Three quarters of the way", "90% of the way", "At the end"]
+                    selection: Math.max(0, points.indexOf(listenbrainz.listenPoint))
+                    onActivated: listenbrainz.setListenPoint(points[currentIndex])
+                    Accessible.name: "Count a listen after"
+                }
+            }
             PillButton {
                 objectName: "listenbrainzRetryNow"
                 visible: listenbrainz.pendingCount > 0 && listenbrainz.connected && !shell.offlineMode
@@ -1858,6 +1904,33 @@ Item {
                     selection: Math.max(0, pages.indexOf(shell.startPage))
                     onActivated: shell.setStartPage(pages[currentIndex])
                     Accessible.name: "Page Hallucinate opens on"
+                }
+            }
+            Flow {
+                visible: shell.appImageLauncher.length > 0
+                width: parent.width
+                spacing: 10
+                Text {
+                    textFormat: Text.PlainText
+                    width: Math.min(parent.width, 460)
+                    wrapMode: Text.WordWrap
+                    height: Math.max(38, implicitHeight)
+                    verticalAlignment: Text.AlignVCenter
+                    text: shell.appImageLauncher === "other" ? "This AppImage is in your app launcher (added by AppImageLauncher or a similar tool), so docks show its icon."
+                        : shell.appImageLauncher === "ours" ? "This AppImage is in your app launcher, so docks show its icon."
+                        : "This AppImage isn't in your app launcher, so docks and taskbars can't show its icon."
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                }
+                PillButton {
+                    objectName: "addToLauncher"
+                    visible: shell.appImageLauncher === "none"
+                    text: "Add to app launcher"
+                    onClicked: Nav.notify(shell.addToLauncher())
+                }
+                PillButton {
+                    visible: shell.appImageLauncher === "ours"
+                    text: "Remove from app launcher"
+                    onClicked: shell.removeFromLauncher()
                 }
             }
             PillButton { text: "Open mini player"; onClicked: shell.toggleMini() }
