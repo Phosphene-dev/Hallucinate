@@ -488,3 +488,26 @@ def test_connecting_in_offline_mode_says_why(make_scrobbler, memory_keyring, mon
         assert wait_for(lambda: again.configured, timeout=4)
     finally:
         net.set_offline(False)
+
+
+def test_the_listen_point_can_be_chosen():
+    song = {"path": "/a.flac", "title": "T", "artist": "A"}
+    ten_min = 600_000
+    assert scrobbling.listen_threshold(song, ten_min) == 240_000  # Last.fm's rule
+    assert scrobbling.listen_threshold(song, ten_min, "25") == 150_000
+    assert scrobbling.listen_threshold(song, ten_min, "50") == 300_000  # half, without the 4-minute cap
+    assert scrobbling.listen_threshold(song, ten_min, "90") == 540_000
+    assert scrobbling.listen_threshold(song, ten_min, "end") == 597_000
+    assert scrobbling.listen_threshold(song, 20_000, "25") == 0  # 30 s or less still never counts
+    assert scrobbling.listen_threshold(song, 0, "75") == 240_000  # length unknown: the rule
+    assert scrobbling.listen_threshold({"kind": "station"}, 0, "end") == 60_000
+    assert scrobbling.listen_point("nonsense") == "rule"
+
+
+def test_the_listen_point_is_kept(make_scrobbler):
+    _player, make = make_scrobbler
+    s = make()
+    assert s.listenPoint == "rule"
+    s.setListenPoint("75")
+    assert make().listenPoint == "75"
+    s.setListenPoint("rule")

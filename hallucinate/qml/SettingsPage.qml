@@ -1504,7 +1504,7 @@ Item {
             id: sec_scrobbling
             objectName: "settings_scrobbling"
             title: "Scrobbling & sharing"
-            keywords: "last.fm lastfm listenbrainz scrobble scrobbling loves discord rich presence history import account radio stations podcasts episodes queued"
+            keywords: "last.fm lastfm listenbrainz scrobble scrobbling loves discord rich presence history import account radio stations podcasts episodes queued when half percent threshold point listen end"
             query: page.query
             Text { text: "Last.fm"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {
@@ -1603,6 +1603,22 @@ Item {
                 text: "Send now"
                 onClicked: scrobbler.retryNow()
             }
+            Flow {
+                visible: scrobbler.connected
+                width: parent.width
+                spacing: 10
+                Text { textFormat: Text.PlainText; text: "Scrobble a song after"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                StyledCombo {
+                    objectName: "scrobblePoint"
+                    readonly property var points: ["rule", "25", "50", "75", "90", "end"]
+                    width: 300
+                    model: ["Half way, or 4 minutes (Last.fm's rule)", "A quarter of the way", "Half way, however long",
+                            "Three quarters of the way", "90% of the way", "At the end"]
+                    selection: Math.max(0, points.indexOf(scrobbler.listenPoint))
+                    onActivated: scrobbler.setListenPoint(points[currentIndex])
+                    Accessible.name: "Scrobble a song after"
+                }
+            }
             StyledCheck {
                 objectName: "syncLoves"
                 visible: scrobbler.connected && shell.features.liked !== false
@@ -1668,6 +1684,22 @@ Item {
                 font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); wrapMode: Text.WordWrap
             }
             OfflineNote { visible: shell.offlineMode; what: "ListenBrainz" }
+            Flow {
+                visible: listenbrainz.connected
+                width: parent.width
+                spacing: 10
+                Text { textFormat: Text.PlainText; text: "Count a listen after"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                StyledCombo {
+                    objectName: "listenPoint"
+                    readonly property var points: ["rule", "25", "50", "75", "90", "end"]
+                    width: 300
+                    model: ["Half way, or 4 minutes (Last.fm's rule)", "A quarter of the way", "Half way, however long",
+                            "Three quarters of the way", "90% of the way", "At the end"]
+                    selection: Math.max(0, points.indexOf(listenbrainz.listenPoint))
+                    onActivated: listenbrainz.setListenPoint(points[currentIndex])
+                    Accessible.name: "Count a listen after"
+                }
+            }
             PillButton {
                 objectName: "listenbrainzRetryNow"
                 visible: listenbrainz.pendingCount > 0 && listenbrainz.connected && !shell.offlineMode
