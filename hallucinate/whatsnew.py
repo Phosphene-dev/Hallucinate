@@ -2,6 +2,11 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "1.6.1": [
+        "Home's album shelves move with the mouse wheel and by dragging again, and long song titles scroll in the "
+        "player bar and mini player while they play.",
+        "The selection bar and Now Playing fit small windows.",
+    ],
     "1.6.0": [
         "Select anything, from anywhere: Ctrl+click, Shift+click, Ctrl+A or drag across a list, and gather songs, "
         "albums and artists from different pages. Drag a selection onto a playlist or the queue.",

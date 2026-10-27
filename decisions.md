@@ -76,6 +76,9 @@ From testing the app on my own library, on Linux (Hyprland) and Windows:
   promoting it dishonestly. [0.9.0]
 - **No paid macOS signing.** I won't pay Apple's $99 a year to sign for a platform I don't use. Windows signing
   is worth doing, but it waits for now (SignPath).
+- **Lighter point releases.** Building every package for every release was wasting resources. Point releases
+  build only the AppImage, the Flatpak and the Windows installer; macOS and the .deb/.rpm come with the major
+  releases. [1.6.1]
 - **Packages for other distributions.** Besides the AppImage and Flatpak, Hallucinate ships a .deb, an .rpm and a
   Nix flake, so people on Debian, Ubuntu, Fedora, openSUSE and NixOS can install it the way they're used to.
   [1.5.1]

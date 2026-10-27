@@ -89,12 +89,12 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             width: parent.width - art.width - 12
             spacing: 3
-            Text {
-                textFormat: Text.PlainText
+            MarqueeText {  // a long title glides to its end and back while it plays (#112)
+                objectName: "barTitle"
                 width: parent.width
                 text: player.hasTrack ? player.current.title : "Nothing playing"
+                active: player.playing
                 color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
-                elide: Text.ElideRight
                 Accessible.role: Accessible.StaticText
                 Accessible.name: text
                 MouseArea {  // click: go to what's playing; right-click: its menu

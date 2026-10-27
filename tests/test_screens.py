@@ -1798,8 +1798,9 @@ def test_the_mouse_wheel_scrolls_evenly_adds_up_and_takes_hi_res_steps(qapp, app
 
 @pytest.mark.parametrize("app_window", ["varied"], indirect=True)
 def test_the_wheel_over_a_shelf_moves_the_page_or_the_shelf(qapp, app_window):
-    """Issue 105: the wheel over Home's shelves moves the page by default; Shift+wheel, or the "Moves the row"
-    setting, moves the albums sideways; the arrow buttons page through them."""
+    """Issues 105 and 109: the wheel over Home's shelves moves the albums when the turn starts over the shelf,
+    while a page scroll already under way carries on past it; Shift+wheel always moves them; the setting can
+    always move the row, or leave the wheel to the page."""
     import time
 
     from PySide6.QtCore import QPoint
@@ -1834,26 +1835,54 @@ def test_the_wheel_over_a_shelf_moves_the_page_or_the_shelf(qapp, app_window):
         settle(20)
     clock = [50_000]
 
-    def wheel(angle, mods=Qt.KeyboardModifier.NoModifier):
-        shelf.setProperty("contentX", shelf.property("originX"))
-        settle(50)
-        start = shelf.property("contentX")
-        pos = shelf.mapToScene(QPointF(shelf.width() / 2, shelf.height() / 2))
+    def send(pos, angle, mods=Qt.KeyboardModifier.NoModifier):
         clock[0] += 500
         e = QWheelEvent(pos, pos, QPoint(0, 0), QPoint(0, angle), Qt.MouseButton.NoButton, mods,
                         Qt.ScrollPhase.NoScrollPhase, False)
         e.setTimestamp(clock[0])
         qapp.sendEvent(window, e)
+
+    def wheel(angle, mods=Qt.KeyboardModifier.NoModifier, page_first=False):
+        shelf.setProperty("contentX", shelf.property("originX") - shelf.property("leftMargin"))
+        settle(800)  # (any earlier page scroll is over)
+        start = shelf.property("contentX")
+        if page_first:  # the page is being scrolled, and the pointer reaches the shelf on the way
+            send(QPointF(window.width() - 40, 120), angle)
+            settle(30)
+        send(shelf.mapToScene(QPointF(shelf.width() / 2, shelf.height() / 2)), angle, mods)
         settle(400)
         return shelf.property("contentX") - start
 
-    assert wheel(-120) == 0  # the page's
-    assert wheel(-120, Qt.KeyboardModifier.ShiftModifier) > 100
-    shell.setUiValue("shelfWheel", "row")
+    assert wheel(-120) > 100  # a turn that starts over the shelf moves it
+    assert wheel(-120, page_first=True) == 0  # a page scroll carries on past it
+    assert wheel(-120, Qt.KeyboardModifier.ShiftModifier, page_first=True) > 100
     try:
-        assert wheel(-120) > 100
-    finally:
         shell.setUiValue("shelfWheel", "page")
+        assert wheel(-120) == 0
+        assert wheel(-120, Qt.KeyboardModifier.ShiftModifier) > 100
+        shell.setUiValue("shelfWheel", "row")
+        assert wheel(-120, page_first=True) > 100
+    finally:
+        shell.setUiValue("shelfWheel", "auto")
+
+    # Issue 109: a mouse drag along a shelf moves it, as before selecting by dragging came in; it selects nothing
+    from PySide6.QtCore import QPoint as P
+    from PySide6.QtTest import QTest
+
+    shelf.setProperty("contentX", shelf.property("originX") - shelf.property("leftMargin"))
+    settle(100)
+    start = shelf.property("contentX")
+    c = shelf.mapToScene(QPointF(shelf.width() * 0.8, shelf.height() * 0.4))
+    a = P(int(c.x()), int(c.y()))
+    QTest.mousePress(window, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, a)
+    for k in range(1, 13):
+        QTest.mouseMove(window, P(a.x() - 25 * k, a.y()))
+        qapp.processEvents()
+        time.sleep(0.01)
+    QTest.mouseRelease(window, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, P(a.x() - 300, a.y()))
+    settle(300)
+    assert shelf.property("contentX") - start > 100
+    assert _js(window, "Selection.count") == 0
     assert not warnings, warnings[:3]
 
 
@@ -2239,4 +2268,171 @@ def test_counts_are_written_with_thousands_separators(qapp, app_window):
         assert num(12345) and num(None) == ""
     finally:
         shell.setUiValue("numberFormat", "locale")
+    assert not warnings, warnings[:3]
+
+
+def test_the_selection_bar_fits_the_window(qapp, app_window):
+    """Issue 111: at small and large widths the bar's last actions were off its end, with nothing to say so.
+    Now it shortens labels and moves actions into More until it fits; what's moved is in More."""
+    import time
+
+    from conftest import wait_for
+    from PySide6.QtCore import QPoint
+    from PySide6.QtTest import QTest
+
+    window, objects, warnings = app_window
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "albums"))
+
+    def items(root=None):
+        stack = [root or window.contentItem()]
+        while stack:
+            item = stack.pop()
+            yield item
+            stack.extend(item.childItems())
+
+    def named(name):
+        return [i for i in items() if i.objectName() == name and i.isVisible()]
+
+    assert wait_for(lambda: len(named("albumCard")) == 2)
+    for card in named("albumCard"):
+        p = card.mapToScene(QPointF(0, 0))
+        QTest.mouseClick(window, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.ControlModifier,
+                         QPoint(int(p.x() + 40), int(p.y() + 40)))
+    bar = window.findChild(QObject, "selectionBar")
+    assert wait_for(lambda: bar.property("shown"))
+    flick = next(i for i in items(bar) if "Flickable" in i.metaObject().className())
+    for width in (700, 900, 1100, 1400, 1900):
+        window.resize(width, 800)
+        end = time.monotonic() + 0.5
+        while time.monotonic() < end:  # the window lays out, then the bar fits itself in
+            qapp.processEvents()
+            time.sleep(0.005)
+        level = bar.property("level")
+        assert flick.property("contentWidth") <= flick.width() + 1, (width, level)  # it all shows
+        if level >= 2:
+            more = next(i for i in items(bar) if i.objectName() == "selectionMore")
+            assert more.isVisible()
+    assert bar.property("level") == 0  # with room, everything is back in the bar
+    assert not warnings, warnings[:3]
+
+
+def test_long_titles_glide_while_playing(qapp, app_window):
+    """Issue 112: a title too long for the player bar glides to its end and back while playing, stops (back to
+    the start) when paused, starts over with a new title, and stays put when switched off or with reduced
+    motion."""
+    import pathlib
+    import time
+
+    from PySide6.QtQml import QQmlComponent, qmlEngine
+
+    import hallucinate
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    qml_dir = pathlib.Path(hallucinate.__file__).parent / "qml"
+    comp = QQmlComponent(qmlEngine(window))
+    comp.setData(b'import QtQuick\nimport "."\nItem { width: 400; height: 40\n'
+                 b'  MarqueeText { objectName: "probe"; width: 120; height: 20; active: false\n'
+                 b'    text: "A very long song title that cannot possibly fit in this space at all" } }',
+                 QUrl.fromLocalFile(str(qml_dir / "MarqueeProbe.qml")))
+    holder = comp.create()
+    assert holder is not None, comp.errorString()
+    holder.setParentItem(window.contentItem())
+    holder.setPosition(QPointF(window.width() / 2, window.height() / 2))
+    from PySide6.QtCore import QPoint
+    from PySide6.QtTest import QTest
+
+    QTest.mouseMove(window, QPoint(5, window.height() - 5))  # (pointing at it would make it glide too)
+    m = holder.findChild(QObject, "probe")
+
+    def settle(ms):
+        end = time.monotonic() + ms / 1000
+        while time.monotonic() < end:
+            qapp.processEvents()
+            time.sleep(0.005)
+
+    settle(50)
+    assert m.property("overflows") and not m.property("scrolling")  # paused: still, ending in …
+    m.setProperty("active", True)
+    settle(2600)  # it waits a moment, then glides
+    assert m.property("scrolling") and m.property("offset") > 5
+    m.setProperty("text", "Another quite long title for the next song that also overflows")
+    assert m.property("offset") == 0  # a new song starts at the beginning
+    m.setProperty("active", False)
+    settle(30)
+    assert not m.property("scrolling") and m.property("offset") == 0
+    try:
+        shell.setUiValue("marquee", "off")
+        m.setProperty("active", True)
+        settle(30)
+        assert not m.property("scrolling")
+    finally:
+        shell.setUiValue("marquee", "playing")
+    m.setProperty("text", "Short")
+    settle(30)
+    assert not m.property("overflows") and not m.property("scrolling")
+    holder.deleteLater()
+    assert not warnings, warnings[:3]
+
+
+# Issue 113: Now Playing's text and controls ran off a small window. Whatever the window's size, everything
+# Now Playing shows stays inside it.
+def _visible_items(root):
+    stack = [root]
+    while stack:
+        item = stack.pop()
+        if not item.isVisible() or item.opacity() == 0:
+            continue
+        yield item
+        stack.extend(item.childItems())
+
+
+@pytest.mark.parametrize("lyrics", [False, True])
+@pytest.mark.parametrize("size", [(900, 600), (885, 580), (760, 520), (640, 480), (520, 700), (1280, 800),
+                                  (2560, 1080), (1000, 1400)])
+def test_now_playing_fits_the_window(qapp, app_window, size, lyrics, tmp_path):
+    import os
+    import time
+
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    user_lib, player = objects["userLib"], objects["player"]
+    view = window.findChild(QObject, "nowPlayingView")
+    # (a tiling window manager can make the window smaller than it asks to be: the tester's was 885×580)
+    window.setProperty("minimumWidth", 0)
+    window.setProperty("minimumHeight", 0)
+    window.resize(*size)
+    if not player.property("hasTrack"):
+        from audio import encode
+
+        song = encode(tmp_path / "np.flac", "flac", seconds=3, title="Np")
+        title = "An Extraordinarily Long Song Title That Goes On (Extended Twelve-Inch Remix, Remastered 2024)"
+        player.playList([{"id": 99, "path": str(song), "title": title, "artist": "The Extraordinarily Long Named "
+                          "Orchestra and Choir", "album": "A Very Long Album Name, Volume Two", "year": 2024,
+                          "genre": "Dream Pop, Shoegaze, Ambient", "duration": 3, "sample_rate": 44100,
+                          "codec": "FLAC"}], 0)
+        assert wait_for(lambda: player.property("hasTrack"), timeout=5)
+    view.setProperty("open", True)
+    view.setProperty("lyricsMode", lyrics)
+    end = time.monotonic() + 0.8
+    while time.monotonic() < end:
+        qapp.processEvents()
+        time.sleep(0.005)
+    content = view.findChild(QObject, "nowPlayingContent")
+    assert content is not None
+    w, h = window.width(), window.height()
+    out = []
+    for item in _visible_items(content):
+        if item.width() < 1 or item.height() < 1:
+            continue
+        tl = item.mapToScene(QPointF(0, 0))
+        br = item.mapToScene(QPointF(item.width(), item.height()))
+        if tl.x() < -1 or tl.y() < -1 or br.x() > w + 1 or br.y() > h + 1:
+            out.append((item.objectName() or item.metaObject().className(), round(tl.x()), round(tl.y()),
+                        round(br.x()), round(br.y())))
+    shots = os.environ.get("NP_SHOTS")
+    if shots:
+        window.grabWindow().save(os.path.join(shots, f"np-{w}x{h}{'-lyrics' if lyrics else ''}.png"))
+    assert not out, (w, h, out[:6])
     assert not warnings, warnings[:3]

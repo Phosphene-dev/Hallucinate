@@ -86,10 +86,10 @@ def _quote(path):
 
 
 # The launcher's right-click actions in docks and taskbars (as the packages' hallucinate.desktop has them):
-# the tray menu's, which start Hallucinate first when it isn't running (--launch)
+# the tray menu's player controls, which start Hallucinate first when it isn't running (--launch). Not Quit:
+# docks put the actions among their own entries, where a Quit sat oddly (the tester's call; the tray keeps it).
 ACTIONS = (("PlayPause", "Play/Pause", "--play-pause --launch"), ("Next", "Next", "--next --launch"),
-           ("Previous", "Previous", "--prev --launch"), ("MiniPlayer", "Mini Player", "--mini-player --launch"),
-           ("Quit", "Quit", "--quit"))
+           ("Previous", "Previous", "--prev --launch"), ("MiniPlayer", "Mini Player", "--mini-player --launch"))
 
 
 def entry_text(image):

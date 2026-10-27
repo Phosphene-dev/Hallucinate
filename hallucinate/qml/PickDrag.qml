@@ -2,7 +2,7 @@ pragma Singleton
 import QtQuick
 
 // Dragging over a list with the mouse (see Pick): from an item that isn't selected it paints a selection across the
-// items passed over; from one that is, it picks the whole selection up, to drop on a playlist in the sidebar or on
+// items passed over (not in a row that scrolls sideways, which the drag moves instead); from one that is, it picks the whole selection up, to drop on a playlist in the sidebar or on
 // the queue. Near the top or bottom of a scrolling list the list scrolls along.
 QtObject {
     id: drag
@@ -25,6 +25,13 @@ QtObject {
     function press(p, area, mouse) {
         var real = mouse.source === undefined || mouse.source === Qt.MouseEventNotSynthesized
         pick = real && mouse.button === Qt.LeftButton && !(mouse.modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) ? p : null
+        // Where a drag can only scroll (a row that scrolls sideways, like Home's shelves (#109), or painting is
+        // switched off in Settings → Library), only a selected item's drag is ours (it carries the selection):
+        // decided now, as a list can't take a drag over once the press has kept it away
+        if (pick && !(pick.selected && pick.carries)) {
+            var v = pick.view()
+            if (shell.ui.dragSelect === "false" || (v && v.orientation === ListView.Horizontal)) pick = null
+        }
         painting = carrying = false
         swallowClick = false
         // a real mouse drags the selection, not the list (touch still scrolls it)
@@ -41,11 +48,6 @@ QtObject {
             if (Math.abs(sceneX - pressX) < Qt.styleHints.startDragDistance && Math.abs(sceneY - pressY) < Qt.styleHints.startDragDistance) return
             if (pick.selected && pick.carries) {
                 carrying = true
-            } else if (shell.ui.dragSelect === "false") {
-                // painting is off (Settings → Library): the list scrolls as it always did
-                if (area) area.preventStealing = false
-                pick = null
-                return
             } else {
                 painting = true
                 base = Selection.items.slice()

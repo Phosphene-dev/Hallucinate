@@ -24,7 +24,21 @@ Rectangle {
     readonly property bool inPlaylist: songsOnly && Selection.origin.length > 0 && Selection.origin === "playlist:" + userLib.currentPlaylist
 
     property real maxWidth: parent ? parent.width - 32 : 900
-    readonly property bool tight: maxWidth < 860  // short labels in small windows
+    // What fits (#111): 0 everything with full labels; 1 short labels; 2 Play next, Rate and Edit tags move into
+    // More (an episode's last three into its own More); 3 Add to queue and Like too; 4 Add to playlist too; 5 the
+    // count loses its "selected". Worked out again whenever the room or the selection changes; anything still
+    // too wide scrolls, with arrows to say so.
+    property int level: 0
+    readonly property bool tight: level >= 1
+    readonly property bool folded: level >= 2
+    readonly property bool foldedMore: level >= 3
+    readonly property bool foldedAll: level >= 4
+    function fit() { if (shown && row.implicitWidth + 28 > maxWidth + 0.5 && level < 5) { level++; Qt.callLater(fit) } }
+    function refit() { level = 0; Qt.callLater(fit) }
+    onMaxWidthChanged: refit()
+    onDomainChanged: refit()
+    onShownChanged: if (shown) refit()
+    Connections { target: row; function onImplicitWidthChanged() { Qt.callLater(bar.fit) } }
     width: Math.min(row.implicitWidth + 28, maxWidth)
     height: 52
     radius: Theme.round(26)
@@ -52,7 +66,7 @@ Rectangle {
     }
 
     Flickable {
-        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
+        WheelScroll { row: scroller }  // the wheel moves it sideways
         id: scroller
         anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
         contentWidth: row.implicitWidth
@@ -68,7 +82,7 @@ Rectangle {
                 objectName: "selectionCount"
                 anchors.verticalCenter: parent.verticalCenter
                 rightPadding: 6
-                text: Selection.summary(bar.tight) + " selected"
+                text: Selection.summary(bar.tight) + (bar.level >= 5 ? "" : " selected")
                 color: Theme.text
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(13)
@@ -79,20 +93,20 @@ Rectangle {
             // ---- music --------------------------------------------------------------------------------------
             Action { objectName: "selectionPlay"; visible: bar.music; primary: true; text: "Play"; onClicked: { userLib.playPaths(bar.paths()); bar.done("") } }
             Action {
-                visible: bar.music
+                visible: bar.music && !bar.folded
                 text: bar.tight ? "Next" : "Play next"
                 onClicked: { var p = bar.paths(); userLib.playNextPaths(p); bar.done(bar.songs(p.length) + " will play next") }
             }
             Action {
                 objectName: "selectionQueue"
-                visible: bar.music
+                visible: bar.music && !bar.foldedMore
                 text: bar.tight ? "Queue" : "Add to queue"
                 onClicked: { var p = bar.paths(); userLib.enqueuePaths(p); bar.done(bar.songs(p.length) + " added to the queue") }
             }
             Action {
                 id: plButton
                 objectName: "selectionAddToPlaylist"
-                visible: bar.music || bar.domain === "queue"
+                visible: (bar.music && !bar.foldedAll) || bar.domain === "queue"
                 text: bar.tight ? "Playlist…" : "Add to playlist…"
                 onClicked: plMenu.popup(plButton, 0, -plMenu.implicitHeight - 6)
                 Menu {
@@ -113,7 +127,7 @@ Rectangle {
             IconButton {
                 anchors.verticalCenter: parent.verticalCenter
                 icon: "heart"; size: 16
-                visible: bar.music && shell.features.liked !== false
+                visible: bar.music && shell.features.liked !== false && !bar.foldedMore
                 // (worked out for songs picked one by one; for albums, artists… a click likes them all)
                 readonly property bool all: bar.songsOnly && userLib.likesRevision >= 0 && userLib.allLiked(Selection.paths)
                 active: all
@@ -122,7 +136,7 @@ Rectangle {
             }
             Action {
                 id: rateButton
-                visible: bar.music
+                visible: bar.music && !bar.folded
                 text: bar.tight ? "Rate" : "Rate…"
                 onClicked: rateMenu.popup(rateButton, 0, -rateMenu.implicitHeight - 6)
                 Menu {
@@ -141,7 +155,7 @@ Rectangle {
             }
             Action {
                 objectName: "selectionEditTags"
-                visible: bar.filesOnly && !bar.onServer
+                visible: bar.filesOnly && !bar.onServer && !bar.folded
                 text: bar.tight ? "Tags…" : "Edit tags…"
                 enabled: Selection.paths.every(function (p) { return !/\.[A-Za-z0-9]+#\d+$/.test(p) })
                 onClicked: bar.editTags(bar.paths())
@@ -155,6 +169,60 @@ Rectangle {
                 Menu {
                     id: moreMenu
                     component Item_: MenuItem { height: visible ? implicitHeight : 0 }
+                    // what didn't fit in the bar (see level)
+                    Item_ {
+                        objectName: "selectionMorePlayNext"
+                        visible: bar.folded
+                        text: "Play next"
+                        onTriggered: { var p = bar.paths(); userLib.playNextPaths(p); bar.done(bar.songs(p.length) + " will play next") }
+                    }
+                    Item_ {
+                        visible: bar.foldedMore
+                        text: "Add to queue"
+                        onTriggered: { var p = bar.paths(); userLib.enqueuePaths(p); bar.done(bar.songs(p.length) + " added to the queue") }
+                    }
+                    Item_ {
+                        visible: bar.foldedMore && shell.features.liked !== false
+                        readonly property bool all: bar.songsOnly && userLib.likesRevision >= 0 && userLib.allLiked(Selection.paths)
+                        text: all ? "Unlike all" : "Like all"
+                        onTriggered: { var p = bar.paths(); userLib.setLikedPaths(p, !all); Nav.notify(all ? bar.songs(p.length) + " unliked" : bar.songs(p.length) + " liked") }
+                    }
+                    Menu {
+                        id: playlistSub
+                        title: "Add to playlist"
+                        MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: newPl.open() }
+                        MenuSeparator {}
+                        Instantiator {
+                            model: userLib.playlists
+                            delegate: MenuItem {
+                                text: Theme.plain(model.name)
+                                onTriggered: { var p = bar.paths(); Selection.clear(); Nav.addToPlaylist(model.id, model.name, p, "") }
+                            }
+                            onObjectAdded: (index, object) => playlistSub.insertItem(index + 2, object)
+                            onObjectRemoved: (index, object) => playlistSub.removeItem(object)
+                        }
+                    }
+                    Menu {
+                        id: rateSub
+                        title: "Rate"
+                        Repeater {
+                            model: 5
+                            MenuItem {
+                                required property int index
+                                text: "★★★★★".slice(0, 5 - index) + "☆☆☆☆☆".slice(0, index)
+                                onTriggered: { var p = bar.paths(); userLib.setRatingPaths(p, 5 - index); bar.done(bar.songs(p.length) + " rated " + (5 - index) + "★") }
+                            }
+                        }
+                        MenuSeparator {}
+                        MenuItem { text: "Clear rating"; onTriggered: { userLib.setRatingPaths(bar.paths(), 0); bar.done("") } }
+                    }
+                    Item_ {
+                        visible: bar.folded && bar.filesOnly && !bar.onServer
+                        text: "Edit tags…"
+                        enabled: Selection.paths.every(function (p) { return !/\.[A-Za-z0-9]+#\d+$/.test(p) })
+                        onTriggered: bar.editTags(bar.paths())
+                    }
+                    MenuSeparator { visible: bar.folded; height: visible ? implicitHeight : 0 }
                     Item_ {
                         objectName: "selectionRemoveFromPlaylist"
                         visible: bar.inPlaylist
@@ -222,9 +290,21 @@ Rectangle {
             Action { visible: bar.domain === "episode"; primary: true; text: bar.tight ? "Next" : "Play next"; onClicked: { podcasts.playNextMany(bar.numbers("episode")); bar.done("") } }
             Action { visible: bar.domain === "episode"; text: bar.tight ? "Queue" : "Add to queue"; onClicked: { podcasts.enqueueMany(bar.numbers("episode")); bar.done("") } }
             Action { visible: bar.domain === "episode"; text: bar.tight ? "Played" : "Mark played"; onClicked: { podcasts.markPlayedMany(bar.numbers("episode"), true); bar.done("") } }
-            Action { visible: bar.domain === "episode"; text: bar.tight ? "Unplayed" : "Mark unplayed"; onClicked: { podcasts.markPlayedMany(bar.numbers("episode"), false); bar.done("") } }
-            Action { visible: bar.domain === "episode"; text: "Download"; onClicked: { podcasts.downloadMany(bar.numbers("episode")); bar.done("Downloading " + Selection.summary(false)) } }
-            Action { visible: bar.domain === "episode"; text: bar.tight ? "Delete files" : "Remove downloads"; onClicked: { podcasts.removeDownloadMany(bar.numbers("episode")); bar.done("") } }
+            Action { visible: bar.domain === "episode" && !bar.folded; text: bar.tight ? "Unplayed" : "Mark unplayed"; onClicked: { podcasts.markPlayedMany(bar.numbers("episode"), false); bar.done("") } }
+            Action { visible: bar.domain === "episode" && !bar.folded; text: "Download"; onClicked: { podcasts.downloadMany(bar.numbers("episode")); bar.done("Downloading " + Selection.summary(false)) } }
+            Action { visible: bar.domain === "episode" && !bar.folded; text: bar.tight ? "Delete files" : "Remove downloads"; onClicked: { podcasts.removeDownloadMany(bar.numbers("episode")); bar.done("") } }
+            Action {
+                id: episodeMore
+                visible: bar.domain === "episode" && bar.folded
+                text: "More"
+                onClicked: episodeMenu.popup(episodeMore, 0, -episodeMenu.implicitHeight - 6)
+                Menu {
+                    id: episodeMenu
+                    MenuItem { text: "Mark unplayed"; onTriggered: { podcasts.markPlayedMany(bar.numbers("episode"), false); bar.done("") } }
+                    MenuItem { text: "Download"; onTriggered: { podcasts.downloadMany(bar.numbers("episode")); bar.done("Downloading " + Selection.summary(false)) } }
+                    MenuItem { text: "Remove downloads"; onTriggered: { podcasts.removeDownloadMany(bar.numbers("episode")); bar.done("") } }
+                }
+            }
 
             // ---- radio stations ---------------------------------------------------------------------------
             Action { visible: bar.domain === "station"; primary: true; text: bar.tight ? "Next" : "Play next"; onClicked: { stations.playNextMany(bar.numbers("station")); bar.done("") } }
@@ -239,14 +319,40 @@ Rectangle {
         }
     }
 
-    Rectangle {  // more buttons to the right: scroll (wheel or drag) to reach them
-        anchors { right: parent.right; rightMargin: 1; verticalCenter: parent.verticalCenter }
-        width: 36; height: parent.height - 2; radius: Theme.round(height / 2)
-        visible: scroller.contentWidth > scroller.width && !scroller.atXEnd
-        gradient: Gradient {
-            orientation: Gradient.Horizontal
-            GradientStop { position: 0; color: "transparent" }
-            GradientStop { position: 1; color: Theme.glassStrong }
+    // Still too wide (a very small window): fades and arrows at the ends say there's more, and move to it
+    Repeater {
+        model: [-1, 1]
+        delegate: Rectangle {
+            required property int modelData
+            readonly property bool more: scroller.contentWidth > scroller.width + 1 && (modelData < 0 ? !scroller.atXBeginning : !scroller.atXEnd)
+            objectName: modelData < 0 ? "selectionScrollBack" : "selectionScrollOn"
+            anchors.verticalCenter: parent.verticalCenter
+            x: modelData < 0 ? 1 : parent.width - width - 1
+            width: 44; height: parent.height - 2; radius: Theme.round(height / 2)
+            visible: more
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0; color: modelData < 0 ? Theme.glassStrong : "transparent" }
+                GradientStop { position: 0.55; color: Theme.glassStrong }
+                GradientStop { position: 1; color: modelData < 0 ? "transparent" : Theme.glassStrong }
+            }
+            Icon {
+                anchors.centerIn: parent
+                anchors.horizontalCenterOffset: modelData < 0 ? -4 : 4
+                width: 14; height: 14
+                name: modelData < 0 ? "back" : "forward"
+                color: arrowMouse.containsMouse ? Theme.text : Theme.textDim
+            }
+            MouseArea {
+                id: arrowMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: scroller.contentX = Math.max(0, Math.min(scroller.contentWidth - scroller.width,
+                                                                    scroller.contentX + modelData * scroller.width * 0.7))
+            }
+            Accessible.role: Accessible.Button
+            Accessible.name: modelData < 0 ? "Earlier actions" : "More actions"
         }
     }
 

@@ -3,6 +3,39 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.6.1] - 2026-10-27
+
+The tester's fifth round: Home's shelves move with the wheel and by dragging again, the selection bar and Now
+Playing fit any window, and long titles scroll.
+
+### Fixed
+- Home's album shelves couldn't be moved by dragging with the mouse (#109): since 1.6.0 a drag selected the albums
+  instead. In a row that scrolls sideways a drag moves the row again (dragging a selected album still carries
+  the selection to a playlist or the queue).
+- The mouse wheel over a shelf now moves its albums (#109) when the turn starts over the shelf, while a page
+  scroll already under way carries on past it, so scrolling down Home doesn't stop at every shelf. Settings →
+  Appearance → "Wheel over a row of albums" can make it always move the row, or leave it to the page.
+- Pointing at an album on Home cut off the top of its cover as it lifted (#110); the lift and glow now have room.
+- The selection bar's last actions were off its end in small and in large windows, with nothing to say so
+  (#111). It now shortens its labels and moves the less used actions into More until it fits (and the wheel
+  and arrows scroll it if even that's too wide).
+- Now Playing's text and controls ran off a small window (#113). Less needed lines make way first (genres, the
+  rating and signal path, the album line), the title gets smaller, lyrics take the height that's left, and in a
+  narrow window the cover steps aside for the controls.
+- Show in folder did nothing in the Flatpak for recap cards and spectrograms (#95): the portal won't open files
+  the app can write to. The Flatpak now asks the file manager directly first.
+
+### Added
+- Long song titles glide to their end and back while playing, in the player bar and the mini player (#112),
+  starting over with each song and stopping when paused. Settings → Appearance → "Long song titles": while
+  playing, only when pointed at, or not at all; reduced motion keeps them still.
+
+### Changed
+- The dock and taskbar menu no longer has Quit (it sat oddly among the dock's own entries); the tray menu keeps it.
+- Releases: point releases build the AppImage, Flatpak and Windows installer; macOS and the .deb/.rpm come with
+  major releases, and the website's links go to the newest release that has them.
+- The Flatpak may talk to the file manager (`org.freedesktop.FileManager1`), for Show in folder.
+
 ## [1.6.0] - 2026-10-27
 
 Select anything, from anywhere: songs, albums, artists, genres, composers, playlists, queue entries, history,

@@ -8,15 +8,16 @@ Item {
     id: arrows
     property var row: null
     property string what: "albums"   // for screen readers: "Earlier albums", "More albums"
-    readonly property real maxX: row ? Math.max(row.originX, row.originX + row.contentWidth - row.width) : 0
-    readonly property bool canBack: row !== null && row.contentX > row.originX + 1
+    readonly property real minX: row ? row.originX - row.leftMargin : 0
+    readonly property real maxX: row ? Math.max(minX, row.originX + row.contentWidth + row.rightMargin - row.width) : 0
+    readonly property bool canBack: row !== null && row.contentX > minX + 1
     readonly property bool canOn: row !== null && row.contentX < maxX - 1
     readonly property bool shown: hover.hovered && shell.ui.shelfArrows !== "false"
 
     function page(dir) {
         if (!row) return
         var from = slide.running ? slide.to : row.contentX
-        slide.to = Math.max(row.originX, Math.min(maxX, from + dir * Math.max(200, row.width * 0.8)))
+        slide.to = Math.max(minX, Math.min(maxX, from + dir * Math.max(200, row.width * 0.8)))
         slide.restart()
     }
     NumberAnimation {

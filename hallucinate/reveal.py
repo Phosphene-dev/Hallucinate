@@ -3,7 +3,8 @@
 In the Flatpak, opening a file:// folder with Qt goes through the desktop portal's file opener, which doesn't
 open folders: nothing happened. The portal has a call for exactly this, OpenURI.OpenDirectory, which takes the
 file itself (as a file descriptor, so the sandbox never names a path the host can't see) and opens its folder
-with it selected. Outside the sandbox, file managers (Nautilus, Dolphin, Nemo, Thunar, Caja…) answer the
+with it selected; but it refuses files the app can write to, so in the Flatpak the file manager is asked first
+(the shared folders have the same paths on the host). Outside the sandbox, file managers (Nautilus, Dolphin, Nemo, Thunar, Caja…) answer the
 org.freedesktop.FileManager1 interface, which does the same. When neither answers, the caller opens the folder
 the plain way. Calls go out with jeepney, as notifications do."""
 import logging
@@ -41,14 +42,18 @@ def calls(path, flatpak):
     if open_dbus_connection is None or not path:
         return []
     folder = os.path.isdir(path)
+    direct = (FILE_MANAGER, "ShowFolders" if folder else "ShowItems", "ass", ([uri(path)], ""), False)
     if flatpak:
-        # a file: its folder, with it selected; a folder: opened (the portal opens folders as files). Should the
-        # portal refuse the file (it did for images saved in Pictures/Hallucinate), the folder alone is opened.
+        # The portal won't open what the app may write to (a file it could have changed would then run as the
+        # host's): the images saved in Pictures/Hallucinate were refused, folder and all. Folders shared with the
+        # sandbox have the same path on the host, so the file manager is asked first, by path; then the portal:
+        # a file's folder with it selected, else the folder alone (the portal opens folders as files).
+        first = [] if path.startswith(("/app/", "/run/")) else [direct]  # (paths the host doesn't have)
         if folder:
-            return [(PORTAL, "OpenFile", "sha{sv}", ("", path, {}), True)]
-        return [(PORTAL, "OpenDirectory", "sha{sv}", ("", path, {}), True),
-                (PORTAL, "OpenFile", "sha{sv}", ("", os.path.dirname(path), {}), True)]
-    return [(FILE_MANAGER, "ShowFolders" if folder else "ShowItems", "ass", ([uri(path)], ""), False)]
+            return first + [(PORTAL, "OpenFile", "sha{sv}", ("", path, {}), True)]
+        return first + [(PORTAL, "OpenDirectory", "sha{sv}", ("", path, {}), True),
+                        (PORTAL, "OpenFile", "sha{sv}", ("", os.path.dirname(path), {}), True)]
+    return [direct]
 
 
 def show(path, flatpak=None, connect=None):

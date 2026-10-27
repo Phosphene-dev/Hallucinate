@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.6.1" date="2026-10-27">
+      <description>
+        <p>Home's album shelves move with the mouse wheel and by dragging again, long song titles scroll while they play, and the selection bar and Now Playing fit small windows.</p>
+        <p>Fixes: an album cover cut off as it lifts, and Show in folder for recap cards and spectrograms.</p>
+      </description>
+    </release>
     <release version="1.6.0" date="2026-10-27">
       <description>
         <p>Select songs, albums, artists, playlists, queue entries and more from anywhere, by clicking, keyboard or dragging, and act on them all at once. Drag a selection onto a playlist or the queue.</p>

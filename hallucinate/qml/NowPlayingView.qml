@@ -21,7 +21,16 @@ Item {
     function setDeck(on) { deckChoice = on ? "1" : "0"; shell.setUiValue("nowPlayingDeck", deckChoice) }
     property bool idle: false
     property bool lyricsMode: shell.uiValue("nowPlayingLyrics", "0") === "1"
-    onLyricsModeChanged: shell.setUiValue("nowPlayingLyrics", lyricsMode ? "1" : "0")
+    onLyricsModeChanged: { shell.setUiValue("nowPlayingLyrics", lyricsMode ? "1" : "0"); refit() }
+    // What fits a small window (#113), the least needed going first: 1 a two-line, smaller title and no genres;
+    // 2 no rating or signal path; 3 a one-line title, no album line; 4 no quality badges. Worked out again when
+    // the window, the song or the view changes. The cover goes when it would leave the controls too little room.
+    property int fold: 0
+    function fit() { if (info.implicitHeight > content.height + 0.5 && fold < 4) { fold++; Qt.callLater(fit) } }
+    function refit() { fold = 0; Qt.callLater(fit) }
+    onWidthChanged: refit()
+    onHeightChanged: refit()
+    Connections { target: player; function onCurrentChanged() { view.refit() } }
     visible: opacity > 0
     opacity: open ? 1 : 0
     enabled: open
@@ -66,7 +75,9 @@ Item {
 
         RowLayout {
             id: content
-            anchors { fill: parent; leftMargin: Math.max(48, parent.width * 0.08); rightMargin: Math.max(48, parent.width * 0.08)
+            objectName: "nowPlayingContent"
+            readonly property real edge: Math.max(parent.width < 720 ? 20 : 48, parent.width * 0.08)
+            anchors { fill: parent; leftMargin: edge; rightMargin: edge
                       topMargin: 90; bottomMargin: 70 }
             spacing: Math.max(36, parent.width * 0.05)
 
@@ -78,6 +89,8 @@ Item {
                 Layout.preferredHeight: side
                 Layout.alignment: Qt.AlignVCenter
                 Behavior on Layout.preferredWidth { NumberAnimation { duration: 420; easing.type: Easing.OutCubic } }
+                // in a narrow window the cover makes way, rather than leave the controls too little room (#113)
+                visible: content.width - side * (view.vinyl ? 1.5 : 1) - content.spacing >= controls.implicitWidth + 8
 
                 Item {
                     id: record
@@ -178,23 +191,29 @@ Item {
 
             // Track and controls
             ColumnLayout {
+                id: info
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
+                Layout.fillHeight: view.lyricsMode  // the lyrics take what's left of the height
+                Layout.maximumHeight: content.height
                 spacing: 10
+                onImplicitHeightChanged: Qt.callLater(view.fit)
                 Text {
                     textFormat: Text.PlainText
                     Layout.fillWidth: true
                     text: player.hasTrack ? player.current.title : "Nothing playing"
                     color: "white"
                     font.family: Theme.displayFamily
-                    font.pixelSize: (Theme.fontSize(view.lyricsMode ? 24 : Math.max(26, Math.min(46, view.width / 30)))) * Theme.displayScale
+                    font.pixelSize: (Theme.fontSize(view.lyricsMode || view.fold >= 1 ? Math.min(24, Math.max(20, view.width / 36))
+                                                                                       : Math.max(26, Math.min(46, view.width / 30)))) * Theme.displayScale
                     font.weight: Font.Bold
                     wrapMode: Text.Wrap
-                    maximumLineCount: 3
+                    maximumLineCount: view.fold >= 3 ? 1 : view.fold >= 1 ? 2 : 3
                     elide: Text.ElideRight
                 }
                 QualityBadges {  // E and Hi-Res, as on the song's row
                     objectName: "nowPlayingQuality"
+                    visible: view.fold < 4
                     light: true
                     size: 18
                     explicitTag: player.hasTrack ? player.current.explicit || 0 : 0
@@ -222,7 +241,7 @@ Item {
                 Text {
                     textFormat: Text.PlainText
                     Layout.fillWidth: true
-                    visible: player.hasTrack && (player.current.album || "").length > 0 && !view.lyricsMode
+                    visible: player.hasTrack && (player.current.album || "").length > 0 && !view.lyricsMode && view.fold < 3
                     text: player.hasTrack ? [player.current.album, player.current.year > 0 ? String(player.current.year) : ""]
                                             .filter(s => s).join("  ·  ") : ""
                     color: Qt.rgba(1, 1, 1, 0.6)
@@ -242,7 +261,7 @@ Item {
                 GenreLinks {  // the song's genres: each opens its page
                     objectName: "nowPlayingGenres"
                     Layout.fillWidth: true
-                    visible: player.hasTrack && !view.lyricsMode && names.length > 0
+                    visible: player.hasTrack && !view.lyricsMode && names.length > 0 && view.fold < 1
                     names: {
                         var text = player.hasTrack ? shell.genresText(player.current.genre || "", shell.allGenresSongs) : ""
                         return text ? text.split(", ") : []
@@ -260,7 +279,10 @@ Item {
                     Layout.maximumWidth: 640
                     Layout.topMargin: 14
                     Layout.rightMargin: 24  // long lines wrap before the window's edge
-                    Layout.preferredHeight: Math.min(view.height * 0.42, 380)
+                    Layout.fillHeight: true
+                    Layout.preferredHeight: 60
+                    Layout.minimumHeight: 40
+                    Layout.maximumHeight: 380
                     ListView {
                         WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
                         id: lyricLines
@@ -335,15 +357,15 @@ Item {
                 }
                 StarRating {
                     objectName: "nowPlayingRating"
-                    visible: !(player.current.kind || "").length
+                    visible: !(player.current.kind || "").length && view.fold < 2
                     Layout.topMargin: 2
                     path: player.hasTrack ? player.current.path || "" : ""
                     size: 20
                     onColor: "white"
                     offColor: Qt.rgba(1, 1, 1, 0.35)
                 }
-                SignalPath { light: true; Layout.topMargin: 4 }
-                Item { Layout.preferredHeight: 12 }
+                SignalPath { light: true; Layout.topMargin: 4; visible: stages.length > 0 && view.fold < 2 }
+                Item { Layout.preferredHeight: 12; visible: view.fold < 2 }
                 WaveformSeek {
                     Layout.fillWidth: true
                     Layout.maximumWidth: 640
@@ -363,7 +385,8 @@ Item {
                     }
                 }
                 Row {
-                    spacing: 14
+                    id: controls
+                    spacing: view.width < 600 ? 6 : 14
                     readonly property bool episode: player.hasTrack && player.current.kind === "episode"
                     readonly property bool music: player.hasTrack && !(player.current.kind || "").length
                     IconButton { anchors.verticalCenter: parent.verticalCenter; visible: !parent.episode; icon: "shuffle"; size: 22; active: player.shuffle; onClicked: player.toggleShuffle() }
