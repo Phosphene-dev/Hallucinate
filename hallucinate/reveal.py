@@ -6,7 +6,10 @@ file itself (as a file descriptor, so the sandbox never names a path the host ca
 with it selected. Outside the sandbox, file managers (Nautilus, Dolphin, Nemo, Thunar, Caja…) answer the
 org.freedesktop.FileManager1 interface, which does the same. When neither answers, the caller opens the folder
 the plain way. Calls go out with jeepney, as notifications do."""
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 
 try:
     from jeepney import DBusAddress, new_method_call
@@ -39,8 +42,12 @@ def calls(path, flatpak):
         return []
     folder = os.path.isdir(path)
     if flatpak:
-        # a file: its folder, with it selected; a folder: opened (the portal opens folders as files)
-        return [(PORTAL, "OpenFile" if folder else "OpenDirectory", "sha{sv}", ("", path, {}), True)]
+        # a file: its folder, with it selected; a folder: opened (the portal opens folders as files). Should the
+        # portal refuse the file (it did for images saved in Pictures/Hallucinate), the folder alone is opened.
+        if folder:
+            return [(PORTAL, "OpenFile", "sha{sv}", ("", path, {}), True)]
+        return [(PORTAL, "OpenDirectory", "sha{sv}", ("", path, {}), True),
+                (PORTAL, "OpenFile", "sha{sv}", ("", os.path.dirname(path), {}), True)]
     return [(FILE_MANAGER, "ShowFolders" if folder else "ShowItems", "ass", ([uri(path)], ""), False)]
 
 
@@ -66,7 +73,10 @@ def show(path, flatpak=None, connect=None):
                 reply = conn.send_and_get_reply(new_method_call(address, method, signature, args), timeout=5)
                 if reply.header.message_type.name != "error":
                     return True
-            except Exception:  # noqa: BLE001 - not there, refused, timed out: try the next, or give up
+                # (kept for Copy debug info: why a file manager didn't open)
+                logger.warning("Show in folder: %s refused: %s", method, (getattr(reply, "body", None) or ["?"])[0])
+            except Exception as e:  # noqa: BLE001 - not there, refused, timed out: try the next, or give up
+                logger.warning("Show in folder: %s failed: %s", method, type(e).__name__)
                 continue
             finally:
                 if fd is not None:

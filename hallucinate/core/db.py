@@ -323,7 +323,7 @@ class Database:
 
     def playlists(self) -> list:
         return self._rows(
-            "SELECT p.id, p.name, p.folder, COUNT(t.id) AS n FROM playlists p "
+            "SELECT p.id, p.name, p.folder, p.created, COUNT(t.id) AS n, COALESCE(MAX(i.id), 0) AS last_added FROM playlists p "
             "LEFT JOIN playlist_items i ON i.playlist_id=p.id LEFT JOIN tracks t ON t.path=i.path "
             "GROUP BY p.id ORDER BY p.name COLLATE NOCASE"
         )
@@ -351,7 +351,7 @@ class Database:
         self.conn.commit()
 
     def smart_playlists(self) -> list:
-        return self._rows("SELECT id, name, rules, folder FROM smart_playlists ORDER BY name COLLATE NOCASE, id")
+        return self._rows("SELECT id, name, rules, folder, created FROM smart_playlists ORDER BY name COLLATE NOCASE, id")
 
     def smart_playlist(self, sid: int) -> Optional[dict]:
         rows = self._rows("SELECT id, name, rules FROM smart_playlists WHERE id=?", (sid,))
@@ -417,6 +417,40 @@ class Database:
             (pid, pid))
         self.conn.commit()
         return cur.rowcount
+
+    def playlist_counts(self, paths: list) -> dict:
+        """How many of `paths` each playlist holds: {playlist id: n} (playlists holding none left out)."""
+        out = {}
+        paths = list(dict.fromkeys(p for p in paths if p))
+        for k in range(0, len(paths), 500):
+            chunk = paths[k:k + 500]
+            for pid, n in self.conn.execute(
+                    f"SELECT playlist_id, COUNT(DISTINCT path) FROM playlist_items WHERE path IN ({','.join('?' * len(chunk))}) "
+                    "GROUP BY playlist_id", chunk):
+                out[pid] = out.get(pid, 0) + n
+        return out
+
+    def playlist_paths_in(self, pid: int, paths: list) -> list:
+        """Which of `paths` the playlist already holds."""
+        held = {r[0] for r in self.conn.execute("SELECT path FROM playlist_items WHERE playlist_id=?", (pid,))}
+        return [p for p in paths if p in held]
+
+    def playlist_remove_paths(self, pid: int, paths: list) -> list:
+        """Take every entry of these songs out of a playlist; returns [(path, pos)] to put them back with."""
+        paths = list(dict.fromkeys(paths))
+        rows = []
+        for k in range(0, len(paths), 500):
+            chunk = paths[k:k + 500]
+            q = f"playlist_id=? AND path IN ({','.join('?' * len(chunk))})"
+            rows += [(r[0], r[1]) for r in self.conn.execute(f"SELECT path, pos FROM playlist_items WHERE {q}", [pid, *chunk])]
+            self.conn.execute(f"DELETE FROM playlist_items WHERE {q}", [pid, *chunk])
+        self.conn.commit()
+        return rows
+
+    def playlist_restore(self, pid: int, rows: list):
+        """Put entries taken out with playlist_remove_paths back where they were."""
+        self.conn.executemany("INSERT INTO playlist_items(playlist_id, path, pos) VALUES(?,?,?)", [(pid, p, pos) for p, pos in rows])
+        self.conn.commit()
 
     def playlist_remove_item(self, item_id: int):
         self.conn.execute("DELETE FROM playlist_items WHERE id=?", (item_id,))

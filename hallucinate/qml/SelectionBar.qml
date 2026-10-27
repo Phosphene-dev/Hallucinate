@@ -103,7 +103,7 @@ Rectangle {
                         model: userLib.playlists
                         delegate: MenuItem {
                             text: Theme.plain(model.name)
-                            onTriggered: { var p = bar.paths(); userLib.addPathsToPlaylist(model.id, p); bar.done(bar.songs(p.length) + " added to “" + model.name + "”") }
+                            onTriggered: { var p = bar.paths(); Selection.clear(); Nav.addToPlaylist(model.id, model.name, p, "") }
                         }
                         onObjectAdded: (index, object) => plMenu.insertItem(index + 2, object)
                         onObjectRemoved: (index, object) => plMenu.removeItem(object)

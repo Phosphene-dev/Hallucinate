@@ -17,20 +17,30 @@ Item {
         var y = sidebarOrderBox.mapToItem(flick.contentItem, 0, 0).y - 20
         flick.contentY = Math.max(0, Math.min(y, flick.contentHeight - flick.height))
     }
-    // the section at the top of the view, lit in the jump list
+    // the section at the top of the view, lit in the jump list. The last sections are too short to reach the top
+    // (issue 99): one jumped to stays lit, and at the very end the last section is.
+    property int jumped: -1
+    property bool jumping: false
     readonly property int currentSection: {
-        var y = flick.contentY + 40, at = 0
+        if (jumped >= 0) return jumped
+        var y = flick.contentY + 40, at = 0, last = 0
         for (var i = 0; i < sectionIds.length; i++) {
             var s = sectionItem(i)
-            if (s && s.visible && s.y <= y) at = i
+            if (!s || !s.visible) continue
+            last = i
+            if (s.y <= y) at = i
         }
-        return at
+        return flick.contentHeight > flick.height && flick.contentY >= flick.contentHeight - flick.height - 2 ? last : at
     }
     function jumpTo(i) {
         page.query = ""
         search.text = ""
+        jumping = true
         flick.contentY = Math.max(0, Math.min(sectionItem(i).y, flick.contentHeight - flick.height))
+        jumping = false
+        jumped = i
     }
+    Connections { target: flick; function onContentYChanged() { if (!page.jumping) page.jumped = -1 } }
 
     // Search and jump to a section; the page below scrolls
     Column {
@@ -780,7 +790,7 @@ Item {
             id: sec_library
             objectName: "settings_library"
             title: "Library"
-            keywords: "genres genre music folders scan rescan start startup watch watching health tags files ratings stars cover art cover.jpg embed import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums backup export your data move computer"
+            keywords: "genres genre music folders scan rescan start startup watch watching health tags files ratings stars cover art cover.jpg embed import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums backup export your data move computer duplicates already sort order sidebar select selection selecting drag multiple"
             query: page.query
             Text {
                 textFormat: Text.PlainText
@@ -887,6 +897,49 @@ Item {
                     height: 32
                     text: "Bring them back"
                     onClicked: { library.restoreHidden(); Nav.notify("Rescanning to bring them back…") }
+                }
+            }
+            SettingsGroup {
+                key: "playlistsSelecting"
+                title: "Playlists and selecting"
+                summary: "Songs already in a playlist, the sidebar's order, how selecting works"
+                query: page.query
+                OptionCombo {
+                    objectName: "playlistDuplicates"
+                    label: "Adding a song a playlist already has"
+                    values: ["skip", "ask", "add"]
+                    labels: ["Leave it out (Add anyway is in the note)", "Ask each time", "Add it again"]
+                    current: shell.ui.playlistDuplicates || "skip"
+                    onPicked: function (v) { shell.setUiValue("playlistDuplicates", v) }
+                }
+                OptionCombo {
+                    objectName: "playlistSortSetting"
+                    label: "Playlists in the sidebar"
+                    values: ["name", "name-desc", "newest", "oldest", "added", "songs", "custom"]
+                    labels: ["By name, A–Z", "By name, Z–A", "Newest first", "Oldest first", "Recently added to", "Most songs",
+                             "My own order (Move up and down in a playlist's menu)"]
+                    current: shell.ui.playlistSort || "name"
+                    onPicked: function (v) { shell.setUiValue("playlistSort", v) }
+                }
+                StyledCheck {
+                    objectName: "keepSelection"
+                    text: "Keep what's selected while I go to other pages (gather songs from several places)"
+                    checked: (shell.ui.keepSelection || "true") === "true"
+                    onToggled: shell.setUiValue("keepSelection", checked ? "true" : "false")
+                }
+                StyledCheck {
+                    objectName: "dragSelect"
+                    text: "Drag across a list with the mouse to select (from a selected item: carry it to a playlist or the queue)"
+                    checked: (shell.ui.dragSelect || "true") === "true"
+                    onToggled: shell.setUiValue("dragSelect", checked ? "true" : "false")
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: "Select with Ctrl+click (one more), Shift+click (everything between), Ctrl+A (the whole list) or Shift+arrow keys. "
+                          + "Esc clears it, with Undo."
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
             }
             SettingsGroup {

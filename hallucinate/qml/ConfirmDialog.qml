@@ -18,12 +18,19 @@ Dialog {
     function nameButton() { var b = standardButton(Dialog.Ok); if (b) b.text = confirmText }
     Component.onCompleted: nameButton()
     onConfirmTextChanged: nameButton()
-    Text {
-        textFormat: Text.PlainText
+    // anything declared inside the dialog (a check box, say) goes below the text
+    default property alias extra: col.data
+    Column {
+        id: col
         width: dlg.availableWidth
-        wrapMode: Text.WordWrap
-        text: dlg.body
-        color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
-        lineHeight: 1.15
+        spacing: 12
+        Text {
+            textFormat: Text.PlainText
+            width: parent.width
+            wrapMode: Text.WordWrap
+            text: dlg.body
+            color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            lineHeight: 1.15
+        }
     }
 }

@@ -41,6 +41,11 @@ QtObject {
             if (Math.abs(sceneX - pressX) < Qt.styleHints.startDragDistance && Math.abs(sceneY - pressY) < Qt.styleHints.startDragDistance) return
             if (pick.selected && pick.carries) {
                 carrying = true
+            } else if (shell.ui.dragSelect === "false") {
+                // painting is off (Settings → Library): the list scrolls as it always did
+                if (area) area.preventStealing = false
+                pick = null
+                return
             } else {
                 painting = true
                 base = Selection.items.slice()

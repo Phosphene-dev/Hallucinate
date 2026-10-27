@@ -18,8 +18,8 @@ from .library import _Reader, decorate
 from .models import ALBUM_KEYS, ARTIST_KEYS, TRACK_KEYS, DictModel
 
 logger = logging.getLogger(__name__)
-PLAYLIST_KEYS = ["id", "name", "n", "folder"]
-SMART_KEYS = ["id", "name", "n", "summary", "rules", "folder"]
+PLAYLIST_KEYS = ["id", "name", "n", "folder", "created", "last_added"]
+SMART_KEYS = ["id", "name", "n", "summary", "rules", "folder", "created"]
 REASON_ALBUM_KEYS = [*ALBUM_KEYS, "reason"]
 STAT_ARTIST_KEYS = [*ARTIST_KEYS, "plays"]
 STAT_ALBUM_KEYS = [*ALBUM_KEYS, "plays"]
@@ -936,6 +936,40 @@ class UserLibrary(QObject):
         paths = [p for p in paths if p]
         if paths:
             self._write(lambda db, i, ps: db.playlist_add(i, ps), pid, paths, reload_playlist=True)
+
+    # --- which playlists hold a song (issues 100, 101) -------------------------------------------------------
+    @Slot("QVariantList", result="QVariantMap")
+    def playlistCounts(self, paths):
+        """{playlist id (as text): how many of these songs it holds}, for the Add to playlist menus."""
+        paths = [p for p in paths if p]
+        if not paths:
+            return {}
+        counts = self._reader.submit(lambda db: db.playlist_counts(paths)).result(timeout=10)
+        return {str(k): v for k, v in counts.items()}
+
+    @Slot(int, "QVariantList", result="QVariantList")
+    def pathsInPlaylist(self, pid, paths):
+        """Which of these songs the playlist already holds."""
+        paths = [p for p in paths if p]
+        return self._reader.submit(lambda db: db.playlist_paths_in(pid, paths)).result(timeout=10) if paths else []
+
+    @Slot(int, "QVariantList", result=int)
+    def removePathsFromPlaylistId(self, pid, paths):
+        """Take these songs out of a playlist (any playlist, open or not); restorePlaylistRemoval() undoes it."""
+        paths = [p for p in paths if p]
+        if not paths:
+            return 0
+        rows = self._reader.submit(lambda db: db.playlist_remove_paths(pid, paths)).result(timeout=10)
+        self._removed = (pid, rows)
+        self._write(lambda db: None, reload_playlist=True)  # (refreshes the sidebar's counts and the open playlist)
+        return len(rows)
+
+    @Slot()
+    def restorePlaylistRemoval(self):
+        pid, rows = getattr(self, "_removed", (None, None)) or (None, None)
+        self._removed = None
+        if rows:
+            self._write(lambda db, i, r: db.playlist_restore(i, r), pid, rows, reload_playlist=True)
 
     @Slot(str, "QVariantList", result=int)
     def addPathsToNewPlaylist(self, name, paths):

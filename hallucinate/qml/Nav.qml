@@ -41,6 +41,10 @@ QtObject {
     // songs by path (paths: one song, or a selection); `what` names them in the confirmation
     signal artistMenu(string name)
     signal selectionMenu()  // the song menu, for every song of what's selected
+    // Every "Add to playlist" ends here: songs the playlist already holds are left out (issue 100), with an
+    // "Add anyway" in the toast; `what` names what's added ("3 songs", "“Title”")
+    signal addToPlaylist(int pid, string name, var paths, string what)
+    signal removeFromPlaylistId(int pid, string name, var paths, string what)  // out of a playlist from a menu (issue 101)
     signal deleteInList(string context, string path, int index)  // Delete on a song row: out of a playlist, or unliked
     signal folderMenu(string path, string name)
     signal removeSongs(var paths, string what)

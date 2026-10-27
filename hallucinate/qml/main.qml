@@ -365,6 +365,25 @@ ApplicationWindow {
                 trackMenu.removePathsFromPlaylist(Selection.paths.slice())
             else trackMenu.removeFromPlaylist([index])
         }
+        function onAddToPlaylist(pid, name, paths, what) {
+            paths = paths.filter(function (p, i) { return p && paths.indexOf(p) === i })
+            var mode = shell.ui.playlistDuplicates || "skip"
+            var held = mode === "add" ? [] : userLib.pathsInPlaylist(pid, paths)
+            if (mode === "ask" && held.length) { dupDlg.ask(pid, name, paths, held, what); return }
+            var fresh = paths.filter(function (p) { return held.indexOf(p) < 0 })
+            if (fresh.length) userLib.addPathsToPlaylist(pid, fresh)
+            var n = function (k) { return k + (k === 1 ? " song" : " songs") }
+            var label = fresh.length === paths.length && what ? what : n(fresh.length)
+            if (!held.length) { toast.show(label + " added to “" + name + "”"); return }
+            var msg = !fresh.length ? (paths.length === 1 ? "Already in “" + name + "”" : "All " + n(paths.length) + " are already in “" + name + "”")
+                                    : label + " added to “" + name + "” (" + held.length + " already there)"
+            toast.show(msg, 0, "Add anyway", function () { userLib.addPathsToPlaylist(pid, held); toast.show(n(held.length) + " added again to “" + name + "”") })
+        }
+        function onRemoveFromPlaylistId(pid, name, paths, what) {
+            var removed = userLib.removePathsFromPlaylistId(pid, paths)
+            if (removed) toast.show((what || removed + (removed === 1 ? " song" : " songs")) + " removed from “" + name + "”", 0, "Undo",
+                                    function () { userLib.restorePlaylistRemoval() })
+        }
         function onSelectionMenu() { if (Selection.domain === "music") trackMenu.showMany(Selection.songPaths(), "") }
         function onToggleNowPlaying() { nowPlaying.toggle() }
         function onOpenHealth() { if (window.featureOn("health")) window.go("health") }
@@ -466,6 +485,36 @@ ApplicationWindow {
         anchors { bottom: parent.bottom; bottomMargin: 112 }
         onEditTags: function (paths) { tagEditor.editTracks(paths) }
         onRemoveFromPlaylist: function (paths) { trackMenu.removePathsFromPlaylist(paths) }
+    }
+    // With "Keep what's selected" off, a selection belongs to its page
+    Connections { target: stack; function onCurrentItemChanged() { if (shell.ui.keepSelection === "false") Selection.clear() } }
+    onSectionChanged: if (shell.ui.keepSelection === "false") Selection.clear()
+    // "Ask each time" for songs a playlist already has (Settings → Library → Playlists and selecting)
+    ConfirmDialog {
+        id: dupDlg
+        objectName: "duplicatesDialog"
+        property int pid: -1
+        property string name: ""
+        property var paths: []
+        property var held: []
+        readonly property int fresh: paths.length - held.length
+        function ask(p, n, all, h, w) { pid = p; name = n; paths = all; held = h; what = w; again.checked = fresh === 0; open() }
+        title: held.length === 1 && paths.length === 1 ? "Already in “" + name + "”"
+                                                       : held.length + " of these are already in “" + name + "”"
+        body: fresh === 0 ? (paths.length === 1 ? "Add it again?" : "Add them again?")
+                          : fresh + (fresh === 1 ? " song is" : " songs are") + " new to it."
+        confirmText: again.checked ? (fresh === 0 ? "Add again" : "Add all " + paths.length) : "Add the " + fresh + " new"
+        StyledCheck {
+            id: again
+            visible: dupDlg.fresh > 0
+            text: "Also add the " + dupDlg.held.length + (dupDlg.held.length === 1 ? " that's" : " that are") + " already there"
+        }
+        onAccepted: {
+            var add = again.checked ? paths : paths.filter(function (p) { return held.indexOf(p) < 0 })
+            if (!add.length) return
+            userLib.addPathsToPlaylist(pid, add)
+            toast.show(add.length + (add.length === 1 ? " song" : " songs") + " added to “" + name + "”")
+        }
     }
     Shortcut {
         sequence: "Escape"

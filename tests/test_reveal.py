@@ -34,6 +34,16 @@ def test_in_the_flatpak_the_portal_opens_the_song_s_folder(tmp_path):
     assert bus.closed
 
 
+def test_when_the_portal_refuses_the_file_its_folder_is_opened(tmp_path):
+    """Issue 95 again: an image saved in Pictures/Hallucinate wasn't shown; the folder alone is the fallback."""
+    image = tmp_path / "recap.png"
+    image.write_bytes(b"x")
+    bus = Bus(["error", "method_return"])
+    assert reveal.show(str(image), flatpak=True, connect=lambda: bus)
+    members = [[v for k, v in m.header.fields.items() if getattr(k, "name", "") == "member"][0] for m in bus.sent]
+    assert members == ["OpenDirectory", "OpenFile"]
+
+
 def test_a_folder_in_the_flatpak_is_opened_as_a_file(tmp_path):
     bus = Bus(["method_return"])
     assert reveal.show(str(tmp_path), flatpak=True, connect=lambda: bus)

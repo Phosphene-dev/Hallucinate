@@ -70,6 +70,7 @@ def default_title_bar(env=None, platform=None):
 
 
 class DesktopShell(QObject):
+    uiChanged = Signal()
     miniChanged = Signal()
     settingsChanged = Signal()
     navigateRequested = Signal(str)  # a page picked in the tray menu
@@ -630,6 +631,17 @@ class DesktopShell(QObject):
     @Slot(str, str)
     def setUiValue(self, key, value):
         self._settings.setValue("ui/" + key, value)
+        self.uiChanged.emit()
+
+    @Property("QVariantMap", notify=uiChanged)
+    def ui(self):
+        """Every remembered choice under ui/, live: shell.ui.someKey follows setUiValue (see uiValue for defaults)."""
+        s = self._settings
+        s.beginGroup("ui")
+        try:
+            return {k: str(s.value(k)) for k in s.childKeys()}
+        finally:
+            s.endGroup()
 
     @Property(bool, notify=miniChanged)
     def miniOpen(self):

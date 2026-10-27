@@ -141,6 +141,9 @@ Canvas {
         case "fullscreen":  // four corners
             line([.14,.36,.14,.14]); line([.14,.14,.36,.14]); line([.64,.14,.86,.14]); line([.86,.14,.86,.36])
             line([.86,.64,.86,.86]); line([.86,.86,.64,.86]); line([.36,.86,.14,.86]); line([.14,.86,.14,.64]); break
+        case "sort":  // lines shortening downwards, beside an arrow: put in order
+            line([.1,.24,.56,.24]); line([.1,.46,.44,.46]); line([.1,.68,.32,.68])
+            line([.76,.18,.76,.82]); line([.64,.68,.76,.82,.88,.68]); break
         case "down":
             line([.22,.38,.5,.66]); line([.5,.66,.78,.38]); break
         case "up":
