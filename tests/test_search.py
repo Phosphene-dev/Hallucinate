@@ -31,6 +31,28 @@ def test_special_characters_are_safe(db, scan, music):
     assert db.counts()["tracks"] == 4
 
 
+def test_titles_made_of_symbols_are_found(db):
+    """Issue 102: a song called "!!!" (or "?") wasn't found: word search drops symbols. A query with a part
+    that's only symbols matches its parts as written, in songs, artists and albums."""
+    from hallucinate.core.db import group_index, search_groups
+
+    for i, (title, artist, album) in enumerate([("!!!", "Chk", "Myth Takes"), ("Hello", "!!!", "Thr!!!er"),
+                                                ("?", "Q", "A"), ("Plain", "B", "C")]):
+        db.upsert_track({"path": f"/m/{i}.flac", "mtime": 0, "size": 1, "title": title, "artist": artist,
+                         "album_artist": artist, "aa_tag": 1, "album": album, "album_key": f"k{i}", "track_no": 1,
+                         "disc_no": 0, "year": 2000, "genre": "", "duration": 1.0, "fmt": "FLAC", "codec": "FLAC",
+                         "bitrate": 1, "sample_rate": 44100})
+    db.commit()
+    r = db.search("!!!")
+    assert [t["title"] for t in r["tracks"]] == ["!!!", "Hello"]
+    assert [a["name"] for a in r["artists"]] == ["!!!"] and [a["album"] for a in r["albums"]] == ["Thr!!!er"]
+    assert [t["title"] for t in db.search("?")["tracks"]] == ["?"]
+    assert [t["title"] for t in db.search("!!! hello")["tracks"]] == ["Hello"]
+    assert [t["title"] for t in db.search("plain")["tracks"]] == ["Plain"]  # (words still go the fast way)
+    albums, artists = search_groups(group_index(db.albums(), db.artists()), "!!!")
+    assert [a["album"] for a in albums] == ["Thr!!!er"] and [a["name"] for a in artists] == ["!!!"]
+
+
 def test_artist_pages(db, scan, music):
     scan(music)
     assert [a["album"] for a in db.artist_albums("aurora vale")] == ["Northern Lights"]

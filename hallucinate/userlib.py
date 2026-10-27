@@ -260,6 +260,7 @@ class UserLibrary(QObject):
         m["rediscover"].set_items(data["rediscover"])
         m["onThisDay"].set_items(data["onThisDay"])
         self._home = data["home"]
+        self._reload_history()  # songs come and go from the library: History's "Not in library" with them
         self.homeChanged.emit()
         self._smart_revision += 1
         self._likes_revision += 1
