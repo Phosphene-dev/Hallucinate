@@ -132,6 +132,13 @@ def _tokens(q: str) -> list:
     return re.findall(r"\w+", fold(q))
 
 
+def _literal_terms(q: str) -> list:
+    """The query's space-separated parts, matched as they are, when one of them is only symbols ("!!!", "?",
+    "$$$"): word search drops those, so the song "!!!" was never found (issue 102). [] for ordinary queries."""
+    parts = fold(q).split()
+    return parts if any(not re.search(r"\w", p) for p in parts) else []
+
+
 def group_index(albums, artists):
     """Folded names for searching albums and artists in memory (see search_groups)."""
     return ([(fold(a.get("album") or ""), fold(a.get("album_artist") or ""), a) for a in albums],
@@ -143,7 +150,7 @@ def search_groups(index, query, album_limit=20, artist_limit=12):
     in the album title or its artist; every word in the artist's name; names starting with the first word
     first), but over the few thousand albums and artists instead of every song: milliseconds rather than a
     scan of a quarter-million rows."""
-    toks = _tokens(query)
+    toks = _literal_terms(query) or _tokens(query)
     if not toks:
         return [], []
     albums_idx, artists_idx = index
@@ -184,6 +191,8 @@ class Database:
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_sartist ON tracks(s_artist)")
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_scomposer ON tracks(s_composer)")
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_play_log_sartist ON play_log(s_artist)")
+        # a listen finding its song by artist and title (relink_plays)
+        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_artist_title ON tracks(s_artist, s_title)")
         # a song's or album's own listens (album page "first played", radio, history edits) without a full scan
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_play_log_path ON play_log(path)")
         try:
@@ -323,7 +332,7 @@ class Database:
 
     def playlists(self) -> list:
         return self._rows(
-            "SELECT p.id, p.name, p.folder, COUNT(t.id) AS n FROM playlists p "
+            "SELECT p.id, p.name, p.folder, p.created, COUNT(t.id) AS n, COALESCE(MAX(i.id), 0) AS last_added FROM playlists p "
             "LEFT JOIN playlist_items i ON i.playlist_id=p.id LEFT JOIN tracks t ON t.path=i.path "
             "GROUP BY p.id ORDER BY p.name COLLATE NOCASE"
         )
@@ -351,7 +360,7 @@ class Database:
         self.conn.commit()
 
     def smart_playlists(self) -> list:
-        return self._rows("SELECT id, name, rules, folder FROM smart_playlists ORDER BY name COLLATE NOCASE, id")
+        return self._rows("SELECT id, name, rules, folder, created FROM smart_playlists ORDER BY name COLLATE NOCASE, id")
 
     def smart_playlist(self, sid: int) -> Optional[dict]:
         rows = self._rows("SELECT id, name, rules FROM smart_playlists WHERE id=?", (sid,))
@@ -417,6 +426,40 @@ class Database:
             (pid, pid))
         self.conn.commit()
         return cur.rowcount
+
+    def playlist_counts(self, paths: list) -> dict:
+        """How many of `paths` each playlist holds: {playlist id: n} (playlists holding none left out)."""
+        out = {}
+        paths = list(dict.fromkeys(p for p in paths if p))
+        for k in range(0, len(paths), 500):
+            chunk = paths[k:k + 500]
+            for pid, n in self.conn.execute(
+                    f"SELECT playlist_id, COUNT(DISTINCT path) FROM playlist_items WHERE path IN ({','.join('?' * len(chunk))}) "
+                    "GROUP BY playlist_id", chunk):
+                out[pid] = out.get(pid, 0) + n
+        return out
+
+    def playlist_paths_in(self, pid: int, paths: list) -> list:
+        """Which of `paths` the playlist already holds."""
+        held = {r[0] for r in self.conn.execute("SELECT path FROM playlist_items WHERE playlist_id=?", (pid,))}
+        return [p for p in paths if p in held]
+
+    def playlist_remove_paths(self, pid: int, paths: list) -> list:
+        """Take every entry of these songs out of a playlist; returns [(path, pos)] to put them back with."""
+        paths = list(dict.fromkeys(paths))
+        rows = []
+        for k in range(0, len(paths), 500):
+            chunk = paths[k:k + 500]
+            q = f"playlist_id=? AND path IN ({','.join('?' * len(chunk))})"
+            rows += [(r[0], r[1]) for r in self.conn.execute(f"SELECT path, pos FROM playlist_items WHERE {q}", [pid, *chunk])]
+            self.conn.execute(f"DELETE FROM playlist_items WHERE {q}", [pid, *chunk])
+        self.conn.commit()
+        return rows
+
+    def playlist_restore(self, pid: int, rows: list):
+        """Put entries taken out with playlist_remove_paths back where they were."""
+        self.conn.executemany("INSERT INTO playlist_items(playlist_id, path, pos) VALUES(?,?,?)", [(pid, p, pos) for p, pos in rows])
+        self.conn.commit()
 
     def playlist_remove_item(self, item_id: int):
         self.conn.execute("DELETE FROM playlist_items WHERE id=?", (item_id,))
@@ -490,6 +533,50 @@ class Database:
                     "ON CONFLICT(path) DO UPDATE SET count=count+1, last=MAX(last, excluded.last)", (path, ts))
         self.conn.commit()
         return {"added": added, "matched": matched}
+
+    def relink_plays(self) -> int:
+        """Listens whose song isn't in the library at that path (imported before the library was there, or from a
+        folder removed and added again, which in the Flatpak comes back under a new path) find the library song
+        with the same artist and title: the same album first. A listen of a known path brings that song's likes,
+        ratings, plays and playlist places along, as a move would; an imported one counts as a play. The number
+        of listens linked."""
+        orphans = self.conn.execute(
+            "SELECT l.path, l.s_artist, l.s_title, l.s_album, COUNT(*) AS n, MAX(l.ts) AS last FROM play_log l "
+            "WHERE l.s_artist != '' AND l.s_title != '' AND (l.path IS NULL OR NOT EXISTS "
+            "(SELECT 1 FROM tracks t WHERE t.path = l.path)) "
+            "AND EXISTS(SELECT 1 FROM tracks t WHERE t.s_artist = l.s_artist AND t.s_title = l.s_title) "
+            "GROUP BY l.path, l.s_artist, l.s_title, l.s_album").fetchall()
+        if not orphans:
+            return 0
+        moves, linked = {}, 0
+        for o in orphans:
+            if o["path"] is not None and o["path"] in moves:
+                continue
+            new = self.conn.execute(
+                "SELECT path FROM tracks WHERE s_artist=? AND s_title=? ORDER BY s_album != ?, id LIMIT 1",
+                (o["s_artist"], o["s_title"], o["s_album"])).fetchone()[0]
+            if o["path"] is not None:
+                moves[o["path"]] = new
+                continue
+            cur = self.conn.execute(
+                "UPDATE play_log SET path=? WHERE path IS NULL AND s_artist=? AND s_title=? AND s_album=?",
+                (new, o["s_artist"], o["s_title"], o["s_album"]))
+            linked += cur.rowcount
+            self.conn.execute(
+                "INSERT INTO plays(path, count, last) VALUES(?,?,?) "
+                "ON CONFLICT(path) DO UPDATE SET count=count+excluded.count, last=MAX(last, excluded.last)",
+                (new, cur.rowcount, o["last"]))
+        for old, new in moves.items():
+            linked += self.conn.execute("SELECT COUNT(*) FROM play_log WHERE path=?", (old,)).fetchone()[0]
+            # what the new path has of its own adds up with what moves in, not under it
+            had = self.conn.execute("SELECT count, last FROM plays WHERE path=?", (new,)).fetchone()
+            moving = self.conn.execute("SELECT 1 FROM plays WHERE path=?", (old,)).fetchone()
+            self.move_user_data([(old, new)])
+            if had and moving:
+                self.conn.execute("UPDATE plays SET count=count+?, last=MAX(last, ?) WHERE path=?",
+                                  (had["count"], had["last"], new))
+        self.conn.commit()
+        return linked
 
     def listening_stats(self, period_start=None, limit=10):
         params = () if period_start is None else (period_start,)
@@ -1003,11 +1090,12 @@ class Database:
                groups: bool = True) -> dict:
         """Songs, albums and artists matching `query`. With groups=False only songs are looked up (the library
         finds albums and artists in memory with search_groups)."""
-        toks = _tokens(query)
+        literal = _literal_terms(query)
+        toks = literal or _tokens(query)
         if not toks:
             return {"tracks": [], "albums": [], "artists": []}
 
-        if self.has_fts:
+        if self.has_fts and not literal:
             match = " ".join(f'"{t}"*' for t in toks)
             tracks = self._rows(
                 "SELECT t.* FROM tracks_fts f JOIN tracks t ON t.id = f.rowid "

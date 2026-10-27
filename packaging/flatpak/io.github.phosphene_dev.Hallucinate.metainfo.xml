@@ -95,6 +95,13 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.6.0" date="2026-10-27">
+      <description>
+        <p>Select songs, albums, artists, playlists, queue entries and more from anywhere, by clicking, keyboard or dragging, and act on them all at once. Drag a selection onto a playlist or the queue.</p>
+        <p>Add to playlist shows which playlists already have a song, songs are no longer added twice, and the sidebar's playlists can be sorted. The mouse wheel can move Home's album shelves, the dock or taskbar menu has the player controls, and large numbers are grouped.</p>
+        <p>Fixes: listens showing as not in the library, searching for symbol-only titles, the signal path on PipeWire, and Show in folder in the Flatpak.</p>
+      </description>
+    </release>
     <release version="1.5.1" date="2026-10-26">
       <description>
         <p>Hallucinate is now also available as a .deb, an .rpm and a Nix flake. The analysis helper starts on Nix too.</p>

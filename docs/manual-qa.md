@@ -1,5 +1,23 @@
 # Manual QA checklist
 
+## Release testing for 1.6
+
+- [ ] Ctrl+click songs on one artist page, then albums on another: the bar counts both, and Add to playlist
+      adds every song.
+- [ ] Drag down a song list with the mouse: the songs passed over are selected. Drag one of them onto a playlist
+      in the sidebar: the selection is added. With a touchpad or touch screen the list still scrolls.
+- [ ] Add a song to a playlist it's already in: it's left out (or asked about, per Settings → Library).
+      The Add to playlist menu ticks that playlist; choosing it takes the song out.
+- [ ] Sidebar playlists: each order in the sort button's menu; "My own order" with Move up/down.
+- [ ] Home: Shift+wheel over a shelf moves it; the back/forward buttons appear on hover. Try the setting.
+- [ ] Right-click Hallucinate in your dock or taskbar (KDE, GNOME's dash, Plank, Waybar's taskbar…): Play/Pause,
+      Next, Previous, Mini Player and Quit work, and start it when it isn't running.
+- [ ] Numbers in the thousands on Home and Stats are grouped; each choice in Settings → Appearance → Numbers.
+- [ ] With PipeWire's allowed rates including 44100, a 44.1 kHz song's signal path says "Untouched" and that
+      PipeWire switches the output.
+- [ ] Remove a music folder and add it back (or import Last.fm history before the first scan): History and
+      Recap show the songs as in the library once the scan ends.
+
 ## Release testing for 1.0
 
 The checks people do by hand before 1.0: things that need real hardware, real accounts, real services or a

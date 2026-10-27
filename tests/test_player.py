@@ -137,6 +137,22 @@ def test_shuffle_toggle_midway_keeps_current(make_player, clips):
     assert p._compute_next(auto=False) == 4
 
 
+def test_several_queue_entries_at_once(make_player, clips):
+    """The selection bar's queue actions: several entries removed or moved up next, one Undo for each."""
+    p = make_player(session=False)
+    p.playList(clips[:6], 2)
+    titles = lambda: [t["title"] for t in p.queue]  # noqa: E731
+    p.moveIndexesNext([0, 5, 4])  # from before and after the current song, in queue order
+    assert titles() == ["T1", "T2", "T0", "T4", "T5", "T3"]
+    assert p.current["title"] == "T2" and p.currentIndex == 1
+    p.undoQueue()
+    assert titles() == ["T0", "T1", "T2", "T3", "T4", "T5"] and p.current["title"] == "T2"
+    p.removeIndexes([0, 3, 5, 99])
+    assert titles() == ["T1", "T2", "T4"] and p.current["title"] == "T2"
+    assert p.undoQueue()
+    assert titles() == ["T0", "T1", "T2", "T3", "T4", "T5"]
+
+
 def test_queue_operations(make_player, clips):
     p = make_player(session=False)
     p.playList(clips[:3], 1)

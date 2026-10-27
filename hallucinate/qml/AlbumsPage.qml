@@ -5,6 +5,8 @@ import "."
 // Albums four ways: A–Z, a wall ordered by cover colour, a timeline by decade and year, and by genre.
 Item {
     id: page
+    // Ctrl+A with no row focused (main.qml): the page's list
+    function selectAll() { if (page.view === "colour") Selection.selectAll(wall.toString(), library.albumWall, "album"); else if (page.view === "grid") Selection.selectAll(grid.toString(), library.albums, "album") }
     objectName: "albums"
     readonly property real minCell: 190
     readonly property int cols: Math.max(2, Math.floor((width - 40) / minCell))
@@ -135,8 +137,9 @@ Item {
                         color: "transparent"
                         border.width: 3
                         border.color: Theme.accent
-                        visible: AlbumSelection.count > 0 && AlbumSelection.has(tile.album_key)
+                        visible: tilePick.selected
                     }
+                    Pick { id: tilePick; target: tile; kind: "album"; entry: ({ album_key: tile.album_key, album: tile.album }); source: library.albumWall; index: tile.index }
                     MouseArea {
                         id: tileMouse
                         anchors.fill: parent
@@ -146,13 +149,15 @@ Item {
                         Accessible.role: Accessible.Button
                         Accessible.name: tile.album + (tile.album_artist ? ", " + tile.album_artist : "")
                         Accessible.onPressAction: Nav.openAlbum(tile.album_key)
+                        onPressed: function (mouse) { tilePick.press(this, mouse) }
+                        onPositionChanged: function (mouse) { tilePick.move(this, mouse) }
+                        onReleased: tilePick.release(this)
+                        onCanceled: tilePick.cancel(this)
                         onClicked: function (mouse) {
                             if (mouse.button === Qt.RightButton) Nav.albumMenu([tile.album_key], tile.album, tile.album_artist)
-                            else if (mouse.modifiers & Qt.ControlModifier) AlbumSelection.toggle(library.albumWall, tile.index, tile.album_key)
-                            else if (mouse.modifiers & Qt.ShiftModifier) AlbumSelection.extend(library.albumWall, tile.index, tile.album_key)
-                            else { AlbumSelection.clear(); Nav.openAlbum(tile.album_key) }
+                            else if (!tilePick.click(mouse)) Nav.openAlbum(tile.album_key)
                         }
-                        onPressAndHold: Nav.albumMenu([tile.album_key], tile.album, tile.album_artist)
+                        onPressAndHold: if (!PickDrag.pick) Nav.albumMenu([tile.album_key], tile.album, tile.album_artist)
                     }
                     ToolTip.visible: tileMouse.containsMouse
                     ToolTip.text: Theme.plain(tile.album + " — " + tile.album_artist)
@@ -215,7 +220,7 @@ Item {
                     Text {
                         textFormat: Text.PlainText
                         anchors { left: decadeLabel.right; leftMargin: 14; baseline: decadeLabel.baseline }
-                        text: parent.row.count + (parent.row.count === 1 ? " album" : " albums")
+                        text: Theme.num(parent.row.count) + (parent.row.count === 1 ? " album" : " albums")
                         color: Theme.textDim
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(13)
@@ -267,8 +272,14 @@ Item {
                                 id: entry
                                 required property int index
                                 readonly property var modelData: yearItem.albums[index] || ({})
+                                Pick { id: tlPick; target: entry; kind: "album"; entry: entry.modelData; source: yearItem.albums; index: entry.index }
                                 width: timeline.coverSize
                                 height: timeline.coverSize + 40
+                                Rectangle {  // selected
+                                    x: -3; y: -3; width: timeline.coverSize + 6; height: width
+                                    radius: Theme.round(14); color: "transparent"; border.width: 3; border.color: Theme.accent
+                                    visible: tlPick.selected
+                                }
                                 Cover {
                                     id: tlCover
                                     width: timeline.coverSize; height: width
@@ -308,13 +319,17 @@ Item {
                                     Accessible.role: Accessible.Button
                                     Accessible.name: entry.modelData.album + (entry.modelData.album_artist ? ", " + entry.modelData.album_artist : "")
                                     Accessible.onPressAction: Nav.openAlbum(entry.modelData.album_key)
+                                    onPressed: function (mouse) { tlPick.press(this, mouse) }
+                                    onPositionChanged: function (mouse) { if (pressed) tlPick.move(this, mouse) }
+                                    onReleased: tlPick.release(this)
+                                    onCanceled: tlPick.cancel(this)
                                     onClicked: function (mouse) {
                                         if (mouse.button === Qt.RightButton)
                                             Nav.albumMenu([entry.modelData.album_key], entry.modelData.album, entry.modelData.album_artist || "")
-                                        else
+                                        else if (!tlPick.click(mouse))
                                             Nav.openAlbum(entry.modelData.album_key)
                                     }
-                                    onPressAndHold: Nav.albumMenu([entry.modelData.album_key], entry.modelData.album, entry.modelData.album_artist || "")
+                                    onPressAndHold: if (!PickDrag.pick) Nav.albumMenu([entry.modelData.album_key], entry.modelData.album, entry.modelData.album_artist || "")
                                 }
                             }
                         }
@@ -375,13 +390,17 @@ Item {
                 model: genresBox.genres
                 ScrollBar.vertical: ScrollBar {}
                 delegate: Item {
+                    id: genreTile
                     required property var modelData
+                    required property int index
+                    Pick { id: genreTilePick; target: genreTile; kind: "genre"; entry: genreTile.modelData; source: genresBox.genres; index: genreTile.index }
                     width: genreGrid.cellWidth; height: genreGrid.cellHeight
                     Rectangle {
                         anchors { fill: parent; margins: 6 }
                         radius: Theme.radius
                         color: tileHover.hovered ? Theme.glassHover : Theme.glass
-                        border.color: Theme.stroke
+                        border.color: genreTilePick.selected ? Theme.accent : Theme.stroke
+                        border.width: genreTilePick.selected ? 2 : 1
                         Cover {
                             id: tileCover
                             x: 10; anchors.verticalCenter: parent.verticalCenter
@@ -406,8 +425,8 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 width: parent.width
-                                text: modelData.albums + (modelData.albums === 1 ? " album" : " albums") + "  ·  "
-                                      + modelData.tracks + (modelData.tracks === 1 ? " song" : " songs")
+                                text: Theme.num(modelData.albums) + (modelData.albums === 1 ? " album" : " albums") + "  ·  "
+                                      + Theme.num(modelData.tracks) + (modelData.tracks === 1 ? " song" : " songs")
                                 elide: Text.ElideRight
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily
@@ -416,8 +435,19 @@ Item {
                         }
                         HoverHandler { id: tileHover; cursorShape: Qt.PointingHandCursor }
                         // right-click (or a long press): play, queue or add the whole genre to a playlist
-                        TapHandler { onTapped: Nav.openGenre(modelData.name); onLongPressed: genreTileMenu.showGenre(modelData.name) }
-                        TapHandler { acceptedButtons: Qt.RightButton; onTapped: genreTileMenu.showGenre(modelData.name) }
+                        MouseArea {
+                            anchors.fill: parent
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                            onPressAndHold: if (!PickDrag.pick) genreTileMenu.showGenre(modelData.name)
+                            onPressed: function (mouse) { genreTilePick.press(this, mouse) }
+                            onPositionChanged: function (mouse) { genreTilePick.move(this, mouse) }
+                            onReleased: genreTilePick.release(this)
+                            onCanceled: genreTilePick.cancel(this)
+                            onClicked: function (mouse) {
+                                if (mouse.button === Qt.RightButton) genreTileMenu.showGenre(modelData.name)
+                                else if (!genreTilePick.click(mouse)) Nav.openGenre(modelData.name)
+                            }
+                        }
                         Accessible.role: Accessible.Link
                         Accessible.name: "Genre: " + modelData.name
                         Accessible.onPressAction: Nav.openGenre(modelData.name)

@@ -4,6 +4,8 @@ import "."
 
 Item {
     id: page
+    // Ctrl+A with no row focused (main.qml): the page's list
+    function selectAll() { Selection.selectAll(grid.toString(), grid.model, page.composers ? "composer" : "artist") }
     objectName: "artists"
     readonly property int cols: Math.max(2, Math.floor((width - 40) / 170))
     // A–Z (the library's own order), most songs, most played or newest first: sorted here from the same list
@@ -31,10 +33,10 @@ Item {
     // Python's models (made in the background): handing the view thousands of composers as a JS list froze it
     readonly property var composerRows: !composers ? null : order === "az" ? library.composersAz : library.composers
     function subtitle(a) {
-        if (composers) return a.works > 0 ? a.works + (a.works === 1 ? " work" : " works") : a.tracks + (a.tracks === 1 ? " song" : " songs")
-        if (order === "songs") return a.tracks + (a.tracks === 1 ? " song" : " songs")
+        if (composers) return a.works > 0 ? Theme.num(a.works) + (a.works === 1 ? " work" : " works") : Theme.num(a.tracks) + (a.tracks === 1 ? " song" : " songs")
+        if (order === "songs") return Theme.num(a.tracks) + (a.tracks === 1 ? " song" : " songs")
         if (order === "plays") return (a.plays || 0) + (a.plays === 1 ? " play" : " plays")
-        return a.albums + (a.albums === 1 ? " album" : " albums")
+        return Theme.num(a.albums) + (a.albums === 1 ? " album" : " albums")
     }
 
     Text {
@@ -91,6 +93,8 @@ Item {
                 subtitle: page.subtitle(parent.artist)
                 composer: page.composers
                 artUrl: parent.artist.artUrl
+                selectionSource: grid.model
+                rowIndex: index
             }
         }
     }

@@ -12,20 +12,28 @@ Rectangle {
     readonly property bool playing: player.hasTrack && player.current.kind === "episode"
                                     && player.current.episode_id === episode.id
     signal menu()
+    // its list and place there: Ctrl/Shift+click, dragging and Ctrl+A select episodes (see Selection)
+    property var selectionSource: null
+    property int rowIndex: -1
+    Pick { id: pick; target: row; kind: "episode"; entry: row.episode && row.episode.id !== undefined ? { id: row.episode.id, title: row.episode.title } : null; source: row.selectionSource; index: row.rowIndex }
     activeFocusOnTab: true
     Accessible.role: Accessible.ListItem
     Accessible.name: (episode.title || "") + (episode.detail ? ", " + episode.detail : "")
     Accessible.onPressAction: (row.upNextRow ? podcasts.playUpNext(episode.id) : podcasts.play(episode.id))
-    ListKeys { id: listKeys; row: row; onMenu: row.menu() }
-    Keys.onShortcutOverride: function (event) { event.accepted = listKeys.handles(event) || event.key === Qt.Key_Return }
-    Keys.onPressed: function (event) { if (listKeys.handles(event)) listKeys.press(event, row.ListView.view ? row.ListView.view.indexAt(row.x + 1, row.y + 1) : 0) }
+    ListKeys { id: listKeys; row: row; pick: pick; onMenu: row.menu() }
+    Keys.onShortcutOverride: function (event) { event.accepted = listKeys.handles(event) || listKeys.selects(event) || event.key === Qt.Key_Return }
+    Keys.onPressed: function (event) {
+        if (pick.keys(event)) return
+        if (listKeys.handles(event)) listKeys.press(event, row.ListView.view ? row.ListView.view.indexAt(row.x + 1, row.y + 1) : 0)
+    }
     Keys.onReturnPressed: row.playing ? player.toggle() : (row.upNextRow ? podcasts.playUpNext(row.episode.id) : podcasts.play(row.episode.id))
     Keys.onEnterPressed: row.playing ? player.toggle() : (row.upNextRow ? podcasts.playUpNext(row.episode.id) : podcasts.play(row.episode.id))
     Rectangle { anchors.fill: parent; anchors.margins: -2; radius: Theme.round(14); color: "transparent"; border.width: 2; border.color: Theme.accent; visible: row.activeFocus }
     width: parent ? parent.width : 400
     height: 64
     radius: Theme.round(14)
-    color: rowMouse.containsMouse || playing ? Theme.glassHover : "transparent"
+    color: pick.selected ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, rowMouse.containsMouse ? 0.24 : 0.17)
+                         : rowMouse.containsMouse || playing ? Theme.glassHover : "transparent"
     border.width: playing ? 1 : 0
     border.color: Theme.accent
 
@@ -69,12 +77,17 @@ Rectangle {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onPressed: function (mouse) { pick.press(this, mouse) }
+        onPositionChanged: function (mouse) { if (pressed) pick.move(this, mouse) }
+        onReleased: pick.release(this)
+        onCanceled: pick.cancel(this)
         onClicked: function (mouse) {
             if (mouse.button === Qt.RightButton) row.menu()
+            else if (pick.click(mouse)) return
             else if (row.playing) player.toggle()
             else (row.upNextRow ? podcasts.playUpNext(row.episode.id) : podcasts.play(row.episode.id))
         }
-        onPressAndHold: row.menu()
+        onPressAndHold: if (!PickDrag.pick) row.menu()
         Accessible.role: Accessible.Button
         Accessible.name: (row.playing ? "Playing: " : "Play ") + (row.episode.title || "") + ", " + (row.episode.detail || "")
         Accessible.onPressAction: (row.upNextRow ? podcasts.playUpNext(row.episode.id) : podcasts.play(row.episode.id))

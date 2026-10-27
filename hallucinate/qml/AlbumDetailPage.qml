@@ -7,6 +7,8 @@ import "."
 // when it arrived and how you've listened to it) and the tracks split by disc.
 Item {
     id: page
+    // Ctrl+A with no row focused (main.qml): the page's list
+    function selectAll() { Selection.selectAll(list.toString(), list.model, "song") }
     objectName: "album"
     property string albumKey
     // Pages kept underneath for Back catch up when they're shown again: refreshing them all on every rescan
@@ -48,7 +50,7 @@ Item {
     }
     function listening() {
         if (!notes.plays) return "Not played yet"
-        var s = notes.plays + (notes.plays === 1 ? " play" : " plays")
+        var s = Theme.num(notes.plays) + (notes.plays === 1 ? " play" : " plays")
         if (notes.firstPlayed) s += "  ·  first " + fmtDate(notes.firstPlayed)
         if (notes.lastPlayed) s += "  ·  last " + fmtDate(notes.lastPlayed)
         return s
@@ -241,7 +243,7 @@ Item {
                         Note { label: "Size"; value: page.notes.bytes ? Theme.fmtBytes(page.notes.bytes) : "" }
                         Note { label: "Added"; value: page.fmtDate(page.notes.added || 0) }
                         Note { objectName: "albumListening"; label: "Your listening"; value: page.listening() }
-                        Note { label: "Liked"; value: page.notes.liked ? page.notes.liked + (page.notes.liked === 1 ? " song" : " songs") : "" }
+                        Note { label: "Liked"; value: page.notes.liked ? Theme.num(page.notes.liked) + (page.notes.liked === 1 ? " song" : " songs") : "" }
                     }
                 }
             }

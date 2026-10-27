@@ -129,8 +129,24 @@ QtObject {
     }
     function fmtHours(seconds) {
         var h = seconds / 3600
-        if (h >= 48) return Math.round(h / 24) + " days"
-        return (h >= 10 ? Math.round(h) : h.toFixed(1)) + " hours"
+        if (h >= 48) return num(Math.round(h / 24)) + " days"
+        return (h >= 10 ? num(Math.round(h)) : num(h, 1)) + " hours"
+    }
+
+    // A count as you read numbers (Settings → Appearance → Numbers): 12,345 · 12.345 · 12 345 · 12345, or as
+    // the system's language writes them. `decimals`: places after the point (none unless asked).
+    readonly property string numberFormat: shell.ui.numberFormat || "locale"
+    function num(n, decimals) {
+        var v = Number(n)
+        if (n === undefined || n === null || n === "" || !isFinite(v)) return n === undefined || n === null ? "" : String(n)
+        var places = decimals || 0
+        if (numberFormat === "locale") return v.toLocaleString(Qt.locale(), "f", places)
+        var group = ({ comma: ",", period: ".", space: "\u202f", none: "" })[numberFormat]
+        if (group === undefined) group = ","
+        var point = numberFormat === "period" ? "," : "."
+        var fixed = Math.abs(v).toFixed(places).split(".")
+        var whole = fixed[0].replace(/\B(?=(\d{3})+(?!\d))/g, group)
+        return (v < 0 ? "-" : "") + whole + (fixed.length > 1 ? point + fixed[1] : "")
     }
 
     // For text shown by Qt's own controls (tooltips, menu items, dialog titles), which can't be told to draw plain

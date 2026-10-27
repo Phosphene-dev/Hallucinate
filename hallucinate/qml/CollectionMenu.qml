@@ -18,9 +18,19 @@ Menu {
                                                                           : "Everything in “" + name + "”"
 
     property var copies: ({ servers: 0, kept: 0, waiting: 0 })  // songs from a music server, kept here or not
-    function showNow() { copies = serverCopies.status(paths()); popup() }
+    function showNow() { if (ofSelection()) return; copies = serverCopies.status(paths()); popup() }
+    // on one of several things selected, the menu is the selection's (every song of all of them)
+    function ofSelection() {
+        if (Selection.count < 2 || !Selection.has(kind, kind === "folder" ? path : name)) return false
+        Nav.selectionMenu()
+        return true
+    }
     function showArtist(n) { kind = "artist"; name = n; path = ""; showNow() }
-    function showFolder(p, n) { kind = "folder"; path = p; name = n || p.split("/").pop(); copies = ({ servers: 0, kept: 0, waiting: 0 }); popup() }
+    function showFolder(p, n) {
+        kind = "folder"; path = p; name = n || p.split("/").pop()
+        if (ofSelection()) return
+        copies = ({ servers: 0, kept: 0, waiting: 0 }); popup()
+    }
     function showGenre(n) { kind = "genre"; name = n; path = ""; showNow() }
     function showComposer(n) { kind = "composer"; name = n; path = ""; showNow() }
     signal genreRenamed(string oldName, string newName)  // its songs are being retagged
@@ -34,7 +44,7 @@ Menu {
         else if (composer) { if (shuffle) player.setShuffle(true); library.playComposer(name, shuffle) }
         else library.playFolder(path, shuffle)
     }
-    function songCount(list) { return list.length + (list.length === 1 ? " song" : " songs") }
+    function songCount(list) { return Theme.num(list.length) + (list.length === 1 ? " song" : " songs") }
 
     MenuItem { text: "Play"; icon.name: "play"; onTriggered: collectionMenu.play(false) }
     MenuItem { text: "Shuffle"; icon.name: "shuffle"; onTriggered: collectionMenu.play(true) }
@@ -51,6 +61,14 @@ Menu {
         objectName: "addToPlaylistMenu"
         title: "Add to playlist"
         icon.name: "playlist"
+        // which playlists already hold these songs: ticked, and a click takes them out (issue 101)
+        property var held: ({})
+        property var heldPaths: []
+        onAboutToShow: {
+            heldPaths = collectionMenu.paths()
+            held = userLib.playlistCounts(heldPaths)
+            for (var i = 0; i < count; i++) { var it = itemAt(i); if (it && it.have !== undefined) it.checked = it.full }
+        }
         MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: newDlg.open() }
         MenuSeparator {}
         Instantiator {
@@ -58,8 +76,12 @@ Menu {
             delegate: MenuItem {
                 required property int id
                 required property string name
-                text: Theme.plain(name)
-                onTriggered: { var p = collectionMenu.paths(); userLib.addPathsToPlaylist(id, p); Nav.notify(collectionMenu.songCount(p) + " added to “" + name + "”") }
+                readonly property int have: plMenu.held[String(id)] || 0
+                readonly property bool full: have > 0 && have >= plMenu.heldPaths.length
+                checkable: true
+                text: Theme.plain(name) + (have > 0 && !full ? "  (" + Theme.num(have) + " of " + plMenu.heldPaths.length + ")" : "")
+                onTriggered: full ? Nav.removeFromPlaylistId(id, name, collectionMenu.paths(), "")
+                                  : Nav.addToPlaylist(id, name, collectionMenu.paths(), "")
             }
             onObjectAdded: (i, o) => plMenu.addItem(o)
             onObjectRemoved: (i, o) => plMenu.removeItem(o)

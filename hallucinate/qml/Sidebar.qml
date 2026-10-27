@@ -28,11 +28,47 @@ Item {
         function onRowsRemoved() { side.plRevision++ }
         function onDataChanged() { side.plRevision++ }
     }
+    // The order of the playlists (issue 103): by name either way, newest or oldest, most recently added to, most
+    // songs, or your own (Move up and Move down in a playlist's menu). Folders keep to A–Z; inside one, the same order.
+    readonly property string plSort: shell.ui.playlistSort || "name"
+    readonly property var plCustom: (shell.ui.playlistOrder || "").split(",").filter(function (k) { return k.length })
+    readonly property var plSorts: [{ id: "name", t: "Name, A–Z" }, { id: "name-desc", t: "Name, Z–A" }, { id: "newest", t: "Newest first" },
+                                    { id: "oldest", t: "Oldest first" }, { id: "added", t: "Recently added to" },
+                                    { id: "songs", t: "Most songs" }, { id: "custom", t: "My own order" }]
+    function plKey(item) { return (item.smart ? "s" : "p") + item.id }
+    function plCompare(a, b) {
+        var byName = a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true })
+        switch (plSort) {
+        case "name-desc": return -byName
+        case "newest": return (b.created || 0) - (a.created || 0) || byName
+        case "oldest": return (a.created || 0) - (b.created || 0) || byName
+        case "added": return (b.last_added || 0) - (a.last_added || 0) || byName
+        case "songs": return (b.n || 0) - (a.n || 0) || byName
+        case "custom":
+            var ia = plCustom.indexOf(plKey(a)), ib = plCustom.indexOf(plKey(b))
+            if (ia < 0 && ib < 0) return byName
+            return ia < 0 ? 1 : ib < 0 ? -1 : ia - ib  // new playlists go to the end
+        }
+        return byName
+    }
+    // Move up/down: switches to "My own order", starting from the order shown now
+    function plMove(item, step) {
+        var flat = plTree.folders.reduce(function (acc, f) { return acc.concat(f.items) }, []).concat(plTree.loose)
+        var sameFolder = flat.filter(function (x) { return (x.folder || "").toLowerCase() === (item.folder || "").toLowerCase() })
+        var keys = flat.map(plKey), k = plKey(item)
+        var at = sameFolder.map(plKey).indexOf(k), to = at + step
+        if (at < 0 || to < 0 || to >= sameFolder.length) return
+        var a = keys.indexOf(k), b = keys.indexOf(plKey(sameFolder[to]))
+        keys[a] = keys[b]; keys[b] = k
+        shell.setUiValue("playlistOrder", keys.join(","))
+        shell.setUiValue("playlistSort", "custom")
+    }
     readonly property var plTree: {
-        var r = plRevision, byFolder = {}, names = [], loose = []
+        var r = plRevision, s = plSort, c = plCustom, byFolder = {}, names = [], loose = []
         function add(list, smart) {
             for (var i = 0; i < list.length; i++) {
-                var item = { id: list[i].id, name: list[i].name, smart: smart, folder: list[i].folder || "" }
+                var item = { id: list[i].id, name: list[i].name, smart: smart, folder: list[i].folder || "",
+                             created: list[i].created || 0, last_added: list[i].last_added || 0, n: list[i].n || 0 }
                 if (!item.folder) { loose.push(item); continue }
                 var key = item.folder.toLowerCase()
                 if (!byFolder[key]) { byFolder[key] = { name: item.folder, items: [] }; names.push(key) }
@@ -41,7 +77,9 @@ Item {
         }
         add(userLib.playlists.toList(), false)
         add(userLib.smartPlaylists.toList(), true)
-        names.sort(function (a, b) { return byFolder[a].name.localeCompare(byFolder[b].name) })
+        loose.sort(plCompare)
+        for (var f in byFolder) byFolder[f].items.sort(plCompare)
+        names.sort(function (a, b) { return byFolder[a].name.localeCompare(byFolder[b].name, undefined, { sensitivity: "base", numeric: true }) })
         return { folders: names.map(function (k) { return byFolder[k] }), loose: loose }
     }
     readonly property var folderNames: plTree.folders.map(function (f) { return f.name })
@@ -51,7 +89,23 @@ Item {
 
     // A playlist in the list: opens it; right-click for its menu
     component PlaylistEntry: RailButton {
+        id: plEntry
         property var entry: ({})
+        pick: Pick { target: plEntry; kind: plEntry.entry.smart ? "smart" : "playlist"; entry: plEntry.entry; carries: false }
+        // a selection carried over a playlist (not a smart one: its rules choose its songs) is added to it
+        dropping: plDrop.containsDrag
+        DropArea {
+            id: plDrop
+            anchors.fill: parent
+            keys: ["hallucinate/selection"]
+            enabled: !plEntry.entry.smart
+            onDropped: function (drop) {
+                var p = Selection.songPaths()
+                Selection.clear()
+                Nav.addToPlaylist(plEntry.entry.id, plEntry.entry.name, p, "")
+                drop.accept()
+            }
+        }
         height: side.compact ? 32 : 36
         text: entry.name || ""
         icon: entry.smart ? "smartlist" : "playlist"
@@ -224,6 +278,21 @@ Item {
                             selected: side.section === modelData.id && side.atRoot
                             onClicked: side.navigate(modelData.id)
                             onMenuRequested: { pageMenu.page = modelData.id; pageMenu.popup() }
+                            // a selection carried onto Liked Songs is liked
+                            dropping: likeDrop.containsDrag
+                            DropArea {
+                                id: likeDrop
+                                anchors.fill: parent
+                                keys: ["hallucinate/selection"]
+                                enabled: rail.modelData.id === "liked"
+                                onDropped: function (drop) {
+                                    var p = Selection.songPaths()
+                                    userLib.setLikedPaths(p, true)
+                                    Selection.clear()
+                                    Nav.notify(Theme.num(p.length) + (p.length === 1 ? " song" : " songs") + " liked")
+                                    drop.accept()
+                                }
+                            }
                         }
                     }
                 }
@@ -266,6 +335,28 @@ Item {
                         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                         icon: "plus"; size: 14; tip: "New playlist"
                         onClicked: newPlMenu.popup(newPlButton, 0, newPlButton.height)
+                    }
+                    IconButton {
+                        id: sortPlButton
+                        objectName: "playlistSortButton"
+                        visible: !side.collapsed
+                        anchors { right: newPlButton.left; rightMargin: 2; verticalCenter: parent.verticalCenter }
+                        icon: "sort"; size: 14; tip: "Order: " + (side.plSorts.filter(function (o) { return o.id === side.plSort })[0] || side.plSorts[0]).t
+                        onClicked: sortPlMenu.popup(sortPlButton, 0, sortPlButton.height)
+                    }
+                    Menu {
+                        id: sortPlMenu
+                        objectName: "playlistSortMenu"
+                        Repeater {
+                            model: side.plSorts
+                            MenuItem {
+                                required property var modelData
+                                text: modelData.t
+                                checkable: true
+                                checked: side.plSort === modelData.id
+                                onTriggered: shell.setUiValue("playlistSort", modelData.id)
+                            }
+                        }
                     }
                     Menu {
                         id: newPlMenu
@@ -450,6 +541,15 @@ Item {
                 onObjectAdded: (i, o) => moveMenu.addItem(o)
                 onObjectRemoved: (i, o) => moveMenu.removeItem(o)
             }
+        }
+        MenuItem {
+            objectName: "playlistMoveUp"
+            text: "Move up"; icon.name: "up"
+            onTriggered: side.plMove({ id: plItemMenu.pid, smart: plItemMenu.smart, folder: plItemMenu.folder }, -1)
+        }
+        MenuItem {
+            text: "Move down"; icon.name: "down"
+            onTriggered: side.plMove({ id: plItemMenu.pid, smart: plItemMenu.smart, folder: plItemMenu.folder }, 1)
         }
         MenuSeparator {}
         MenuItem {

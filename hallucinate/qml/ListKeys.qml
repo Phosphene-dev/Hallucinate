@@ -8,6 +8,7 @@ import QtQuick
 QtObject {
     id: keys
     property Item row
+    property var pick: null  // the row's Pick: Shift with a move selects along the way
     signal menu()
 
     function view() { return row && row.ListView.view ? row.ListView.view : null }
@@ -62,23 +63,46 @@ QtObject {
     function handles(event) {
         var plain = (event.modifiers & ~Qt.KeypadModifier) === Qt.NoModifier
         if (event.key === Qt.Key_F10 && (event.modifiers & Qt.ShiftModifier)) return true
+        if (pick && (event.modifiers & ~Qt.KeypadModifier) === Qt.ShiftModifier && moves.indexOf(event.key) >= 0) return count() > 1
         if (!plain) return false
         if (event.key === Qt.Key_Menu) return true
         // the moves, only with other rows to move to
         return [Qt.Key_Up, Qt.Key_Down, Qt.Key_PageUp, Qt.Key_PageDown, Qt.Key_Home, Qt.Key_End].indexOf(event.key) >= 0
                && count() > 1
     }
+    readonly property var moves: [Qt.Key_Up, Qt.Key_Down, Qt.Key_PageUp, Qt.Key_PageDown, Qt.Key_Home, Qt.Key_End]
+    // Shift with a move: select from this row to where it lands (Ctrl+A and Ctrl+Space are the Pick's)
+    function selects(event) {
+        var m = event.modifiers & ~Qt.KeypadModifier
+        if (pick && m === Qt.ShiftModifier && moves.indexOf(event.key) >= 0 && count() > 1) return true
+        return !!pick && (m & Qt.ControlModifier) !== 0 && (event.key === Qt.Key_A || event.key === Qt.Key_Space)
+    }
     // index: the row's place in its ListView (a Repeater's row finds its own place among its siblings)
     function press(event, index) {
+        var own = index
         if (!view()) index = siblings().indexOf(row)
+        var to
         switch (event.key) {
-        case Qt.Key_Up: go(index - 1); break
-        case Qt.Key_Down: go(index + 1); break
-        case Qt.Key_PageUp: go(index - page()); break
-        case Qt.Key_PageDown: go(index + page()); break
-        case Qt.Key_Home: go(0); break
-        case Qt.Key_End: go(count() - 1); break
+        case Qt.Key_Up: to = index - 1; break
+        case Qt.Key_Down: to = index + 1; break
+        case Qt.Key_PageUp: to = index - page(); break
+        case Qt.Key_PageDown: to = index + page(); break
+        case Qt.Key_Home: to = 0; break
+        case Qt.Key_End: to = count() - 1; break
         default: keys.menu()
+        }
+        if (to !== undefined) {
+            to = Math.max(0, Math.min(count() - 1, to))
+            if ((event.modifiers & Qt.ShiftModifier) && pick && pick.source && pick.item) {
+                var name = pick.listName()
+                if (Selection.anchorList !== name || Selection.anchor < 0) {
+                    if (!pick.selected) pick.toggle()
+                    Selection.anchorList = name
+                    Selection.anchor = own
+                }
+                Selection.selectRange(name, pick.source, Selection.anchor, own + (to - index), pick.kind, Selection.items, pick.origin)
+            }
+            go(to)
         }
         event.accepted = true
     }

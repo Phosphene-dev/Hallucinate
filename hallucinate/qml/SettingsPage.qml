@@ -17,20 +17,30 @@ Item {
         var y = sidebarOrderBox.mapToItem(flick.contentItem, 0, 0).y - 20
         flick.contentY = Math.max(0, Math.min(y, flick.contentHeight - flick.height))
     }
-    // the section at the top of the view, lit in the jump list
+    // the section at the top of the view, lit in the jump list. The last sections are too short to reach the top
+    // (issue 99): one jumped to stays lit, and at the very end the last section is.
+    property int jumped: -1
+    property bool jumping: false
     readonly property int currentSection: {
-        var y = flick.contentY + 40, at = 0
+        if (jumped >= 0) return jumped
+        var y = flick.contentY + 40, at = 0, last = 0
         for (var i = 0; i < sectionIds.length; i++) {
             var s = sectionItem(i)
-            if (s && s.visible && s.y <= y) at = i
+            if (!s || !s.visible) continue
+            last = i
+            if (s.y <= y) at = i
         }
-        return at
+        return flick.contentHeight > flick.height && flick.contentY >= flick.contentHeight - flick.height - 2 ? last : at
     }
     function jumpTo(i) {
         page.query = ""
         search.text = ""
+        jumping = true
         flick.contentY = Math.max(0, Math.min(sectionItem(i).y, flick.contentHeight - flick.height))
+        jumping = false
+        jumped = i
     }
+    Connections { target: flick; function onContentYChanged() { if (!page.jumping) page.jumped = -1 } }
 
     // Search and jump to a section; the page below scrolls
     Column {
@@ -107,7 +117,7 @@ Item {
             id: sec_appearance
             objectName: "settings_appearance"
             title: "Appearance"
-            keywords: "theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
+            keywords: "numbers thousands separator comma commas digits shelf shelves row rows sideways wheel tilt arrows theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
             query: page.query
             Row {
                 spacing: 12
@@ -299,6 +309,46 @@ Item {
                         onActivated: function (i) { shell.setScrollSpeed(speeds[i]) }
                         Accessible.name: "Scroll speed (mouse wheel)"
                     }
+                }
+                Row {
+                    spacing: 12
+                    Text { textFormat: Text.PlainText; text: "Wheel over a row of albums"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }
+                    StyledCombo {
+                        objectName: "shelfWheel"
+                        width: 260
+                        readonly property var modes: ["page", "row"]
+                        model: ["Scrolls the page", "Moves the row, then the page"]
+                        selection: shell.ui.shelfWheel === "row" ? 1 : 0
+                        onActivated: function (i) { shell.setUiValue("shelfWheel", modes[i]) }
+                        Accessible.name: "Mouse wheel over a row of albums"
+                    }
+                }
+                Row {
+                    spacing: 12
+                    Text { textFormat: Text.PlainText; text: "Numbers"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }
+                    StyledCombo {
+                        objectName: "numberFormat"
+                        width: 260
+                        readonly property var formats: ["locale", "comma", "period", "space", "none"]
+                        model: ["As your language writes them (" + Number(12345).toLocaleString(Qt.locale(), "f", 0) + ")",
+                                "12,345", "12.345", "12\u202f345", "12345"]
+                        selection: Math.max(0, formats.indexOf(Theme.numberFormat))
+                        onActivated: function (i) { shell.setUiValue("numberFormat", formats[i]) }
+                        Accessible.name: "How numbers are written"
+                    }
+                }
+                StyledCheck {
+                    objectName: "shelfArrows"
+                    text: "Show back and forward buttons on rows of albums"
+                    checked: shell.ui.shelfArrows !== "false"
+                    onToggled: shell.setUiValue("shelfArrows", checked ? "true" : "false")
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: "Rows that scroll sideways (Home's shelves, search results) also move with Shift+wheel, a tilting wheel or a touchpad swipe."
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
                 StyledCheck {
                     text: "Show audio format and average bitrate on tracks"
@@ -607,7 +657,7 @@ Item {
             id: sec_playback
             objectName: "settings_playback"
             title: "Playback"
-            keywords: "output device audio replaygain loudness preamp measure crossfade gapless album fade pause resume start startup open volume step wheel maximum limit loud speed sleep timer"
+            keywords: "sample rate resample resampling bit perfect signal path pipewire allowed rates 44.1 48 output device audio replaygain loudness preamp measure crossfade gapless album fade pause resume start startup open volume step wheel maximum limit loud speed sleep timer"
             query: page.query
             Flow {  // wraps in a narrow window
                 width: parent.width
@@ -629,6 +679,28 @@ Item {
                         }
                     }
                 }
+            }
+            Flow {  // wraps in a narrow window
+                width: parent.width
+                spacing: 12
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Output sample rate"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                StyledCombo {
+                    objectName: "outputRateMode"
+                    width: Math.min(360, parent.width)
+                    readonly property var modes: ["auto", "follows", "fixed"]
+                    model: [player.pipewireRates ? "Find out (PipeWire switches: " + player.pipewireRates + ")" : "Find out (the device's own rate)",
+                            "Follows each song (set up for it)", "Fixed at the device's rate"]
+                    selection: Math.max(0, modes.indexOf(player.outputRateMode))
+                    onActivated: function (i) { player.setOutputRateMode(modes[i]) }
+                    Accessible.name: "Output sample rate, for the signal path"
+                }
+            }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: "What the signal path assumes the output runs at. Hallucinate plays each song at its own rate; whether the output converts it is up to your system (PipeWire's allowed rates, a DAC's settings)."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
             Flow {  // wraps in a narrow window
                 width: parent.width
@@ -675,7 +747,7 @@ Item {
                         textFormat: Text.PlainText
                         width: Math.min(implicitWidth, parent.width)
                         wrapMode: Text.WordWrap
-                        text: replayGain.busy ? "Measured " + replayGain.done + " of " + replayGain.total + " songs…"
+                        text: replayGain.busy ? "Measured " + Theme.num(replayGain.done) + " of " + Theme.num(replayGain.total) + " songs…"
                             : "Measures loudness (EBU R128) for songs whose files have no ReplayGain tags. Files aren't changed."
                         color: Theme.textDim
                         font.family: Theme.fontFamily
@@ -780,7 +852,7 @@ Item {
             id: sec_library
             objectName: "settings_library"
             title: "Library"
-            keywords: "genres genre music folders scan rescan start startup watch watching health tags files ratings stars cover art cover.jpg embed import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums backup export your data move computer"
+            keywords: "genres genre music folders scan rescan start startup watch watching health tags files ratings stars cover art cover.jpg embed import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums backup export your data move computer duplicates already sort order sidebar select selection selecting drag multiple"
             query: page.query
             Text {
                 textFormat: Text.PlainText
@@ -867,7 +939,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 visible: library.unreadableFiles > 0 && !library.scanning
-                text: library.unreadableFiles + " files could not be read and were skipped."
+                text: Theme.num(library.unreadableFiles) + " files could not be read and were skipped."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Flow {
@@ -878,7 +950,7 @@ Item {
                     textFormat: Text.PlainText
                     objectName: "hiddenCount"
                     height: 32; verticalAlignment: Text.AlignVCenter
-                    text: library.hiddenCount + (library.hiddenCount === 1 ? " file" : " files")
+                    text: Theme.num(library.hiddenCount) + (library.hiddenCount === 1 ? " file" : " files")
                           + " removed from the library (still on disk)"
                     color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                 }
@@ -887,6 +959,49 @@ Item {
                     height: 32
                     text: "Bring them back"
                     onClicked: { library.restoreHidden(); Nav.notify("Rescanning to bring them back…") }
+                }
+            }
+            SettingsGroup {
+                key: "playlistsSelecting"
+                title: "Playlists and selecting"
+                summary: "Songs already in a playlist, the sidebar's order, how selecting works"
+                query: page.query
+                OptionCombo {
+                    objectName: "playlistDuplicates"
+                    label: "Adding a song a playlist already has"
+                    values: ["skip", "ask", "add"]
+                    labels: ["Leave it out (Add anyway is in the note)", "Ask each time", "Add it again"]
+                    current: shell.ui.playlistDuplicates || "skip"
+                    onPicked: function (v) { shell.setUiValue("playlistDuplicates", v) }
+                }
+                OptionCombo {
+                    objectName: "playlistSortSetting"
+                    label: "Playlists in the sidebar"
+                    values: ["name", "name-desc", "newest", "oldest", "added", "songs", "custom"]
+                    labels: ["By name, A–Z", "By name, Z–A", "Newest first", "Oldest first", "Recently added to", "Most songs",
+                             "My own order (Move up and down in a playlist's menu)"]
+                    current: shell.ui.playlistSort || "name"
+                    onPicked: function (v) { shell.setUiValue("playlistSort", v) }
+                }
+                StyledCheck {
+                    objectName: "keepSelection"
+                    text: "Keep what's selected while I go to other pages (gather songs from several places)"
+                    checked: (shell.ui.keepSelection || "true") === "true"
+                    onToggled: shell.setUiValue("keepSelection", checked ? "true" : "false")
+                }
+                StyledCheck {
+                    objectName: "dragSelect"
+                    text: "Drag across a list with the mouse to select (from a selected item: carry it to a playlist or the queue)"
+                    checked: (shell.ui.dragSelect || "true") === "true"
+                    onToggled: shell.setUiValue("dragSelect", checked ? "true" : "false")
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: "Select with Ctrl+click (one more), Shift+click (everything between), Ctrl+A (the whole list) or Shift+arrow keys. "
+                          + "Esc clears it, with Undo."
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
             }
             SettingsGroup {
@@ -1098,7 +1213,7 @@ Item {
                        ? serverCopies.count.toLocaleString(Qt.locale(), "f", 0) + (serverCopies.count === 1 ? " song" : " songs")
                          + " kept on this computer (" + Theme.fmtBytes(serverCopies.bytes) + "): they play without the server, in offline mode too."
                        : "To play a server's songs without it (on a train, say), right-click an album, playlist or song and choose Keep on this computer.")
-                      + (serverCopies.waiting > 0 ? "  Downloading " + serverCopies.waiting + " more"
+                      + (serverCopies.waiting > 0 ? "  Downloading " + Theme.num(serverCopies.waiting) + " more"
                          + (serverCopies.busy ? " (" + Math.round(serverCopies.progress * 100) + "% of the current one)" : shell.offlineMode ? ", once offline mode is off" : "") + "." : "")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
@@ -1334,7 +1449,7 @@ Item {
             SettingsGroup {
                 key: "remoteDevices"
                 title: "Paired devices"
-                summary: webRemote.pairedDevices.length ? webRemote.pairedDevices.length + (webRemote.pairedDevices.length === 1 ? " device" : " devices") : "None yet"
+                summary: webRemote.pairedDevices.length ? Theme.num(webRemote.pairedDevices.length) + (webRemote.pairedDevices.length === 1 ? " device" : " devices") : "None yet"
                 query: page.query
                 Repeater {
                     model: webRemote.pairedDevices

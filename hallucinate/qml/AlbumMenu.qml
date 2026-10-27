@@ -11,7 +11,7 @@ Menu {
     property string albumTitle: ""
     property string artist: ""
     readonly property bool single: keys.length === 1
-    readonly property string what: single ? "“" + albumTitle + "”" : keys.length + " albums"
+    readonly property string what: single ? "“" + albumTitle + "”" : Theme.num(keys.length) + " albums"
 
     // Read when the menu opens: whether every song is liked already, the first song (for its folder), the genre
     property bool allLiked: false
@@ -48,6 +48,14 @@ Menu {
         objectName: "addToPlaylistMenu"
         title: "Add to playlist"
         icon.name: "playlist"
+        // which playlists already hold these songs: ticked, and a click takes them out (issue 101)
+        property var held: ({})
+        property var heldPaths: []
+        onAboutToShow: {
+            heldPaths = albumMenu.paths()
+            held = userLib.playlistCounts(heldPaths)
+            for (var i = 0; i < count; i++) { var it = itemAt(i); if (it && it.have !== undefined) it.checked = it.full }
+        }
         MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: newDlg.open() }
         MenuSeparator {}
         Instantiator {
@@ -55,8 +63,12 @@ Menu {
             delegate: MenuItem {
                 required property int id
                 required property string name
-                text: Theme.plain(name)
-                onTriggered: { userLib.addPathsToPlaylist(id, albumMenu.paths()); Nav.notify(albumMenu.what + " added to “" + name + "”") }
+                readonly property int have: plMenu.held[String(id)] || 0
+                readonly property bool full: have > 0 && have >= plMenu.heldPaths.length
+                checkable: true
+                text: Theme.plain(name) + (have > 0 && !full ? "  (" + Theme.num(have) + " of " + plMenu.heldPaths.length + ")" : "")
+                onTriggered: full ? Nav.removeFromPlaylistId(id, name, albumMenu.paths(), albumMenu.what)
+                                  : Nav.addToPlaylist(id, name, albumMenu.paths(), albumMenu.what)
             }
             onObjectAdded: (i, o) => plMenu.addItem(o)
             onObjectRemoved: (i, o) => plMenu.removeItem(o)

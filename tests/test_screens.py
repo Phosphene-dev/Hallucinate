@@ -360,9 +360,9 @@ def test_albums_select_menu_and_remove(qapp, app_window):
 
     for card in cards:
         click(card, mods=Qt.KeyboardModifier.ControlModifier)
-    bar = named("albumBar")
+    bar = named("selectionBar")
     assert wait_for(lambda b=bar[0]: b.property("shown"))
-    assert next(i for i in items() if i.objectName() == "albumSelectionCount").property("text") == "2 albums selected"
+    assert next(i for i in items() if i.objectName() == "selectionCount").property("text") == "2 albums selected"
 
     click(cards[0], Qt.MouseButton.RightButton)
     menu = window.findChild(QObject, "albumMenu")
@@ -1796,6 +1796,67 @@ def test_the_mouse_wheel_scrolls_evenly_adds_up_and_takes_hi_res_steps(qapp, app
     assert not warnings, warnings[:3]
 
 
+@pytest.mark.parametrize("app_window", ["varied"], indirect=True)
+def test_the_wheel_over_a_shelf_moves_the_page_or_the_shelf(qapp, app_window):
+    """Issue 105: the wheel over Home's shelves moves the page by default; Shift+wheel, or the "Moves the row"
+    setting, moves the albums sideways; the arrow buttons page through them."""
+    import time
+
+    from PySide6.QtCore import QPoint
+    from PySide6.QtGui import QWheelEvent
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    window.resize(900, 800)
+
+    def settle(ms):
+        end = time.monotonic() + ms / 1000
+        while time.monotonic() < end:
+            qapp.processEvents()
+            time.sleep(0.005)
+
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "home"))
+    settle(400)
+    page = window.findChild(QObject, "pageStack").property("currentItem")
+    items, shelf = [page], None
+    while items and shelf is None:
+        item = items.pop()
+        if ("ListView" in item.metaObject().className() and item.isVisible()  # one that scrolls sideways
+                and item.property("contentWidth") > item.width() + 50 and item.property("contentHeight") <= item.height() + 1):
+            shelf = item
+        items.extend(item.childItems())
+    assert shelf is not None
+    flick = shelf.parentItem()
+    while flick is not None and flick.property("contentY") is None:
+        flick = flick.parentItem()
+    while shelf.mapToScene(QPointF(0, shelf.height())).y() > window.height() - 120:  # bring it into view
+        flick.setProperty("contentY", flick.property("contentY") + 100)
+        settle(20)
+    clock = [50_000]
+
+    def wheel(angle, mods=Qt.KeyboardModifier.NoModifier):
+        shelf.setProperty("contentX", shelf.property("originX"))
+        settle(50)
+        start = shelf.property("contentX")
+        pos = shelf.mapToScene(QPointF(shelf.width() / 2, shelf.height() / 2))
+        clock[0] += 500
+        e = QWheelEvent(pos, pos, QPoint(0, 0), QPoint(0, angle), Qt.MouseButton.NoButton, mods,
+                        Qt.ScrollPhase.NoScrollPhase, False)
+        e.setTimestamp(clock[0])
+        qapp.sendEvent(window, e)
+        settle(400)
+        return shelf.property("contentX") - start
+
+    assert wheel(-120) == 0  # the page's
+    assert wheel(-120, Qt.KeyboardModifier.ShiftModifier) > 100
+    shell.setUiValue("shelfWheel", "row")
+    try:
+        assert wheel(-120) > 100
+    finally:
+        shell.setUiValue("shelfWheel", "page")
+    assert not warnings, warnings[:3]
+
+
 def test_adding_to_a_playlist_from_the_song_album_and_collection_menus(qapp, app_window):
     """Issue 92: the playlist items of a submenu are MenuItems, whose own `menu` (the submenu) hid the menu's id
     of the same name: "Add to playlist" failed with "incompatible arguments" and added nothing."""
@@ -1921,3 +1982,261 @@ def test_the_spectrum_analyzer_opens_from_a_song_s_menu(qapp, app_window, tmp_pa
     spectrum[0].close()
     QMetaObject.invokeMethod(menu, "close")
     assert not [w for w in warnings if "Spectrum" in w], warnings
+
+
+# --- selecting (Selection.qml, Pick, PickDrag) ---------------------------------------------------------------------
+def _js(window, expr):
+    from PySide6.QtQml import QQmlEngine, QQmlExpression
+
+    out = QQmlExpression(QQmlEngine.contextForObject(window), window, expr).evaluate()
+    return plain(out[0] if isinstance(out, tuple) else out)
+
+
+def _visible(window, name):
+    found, stack = [], [window.contentItem()]
+    while stack:
+        item = stack.pop()
+        if not item.isVisible():
+            continue
+        if item.objectName() == name and item.width() > 0:
+            found.append(item)
+        stack.extend(item.childItems())
+    return sorted(found, key=lambda i: (_at(i).y(), _at(i).x()))
+
+
+def _at(item):
+    """An item's top left corner in the window."""
+    from PySide6.QtCore import QPointF
+
+    return item.mapToScene(QPointF(0, 0))
+
+
+def _click(window, item, mods=Qt.KeyboardModifier.NoModifier, button=Qt.MouseButton.LeftButton, dx=None):
+    from PySide6.QtCore import QPoint
+    from PySide6.QtTest import QTest
+
+    c = item.mapToScene(item.boundingRect().center())
+    QTest.mouseClick(window, button, mods, QPoint(int(c.x() if dx is None else _at(item).x() + dx), int(c.y())))
+
+
+def test_ctrl_click_adds_to_the_selection_on_an_artists_page(qapp, app_window):
+    """The tester's report: on an artist's page, Ctrl+clicking a second song started the selection over, because
+    the list ("Songs to start with") was a new array each time it was read."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    QMetaObject.invokeMethod(window, "openArtist", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "Aurora Vale"))
+    assert wait_for(lambda: len(_visible(window, "trackRow")) >= 3)
+    rows = _visible(window, "trackRow")
+    for row in rows[:3]:
+        _click(window, row, Qt.KeyboardModifier.ControlModifier, dx=140)
+    assert wait_for(lambda: _js(window, "Selection.count") == 3)
+    assert [r.property("selected") for r in rows[:3]] == [True, True, True]
+    _click(window, rows[1], Qt.KeyboardModifier.ControlModifier, dx=140)  # and out again
+    assert _js(window, "Selection.count") == 2 and not rows[1].property("selected")
+    assert not warnings, warnings[:3]
+
+
+def test_a_selection_lasts_across_pages_and_mixes_kinds(qapp, app_window):
+    """Gathering from several pages: an album on Albums, then a song on Songs; the bar counts both, and acts on the
+    album's songs and the song, once each. Esc clears it, with Undo."""
+    from conftest import wait_for
+    from PySide6.QtTest import QTest
+
+    window, objects, warnings = app_window
+    go = lambda page: QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", page))  # noqa: E731
+    go("albums")
+    assert wait_for(lambda: len(_visible(window, "albumCard")) == 2)
+    _click(window, _visible(window, "albumCard")[0], Qt.KeyboardModifier.ControlModifier)
+    go("songs")
+    assert wait_for(lambda: len(_visible(window, "trackRow")) == 8)
+    songs = _visible(window, "trackRow")
+    blue = next(r for r in songs if r.property("artist") == "Blue Harbor")
+    aurora = next(r for r in songs if r.property("artist") == "Aurora Vale")
+    _click(window, blue, Qt.KeyboardModifier.ControlModifier, dx=140)
+    _click(window, aurora, Qt.KeyboardModifier.ControlModifier, dx=140)  # (one of the album's own: counted once)
+    assert wait_for(lambda: _js(window, "Selection.count") == 3)
+    count = window.findChild(QObject, "selectionBar")
+    assert _js(window, "Selection.summary(false)") == "1 album, 2 songs"
+    paths = _js(window, "Selection.songPaths()")
+    album = objects["library"].albumPaths([_js(window, "Selection.items[0].key")])
+    assert paths[:4] == album and len(paths) == 5 and len(set(paths)) == 5
+
+    QTest.keyClick(window, Qt.Key.Key_Escape)
+    assert wait_for(lambda: _js(window, "Selection.count") == 0)
+    assert wait_for(lambda: not count.property("shown"))
+    toast = window.findChild(QObject, "toast")
+    assert "Cleared the selection" in str(toast.property("message"))
+    _js(window, "toast.action()")  # Undo
+    assert wait_for(lambda: _js(window, "Selection.count") == 3)
+    assert not warnings, warnings[:3]
+
+
+def test_dragging_across_songs_selects_them_and_doesnt_play(qapp, app_window):
+    """A drag over a list paints a selection; the release isn't also a click (nothing starts playing)."""
+    from conftest import wait_for
+    from PySide6.QtCore import QPoint
+    from PySide6.QtTest import QTest
+
+    window, objects, warnings = app_window
+    player = objects["player"]
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "songs"))
+    assert wait_for(lambda: len(_visible(window, "trackRow")) == 8)
+    rows = _visible(window, "trackRow")
+    before = player.current.get("path")
+    start, end = _at(rows[1]), _at(rows[4])
+    a = QPoint(int(start.x() + 140), int(start.y() + 20))
+    b = QPoint(int(end.x() + 140), int(end.y() + 20))
+    QTest.mousePress(window, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, a)
+    for k in range(1, 9):
+        QTest.mouseMove(window, QPoint(a.x(), a.y() + (b.y() - a.y()) * k // 8))
+        qapp.processEvents()
+    QTest.mouseRelease(window, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, b)
+    assert wait_for(lambda: _js(window, "Selection.count") == 4)
+    assert [r.property("selected") for r in rows] == [False, True, True, True, True, False, False, False]
+    assert player.current.get("path") == before
+    assert not _js(window, "PickDrag.painting")
+    assert not warnings, warnings[:3]
+
+
+def test_ctrl_a_selects_the_page_and_shift_click_extends(qapp, app_window):
+    from conftest import wait_for
+    from PySide6.QtTest import QTest
+
+    window, objects, warnings = app_window
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "songs"))
+    assert wait_for(lambda: len(_visible(window, "trackRow")) == 8)
+    window.contentItem().forceActiveFocus()
+    QTest.keyClick(window, Qt.Key.Key_A, Qt.KeyboardModifier.ControlModifier)
+    assert wait_for(lambda: _js(window, "Selection.count") == 8)
+    _js(window, "Selection.clear()")
+    rows = _visible(window, "trackRow")
+    _click(window, rows[2], Qt.KeyboardModifier.ControlModifier, dx=140)
+    _click(window, rows[5], Qt.KeyboardModifier.ShiftModifier, dx=140)
+    assert wait_for(lambda: _js(window, "Selection.count") == 4)
+    assert [r.property("selected") for r in rows] == [False, False, True, True, True, True, False, False]
+    assert not warnings, warnings[:3]
+
+
+def test_queue_entries_select_and_go_together(qapp, app_window):
+    """Queue entries are their own kind: selecting one drops a selection of songs, and the bar removes them (one
+    Undo) or moves them up next."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    player = objects["player"]
+    tracks = objects["library"].allTracks()
+    player.playList(tracks[:5], 0)
+    player.pause()
+    _js(window, "Selection.toggle('x', 0, Selection.itemOf('song', { path: '/a.flac', title: 'A' }))")
+    assert _js(window, "Selection.domain") == "music"
+    _js(window, "Selection.selectRange('q', player.queueModel, 2, 3, 'queue', Selection.items)")
+    assert _js(window, "Selection.domain") == "queue" and _js(window, "Selection.count") == 2
+    assert _js(window, "Selection.summary(false)") == "2 songs in the queue"
+    QMetaObject.invokeMethod(window.findChild(QObject, "selectionRemoveFromQueue"), "clicked")
+    assert wait_for(lambda: player.queueLength == 3)
+    assert _js(window, "Selection.count") == 0
+    player.undoQueue()
+    assert player.queueLength == 5
+    assert not warnings, warnings[:3]
+
+
+def test_a_selection_dragged_onto_a_playlist_is_added_to_it(qapp, app_window):
+    """Dragging from a selected song carries the whole selection; dropped on a playlist in the sidebar, its songs
+    go in, and the selection ends."""
+    from conftest import wait_for
+    from PySide6.QtCore import QPoint
+    from PySide6.QtTest import QTest
+
+    window, objects, warnings = app_window
+    user_lib = objects["userLib"]
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "songs"))
+    assert wait_for(lambda: len(_visible(window, "trackRow")) == 8)
+    rows = _visible(window, "trackRow")
+    for r in (rows[4], rows[6]):
+        _click(window, r, Qt.KeyboardModifier.ControlModifier, dx=140)
+    assert wait_for(lambda: _js(window, "Selection.count") == 2)
+
+    def entry():
+        stack = [window.contentItem()]
+        while stack:
+            item = stack.pop()
+            if item.property("text") == "Evening" and item.isVisible() and item.property("pick") is not None:
+                return item
+            stack.extend(item.childItems())
+
+    target = wait_for(entry)
+    assert target is not None
+    a = QPoint(int(_at(rows[4]).x() + 140), int(_at(rows[4]).y() + 20))
+    t = target.mapToScene(target.boundingRect().center())
+    b = QPoint(int(t.x()), int(t.y()))
+    QTest.mousePress(window, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, a)
+    for k in range(1, 13):
+        QTest.mouseMove(window, QPoint(a.x() + (b.x() - a.x()) * k // 12, a.y() + (b.y() - a.y()) * k // 12))
+        qapp.processEvents()
+    assert _js(window, "PickDrag.carrying")
+    assert target.property("dropping")
+    QTest.mouseRelease(window, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, b)
+    pid = next(user_lib.playlists.get(i)["id"] for i in range(user_lib.playlists.rowCount()) if user_lib.playlists.get(i)["name"] == "Evening")
+
+    def count():
+        user_lib.openPlaylist(pid)
+        for _ in range(10):
+            qapp.processEvents()
+        return user_lib.playlistTracks.rowCount()
+
+    assert wait_for(lambda: count() == 3)  # it had one
+    assert _js(window, "Selection.count") == 0 and not _js(window, "PickDrag.carrying")
+    assert not warnings, warnings[:3]
+
+
+def test_every_kind_of_selection_comes_down_to_its_songs(qapp, app_window):
+    """userLib.selectionPaths: artists, genres, playlists, folders, albums and plays as their songs, in order and
+    once each; an item that's gone (a deleted playlist) leaves the rest."""
+    window, objects, warnings = app_window
+    user_lib, library = objects["userLib"], objects["library"]
+    aurora, blue = library.albumPaths(["k0"]), library.albumPaths(["k1"])
+    pid = next(user_lib.playlists.get(i)["id"] for i in range(user_lib.playlists.rowCount()))
+    paths = lambda items: list(user_lib.selectionPaths(items))  # noqa: E731
+    assert paths([{"kind": "artist", "key": "Blue Harbor"}]) == blue
+    assert sorted(paths([{"kind": "genre", "key": "Dream Pop"}])) == sorted(aurora + blue)
+    assert paths([{"kind": "playlist", "key": str(pid)}]) == [aurora[1]]
+    folder = aurora[0].rsplit("/", 1)[0]
+    assert paths([{"kind": "folder", "key": folder}]) == aurora
+    assert paths([{"kind": "song", "key": blue[0]}, {"kind": "album", "key": "k1"}, {"kind": "playlist", "key": "999"}]) == blue
+    assert paths([{"kind": "history", "key": "1", "path": aurora[2]}, {"kind": "queue", "key": "0", "path": aurora[2]}]) == [aurora[2]]
+    assert paths([]) == []
+
+
+def test_counts_are_written_with_thousands_separators(qapp, app_window):
+    """Issue 107: counts in the thousands are grouped, as your language writes them or as chosen."""
+    import pathlib
+
+    from PySide6.QtQml import QQmlComponent, qmlEngine
+
+    import hallucinate
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    qml_dir = pathlib.Path(hallucinate.__file__).parent / "qml"
+    comp = QQmlComponent(qmlEngine(window))
+    comp.setData(b'import QtQuick\nimport "." \nQtObject { function num(n, d) { return Theme.num(n, d) } }',
+                 QUrl.fromLocalFile(str(qml_dir / "NumProbe.qml")))
+    probe = comp.create()
+    assert probe is not None, comp.errorString()
+
+    def num(n, d=0):
+        return QMetaObject.invokeMethod(probe, "num", Q_RETURN_ARG("QVariant"), Q_ARG("QVariant", n), Q_ARG("QVariant", d))
+
+    expected = {"comma": ("12,345", "1,234,567", "999", "12.5"), "period": ("12.345", "1.234.567", "999", "12,5"),
+                "space": ("12\u202f345", "1\u202f234\u202f567", "999", "12.5"), "none": ("12345", "1234567", "999", "12.5")}
+    try:
+        for fmt, (a, b, c, d) in expected.items():
+            shell.setUiValue("numberFormat", fmt)
+            qapp.processEvents()
+            assert (num(12345), num(1234567), num(999), num(12.5, 1)) == (a, b, c, d), fmt
+        shell.setUiValue("numberFormat", "locale")
+        assert num(12345) and num(None) == ""
+    finally:
+        shell.setUiValue("numberFormat", "locale")
+    assert not warnings, warnings[:3]

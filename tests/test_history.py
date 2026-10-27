@@ -188,3 +188,32 @@ def test_old_play_logs_gain_folded_columns(tmp_path):
         assert [r["title"] for r in history.plays(db, artist="BJORK")] == ["Jóga"]
     finally:
         db.close()
+
+
+def test_listens_find_their_songs_again(db):
+    # imported before the library was there
+    db.import_plays([{"ts": NOW - 10, "artist": "Massive Attack", "title": "Angel", "album": "Mezzanine"}], "lastfm")
+    # played from a folder that was removed and added again under a new path (the Flatpak's portal does this)
+    add(db, "/old/teardrop", "Teardrop", "Massive Attack", "Mezzanine", 330)
+    db.record_play("/old/teardrop", NOW - 20)
+    db.record_play("/old/teardrop", NOW - 30)
+    db.set_liked("/old/teardrop", True)
+    db.remove_paths(["/old/teardrop"])
+    assert all(r["available"] == 0 for r in history.plays(db))
+
+    add(db, "/new/angel", "Angel", "Massive Attack", "Mezzanine", 380)
+    add(db, "/new/teardrop", "Teardrop", "Massive Attack", "Mezzanine", 330)
+    db.record_play("/new/teardrop", NOW - 5)
+    assert db.relink_plays() == 3
+    rows = history.plays(db)
+    assert all(r["available"] == 1 for r in rows)
+    assert {r["path"] for r in rows} == {"/new/angel", "/new/teardrop"}
+    counts = {r[0]: r[1] for r in db.conn.execute("SELECT path, count FROM plays")}
+    assert counts == {"/new/angel": 1, "/new/teardrop": 3}
+    assert db.conn.execute("SELECT path FROM likes").fetchall()[0][0] == "/new/teardrop"  # a like comes along
+    assert db.relink_plays() == 0  # nothing left to do
+
+
+def test_relinking_leaves_songs_you_dont_have(log):
+    assert log.relink_plays() == 0
+    assert [r["available"] for r in history.plays(log)][4] == 0  # Angel isn't in this library

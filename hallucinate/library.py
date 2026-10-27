@@ -1050,6 +1050,11 @@ class Library(QObject):
                 scanner = Scanner(db, self._art_dir, progress=self.scanProgress.emit,
                                   should_stop=self._scan_stop.is_set)
                 stats = scanner.scan(folders)
+                # listens from before these songs were found (imported, or a folder added again) find them
+                try:
+                    stats["relinked"] = db.relink_plays()
+                except Exception:  # noqa: BLE001
+                    logger.exception("Couldn't link listens to library songs")
             finally:
                 db.close()
         except Exception as e:  # keep the UI alive whatever happens
@@ -1089,7 +1094,8 @@ class Library(QObject):
             self._set_status("Scan failed: " + stats["error"])
         else:
             self._set_status("")
-        if stats.get("added") or stats.get("updated") or stats.get("removed") or not self._counts["tracks"]:
+        if (stats.get("added") or stats.get("updated") or stats.get("removed") or stats.get("relinked")
+                or not self._counts["tracks"]):
             self.reload()
         self._watched_dirs = stats.get("dirs", [])[:MAX_WATCHED_DIRS]
         self._apply_watch()

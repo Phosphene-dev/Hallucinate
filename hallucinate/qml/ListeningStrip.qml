@@ -45,7 +45,7 @@ Column {
             Text {
                 textFormat: Text.PlainText
                 text: strip.info.hours < 1 && strip.info.hours > 0 ? "under an hour"
-                      : strip.info.hours === 1 ? "1 hour" : strip.info.hours + " hours"
+                      : strip.info.hours === 1 ? "1 hour" : Theme.num(strip.info.hours) + " hours"
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(20)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Text {

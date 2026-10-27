@@ -26,7 +26,7 @@ Item {
     readonly property var albumList: info.albumList || []
     readonly property var artistList: info.artistList || []
     property bool allAlbums: false
-    function plural(n, one, many) { return n + " " + (n === 1 ? one : many) }
+    function plural(n, one, many) { return Theme.num(n) + " " + (n === 1 ? one : many) }
     // Play next, add to the queue or a playlist: every song of the genre
     CollectionMenu {
         id: genreMenu; objectName: "genreMenu"
@@ -243,6 +243,9 @@ Item {
                         model: page.allAlbums ? page.albumList : page.albumList.slice(0, 24)
                         AlbumCard {
                             required property var modelData
+                            required property int index
+                            rowIndex: index
+                            selectionSource: page.allAlbums ? page.albumList : page.albumList.slice(0, 24)
                             cardWidth: 160
                             albumKey: modelData.album_key
                             title: modelData.album

@@ -11,10 +11,21 @@ Item {
     property url artUrl
     property string note: ""
     property string artist: ""      // for the menu's "Go to artist"
-    // The grid this card is in (its model, or an array of albums) and its place there: Ctrl/Shift+click select
+    // The grid this card is in (its model, or an array of albums) and its place there: Shift+click and dragging
+    // select across it (Ctrl+click works anywhere)
     property var selectionSource: null
     property int rowIndex: -1
-    readonly property bool selected: AlbumSelection.count > 0 && AlbumSelection.has(albumKey)
+    // the delegate the card sits in, when it's wrapped in one (dragging finds cards by their delegates)
+    property Item selectionTarget: card
+    Pick {
+        id: pick
+        target: card.selectionTarget
+        kind: "album"
+        entry: card.albumKey.length ? { album_key: card.albumKey, album: card.title } : null
+        source: card.selectionSource
+        index: card.rowIndex
+    }
+    readonly property bool selected: pick.selected
     function openMenu() { Nav.albumMenu([albumKey], title, artist) }
     property real cardWidth: 170
     width: cardWidth
@@ -132,24 +143,21 @@ Item {
         }
     }
     HoverHandler { id: hh }
+    Keys.onPressed: function (event) { pick.keys(event) }
     MouseArea {
         anchors.fill: parent
         anchors.margins: -6
         z: -1
         cursorShape: Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onPressed: function (mouse) { pick.press(this, mouse) }
+        onPositionChanged: function (mouse) { pick.move(this, mouse) }
+        onReleased: pick.release(this)
+        onCanceled: pick.cancel(this)
         onClicked: function (mouse) {
-            if (mouse.button === Qt.RightButton) {
-                card.openMenu()
-            } else if (card.selectionSource && (mouse.modifiers & Qt.ControlModifier)) {
-                AlbumSelection.toggle(card.selectionSource, card.rowIndex, card.albumKey)
-            } else if (card.selectionSource && (mouse.modifiers & Qt.ShiftModifier)) {
-                AlbumSelection.extend(card.selectionSource, card.rowIndex, card.albumKey)
-            } else {
-                AlbumSelection.clear()
-                Nav.openAlbum(card.albumKey)
-            }
+            if (mouse.button === Qt.RightButton) card.openMenu()
+            else if (!pick.click(mouse)) Nav.openAlbum(card.albumKey)
         }
-        onPressAndHold: card.openMenu()  // touch screens
+        onPressAndHold: if (!PickDrag.pick) card.openMenu()  // touch screens
     }
 }

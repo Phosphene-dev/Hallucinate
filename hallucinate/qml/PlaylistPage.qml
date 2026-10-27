@@ -4,6 +4,8 @@ import "."
 
 Item {
     id: page
+    // Ctrl+A with no row focused (main.qml): the page's list
+    function selectAll() { Selection.selectAll(list.toString(), list.model, "song", list.count && list.itemAtIndex(0) ? list.itemAtIndex(0).selectionOrigin : "") }
     objectName: "playlist"
     property bool liked: false
     property int playlistId: -1
@@ -73,9 +75,9 @@ Item {
             objectName: "dedupePlaylist"
             visible: !page.liked; height: visible ? implicitHeight : 0
             enabled: page.summary.twice > 0
-            text: page.summary.twice > 0 ? "Remove " + page.summary.twice + (page.summary.twice === 1 ? " repeat" : " repeats") : "No songs repeat"
+            text: page.summary.twice > 0 ? "Remove " + Theme.num(page.summary.twice) + (page.summary.twice === 1 ? " repeat" : " repeats") : "No songs repeat"
             icon.name: "duplicates"
-            onTriggered: { var n = userLib.removePlaylistDuplicates(page.playlistId); Nav.notify(n + (n === 1 ? " repeat" : " repeats") + " taken out; each song is in it once") }
+            onTriggered: { var n = userLib.removePlaylistDuplicates(page.playlistId); Nav.notify(Theme.num(n) + (n === 1 ? " repeat" : " repeats") + " taken out; each song is in it once") }
         }
         MenuItem {
             objectName: "playlistKeep"
@@ -125,7 +127,7 @@ Item {
                 }
                 Text {
                     objectName: "playlistCount"
-                    text: list.count + (list.count === 1 ? " song" : " songs") + (page.seconds >= 60 ? "  ·  " + Theme.fmtHours(page.seconds) : "")
+                    text: Theme.num(list.count) + (list.count === 1 ? " song" : " songs") + (page.seconds >= 60 ? "  ·  " + Theme.fmtHours(page.seconds) : "")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText
                 }
                 Row {

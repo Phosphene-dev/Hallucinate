@@ -136,7 +136,8 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 | Q · L | Queue · lyrics |
 | Ctrl+M | Mini player |
 | Ctrl+1…5 · Ctrl+0 | Rate the playing song · clear its rating |
-| Ctrl+click · Shift+click | Select songs · select a range (then act on them from the bar that appears) |
+| Ctrl+click · Shift+click · drag | Select anything (songs, albums, artists, playlists, queue entries…) · a range · what you drag across; then act on them from the bar that appears |
+| Ctrl+A · Shift+↑↓ · Ctrl+Space | Select the whole list · extend the selection · select the focused item |
 | Ctrl+Z | Undo the last queue change |
 | Esc | Clear the selection |
 | Alt+← · Alt+→ · mouse back/forward buttons | Back · forward, like a browser |
@@ -165,6 +166,7 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - CUE sheets: a single-file album with a .cue (or a sheet embedded in the file) appears as its separate songs, each with its own waveform, and plays gaplessly.
 - First-run welcome: choose your music folders, a theme and scrobbling on a fresh install.
 - Album menus and multi-select: right-click an album (or Ctrl/Shift+click several) to play, queue, add to a playlist, edit, remove from the library (files kept; Settings → Library brings them back) or move to the trash.
+- Select anything from anywhere: songs, albums, artists, genres, composers, playlists, queue entries, history, folders, episodes and stations, gathered across pages. Drag across a list to select, or drag a selection onto a playlist, Liked Songs or the queue. Add to playlist menus tick the playlists a song is already in.
 - Multi-select: Ctrl/Shift+click songs in any list, then play them, play them next, queue them, add them to a playlist, like, rate or edit their tags together.
 - Queue undo (Ctrl+Z, 20 steps) for clearing, removing, moving and replacing the queue.
 - Skip tracking: moving on from a song early counts as a skip; smart playlists can use skip counts and radio plays often-skipped songs less.
@@ -441,7 +443,8 @@ hallucinate cmd volume 40                  # seek 1:30, next, prev, shuffle on, 
 hallucinate cmd --help                     # everything; add --json for scripts
 hallucinate tui                            # a full-screen player in the terminal
 ```
-`--play-pause`, `--next`, `--prev` and `--status` (JSON) still work too. They all talk to the running app over a
+`--play-pause`, `--next`, `--prev`, `--mini-player`, `--quit` and `--status` (JSON) still work too (the
+first four are also in the launcher's right-click menu in docks and taskbars). They all talk to the running app over a
 socket only your account can open, and launching `hallucinate` again brings its window forward.
 
 **Without a window** (a home server, a NAS, a Raspberry Pi, a container, a Proxmox LXC):

@@ -143,8 +143,8 @@ Item {
                         objectName: "healthSummary"
                         text: page.report.loading && !page.checks.length ? "Checking your library…"
                             : (page.report.issues || 0) === 0 ? "Nothing to fix. Your library is in great shape."
-                            : page.report.issues + (page.report.issues === 1 ? " thing" : " things") + " worth a look across "
-                              + (page.report.albums || 0) + " albums and " + (page.report.tracks || 0) + " songs"
+                            : Theme.num(page.report.issues) + (page.report.issues === 1 ? " thing" : " things") + " worth a look across "
+                              + Theme.num((page.report.albums || 0)) + " albums and " + Theme.num((page.report.tracks || 0)) + " songs"
                         color: Theme.textDim
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(14)
@@ -251,7 +251,7 @@ Item {
                                 width: Math.min(implicitWidth, card.width - 220)
                                 elide: Text.ElideRight
                                 text: metaEditor.coversBusy
-                                      ? "Looked up " + metaEditor.coversDone + " of " + metaEditor.coversTotal + " albums  ·  "
+                                      ? "Looked up " + Theme.num(metaEditor.coversDone) + " of " + Theme.num(metaEditor.coversTotal) + " albums  ·  "
                                         + metaEditor.coversFound + " found" + (metaEditor.coversCurrent ? "  ·  " + metaEditor.coversCurrent : "")
                                       : "Searches MusicBrainz and the Cover Art Archive, about one album a second."
                                 color: Theme.textDim
@@ -288,10 +288,10 @@ Item {
                                 width: Math.min(implicitWidth, card.width - 360)
                                 elide: Text.ElideRight
                                 text: metaEditor.genresSaving
-                                      ? "Saving genres to your files: " + metaEditor.genresSaved + " of " + metaEditor.genresToSave
+                                      ? "Saving genres to your files: " + Theme.num(metaEditor.genresSaved) + " of " + metaEditor.genresToSave
                                         + " albums. You can carry on meanwhile."
                                       : metaEditor.genresBusy
-                                      ? "Looked up " + metaEditor.genresDone + " of " + metaEditor.genresTotal + " albums  ·  "
+                                      ? "Looked up " + Theme.num(metaEditor.genresDone) + " of " + Theme.num(metaEditor.genresTotal) + " albums  ·  "
                                         + metaEditor.genresFound + " found" + (metaEditor.genresCurrent ? "  ·  " + metaEditor.genresCurrent : "")
                                       : "Asks MusicBrainz, a couple of seconds an album. You check what it finds before anything is saved."
                                 color: Theme.textDim
@@ -310,7 +310,7 @@ Item {
                                 text: "Keep the best copies"
                                 onClicked: {
                                     var n = card.modelData.extra
-                                    extraDlg.what = n + (n === 1 ? " copy" : " copies")
+                                    extraDlg.what = Theme.num(n) + (n === 1 ? " copy" : " copies")
                                     extraDlg.open()
                                 }
                             }
@@ -341,7 +341,7 @@ Item {
                                 textFormat: Text.PlainText
                                 anchors.verticalCenter: parent.verticalCenter
                                 visible: replayGain.busy
-                                text: "Measured " + replayGain.done + " of " + replayGain.total + " songs"
+                                text: "Measured " + Theme.num(replayGain.done) + " of " + Theme.num(replayGain.total) + " songs"
                                       + (replayGain.failed ? "  ·  " + replayGain.failed + " couldn't be read" : "")
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily
@@ -426,7 +426,7 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 visible: card.modelData.count > card.modelData.items.length
-                                text: "Showing the first " + card.modelData.items.length + " of " + card.modelData.count
+                                text: "Showing the first " + Theme.num(card.modelData.items.length) + " of " + card.modelData.count
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily
                                 font.pixelSize: Theme.fontSize(12)

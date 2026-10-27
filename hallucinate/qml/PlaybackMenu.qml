@@ -11,6 +11,14 @@ Menu {
         objectName: "nowPlayingPlaylistMenu"
         title: "Add to playlist"
         icon.name: "playlist"
+        // which playlists already hold these songs: ticked, and a click takes them out (issue 101)
+        property var held: ({})
+        property var heldPaths: []
+        onAboutToShow: {
+            heldPaths = [player.current.path]
+            held = userLib.playlistCounts(heldPaths)
+            for (var i = 0; i < count; i++) { var it = itemAt(i); if (it && it.have !== undefined) it.checked = it.full }
+        }
         enabled: playback.song
         MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: Nav.newPlaylistWith([player.current.path]) }
         MenuSeparator {}
@@ -19,11 +27,12 @@ Menu {
             delegate: MenuItem {
                 required property int id
                 required property string name
-                text: Theme.plain(name)
-                onTriggered: {
-                    userLib.addPathsToPlaylist(id, [player.current.path])
-                    Nav.notify("“" + (player.current.title || "This song") + "” added to “" + name + "”")
-                }
+                readonly property int have: plSub.held[String(id)] || 0
+                readonly property bool full: have > 0 && have >= plSub.heldPaths.length
+                checkable: true
+                text: Theme.plain(name) + (have > 0 && !full ? "  (" + Theme.num(have) + " of " + plSub.heldPaths.length + ")" : "")
+                onTriggered: full ? Nav.removeFromPlaylistId(id, name, [player.current.path], "“" + (player.current.title || "This song") + "”")
+                                  : Nav.addToPlaylist(id, name, [player.current.path], "“" + (player.current.title || "This song") + "”")
             }
             onObjectAdded: (i, o) => plSub.addItem(o)
             onObjectRemoved: (i, o) => plSub.removeItem(o)
@@ -69,7 +78,7 @@ Menu {
             model: [5, 10, 15, 30, 45, 60, 90]
             MenuItem {
                 required property int modelData
-                text: modelData + " minutes"
+                text: Theme.num(modelData) + " minutes"
                 onTriggered: player.setSleepMinutes(modelData)
             }
         }

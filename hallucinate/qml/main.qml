@@ -344,10 +344,47 @@ ApplicationWindow {
         function onOpenSpectrum(path) { spectrumWindow.analyse(path) }
         function onNewPlaylistWith(paths) { createDlg.paths = paths; createDlg.open() }
         function onTrackMenu(path, title, context, index) {
-            // on a song that's part of a selection, the menu acts on the whole selection
-            if (Selection.count > 1 && Selection.paths.indexOf(path) >= 0) trackMenu.showMany(Selection.paths, context)
+            // on a song (or a play) that's part of a selection, the menu acts on the whole selection
+            var inIt = Selection.count > 1 && Selection.domain === "music"
+                       && (Selection.has("song", path) || Selection.items.some(function (i) { return i.kind === "history" && i.path === path }))
+            if (inIt) trackMenu.showMany(Selection.songPaths(), context)
             else trackMenu.show(path, title, context, index)
         }
+        function onDeleteInList(context, path, index) {
+            if (context === "liked") {
+                var many = Selection.count > 1 && Selection.has("song", path)
+                var paths = many ? Selection.paths.slice() : [path]
+                userLib.setLikedPaths(paths, false)
+                if (many) Selection.clear()
+                Nav.notifyAction(paths.length === 1 ? "Removed from Liked Songs" : Theme.num(paths.length) + " songs removed from Liked Songs",
+                                 "Undo", function () { userLib.setLikedPaths(paths, true) })
+                return
+            }
+            if (context !== "playlist") return
+            if (Selection.count > 1 && Selection.has("song", path) && Selection.origin === "playlist:" + userLib.currentPlaylist)
+                trackMenu.removePathsFromPlaylist(Selection.paths.slice())
+            else trackMenu.removeFromPlaylist([index])
+        }
+        function onAddToPlaylist(pid, name, paths, what) {
+            paths = paths.filter(function (p, i) { return p && paths.indexOf(p) === i })
+            var mode = shell.ui.playlistDuplicates || "skip"
+            var held = mode === "add" ? [] : userLib.pathsInPlaylist(pid, paths)
+            if (mode === "ask" && held.length) { dupDlg.ask(pid, name, paths, held, what); return }
+            var fresh = paths.filter(function (p) { return held.indexOf(p) < 0 })
+            if (fresh.length) userLib.addPathsToPlaylist(pid, fresh)
+            var n = function (k) { return Theme.num(k) + (k === 1 ? " song" : " songs") }
+            var label = fresh.length === paths.length && what ? what : n(fresh.length)
+            if (!held.length) { toast.show(label + " added to “" + name + "”"); return }
+            var msg = !fresh.length ? (paths.length === 1 ? "Already in “" + name + "”" : "All " + n(paths.length) + " are already in “" + name + "”")
+                                    : label + " added to “" + name + "” (" + held.length + " already there)"
+            toast.show(msg, 0, "Add anyway", function () { userLib.addPathsToPlaylist(pid, held); toast.show(n(held.length) + " added again to “" + name + "”") })
+        }
+        function onRemoveFromPlaylistId(pid, name, paths, what) {
+            var removed = userLib.removePathsFromPlaylistId(pid, paths)
+            if (removed) toast.show((what || Theme.num(removed) + (removed === 1 ? " song" : " songs")) + " removed from “" + name + "”", 0, "Undo",
+                                    function () { userLib.restorePlaylistRemoval() })
+        }
+        function onSelectionMenu() { if (Selection.domain === "music") trackMenu.showMany(Selection.songPaths(), "") }
         function onToggleNowPlaying() { nowPlaying.toggle() }
         function onOpenHealth() { if (window.featureOn("health")) window.go("health") }
         function onOpenPalette() { commandPalette.show() }
@@ -366,8 +403,13 @@ ApplicationWindow {
         function onInstallUpdate() { updateDlg.open() }
         function onAlbumMenu(keys, title, artist) {
             // acting on a selected album acts on the whole selection
-            var k = keys.length === 1 && AlbumSelection.has(keys[0]) ? AlbumSelection.keys.slice() : keys
-            albumMenu.show(k, title, artist)
+            if (keys.length === 1 && Selection.count > 1 && Selection.has("album", keys[0])) {
+                var albums = Selection.items.filter(function (i) { return i.kind === "album" })
+                if (albums.length === Selection.count) { albumMenu.show(albums.map(function (i) { return i.key }), title, artist); return }
+                trackMenu.showMany(Selection.songPaths(), "")  // albums and other things: their songs
+                return
+            }
+            albumMenu.show(keys, title, artist)
         }
         function onRemoveAlbums(keys, what) { removeDlg.songs = false; removeDlg.keys = keys; removeDlg.what = what; removeDlg.open() }
         function onTrashAlbums(keys, what) { trashDlg.songs = false; trashDlg.keys = keys; trashDlg.what = what; trashDlg.open() }
@@ -421,20 +463,21 @@ ApplicationWindow {
         target: userLib
         function onPlayerImported(result) {
             if (result.error) { toast.show(result.error); return }
-            toast.show(result.source + ": matched " + result.matched + " of " + result.songs + " songs · "
-                       + result.plays + " plays, " + result.ratings + " ratings, " + result.playlists + " playlists")
+            toast.show(result.source + ": matched " + Theme.num(result.matched) + " of " + Theme.num(result.songs) + " songs · "
+                       + Theme.num(result.plays) + " plays, " + Theme.num(result.ratings) + " ratings, " + Theme.num(result.playlists) + " playlists")
         }
         function onPlaylistImported(result) {
             if (result.error) { toast.show(result.error); return }
             if (result.id < 0) { toast.show("None of those songs are in your library"); return }
-            toast.show("Imported “" + result.name + "”: " + result.added + (result.added === 1 ? " song" : " songs")
+            toast.show("Imported “" + result.name + "”: " + Theme.num(result.added) + (result.added === 1 ? " song" : " songs")
                        + (result.missing ? ", " + result.missing + " not found in your library" : ""))
             window.openPlaylist(result.id, result.name)
         }
     }
 
-    // Acts on songs selected with Ctrl/Shift+click; a selection belongs to one page
+    // Acts on whatever's selected (Ctrl/Shift+click, dragging, Ctrl+A), from any page: a selection lasts while you browse
     SelectionBar {
+        id: selectionBar
         z: 59
         // over the page area (right of the sidebar), never wider than it
         maxWidth: stack.width - 24
@@ -443,31 +486,85 @@ ApplicationWindow {
         onEditTags: function (paths) { tagEditor.editTracks(paths) }
         onRemoveFromPlaylist: function (paths) { trackMenu.removePathsFromPlaylist(paths) }
     }
-    AlbumBar {
-        z: 59
-        maxWidth: stack.width - 24
-        x: sidebar.width + (stack.width - width) / 2
-        anchors { bottom: parent.bottom; bottomMargin: 112 }
+    // With "Keep what's selected" off, a selection belongs to its page
+    Connections { target: stack; function onCurrentItemChanged() { if (shell.ui.keepSelection === "false") Selection.clear() } }
+    onSectionChanged: if (shell.ui.keepSelection === "false") Selection.clear()
+    // "Ask each time" for songs a playlist already has (Settings → Library → Playlists and selecting)
+    ConfirmDialog {
+        id: dupDlg
+        objectName: "duplicatesDialog"
+        property int pid: -1
+        property string name: ""
+        property var paths: []
+        property var held: []
+        readonly property int fresh: paths.length - held.length
+        function ask(p, n, all, h, w) { pid = p; name = n; paths = all; held = h; what = w; again.checked = fresh === 0; open() }
+        title: held.length === 1 && paths.length === 1 ? "Already in “" + name + "”"
+                                                       : Theme.num(held.length) + " of these are already in “" + name + "”"
+        body: fresh === 0 ? (paths.length === 1 ? "Add it again?" : "Add them again?")
+                          : Theme.num(fresh) + (fresh === 1 ? " song is" : " songs are") + " new to it."
+        confirmText: again.checked ? (fresh === 0 ? "Add again" : "Add all " + paths.length) : "Add the " + fresh + " new"
+        StyledCheck {
+            id: again
+            visible: dupDlg.fresh > 0
+            text: "Also add the " + Theme.num(dupDlg.held.length) + (dupDlg.held.length === 1 ? " that's" : " that are") + " already there"
+        }
+        onAccepted: {
+            var add = again.checked ? paths : paths.filter(function (p) { return held.indexOf(p) < 0 })
+            if (!add.length) return
+            userLib.addPathsToPlaylist(pid, add)
+            toast.show(Theme.num(add.length) + (add.length === 1 ? " song" : " songs") + " added to “" + name + "”")
+        }
     }
-    onSectionChanged: { Selection.clear(); AlbumSelection.clear() }
-    Connections { target: stack; function onCurrentItemChanged() { Selection.clear(); AlbumSelection.clear() } }
-    // One Escape for both kinds of selection: two shortcuts on the same key at once would be ambiguous, and Qt
-    // then runs neither. Selecting songs drops a selection of albums and the other way round, so their bars
-    // never sit on top of each other.
     Shortcut {
         sequence: "Escape"
-        enabled: (Selection.count > 0 || AlbumSelection.count > 0) && !nowPlaying.open
-        onActivated: { Selection.clear(); AlbumSelection.clear() }
+        enabled: Selection.count > 0 && !nowPlaying.open && !PickDrag.carrying
+        onActivated: selectionBar.clearWithUndo()
+    }
+    // A queue entry's place changes with the queue: a selection of them would point at other songs
+    Connections { target: player.queueModel; function onModelReset() { Selection.dropKind("queue") } function onRowsRemoved() { Selection.dropKind("queue") } function onRowsInserted() { Selection.dropKind("queue") } function onRowsMoved() { Selection.dropKind("queue") } }
+    // Ctrl+A on a page with one main list (not while typing, and not where a focused row has its own)
+    Shortcut {
+        sequence: StandardKey.SelectAll
+        enabled: !window.typing && !nowPlaying.open && !!stack.currentItem && typeof stack.currentItem.selectAll === "function"
+        onActivated: stack.currentItem.selectAll()
+    }
+
+    // What a drag from a selected item carries: a label under the pointer. Dropped on a playlist in the sidebar or
+    // on the queue, it adds every song of the selection there (see PickDrag).
+    Rectangle {
+        id: carried
+        objectName: "selectionCarried"
+        z: 200
+        visible: PickDrag.carrying
+        x: PickDrag.sceneX + 14
+        y: PickDrag.sceneY + 10
+        width: carriedText.implicitWidth + 24
+        height: 32
+        radius: Theme.round(16)
+        color: Theme.accent
+        Drag.active: PickDrag.carrying
+        Drag.keys: ["hallucinate/selection"]
+        Drag.hotSpot.x: -14
+        Drag.hotSpot.y: -10
+        Text {
+            id: carriedText
+            textFormat: Text.PlainText
+            anchors.centerIn: parent
+            text: Selection.summary(false)
+            color: Theme.onAccent
+            font.family: Theme.fontFamily
+            font.pixelSize: Theme.fontSize(12)
+            font.weight: Font.DemiBold
+        }
     }
     // Escape on the search results (nothing selected, not typing in a field) leaves the search, like Back
     Shortcut {
         sequence: "Escape"
         enabled: !!(stack.currentItem && stack.currentItem.objectName === "search") && Selection.count === 0
-                 && AlbumSelection.count === 0 && !nowPlaying.open && !window.typing
+                 && !nowPlaying.open && !window.typing
         onActivated: searchField.text = ""
     }
-    Connections { target: Selection; function onCountChanged() { if (Selection.count > 0) AlbumSelection.clear() } }
-    Connections { target: AlbumSelection; function onCountChanged() { if (AlbumSelection.count > 0) Selection.clear() } }
 
     ConfirmDialog {
         id: removeFolderDlg
@@ -494,8 +591,9 @@ ApplicationWindow {
               + "Settings → Library can bring it back. Plays, likes and playlists are kept."
         property bool songs: false  // keys are song paths rather than album keys
         onAccepted: {
-            if (songs) { library.removeSongs(keys); Selection.clear() }
-            else { library.removeAlbums(keys); AlbumSelection.clear() }
+            if (songs) library.removeSongs(keys)
+            else library.removeAlbums(keys)
+            Selection.clear()
         }
     }
     ConfirmDialog {
@@ -510,19 +608,20 @@ ApplicationWindow {
         property bool songs: false
         property bool cue: false  // a CUE sheet's songs share one file: trashing one trashes the whole sheet's audio
         onAccepted: {
-            if (songs) { library.trashSongs(keys); Selection.clear() }
-            else { library.trashAlbums(keys); AlbumSelection.clear() }
+            if (songs) library.trashSongs(keys)
+            else library.trashAlbums(keys)
+            Selection.clear()
         }
     }
     Connections {
         target: library
         function onAlbumsRemoved(r) {
-            var n = r.albums > 0 ? r.albums + (r.albums === 1 ? " album" : " albums")
-                                 : r.songs + (r.songs === 1 ? " song" : " songs")
+            var n = r.albums > 0 ? Theme.num(r.albums) + (r.albums === 1 ? " album" : " albums")
+                                 : Theme.num(r.songs) + (r.songs === 1 ? " song" : " songs")
             if (r.kind === "hidden") toast.show(n + " removed from the library", 0, "Undo",
                                                 function () { library.unhidePaths(r.paths || []) })
             else if (r.failed && !r.songs) toast.show("Couldn't move the files to the trash")
-            else toast.show(n + " moved to the trash" + (r.failed ? " (" + r.failed + " files couldn't be moved)" : ""))
+            else toast.show(n + " moved to the trash" + (r.failed ? " (" + Theme.num(r.failed) + " files couldn't be moved)" : ""))
             if (r.songs > 0 && stack.currentItem && r.keys.indexOf(stack.currentItem.albumKey) >= 0) {
                 window.goBack()  // its page is gone, so it can't be gone forward to either
                 window.forwardRoutes = window.forwardRoutes.slice(0, -1)
@@ -532,7 +631,7 @@ ApplicationWindow {
 
     Connections {
         target: userLib
-        function onLovesMatched(n) { toast.show(n ? "Liked " + n + (n === 1 ? " song" : " songs") + " you'd loved on Last.fm" : "No new songs to like from your Last.fm loves") }
+        function onLovesMatched(n) { toast.show(n ? "Liked " + Theme.num(n) + (n === 1 ? " song" : " songs") + " you'd loved on Last.fm" : "No new songs to like from your Last.fm loves") }
     }
     Connections {
         target: serverCopies
@@ -564,7 +663,7 @@ ApplicationWindow {
             toastTimer.restart()
         }
         z: 60
-        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Selection.count > 0 || AlbumSelection.count > 0 ? 176 : 118 }
+        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Selection.count > 0 ? 176 : 118 }
         width: toastText.width + 36 + (toastAction.visible ? toastAction.width + 14 : 0)
         height: Math.max(40, toastText.height + 22)
         radius: Theme.round(20)
@@ -751,7 +850,7 @@ ApplicationWindow {
             if (!name.length) return
             if (paths.length) {
                 userLib.addPathsToNewPlaylist(name, paths)
-                toast.show((paths.length === 1 ? "Added to “" : paths.length + " songs added to “") + name + "”")
+                toast.show((paths.length === 1 ? "Added to “" : Theme.num(paths.length) + " songs added to “") + name + "”")
             } else window.openPlaylist(userLib.createPlaylist(name), name)
         }
         TextField {
@@ -1024,6 +1123,7 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
+        PickDrag.dropAt = function () { carried.Drag.drop() }  // (see the carried label)
         go(shell.openingPage())
         // an AppImage nothing has added to the app launcher: docks can't show its icon (once; Settings → Desktop)
         if (!welcomeView.open && shell.offerLauncher())

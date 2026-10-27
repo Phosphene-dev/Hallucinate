@@ -20,7 +20,7 @@ Menu {
     // a song on a music server: no file here to show, edit or put in the trash
     readonly property bool onServer: paths.some(function (p) { return /^(subsonic|jellyfin):\/\//.test(p) })
     property var copies: ({ servers: 0, kept: 0, waiting: 0 })  // songs from a music server, kept here or not
-    readonly property string what: single ? "“" + trackTitle + "”" : paths.length + " songs"
+    readonly property string what: single ? "“" + trackTitle + "”" : Theme.num(paths.length) + " songs"
 
     function show(p, t, c, i) {
         path = p; trackTitle = t; context = c; index = i; paths = [p]
@@ -46,7 +46,7 @@ Menu {
         if (pid < 0 || !rows.length) return
         var removed = rows.map(function (i) { return model.get(i).path })
         rows.forEach(function (i) { userLib.removeFromPlaylist(i) })
-        Nav.notifyAction(rows.length === 1 ? "Removed from the playlist" : rows.length + " songs removed from the playlist",
+        Nav.notifyAction(rows.length === 1 ? "Removed from the playlist" : Theme.num(rows.length) + " songs removed from the playlist",
                          "Undo", function () {
             userLib.addPathsToPlaylist(pid, removed)  // back at the end...
             if (userLib.currentPlaylist !== pid) return
@@ -117,6 +117,12 @@ Menu {
         title: "Add to playlist"
         icon.name: "playlist"
         enabled: !songMenu.stream
+        // which playlists already hold the song(s): ticked, and a click takes them out (issue 101)
+        property var held: ({})
+        onAboutToShow: {
+            held = userLib.playlistCounts(songMenu.paths)
+            for (var i = 0; i < count; i++) { var it = itemAt(i); if (it && it.have !== undefined) it.checked = it.full }
+        }
         MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: newDlg.open() }
         MenuSeparator {}
         Instantiator {
@@ -124,10 +130,15 @@ Menu {
             delegate: MenuItem {
                 required property int id
                 required property string name
-                text: Theme.plain(name)
+                readonly property int have: plMenu.held[String(id)] || 0
+                readonly property bool full: have > 0 && have >= songMenu.paths.length
+                checkable: true
+                text: Theme.plain(name) + (have > 0 && !full ? "  (" + Theme.num(have) + " of " + songMenu.paths.length + ")" : "")
                 onTriggered: {
-                    userLib.addPathsToPlaylist(id, songMenu.paths)
-                    songMenu.done(songMenu.what + " added to “" + name + "”")
+                    var p = songMenu.paths.slice(), w = songMenu.what
+                    songMenu.done("")
+                    if (full) Nav.removeFromPlaylistId(id, name, p, w)
+                    else Nav.addToPlaylist(id, name, p, w)
                 }
             }
             onObjectAdded: (i, o) => plMenu.addItem(o)

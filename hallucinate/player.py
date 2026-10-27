@@ -426,6 +426,9 @@ class Player(QObject):
         self._eq_preset = "Flat"
         self._headphone = {"name": "", "curve": None}
         self._crossfeed = str(self._settings.value("audio/crossfeed", "off"))
+        self._rate_mode = str(self._settings.value("audio/outputRate", "auto"))
+        if self._rate_mode not in signalpath.RATE_MODES:
+            self._rate_mode = "auto"
         if self._crossfeed not in eq.CROSSFEED:
             self._crossfeed = "off"
         try:
@@ -1090,11 +1093,33 @@ class Player(QObject):
         self._switch_device_eq()
         self.outputDevicesChanged.emit()
 
+    @Property(str, notify=signalPathChanged)
+    def outputRateMode(self):
+        """How the signal path learns the output's sample rate: "auto" (asks PipeWire), "follows" (each song's)
+        or "fixed" (the device's own); see signalpath.RATE_MODES."""
+        return self._rate_mode
+
+    @Slot(str)
+    def setOutputRateMode(self, mode):
+        mode = mode if mode in signalpath.RATE_MODES else "auto"
+        if mode != self._rate_mode:
+            self._rate_mode = mode
+            self._settings.setValue("audio/outputRate", mode)
+            self.signalPathChanged.emit()
+
+    @Property(str, constant=True)
+    def pipewireRates(self):
+        """The rates PipeWire may switch the output to, for Settings ("44.1, 48, 96 kHz"), or ""."""
+        rates = sorted(signalpath.pipewire_allowed_rates())
+        return ", ".join(f"{r / 1000:g}" for r in rates) + " kHz" if len(rates) > 1 else ""
+
     @Property("QVariantMap", notify=signalPathChanged)
     def signalPath(self):
         """The current track's way from file to speakers (see signalpath.describe)."""
         track = self._queue[self._index] if self.hasTrack else None
         device = self._output_audio_device()
+        rate = int((track or {}).get("sample_rate") or 0)
+        follows = signalpath.output_follows(rate, self._rate_mode) if track else False
         return signalpath.describe(
             track,
             rg_factor=replaygain_factor(track, self._rg_mode, self._rg_preamp),
@@ -1107,6 +1132,8 @@ class Player(QObject):
             crossfade=self._crossfade,
             device_name="" if device.isNull() else device.description(),
             device_rate=0 if device.isNull() else device.preferredFormat().sampleRate(),
+            rate_follows=follows,
+            rate_source="PipeWire" if follows and self._rate_mode == "auto" else "",
         )
 
     def _output_audio_device(self):
@@ -1766,6 +1793,37 @@ class Player(QObject):
             self.trackChanged.emit()
         self._invalidate_next()
         self._sync_queue()
+
+    @Slot("QVariantList")
+    def removeIndexes(self, indexes):
+        """Take several entries out of the queue (one Undo brings them all back)."""
+        idx = sorted({int(i) for i in indexes if 0 <= int(i) < len(self._queue)}, reverse=True)
+        if not idx:
+            return
+        self._remember_queue(f"{len(idx)} songs removed" if len(idx) > 1 else "Song removed")
+        steps = len(self._undo)
+        for i in idx:
+            self.removeAt(i)
+        del self._undo[steps:]  # (each removeAt kept its own; the one above covers them all)
+        self.undoChanged.emit()
+
+    @Slot("QVariantList")
+    def moveIndexesNext(self, indexes):
+        """Move several queue entries to play right after the current song, in their queue order."""
+        idx = sorted({int(i) for i in indexes if 0 <= int(i) < len(self._queue) and int(i) != self._index})
+        if not idx:
+            return
+        self._remember_queue("Songs moved")
+        steps = len(self._undo)
+        moving = [self._queue[i] for i in idx]
+        for k, entry in enumerate(moving):
+            src = next(j for j, e in enumerate(self._queue) if e is entry)  # (moves before it shifted it)
+            # right after the current song and the ones already moved; one from before the current song
+            # takes its place out from in front of it
+            dst = self._index + 1 + k if src > self._index else self._index + k
+            self.moveItem(src, dst)
+        del self._undo[steps:]
+        self.undoChanged.emit()
 
     @Slot(int, int)
     def moveItem(self, src, dst):

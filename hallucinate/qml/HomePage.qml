@@ -51,7 +51,7 @@ Item {
                     width: parent.width
                     wrapMode: Text.WordWrap
                     visible: library.trackCount > 0
-                    text: [library.albumCount + " albums", library.trackCount + " songs", library.artistCount + " artists",
+                    text: [Theme.num(library.albumCount) + " albums", Theme.num(library.trackCount) + " songs", Theme.num(library.artistCount) + " artists",
                            page.facts.seconds ? Theme.fmtHours(page.facts.seconds) + " of music" : ""].filter(s => s).join("  ·  ")
                     color: Theme.textDim
                     font.family: Theme.fontFamily
@@ -209,23 +209,29 @@ Item {
                 spacing: 14
                 width: col.width
                 SectionHeader { title: parent.title; subtitle: parent.subtitle }
-                ListView {
-                    WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
-                    id: shelf
+                Item {
                     width: parent.width
                     height: 262
-                    orientation: ListView.Horizontal
-                    spacing: 20
-                    clip: true
-                    boundsBehavior: Flickable.StopAtBounds
-                    delegate: AlbumCard {
-                        albumKey: model.album_key
-                        title: model.album
-                        subtitle: model.album_artist
-                        artist: model.album_artist
-                        artUrl: model.artUrl
-                        note: model.reason || ""
+                    ListView {
+                        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
+                        id: shelf
+                        anchors.fill: parent
+                        orientation: ListView.Horizontal
+                        spacing: 20
+                        clip: true
+                        boundsBehavior: Flickable.StopAtBounds
+                        delegate: AlbumCard {
+                            albumKey: model.album_key
+                            title: model.album
+                            subtitle: model.album_artist
+                            artist: model.album_artist
+                            artUrl: model.artUrl
+                            note: model.reason || ""
+                            selectionSource: ListView.view ? ListView.view.model : null
+                            rowIndex: index
+                        }
                     }
+                    ShelfArrows { row: shelf; anchors.fill: parent }
                 }
             }
 

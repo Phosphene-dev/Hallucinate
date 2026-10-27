@@ -12,11 +12,14 @@ Item {
     signal clicked()
     property bool hasMenu: false  // right-click (or press and hold) asks for a menu
     signal menuRequested()
+    property var pick: null        // a Pick: Ctrl/Shift+click select the entry instead (playlists)
+    property bool dropping: false  // something carried hovers over it, to be dropped on it
     height: 42
     activeFocusOnTab: true
     // A focused control takes Space and Enter itself; without this the window's Space (play/pause) wins
     Keys.onShortcutOverride: function (event) { event.accepted = event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter }
     Keys.onSpacePressed: item.clicked()
+    Keys.onPressed: function (event) { if (item.pick) item.pick.keys(event) }
     Keys.onReturnPressed: item.clicked()
     Keys.onEnterPressed: item.clicked()
     Accessible.role: Accessible.Button
@@ -44,6 +47,14 @@ Item {
         }
         border.width: item.selected ? 1 : 0
         border.color: Theme.strokeHi
+    }
+    Rectangle {  // selected (Ctrl+click), or about to take what's carried over it
+        anchors.fill: parent
+        radius: Theme.round(height / 2)
+        color: item.dropping ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.22) : "transparent"
+        border.width: 2
+        border.color: Theme.accent
+        visible: item.dropping || (item.pick !== null && item.pick.selected)
     }
     Rectangle {  // a retro theme marks the open page in solid accent, and the one under the pointer plainly
         anchors.fill: parent
@@ -80,7 +91,10 @@ Item {
         cursorShape: Qt.PointingHandCursor
         acceptedButtons: item.hasMenu ? Qt.LeftButton | Qt.RightButton : Qt.LeftButton
         onPressAndHold: if (item.hasMenu) item.menuRequested()
-        onClicked: function (mouse) { mouse.button === Qt.RightButton ? item.menuRequested() : item.clicked() }
+        onClicked: function (mouse) {
+            if (mouse.button === Qt.RightButton) item.menuRequested()
+            else if (!(item.pick && item.pick.click(mouse))) item.clicked()
+        }
     }
     ToolTip.visible: item.collapsed && ma.containsMouse
     ToolTip.text: Theme.plain(item.text)

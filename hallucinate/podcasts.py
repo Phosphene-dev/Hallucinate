@@ -629,6 +629,48 @@ class Podcasts(QObject):
             self._player.enqueue(self._entry(e))
             self.message.emit(f"“{e['title']}” added to the queue")
 
+    # --- several episodes at once (the selection bar) ----------------------------------------------------
+    @Slot("QVariantList", bool)
+    def markPlayedMany(self, ids, played=True):
+        ids = [int(i) for i in ids]
+        episodes = [e for e in (self._db.episode(i) for i in ids) if e]
+        self._undo = [(e["id"], e["position"]) for e in episodes if not e["played"]] if played else None
+        self._db.set_played([e["id"] for e in episodes], played)
+        if played:
+            for e in episodes:
+                self._after_played(e["id"])
+        self.reload()
+        n = len(episodes)
+        if played and self._undo:
+            self.undoable.emit(f"Marked {n} episode{'s' if n != 1 else ''} played")
+
+    @Slot("QVariantList")
+    def enqueueMany(self, ids):
+        entries = [self._entry(e) for e in (self._db.episode(int(i)) for i in ids) if e]
+        if entries:
+            self._player.enqueueAll(entries)
+            self.message.emit(f"{len(entries)} episode{'s' if len(entries) != 1 else ''} added to the queue")
+
+    @Slot("QVariantList")
+    def playNextMany(self, ids):
+        entries = [self._entry(e) for e in (self._db.episode(int(i)) for i in ids) if e]
+        for entry in reversed(entries):  # each goes in right after the current one
+            self._player.playNext(entry)
+        if entries:
+            self.message.emit(f"{len(entries)} episode{'s' if len(entries) != 1 else ''} will play next")
+
+    @Slot("QVariantList")
+    def downloadMany(self, ids):
+        for i in ids:
+            e = self._db.episode(int(i))
+            if e and e.get("url") and not e.get("local_path"):
+                self.download(e["id"], quiet=True)
+
+    @Slot("QVariantList")
+    def removeDownloadMany(self, ids):
+        for i in ids:
+            self.removeDownload(int(i))
+
     @Slot(int, bool)
     def markPlayed(self, episode_id, played=True):
         self._db.set_played([episode_id], played)

@@ -67,6 +67,9 @@ def main(argv=None) -> int:
     controls.add_argument("--next", dest="control", action="store_const", const="next", help="skip to the next track")
     controls.add_argument("--prev", dest="control", action="store_const", const="prev", help="play the previous track")
     controls.add_argument("--play-pause", dest="control", action="store_const", const="play-pause", help="toggle playback")
+    controls.add_argument("--mini-player", dest="control", action="store_const", const="mini-player",
+                          help="switch between the mini player and the window")
+    controls.add_argument("--quit", dest="control", action="store_const", const="quit", help="quit Hallucinate")
     controls.add_argument("--status", dest="control", action="store_const", const="status", help="print current playback status as JSON")
     controls.add_argument("--pair", dest="control", action="store_const", const="pair",
                           help="show a code to pair a phone or browser with the web interface")
@@ -77,6 +80,8 @@ def main(argv=None) -> int:
                         help="let other devices on your network reach the web interface (kept for next time)")
     server.add_argument("--port", type=int, help="the web interface's port (kept for next time; default 8483)")
     server.add_argument("--no-web", action="store_true", help="don't start the web interface")
+    # the launcher's right-click actions: start Hallucinate when it isn't running, then do it
+    ap.add_argument("--launch", action="store_true", help=argparse.SUPPRESS)
     ap.add_argument("--quit-after", type=int, metavar="MS", help=argparse.SUPPRESS)
     ap.add_argument("--decode-check", nargs="+", metavar="FILE", help=argparse.SUPPRESS)  # packaging CI
     ap.add_argument("--version", action="version", version=__version__)
@@ -92,8 +97,14 @@ def main(argv=None) -> int:
         from . import cli
 
         return cli.main(["pair"])
+    launch_then = None
     if args.control:
         response = send_control(args.control)
+        if response is None and args.launch and args.control not in ("status", "quit"):
+            launch_then = args.control  # done once the window is up (below)
+            response = {"ok": True, "starting": True}
+        elif response is None and args.control == "quit":
+            return 0  # nothing to quit
         if response is None:
             print("Hallucinate is not running; start it before using playback controls.", file=sys.stderr)
             return 1
@@ -102,7 +113,8 @@ def main(argv=None) -> int:
             return 1
         if args.control == "status":
             print(json.dumps(response["status"], ensure_ascii=False))
-        return 0
+        if launch_then is None:
+            return 0
 
     if args.headless:
         from . import headless
@@ -110,6 +122,7 @@ def main(argv=None) -> int:
         return headless.run(args)
 
     existing = (
+        None if launch_then else
         send_control("add-folders", folders=args.folders)
         if args.folders
         else send_control("raise")
@@ -353,6 +366,11 @@ def main(argv=None) -> int:
 
     freeze_watch = crashlog.watch_freezes(context=freeze_context)  # noqa: F841 - kept alive for the run
     control.setRaiseCallback(shell.showMain)
+    control.setShell(shell)
+    if launch_then == "mini-player":
+        QTimer.singleShot(0, shell.toggleMini)
+    elif launch_then:  # play/pause, next, previous: on the queue the last session left
+        QTimer.singleShot(0, {"play-pause": player.toggle, "next": player.next, "prev": player.previous}[launch_then])
     mpris = None
     try:
         if not sys.platform.startswith("linux"):

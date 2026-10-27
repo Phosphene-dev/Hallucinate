@@ -116,13 +116,30 @@ Item {
                     Rectangle {
                         id: tile
                         required property var modelData
+                        required property int index
+                        Pick { id: folderPick; target: tile; kind: "folder"; entry: tile.modelData; source: page.folders; index: tile.index }
+                        // from the keyboard: Tab to it, Enter opens it, the Menu key its menu
+                        activeFocusOnTab: true
+                        Accessible.role: Accessible.Button
+                        Accessible.name: "Open " + tile.modelData.name + ", " + Theme.num(tile.modelData.songs) + (tile.modelData.songs === 1 ? " song" : " songs")
+                        Accessible.selected: folderPick.selected
+                        Accessible.onPressAction: page.path = tile.modelData.path
+                        Keys.onShortcutOverride: function (event) { event.accepted = [Qt.Key_Space, Qt.Key_Return, Qt.Key_Enter].indexOf(event.key) >= 0 || ((event.modifiers & Qt.ControlModifier) && (event.key === Qt.Key_A || event.key === Qt.Key_Space)) }
+                        Keys.onPressed: function (event) {
+                            if (folderPick.keys(event)) return
+                            if (event.key === Qt.Key_Menu || (event.key === Qt.Key_F10 && (event.modifiers & Qt.ShiftModifier))) { Nav.folderMenu(tile.modelData.path, tile.modelData.name); event.accepted = true }
+                        }
+                        Keys.onReturnPressed: page.path = tile.modelData.path
+                        Keys.onEnterPressed: page.path = tile.modelData.path
+                        Keys.onSpacePressed: page.path = tile.modelData.path
+                        Rectangle { anchors.fill: parent; anchors.margins: -3; radius: Theme.round(18); color: "transparent"; border.width: 2; border.color: Theme.accent; visible: tile.activeFocus }
                         width: Math.max(240, (col.width - 2 * 10) / 3 - 1)
                         height: 68
                         radius: Theme.round(16)
                         color: tileHover.hovered ? Theme.glassHover : Theme.glass
                         HoverHandler { id: tileHover }
-                        border.width: 1
-                        border.color: Theme.stroke
+                        border.width: folderPick.selected ? 2 : 1
+                        border.color: folderPick.selected ? Theme.accent : Theme.stroke
                         Cover {
                             id: folderArt
                             x: 10; anchors.verticalCenter: parent.verticalCenter
@@ -153,7 +170,7 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 width: parent.width
-                                text: tile.modelData.songs + (tile.modelData.songs === 1 ? " song" : " songs") + "  ·  " + tile.modelData.durText
+                                text: Theme.num(tile.modelData.songs) + (tile.modelData.songs === 1 ? " song" : " songs") + "  ·  " + tile.modelData.durText
                                 color: Theme.textDim
                                 elide: Text.ElideRight
                                 font.family: Theme.fontFamily
@@ -164,14 +181,18 @@ Item {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             acceptedButtons: Qt.LeftButton | Qt.RightButton
-                            onPressAndHold: Nav.folderMenu(tile.modelData.path, tile.modelData.name)
+                            onPressAndHold: if (!PickDrag.pick) Nav.folderMenu(tile.modelData.path, tile.modelData.name)
                             Accessible.role: Accessible.Button
                             Accessible.name: "Open " + tile.modelData.name + ", " + tile.modelData.songs
                                              + (tile.modelData.songs === 1 ? " song" : " songs")
                             Accessible.onPressAction: page.path = tile.modelData.path
+                            onPressed: function (mouse) { folderPick.press(this, mouse) }
+                            onPositionChanged: function (mouse) { folderPick.move(this, mouse) }
+                            onReleased: folderPick.release(this)
+                            onCanceled: folderPick.cancel(this)
                             onClicked: function (mouse) {
                                 if (mouse.button === Qt.RightButton) Nav.folderMenu(tile.modelData.path, tile.modelData.name)
-                                else page.path = tile.modelData.path
+                                else if (!folderPick.click(mouse)) page.path = tile.modelData.path
                             }
                         }
                         IconButton {
@@ -191,7 +212,7 @@ Item {
                 width: col.width
                 spacing: 2
                 visible: page.tracks.length > 0
-                SectionHeader { title: "Songs"; subtitle: page.tracks.length + (page.tracks.length === 1 ? " song in this folder" : " songs in this folder") }
+                SectionHeader { title: "Songs"; subtitle: Theme.num(page.tracks.length) + (page.tracks.length === 1 ? " song in this folder" : " songs in this folder") }
                 Item { width: 1; height: 6 }
                 Repeater {
                     model: page.tracks
