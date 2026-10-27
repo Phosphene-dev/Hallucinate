@@ -11,7 +11,7 @@ Menu {
     property string albumTitle: ""
     property string artist: ""
     readonly property bool single: keys.length === 1
-    readonly property string what: single ? "“" + albumTitle + "”" : keys.length + " albums"
+    readonly property string what: single ? "“" + albumTitle + "”" : Theme.num(keys.length) + " albums"
 
     // Read when the menu opens: whether every song is liked already, the first song (for its folder), the genre
     property bool allLiked: false
@@ -66,7 +66,7 @@ Menu {
                 readonly property int have: plMenu.held[String(id)] || 0
                 readonly property bool full: have > 0 && have >= plMenu.heldPaths.length
                 checkable: true
-                text: Theme.plain(name) + (have > 0 && !full ? "  (" + have + " of " + plMenu.heldPaths.length + ")" : "")
+                text: Theme.plain(name) + (have > 0 && !full ? "  (" + Theme.num(have) + " of " + plMenu.heldPaths.length + ")" : "")
                 onTriggered: full ? Nav.removeFromPlaylistId(id, name, albumMenu.paths(), albumMenu.what)
                                   : Nav.addToPlaylist(id, name, albumMenu.paths(), albumMenu.what)
             }

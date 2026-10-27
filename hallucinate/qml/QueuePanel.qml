@@ -21,7 +21,7 @@ Rectangle {
             // how many, and how long until the queue runs out (the rest of this song and all those to come)
             readonly property real leftSeconds: player.upcomingSeconds
                 + (player.hasTrack && player.current.kind !== "station" ? Math.max(0, player.duration - player.position) / 1000 : 0)
-            text: player.queueModel.count + " tracks" + (leftSeconds >= 60 ? " · " + panel.fmtLeft(leftSeconds) + " left" : "")
+            text: Theme.num(player.queueModel.count) + " tracks" + (leftSeconds >= 60 ? " · " + panel.fmtLeft(leftSeconds) + " left" : "")
             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); anchors.verticalCenter: parent.verticalCenter; textFormat: Text.PlainText
         }
     }
@@ -131,7 +131,7 @@ Rectangle {
             var p = Selection.songPaths()
             userLib.enqueuePaths(p)
             Selection.clear()
-            Nav.notify(p.length + (p.length === 1 ? " song" : " songs") + " added to the queue")
+            Nav.notify(Theme.num(p.length) + (p.length === 1 ? " song" : " songs") + " added to the queue")
             drop.accept()
         }
         Rectangle {
@@ -227,7 +227,7 @@ Rectangle {
                     var n = Selection.count
                     player.removeIndexes(Selection.items.map(function (i) { return parseInt(i.key) }))
                     Selection.clear()
-                    Nav.notifyAction(n + " songs removed from the queue", "Undo", function () { player.undoQueue() })
+                    Nav.notifyAction(Theme.num(n) + " songs removed from the queue", "Undo", function () { player.undoQueue() })
                     e.accepted = true
                     return
                 }

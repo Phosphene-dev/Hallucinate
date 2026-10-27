@@ -37,9 +37,9 @@ Item {
     Text {
         textFormat: Text.PlainText
         anchors { left: title.right; leftMargin: 14; baseline: title.baseline }
-        text: duplicatesVisible ? library.duplicates.count + " probable duplicates"
-            : library.filtersActive ? library.filteredTracks.count + (library.filteredTracks.count === 1 ? " song" : " songs") + " shown"
-            : library.trackCount + (library.trackCount === 1 ? " song" : " songs")
+        text: duplicatesVisible ? Theme.num(library.duplicates.count) + " probable duplicates"
+            : library.filtersActive ? Theme.num(library.filteredTracks.count) + (library.filteredTracks.count === 1 ? " song" : " songs") + " shown"
+            : Theme.num(library.trackCount) + (library.trackCount === 1 ? " song" : " songs")
         color: Theme.textDim
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSize(14)

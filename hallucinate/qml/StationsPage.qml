@@ -269,7 +269,7 @@ Item {
                     }
                     Text {
                         textFormat: Text.PlainText
-                        text: stations.count === 1 ? "1 station" : stations.count + " stations"
+                        text: stations.count === 1 ? "1 station" : Theme.num(stations.count) + " stations"
                         color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
                     }
                 }

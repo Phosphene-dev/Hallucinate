@@ -117,7 +117,7 @@ Item {
             id: sec_appearance
             objectName: "settings_appearance"
             title: "Appearance"
-            keywords: "shelf shelves row rows sideways wheel tilt arrows theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
+            keywords: "numbers thousands separator comma commas digits shelf shelves row rows sideways wheel tilt arrows theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
             query: page.query
             Row {
                 spacing: 12
@@ -321,6 +321,20 @@ Item {
                         selection: shell.ui.shelfWheel === "row" ? 1 : 0
                         onActivated: function (i) { shell.setUiValue("shelfWheel", modes[i]) }
                         Accessible.name: "Mouse wheel over a row of albums"
+                    }
+                }
+                Row {
+                    spacing: 12
+                    Text { textFormat: Text.PlainText; text: "Numbers"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }
+                    StyledCombo {
+                        objectName: "numberFormat"
+                        width: 260
+                        readonly property var formats: ["locale", "comma", "period", "space", "none"]
+                        model: ["As your language writes them (" + Number(12345).toLocaleString(Qt.locale(), "f", 0) + ")",
+                                "12,345", "12.345", "12\u202f345", "12345"]
+                        selection: Math.max(0, formats.indexOf(Theme.numberFormat))
+                        onActivated: function (i) { shell.setUiValue("numberFormat", formats[i]) }
+                        Accessible.name: "How numbers are written"
                     }
                 }
                 StyledCheck {
@@ -643,7 +657,7 @@ Item {
             id: sec_playback
             objectName: "settings_playback"
             title: "Playback"
-            keywords: "output device audio replaygain loudness preamp measure crossfade gapless album fade pause resume start startup open volume step wheel maximum limit loud speed sleep timer"
+            keywords: "sample rate resample resampling bit perfect signal path pipewire allowed rates 44.1 48 output device audio replaygain loudness preamp measure crossfade gapless album fade pause resume start startup open volume step wheel maximum limit loud speed sleep timer"
             query: page.query
             Flow {  // wraps in a narrow window
                 width: parent.width
@@ -665,6 +679,28 @@ Item {
                         }
                     }
                 }
+            }
+            Flow {  // wraps in a narrow window
+                width: parent.width
+                spacing: 12
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Output sample rate"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                StyledCombo {
+                    objectName: "outputRateMode"
+                    width: Math.min(360, parent.width)
+                    readonly property var modes: ["auto", "follows", "fixed"]
+                    model: [player.pipewireRates ? "Find out (PipeWire switches: " + player.pipewireRates + ")" : "Find out (the device's own rate)",
+                            "Follows each song (set up for it)", "Fixed at the device's rate"]
+                    selection: Math.max(0, modes.indexOf(player.outputRateMode))
+                    onActivated: function (i) { player.setOutputRateMode(modes[i]) }
+                    Accessible.name: "Output sample rate, for the signal path"
+                }
+            }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: "What the signal path assumes the output runs at. Hallucinate plays each song at its own rate; whether the output converts it is up to your system (PipeWire's allowed rates, a DAC's settings)."
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
             Flow {  // wraps in a narrow window
                 width: parent.width
@@ -711,7 +747,7 @@ Item {
                         textFormat: Text.PlainText
                         width: Math.min(implicitWidth, parent.width)
                         wrapMode: Text.WordWrap
-                        text: replayGain.busy ? "Measured " + replayGain.done + " of " + replayGain.total + " songs…"
+                        text: replayGain.busy ? "Measured " + Theme.num(replayGain.done) + " of " + Theme.num(replayGain.total) + " songs…"
                             : "Measures loudness (EBU R128) for songs whose files have no ReplayGain tags. Files aren't changed."
                         color: Theme.textDim
                         font.family: Theme.fontFamily
@@ -903,7 +939,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 visible: library.unreadableFiles > 0 && !library.scanning
-                text: library.unreadableFiles + " files could not be read and were skipped."
+                text: Theme.num(library.unreadableFiles) + " files could not be read and were skipped."
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Flow {
@@ -914,7 +950,7 @@ Item {
                     textFormat: Text.PlainText
                     objectName: "hiddenCount"
                     height: 32; verticalAlignment: Text.AlignVCenter
-                    text: library.hiddenCount + (library.hiddenCount === 1 ? " file" : " files")
+                    text: Theme.num(library.hiddenCount) + (library.hiddenCount === 1 ? " file" : " files")
                           + " removed from the library (still on disk)"
                     color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                 }
@@ -1177,7 +1213,7 @@ Item {
                        ? serverCopies.count.toLocaleString(Qt.locale(), "f", 0) + (serverCopies.count === 1 ? " song" : " songs")
                          + " kept on this computer (" + Theme.fmtBytes(serverCopies.bytes) + "): they play without the server, in offline mode too."
                        : "To play a server's songs without it (on a train, say), right-click an album, playlist or song and choose Keep on this computer.")
-                      + (serverCopies.waiting > 0 ? "  Downloading " + serverCopies.waiting + " more"
+                      + (serverCopies.waiting > 0 ? "  Downloading " + Theme.num(serverCopies.waiting) + " more"
                          + (serverCopies.busy ? " (" + Math.round(serverCopies.progress * 100) + "% of the current one)" : shell.offlineMode ? ", once offline mode is off" : "") + "." : "")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
@@ -1413,7 +1449,7 @@ Item {
             SettingsGroup {
                 key: "remoteDevices"
                 title: "Paired devices"
-                summary: webRemote.pairedDevices.length ? webRemote.pairedDevices.length + (webRemote.pairedDevices.length === 1 ? " device" : " devices") : "None yet"
+                summary: webRemote.pairedDevices.length ? Theme.num(webRemote.pairedDevices.length) + (webRemote.pairedDevices.length === 1 ? " device" : " devices") : "None yet"
                 query: page.query
                 Repeater {
                     model: webRemote.pairedDevices

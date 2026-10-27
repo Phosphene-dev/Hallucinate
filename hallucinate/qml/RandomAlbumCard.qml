@@ -95,7 +95,7 @@ GlassPanel {
             width: parent.width
             wrapMode: Text.WordWrap
             visible: card.hasAlbum
-            text: card.hasAlbum ? [card.album.year > 0 ? card.album.year : "", card.album.n + (card.album.n === 1 ? " song" : " songs"),
+            text: card.hasAlbum ? [card.album.year > 0 ? card.album.year : "", Theme.num(card.album.n) + (card.album.n === 1 ? " song" : " songs"),
                                     card.album.durText].filter(s => s !== "").join("  ·  ") : ""
             color: Theme.textDim
             font.family: Theme.fontFamily

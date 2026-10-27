@@ -57,7 +57,7 @@ Dialog {
             if (r.keep && r.genre.trim().length) out.push({ album_key: r.albumKey, genre: r.genre.trim() })
         }
         metaEditor.saveGenres(out)
-        Nav.notify(out.length === 1 ? "Saving 1 album's genre" : "Saving genres for " + out.length + " albums")
+        Nav.notify(out.length === 1 ? "Saving 1 album's genre" : "Saving genres for " + Theme.num(out.length) + " albums")
     }
 
     Column {
@@ -119,7 +119,7 @@ Dialog {
                 }
                 Text {
                     textFormat: Text.PlainText; width: parent.width; elide: Text.ElideRight
-                    text: [row.model.artist, row.model.songs === 1 ? "1 song" : row.model.songs + " songs",
+                    text: [row.model.artist, row.model.songs === 1 ? "1 song" : Theme.num(row.model.songs) + " songs",
                            row.model.fromArtist ? "the artist's genre" : (row.model.sources ? "from " + row.model.sources : "")]
                           .filter(function (x) { return x }).join("  ·  ")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11)

@@ -30,7 +30,7 @@ Menu {
                 readonly property int have: plSub.held[String(id)] || 0
                 readonly property bool full: have > 0 && have >= plSub.heldPaths.length
                 checkable: true
-                text: Theme.plain(name) + (have > 0 && !full ? "  (" + have + " of " + plSub.heldPaths.length + ")" : "")
+                text: Theme.plain(name) + (have > 0 && !full ? "  (" + Theme.num(have) + " of " + plSub.heldPaths.length + ")" : "")
                 onTriggered: full ? Nav.removeFromPlaylistId(id, name, [player.current.path], "“" + (player.current.title || "This song") + "”")
                                   : Nav.addToPlaylist(id, name, [player.current.path], "“" + (player.current.title || "This song") + "”")
             }
@@ -78,7 +78,7 @@ Menu {
             model: [5, 10, 15, 30, 45, 60, 90]
             MenuItem {
                 required property int modelData
-                text: modelData + " minutes"
+                text: Theme.num(modelData) + " minutes"
                 onTriggered: player.setSleepMinutes(modelData)
             }
         }

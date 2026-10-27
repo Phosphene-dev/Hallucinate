@@ -43,6 +43,12 @@ This record starts at version 0.3.2. Versions in brackets are where each decisio
 - **Choosing when a song counts.** When Last.fm's scrobbling broke, the app still said "Scrobbling now". I wanted
   to choose when a song is scrobbled or counts as a listen, and to be able to switch the "Scrobbling now" notice
   off. [1.4.1]
+- **Select anything, from anywhere.** I wanted to select several of anything at once (songs from an artist or
+  album to add to a playlist, and every other sensible kind of item) with the usual methods: clicking with
+  Ctrl and Shift, dragging the mouse, and the rest. When asked, I chose that a selection gathers across pages,
+  that a drag paints a selection or carries one depending on where it starts, and that every kind of item can be
+  selected (artists, genres and composers; sidebar playlists; queue entries; history, folders, podcasts and
+  radio). [1.6.0]
 - **Tiling window managers are first-class.** A tiling window manager (Hyprland) is my main desktop, so the app
   has to work properly there, not only on floating desktops. [0.6.1, 0.9.0]
 

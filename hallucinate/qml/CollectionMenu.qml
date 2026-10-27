@@ -44,7 +44,7 @@ Menu {
         else if (composer) { if (shuffle) player.setShuffle(true); library.playComposer(name, shuffle) }
         else library.playFolder(path, shuffle)
     }
-    function songCount(list) { return list.length + (list.length === 1 ? " song" : " songs") }
+    function songCount(list) { return Theme.num(list.length) + (list.length === 1 ? " song" : " songs") }
 
     MenuItem { text: "Play"; icon.name: "play"; onTriggered: collectionMenu.play(false) }
     MenuItem { text: "Shuffle"; icon.name: "shuffle"; onTriggered: collectionMenu.play(true) }
@@ -79,7 +79,7 @@ Menu {
                 readonly property int have: plMenu.held[String(id)] || 0
                 readonly property bool full: have > 0 && have >= plMenu.heldPaths.length
                 checkable: true
-                text: Theme.plain(name) + (have > 0 && !full ? "  (" + have + " of " + plMenu.heldPaths.length + ")" : "")
+                text: Theme.plain(name) + (have > 0 && !full ? "  (" + Theme.num(have) + " of " + plMenu.heldPaths.length + ")" : "")
                 onTriggered: full ? Nav.removeFromPlaylistId(id, name, collectionMenu.paths(), "")
                                   : Nav.addToPlaylist(id, name, collectionMenu.paths(), "")
             }

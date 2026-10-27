@@ -49,7 +49,7 @@ Dialog {
     anchors.centerIn: parent
     modal: true
     width: Math.min(560, parent ? parent.width - 40 : 560)
-    title: albumMode ? "Edit album" : manyMode ? "Edit " + paths.length + " songs" : "Edit tags"
+    title: albumMode ? "Edit album" : manyMode ? "Edit " + Theme.num(paths.length) + " songs" : "Edit tags"
     standardButtons: Dialog.Save | Dialog.Cancel
 
     readonly property var keys: albumMode || manyMode
@@ -150,8 +150,8 @@ Dialog {
             dlg.trackTags = r.tracks
             dlg.mbResults = []
             dlg.mbStatus = r.matched ? "Filled in from MusicBrainz. Check the fields, then Save."
-                : "Filled in the album from MusicBrainz. Its " + r.releaseTracks + " tracks don't match this album's "
-                  + r.songs + " songs, so song titles are left as they are."
+                : "Filled in the album from MusicBrainz. Its " + Theme.num(r.releaseTracks) + " tracks don't match this album's "
+                  + Theme.num(r.songs) + " songs, so song titles are left as they are."
         }
         function onGenreFound(r) {
             if (!dlg.opened) return
@@ -180,7 +180,7 @@ Dialog {
             textFormat: Text.PlainText
             visible: dlg.albumMode || dlg.manyMode
             Layout.fillWidth: true
-            text: dlg.paths.length + " tracks. Only changed fields are written to every track."
+            text: Theme.num(dlg.paths.length) + " tracks. Only changed fields are written to every track."
                 + (dlg.manyMode && dlg.mixed.length ? " Empty fields marked “mixed” differ between them and stay as they are." : "")
             color: Theme.textDim
             wrapMode: Text.WordWrap
@@ -298,7 +298,7 @@ Dialog {
                     Text { textFormat: Text.PlainText; width: parent.width; elide: Text.ElideRight; text: modelData.title + " · " + modelData.artist; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); font.weight: Font.DemiBold }
                     Text {
                         textFormat: Text.PlainText; width: parent.width; elide: Text.ElideRight
-                        text: [modelData.year, modelData.country, modelData.format, modelData.tracks + " tracks", modelData.label].filter(function (x) { return x }).join("  ·  ")
+                        text: [modelData.year, modelData.country, modelData.format, Theme.num(modelData.tracks) + " tracks", modelData.label].filter(function (x) { return x }).join("  ·  ")
                         color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11)
                     }
                 }
@@ -319,7 +319,7 @@ Dialog {
             objectName: "mbTrackTitles"
             visible: dlg.trackTags.length > 0
             checked: true
-            text: "Also set each song's title and number from MusicBrainz (" + dlg.trackTags.length + " songs)"
+            text: "Also set each song's title and number from MusicBrainz (" + Theme.num(dlg.trackTags.length) + " songs)"
         }
         RowLayout {
             Layout.fillWidth: true

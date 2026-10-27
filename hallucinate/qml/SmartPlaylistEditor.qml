@@ -211,7 +211,7 @@ Dialog {
             wrapMode: Text.WordWrap
             readonly property int matches: dlg.matches
             text: matches < 0 ? userLib.describeRules(dlg.rulesJson)
-                              : userLib.describeRules(dlg.rulesJson) + " — " + matches + (matches === 1 ? " song now" : " songs now")
+                              : userLib.describeRules(dlg.rulesJson) + " — " + Theme.num(matches) + (matches === 1 ? " song now" : " songs now")
             color: matches < 0 ? Theme.error : Theme.textDim
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize(13)

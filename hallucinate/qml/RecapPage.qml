@@ -21,7 +21,7 @@ Item {
         if (seconds >= 3600 * 1.5) return { n: Math.round(seconds / 3600), u: "hours" }
         return { n: Math.round(seconds / 60), u: "minutes" }
     }
-    function plural(n, one, many) { return n + " " + (n === 1 ? one : many) }
+    function plural(n, one, many) { return Theme.num(n) + " " + (n === 1 ? one : many) }
     function peakHour() {
         var h = rc.hours || [], best = -1, at = 0
         for (var i = 0; i < h.length; i++) if (h[i] > best) { best = h[i]; at = i }

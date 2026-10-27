@@ -35,7 +35,7 @@ Item {
     property bool allSongs: false
 
     function fmtDate(ts) { return ts > 0 ? Qt.formatDate(new Date(ts * 1000), "d MMM yyyy") : "" }
-    function plural(n, one, many) { return n + " " + (n === 1 ? one : many) }
+    function plural(n, one, many) { return Theme.num(n) + " " + (n === 1 ? one : many) }
     function yearsActive() {
         var a = profile.firstYear || 0, b = profile.lastYear || 0
         return a && b ? (a === b ? String(a) : a + "–" + b) : ""
@@ -519,7 +519,7 @@ Item {
                                         albumKey: modelData.album_key
                                         title: modelData.album
                                         artist: page.artistName
-                                        subtitle: modelData.n + (modelData.n === 1 ? " song" : " songs") + "  ·  " + modelData.durText
+                                        subtitle: Theme.num(modelData.n) + (modelData.n === 1 ? " song" : " songs") + "  ·  " + modelData.durText
                                         artUrl: modelData.artUrl
                                     }
                                 }
@@ -611,7 +611,7 @@ Item {
                                 selectionSource: similarBox.have.slice(0, 12)
                                 cardWidth: 130
                                 name: modelData.name
-                                subtitle: modelData.albums + (modelData.albums === 1 ? " album" : " albums")
+                                subtitle: Theme.num(modelData.albums) + (modelData.albums === 1 ? " album" : " albums")
                                 artUrl: modelData.artUrl || ""
                             }
                         }
@@ -657,7 +657,7 @@ Item {
                             font.pixelSize: Theme.fontSize(13)
                             font.weight: Font.DemiBold
                             LinkArea {
-                                name: page.allSongs ? "Hide all songs" : "Show all " + page.tracksModel.count + " songs"
+                                name: page.allSongs ? "Hide all songs" : "Show all " + Theme.num(page.tracksModel.count) + " songs"
                                 onClicked: page.allSongs = !page.allSongs
                             }
                         }

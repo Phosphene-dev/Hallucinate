@@ -289,7 +289,7 @@ Item {
                                     var p = Selection.songPaths()
                                     userLib.setLikedPaths(p, true)
                                     Selection.clear()
-                                    Nav.notify(p.length + (p.length === 1 ? " song" : " songs") + " liked")
+                                    Nav.notify(Theme.num(p.length) + (p.length === 1 ? " song" : " songs") + " liked")
                                     drop.accept()
                                 }
                             }

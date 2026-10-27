@@ -3,6 +3,63 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.6.0] - 2026-10-27
+
+Select anything, from anywhere: songs, albums, artists, genres, composers, playlists, queue entries, history,
+folders, episodes and stations, with Ctrl/Shift+click, Ctrl+A, Shift+arrows or a drag of the mouse. Plus the
+tester's fourth round of fixes and requests.
+
+### Added
+- One selection for the whole app. Ctrl+click adds or removes an item, Shift+click takes everything between,
+  Ctrl+A takes the whole list, Shift+arrow keys extend it, Ctrl+Space toggles the focused item, and Esc clears it
+  (with Undo). A selection gathers across pages: pick songs on one artist page and albums on another, then act on
+  them all at once.
+- Drag with the mouse across a list to select what you pass over. Start the drag on something already selected
+  and you carry the whole selection instead: drop it on a playlist or Liked Songs in the sidebar, or on the queue.
+- One selection bar with each kind's own actions: play, play next, add to the queue or a playlist, like,
+  remove from a playlist or the history, delete playlists, remove queue entries or play them next, and the
+  same for episodes and stations. Right-clicking a selected item opens the menu for the whole selection.
+- Add to playlist menus tick the playlists a song is already in, and show "(2 of 5)" when some of the selection
+  is there. Choosing a ticked playlist takes the songs out again (#101).
+- The sidebar's playlists can be sorted: by name either way, newest or oldest, recently added to, most songs,
+  or your own order (right-click → Move up / Move down) (#103).
+- The mouse wheel can move Home's album shelves (#105): Shift+wheel always does, and Settings → Appearance →
+  "Wheel over a row of albums" can make the plain wheel move the row first and the page at its end. Back and
+  forward buttons show over a shelf while the pointer is on it (can be switched off). Search results and Stats
+  rows too.
+- Right-clicking Hallucinate in a dock or taskbar offers Play/Pause, Next, Previous, Mini Player and Quit, as
+  the tray menu does (#106). The actions start Hallucinate when it isn't running. `hallucinate --mini-player`
+  and `hallucinate --quit` join `--play-pause` and friends.
+- Large numbers are grouped: 12,345 songs (#107). Settings → Appearance → Numbers chooses how: as your language
+  writes them (the default), 12,345, 12.345, 12 345 or 12345.
+- Settings → Playback → Output sample rate, for the signal path: find out from PipeWire (the default), the
+  output follows each song's rate, or it's fixed at the device's rate.
+- Settings → Library → Playlists and selecting: what to do with songs already in a playlist (leave them out,
+  ask, or add them again), the sidebar's playlist order, whether a selection stays after you act on it, and
+  whether dragging across a list selects.
+- Keyboard access to the genres list, history rows, radio stations and folder tiles.
+
+### Fixed
+- A song could be added to a playlist it was already in (#100). Songs already there are now left out and you're
+  told how many; a setting can ask each time or add them anyway.
+- History and Recap said "Not in library" for songs you have (#104): listens imported from Last.fm or
+  ListenBrainz before the library was scanned, and plays of a folder removed and added again (which the Flatpak
+  gives a new path) now find their songs by artist and title after every scan. A play's likes, ratings, play
+  count and playlist places come with it.
+- Searching for a title made only of symbols (such as "!!!" or "÷") found nothing (#102).
+- The signal path called a 44.1 kHz song "Processed" on a 48 kHz output even when PipeWire switches the output
+  to 44.1 kHz. It now reads PipeWire's allowed rates (the live setting, or your `pipewire.conf.d`) and says when
+  PipeWire switches. Steps that leave the sound alone are now shown in the accent colour, as "Untouched" is,
+  and steps that change it in grey.
+- Settings: clicking the last two entries of the jump list didn't light them up, because the page can't scroll
+  far enough to bring them to the top (#99).
+- Show in folder in the Flatpak (#95): when the file manager won't select the file, it opens the folder instead.
+- Ctrl+click on an artist page's songs didn't select them.
+
+### Changed
+- The Flatpak can read `~/.config/pipewire` (read-only), for the signal path's sample rates.
+- History follows the library: it re-reads when songs come and go.
+
 ## [1.5.1] - 2026-10-26
 
 Hallucinate for more Linux distributions: a .deb, an .rpm and a Nix flake.

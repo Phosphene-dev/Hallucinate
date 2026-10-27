@@ -51,7 +51,7 @@ Item {
                     width: parent.width
                     wrapMode: Text.WordWrap
                     visible: library.trackCount > 0
-                    text: [library.albumCount + " albums", library.trackCount + " songs", library.artistCount + " artists",
+                    text: [Theme.num(library.albumCount) + " albums", Theme.num(library.trackCount) + " songs", Theme.num(library.artistCount) + " artists",
                            page.facts.seconds ? Theme.fmtHours(page.facts.seconds) + " of music" : ""].filter(s => s).join("  ·  ")
                     color: Theme.textDim
                     font.family: Theme.fontFamily

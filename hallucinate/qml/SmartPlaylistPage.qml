@@ -59,7 +59,7 @@ Item {
                     width: parent.width
                     elide: Text.ElideRight
                     objectName: "smartCount"
-                    text: list.count + (list.count === 1 ? " song" : " songs") + " · " + page.info.summary
+                    text: Theme.num(list.count) + (list.count === 1 ? " song" : " songs") + " · " + page.info.summary
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
                 }
                 Row {

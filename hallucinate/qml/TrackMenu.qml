@@ -20,7 +20,7 @@ Menu {
     // a song on a music server: no file here to show, edit or put in the trash
     readonly property bool onServer: paths.some(function (p) { return /^(subsonic|jellyfin):\/\//.test(p) })
     property var copies: ({ servers: 0, kept: 0, waiting: 0 })  // songs from a music server, kept here or not
-    readonly property string what: single ? "“" + trackTitle + "”" : paths.length + " songs"
+    readonly property string what: single ? "“" + trackTitle + "”" : Theme.num(paths.length) + " songs"
 
     function show(p, t, c, i) {
         path = p; trackTitle = t; context = c; index = i; paths = [p]
@@ -46,7 +46,7 @@ Menu {
         if (pid < 0 || !rows.length) return
         var removed = rows.map(function (i) { return model.get(i).path })
         rows.forEach(function (i) { userLib.removeFromPlaylist(i) })
-        Nav.notifyAction(rows.length === 1 ? "Removed from the playlist" : rows.length + " songs removed from the playlist",
+        Nav.notifyAction(rows.length === 1 ? "Removed from the playlist" : Theme.num(rows.length) + " songs removed from the playlist",
                          "Undo", function () {
             userLib.addPathsToPlaylist(pid, removed)  // back at the end...
             if (userLib.currentPlaylist !== pid) return
@@ -133,7 +133,7 @@ Menu {
                 readonly property int have: plMenu.held[String(id)] || 0
                 readonly property bool full: have > 0 && have >= songMenu.paths.length
                 checkable: true
-                text: Theme.plain(name) + (have > 0 && !full ? "  (" + have + " of " + songMenu.paths.length + ")" : "")
+                text: Theme.plain(name) + (have > 0 && !full ? "  (" + Theme.num(have) + " of " + songMenu.paths.length + ")" : "")
                 onTriggered: {
                     var p = songMenu.paths.slice(), w = songMenu.what
                     songMenu.done("")

@@ -50,7 +50,7 @@ Item {
     }
     function listening() {
         if (!notes.plays) return "Not played yet"
-        var s = notes.plays + (notes.plays === 1 ? " play" : " plays")
+        var s = Theme.num(notes.plays) + (notes.plays === 1 ? " play" : " plays")
         if (notes.firstPlayed) s += "  ·  first " + fmtDate(notes.firstPlayed)
         if (notes.lastPlayed) s += "  ·  last " + fmtDate(notes.lastPlayed)
         return s
@@ -243,7 +243,7 @@ Item {
                         Note { label: "Size"; value: page.notes.bytes ? Theme.fmtBytes(page.notes.bytes) : "" }
                         Note { label: "Added"; value: page.fmtDate(page.notes.added || 0) }
                         Note { objectName: "albumListening"; label: "Your listening"; value: page.listening() }
-                        Note { label: "Liked"; value: page.notes.liked ? page.notes.liked + (page.notes.liked === 1 ? " song" : " songs") : "" }
+                        Note { label: "Liked"; value: page.notes.liked ? Theme.num(page.notes.liked) + (page.notes.liked === 1 ? " song" : " songs") : "" }
                     }
                 }
             }

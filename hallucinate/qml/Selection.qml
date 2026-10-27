@@ -168,7 +168,7 @@ QtObject {
             var n = countOf(order[i])
             if (n) parts.push(n + " " + nouns[order[i]][n === 1 ? 0 : 1])
         }
-        if (tight && parts.length > 1) return count + " items"
+        if (tight && parts.length > 1) return Theme.num(count) + " items"
         return parts.join(", ")
     }
 }

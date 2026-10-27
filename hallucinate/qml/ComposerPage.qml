@@ -32,7 +32,7 @@ Item {
         out.push(n)
         return out
     }
-    function plural(n, one, many) { return n + " " + (n === 1 ? one : many) }
+    function plural(n, one, many) { return Theme.num(n) + " " + (n === 1 ? one : many) }
     // a movement as it's usually written: "III. Allegro", else the song's own title
     function movementTitle(t) {
         if (!t.movement) return t.title

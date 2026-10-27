@@ -38,7 +38,7 @@ Item {
         showingSongs = true
         songList.positionViewAtBeginning()
     }
-    function plural(n, one, many) { return n + " " + (n === 1 ? one : many) }
+    function plural(n, one, many) { return Theme.num(n) + " " + (n === 1 ? one : many) }
 
     // ---- the genres --------------------------------------------------------------------------------------------
     Item {
@@ -60,7 +60,7 @@ Item {
         Text {
             textFormat: Text.PlainText
             anchors { left: title.right; leftMargin: 10; baseline: title.baseline }
-            text: library.genreModel.count > 0 ? library.genreModel.count : ""
+            text: library.genreModel.count > 0 ? Theme.num(library.genreModel.count) : ""
             color: Theme.textDim
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize(14)

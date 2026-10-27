@@ -2,6 +2,14 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "1.6.0": [
+        "Select anything, from anywhere: Ctrl+click, Shift+click, Ctrl+A or drag across a list, and gather songs, "
+        "albums and artists from different pages. Drag a selection onto a playlist or the queue.",
+        "Add to playlist shows which playlists already have the song (and takes it out again), and the sidebar's "
+        "playlists can be sorted.",
+        "Shift+wheel moves Home's album shelves, a dock or taskbar right-click has the player controls, and big "
+        "numbers read 12,345.",
+    ],
     "1.5.1": [
         "Hallucinate now comes as a .deb for Debian and Ubuntu, an .rpm for Fedora and openSUSE, and a Nix "
         "flake, besides the AppImage and Flatpak.",

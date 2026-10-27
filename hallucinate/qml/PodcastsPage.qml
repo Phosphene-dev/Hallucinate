@@ -116,7 +116,7 @@ Item {
                 }
                 Text {
                     textFormat: Text.PlainText
-                    text: podcasts.busy ? "Checking feeds…" : podcasts.count === 1 ? "1 show" : podcasts.count + " shows"
+                    text: podcasts.busy ? "Checking feeds…" : podcasts.count === 1 ? "1 show" : Theme.num(podcasts.count) + " shows"
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
                 }
             }

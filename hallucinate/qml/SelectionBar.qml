@@ -41,7 +41,7 @@ Rectangle {
     function keysOf(kind) { return Selection.items.filter(function (i) { return i.kind === kind }).map(function (i) { return i.key }) }
     function numbers(kind) { return keysOf(kind).map(function (k) { return parseInt(k) }) }
     function done(message) { Selection.clear(); if (message) Nav.notify(message) }
-    function songs(n) { return n + (n === 1 ? " song" : " songs") }
+    function songs(n) { return Theme.num(n) + (n === 1 ? " song" : " songs") }
     // "3 albums", "12 songs": what the toast says was acted on
     function what() { return Selection.count === 1 && Selection.items[0].title ? "“" + Selection.items[0].title + "”" : Selection.summary(false) }
     function clearWithUndo() {
@@ -168,7 +168,7 @@ Rectangle {
                         onTriggered: {
                             var ids = bar.numbers("history"), n = ids.length
                             userLib.removeHistoryEntries(ids)
-                            bar.done(n === 1 ? "Removed from your history" : n + " plays removed from your history")
+                            bar.done(n === 1 ? "Removed from your history" : Theme.num(n) + " plays removed from your history")
                         }
                     }
                     Item_ {
@@ -275,7 +275,7 @@ Rectangle {
     ConfirmDialog {
         id: deleteDlg
         objectName: "deletePlaylistsDialog"
-        title: Selection.count === 1 ? "Delete this playlist?" : "Delete " + Selection.count + " playlists?"
+        title: Selection.count === 1 ? "Delete this playlist?" : "Delete " + Theme.num(Selection.count) + " playlists?"
         confirmText: "Delete"
         destructive: true
         body: Selection.summary(false) + " will be deleted. The songs in them stay in your library."

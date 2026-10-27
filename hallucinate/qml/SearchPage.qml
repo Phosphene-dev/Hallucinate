@@ -103,7 +103,7 @@ Item {
                         rowIndex: index
                         selectionSource: page.artists
                         name: modelData.name
-                        subtitle: modelData.albums + (modelData.albums === 1 ? " album" : " albums")
+                        subtitle: Theme.num(modelData.albums) + (modelData.albums === 1 ? " album" : " albums")
                         artUrl: modelData.artUrl
                     }
                 }

@@ -220,7 +220,7 @@ Item {
                     Text {
                         textFormat: Text.PlainText
                         anchors { left: decadeLabel.right; leftMargin: 14; baseline: decadeLabel.baseline }
-                        text: parent.row.count + (parent.row.count === 1 ? " album" : " albums")
+                        text: Theme.num(parent.row.count) + (parent.row.count === 1 ? " album" : " albums")
                         color: Theme.textDim
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(13)
@@ -425,8 +425,8 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 width: parent.width
-                                text: modelData.albums + (modelData.albums === 1 ? " album" : " albums") + "  ·  "
-                                      + modelData.tracks + (modelData.tracks === 1 ? " song" : " songs")
+                                text: Theme.num(modelData.albums) + (modelData.albums === 1 ? " album" : " albums") + "  ·  "
+                                      + Theme.num(modelData.tracks) + (modelData.tracks === 1 ? " song" : " songs")
                                 elide: Text.ElideRight
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily

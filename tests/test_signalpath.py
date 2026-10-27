@@ -57,3 +57,47 @@ def test_it_says_why_and_what_would_leave_the_sound_untouched():
     assert "48 kHz" in resample and "44.1 kHz" in resample and "PipeWire" in resample
     assert "80%" in volume and "100%" in volume
     assert describe(FLAC, device_rate=44100)["advice"] == []
+
+
+def test_pipewire_switching_to_the_song_s_rate_is_untouched(tmp_path):
+    """The tester's PipeWire allows 44100 and 48000: a 44.1 kHz FLAC isn't resampled to the 48 kHz the device
+    reports, PipeWire switches the output to it."""
+    from hallucinate import signalpath
+
+    path = describe(FLAC, device_name="DAC", device_rate=48000, rate_follows=True, rate_source="PipeWire")
+    assert path["untouched"] and path["stages"][-1]["detail"] == "DAC  ·  44.1 kHz (switched by PipeWire)"
+    assert "nothing else is playing" in " ".join(path["advice"])
+    fixed = describe(FLAC, device_name="DAC", device_rate=48000)
+    assert not fixed["untouched"] and "Output sample rate" in " ".join(fixed["advice"])
+
+    assert signalpath.output_follows(44100, "follows") and not signalpath.output_follows(44100, "fixed")
+    assert signalpath.output_follows(44100, "auto", frozenset({44100, 48000}))
+    assert not signalpath.output_follows(88200, "auto", frozenset({44100, 48000}))
+    assert not signalpath.output_follows(44100, "auto", frozenset({48000}))  # one rate: it never switches
+
+
+def test_allowed_rates_from_pipewire(tmp_path):
+    from hallucinate import signalpath
+
+    runtime = tmp_path / "run"
+    runtime.mkdir()
+    env = {"HOME": str(tmp_path), "XDG_RUNTIME_DIR": str(runtime)}
+
+    class Done:
+        def __init__(self, out):
+            self.stdout = out
+
+    def no_tool(*_a, **_k):
+        raise FileNotFoundError("pw-metadata")
+
+    assert signalpath.pipewire_allowed_rates(env, run=no_tool) == frozenset()  # PipeWire isn't running
+    (runtime / "pipewire-0").write_text("")
+    assert signalpath.pipewire_allowed_rates(env, run=no_tool) == frozenset()  # nothing set: one rate
+    live = "Found \"settings\" metadata 31\nupdate: id:0 key:'clock.allowed-rates' value:'[ 44100 48000 96000 ]' type:''\n"
+    assert signalpath.pipewire_allowed_rates(env, run=lambda *_a, **_k: Done(live)) == {44100, 48000, 96000}
+    conf = tmp_path / ".config" / "pipewire" / "pipewire.conf.d"
+    conf.mkdir(parents=True)
+    (conf / "10-rates.conf").write_text(
+        "context.properties = {\n  # default.clock.allowed-rates = [ 48000 ]\n"
+        "  default.clock.allowed-rates = [ 44100, 48000, 88200, 96000 ]\n}\n")
+    assert signalpath.pipewire_allowed_rates(env, run=no_tool) == {44100, 48000, 88200, 96000}

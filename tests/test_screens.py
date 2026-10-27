@@ -2206,3 +2206,37 @@ def test_every_kind_of_selection_comes_down_to_its_songs(qapp, app_window):
     assert paths([{"kind": "song", "key": blue[0]}, {"kind": "album", "key": "k1"}, {"kind": "playlist", "key": "999"}]) == blue
     assert paths([{"kind": "history", "key": "1", "path": aurora[2]}, {"kind": "queue", "key": "0", "path": aurora[2]}]) == [aurora[2]]
     assert paths([]) == []
+
+
+def test_counts_are_written_with_thousands_separators(qapp, app_window):
+    """Issue 107: counts in the thousands are grouped, as your language writes them or as chosen."""
+    import pathlib
+
+    from PySide6.QtQml import QQmlComponent, qmlEngine
+
+    import hallucinate
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    qml_dir = pathlib.Path(hallucinate.__file__).parent / "qml"
+    comp = QQmlComponent(qmlEngine(window))
+    comp.setData(b'import QtQuick\nimport "." \nQtObject { function num(n, d) { return Theme.num(n, d) } }',
+                 QUrl.fromLocalFile(str(qml_dir / "NumProbe.qml")))
+    probe = comp.create()
+    assert probe is not None, comp.errorString()
+
+    def num(n, d=0):
+        return QMetaObject.invokeMethod(probe, "num", Q_RETURN_ARG("QVariant"), Q_ARG("QVariant", n), Q_ARG("QVariant", d))
+
+    expected = {"comma": ("12,345", "1,234,567", "999", "12.5"), "period": ("12.345", "1.234.567", "999", "12,5"),
+                "space": ("12\u202f345", "1\u202f234\u202f567", "999", "12.5"), "none": ("12345", "1234567", "999", "12.5")}
+    try:
+        for fmt, (a, b, c, d) in expected.items():
+            shell.setUiValue("numberFormat", fmt)
+            qapp.processEvents()
+            assert (num(12345), num(1234567), num(999), num(12.5, 1)) == (a, b, c, d), fmt
+        shell.setUiValue("numberFormat", "locale")
+        assert num(12345) and num(None) == ""
+    finally:
+        shell.setUiValue("numberFormat", "locale")
+    assert not warnings, warnings[:3]

@@ -121,7 +121,7 @@ Item {
                         // from the keyboard: Tab to it, Enter opens it, the Menu key its menu
                         activeFocusOnTab: true
                         Accessible.role: Accessible.Button
-                        Accessible.name: "Open " + tile.modelData.name + ", " + tile.modelData.songs + (tile.modelData.songs === 1 ? " song" : " songs")
+                        Accessible.name: "Open " + tile.modelData.name + ", " + Theme.num(tile.modelData.songs) + (tile.modelData.songs === 1 ? " song" : " songs")
                         Accessible.selected: folderPick.selected
                         Accessible.onPressAction: page.path = tile.modelData.path
                         Keys.onShortcutOverride: function (event) { event.accepted = [Qt.Key_Space, Qt.Key_Return, Qt.Key_Enter].indexOf(event.key) >= 0 || ((event.modifiers & Qt.ControlModifier) && (event.key === Qt.Key_A || event.key === Qt.Key_Space)) }
@@ -170,7 +170,7 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 width: parent.width
-                                text: tile.modelData.songs + (tile.modelData.songs === 1 ? " song" : " songs") + "  ·  " + tile.modelData.durText
+                                text: Theme.num(tile.modelData.songs) + (tile.modelData.songs === 1 ? " song" : " songs") + "  ·  " + tile.modelData.durText
                                 color: Theme.textDim
                                 elide: Text.ElideRight
                                 font.family: Theme.fontFamily
@@ -212,7 +212,7 @@ Item {
                 width: col.width
                 spacing: 2
                 visible: page.tracks.length > 0
-                SectionHeader { title: "Songs"; subtitle: page.tracks.length + (page.tracks.length === 1 ? " song in this folder" : " songs in this folder") }
+                SectionHeader { title: "Songs"; subtitle: Theme.num(page.tracks.length) + (page.tracks.length === 1 ? " song in this folder" : " songs in this folder") }
                 Item { width: 1; height: 6 }
                 Repeater {
                     model: page.tracks

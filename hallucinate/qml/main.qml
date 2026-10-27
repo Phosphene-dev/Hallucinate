@@ -356,7 +356,7 @@ ApplicationWindow {
                 var paths = many ? Selection.paths.slice() : [path]
                 userLib.setLikedPaths(paths, false)
                 if (many) Selection.clear()
-                Nav.notifyAction(paths.length === 1 ? "Removed from Liked Songs" : paths.length + " songs removed from Liked Songs",
+                Nav.notifyAction(paths.length === 1 ? "Removed from Liked Songs" : Theme.num(paths.length) + " songs removed from Liked Songs",
                                  "Undo", function () { userLib.setLikedPaths(paths, true) })
                 return
             }
@@ -372,7 +372,7 @@ ApplicationWindow {
             if (mode === "ask" && held.length) { dupDlg.ask(pid, name, paths, held, what); return }
             var fresh = paths.filter(function (p) { return held.indexOf(p) < 0 })
             if (fresh.length) userLib.addPathsToPlaylist(pid, fresh)
-            var n = function (k) { return k + (k === 1 ? " song" : " songs") }
+            var n = function (k) { return Theme.num(k) + (k === 1 ? " song" : " songs") }
             var label = fresh.length === paths.length && what ? what : n(fresh.length)
             if (!held.length) { toast.show(label + " added to “" + name + "”"); return }
             var msg = !fresh.length ? (paths.length === 1 ? "Already in “" + name + "”" : "All " + n(paths.length) + " are already in “" + name + "”")
@@ -381,7 +381,7 @@ ApplicationWindow {
         }
         function onRemoveFromPlaylistId(pid, name, paths, what) {
             var removed = userLib.removePathsFromPlaylistId(pid, paths)
-            if (removed) toast.show((what || removed + (removed === 1 ? " song" : " songs")) + " removed from “" + name + "”", 0, "Undo",
+            if (removed) toast.show((what || Theme.num(removed) + (removed === 1 ? " song" : " songs")) + " removed from “" + name + "”", 0, "Undo",
                                     function () { userLib.restorePlaylistRemoval() })
         }
         function onSelectionMenu() { if (Selection.domain === "music") trackMenu.showMany(Selection.songPaths(), "") }
@@ -463,13 +463,13 @@ ApplicationWindow {
         target: userLib
         function onPlayerImported(result) {
             if (result.error) { toast.show(result.error); return }
-            toast.show(result.source + ": matched " + result.matched + " of " + result.songs + " songs · "
-                       + result.plays + " plays, " + result.ratings + " ratings, " + result.playlists + " playlists")
+            toast.show(result.source + ": matched " + Theme.num(result.matched) + " of " + Theme.num(result.songs) + " songs · "
+                       + Theme.num(result.plays) + " plays, " + Theme.num(result.ratings) + " ratings, " + Theme.num(result.playlists) + " playlists")
         }
         function onPlaylistImported(result) {
             if (result.error) { toast.show(result.error); return }
             if (result.id < 0) { toast.show("None of those songs are in your library"); return }
-            toast.show("Imported “" + result.name + "”: " + result.added + (result.added === 1 ? " song" : " songs")
+            toast.show("Imported “" + result.name + "”: " + Theme.num(result.added) + (result.added === 1 ? " song" : " songs")
                        + (result.missing ? ", " + result.missing + " not found in your library" : ""))
             window.openPlaylist(result.id, result.name)
         }
@@ -500,20 +500,20 @@ ApplicationWindow {
         readonly property int fresh: paths.length - held.length
         function ask(p, n, all, h, w) { pid = p; name = n; paths = all; held = h; what = w; again.checked = fresh === 0; open() }
         title: held.length === 1 && paths.length === 1 ? "Already in “" + name + "”"
-                                                       : held.length + " of these are already in “" + name + "”"
+                                                       : Theme.num(held.length) + " of these are already in “" + name + "”"
         body: fresh === 0 ? (paths.length === 1 ? "Add it again?" : "Add them again?")
-                          : fresh + (fresh === 1 ? " song is" : " songs are") + " new to it."
+                          : Theme.num(fresh) + (fresh === 1 ? " song is" : " songs are") + " new to it."
         confirmText: again.checked ? (fresh === 0 ? "Add again" : "Add all " + paths.length) : "Add the " + fresh + " new"
         StyledCheck {
             id: again
             visible: dupDlg.fresh > 0
-            text: "Also add the " + dupDlg.held.length + (dupDlg.held.length === 1 ? " that's" : " that are") + " already there"
+            text: "Also add the " + Theme.num(dupDlg.held.length) + (dupDlg.held.length === 1 ? " that's" : " that are") + " already there"
         }
         onAccepted: {
             var add = again.checked ? paths : paths.filter(function (p) { return held.indexOf(p) < 0 })
             if (!add.length) return
             userLib.addPathsToPlaylist(pid, add)
-            toast.show(add.length + (add.length === 1 ? " song" : " songs") + " added to “" + name + "”")
+            toast.show(Theme.num(add.length) + (add.length === 1 ? " song" : " songs") + " added to “" + name + "”")
         }
     }
     Shortcut {
@@ -616,12 +616,12 @@ ApplicationWindow {
     Connections {
         target: library
         function onAlbumsRemoved(r) {
-            var n = r.albums > 0 ? r.albums + (r.albums === 1 ? " album" : " albums")
-                                 : r.songs + (r.songs === 1 ? " song" : " songs")
+            var n = r.albums > 0 ? Theme.num(r.albums) + (r.albums === 1 ? " album" : " albums")
+                                 : Theme.num(r.songs) + (r.songs === 1 ? " song" : " songs")
             if (r.kind === "hidden") toast.show(n + " removed from the library", 0, "Undo",
                                                 function () { library.unhidePaths(r.paths || []) })
             else if (r.failed && !r.songs) toast.show("Couldn't move the files to the trash")
-            else toast.show(n + " moved to the trash" + (r.failed ? " (" + r.failed + " files couldn't be moved)" : ""))
+            else toast.show(n + " moved to the trash" + (r.failed ? " (" + Theme.num(r.failed) + " files couldn't be moved)" : ""))
             if (r.songs > 0 && stack.currentItem && r.keys.indexOf(stack.currentItem.albumKey) >= 0) {
                 window.goBack()  // its page is gone, so it can't be gone forward to either
                 window.forwardRoutes = window.forwardRoutes.slice(0, -1)
@@ -631,7 +631,7 @@ ApplicationWindow {
 
     Connections {
         target: userLib
-        function onLovesMatched(n) { toast.show(n ? "Liked " + n + (n === 1 ? " song" : " songs") + " you'd loved on Last.fm" : "No new songs to like from your Last.fm loves") }
+        function onLovesMatched(n) { toast.show(n ? "Liked " + Theme.num(n) + (n === 1 ? " song" : " songs") + " you'd loved on Last.fm" : "No new songs to like from your Last.fm loves") }
     }
     Connections {
         target: serverCopies
@@ -850,7 +850,7 @@ ApplicationWindow {
             if (!name.length) return
             if (paths.length) {
                 userLib.addPathsToNewPlaylist(name, paths)
-                toast.show((paths.length === 1 ? "Added to “" : paths.length + " songs added to “") + name + "”")
+                toast.show((paths.length === 1 ? "Added to “" : Theme.num(paths.length) + " songs added to “") + name + "”")
             } else window.openPlaylist(userLib.createPlaylist(name), name)
         }
         TextField {

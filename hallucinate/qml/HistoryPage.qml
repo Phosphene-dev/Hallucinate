@@ -45,7 +45,7 @@ Item {
         if (m < 60) return m + " min"
         return seconds >= 36000 ? Theme.fmtHours(seconds) : Math.floor(m / 60) + " h " + (m % 60) + " min"
     }
-    function plural(n, one, many) { return n + " " + (n === 1 ? one : many) }
+    function plural(n, one, many) { return Theme.num(n) + " " + (n === 1 ? one : many) }
     function sourceName(s) {
         return s === "lastfm" ? "Last.fm" : s === "listenbrainz" ? "ListenBrainz" : s
     }
