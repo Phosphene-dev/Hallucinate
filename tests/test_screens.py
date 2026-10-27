@@ -1796,6 +1796,67 @@ def test_the_mouse_wheel_scrolls_evenly_adds_up_and_takes_hi_res_steps(qapp, app
     assert not warnings, warnings[:3]
 
 
+@pytest.mark.parametrize("app_window", ["varied"], indirect=True)
+def test_the_wheel_over_a_shelf_moves_the_page_or_the_shelf(qapp, app_window):
+    """Issue 105: the wheel over Home's shelves moves the page by default; Shift+wheel, or the "Moves the row"
+    setting, moves the albums sideways; the arrow buttons page through them."""
+    import time
+
+    from PySide6.QtCore import QPoint
+    from PySide6.QtGui import QWheelEvent
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    window.resize(900, 800)
+
+    def settle(ms):
+        end = time.monotonic() + ms / 1000
+        while time.monotonic() < end:
+            qapp.processEvents()
+            time.sleep(0.005)
+
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "home"))
+    settle(400)
+    page = window.findChild(QObject, "pageStack").property("currentItem")
+    items, shelf = [page], None
+    while items and shelf is None:
+        item = items.pop()
+        if ("ListView" in item.metaObject().className() and item.isVisible()  # one that scrolls sideways
+                and item.property("contentWidth") > item.width() + 50 and item.property("contentHeight") <= item.height() + 1):
+            shelf = item
+        items.extend(item.childItems())
+    assert shelf is not None
+    flick = shelf.parentItem()
+    while flick is not None and flick.property("contentY") is None:
+        flick = flick.parentItem()
+    while shelf.mapToScene(QPointF(0, shelf.height())).y() > window.height() - 120:  # bring it into view
+        flick.setProperty("contentY", flick.property("contentY") + 100)
+        settle(20)
+    clock = [50_000]
+
+    def wheel(angle, mods=Qt.KeyboardModifier.NoModifier):
+        shelf.setProperty("contentX", shelf.property("originX"))
+        settle(50)
+        start = shelf.property("contentX")
+        pos = shelf.mapToScene(QPointF(shelf.width() / 2, shelf.height() / 2))
+        clock[0] += 500
+        e = QWheelEvent(pos, pos, QPoint(0, 0), QPoint(0, angle), Qt.MouseButton.NoButton, mods,
+                        Qt.ScrollPhase.NoScrollPhase, False)
+        e.setTimestamp(clock[0])
+        qapp.sendEvent(window, e)
+        settle(400)
+        return shelf.property("contentX") - start
+
+    assert wheel(-120) == 0  # the page's
+    assert wheel(-120, Qt.KeyboardModifier.ShiftModifier) > 100
+    shell.setUiValue("shelfWheel", "row")
+    try:
+        assert wheel(-120) > 100
+    finally:
+        shell.setUiValue("shelfWheel", "page")
+    assert not warnings, warnings[:3]
+
+
 def test_adding_to_a_playlist_from_the_song_album_and_collection_menus(qapp, app_window):
     """Issue 92: the playlist items of a submenu are MenuItems, whose own `menu` (the submenu) hid the menu's id
     of the same name: "Add to playlist" failed with "incompatible arguments" and added nothing."""

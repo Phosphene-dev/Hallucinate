@@ -209,25 +209,29 @@ Item {
                 spacing: 14
                 width: col.width
                 SectionHeader { title: parent.title; subtitle: parent.subtitle }
-                ListView {
-                    WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
-                    id: shelf
+                Item {
                     width: parent.width
                     height: 262
-                    orientation: ListView.Horizontal
-                    spacing: 20
-                    clip: true
-                    boundsBehavior: Flickable.StopAtBounds
-                    delegate: AlbumCard {
-                        albumKey: model.album_key
-                        title: model.album
-                        subtitle: model.album_artist
-                        artist: model.album_artist
-                        artUrl: model.artUrl
-                        note: model.reason || ""
-                        selectionSource: ListView.view ? ListView.view.model : null
-                        rowIndex: index
+                    ListView {
+                        WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
+                        id: shelf
+                        anchors.fill: parent
+                        orientation: ListView.Horizontal
+                        spacing: 20
+                        clip: true
+                        boundsBehavior: Flickable.StopAtBounds
+                        delegate: AlbumCard {
+                            albumKey: model.album_key
+                            title: model.album
+                            subtitle: model.album_artist
+                            artist: model.album_artist
+                            artUrl: model.artUrl
+                            note: model.reason || ""
+                            selectionSource: ListView.view ? ListView.view.model : null
+                            rowIndex: index
+                        }
                     }
+                    ShelfArrows { row: shelf; anchors.fill: parent }
                 }
             }
 

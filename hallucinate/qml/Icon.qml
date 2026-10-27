@@ -89,6 +89,7 @@ Canvas {
         case "remove":  // a circled minus
             ctx.beginPath(); ctx.arc(w*.5, h*.5, w*.36, 0, Math.PI*2); ctx.stroke(); line([.32,.5,.68,.5]); break
         case "back": line([.62,.15,.3,.5,.62,.85]); break
+        case "forward": line([.38,.15,.7,.5,.38,.85]); break
         case "home":
             line([.12,.48,.5,.14,.88,.48]); line([.22,.4,.22,.86,.78,.86,.78,.4]); line([.42,.86,.42,.62,.58,.62,.58,.86]); break
         case "album":  // a record

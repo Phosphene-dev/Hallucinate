@@ -117,7 +117,7 @@ Item {
             id: sec_appearance
             objectName: "settings_appearance"
             title: "Appearance"
-            keywords: "theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
+            keywords: "shelf shelves row rows sideways wheel tilt arrows theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
             query: page.query
             Row {
                 spacing: 12
@@ -309,6 +309,32 @@ Item {
                         onActivated: function (i) { shell.setScrollSpeed(speeds[i]) }
                         Accessible.name: "Scroll speed (mouse wheel)"
                     }
+                }
+                Row {
+                    spacing: 12
+                    Text { textFormat: Text.PlainText; text: "Wheel over a row of albums"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }
+                    StyledCombo {
+                        objectName: "shelfWheel"
+                        width: 260
+                        readonly property var modes: ["page", "row"]
+                        model: ["Scrolls the page", "Moves the row, then the page"]
+                        selection: shell.ui.shelfWheel === "row" ? 1 : 0
+                        onActivated: function (i) { shell.setUiValue("shelfWheel", modes[i]) }
+                        Accessible.name: "Mouse wheel over a row of albums"
+                    }
+                }
+                StyledCheck {
+                    objectName: "shelfArrows"
+                    text: "Show back and forward buttons on rows of albums"
+                    checked: shell.ui.shelfArrows !== "false"
+                    onToggled: shell.setUiValue("shelfArrows", checked ? "true" : "false")
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: "Rows that scroll sideways (Home's shelves, search results) also move with Shift+wheel, a tilting wheel or a touchpad swipe."
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
                 StyledCheck {
                     text: "Show audio format and average bitrate on tracks"

@@ -223,25 +223,29 @@ Item {
                 visible: userLib.recentPlayed.count > 0
                 title: "Recently played"
             }
-            ListView {
-                WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
+            Item {
                 visible: userLib.recentPlayed.count > 0
-                width: parent.width
-                height: 248
-                orientation: ListView.Horizontal
-                spacing: 20
-                clip: true
-                model: userLib.recentPlayed
-                boundsBehavior: Flickable.StopAtBounds
-                delegate: AlbumCard {
-                    selectionSource: userLib.recentPlayed
-                    rowIndex: index
-                    albumKey: model.album_key
-                    title: model.album
-                    subtitle: model.album_artist
-                    artist: model.album_artist
-                    artUrl: model.artUrl
+                width: parent.width; height: 248
+                ListView {
+                    id: recentRow
+                    WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
+                    anchors.fill: parent
+                    orientation: ListView.Horizontal
+                    spacing: 20
+                    clip: true
+                    model: userLib.recentPlayed
+                    boundsBehavior: Flickable.StopAtBounds
+                    delegate: AlbumCard {
+                        selectionSource: userLib.recentPlayed
+                        rowIndex: index
+                        albumKey: model.album_key
+                        title: model.album
+                        subtitle: model.album_artist
+                        artist: model.album_artist
+                        artUrl: model.artUrl
+                    }
                 }
+                ShelfArrows { row: recentRow; what: "albums"; anchors.fill: parent }
             }
 
             SectionHeader {

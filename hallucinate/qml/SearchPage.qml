@@ -86,23 +86,28 @@ Item {
                 text: "Artists"
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
-            ListView {
-                WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
+            Item {
                 visible: page.artists.length > 0
                 width: parent.width; height: 210
-                orientation: ListView.Horizontal
-                spacing: 18; clip: true
-                boundsBehavior: Flickable.StopAtBounds
-                model: page.artists
-                delegate: ArtistCard {
-                    required property var modelData
-                    required property int index
-                    rowIndex: index
-                    selectionSource: page.artists
-                    name: modelData.name
-                    subtitle: modelData.albums + (modelData.albums === 1 ? " album" : " albums")
-                    artUrl: modelData.artUrl
+                ListView {
+                    id: artistRow
+                    WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
+                    anchors.fill: parent
+                    orientation: ListView.Horizontal
+                    spacing: 18; clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    model: page.artists
+                    delegate: ArtistCard {
+                        required property var modelData
+                        required property int index
+                        rowIndex: index
+                        selectionSource: page.artists
+                        name: modelData.name
+                        subtitle: modelData.albums + (modelData.albums === 1 ? " album" : " albums")
+                        artUrl: modelData.artUrl
+                    }
                 }
+                ShelfArrows { row: artistRow; what: "artists"; anchors.fill: parent }
             }
 
             Text {
@@ -157,25 +162,30 @@ Item {
                 text: "Albums"
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
-            ListView {
-                WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
+            Item {
                 visible: page.albums.length > 0
                 width: parent.width; height: 240
-                orientation: ListView.Horizontal
-                spacing: 18; clip: true
-                boundsBehavior: Flickable.StopAtBounds
-                model: page.albums
-                delegate: AlbumCard {
-                    required property var modelData
-                    required property int index
-                    albumKey: modelData.album_key
-                    title: modelData.album
-                    subtitle: modelData.album_artist || ""
-                    artist: modelData.album_artist || ""
-                    artUrl: modelData.artUrl
-                    selectionSource: page.albums
-                    rowIndex: index
+                ListView {
+                    id: albumRow
+                    WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
+                    anchors.fill: parent
+                    orientation: ListView.Horizontal
+                    spacing: 18; clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    model: page.albums
+                    delegate: AlbumCard {
+                        required property var modelData
+                        required property int index
+                        albumKey: modelData.album_key
+                        title: modelData.album
+                        subtitle: modelData.album_artist || ""
+                        artist: modelData.album_artist || ""
+                        artUrl: modelData.artUrl
+                        selectionSource: page.albums
+                        rowIndex: index
+                    }
                 }
+                ShelfArrows { row: albumRow; what: "albums"; anchors.fill: parent }
             }
 
             Row {
