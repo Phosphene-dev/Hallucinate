@@ -216,6 +216,9 @@ Item {
                         WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
                         id: shelf
                         anchors.fill: parent
+                        // room around the cards for a hovered cover's lift and glow, which the clip would cut off (#110)
+                        anchors.topMargin: -14; anchors.leftMargin: -14; anchors.rightMargin: -14
+                        topMargin: 14; leftMargin: 14; rightMargin: 14
                         orientation: ListView.Horizontal
                         spacing: 20
                         clip: true

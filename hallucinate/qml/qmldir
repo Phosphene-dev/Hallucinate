@@ -3,3 +3,4 @@ singleton Nav 1.0 Nav.qml
 singleton Selection 1.0 Selection.qml
 singleton Rows 1.0 Rows.qml
 singleton PickDrag 1.0 PickDrag.qml
+singleton WheelLatch 1.0 WheelLatch.qml

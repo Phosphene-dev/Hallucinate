@@ -11,6 +11,7 @@ import argparse
 import base64
 import datetime
 import html
+import json
 import os
 import re
 import shutil
@@ -112,7 +113,27 @@ def flatpak_files(out, repo):
     return True
 
 
-def build(out, flatpak_repo=None):
+def newest_with(pattern, releases=None):
+    """The newest release with an asset whose name matches `pattern`, as (its page, {name: download URL}), or
+    None. Point releases carry only the AppImage, Flatpak and Windows builds; macOS and the .deb/.rpm come with
+    the bigger ones, so their links go to the newest release that has them, not to "latest"."""
+    if releases is None:
+        try:
+            r = subprocess.run(["gh", "api", "repos/Phosphene-dev/Hallucinate/releases?per_page=30"],
+                               capture_output=True, text=True, timeout=60, check=True)
+            releases = json.loads(r.stdout)
+        except (OSError, subprocess.SubprocessError, ValueError):
+            return None
+    for rel in releases:
+        if rel.get("draft") or rel.get("prerelease"):
+            continue
+        assets = {a.get("name", ""): a.get("browser_download_url", "") for a in rel.get("assets") or []}
+        if any(re.fullmatch(pattern, name) for name in assets):
+            return rel.get("html_url", f"{REPO}/releases"), assets
+    return None
+
+
+def build(out, flatpak_repo=None, releases=None):
     out = Path(out)
     if out.exists():
         shutil.rmtree(out)
@@ -130,6 +151,10 @@ def build(out, flatpak_repo=None):
         "VERSION": version, "RELEASE_DATE": pretty_date(date), "CHANGES": render_changes(changes),
         "WAVE": wave, "REPO": REPO, "RELEASES": f"{REPO}/releases", "SITE_URL": SITE_URL,
     }
+    mac = newest_with(r"Hallucinate-macos-arm64\.zip", releases)
+    values["MAC_URL"] = mac[1]["Hallucinate-macos-arm64.zip"] if mac else f"{REPO}/releases/latest/download/Hallucinate-macos-arm64.zip"
+    packages = newest_with(r"hallucinate.*\.(deb|rpm)", releases)
+    values["PACKAGES_URL"] = packages[0] if packages else f"{REPO}/releases/latest"
     if flatpak_files(out, flatpak_repo):
         values["LINUX_MORE"] = (
             'Prefer Flatpak? <a href="hallucinate.flatpakref">Install it from our signed repository</a> and it '

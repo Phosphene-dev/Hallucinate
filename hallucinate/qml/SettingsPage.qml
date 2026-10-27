@@ -117,7 +117,7 @@ Item {
             id: sec_appearance
             objectName: "settings_appearance"
             title: "Appearance"
-            keywords: "numbers thousands separator comma commas digits shelf shelves row rows sideways wheel tilt arrows theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
+            keywords: "marquee scroll scrolling long title titles ticker numbers thousands separator comma commas digits shelf shelves row rows sideways wheel tilt arrows theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
             query: page.query
             Row {
                 spacing: 12
@@ -316,11 +316,24 @@ Item {
                     StyledCombo {
                         objectName: "shelfWheel"
                         width: 260
-                        readonly property var modes: ["page", "row"]
-                        model: ["Scrolls the page", "Moves the row, then the page"]
-                        selection: shell.ui.shelfWheel === "row" ? 1 : 0
+                        readonly property var modes: ["auto", "row", "page"]
+                        model: ["Moves the row (a page scroll carries on past it)", "Always moves the row, then the page", "Scrolls the page"]
+                        selection: Math.max(0, modes.indexOf(shell.ui.shelfWheel || "auto"))
                         onActivated: function (i) { shell.setUiValue("shelfWheel", modes[i]) }
                         Accessible.name: "Mouse wheel over a row of albums"
+                    }
+                }
+                Row {
+                    spacing: 12
+                    Text { textFormat: Text.PlainText; text: "Long song titles"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }
+                    StyledCombo {
+                        objectName: "marquee"
+                        width: 260
+                        readonly property var modes: ["playing", "hover", "off"]
+                        model: ["Scroll while playing", "Scroll when pointed at", "Don't scroll (end in …)"]
+                        selection: Math.max(0, modes.indexOf(shell.ui.marquee || "playing"))
+                        onActivated: function (i) { shell.setUiValue("marquee", modes[i]) }
+                        Accessible.name: "Long song titles in the player bar and mini player"
                     }
                 }
                 Row {
@@ -347,7 +360,7 @@ Item {
                     textFormat: Text.PlainText
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    text: "Rows that scroll sideways (Home's shelves, search results) also move with Shift+wheel, a tilting wheel or a touchpad swipe."
+                    text: "Rows that scroll sideways (Home's shelves, search results) always move with Shift+wheel, a tilting wheel or a touchpad swipe. Scrolling down the page doesn't stop at each row: a row takes the wheel when you start turning it over the row."
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
                 StyledCheck {

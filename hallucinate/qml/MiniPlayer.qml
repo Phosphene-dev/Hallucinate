@@ -35,12 +35,12 @@ Window {
     ColumnLayout {
         anchors { left: art.right; leftMargin: 12; right: parent.right; rightMargin: 12; top: parent.top; topMargin: 12; bottom: parent.bottom; bottomMargin: 10 }
         spacing: 2
-        Text {
-            textFormat: Text.PlainText
+        MarqueeText {  // a long title glides to its end and back while it plays (#112)
+            objectName: "miniTitle"
             Layout.fillWidth: true
             text: player.hasTrack ? player.current.title : "Nothing playing"
+            active: player.playing
             color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
-            elide: Text.ElideRight
         }
         Text {
             textFormat: Text.PlainText

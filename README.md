@@ -19,7 +19,7 @@
 <h3 align="center">
   <a href="https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-windows-x64-setup.exe">⬇ Windows</a> &nbsp;·&nbsp;
   <a href="https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-x86_64.AppImage">⬇ Linux (AppImage)</a> &nbsp;·&nbsp;
-  <a href="https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-macos-arm64.zip">⬇ macOS (Apple silicon)</a>
+  <a href="https://github.com/Phosphene-dev/Hallucinate/releases/download/v1.6.0/Hallucinate-macos-arm64.zip">⬇ macOS (Apple silicon)</a>
 </h3>
 <p align="center">
   <a href="https://phosphene-dev.github.io/Hallucinate/"><b>Website</b></a> · Flatpak, Arch (AUR) and pip: see <a href="#install">Install</a> · <a href="https://github.com/Phosphene-dev/Hallucinate/releases">all releases</a> · <a href="CHANGELOG.md">what's new</a>
@@ -223,9 +223,9 @@ chmod +x Hallucinate-x86_64.AppImage && ./Hallucinate-x86_64.AppImage
 Bundles Python, PySide6 and the Qt Multimedia FFmpeg backend. Build it yourself with `packaging/appimage/build.sh`.
 
 ### Debian, Ubuntu and Fedora (.deb, .rpm)
-Each release has a `.deb` (Debian 12+, Ubuntu 22.04+, Mint, Pop!_OS…) and an `.rpm` (Fedora, openSUSE…). They
+Major releases have a `.deb` (Debian 12+, Ubuntu 22.04+, Mint, Pop!_OS…) and an `.rpm` (Fedora, openSUSE…). They
 hold the same bundled Python and Qt as the AppImage, installed under `/opt/hallucinate`, with a `hallucinate`
-command, a menu entry and icons. Download them from [Releases](https://github.com/Phosphene-dev/Hallucinate/releases/latest), then:
+command, a menu entry and icons. Download them from the newest [release](https://github.com/Phosphene-dev/Hallucinate/releases) that has them, then:
 ```sh
 sudo apt install ./hallucinate_*_amd64.deb        # Debian, Ubuntu
 sudo dnf install ./hallucinate-*.x86_64.rpm       # Fedora
@@ -259,8 +259,8 @@ directories. To build it yourself, and how the repository is published:
 [packaging/flatpak/README.md](packaging/flatpak/README.md).
 
 ### macOS
-The release workflow builds a self-contained `.app` zip for the runner's native
-architecture (Apple silicon). Download the [macOS zip](https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-macos-arm64.zip),
+Major releases include a self-contained `.app` zip for Apple silicon (point releases bring the AppImage,
+Flatpak and Windows builds only). Download the [macOS zip](https://github.com/Phosphene-dev/Hallucinate/releases/download/v1.6.0/Hallucinate-macos-arm64.zip),
 unzip it, and move `Hallucinate.app` to Applications. The build isn't signed or
 notarized by Apple, so the first launch is blocked ("Apple could not verify…"). Open it once anyway in
 **System Settings → Privacy & Security → Open Anyway**, or from a terminal:

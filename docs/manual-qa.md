@@ -1,5 +1,15 @@
 # Manual QA checklist
 
+## Release testing for 1.6.1
+
+- [ ] Home: drag a shelf sideways with the mouse; turn the wheel over a shelf (it moves); scroll down the page
+      from above the shelves (the page keeps going).
+- [ ] Point at an album on Home: its cover lifts without being cut off at the top.
+- [ ] Select songs in a small and a large window: every action is in the bar or under More.
+- [ ] Now Playing in a small window (and with lyrics): nothing runs off the window.
+- [ ] A long song title scrolls in the player bar and mini player while playing, and stops when paused.
+- [ ] Flatpak: Show in folder after saving a recap card and a spectrogram.
+
 ## Release testing for 1.6
 
 - [ ] Ctrl+click songs on one artist page, then albums on another: the bar counts both, and Add to playlist

@@ -64,8 +64,9 @@ def test_a_launcher_someone_else_wrote_is_never_touched(tmp_path):
 
 
 def test_launchers_offer_the_tray_menu_s_actions():
-    """Issue 106: right-clicking Hallucinate in a dock or taskbar offers play/pause, next, previous, the mini
-    player and quit, in the packages' launcher and the AppImage's alike, each a command line the app takes."""
+    """Issue 106: right-clicking Hallucinate in a dock or taskbar offers play/pause, next, previous and the mini
+    player (not Quit: the tray menu keeps that), in the packages' launcher and the AppImage's alike, each a
+    command line the app takes."""
     import configparser
     import pathlib
 
@@ -92,4 +93,5 @@ def test_launchers_offer_the_tray_menu_s_actions():
             assert app.main(args.split()) == 0
         finally:
             app.send_control = monkey
-    assert seen == ["play-pause", "next", "prev", "mini-player", "quit"]
+    assert seen == ["play-pause", "next", "prev", "mini-player"]
+    assert all("Quit" not in text for text in texts)

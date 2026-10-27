@@ -6,8 +6,10 @@ import "."
 // wheels (a Logitech G502 X sends a notch as eight small steps) less than half as far. Here every notch, or its
 // share of one, moves the same distance (Settings → Appearance → Scroll speed), quick notches add up, and
 // touchpads keep Qt's own smooth, flickable scrolling.
-// In a row that scrolls sideways (Home's shelves) Shift+wheel, or a tilt wheel, moves the row; the plain wheel
-// moves the page, or the row first (Settings → Appearance → "Mouse wheel over a row of albums").
+// In a row that scrolls sideways (Home's shelves) Shift+wheel, or a tilt wheel, moves the row. The plain wheel
+// (Settings → Appearance → "Wheel over a row of albums"): moves the row when the turn starts over it, while a
+// page scroll already under way carries on past it (the default); always moves the row first; or moves the page.
+// A row at its end in that direction leaves the wheel to the page.
 //     ListView { WheelScroll {} ... }
 WheelHandler {
     id: ws
@@ -25,13 +27,15 @@ WheelHandler {
         return null
     }
     // the row itself, when it's one that scrolls sideways
-    readonly property var row: {
+    // (a Flickable that isn't a list is named: `WheelScroll { row: aFlickable }`)
+    property var row: {
         // (declared in a list, a handler can land in its contentItem)
         for (var p = parent, n = 0; p && n < 2; p = p.parent, n++)
             if (p.orientation === ListView.Horizontal) return p
         return null
     }
-    readonly property real maxX: row ? Math.max(row.originX, row.originX + row.contentWidth - row.width) : 0
+    readonly property real minX: row ? row.originX - row.leftMargin : 0
+    readonly property real maxX: row ? Math.max(minX, row.originX + row.contentWidth + row.rightMargin - row.width) : 0
     property real targetX: 0
     readonly property real minY: view ? view.originY - view.topMargin : 0
     readonly property real maxY: view ? Math.max(minY, view.originY + view.contentHeight + view.bottomMargin - view.height) : 0
@@ -42,9 +46,9 @@ WheelHandler {
     enabled: (view !== null && view.interactive && maxY - minY > 1) || row !== null
     // moves the row by `steps` notches; false when it can't go that way (at its end, or it all fits)
     function moveRow(steps) {
-        if (!row || !row.interactive || maxX - row.originX < 1) return false
+        if (!row || !row.interactive || maxX - minX < 1) return false
         var from = rowScroll.running ? targetX : row.contentX
-        var to = Math.max(row.originX, Math.min(maxX, from - steps * 220 * shell.scrollSpeed))
+        var to = Math.max(minX, Math.min(maxX, from - steps * 220 * shell.scrollSpeed))
         if (Math.abs(to - from) < 0.5) return false
         targetX = to
         rowScroll.to = to
@@ -54,7 +58,10 @@ WheelHandler {
     onWheel: function (event) {
         if (row && event.angleDelta.x === 0 && event.angleDelta.y !== 0) {
             var sideways = (event.modifiers & Qt.ShiftModifier) !== 0
-            if (sideways || shell.ui.shelfWheel === "row") {
+            var mode = shell.ui.shelfWheel || "auto"
+            // (a row in no page, like the selection bar's, always takes it)
+            var started = !view || mode === "row" || (mode === "auto" && Date.now() - WheelLatch.pageAt > WheelLatch.settle)
+            if (sideways || started) {
                 if (moveRow(event.angleDelta.y / 120) || sideways) return
                 // at the row's end the page moves on
             }
@@ -64,6 +71,7 @@ WheelHandler {
             event.accepted = false  // sideways (a tilt wheel, Shift): for the row itself
             return
         }
+        WheelLatch.pageAt = Date.now()
         var from = scroll.running ? ws.targetY : view.contentY
         ws.targetY = Math.max(ws.minY, Math.min(ws.maxY, from - steps * 110 * shell.scrollSpeed))
         scroll.to = ws.targetY

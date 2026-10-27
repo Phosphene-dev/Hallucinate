@@ -45,6 +45,8 @@ jobs:
           from=$(packaging/flatpak/fetch_repo.sh flatpak-repo)
           echo "Serving the Flatpak repository from: ${from:-nowhere yet}"
       - run: python scripts/build_site.py _site --flatpak-repo flatpak-repo
+        env:
+          GH_TOKEN: ${{ github.token }}  # finds the newest release with macOS and .deb/.rpm builds
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

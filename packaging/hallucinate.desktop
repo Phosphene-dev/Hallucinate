@@ -9,7 +9,7 @@ Terminal=false
 Categories=AudioVideo;Audio;Player;Qt;
 MimeType=audio/mpeg;audio/flac;audio/x-flac;audio/ogg;audio/opus;audio/x-wav;audio/mp4;audio/aac;audio/x-ms-wma;audio/x-ape;
 StartupWMClass=hallucinate
-Actions=PlayPause;Next;Previous;MiniPlayer;Quit;
+Actions=PlayPause;Next;Previous;MiniPlayer;
 
 [Desktop Action PlayPause]
 Name=Play/Pause
@@ -26,7 +26,3 @@ Exec=hallucinate --prev --launch
 [Desktop Action MiniPlayer]
 Name=Mini Player
 Exec=hallucinate --mini-player --launch
-
-[Desktop Action Quit]
-Name=Quit
-Exec=hallucinate --quit
