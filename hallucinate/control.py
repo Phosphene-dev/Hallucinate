@@ -118,6 +118,7 @@ class ControlServer(QObject):
         super().__init__(parent)
         self._player = player
         self._raise_callback = raise_callback
+        self._shell = None
         self._library = None
         self._api = None
         self._web = None
@@ -155,6 +156,10 @@ class ControlServer(QObject):
 
     def setRaiseCallback(self, callback):
         self._raise_callback = callback
+
+    def setShell(self, shell):
+        """The window side: the mini player and quitting (the launcher's right-click actions)."""
+        self._shell = shell
 
     def close(self):
         self._server.close()
@@ -216,6 +221,17 @@ class ControlServer(QObject):
                     self._library.addFolder(folder)
             if self._raise_callback is not None:
                 self._raise_callback()
+            return {"ok": True}
+        if command in ("mini-player", "quit"):
+            if self._shell is None:
+                return {"ok": False, "error": "Hallucinate is still starting"}
+            if command == "mini-player":
+                self._shell.toggleMini()
+            else:
+                from PySide6.QtCore import QTimer
+                from PySide6.QtWidgets import QApplication
+
+                QTimer.singleShot(0, QApplication.instance().quit)  # after the answer is sent
             return {"ok": True}
         if command == "api":
             return self._call_api(request)

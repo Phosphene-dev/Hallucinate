@@ -206,3 +206,28 @@ def test_control_socket_is_private_to_the_user(tmp_path):
     assert default_server_name({"XDG_CACHE_HOME": str(cache)}, "linux") == str(cache / "hallucinate" / "control")
     assert (cache / "hallucinate").stat().st_mode & 0o077 == 0  # no runtime folder: our own closed one
     assert default_server_name({"XDG_CACHE_HOME": str(cache)}, "darwin").startswith("hallucinate-control-")
+
+
+def test_mini_player_and_quit_from_the_launcher(qapp, monkeypatch):
+    """The launcher's right-click actions: the mini player switches, Quit quits (once its answer is sent),
+    and with nothing running Quit has nothing to do."""
+    from hallucinate import app
+
+    class Shell:
+        minis = 0
+
+        def toggleMini(self):
+            Shell.minis += 1
+
+    server = ControlServer(server_name="hallucinate-test-" + uuid4().hex)
+    assert server._dispatch("mini-player", {})["ok"] is False  # still starting
+    server.setShell(Shell())
+    assert server._dispatch("mini-player", {}) == {"ok": True} and Shell.minis == 1
+    quits = []
+    monkeypatch.setattr(qapp, "quit", lambda: quits.append(1))
+    assert server._dispatch("quit", {}) == {"ok": True}
+    for _ in range(5):
+        qapp.processEvents()
+    assert quits == [1]
+    monkeypatch.setattr(app, "send_control", lambda _command: None)
+    assert app.main(["--quit"]) == 0

@@ -85,7 +85,15 @@ def _quote(path):
     return f'"{escaped}"'
 
 
+# The launcher's right-click actions in docks and taskbars (as the packages' hallucinate.desktop has them):
+# the tray menu's, which start Hallucinate first when it isn't running (--launch)
+ACTIONS = (("PlayPause", "Play/Pause", "--play-pause --launch"), ("Next", "Next", "--next --launch"),
+           ("Previous", "Previous", "--prev --launch"), ("MiniPlayer", "Mini Player", "--mini-player --launch"),
+           ("Quit", "Quit", "--quit"))
+
+
 def entry_text(image):
+    actions = "".join(f"\n[Desktop Action {key}]\nName={name}\nExec={_quote(image)} {args}\n" for key, name, args in ACTIONS)
     return (
         "[Desktop Entry]\n"
         "Type=Application\n"
@@ -100,7 +108,9 @@ def entry_text(image):
         "MimeType=audio/mpeg;audio/flac;audio/x-flac;audio/ogg;audio/opus;audio/x-wav;audio/mp4;audio/aac;"
         "audio/x-ms-wma;audio/x-ape;\n"
         f"StartupWMClass={APP_ID}\n"
+        f"Actions={''.join(key + ';' for key, _, _ in ACTIONS)}\n"
         f"{MARKER}\n"
+        f"{actions}"
     )
 
 

@@ -61,3 +61,35 @@ def test_a_launcher_someone_else_wrote_is_never_touched(tmp_path):
     de.remove(env)
     de.follow(env)
     assert path.read_text() == "[Desktop Entry]\nExec=/usr/bin/hallucinate\n"
+
+
+def test_launchers_offer_the_tray_menu_s_actions():
+    """Issue 106: right-clicking Hallucinate in a dock or taskbar offers play/pause, next, previous, the mini
+    player and quit, in the packages' launcher and the AppImage's alike, each a command line the app takes."""
+    import configparser
+    import pathlib
+
+    from hallucinate import app
+
+    root = pathlib.Path(__file__).resolve().parent.parent
+    texts = [(root / "packaging" / "hallucinate.desktop").read_text(encoding="utf-8"),
+             (root / "packaging" / "appimage" / "appdir" / "hallucinate.desktop").read_text(encoding="utf-8"),
+             de.entry_text("/apps/Hallucinate.AppImage")]
+    keys = [key for key, _, _ in de.ACTIONS]
+    for text in texts:
+        entry = configparser.ConfigParser(interpolation=None)
+        entry.optionxform = str
+        entry.read_string(text)
+        assert entry["Desktop Entry"]["Actions"] == "".join(k + ";" for k in keys)
+        for key, name, args in de.ACTIONS:
+            action = entry[f"Desktop Action {key}"]
+            assert action["Name"] == name and action["Exec"].endswith(" " + args)
+    seen = []
+    for _key, _name, args in de.ACTIONS:  # every one is a command line the app knows
+        monkey = app.send_control
+        try:
+            app.send_control = lambda command, **_: seen.append(command) or {"ok": True}
+            assert app.main(args.split()) == 0
+        finally:
+            app.send_control = monkey
+    assert seen == ["play-pause", "next", "prev", "mini-player", "quit"]
