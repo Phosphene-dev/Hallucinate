@@ -863,9 +863,8 @@ class UserLibrary(QObject):
 
     # --- a selection of any kind (see Selection.qml): its songs ---------------------------------------------
     def _selection_paths(self, db, items):
-        from .core import composers
+        from .core import composers, genre_views
         from .core import folders as folder_views
-        from .core import genre_views
 
         out, seen = [], set()
 
