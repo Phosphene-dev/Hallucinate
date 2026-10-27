@@ -35,8 +35,11 @@ echo "$tool_sha  $work/appimagetool" | sha256sum -c --quiet -
 chmod +x "$work/appimagetool"
 
 (cd "$work" && "$work/venv/bin/python-appimage" build app -p "${PYTHON_VERSION:-3.12}" --no-packaging appdir)
-# python-appimage names the AppDir after the desktop entry's Name field.
-mv "$work"/Hallucinate*-"$(uname -m)" "$work/AppDir"
+# python-appimage names the AppDir after the desktop entry's last Name= line, which is a right-click action's
+# ("Quit") now that the entry has them: take whichever it made.
+made=("$work"/*-"$(uname -m)")
+[ "${#made[@]}" -eq 1 ] && [ -d "${made[0]}" ] || { echo "python-appimage made no AppDir: ${made[*]}" >&2; exit 1; }
+mv "${made[0]}" "$work/AppDir"
 python3 "$repo/packaging/qt_prune.py" "$work/AppDir"  # drop the parts of Qt the app never uses
 # KEEP_APPDIR=dir: keep a copy of the finished AppDir (the .deb and .rpm are made from it: packaging/linux)
 if [ -n "${KEEP_APPDIR:-}" ]; then rm -rf "$KEEP_APPDIR" && cp -a "$work/AppDir" "$KEEP_APPDIR"; fi
