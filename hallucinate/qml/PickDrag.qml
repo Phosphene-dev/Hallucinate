@@ -71,7 +71,8 @@ QtObject {
         if (v) {
             var p = v.mapFromItem(null, x, y)
             p.y = Math.max(0, Math.min(v.height - 1, p.y)); p.x = Math.max(0, Math.min(v.width - 1, p.x))
-            var i = v.indexAt(p.x + v.contentX, p.y + v.contentY)
+            var c = v.mapToItem(v.contentItem, p.x, p.y)  // (a header or section labels offset the content)
+            var i = v.indexAt(c.x, c.y)
             return i >= 0 ? i : -1
         }
         // a Repeater's items: the one under the pointer, or (between or past them) the nearest, of this list
