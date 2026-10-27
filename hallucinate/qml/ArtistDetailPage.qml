@@ -512,6 +512,9 @@ Item {
                                     model: yearRow.modelData.albums
                                     AlbumCard {
                                         required property var modelData
+                                        required property int index
+                                        rowIndex: index
+                                        selectionSource: yearRow.modelData.albums
                                         cardWidth: 160
                                         albumKey: modelData.album_key
                                         title: modelData.album
@@ -538,6 +541,9 @@ Item {
                             model: page.profile.appearsOn || []
                             AlbumCard {
                                 required property var modelData
+                                required property int index
+                                rowIndex: index
+                                selectionSource: page.profile.appearsOn || []
                                 cardWidth: 160
                                 albumKey: modelData.album_key
                                 title: modelData.album
@@ -600,6 +606,9 @@ Item {
                             model: similarBox.have.slice(0, 12)
                             ArtistCard {
                                 required property var modelData
+                                required property int index
+                                rowIndex: index
+                                selectionSource: similarBox.have.slice(0, 12)
                                 cardWidth: 130
                                 name: modelData.name
                                 subtitle: modelData.albums + (modelData.albums === 1 ? " album" : " albums")

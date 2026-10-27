@@ -96,6 +96,9 @@ Item {
                 model: page.artists
                 delegate: ArtistCard {
                     required property var modelData
+                    required property int index
+                    rowIndex: index
+                    selectionSource: page.artists
                     name: modelData.name
                     subtitle: modelData.albums + (modelData.albums === 1 ? " album" : " albums")
                     artUrl: modelData.artUrl

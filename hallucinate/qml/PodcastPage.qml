@@ -5,6 +5,8 @@ import "."
 // One show: its cover, notes and settings, then every episode, newest first.
 Item {
     id: page
+    // Ctrl+A with no row focused (main.qml): the page's list
+    function selectAll() { Selection.selectAll(list.toString(), list.model, "episode") }
     objectName: "podcast"
     property int podcastId: 0
     property var info: ({})
@@ -200,6 +202,9 @@ Item {
 
             delegate: EpisodeRow {
                 required property var model
+                required property int index
+                selectionSource: list.model
+                rowIndex: index
                 width: list.width - 8
                 episode: model
                 onMenu: episodeMenu.showFor(model, false)

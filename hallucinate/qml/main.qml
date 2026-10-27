@@ -345,7 +345,7 @@ ApplicationWindow {
         function onNewPlaylistWith(paths) { createDlg.paths = paths; createDlg.open() }
         function onTrackMenu(path, title, context, index) {
             // on a song that's part of a selection, the menu acts on the whole selection
-            if (Selection.count > 1 && Selection.paths.indexOf(path) >= 0) trackMenu.showMany(Selection.paths, context)
+            if (Selection.count > 1 && Selection.has("song", path)) trackMenu.showMany(Selection.songPaths(), context)
             else trackMenu.show(path, title, context, index)
         }
         function onToggleNowPlaying() { nowPlaying.toggle() }
@@ -366,8 +366,13 @@ ApplicationWindow {
         function onInstallUpdate() { updateDlg.open() }
         function onAlbumMenu(keys, title, artist) {
             // acting on a selected album acts on the whole selection
-            var k = keys.length === 1 && AlbumSelection.has(keys[0]) ? AlbumSelection.keys.slice() : keys
-            albumMenu.show(k, title, artist)
+            if (keys.length === 1 && Selection.count > 1 && Selection.has("album", keys[0])) {
+                var albums = Selection.items.filter(function (i) { return i.kind === "album" })
+                if (albums.length === Selection.count) { albumMenu.show(albums.map(function (i) { return i.key }), title, artist); return }
+                trackMenu.showMany(Selection.songPaths(), "")  // albums and other things: their songs
+                return
+            }
+            albumMenu.show(keys, title, artist)
         }
         function onRemoveAlbums(keys, what) { removeDlg.songs = false; removeDlg.keys = keys; removeDlg.what = what; removeDlg.open() }
         function onTrashAlbums(keys, what) { trashDlg.songs = false; trashDlg.keys = keys; trashDlg.what = what; trashDlg.open() }
@@ -433,8 +438,9 @@ ApplicationWindow {
         }
     }
 
-    // Acts on songs selected with Ctrl/Shift+click; a selection belongs to one page
+    // Acts on whatever's selected (Ctrl/Shift+click, dragging, Ctrl+A), from any page: a selection lasts while you browse
     SelectionBar {
+        id: selectionBar
         z: 59
         // over the page area (right of the sidebar), never wider than it
         maxWidth: stack.width - 24
@@ -443,31 +449,55 @@ ApplicationWindow {
         onEditTags: function (paths) { tagEditor.editTracks(paths) }
         onRemoveFromPlaylist: function (paths) { trackMenu.removePathsFromPlaylist(paths) }
     }
-    AlbumBar {
-        z: 59
-        maxWidth: stack.width - 24
-        x: sidebar.width + (stack.width - width) / 2
-        anchors { bottom: parent.bottom; bottomMargin: 112 }
-    }
-    onSectionChanged: { Selection.clear(); AlbumSelection.clear() }
-    Connections { target: stack; function onCurrentItemChanged() { Selection.clear(); AlbumSelection.clear() } }
-    // One Escape for both kinds of selection: two shortcuts on the same key at once would be ambiguous, and Qt
-    // then runs neither. Selecting songs drops a selection of albums and the other way round, so their bars
-    // never sit on top of each other.
     Shortcut {
         sequence: "Escape"
-        enabled: (Selection.count > 0 || AlbumSelection.count > 0) && !nowPlaying.open
-        onActivated: { Selection.clear(); AlbumSelection.clear() }
+        enabled: Selection.count > 0 && !nowPlaying.open && !PickDrag.carrying
+        onActivated: selectionBar.clearWithUndo()
+    }
+    // A queue entry's place changes with the queue: a selection of them would point at other songs
+    Connections { target: player.queueModel; function onModelReset() { Selection.dropKind("queue") } function onRowsRemoved() { Selection.dropKind("queue") } function onRowsInserted() { Selection.dropKind("queue") } function onRowsMoved() { Selection.dropKind("queue") } }
+    // Ctrl+A on a page with one main list (not while typing, and not where a focused row has its own)
+    Shortcut {
+        sequence: StandardKey.SelectAll
+        enabled: !window.typing && !nowPlaying.open && !!stack.currentItem && typeof stack.currentItem.selectAll === "function"
+        onActivated: stack.currentItem.selectAll()
+    }
+
+    // What a drag from a selected item carries: a label under the pointer. Dropped on a playlist in the sidebar or
+    // on the queue, it adds every song of the selection there (see PickDrag).
+    Rectangle {
+        id: carried
+        objectName: "selectionCarried"
+        z: 200
+        visible: PickDrag.carrying
+        x: PickDrag.sceneX + 14
+        y: PickDrag.sceneY + 10
+        width: carriedText.implicitWidth + 24
+        height: 32
+        radius: Theme.round(16)
+        color: Theme.accent
+        Drag.active: PickDrag.carrying
+        Drag.keys: ["hallucinate/selection"]
+        Drag.hotSpot.x: -14
+        Drag.hotSpot.y: -10
+        Text {
+            id: carriedText
+            textFormat: Text.PlainText
+            anchors.centerIn: parent
+            text: Selection.summary(false)
+            color: Theme.onAccent
+            font.family: Theme.fontFamily
+            font.pixelSize: Theme.fontSize(12)
+            font.weight: Font.DemiBold
+        }
     }
     // Escape on the search results (nothing selected, not typing in a field) leaves the search, like Back
     Shortcut {
         sequence: "Escape"
         enabled: !!(stack.currentItem && stack.currentItem.objectName === "search") && Selection.count === 0
-                 && AlbumSelection.count === 0 && !nowPlaying.open && !window.typing
+                 && !nowPlaying.open && !window.typing
         onActivated: searchField.text = ""
     }
-    Connections { target: Selection; function onCountChanged() { if (Selection.count > 0) AlbumSelection.clear() } }
-    Connections { target: AlbumSelection; function onCountChanged() { if (AlbumSelection.count > 0) Selection.clear() } }
 
     ConfirmDialog {
         id: removeFolderDlg
@@ -494,8 +524,9 @@ ApplicationWindow {
               + "Settings → Library can bring it back. Plays, likes and playlists are kept."
         property bool songs: false  // keys are song paths rather than album keys
         onAccepted: {
-            if (songs) { library.removeSongs(keys); Selection.clear() }
-            else { library.removeAlbums(keys); AlbumSelection.clear() }
+            if (songs) library.removeSongs(keys)
+            else library.removeAlbums(keys)
+            Selection.clear()
         }
     }
     ConfirmDialog {
@@ -510,8 +541,9 @@ ApplicationWindow {
         property bool songs: false
         property bool cue: false  // a CUE sheet's songs share one file: trashing one trashes the whole sheet's audio
         onAccepted: {
-            if (songs) { library.trashSongs(keys); Selection.clear() }
-            else { library.trashAlbums(keys); AlbumSelection.clear() }
+            if (songs) library.trashSongs(keys)
+            else library.trashAlbums(keys)
+            Selection.clear()
         }
     }
     Connections {
@@ -564,7 +596,7 @@ ApplicationWindow {
             toastTimer.restart()
         }
         z: 60
-        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Selection.count > 0 || AlbumSelection.count > 0 ? 176 : 118 }
+        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Selection.count > 0 ? 176 : 118 }
         width: toastText.width + 36 + (toastAction.visible ? toastAction.width + 14 : 0)
         height: Math.max(40, toastText.height + 22)
         radius: Theme.round(20)
@@ -1024,6 +1056,7 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
+        PickDrag.dropAt = function () { carried.Drag.drop() }  // (see the carried label)
         go(shell.openingPage())
         // an AppImage nothing has added to the app launcher: docks can't show its icon (once; Settings → Desktop)
         if (!welcomeView.open && shell.offerLauncher())

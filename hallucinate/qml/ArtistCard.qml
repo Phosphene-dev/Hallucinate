@@ -9,6 +9,18 @@ Item {
     property url artUrl
     property real cardWidth: 150
     property bool composer: false  // a composer's card: opens their page and menu instead
+    // The list it's in and its place there: Shift+click and dragging select across it (Ctrl+click works anywhere)
+    property var selectionSource: null
+    property int rowIndex: -1
+    Pick {
+        id: pick
+        target: card
+        kind: card.composer ? "composer" : "artist"
+        entry: card.name.length ? { name: card.name } : null
+        source: card.selectionSource
+        index: card.rowIndex
+    }
+    readonly property bool selected: pick.selected
     function openIt() { if (composer) Nav.openComposer(name); else Nav.openArtist(name) }
     function menuIt() { if (!composer) Nav.artistMenu(name); else if (composerMenu.item) composerMenu.item.showComposer(name) }
     width: cardWidth
@@ -25,12 +37,18 @@ Item {
     Keys.onSpacePressed: card.openIt()
     Keys.onMenuPressed: card.menuIt()
     Keys.onPressed: function (event) {
+        if (pick.keys(event)) return
         if (event.key === Qt.Key_F10 && (event.modifiers & Qt.ShiftModifier)) { card.menuIt(); event.accepted = true }
     }
     Rectangle {
         x: -4; y: -4; width: card.cardWidth + 8; height: card.cardWidth + 8
         radius: width / 2; color: "transparent"; border.width: 2; border.color: Theme.accent
         visible: card.activeFocus
+    }
+    Rectangle {  // selected
+        x: -5; y: -5; width: card.cardWidth + 10; height: card.cardWidth + 10
+        radius: width / 2; color: "transparent"; border.width: 3; border.color: Theme.accent
+        visible: card.selected
     }
 
     Cover {
@@ -73,8 +91,15 @@ Item {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onPressAndHold: card.menuIt()
-        onClicked: function (mouse) { mouse.button === Qt.RightButton ? card.menuIt() : card.openIt() }
+        onPressAndHold: if (!PickDrag.painting && !PickDrag.carrying) card.menuIt()
+        onPressed: function (mouse) { pick.press(this, mouse) }
+        onPositionChanged: function (mouse) { if (pressed) pick.move(this, mouse) }
+        onReleased: pick.release(this)
+        onCanceled: pick.cancel(this)
+        onClicked: function (mouse) {
+            if (mouse.button === Qt.RightButton) card.menuIt()
+            else if (!pick.click(mouse)) card.openIt()
+        }
     }
     Loader {  // (made only for composers' cards: artists share the window's menu)
         id: composerMenu

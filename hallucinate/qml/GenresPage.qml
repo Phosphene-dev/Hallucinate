@@ -9,6 +9,8 @@ import "."
 // away.
 Item {
     id: page
+    // Ctrl+A with no row focused (main.qml): the page's list
+    function selectAll() { if (page.songs && (page.showingSongs || !page.narrow) && songList.activeFocus) Selection.selectAll(songList.toString(), page.songs, "song"); else Selection.selectAll(genreList.toString(), page.genreModel, "genre") }
     objectName: "genres"
 
     property string order: shell.uiValue("genresListOrder", "az")  // az, songs, plays
@@ -107,6 +109,8 @@ Item {
                 required property string artUrl
                 readonly property bool shown: page.filter.length === 0 || name.toLowerCase().indexOf(page.filter) >= 0
                 readonly property bool picked: name === page.selected
+                required property int index
+                Pick { id: genrePick; target: entry; kind: "genre"; entry: ({ name: entry.name }); source: page.genreModel; index: entry.index }
                 width: ListView.view.width - 8
                 height: shown ? 58 : 0
                 visible: shown
@@ -114,6 +118,8 @@ Item {
                     anchors { fill: parent; topMargin: 2; bottomMargin: 2 }
                     radius: Theme.radius
                     color: entry.picked ? Theme.selectedBg : entryHover.hovered ? Theme.glassHover : "transparent"
+                    border.width: genrePick.selected ? 2 : 0
+                    border.color: Theme.accent
                 }
                 Cover {
                     id: entryCover
@@ -148,8 +154,19 @@ Item {
                     }
                 }
                 HoverHandler { id: entryHover; cursorShape: Qt.PointingHandCursor }
-                TapHandler { onTapped: page.pick(entry.name); onLongPressed: genreMenu.showGenre(entry.name) }
-                TapHandler { acceptedButtons: Qt.RightButton; onTapped: genreMenu.showGenre(entry.name) }
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    onPressAndHold: if (!PickDrag.painting && !PickDrag.carrying) genreMenu.showGenre(entry.name)
+                    onPressed: function (mouse) { genrePick.press(this, mouse) }
+                    onPositionChanged: function (mouse) { genrePick.move(this, mouse) }
+                    onReleased: genrePick.release(this)
+                    onCanceled: genrePick.cancel(this)
+                    onClicked: function (mouse) {
+                        if (mouse.button === Qt.RightButton) genreMenu.showGenre(entry.name)
+                        else if (!genrePick.click(mouse)) page.pick(entry.name)
+                    }
+                }
                 Accessible.role: Accessible.ListItem
                 Accessible.name: entry.name + ", " + page.plural(entry.tracks, "song", "songs")
                 Accessible.onPressAction: page.pick(entry.name)

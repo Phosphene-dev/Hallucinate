@@ -5,6 +5,8 @@ import "."
 // Albums four ways: A–Z, a wall ordered by cover colour, a timeline by decade and year, and by genre.
 Item {
     id: page
+    // Ctrl+A with no row focused (main.qml): the page's list
+    function selectAll() { if (page.view === "colour") Selection.selectAll(wall.toString(), library.albumWall, "album"); else if (page.view === "grid") Selection.selectAll(grid.toString(), library.albums, "album") }
     objectName: "albums"
     readonly property real minCell: 190
     readonly property int cols: Math.max(2, Math.floor((width - 40) / minCell))
@@ -135,8 +137,9 @@ Item {
                         color: "transparent"
                         border.width: 3
                         border.color: Theme.accent
-                        visible: AlbumSelection.count > 0 && AlbumSelection.has(tile.album_key)
+                        visible: tilePick.selected
                     }
+                    Pick { id: tilePick; target: tile; kind: "album"; entry: ({ album_key: tile.album_key, album: tile.album }); source: library.albumWall; index: tile.index }
                     MouseArea {
                         id: tileMouse
                         anchors.fill: parent
@@ -146,13 +149,15 @@ Item {
                         Accessible.role: Accessible.Button
                         Accessible.name: tile.album + (tile.album_artist ? ", " + tile.album_artist : "")
                         Accessible.onPressAction: Nav.openAlbum(tile.album_key)
+                        onPressed: function (mouse) { tilePick.press(this, mouse) }
+                        onPositionChanged: function (mouse) { tilePick.move(this, mouse) }
+                        onReleased: tilePick.release(this)
+                        onCanceled: tilePick.cancel(this)
                         onClicked: function (mouse) {
                             if (mouse.button === Qt.RightButton) Nav.albumMenu([tile.album_key], tile.album, tile.album_artist)
-                            else if (mouse.modifiers & Qt.ControlModifier) AlbumSelection.toggle(library.albumWall, tile.index, tile.album_key)
-                            else if (mouse.modifiers & Qt.ShiftModifier) AlbumSelection.extend(library.albumWall, tile.index, tile.album_key)
-                            else { AlbumSelection.clear(); Nav.openAlbum(tile.album_key) }
+                            else if (!tilePick.click(mouse)) Nav.openAlbum(tile.album_key)
                         }
-                        onPressAndHold: Nav.albumMenu([tile.album_key], tile.album, tile.album_artist)
+                        onPressAndHold: if (!PickDrag.painting && !PickDrag.carrying) Nav.albumMenu([tile.album_key], tile.album, tile.album_artist)
                     }
                     ToolTip.visible: tileMouse.containsMouse
                     ToolTip.text: Theme.plain(tile.album + " — " + tile.album_artist)

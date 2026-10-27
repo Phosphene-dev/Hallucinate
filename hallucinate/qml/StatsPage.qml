@@ -234,6 +234,8 @@ Item {
                 model: userLib.recentPlayed
                 boundsBehavior: Flickable.StopAtBounds
                 delegate: AlbumCard {
+                    selectionSource: userLib.recentPlayed
+                    rowIndex: index
                     albumKey: model.album_key
                     title: model.album
                     subtitle: model.album_artist

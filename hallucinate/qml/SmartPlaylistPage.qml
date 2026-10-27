@@ -5,6 +5,8 @@ import "."
 // A smart playlist: its tracks are whatever currently matches its rules.
 Item {
     id: page
+    // Ctrl+A with no row focused (main.qml): the page's list
+    function selectAll() { Selection.selectAll(list.toString(), list.model, "song") }
     objectName: "smartPlaylist"
     property int smartId: -1
     property string playlistName: ""

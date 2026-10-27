@@ -243,6 +243,9 @@ Item {
                         model: page.allAlbums ? page.albumList : page.albumList.slice(0, 24)
                         AlbumCard {
                             required property var modelData
+                            required property int index
+                            rowIndex: index
+                            selectionSource: page.allAlbums ? page.albumList : page.albumList.slice(0, 24)
                             cardWidth: 160
                             albumKey: modelData.album_key
                             title: modelData.album

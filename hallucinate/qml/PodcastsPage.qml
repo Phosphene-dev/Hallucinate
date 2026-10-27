@@ -202,6 +202,9 @@ Item {
                     model: podcasts.upNext
                     EpisodeRow {
                         required property var model
+                        required property int index
+                        selectionSource: podcasts.upNext
+                        rowIndex: index
                         width: col.width
                         episode: model
                         showPodcast: true
@@ -219,6 +222,9 @@ Item {
                     model: podcasts.inProgress
                     EpisodeRow {
                         required property var model
+                        required property int index
+                        selectionSource: podcasts.inProgress
+                        rowIndex: index
                         width: col.width
                         episode: model
                         showPodcast: true
@@ -237,6 +243,9 @@ Item {
                     model: podcasts.latest
                     EpisodeRow {
                         required property var model
+                        required property int index
+                        selectionSource: podcasts.latest
+                        rowIndex: index
                         width: col.width
                         episode: model
                         showPodcast: true

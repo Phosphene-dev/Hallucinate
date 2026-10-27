@@ -7,6 +7,8 @@ import "."
 // when it arrived and how you've listened to it) and the tracks split by disc.
 Item {
     id: page
+    // Ctrl+A with no row focused (main.qml): the page's list
+    function selectAll() { Selection.selectAll(list.toString(), list.model, "song") }
     objectName: "album"
     property string albumKey
     // Pages kept underneath for Back catch up when they're shown again: refreshing them all on every rescan

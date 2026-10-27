@@ -154,10 +154,16 @@ Item {
         property alias trailing: trailingSlot.data
         signal activated()
         signal menu()
+        // a saved station (search results aren't): selectable, see Selection
+        property var station: null
+        property var selectionSource: null
+        property int rowIndex: -1
+        Pick { id: stationPick; target: row; kind: "station"; entry: row.station; source: row.selectionSource; index: row.rowIndex }
         width: parent ? parent.width : 400
         height: 60
         radius: Theme.round(14)
-        color: rowMouse.containsMouse || playing ? Theme.glassHover : "transparent"
+        color: stationPick.selected ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, rowMouse.containsMouse ? 0.24 : 0.17)
+                                    : rowMouse.containsMouse || playing ? Theme.glassHover : "transparent"
         border.width: playing ? 1 : 0
         border.color: Theme.accent
         Cover {
@@ -194,8 +200,15 @@ Item {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             acceptedButtons: Qt.LeftButton | Qt.RightButton
-            onClicked: function (mouse) { mouse.button === Qt.RightButton ? row.menu() : row.activated() }
-            onPressAndHold: row.menu()
+            onPressed: function (mouse) { if (row.station) stationPick.press(this, mouse) }
+            onPositionChanged: function (mouse) { if (pressed) stationPick.move(this, mouse) }
+            onReleased: stationPick.release(this)
+            onCanceled: stationPick.cancel(this)
+            onClicked: function (mouse) {
+                if (mouse.button === Qt.RightButton) row.menu()
+                else if (!(row.station && stationPick.click(mouse))) row.activated()
+            }
+            onPressAndHold: if (!PickDrag.painting) row.menu()
             Accessible.role: Accessible.Button
             Accessible.name: (row.playing ? "Playing: " : "Play ") + row.name
             Accessible.onPressAction: row.activated()
@@ -322,6 +335,10 @@ Item {
                     model: stations.model
                     StationRow {
                         required property var model
+                        required property int index
+                        station: ({ id: model.id, name: model.name })
+                        selectionSource: stations.model
+                        rowIndex: index
                         width: col.width
                         name: model.name
                         detail: model.detail

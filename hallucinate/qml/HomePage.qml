@@ -225,6 +225,8 @@ Item {
                         artist: model.album_artist
                         artUrl: model.artUrl
                         note: model.reason || ""
+                        selectionSource: ListView.view ? ListView.view.model : null
+                        rowIndex: index
                     }
                 }
             }

@@ -178,21 +178,39 @@ class Stations(QObject):
 
     @Slot(int)
     def remove(self, station_id):
-        station = self._db.station(station_id)
-        if station:
-            self._db.remove_station(station_id)
-            self._undo = station
-            self.refresh()
-            self.undoable.emit(f"Removed “{station['name']}”")
+        self.removeMany([station_id])
+
+    @Slot("QVariantList")
+    def removeMany(self, ids):
+        """Remove stations; one Undo puts them all back."""
+        removed = [s for s in (self._db.station(int(i)) for i in ids) if s]
+        for s in removed:
+            self._db.remove_station(s["id"])
+        if not removed:
+            return
+        self._undo = removed
+        self.refresh()
+        self.undoable.emit(f"Removed “{removed[0]['name']}”" if len(removed) == 1 else f"Removed {len(removed)} stations")
+
+    @Slot("QVariantList")
+    def playNextMany(self, ids):
+        found = [s for s in (self._db.station(int(i)) for i in ids) if s]
+        for station in reversed(found):
+            self._player.playNext(self._entry(station))
+        if found:
+            self.message.emit(f"{len(found)} stations will play next" if len(found) > 1 else f"“{found[0]['name']}” will play next")
 
     @Slot()
     def undo(self):
-        """Put back the station removed last."""
-        station, self._undo = getattr(self, "_undo", None), None
-        if station:
+        """Put back the stations removed last."""
+        stations, self._undo = getattr(self, "_undo", None), None
+        if isinstance(stations, dict):
+            stations = [stations]
+        for station in stations or []:
             new_id = self._db.add_station(station)
             self._db.conn.execute("UPDATE stations SET added=?, last_played=?, plays=? WHERE id=?",
                                   (station["added"], station["last_played"], station["plays"], new_id))
+        if stations:
             self._db.conn.commit()
             self.refresh()
 

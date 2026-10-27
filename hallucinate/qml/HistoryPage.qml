@@ -7,6 +7,8 @@ import "."
 // listen came from, play a song again, or remove a listen that shouldn't count.
 Item {
     id: page
+    // Ctrl+A with no row focused (main.qml): the page's list
+    function selectAll() { Selection.selectAll(list.toString(), list.model, "history") }
     objectName: "history"
     property string period: "all"
     property string query: ""
@@ -252,12 +254,14 @@ Item {
             required property var model
             readonly property bool available: model.available === 1
             readonly property bool current: available && Rows.currentPath === model.path
+            Pick { id: histPick; target: row; kind: "history"; entry: ({ id: row.model.id, title: row.model.title, path: row.model.path }); source: userLib.historyModel; index: row.index }
             width: list.width
             height: 56
             Rectangle {
                 anchors { fill: parent; leftMargin: 16; rightMargin: 24 }
                 radius: Theme.radiusSmall
-                color: rowHover.hovered ? Theme.glassHover : "transparent"
+                color: histPick.selected ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, rowHover.hovered ? 0.24 : 0.17)
+                       : rowHover.hovered ? Theme.glassHover : "transparent"
             }
             HoverHandler { id: rowHover }
             Accessible.role: Accessible.ListItem
@@ -268,10 +272,14 @@ Item {
                 enabled: row.available
                 cursorShape: row.available ? Qt.PointingHandCursor : Qt.ArrowCursor
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
-                onPressAndHold: Nav.trackMenu(row.model.path, row.model.title, "history", -1)
+                onPressAndHold: if (!PickDrag.painting && !PickDrag.carrying) Nav.trackMenu(row.model.path, row.model.title, "history", -1)
+                onPressed: function (mouse) { histPick.press(this, mouse) }
+                onPositionChanged: function (mouse) { histPick.move(this, mouse) }
+                onReleased: histPick.release(this)
+                onCanceled: histPick.cancel(this)
                 onClicked: function (mouse) {
                     if (mouse.button === Qt.RightButton) Nav.trackMenu(row.model.path, row.model.title, "history", -1)
-                    else userLib.playHistoryEntry(row.index)
+                    else if (!histPick.click(mouse)) userLib.playHistoryEntry(row.index)
                 }
             }
             Text {

@@ -861,6 +861,59 @@ class UserLibrary(QObject):
 
         return decorate(self._reader.submit(load).result(timeout=30)) if paths else []
 
+    # --- a selection of any kind (see Selection.qml): its songs ---------------------------------------------
+    def _selection_paths(self, db, items):
+        from .core import composers
+        from .core import folders as folder_views
+        from .core import genre_views
+
+        out, seen = [], set()
+
+        def add(rows):
+            for r in rows:
+                p = r if isinstance(r, str) else r["path"]
+                if p and p not in seen:
+                    seen.add(p)
+                    out.append(p)
+
+        for item in items:
+            kind, key = item.get("kind", ""), item.get("key", "")
+            try:
+                if kind in ("song", "queue", "history"):
+                    add([item.get("path") or key])
+                elif kind == "album":
+                    add(db.album_tracks(key))
+                elif kind == "artist":
+                    add(db.artist_tracks(key))
+                elif kind == "genre":
+                    add(genre_views.tracks(db, key))
+                elif kind == "composer":
+                    add(composers.tracks(db, key))
+                elif kind == "folder":
+                    add(folder_views.tracks_below(db, key))
+                elif kind == "playlist":
+                    add(db.playlist_tracks(int(key)))
+                elif kind == "smart":
+                    row = db.smart_playlist(int(key))
+                    if row:
+                        add(smart_rules.matching_tracks(db, smart_rules.normalize(row["rules"])))
+                elif kind == "liked":
+                    add(db.liked_tracks())
+            except Exception:  # noqa: BLE001 - one bad item (a playlist since deleted) leaves the rest
+                logger.exception("Selection item %r failed", item)
+        return out
+
+    @Slot("QVariantList", result="QVariantList")
+    def selectionPaths(self, items):
+        """Every song of a selection, in order and once each: songs, queue and history entries as they are,
+        albums, artists, genres, composers, folders and playlists as all their songs."""
+        items = [dict(i) for i in items or []]
+        if not items:
+            return []
+        if all(i.get("kind") in ("song", "queue", "history") for i in items):  # (no database needed)
+            return self._selection_paths(None, items)
+        return self._reader.submit(lambda db: self._selection_paths(db, items)).result(timeout=30)
+
     @Slot("QVariantList")
     def playPaths(self, paths):
         tracks = self._tracks(list(paths))
@@ -1063,6 +1116,21 @@ class UserLibrary(QObject):
     def removeHistoryEntry(self, play_id):
         """Forget one listen (its song's play count drops by one)."""
         self._write(lambda db, i: history.delete_play(db, i), play_id)
+        self.refreshStats()
+        self._reload_history()
+
+    @Slot("QVariantList")
+    def removeHistoryEntries(self, play_ids):
+        """Forget several listens at once (the selection bar)."""
+        ids = [int(i) for i in play_ids]
+        if not ids:
+            return
+
+        def delete(db, ids):
+            for i in ids:
+                history.delete_play(db, i)
+
+        self._write(delete, ids)
         self.refreshStats()
         self._reload_history()
 

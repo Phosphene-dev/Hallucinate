@@ -23,9 +23,20 @@ Rectangle {
     property int sampleRate: 0
     property int explicitTag: 0
     readonly property bool liked: path.length > 0 && Rows.liked[path] === true
-    // The list this row belongs to (its model, or an array of tracks): Ctrl/Shift+click select within it
+    // The list this row belongs to (its model, or an array of tracks): Shift+click and dragging select across it
     property var selectionSource: null
-    readonly property bool selected: path.length > 0 && Selection.count > 0 && Selection.paths.indexOf(path) >= 0
+    // in the playlist that's open: a selection made there can be taken out of it
+    property string selectionOrigin: context === "playlist" && userLib.currentPlaylist >= 0 ? "playlist:" + userLib.currentPlaylist : ""
+    Pick {
+        id: pick
+        target: row
+        kind: "song"
+        entry: row.path.length ? { path: row.path, title: row.title } : null
+        source: row.selectionSource
+        index: row.rowIndex
+        origin: row.selectionOrigin
+    }
+    readonly property bool selected: pick.selected
     signal enqueue()
     // The second line and the album open the song's artist and album (looked up when clicked, as some lists add
     // to the line, like a play count). Off where the line isn't the artist at all.
@@ -41,14 +52,17 @@ Rectangle {
 
     HoverHandler { id: hh }
     activeFocusOnTab: true
-    ListKeys { id: listKeys; row: row; onMenu: if (row.path.length) Nav.trackMenu(row.path, row.title, row.context, row.rowIndex) }
+    ListKeys { id: listKeys; row: row; pick: pick; onMenu: if (row.path.length) Nav.trackMenu(row.path, row.title, row.context, row.rowIndex) }
     // Space, Enter and the moves are the row's while it has the focus (Space would otherwise play/pause)
     Keys.onShortcutOverride: function (event) {
         var plain = (event.modifiers & ~Qt.KeypadModifier) === Qt.NoModifier
-        event.accepted = listKeys.handles(event)
+        event.accepted = listKeys.handles(event) || listKeys.selects(event)
             || (plain && [Qt.Key_Space, Qt.Key_Return, Qt.Key_Enter].indexOf(event.key) >= 0)
     }
-    Keys.onPressed: function (event) { if (listKeys.handles(event)) listKeys.press(event, row.rowIndex) }
+    Keys.onPressed: function (event) {
+        if (pick.keys(event)) return
+        if (listKeys.handles(event)) listKeys.press(event, row.rowIndex)
+    }
     Keys.onSpacePressed: row.activated()
     Keys.onReturnPressed: row.activated()
     Keys.onEnterPressed: row.activated()
@@ -63,19 +77,21 @@ Rectangle {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onPressAndHold: if (row.path.length) Nav.trackMenu(row.path, row.title, row.context, row.rowIndex)
+        onPressAndHold: if (row.path.length && !PickDrag.painting && !PickDrag.carrying) Nav.trackMenu(row.path, row.title, row.context, row.rowIndex)
+        onPressed: function (mouse) { if (row.path.length) pick.press(this, mouse) }
+        onPositionChanged: function (mouse) { pick.move(this, mouse) }
+        onReleased: pick.release(this)
+        onCanceled: pick.cancel(this)
         onClicked: function (mouse) { row.click(mouse) }
     }
-    // A click on the row (or on its artist or album link with Ctrl or Shift held, which select instead)
+    // A click on the row (or on its artist or album link with Ctrl or Shift held, which select instead). A plain
+    // click plays the song and leaves any selection as it is: songs gathered from several pages stay gathered.
     function click(mouse) {
         if (mouse.button === Qt.RightButton) {
             if (row.path.length) Nav.trackMenu(row.path, row.title, row.context, row.rowIndex)
-        } else if (row.path.length && (mouse.modifiers & Qt.ControlModifier)) {
-            Selection.toggle(row.selectionSource, row.rowIndex, row.path)
-        } else if (row.path.length && (mouse.modifiers & Qt.ShiftModifier)) {
-            Selection.extend(row.selectionSource, row.rowIndex, row.path)
+        } else if (row.path.length && pick.click(mouse)) {
+            return
         } else {
-            Selection.clear()
             row.activated()
         }
     }
@@ -198,7 +214,7 @@ Rectangle {
     // A link in the row: a plain click follows it; with Ctrl or Shift it selects like a click on the row does
     function followLink(mouse, follow) {
         if (mouse && (mouse.modifiers & (Qt.ControlModifier | Qt.ShiftModifier))) row.click(mouse)
-        else { Selection.clear(); follow() }
+        else follow()
     }
     IconButton {
         id: moreBtn

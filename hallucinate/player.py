@@ -1767,6 +1767,37 @@ class Player(QObject):
         self._invalidate_next()
         self._sync_queue()
 
+    @Slot("QVariantList")
+    def removeIndexes(self, indexes):
+        """Take several entries out of the queue (one Undo brings them all back)."""
+        idx = sorted({int(i) for i in indexes if 0 <= int(i) < len(self._queue)}, reverse=True)
+        if not idx:
+            return
+        self._remember_queue(f"{len(idx)} songs removed" if len(idx) > 1 else "Song removed")
+        steps = len(self._undo)
+        for i in idx:
+            self.removeAt(i)
+        del self._undo[steps:]  # (each removeAt kept its own; the one above covers them all)
+        self.undoChanged.emit()
+
+    @Slot("QVariantList")
+    def moveIndexesNext(self, indexes):
+        """Move several queue entries to play right after the current song, in their queue order."""
+        idx = sorted({int(i) for i in indexes if 0 <= int(i) < len(self._queue) and int(i) != self._index})
+        if not idx:
+            return
+        self._remember_queue("Songs moved")
+        steps = len(self._undo)
+        moving = [self._queue[i] for i in idx]
+        for k, entry in enumerate(moving):
+            src = next(j for j, e in enumerate(self._queue) if e is entry)  # (moves before it shifted it)
+            # right after the current song and the ones already moved; one from before the current song
+            # takes its place out from in front of it
+            dst = self._index + 1 + k if src > self._index else self._index + k
+            self.moveItem(src, dst)
+        del self._undo[steps:]
+        self.undoChanged.emit()
+
     @Slot(int, int)
     def moveItem(self, src, dst):
         n = len(self._queue)

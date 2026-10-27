@@ -51,7 +51,24 @@ Item {
 
     // A playlist in the list: opens it; right-click for its menu
     component PlaylistEntry: RailButton {
+        id: plEntry
         property var entry: ({})
+        pick: Pick { target: plEntry; kind: plEntry.entry.smart ? "smart" : "playlist"; entry: plEntry.entry; carries: false }
+        // a selection carried over a playlist (not a smart one: its rules choose its songs) is added to it
+        dropping: plDrop.containsDrag
+        DropArea {
+            id: plDrop
+            anchors.fill: parent
+            keys: ["hallucinate/selection"]
+            enabled: !plEntry.entry.smart
+            onDropped: function (drop) {
+                var p = Selection.songPaths()
+                userLib.addPathsToPlaylist(plEntry.entry.id, p)
+                Selection.clear()
+                Nav.notify(p.length + (p.length === 1 ? " song" : " songs") + " added to “" + plEntry.entry.name + "”")
+                drop.accept()
+            }
+        }
         height: side.compact ? 32 : 36
         text: entry.name || ""
         icon: entry.smart ? "smartlist" : "playlist"
@@ -224,6 +241,21 @@ Item {
                             selected: side.section === modelData.id && side.atRoot
                             onClicked: side.navigate(modelData.id)
                             onMenuRequested: { pageMenu.page = modelData.id; pageMenu.popup() }
+                            // a selection carried onto Liked Songs is liked
+                            dropping: likeDrop.containsDrag
+                            DropArea {
+                                id: likeDrop
+                                anchors.fill: parent
+                                keys: ["hallucinate/selection"]
+                                enabled: rail.modelData.id === "liked"
+                                onDropped: function (drop) {
+                                    var p = Selection.songPaths()
+                                    userLib.setLikedPaths(p, true)
+                                    Selection.clear()
+                                    Nav.notify(p.length + (p.length === 1 ? " song" : " songs") + " liked")
+                                    drop.accept()
+                                }
+                            }
                         }
                     }
                 }

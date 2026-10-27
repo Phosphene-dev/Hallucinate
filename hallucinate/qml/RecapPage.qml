@@ -402,6 +402,9 @@ Item {
                             model: page.rc.topAlbums || []
                             AlbumCard {
                                 required property var modelData
+                                required property int index
+                                rowIndex: index
+                                selectionSource: page.rc.topAlbums || []
                                 cardWidth: Math.min(150, (parent.width - 28) / 3)
                                 albumKey: modelData.album_key || ""
                                 title: modelData.album

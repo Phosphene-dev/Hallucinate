@@ -4,6 +4,8 @@ import "."
 
 Item {
     id: page
+    // Ctrl+A with no row focused (main.qml): the page's list
+    function selectAll() { Selection.selectAll(list.toString(), list.model, "song") }
     objectName: "songs"
     property bool duplicatesVisible: false
     // play the list as shown (duplicates, filtered, sorted or all), from `index`

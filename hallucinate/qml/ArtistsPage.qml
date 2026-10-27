@@ -4,6 +4,8 @@ import "."
 
 Item {
     id: page
+    // Ctrl+A with no row focused (main.qml): the page's list
+    function selectAll() { Selection.selectAll(grid.toString(), grid.model, page.composers ? "composer" : "artist") }
     objectName: "artists"
     readonly property int cols: Math.max(2, Math.floor((width - 40) / 170))
     // A–Z (the library's own order), most songs, most played or newest first: sorted here from the same list
@@ -91,6 +93,8 @@ Item {
                 subtitle: page.subtitle(parent.artist)
                 composer: page.composers
                 artUrl: parent.artist.artUrl
+                selectionSource: grid.model
+                rowIndex: index
             }
         }
     }

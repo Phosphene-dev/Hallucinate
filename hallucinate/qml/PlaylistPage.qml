@@ -4,6 +4,8 @@ import "."
 
 Item {
     id: page
+    // Ctrl+A with no row focused (main.qml): the page's list
+    function selectAll() { Selection.selectAll(list.toString(), list.model, "song", list.count && list.itemAtIndex(0) ? list.itemAtIndex(0).selectionOrigin : "") }
     objectName: "playlist"
     property bool liked: false
     property int playlistId: -1

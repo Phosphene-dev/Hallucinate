@@ -360,9 +360,9 @@ def test_albums_select_menu_and_remove(qapp, app_window):
 
     for card in cards:
         click(card, mods=Qt.KeyboardModifier.ControlModifier)
-    bar = named("albumBar")
+    bar = named("selectionBar")
     assert wait_for(lambda b=bar[0]: b.property("shown"))
-    assert next(i for i in items() if i.objectName() == "albumSelectionCount").property("text") == "2 albums selected"
+    assert next(i for i in items() if i.objectName() == "selectionCount").property("text") == "2 albums selected"
 
     click(cards[0], Qt.MouseButton.RightButton)
     menu = window.findChild(QObject, "albumMenu")

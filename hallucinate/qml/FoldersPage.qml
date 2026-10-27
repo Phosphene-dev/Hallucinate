@@ -116,13 +116,15 @@ Item {
                     Rectangle {
                         id: tile
                         required property var modelData
+                        required property int index
+                        Pick { id: folderPick; target: tile; kind: "folder"; entry: tile.modelData; source: page.folders; index: tile.index }
                         width: Math.max(240, (col.width - 2 * 10) / 3 - 1)
                         height: 68
                         radius: Theme.round(16)
                         color: tileHover.hovered ? Theme.glassHover : Theme.glass
                         HoverHandler { id: tileHover }
-                        border.width: 1
-                        border.color: Theme.stroke
+                        border.width: folderPick.selected ? 2 : 1
+                        border.color: folderPick.selected ? Theme.accent : Theme.stroke
                         Cover {
                             id: folderArt
                             x: 10; anchors.verticalCenter: parent.verticalCenter
@@ -164,14 +166,18 @@ Item {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             acceptedButtons: Qt.LeftButton | Qt.RightButton
-                            onPressAndHold: Nav.folderMenu(tile.modelData.path, tile.modelData.name)
+                            onPressAndHold: if (!PickDrag.painting && !PickDrag.carrying) Nav.folderMenu(tile.modelData.path, tile.modelData.name)
                             Accessible.role: Accessible.Button
                             Accessible.name: "Open " + tile.modelData.name + ", " + tile.modelData.songs
                                              + (tile.modelData.songs === 1 ? " song" : " songs")
                             Accessible.onPressAction: page.path = tile.modelData.path
+                            onPressed: function (mouse) { folderPick.press(this, mouse) }
+                            onPositionChanged: function (mouse) { folderPick.move(this, mouse) }
+                            onReleased: folderPick.release(this)
+                            onCanceled: folderPick.cancel(this)
                             onClicked: function (mouse) {
                                 if (mouse.button === Qt.RightButton) Nav.folderMenu(tile.modelData.path, tile.modelData.name)
-                                else page.path = tile.modelData.path
+                                else if (!folderPick.click(mouse)) page.path = tile.modelData.path
                             }
                         }
                         IconButton {

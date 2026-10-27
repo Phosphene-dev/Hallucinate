@@ -122,6 +122,32 @@ Rectangle {
             onVisibleChanged: if (visible) { var b = saveDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
         }
     }
+    // A selection carried here (see PickDrag) goes on the end of the queue
+    DropArea {
+        id: selectionDrop
+        anchors.fill: parent
+        keys: ["hallucinate/selection"]
+        onDropped: function (drop) {
+            var p = Selection.songPaths()
+            userLib.enqueuePaths(p)
+            Selection.clear()
+            Nav.notify(p.length + (p.length === 1 ? " song" : " songs") + " added to the queue")
+            drop.accept()
+        }
+        Rectangle {
+            anchors.fill: parent
+            visible: selectionDrop.containsDrag
+            color: "transparent"
+            border.color: Theme.accent
+            border.width: 2
+            Text {
+                textFormat: Text.PlainText
+                anchors.centerIn: parent
+                text: "Drop to add to queue"
+                color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
+            }
+        }
+    }
     DropArea {
         id: queueDrop
         anchors.fill: parent
@@ -183,15 +209,28 @@ Rectangle {
             y: list.dragTo * 54 - list.contentY + (list.dragTo > list.dragFrom ? 54 : 0) - 1
         }
         delegate: Rectangle {
+            id: qrow
             width: ListView.view.width - 10
             height: 54
             radius: Theme.radiusSmall
-            color: hh.hovered ? Theme.surface : "transparent"
+            Pick { id: qpick; target: qrow; kind: "queue"; entry: ({ index: index, title: model.title, path: model.path }); source: player.queueModel; index: index }
+            color: qpick.selected ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, hh.hovered ? 0.24 : 0.17)
+                                  : hh.hovered ? Theme.surface : "transparent"
             HoverHandler { id: hh }
             opacity: ListView.view.dragFrom === index ? 0.4 : 1
             activeFocusOnTab: true
             Keys.onReturnPressed: player.playIndex(index)
             Keys.onPressed: function (e) {
+                if (qpick.keys(e)) return
+                // Delete on a selected entry takes the whole selection out
+                if (e.key === Qt.Key_Delete && !e.modifiers && qpick.selected && Selection.count > 1) {
+                    var n = Selection.count
+                    player.removeIndexes(Selection.items.map(function (i) { return parseInt(i.key) }))
+                    Selection.clear()
+                    Nav.notifyAction(n + " songs removed from the queue", "Undo", function () { player.undoQueue() })
+                    e.accepted = true
+                    return
+                }
                 if ((e.modifiers & Qt.AltModifier) && e.key === Qt.Key_Up && index > 0) { player.moveItem(index, index - 1); e.accepted = true }
                 else if ((e.modifiers & Qt.AltModifier) && e.key === Qt.Key_Down && index < ListView.view.count - 1) { player.moveItem(index, index + 1); e.accepted = true }
                 else if (e.key === Qt.Key_Delete && !e.modifiers) { panel.removeRow(index, true); e.accepted = true }
@@ -202,10 +241,14 @@ Rectangle {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
-                onPressAndHold: Nav.trackMenu(model.path, model.title, "queue", index)
+                onPressAndHold: if (!PickDrag.painting) Nav.trackMenu(model.path, model.title, "queue", index)
+                onPressed: function (mouse) { qpick.press(this, mouse) }
+                onPositionChanged: function (mouse) { qpick.move(this, mouse) }
+                onReleased: qpick.release(this)
+                onCanceled: qpick.cancel(this)
                 onClicked: function (mouse) {
                     if (mouse.button === Qt.RightButton) Nav.trackMenu(model.path, model.title, "queue", index)
-                    else player.playIndex(index)
+                    else if (!qpick.click(mouse)) player.playIndex(index)
                 }
             }
             MouseArea {
