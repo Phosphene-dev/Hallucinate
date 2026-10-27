@@ -7,7 +7,7 @@ import QtQuick
 QtObject {
     id: drag
 
-    property var pick: null            // the Pick the press was on
+    property var pick: null            // the Pick a mouse press was on (none for touch: press-and-hold menus are touch's)
     property bool painting: false
     property bool carrying: false
     property var base: []              // the selection when painting began (painting adds to it)

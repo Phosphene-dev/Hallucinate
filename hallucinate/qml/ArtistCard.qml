@@ -91,7 +91,7 @@ Item {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onPressAndHold: if (!PickDrag.painting && !PickDrag.carrying) card.menuIt()
+        onPressAndHold: if (!PickDrag.pick) card.menuIt()
         onPressed: function (mouse) { pick.press(this, mouse) }
         onPositionChanged: function (mouse) { if (pressed) pick.move(this, mouse) }
         onReleased: pick.release(this)

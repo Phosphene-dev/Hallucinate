@@ -344,10 +344,28 @@ ApplicationWindow {
         function onOpenSpectrum(path) { spectrumWindow.analyse(path) }
         function onNewPlaylistWith(paths) { createDlg.paths = paths; createDlg.open() }
         function onTrackMenu(path, title, context, index) {
-            // on a song that's part of a selection, the menu acts on the whole selection
-            if (Selection.count > 1 && Selection.has("song", path)) trackMenu.showMany(Selection.songPaths(), context)
+            // on a song (or a play) that's part of a selection, the menu acts on the whole selection
+            var inIt = Selection.count > 1 && Selection.domain === "music"
+                       && (Selection.has("song", path) || Selection.items.some(function (i) { return i.kind === "history" && i.path === path }))
+            if (inIt) trackMenu.showMany(Selection.songPaths(), context)
             else trackMenu.show(path, title, context, index)
         }
+        function onDeleteInList(context, path, index) {
+            if (context === "liked") {
+                var many = Selection.count > 1 && Selection.has("song", path)
+                var paths = many ? Selection.paths.slice() : [path]
+                userLib.setLikedPaths(paths, false)
+                if (many) Selection.clear()
+                Nav.notifyAction(paths.length === 1 ? "Removed from Liked Songs" : paths.length + " songs removed from Liked Songs",
+                                 "Undo", function () { userLib.setLikedPaths(paths, true) })
+                return
+            }
+            if (context !== "playlist") return
+            if (Selection.count > 1 && Selection.has("song", path) && Selection.origin === "playlist:" + userLib.currentPlaylist)
+                trackMenu.removePathsFromPlaylist(Selection.paths.slice())
+            else trackMenu.removeFromPlaylist([index])
+        }
+        function onSelectionMenu() { if (Selection.domain === "music") trackMenu.showMany(Selection.songPaths(), "") }
         function onToggleNowPlaying() { nowPlaying.toggle() }
         function onOpenHealth() { if (window.featureOn("health")) window.go("health") }
         function onOpenPalette() { commandPalette.show() }

@@ -58,9 +58,15 @@ Rectangle {
         var plain = (event.modifiers & ~Qt.KeypadModifier) === Qt.NoModifier
         event.accepted = listKeys.handles(event) || listKeys.selects(event)
             || (plain && [Qt.Key_Space, Qt.Key_Return, Qt.Key_Enter].indexOf(event.key) >= 0)
+            || (plain && event.key === Qt.Key_Delete && (row.context === "playlist" || row.context === "liked"))
     }
     Keys.onPressed: function (event) {
         if (pick.keys(event)) return
+        if (event.key === Qt.Key_Delete && (row.context === "playlist" || row.context === "liked") && row.path.length) {
+            Nav.deleteInList(row.context, row.path, row.rowIndex)
+            event.accepted = true
+            return
+        }
         if (listKeys.handles(event)) listKeys.press(event, row.rowIndex)
     }
     Keys.onSpacePressed: row.activated()
@@ -77,7 +83,7 @@ Rectangle {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onPressAndHold: if (row.path.length && !PickDrag.painting && !PickDrag.carrying) Nav.trackMenu(row.path, row.title, row.context, row.rowIndex)
+        onPressAndHold: if (row.path.length && !PickDrag.pick) Nav.trackMenu(row.path, row.title, row.context, row.rowIndex)
         onPressed: function (mouse) { if (row.path.length) pick.press(this, mouse) }
         onPositionChanged: function (mouse) { pick.move(this, mouse) }
         onReleased: pick.release(this)

@@ -18,9 +18,19 @@ Menu {
                                                                           : "Everything in “" + name + "”"
 
     property var copies: ({ servers: 0, kept: 0, waiting: 0 })  // songs from a music server, kept here or not
-    function showNow() { copies = serverCopies.status(paths()); popup() }
+    function showNow() { if (ofSelection()) return; copies = serverCopies.status(paths()); popup() }
+    // on one of several things selected, the menu is the selection's (every song of all of them)
+    function ofSelection() {
+        if (Selection.count < 2 || !Selection.has(kind, kind === "folder" ? path : name)) return false
+        Nav.selectionMenu()
+        return true
+    }
     function showArtist(n) { kind = "artist"; name = n; path = ""; showNow() }
-    function showFolder(p, n) { kind = "folder"; path = p; name = n || p.split("/").pop(); copies = ({ servers: 0, kept: 0, waiting: 0 }); popup() }
+    function showFolder(p, n) {
+        kind = "folder"; path = p; name = n || p.split("/").pop()
+        if (ofSelection()) return
+        copies = ({ servers: 0, kept: 0, waiting: 0 }); popup()
+    }
     function showGenre(n) { kind = "genre"; name = n; path = ""; showNow() }
     function showComposer(n) { kind = "composer"; name = n; path = ""; showNow() }
     signal genreRenamed(string oldName, string newName)  // its songs are being retagged

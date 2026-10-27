@@ -158,6 +158,6 @@ Item {
             if (mouse.button === Qt.RightButton) card.openMenu()
             else if (!pick.click(mouse)) Nav.openAlbum(card.albumKey)
         }
-        onPressAndHold: if (!PickDrag.painting && !PickDrag.carrying) card.openMenu()  // touch screens
+        onPressAndHold: if (!PickDrag.pick) card.openMenu()  // touch screens
     }
 }

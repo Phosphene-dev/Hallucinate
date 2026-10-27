@@ -111,6 +111,21 @@ Item {
                 readonly property bool picked: name === page.selected
                 required property int index
                 Pick { id: genrePick; target: entry; kind: "genre"; entry: ({ name: entry.name }); source: page.genreModel; index: entry.index }
+                // from the keyboard: Tab to the list, arrows move, Enter shows its songs, the Menu key its menu
+                activeFocusOnTab: shown
+                ListKeys { id: genreKeys; row: entry; pick: genrePick; onMenu: genreMenu.showGenre(entry.name) }
+                Keys.onShortcutOverride: function (event) {
+                    event.accepted = genreKeys.handles(event) || genreKeys.selects(event)
+                        || [Qt.Key_Space, Qt.Key_Return, Qt.Key_Enter].indexOf(event.key) >= 0
+                }
+                Keys.onPressed: function (event) {
+                    if (genrePick.keys(event)) return
+                    if (genreKeys.handles(event)) genreKeys.press(event, entry.index)
+                }
+                Keys.onReturnPressed: page.pick(entry.name)
+                Keys.onEnterPressed: page.pick(entry.name)
+                Keys.onSpacePressed: page.pick(entry.name)
+                Rectangle { anchors.fill: parent; radius: Theme.radius; color: "transparent"; border.width: 2; border.color: Theme.accent; visible: entry.activeFocus }
                 width: ListView.view.width - 8
                 height: shown ? 58 : 0
                 visible: shown
@@ -157,7 +172,7 @@ Item {
                 MouseArea {
                     anchors.fill: parent
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
-                    onPressAndHold: if (!PickDrag.painting && !PickDrag.carrying) genreMenu.showGenre(entry.name)
+                    onPressAndHold: if (!PickDrag.pick) genreMenu.showGenre(entry.name)
                     onPressed: function (mouse) { genrePick.press(this, mouse) }
                     onPositionChanged: function (mouse) { genrePick.move(this, mouse) }
                     onReleased: genrePick.release(this)

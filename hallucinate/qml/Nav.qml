@@ -40,6 +40,8 @@ QtObject {
     signal trashAlbums(var keys, string what)
     // songs by path (paths: one song, or a selection); `what` names them in the confirmation
     signal artistMenu(string name)
+    signal selectionMenu()  // the song menu, for every song of what's selected
+    signal deleteInList(string context, string path, int index)  // Delete on a song row: out of a playlist, or unliked
     signal folderMenu(string path, string name)
     signal removeSongs(var paths, string what)
     signal removeFolder(string path)  // take a music folder out of the library, after asking

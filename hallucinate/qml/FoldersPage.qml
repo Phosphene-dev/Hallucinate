@@ -118,6 +118,21 @@ Item {
                         required property var modelData
                         required property int index
                         Pick { id: folderPick; target: tile; kind: "folder"; entry: tile.modelData; source: page.folders; index: tile.index }
+                        // from the keyboard: Tab to it, Enter opens it, the Menu key its menu
+                        activeFocusOnTab: true
+                        Accessible.role: Accessible.Button
+                        Accessible.name: "Open " + tile.modelData.name + ", " + tile.modelData.songs + (tile.modelData.songs === 1 ? " song" : " songs")
+                        Accessible.selected: folderPick.selected
+                        Accessible.onPressAction: page.path = tile.modelData.path
+                        Keys.onShortcutOverride: function (event) { event.accepted = [Qt.Key_Space, Qt.Key_Return, Qt.Key_Enter].indexOf(event.key) >= 0 || ((event.modifiers & Qt.ControlModifier) && (event.key === Qt.Key_A || event.key === Qt.Key_Space)) }
+                        Keys.onPressed: function (event) {
+                            if (folderPick.keys(event)) return
+                            if (event.key === Qt.Key_Menu || (event.key === Qt.Key_F10 && (event.modifiers & Qt.ShiftModifier))) { Nav.folderMenu(tile.modelData.path, tile.modelData.name); event.accepted = true }
+                        }
+                        Keys.onReturnPressed: page.path = tile.modelData.path
+                        Keys.onEnterPressed: page.path = tile.modelData.path
+                        Keys.onSpacePressed: page.path = tile.modelData.path
+                        Rectangle { anchors.fill: parent; anchors.margins: -3; radius: Theme.round(18); color: "transparent"; border.width: 2; border.color: Theme.accent; visible: tile.activeFocus }
                         width: Math.max(240, (col.width - 2 * 10) / 3 - 1)
                         height: 68
                         radius: Theme.round(16)
@@ -166,7 +181,7 @@ Item {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             acceptedButtons: Qt.LeftButton | Qt.RightButton
-                            onPressAndHold: if (!PickDrag.painting && !PickDrag.carrying) Nav.folderMenu(tile.modelData.path, tile.modelData.name)
+                            onPressAndHold: if (!PickDrag.pick) Nav.folderMenu(tile.modelData.path, tile.modelData.name)
                             Accessible.role: Accessible.Button
                             Accessible.name: "Open " + tile.modelData.name + ", " + tile.modelData.songs
                                              + (tile.modelData.songs === 1 ? " song" : " songs")

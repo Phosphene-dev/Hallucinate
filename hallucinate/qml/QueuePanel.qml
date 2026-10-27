@@ -241,7 +241,7 @@ Rectangle {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
-                onPressAndHold: if (!PickDrag.painting) Nav.trackMenu(model.path, model.title, "queue", index)
+                onPressAndHold: if (!PickDrag.pick) Nav.trackMenu(model.path, model.title, "queue", index)
                 onPressed: function (mouse) { qpick.press(this, mouse) }
                 onPositionChanged: function (mouse) { qpick.move(this, mouse) }
                 onReleased: qpick.release(this)

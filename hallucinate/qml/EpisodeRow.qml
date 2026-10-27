@@ -87,7 +87,7 @@ Rectangle {
             else if (row.playing) player.toggle()
             else (row.upNextRow ? podcasts.playUpNext(row.episode.id) : podcasts.play(row.episode.id))
         }
-        onPressAndHold: if (!PickDrag.painting) row.menu()
+        onPressAndHold: if (!PickDrag.pick) row.menu()
         Accessible.role: Accessible.Button
         Accessible.name: (row.playing ? "Playing: " : "Play ") + (row.episode.title || "") + ", " + (row.episode.detail || "")
         Accessible.onPressAction: (row.upNextRow ? podcasts.playUpNext(row.episode.id) : podcasts.play(row.episode.id))

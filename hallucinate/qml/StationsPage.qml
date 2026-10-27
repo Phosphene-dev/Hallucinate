@@ -159,6 +159,26 @@ Item {
         property var selectionSource: null
         property int rowIndex: -1
         Pick { id: stationPick; target: row; kind: "station"; entry: row.station; source: row.selectionSource; index: row.rowIndex }
+        // from the keyboard: Tab to it, arrows move, Enter plays it, the Menu key its menu
+        activeFocusOnTab: true
+        objectName: "stationRow"
+        Accessible.role: Accessible.ListItem
+        Accessible.name: (row.playing ? "Playing: " : "") + row.name + (row.detail ? ", " + row.detail : "")
+        Accessible.selected: stationPick.selected
+        Accessible.onPressAction: row.activated()
+        ListKeys { id: stationKeys; row: row; pick: row.station ? stationPick : null; onMenu: row.menu() }
+        Keys.onShortcutOverride: function (event) {
+            event.accepted = stationKeys.handles(event) || stationKeys.selects(event)
+                || [Qt.Key_Space, Qt.Key_Return, Qt.Key_Enter].indexOf(event.key) >= 0
+        }
+        Keys.onPressed: function (event) {
+            if (row.station && stationPick.keys(event)) return
+            if (stationKeys.handles(event)) stationKeys.press(event, row.rowIndex)
+        }
+        Keys.onReturnPressed: row.activated()
+        Keys.onEnterPressed: row.activated()
+        Keys.onSpacePressed: row.activated()
+        Rectangle { anchors.fill: parent; anchors.margins: -2; radius: Theme.round(14); color: "transparent"; border.width: 2; border.color: Theme.accent; visible: row.activeFocus }
         width: parent ? parent.width : 400
         height: 60
         radius: Theme.round(14)
@@ -208,7 +228,7 @@ Item {
                 if (mouse.button === Qt.RightButton) row.menu()
                 else if (!(row.station && stationPick.click(mouse))) row.activated()
             }
-            onPressAndHold: if (!PickDrag.painting) row.menu()
+            onPressAndHold: if (!PickDrag.pick) row.menu()
             Accessible.role: Accessible.Button
             Accessible.name: (row.playing ? "Playing: " : "Play ") + row.name
             Accessible.onPressAction: row.activated()
