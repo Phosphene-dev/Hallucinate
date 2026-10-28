@@ -1,5 +1,13 @@
 # Manual QA checklist
 
+## Release testing for 1.6.2
+
+- [ ] Home: the mouse wheel over a shelf moves its albums (each "Wheel over a row of albums" choice).
+- [ ] Home: a hovered cover lifts without losing its top.
+- [ ] Songs page after a fresh scan: every song whose album has a cover shows it.
+- [ ] With songs selected, resize the window back and forth: the bar changes layout without flickering.
+- [ ] With songs selected, open Now Playing: the bar is hidden; close it: the bar and selection are back.
+
 ## Release testing for 1.6.1
 
 - [ ] Home: drag a shelf sideways with the mouse; turn the wheel over a shelf (it moves); scroll down the page

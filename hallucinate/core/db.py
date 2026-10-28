@@ -1011,6 +1011,13 @@ class Database:
             if folded != s_aa:
                 stale.append((folded, tid))
         self.conn.executemany("UPDATE tracks SET s_aa=? WHERE id=?", stale)
+        # A song without a cover of its own takes its album's (#115): one found on another of the album's songs
+        # partway through a scan, or later, left the songs read before it without one in every song list
+        self.conn.execute(
+            """UPDATE tracks SET art = (SELECT MAX(t2.art) FROM tracks t2 WHERE t2.album_key = tracks.album_key
+                                        AND t2.art IS NOT NULL AND t2.art != '')
+               WHERE (art IS NULL OR art = '') AND EXISTS (SELECT 1 FROM tracks t3 WHERE t3.album_key = tracks.album_key
+                                                          AND t3.art IS NOT NULL AND t3.art != '')""")
         self.conn.commit()
 
     # --- reads ---------------------------------------------------------

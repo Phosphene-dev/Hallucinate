@@ -14,20 +14,46 @@ Item {
     readonly property bool canOn: row !== null && row.contentX < maxX - 1
     readonly property bool shown: hover.hovered && shell.ui.shelfArrows !== "false"
 
-    function page(dir) {
-        if (!row) return
+    function page(dir) { slideBy(dir * Math.max(200, row ? row.width * 0.8 : 0), 260) }
+    // Moves the row by dx (quick turns add up); false when it can't go that way
+    function slideBy(dx, ms) {
+        if (!row || maxX - minX < 1) return false
         var from = slide.running ? slide.to : row.contentX
-        slide.to = Math.max(minX, Math.min(maxX, from + dir * Math.max(200, row.width * 0.8)))
+        var to = Math.max(minX, Math.min(maxX, from + dx))
+        if (Math.abs(to - from) < 0.5) return false
+        slide.duration = Theme.reduceMotion ? 0 : ms
+        slide.to = to
         slide.restart()
+        return true
     }
     NumberAnimation {
         id: slide
         target: arrows.row
         property: "contentX"
-        duration: Theme.reduceMotion ? 0 : 260
         easing.type: Easing.OutCubic
     }
     HoverHandler { id: hover; acceptedDevices: PointerDevice.Mouse }
+
+    // The mouse wheel over the row (#109). A MouseArea's wheel, which every platform delivers alike: a
+    // WheelHandler on the list didn't get the wheel on the tester's desktop. Clicks and hovering go through
+    // (it takes no buttons). What it doesn't use goes on to the page.
+    MouseArea {
+        objectName: "shelfWheel"
+        anchors.fill: parent
+        acceptedButtons: Qt.NoButton
+        onWheel: function (wheel) {
+            wheel.accepted = false
+            if (!arrows.row || wheel.angleDelta.x !== 0 || wheel.angleDelta.y === 0) return  // sideways: the list's
+            if (wheel.phase !== Qt.NoScrollPhase && wheel.pixelDelta.y !== 0) return  // a touchpad: the list's own
+            var sideways = (wheel.modifiers & Qt.ShiftModifier) !== 0
+            var mode = shell.ui.shelfWheel || "auto"
+            // (a page scroll already under way carries on past the row)
+            var takes = sideways || mode === "row" || (mode === "auto" && Date.now() - WheelLatch.pageAt > WheelLatch.settle)
+            if (!takes) return
+            if (arrows.slideBy(-wheel.angleDelta.y / 120 * 220 * shell.scrollSpeed, 160) || sideways)
+                wheel.accepted = true  // at the row's end the page moves on
+        }
+    }
 
     Repeater {
         model: [-1, 1]

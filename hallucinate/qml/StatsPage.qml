@@ -233,6 +233,7 @@ Item {
                     // room around the cards for a hovered cover's lift and glow, which the clip would cut off (#110)
                     anchors.topMargin: -14; anchors.leftMargin: -14; anchors.rightMargin: -14
                     topMargin: 14; leftMargin: 14; rightMargin: 14
+                    contentY: -topMargin  // (the cards sit below that room; a sideways list doesn't move them itself)
                     orientation: ListView.Horizontal
                     spacing: 20
                     clip: true

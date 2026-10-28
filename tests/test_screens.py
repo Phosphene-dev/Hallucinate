@@ -575,7 +575,10 @@ def test_everything_clickable_has_a_name_for_screen_readers(qapp, app_window):
             if not child.isVisible():
                 continue
             cls = child.metaObject().className()
-            interactive = (cls.startswith("QQuickMouseArea") and child.isEnabled()) or child.property("activeFocusOnTab") \
+            # (a MouseArea taking no buttons only takes the wheel, as a shelf's does: nothing to click or name)
+            clickable = cls.startswith("QQuickMouseArea") and child.isEnabled() \
+                and child.property("acceptedButtons") != Qt.MouseButton.NoButton
+            interactive = clickable or child.property("activeFocusOnTab") \
                 or any(k in cls for k in ("TextField", "Slider", "ComboBox", "Switch", "CheckBox"))
             if interactive and not named(child):
                 ctx = QQmlEngine.contextForObject(child) or QQmlEngine.contextForObject(child.parentItem())
@@ -1827,6 +1830,12 @@ def test_the_wheel_over_a_shelf_moves_the_page_or_the_shelf(qapp, app_window):
             shelf = item
         items.extend(item.childItems())
     assert shelf is not None
+    # Issue 110: room above the covers for the hover lift (a sideways list's cards sat at its clipped top)
+    first = next(c for c in shelf.property("contentItem").childItems() if c.objectName() == "albumCard")
+    assert first.mapToScene(QPointF(0, 0)).y() - shelf.mapToScene(QPointF(0, 0)).y() >= 12
+    from hallucinate.thumbs import ArtProvider
+
+    assert ArtProvider.parse("128~2/file:///a.jpg") == (128, "/a.jpg")  # a Cover's retry asks for the same picture
     flick = shelf.parentItem()
     while flick is not None and flick.property("contentY") is None:
         flick = flick.parentItem()
@@ -2313,6 +2322,29 @@ def test_the_selection_bar_fits_the_window(qapp, app_window):
             more = next(i for i in items(bar) if i.objectName() == "selectionMore")
             assert more.isVisible()
     assert bar.property("level") == 0  # with room, everything is back in the bar
+
+    # Issue 116: Now Playing hides the bar; closing it brings it back, the selection kept
+    view = window.findChild(QObject, "nowPlayingView")
+    view.setProperty("open", True)
+    assert wait_for(lambda: not bar.isVisible())
+    view.setProperty("open", False)
+    assert wait_for(lambda: bar.isVisible()) and _js(window, "Selection.count") == 2
+
+    # Issue 117: going between sizes it goes straight to the layout that fits, without trying the wider ones
+    # again on each step (they flickered by)
+    from PySide6.QtCore import SIGNAL
+
+    seen = []
+    QObject.connect(bar, SIGNAL("levelChanged()"), lambda: seen.append(bar.property("level")))
+    for width in (700, 1900, 700, 1900, 700):
+        seen.clear()
+        window.resize(width, 800)
+        end = time.monotonic() + 0.4
+        while time.monotonic() < end:
+            qapp.processEvents()
+            time.sleep(0.005)
+        # (the page's own width can settle in two steps, the sidebar narrowing after the window)
+        assert len(seen) <= 2 and (bar.property("level") == 0 or 0 not in seen), (width, seen)
     assert not warnings, warnings[:3]
 
 

@@ -33,12 +33,24 @@ Rectangle {
     readonly property bool folded: level >= 2
     readonly property bool foldedMore: level >= 3
     readonly property bool foldedAll: level >= 4
+    // How wide the bar's row was at each level, for this selection's kind of actions: resizing the window goes
+    // straight to the level that fits, rather than back to 0 and folding up again on every step (#117)
+    property var widths: ({})
+    readonly property string actionsKey: [domain, songsOnly, filesOnly, playlistsOnly, inPlaylist, onServer].join()
     function fit() { if (shown && row.implicitWidth + 28 > maxWidth + 0.5 && level < 5) { level++; Qt.callLater(fit) } }
-    function refit() { level = 0; Qt.callLater(fit) }
+    function refit() {
+        var l = 0
+        while (l < 5 && widths[l] !== undefined && widths[l] + 28 > maxWidth + 0.5) l++
+        level = l
+        Qt.callLater(fit)  // (a level not seen yet is measured, and folded further if need be)
+    }
     onMaxWidthChanged: refit()
-    onDomainChanged: refit()
+    onActionsKeyChanged: { widths = {}; refit() }
     onShownChanged: if (shown) refit()
-    Connections { target: row; function onImplicitWidthChanged() { Qt.callLater(bar.fit) } }
+    Connections {
+        target: row
+        function onImplicitWidthChanged() { bar.widths[bar.level] = row.implicitWidth; Qt.callLater(bar.fit) }
+    }
     width: Math.min(row.implicitWidth + 28, maxWidth)
     height: 52
     radius: Theme.round(26)
@@ -46,9 +58,11 @@ Rectangle {
     Bevel {}
     border.width: 1
     border.color: Theme.strokeHi
-    opacity: shown ? 1 : 0
+    // Now Playing covers the window: the bar steps out of its way and comes back after (#116); the selection stays
+    property bool covered: false
+    opacity: shown && !covered ? 1 : 0
     visible: opacity > 0
-    enabled: shown
+    enabled: shown && !covered
     Behavior on opacity { NumberAnimation { duration: 160 } }
 
     function paths() { return Selection.songPaths() }

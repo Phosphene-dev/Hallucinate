@@ -217,3 +217,16 @@ def test_listens_find_their_songs_again(db):
 def test_relinking_leaves_songs_you_dont_have(log):
     assert log.relink_plays() == 0
     assert [r["available"] for r in history.plays(log)][4] == 0  # Angel isn't in this library
+
+
+def test_songs_without_a_cover_take_their_album_s(db):
+    """Issue 115: a cover found on one of an album's songs partway through a scan left the songs read before it
+    without one in every song list. After the scan, they take the album's."""
+    add(db, "/m/a1", "One", "Band", "Record")
+    add(db, "/m/a2", "Two", "Band", "Record")
+    add(db, "/m/b1", "Solo", "Other", "Bare")
+    db.conn.execute("UPDATE tracks SET art='/art/record.jpg' WHERE path='/m/a2'")
+    db.finalize()
+    arts = {r[0]: r[1] for r in db.conn.execute("SELECT path, art FROM tracks")}
+    assert arts["/m/a1"] == "/art/record.jpg" and arts["/m/a2"] == "/art/record.jpg"
+    assert not arts["/m/b1"]  # an album with no cover anywhere stays without one

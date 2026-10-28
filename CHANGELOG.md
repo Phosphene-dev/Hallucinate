@@ -3,6 +3,25 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.6.2] - 2026-10-28
+
+The tester's sixth round.
+
+### Fixed
+- The mouse wheel still didn't move Home's album shelves on the tester's desktop (#109), whatever the setting.
+  Each shelf now takes the wheel itself, the way every platform delivers it, before the page does.
+- A hovered album cover was still cut off at the top on Home (#110): a sideways list placed its cards at its
+  very top, past the room made for them. The cards now sit below that room.
+- Some songs showed no cover in song lists until their album was opened (#115). Songs read before their album's
+  cover was found now take the album's cover after every scan, and a cover that fails to load shows ♪ and is
+  tried again instead of staying blank.
+- The selection bar flickered while the window was resized (#117): each step tried the full layout again. It
+  now remembers how wide each layout is and goes straight to the one that fits.
+
+### Added
+- The selection bar steps aside while Now Playing is open and comes back after, the selection kept (#116).
+- The sidebar's logo rocks along an arc when you point at it (#118); reduced motion keeps it still.
+
 ## [1.6.1] - 2026-10-27
 
 The tester's fifth round: Home's shelves move with the wheel and by dragging again, the selection bar and Now

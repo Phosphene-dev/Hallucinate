@@ -13,9 +13,16 @@ Rectangle {
     readonly property real wantedPx: Math.max(width, height) * Screen.devicePixelRatio
     readonly property int bucketPx: wantedPx <= 64 ? 64 : wantedPx <= 128 ? 128 : wantedPx <= 256 ? 256 : 512
     readonly property string sourceText: source.toString()
+    // A cover that didn't load (the provider sends a 1-pixel placeholder, which the image cache would keep
+    // showing as a blank square: #115) shows the ♪ and is asked for again a little later, a few times
+    property int attempt: 0
+    readonly property bool missing: img.status === Image.Ready && img.sourceSize.width <= 1
     readonly property string resolved: sourceText.length === 0 ? ""
-        : sourceText.indexOf("file:") === 0 ? "image://art/" + bucketPx + "/" + encodeURIComponent(sourceText)
+        : sourceText.indexOf("file:") === 0 ? "image://art/" + bucketPx + (attempt ? "~" + attempt : "") + "/" + encodeURIComponent(sourceText)
         : sourceText
+    onSourceTextChanged: attempt = 0
+    onMissingChanged: if (missing && attempt < 3 && sourceText.indexOf("file:") === 0) retry.restart()
+    Timer { id: retry; interval: 1500 * (cover.attempt + 1); onTriggered: cover.attempt++ }
 
     Rectangle {
         anchors.fill: parent
@@ -29,7 +36,7 @@ Rectangle {
         color: Theme.textDim  // readable on the placeholder in every theme
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSize(Math.max(12, cover.width * 0.4))
-        visible: img.status !== Image.Ready
+        visible: img.status !== Image.Ready || cover.missing
     }
     Image {
         id: img
@@ -38,7 +45,7 @@ Rectangle {
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         cache: true
-        opacity: status === Image.Ready ? 1 : 0
+        opacity: status === Image.Ready && !cover.missing ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 160 } }
         visible: !cover.useMask
         layer.enabled: cover.useMask
@@ -63,6 +70,6 @@ Rectangle {
         maskSource: mask
         maskThresholdMin: 0.5
         maskSpreadAtMin: 1.0
-        visible: cover.useMask && img.status === Image.Ready
+        visible: cover.useMask && img.status === Image.Ready && !cover.missing
     }
 }
