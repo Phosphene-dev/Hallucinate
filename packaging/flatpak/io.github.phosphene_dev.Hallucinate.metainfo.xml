@@ -95,6 +95,11 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.6.2" date="2026-10-28">
+      <description>
+        <p>The mouse wheel moves Home's album shelves, hovered covers aren't cut off, every song list shows its covers, and the selection bar no longer flickers while resizing and steps aside for Now Playing.</p>
+      </description>
+    </release>
     <release version="1.6.1" date="2026-10-27">
       <description>
         <p>Home's album shelves move with the mouse wheel and by dragging again, long song titles scroll while they play, and the selection bar and Now Playing fit small windows.</p>

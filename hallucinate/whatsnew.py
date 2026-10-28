@@ -2,6 +2,10 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "1.6.2": [
+        "The mouse wheel moves Home's album shelves, covers no longer lose their top on hover, and every song "
+        "list shows its album covers.",
+    ],
     "1.6.1": [
         "Home's album shelves move with the mouse wheel and by dragging again, and long song titles scroll in the "
         "player bar and mini player while they play.",

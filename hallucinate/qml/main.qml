@@ -481,6 +481,7 @@ ApplicationWindow {
         z: 59
         // over the page area (right of the sidebar), never wider than it
         maxWidth: stack.width - 24
+        covered: nowPlaying.open
         x: sidebar.width + (stack.width - width) / 2
         anchors { bottom: parent.bottom; bottomMargin: 112 }
         onEditTags: function (paths) { tagEditor.editTracks(paths) }

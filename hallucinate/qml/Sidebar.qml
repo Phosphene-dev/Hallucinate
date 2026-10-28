@@ -200,6 +200,24 @@ Item {
                         width: 32; height: 32
                         source: "../assets/hallucinate.png"; sourceSize: Qt.size(64, 64); smooth: true
                         Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        // Pointed at, it rocks from side to side along an arc, like a rainbow's, and settles back
+                        // when the pointer leaves (#118); reduced motion keeps it still
+                        transform: Rotation {
+                            id: rock
+                            origin.x: logo.width / 2; origin.y: logo.height * 1.6  // a pivot below: the tilt is an arc
+                            angle: 0
+                        }
+                        HoverHandler { id: logoHover; objectName: "logoHover" }
+                        readonly property bool rocking: logoHover.hovered && !Theme.reduceMotion
+                        onRockingChanged: if (!rocking) settle.restart()
+                        SequentialAnimation {
+                            running: logo.rocking
+                            loops: Animation.Infinite
+                            NumberAnimation { target: rock; property: "angle"; to: -12; duration: 420; easing.type: Easing.InOutSine }
+                            NumberAnimation { target: rock; property: "angle"; to: 12; duration: 840; easing.type: Easing.InOutSine }
+                            NumberAnimation { target: rock; property: "angle"; to: 0; duration: 420; easing.type: Easing.InOutSine }
+                        }
+                        NumberAnimation { id: settle; target: rock; property: "angle"; to: 0; duration: 320; easing.type: Easing.OutBack }
                     }
                     FlagStripe {  // a pride theme's flag, quietly under the name
                         anchors { left: logo.right; leftMargin: 11; top: parent.verticalCenter; topMargin: 12 }

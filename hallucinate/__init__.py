@@ -1,4 +1,4 @@
-__version__ = "1.6.1"
+__version__ = "1.6.2"
 
 from . import audiobackend as _audiobackend  # noqa: E402
 

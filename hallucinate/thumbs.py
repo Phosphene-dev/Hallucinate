@@ -33,7 +33,7 @@ class ArtProvider(QQuickImageProvider):
     def parse(image_id: str):
         size_part, _, rest = image_id.partition("/")
         try:
-            px = bucket(int(size_part))
+            px = bucket(int(size_part.split("~")[0]))  # ("128~2": a Cover's second try at a picture that failed)
         except ValueError:
             return None, ""
         rest = unquote(rest)
