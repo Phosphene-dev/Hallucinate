@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.6.3" date="2026-10-30">
+      <description>
+        <p>The web remote has internet radio and podcasts and a Settings page with light and dark modes. Pick any accent colour with a new colour picker.</p>
+        <p>Fixes: clicking command palette results, smoother genre pages, the rescan progress bar, the queue's reorder handle and the web remote's play button.</p>
+      </description>
+    </release>
     <release version="1.6.2" date="2026-10-28">
       <description>
         <p>The mouse wheel moves Home's album shelves, hovered covers aren't cut off, every song list shows its covers, and the selection bar no longer flickers while resizing and steps aside for Now Playing.</p>
