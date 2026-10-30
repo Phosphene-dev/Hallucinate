@@ -283,7 +283,7 @@ Item {
         IconButton { objectName: "openNowPlaying"; icon: "fullscreen"; tip: "Now playing (F)"; onClicked: Nav.toggleNowPlaying() }
         IconButton { icon: "expand"; tip: "Mini player (Ctrl+M)"; visible: !bar.compact; onClicked: shell.toggleMini() }
         IconButton { visible: shell.features.lyrics !== false && !bar.tight; icon: "note"; active: bar.lyricsOpen; tip: "Lyrics"; onClicked: bar.toggleLyrics() }
-        IconButton { icon: "queue"; active: bar.queueOpen; onClicked: bar.toggleQueue() }
+        IconButton { icon: "queue"; active: bar.queueOpen; tip: "Queue (Q)"; onClicked: bar.toggleQueue() }
         VolumeButton {
             objectName: "muteButton"
             anchors.verticalCenter: parent.verticalCenter

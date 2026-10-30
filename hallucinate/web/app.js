@@ -138,8 +138,8 @@ function render() {
     $("miniArt").src = key ? art(key, 64) : NO_ART;
     $("backdrop").style.backgroundImage = key ? `url("${art(key, 128)}")` : "none";
   }
-  $("icoPlay").hidden = s.playing;
-  $("icoPause").hidden = !s.playing;
+  $("icoPlay").toggleAttribute("hidden", s.playing);  // (an svg has no .hidden: #124)
+  $("icoPause").toggleAttribute("hidden", !s.playing);
   $("btnPlay").setAttribute("aria-label", s.playing ? "Pause" : "Play");
   $("miniIco").setAttribute("d", s.playing ? "M7 5h4v14H7zM13 5h4v14h-4z" : "M8 5l11 7-11 7z");
   $("btnShuffle").classList.toggle("on", s.shuffle);

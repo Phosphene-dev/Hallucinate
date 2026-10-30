@@ -5,7 +5,7 @@ import "."
 // Ctrl+K: type to jump anywhere, run any command, or play something. Commands are matched fuzzily (letters in
 // order, word starts count most); albums, artists and songs come from the library search.
 Popup {
-    id: palette
+    id: cmdPalette  // (not "palette": every item has a palette property of its own, which a row would find first: #119)
     objectName: "commandPalette"
     property var win
     property var results: []
@@ -186,16 +186,16 @@ Popup {
     }
 
     property bool searched: false  // the palette used the library's search, so the page's results need restoring
-    Timer { id: searchDelay; interval: 110; onTriggered: { palette.searched = true; library.search(field.text); palette.rebuild() } }
+    Timer { id: searchDelay; interval: 110; onTriggered: { cmdPalette.searched = true; library.search(field.text); cmdPalette.rebuild() } }
     Connections {
         target: library.searchTracks
-        enabled: palette.opened
-        function onCountChanged() { palette.rebuild() }
+        enabled: cmdPalette.opened
+        function onCountChanged() { cmdPalette.rebuild() }
     }
     Connections {
         target: library.searchAlbums
-        enabled: palette.opened
-        function onCountChanged() { palette.rebuild() }
+        enabled: cmdPalette.opened
+        function onCountChanged() { cmdPalette.rebuild() }
     }
 
     contentItem: Column {
@@ -215,23 +215,23 @@ Popup {
                 Icon { x: 20; anchors.verticalCenter: parent.verticalCenter; width: 18; height: 18; name: "search"; color: Theme.accent }
                 Rectangle { anchors { left: parent.left; right: parent.right; bottom: parent.bottom } height: 1; color: Theme.stroke }
             }
-            onTextEdited: { palette.rebuild(); searchDelay.restart() }
-            Keys.onDownPressed: { palette.current = Math.min(palette.results.length - 1, palette.current + 1); list.positionViewAtIndex(palette.current, ListView.Contain) }
-            Keys.onUpPressed: { palette.current = Math.max(0, palette.current - 1); list.positionViewAtIndex(palette.current, ListView.Contain) }
-            Keys.onReturnPressed: palette.runCurrent()
-            Keys.onEnterPressed: palette.runCurrent()
-            Keys.onEscapePressed: palette.close()
+            onTextEdited: { cmdPalette.rebuild(); searchDelay.restart() }
+            Keys.onDownPressed: { cmdPalette.current = Math.min(cmdPalette.results.length - 1, cmdPalette.current + 1); list.positionViewAtIndex(cmdPalette.current, ListView.Contain) }
+            Keys.onUpPressed: { cmdPalette.current = Math.max(0, cmdPalette.current - 1); list.positionViewAtIndex(cmdPalette.current, ListView.Contain) }
+            Keys.onReturnPressed: cmdPalette.runCurrent()
+            Keys.onEnterPressed: cmdPalette.runCurrent()
+            Keys.onEscapePressed: cmdPalette.close()
         }
         ListView {
             WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
             id: list
             objectName: "paletteResults"
             width: parent.width
-            height: palette.height - field.height
+            height: cmdPalette.height - field.height
             topMargin: 8; bottomMargin: 8
             leftMargin: 8; rightMargin: 8  // a ListView ignores its rows' own x
             clip: true
-            model: palette.results
+            model: cmdPalette.results
             boundsBehavior: Flickable.StopAtBounds
             delegate: Rectangle {
                 required property var modelData
@@ -239,7 +239,7 @@ Popup {
                 width: list.width - list.leftMargin - list.rightMargin
                 height: 50
                 radius: Theme.round(12)
-                color: index === palette.current ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.18) : "transparent"
+                color: index === cmdPalette.current ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.18) : "transparent"
                 Item {
                     id: lead
                     x: 12; width: 32; height: 32
@@ -249,7 +249,7 @@ Popup {
                         visible: !modelData.art && modelData.i !== undefined
                         width: 18; height: 18
                         name: modelData.i || ""
-                        color: index === palette.current ? Theme.accent : Theme.textDim
+                        color: index === cmdPalette.current ? Theme.accent : Theme.textDim
                     }
                     Cover {
                         anchors.fill: parent
@@ -267,7 +267,7 @@ Popup {
                     elide: Text.ElideRight
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(14)
-                    font.weight: index === palette.current ? Font.DemiBold : Font.Normal
+                    font.weight: index === cmdPalette.current ? Font.DemiBold : Font.Normal
                 }
                 Text {
                     textFormat: Text.PlainText
@@ -285,14 +285,14 @@ Popup {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onEntered: palette.current = index
-                    onClicked: { palette.current = index; palette.runCurrent() }
+                    onEntered: cmdPalette.current = index
+                    onClicked: { cmdPalette.current = index; cmdPalette.runCurrent() }
                 }
             }
             Text {
                 textFormat: Text.PlainText
                 anchors.centerIn: parent
-                visible: palette.results.length === 0
+                visible: cmdPalette.results.length === 0
                 text: "Nothing matches"
                 color: Theme.textDim
                 font.family: Theme.fontFamily

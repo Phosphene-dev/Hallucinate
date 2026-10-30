@@ -49,6 +49,14 @@ This record starts at version 0.3.2. Versions in brackets are where each decisio
   that a drag paints a selection or carries one depending on where it starts, and that every kind of item can be
   selected (artists, genres and composers; sidebar playlists; queue entries; history, folders, podcasts and
   radio). [1.6.0]
+- **Phones later, on purpose.** I want some kind of phone companion, and maybe one day a mobile version, but that's
+  a big commitment, so it waits (an aarch64 Flatpak for Linux phones, issue 130, waits with it).
+- **A cyberpunk theme of its own.** A retro-futuristic, trippy, surreal sci-fi theme: neon-noir cyberpunk with a
+  dreamlike layer, after Serial Experiments Lain, Evangelion, Blade Runner, Cyberpunk 2077 and Gunbuster's
+  greebles. As full as the Hi-Fi Deck or more, with loud and quiet versions, a Now Playing that can be a cockpit
+  or a terminal (a choice), and no effect at all on the app for anyone not using it.
+- **Choices, never a locked-down monolith.** Features shouldn't feel half-baked or fixed one way: where people
+  could want different things, they get the option.
 - **Tiling window managers are first-class.** A tiling window manager (Hyprland) is my main desktop, so the app
   has to work properly there, not only on floating desktops. [0.6.1, 0.9.0]
 
