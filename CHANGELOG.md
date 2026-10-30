@@ -3,6 +3,18 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+- Library health → Repair covers: if any covers show blank or garbled, this makes them all again. Every song's
+  picture is read afresh (a full rescan) and the scaled copies are remade. Covers you chose yourself stay.
+
+### Fixed
+- A cover picture that stops part way (in a song's tags, or a cover.jpg still being copied in) showed as a garbled
+  or blank cover. It's passed over for the folder's cover or another song's picture.
+- Covers that changed on disk during a scan kept showing the old picture until the app restarted. They're read
+  again once the scan is done.
+
 ## [1.7.1] - 2026-10-30
 
 ### Changed

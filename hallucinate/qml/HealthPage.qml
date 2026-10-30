@@ -149,10 +149,30 @@ Item {
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(14)
                     }
-                    PillButton {
-                        text: page.report.loading ? "Checking…" : "Check again"
-                        enabled: !page.report.loading
-                        onClicked: library.checkHealth()
+                    Flow {
+                        width: parent.width
+                        spacing: 10
+                        PillButton {
+                            text: page.report.loading ? "Checking…" : "Check again"
+                            enabled: !page.report.loading
+                            onClicked: library.checkHealth()
+                        }
+                        // covers blank or garbled: start them over (a full rescan; your own chosen covers stay)
+                        PillButton {
+                            objectName: "repairCovers"
+                            text: "Repair covers…"
+                            enabled: !library.scanning
+                            onClicked: repairDlg.open()
+                        }
+                    }
+                    ConfirmDialog {
+                        id: repairDlg
+                        title: "Repair covers?"
+                        body: "Covers that show blank or garbled are made again: every song's picture is read afresh "
+                              + "(a full rescan, which can take a while with a big library), and any that turn out damaged "
+                              + "make way for the folder's cover. Covers you chose yourself stay as they are."
+                        confirmText: "Repair covers"
+                        onAccepted: { library.repairCovers(); Nav.notify("Repairing covers: rescanning your library") }
                     }
                 }
             }

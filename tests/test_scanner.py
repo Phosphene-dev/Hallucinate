@@ -202,3 +202,35 @@ def test_disc_folders_are_read_again_after_the_upgrade(tmp_path):
     assert {r[0]: r[1] for r in db.conn.execute("SELECT path, mtime FROM tracks")} == {
         "/m/Box/CD1/1.mp3": 0, "/m/Box/CD1/2.mp3": 5, "/m/Album/1.mp3": 5}
     db.close()
+
+
+def test_a_cover_cut_short_makes_way_for_the_folders(db, scan, tmp_path):
+    """An embedded picture that stops part way (a tag written by a tool that stopped, a file still being copied)
+    showed as a garbled or blank cover. It's passed over for the folder's cover; a whole one is kept."""
+    from PySide6.QtGui import QColor, QImage
+
+    from hallucinate.core.tags import folder_art_whole, picture_whole
+
+    img = QImage(300, 300, QImage.Format.Format_RGB32)
+    img.fill(QColor("#3a7bd5"))
+    whole = tmp_path / "whole.jpg"
+    assert img.save(str(whole), "JPG", 90)
+    jpeg = whole.read_bytes()
+    assert picture_whole(jpeg) and picture_whole(jpeg + b"\0" * 100)  # a little padding after the end is fine
+    assert not picture_whole(jpeg[: len(jpeg) // 2]) and not picture_whole(b"")
+    assert folder_art_whole(str(whole))
+
+    album = tmp_path / "M" / "Cut"
+    album.mkdir(parents=True)
+    make_mp3(album / "01.mp3", "One", "Someone", "Cut", "Someone", "1", art=jpeg[: len(jpeg) // 2])
+    shutil.copy(whole, album / "cover.jpg")
+    scan(tmp_path / "M")
+    (cut,) = db.albums()
+    assert cut["art"] == str(album / "cover.jpg")
+
+    other = tmp_path / "N" / "Fine"
+    other.mkdir(parents=True)
+    make_mp3(other / "01.mp3", "Two", "Someone Else", "Fine", "Someone Else", "1", art=jpeg)
+    scan(tmp_path / "N")
+    fine = next(a for a in db.albums() if a["album"] == "Fine")
+    assert fine["art"] and fine["art"] != str(other / "cover.jpg")

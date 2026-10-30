@@ -17,7 +17,9 @@ from mutagen.wave import WAVE
 from hallucinate.core.db import Database
 from hallucinate.core.scanner import Scanner
 
-PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
+# a real 1x1 PNG, ending in its IEND chunk (a cover that stops short is passed over by the scanner)
+PNG = (b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde"
+       b"\x00\x00\x00\x0cIDATx\x9cc\xe8\xaf\xfe\x0f\x00\x03\xa6\x02\n\xab\x10\xed\xc7\x00\x00\x00\x00IEND\xaeB`\x82")
 
 
 def make_mp3(path, title=None, artist=None, album=None, album_artist=None, track=None, art=None):
