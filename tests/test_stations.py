@@ -452,3 +452,18 @@ def test_stop_network_stops_reading_song_titles(radio, server):
     stations.resumeNetwork()
     assert stations._title_timer.isActive()
     player.stop()
+
+
+def test_a_station_says_connecting_until_its_sound_comes(radio, server, music):
+    """From a song to a station on a host already looked up, it said nothing while the stream opened (#139):
+    "Connecting…" shows until the sound comes, then goes."""
+    _, player, _ = radio
+    song = sorted(p for p in music.rglob("*") if p.is_file())[0]
+    player.playList([{"path": str(song), "title": "A song", "artist": "", "duration": 1}], 0)
+    assert wait_for(lambda: player.playing, timeout=10)
+    entry = {"path": server.url("/live"), "kind": "station", "station": "Test FM", "title": "Test FM",
+             "artist": "", "duration": 0, "id": -98}
+    player.playList([entry], 0)  # 127.0.0.1: nothing to look up, so it goes straight to the stream
+    seen = []
+    assert wait_for(lambda: seen.append(player.error) or (player.playing and player.position > 100), timeout=15), player.error
+    assert "Connecting…" in seen and player.error == ""

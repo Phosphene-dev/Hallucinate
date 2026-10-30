@@ -369,3 +369,20 @@ def test_radio_and_podcasts_in_the_remote(tmp_path):
     assert api.call("features")["stations"] is False
     with pytest.raises(ApiError):
         api.call("stations")
+
+
+def test_a_device_that_disconnects_itself_leaves_the_apps_list(remote):
+    """Web remote → Settings → Disconnect this device: the app's list of paired devices follows at once (#137)."""
+    server, *_ = remote
+    server.configure(enabled=True)
+    key = pair(server)
+    assert wait_for(lambda: len(server.pairedDevices) == 1)
+    # (the pairing code's countdown refreshes the app every second while it runs; by the time someone
+    # disconnects in real use it's long over)
+    assert wait_for(lambda: not server._code_timer.isActive(), timeout=10)
+    told = []
+    server.changed.connect(lambda: told.append(len(server.pairedDevices)))
+    r = request(server, "POST", "/api/forget", {}, {**APP, "Authorization": f"Bearer {key}"})
+    assert r["status"] == 200
+    assert wait_for(lambda: told and told[-1] == 0)
+    assert server.pairedDevices == []

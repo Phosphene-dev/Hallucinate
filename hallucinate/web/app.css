@@ -180,3 +180,7 @@ body.spin .now-art { position: relative; }
 body.spin .now-art::after { content: ""; position: absolute; inset: 42%; border-radius: 50%; background: var(--bg);
                             box-shadow: 0 0 0 1px rgba(255, 255, 255, .25); }
 @media (prefers-reduced-motion: reduce) { body.spin .now-art, body.spin .mini img { animation: none; } }
+
+/* a radio station: the bar can't be moved, and the end says LIVE (#138) */
+#seek.live { opacity: .55; cursor: default; }
+#durText.live { color: var(--accent); font-weight: 700; letter-spacing: .08em; }

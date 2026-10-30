@@ -2,6 +2,10 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "1.7.1": [
+        "Radio stations say “Connecting…” while they connect, every time, and the web remote shows them as LIVE.",
+        "A device you disconnect from the web remote leaves the list in Settings straight away.",
+    ],
     "1.7.0": [
         "Afterimage, a neon-noir theme (loud, quiet or alert): pick it in Settings → Appearance, then open Now Playing "
         "for a cockpit, or a terminal you can type commands into.",

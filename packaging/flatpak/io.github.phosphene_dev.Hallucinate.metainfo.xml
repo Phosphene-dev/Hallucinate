@@ -95,6 +95,11 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.7.1" date="2026-10-30">
+      <description>
+        <p>Radio stations show that they're connecting every time, and the web remote shows a station as live, with a bar that can't be dragged. A device disconnected from the web remote leaves the list in Settings at once.</p>
+      </description>
+    </release>
     <release version="1.7.0" date="2026-10-30">
       <description>
         <p>Afterimage, a neon-noir theme in loud, quiet and alert versions, with its own Now Playing: a cockpit with a holographic cover and gauges, or a terminal you can type commands into. Three new visualizers come with it: Tunnel, Wires and Neon rain.</p>

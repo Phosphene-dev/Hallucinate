@@ -402,6 +402,7 @@ class _Handler(BaseHTTPRequestHandler):
             return self._error(HTTPStatus.UNAUTHORIZED, "Pair this device first")
         if path == "/api/forget":  # this device unpairs itself
             self.owner.devices.remove(device["id"])
+            self.owner.paired()  # (the app's list of paired devices shows it gone at once: #137)
             return self._send(HTTPStatus.OK, {"ok": True},
                               extra={"Set-Cookie": f"{COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict"})
         if path != "/api/call":
@@ -760,7 +761,7 @@ class WebRemote(QObject):
         self.changed.emit()
 
     def paired(self):
-        """A device just paired (called from a request thread)."""
+        """A device just paired, or unpaired itself (called from a request thread): the app's list follows."""
         QTimer.singleShot(0, self, self.changed.emit)
 
     def allow_attempt(self, ip):
