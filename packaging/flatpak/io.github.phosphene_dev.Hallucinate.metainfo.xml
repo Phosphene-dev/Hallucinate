@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.7.0" date="2026-10-30">
+      <description>
+        <p>Afterimage, a neon-noir theme in loud, quiet and alert versions, with its own Now Playing: a cockpit with a holographic cover and gauges, or a terminal you can type commands into. Three new visualizers come with it: Tunnel, Wires and Neon rain.</p>
+        <p>Covers in the player bar, mini player and web remote can spin like a record. Fixes: covers that showed blank or garbled, the sidebar's icons when it collapses, paired device details in Settings and the web remote's pairing screen.</p>
+      </description>
+    </release>
     <release version="1.6.3" date="2026-10-30">
       <description>
         <p>The web remote has internet radio and podcasts and a Settings page with light and dark modes. Pick any accent colour with a new colour picker.</p>

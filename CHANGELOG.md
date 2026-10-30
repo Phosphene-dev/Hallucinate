@@ -3,7 +3,9 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [1.7.0] - 2026-10-30
+
+Afterimage: a neon-noir theme with a cockpit and a terminal for Now Playing, and the tester's eighth round.
 
 ### Added
 - Afterimage, a neon-noir theme in three versions: Afterimage (loud magenta and cyan), Afterimage Quiet (the same

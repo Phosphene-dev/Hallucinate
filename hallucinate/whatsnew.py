@@ -2,6 +2,12 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "1.7.0": [
+        "Afterimage, a neon-noir theme (loud, quiet or alert): pick it in Settings → Appearance, then open Now Playing "
+        "for a cockpit, or a terminal you can type commands into.",
+        "Covers in the player bar and mini player can spin like a record while you listen (Settings → Appearance).",
+        "Covers that showed blank or with a garbled band are mended, and the sidebar collapses smoothly.",
+    ],
     "1.6.3": [
         "The web remote has your internet radio and podcasts, and a Settings page (light or dark, and more).",
         "Pick any accent colour you like: the + beside the swatches in Settings → Appearance.",
