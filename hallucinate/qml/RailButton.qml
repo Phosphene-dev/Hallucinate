@@ -63,13 +63,15 @@ Item {
     }
     Icon {
         id: glyph
-        x: item.collapsed ? (item.width - width) / 2 : 14
+        objectName: "railGlyph"
+        // where it sits in the collapsed rail is (nearly) where it sits expanded: kept by the left edge as the sidebar
+        // narrows, it never jumps to the middle of the still-wide button and slides back (it used to)
+        x: item.collapsed ? Math.min(14, (item.width - width) / 2) : 14
         anchors.verticalCenter: parent.verticalCenter
         width: 20; height: 20
         name: item.icon
         filled: item.icon === "heart"
         color: item.selected ? (Theme.retro ? Theme.selectedText : Theme.accentHi) : (ma.containsMouse ? Theme.text : Theme.textDim)
-        Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
     }
     Text {
         textFormat: Text.PlainText

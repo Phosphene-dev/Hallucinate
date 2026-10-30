@@ -19,6 +19,10 @@ Item {
     property string deckChoice: shell.uiValue("nowPlayingDeck", "")
     readonly property bool deck: deckChoice === "1" || (deckChoice === "" && Theme.retro)
     function setDeck(on) { deckChoice = on ? "1" : "0"; shell.setUiValue("nowPlayingDeck", deckChoice) }
+    // A neon theme's own Now Playing: the cockpit or the terminal, or the usual one ("classic"); your choice
+    readonly property string neonMode: Theme.neon ? (shell.ui.neonNowPlaying || "cockpit") : ""
+    readonly property bool neonView: !deck && (neonMode === "cockpit" || neonMode === "terminal")
+    function setNeonMode(m) { shell.setUiValue("neonNowPlaying", m) }
     property bool idle: false
     property bool lyricsMode: shell.uiValue("nowPlayingLyrics", "0") === "1"
     onLyricsModeChanged: { shell.setUiValue("nowPlayingLyrics", lyricsMode ? "1" : "0"); refit() }
@@ -39,7 +43,7 @@ Item {
     readonly property var styles: [
         { id: "liquid", t: "Liquid" }, { id: "aurora", t: "Aurora" }, { id: "nebula", t: "Nebula" },
         { id: "halo", t: "Halo" }, { id: "waves", t: "Waves" }, { id: "bars", t: "Bars" }
-    ]
+    ].concat(Theme.neon ? [{ id: "tunnel", t: "Tunnel" }, { id: "wires", t: "Wires" }, { id: "rain", t: "Neon rain" }] : [])  // (a neon theme's own)
 
     function toggle() { open = !open }
     onOpenChanged: { idle = false; if (open) idleTimer.restart() }
@@ -50,7 +54,7 @@ Item {
     Item {
         id: stage
         anchors.fill: parent
-        visible: !view.deck
+        visible: !view.deck && !view.neonView
         // the melt: the scene settles from a slight zoom as it fades in
         scale: view.open || Theme.reduceMotion ? 1 : 1.06
         Behavior on scale { NumberAnimation { duration: 700; easing.type: Easing.OutCubic } }
@@ -442,6 +446,11 @@ Item {
         active: view.deck && view.shown
         sourceComponent: DeckView { active: view.open }
     }
+    Loader {
+        anchors.fill: parent
+        active: view.neonView && view.shown
+        sourceComponent: NeonNowPlaying { active: view.open; mode: view.neonMode; onCloseRequested: view.open = false }
+    }
 
     // Top bar: leave, styles, vinyl, full screen. Fades out with the pointer at rest.
     Item {
@@ -461,13 +470,27 @@ Item {
         Row {
             anchors { right: parent.right; rightMargin: 22; verticalCenter: parent.verticalCenter }
             spacing: 8
+            // in a neon theme: which Now Playing
             Repeater {
-                model: view.deck ? [] : view.styles
+                model: Theme.neon && !view.deck ? [{ id: "cockpit", t: "Cockpit" }, { id: "terminal", t: "Terminal" }, { id: "classic", t: "Classic" }] : []
                 Chip {
                     required property var modelData
+                    objectName: "neonMode_" + modelData.id
                     text: modelData.t
-                    selected: shell.visualizerStyle === modelData.id
-                    onClicked: shell.setVisualizerStyle(modelData.id)
+                    selected: view.neonMode === modelData.id
+                    onClicked: view.setNeonMode(modelData.id)
+                }
+            }
+            Item { width: Theme.neon && !view.deck ? 10 : 0; height: 1 }
+            // the visualizer's style (the cockpit keeps its own, so the usual Now Playing keeps yours)
+            Repeater {
+                model: view.deck || view.neonMode === "terminal" ? [] : view.styles
+                Chip {
+                    required property var modelData
+                    readonly property string current: view.neonView ? (shell.ui.neonVisStyle || "tunnel") : shell.visualizerStyle
+                    text: modelData.t
+                    selected: current === modelData.id
+                    onClicked: view.neonView ? shell.setUiValue("neonVisStyle", modelData.id) : shell.setVisualizerStyle(modelData.id)
                 }
             }
             Item { width: 6; height: 1 }
@@ -480,7 +503,7 @@ Item {
             }
             IconButton {
                 objectName: "lyricsToggle"
-                visible: shell.features.lyrics !== false && !view.deck
+                visible: shell.features.lyrics !== false && !view.deck && !view.neonView
                 anchors.verticalCenter: parent.verticalCenter
                 icon: "note"; active: view.lyricsMode
                 tip: view.lyricsMode ? "Hide lyrics" : "Show lyrics (L)"
@@ -488,7 +511,7 @@ Item {
             }
             IconButton {
                 objectName: "vinylToggle"
-                visible: !view.deck
+                visible: !view.deck && !view.neonView
                 anchors.verticalCenter: parent.verticalCenter
                 icon: "vinyl"; active: view.vinyl
                 tip: view.vinyl ? "Show the cover" : "Show the record"
@@ -509,7 +532,7 @@ Item {
     Text {
         textFormat: Text.PlainText
         anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 22 }
-        visible: !view.deck && !player.visualizerEnabled && player.visualizerAvailable && shell.visualizerStyle !== "bars"
+        visible: !view.deck && view.neonMode !== "terminal" && !player.visualizerEnabled && player.visualizerAvailable && shell.visualizerStyle !== "bars"
         opacity: view.idle ? 0 : 0.6
         Behavior on opacity { NumberAnimation { duration: 400 } }
         text: "Turn on “React to the music” on the Visualizer page to make the backdrop move with the sound"

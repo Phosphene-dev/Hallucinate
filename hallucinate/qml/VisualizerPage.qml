@@ -9,7 +9,7 @@ Item {
     readonly property var styles: [
         { id: "liquid", t: "Liquid" }, { id: "aurora", t: "Aurora" }, { id: "nebula", t: "Nebula" },
         { id: "halo", t: "Halo" }, { id: "waves", t: "Waves" }, { id: "bars", t: "Bars" }
-    ]
+    ].concat(Theme.neon ? [{ id: "tunnel", t: "Tunnel" }, { id: "wires", t: "Wires" }, { id: "rain", t: "Neon rain" }] : [])  // (a neon theme's own)
 
     Rectangle {
         id: frame

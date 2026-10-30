@@ -1,5 +1,21 @@
 # Manual QA checklist
 
+## Release testing for 1.7.0
+
+- [ ] Settings → Appearance → Theme → Afterimage (then Quiet, then Alert): glowing edges, HUD corners, scanlines.
+      Back to Hallucinate: none of it is left (no scanlines, corners or neon edges).
+- [ ] Now Playing in Afterimage: Cockpit (cover in a turning ring, gauges, sync bar seeks when clicked), Terminal,
+      Classic. A new song: a title card in the cockpit, a glitch over the window.
+- [ ] Visualizer chips in Afterimage: Tunnel, Wires and Neon rain move with the music.
+- [ ] Terminal: type `help`, `play <something in your library>`, `vol 40`, `seek 1:00`, `pin signal`, `stats`,
+      `whoami`, `exit`. ↑ brings back the last command, Tab completes one.
+- [ ] Settings → Appearance (in Afterimage): each option turns its effect on or off; Reset these options.
+- [ ] Settings → Appearance → Covers in the player bar: a record that spins while playing, stops on pause.
+      Web remote → Settings → Spinning record: the same there.
+- [ ] Home during a scan: no blank or garbled covers. Collapse the sidebar: no icon jumps right and back.
+- [ ] Settings → Remote & web with the queue open: a paired device's details wrap. Web remote → Disconnect:
+      no cover behind the pairing form.
+
 ## Release testing for 1.6.3
 
 - [ ] Ctrl+K: click a result (a page, an album, a song): it opens or plays.

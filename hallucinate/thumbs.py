@@ -4,6 +4,7 @@ QML requests run on Qt's image-loader threads (``Image.asynchronous``), so decod
 large embedded covers never touches the GUI thread. Scaled results are cached on disk."""
 import hashlib
 import os
+import tempfile
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -69,10 +70,14 @@ def load_thumbnail(cache_dir, path: str, px: int) -> QImage:
     digest = hashlib.sha1(f"{path}|{mtime}|{px}".encode("utf-8", "surrogateescape"), usedforsecurity=False).hexdigest()
     cached = cache_dir / f"{digest}.jpg"
     if cached.exists():
-        image = QImage(str(cached))
+        image = QImage(str(cached)) if complete(cached) else QImage()
         if not image.isNull():
             touch_if_stale(cached)  # recently used thumbnails survive cache trimming
             return image
+        try:
+            cached.unlink()  # cut short: made again below
+        except OSError:
+            pass
     reader = QImageReader(path)
     reader.setAutoTransform(True)
     native = reader.size()
@@ -83,11 +88,40 @@ def load_thumbnail(cache_dir, path: str, px: int) -> QImage:
         return image
     if max(image.width(), image.height()) > px:
         image = image.scaled(px, px, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+    # A temporary file of its own for each writer: two views asking for the same cover at once used to share one
+    # name, and one would move the other's half-written file into the cache, where it stayed as a cover with a
+    # garbled band or a blank square
+    tmp = None
     try:
         cache_dir.mkdir(parents=True, exist_ok=True)
-        tmp = cached.with_suffix(".tmp")
-        if image.save(str(tmp), "JPG" if not image.hasAlphaChannel() else "PNG", 88):
+        fd, tmp = tempfile.mkstemp(dir=cache_dir, prefix=digest + ".", suffix=".tmp")
+        os.close(fd)
+        if image.save(tmp, "JPG" if not image.hasAlphaChannel() else "PNG", 88):
             os.replace(tmp, cached)
+            tmp = None
     except OSError:
         pass
+    finally:
+        if tmp:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
     return image
+
+
+def complete(path) -> bool:
+    """Whether a cached thumbnail was written to the end: a JPEG ends with its end-of-image mark, a PNG with its
+    IEND chunk. A file cut short still decodes, as a picture with a grey band or nothing at all."""
+    try:
+        with open(path, "rb") as fh:
+            head = fh.read(8)
+            fh.seek(-12, os.SEEK_END)
+            tail = fh.read()
+    except OSError:
+        return False
+    if head.startswith(b"\xff\xd8"):
+        return tail.rstrip(b"\x00").endswith(b"\xff\xd9")
+    if head.startswith(b"\x89PNG"):
+        return b"IEND" in tail
+    return True

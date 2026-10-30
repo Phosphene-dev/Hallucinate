@@ -117,7 +117,7 @@ Item {
             id: sec_appearance
             objectName: "settings_appearance"
             title: "Appearance"
-            keywords: "marquee scroll scrolling long title titles ticker numbers thousands separator comma commas digits shelf shelves row rows sideways wheel tilt arrows theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
+            keywords: "terminal panes boot phosphor command spinning spin record disc vinyl rotate neon cyberpunk afterimage scanlines glitch hud greebles cockpit terminal title card marquee scroll scrolling long title titles ticker numbers thousands separator comma commas digits shelf shelves row rows sideways wheel tilt arrows theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
             query: page.query
             Row {
                 spacing: 12
@@ -283,6 +283,117 @@ Item {
                 PillButton { objectName: "makeTheme"; text: "Make my own theme…"; onClicked: themeEditor.open() }
             }
             ThemeEditor { id: themeEditor }
+            // A neon theme's own options (Afterimage): shown only while one is chosen
+            Column {
+                objectName: "neonOptions"
+                visible: Theme.neon
+                width: parent.width
+                spacing: 8
+                Text { textFormat: Text.PlainText; text: themeManager.currentTheme + " options"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(15) * Theme.displayScale; font.weight: Font.DemiBold }
+                Flow {
+                    width: parent.width
+                    spacing: 10
+                    Text { textFormat: Text.PlainText; text: "Now Playing"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                    StyledCombo {
+                        objectName: "neonNowPlaying"
+                        readonly property var modes: ["cockpit", "terminal", "classic"]
+                        width: 320
+                        model: ["Cockpit (gauges and a hologram)", "Terminal (typed out)", "Classic (the usual one)"]
+                        selection: Math.max(0, modes.indexOf(shell.ui.neonNowPlaying || "cockpit"))
+                        onActivated: shell.setUiValue("neonNowPlaying", modes[currentIndex])
+                        Accessible.name: "Now Playing in this theme"
+                    }
+                    Text { textFormat: Text.PlainText; text: "Cockpit colours"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                    StyledCombo {
+                        objectName: "neonTint"
+                        readonly property var modes: ["theme", "cover"]
+                        width: 200
+                        model: ["The theme's neon", "The cover's"]
+                        selection: shell.ui.neonTint === "cover" ? 1 : 0
+                        onActivated: shell.setUiValue("neonTint", modes[currentIndex])
+                        Accessible.name: "Cockpit colours"
+                    }
+                    Text { textFormat: Text.PlainText; text: "Terminal"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                    StyledCombo {
+                        objectName: "neonPhosphor"
+                        readonly property var modes: ["theme", "green", "amber"]
+                        width: 200
+                        model: ["The theme's colour", "Green phosphor", "Amber phosphor"]
+                        selection: Math.max(0, modes.indexOf(shell.ui.neonPhosphor || "theme"))
+                        onActivated: shell.setUiValue("neonPhosphor", modes[currentIndex])
+                        Accessible.name: "Terminal colour"
+                    }
+                }
+                StyledCheck {
+                    objectName: "neonScanlines"
+                    text: "Scanlines and a vignette over the window"
+                    checked: Theme.neonOption("Scanlines")
+                    onToggled: shell.setUiValue("neonScanlines", checked ? "1" : "0")
+                }
+                StyledCheck {
+                    objectName: "neonGlitch"
+                    text: "A glitch when the song changes (and a hologram's flicker)"
+                    checked: Theme.neonOption("Glitch")
+                    enabled: !shell.reduceMotion
+                    onToggled: shell.setUiValue("neonGlitch", checked ? "1" : "0")
+                }
+                StyledCheck {
+                    objectName: "neonGreebles"
+                    text: "HUD details (corner brackets, ticks, status lights and readouts)"
+                    checked: Theme.neonGreebles
+                    onToggled: shell.setUiValue("neonGreebles", checked ? "1" : "0")
+                }
+                StyledCheck {
+                    objectName: "neonBoot"
+                    text: "A start-up sequence when the terminal opens"
+                    checked: shell.ui.neonBoot !== "0"
+                    onToggled: shell.setUiValue("neonBoot", checked ? "1" : "0")
+                }
+                // the terminal's panes, in the order they show (it can pin and unpin them itself too)
+                Text { textFormat: Text.PlainText; text: "Terminal panes"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13) }
+                Flow {
+                    objectName: "neonPanes"
+                    width: parent.width
+                    spacing: 8
+                    readonly property var names: ({ now: "Now playing", wave: "Waveform", spectrum: "Spectrum", lyrics: "Lyrics",
+                        queue: "Up next", signal: "Signal path", stats: "Today's stats", tags: "Tags", similar: "Similar artists",
+                        whoami: "Your library", log: "Log" })
+                    readonly property var shown: {
+                        var v = shell.ui.neonTermPanes  // (blank: the usual ones; "none": every one unpinned)
+                        return (v === undefined || v === "" ? "now,wave,spectrum,lyrics,queue" : v === "none" ? "" : v).split(",").filter(function (p) { return p })
+                    }
+                    Repeater {
+                        model: ["now", "wave", "spectrum", "lyrics", "queue", "signal", "stats", "tags", "similar", "whoami", "log"]
+                        Chip {
+                            required property string modelData
+                            text: parent.names[modelData]
+                            selected: parent.shown.indexOf(modelData) >= 0
+                            onClicked: {
+                                var list = parent.shown.filter(function (p) { return p !== modelData })
+                                if (!selected) list.push(modelData)
+                                shell.setUiValue("neonTermPanes", list.length ? list.join(",") : "none")
+                            }
+                        }
+                    }
+                }
+                StyledCheck {
+                    objectName: "neonTitleCard"
+                    text: "A title card for each new song in the cockpit"
+                    checked: shell.ui.neonTitleCard !== "0"
+                    enabled: !shell.reduceMotion
+                    onToggled: shell.setUiValue("neonTitleCard", checked ? "1" : "0")
+                }
+                PillButton {
+                    objectName: "neonReset"
+                    text: "Reset these options"
+                    onClicked: {
+                        var keys = ["neonNowPlaying", "neonTint", "neonPhosphor", "neonScanlines", "neonGlitch", "neonGreebles",
+                                    "neonTitleCard", "neonBoot", "neonTermPanes", "neonVisStyle"]
+                        for (var i = 0; i < keys.length; i++) shell.setUiValue(keys[i], "")
+                        Nav.notify(themeManager.currentTheme + "'s options are back as they came")
+                    }
+                }
+            }
             StyledCheck {
                 objectName: "ambientMotion"
                 text: "Animated background (slowly drifting colours from the current cover)"
@@ -310,6 +421,19 @@ Item {
                     selection: Math.max(0, modes.indexOf(shell.visualizerBackground))
                     onActivated: shell.setVisualizerBackground(modes[currentIndex])
                     Accessible.name: "Visualizer while the window is in the background"
+                }
+            }
+            Flow {
+                width: parent.width
+                spacing: 10
+                Text { textFormat: Text.PlainText; text: "Covers in the player bar and mini player"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                StyledCombo {
+                    objectName: "spinningArt"
+                    width: 260
+                    model: ["Still", "A record, spinning while playing"]
+                    selection: shell.ui.spinningArt === "1" ? 1 : 0
+                    onActivated: shell.setUiValue("spinningArt", currentIndex === 1 ? "1" : "0")
+                    Accessible.name: "Covers in the player bar and mini player"
                 }
             }
             StyledCheck {
@@ -1513,8 +1637,11 @@ Item {
                         Column {
                             width: parent.width - forgetButton.width - 12
                             anchors.verticalCenter: parent.verticalCenter
-                            Text { textFormat: Text.PlainText; text: modelData.name; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold }
+                            // (wrapped to the room beside the button, however narrow: #133)
+                            Text { width: parent.width; wrapMode: Text.Wrap; textFormat: Text.PlainText; text: modelData.name; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold }
                             Text {
+                                width: parent.width
+                                wrapMode: Text.Wrap
                                 textFormat: Text.PlainText
                                 text: "Paired " + new Date(modelData.paired * 1000).toLocaleDateString() + "  ·  last used " + new Date(modelData.seen * 1000).toLocaleString()
                                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)

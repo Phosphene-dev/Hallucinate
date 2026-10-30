@@ -37,7 +37,17 @@
 - **Fast to drive.** Instant search that forgives typos, Ctrl+K for anything, multi-select, and Ctrl+Z for the queue.
 - **From your phone too.** A web interface and phone remote, off until you switch it on, for paired devices only: your library, queue, internet radio and podcasts, in light or dark.
 - **Only what you want.** Internet radio, podcasts and music servers (Jellyfin, Navidrome and other Subsonic servers) are there if you switch them on.
+- **Wear it your way.** Over twenty themes, from frosted glass and pride flags to two retro ones with a 90s hi-fi Now Playing, and Afterimage: neon noir with a cockpit or a terminal you type commands into.
 - **Yours alone.** No account, no telemetry; everything online is opt-in, and offline mode turns it all off.
+
+### New in 1.7: Afterimage
+| Neon noir, all the way through | The cockpit |
+|---|---|
+| ![Hallucinate in the Afterimage theme: glowing edges, HUD corners and scanlines](docs/screenshots/theme-afterimage.png) | ![Now Playing as a cockpit: a holographic cover in a targeting ring, gauges and readouts over a warp tunnel](docs/screenshots/neon-cockpit.png) |
+
+| The terminal, with commands | Wires, after Serial Experiments Lain |
+|---|---|
+| ![Now Playing as a terminal: panes for the song, waveform, lyrics and signal path, and a console you type into](docs/screenshots/neon-terminal-console.png) | ![The cockpit over the Wires visualizer: cables in a dark room over a pool of light](docs/screenshots/neon-cockpit-wires.png) |
 
 ### New in 1.0
 | Composers and their works | Playlist folders |

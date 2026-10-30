@@ -1048,7 +1048,10 @@ ApplicationWindow {
     // Any text field with the focus (the search, a page's filter, a dialog's field): the window's single-key
     // shortcuts (Space, arrows, letters) stand aside so the keys reach it.
     // The first-run welcome counts too: while it's open, its own buttons and fields have the keys.
+    // (any text field you're typing in, not only search: the terminal's prompt, a tag editor, the accent's hex)
     readonly property bool typing: welcomeView.open || searchField.activeFocus
+                                   || (!!window.activeFocusItem && window.activeFocusItem.cursorPosition !== undefined
+                                       && !window.activeFocusItem.readOnly)
         || (window.activeFocusItem !== null && window.activeFocusItem.cursorPosition !== undefined)
     // A focused Qt control (a checkbox, a combo box, a dialog's buttons) presses itself with Space
     readonly property bool onControl: window.activeFocusItem !== null && window.activeFocusItem.down !== undefined
@@ -1121,6 +1124,14 @@ ApplicationWindow {
             text: "Drop to play"
             color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(21)) * Theme.displayScale; font.weight: Font.DemiBold
         }
+    }
+
+    // A neon theme's scanlines, glitches and HUD corners over everything (nothing at all in any other theme)
+    Loader {
+        anchors.fill: parent
+        z: 900
+        active: Theme.neon
+        sourceComponent: NeonOverlay {}
     }
 
     Component.onCompleted: {

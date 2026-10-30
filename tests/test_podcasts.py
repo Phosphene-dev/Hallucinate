@@ -392,3 +392,7 @@ def test_feeds_that_declare_entities_are_refused():
         pc.parse_feed(bomb)
     with pytest.raises(ValueError):
         pc.parse_opml(bomb.replace("rss", "opml"))
+    # however far down: comments may come before a DOCTYPE, as long as a feed likes
+    padded = bomb.replace("<!DOCTYPE", "<!--" + "x" * 100_000 + "--><!DOCTYPE")
+    with pytest.raises(ValueError):
+        pc.parse_feed(padded)

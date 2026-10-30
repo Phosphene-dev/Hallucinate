@@ -29,8 +29,9 @@ Window {
     Cover {
         id: art
         x: 12; y: 12; width: 88; height: 88
-        radius: Theme.radiusSmall
+        radius: shell.ui.spinningArt === "1" ? width / 2 : Theme.radiusSmall
         source: player.hasTrack ? player.current.artUrl : ""
+        SpinningCover {}
     }
     ColumnLayout {
         anchors { left: art.right; leftMargin: 12; right: parent.right; rightMargin: 12; top: parent.top; topMargin: 12; bottom: parent.bottom; bottomMargin: 10 }

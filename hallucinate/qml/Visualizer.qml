@@ -14,6 +14,7 @@ Item {
     readonly property bool inFront: !Window.window || Window.window.active !== false
     readonly property bool running: active && (inFront || shell.visualizerBackground !== "paused")
     property real quality: 0.5          // shader resolution relative to the item (they are soft anyway)
+    property var tint: []               // three colours of its own instead of the cover's (a neon theme's cockpit)
     readonly property bool gpu: GraphicsInfo.api !== GraphicsInfo.Software && GraphicsInfo.api !== GraphicsInfo.Unknown
     property var unusable: ({})         // styles whose shader this computer's graphics driver couldn't run
     readonly property bool shaderStyle: style !== "bars" && gpu && !unusable[style]
@@ -98,9 +99,9 @@ Item {
             property real energy: vis.energy
             property real beat: vis.beat
             property size res: Qt.size(canvas.layer.textureSize.width, canvas.layer.textureSize.height)
-            property color c0: Theme.art0
-            property color c1: Theme.art1
-            property color c2: Theme.art2
+            property color c0: vis.tint.length > 2 ? vis.tint[0] : Theme.art0
+            property color c1: vis.tint.length > 2 ? vis.tint[1] : Theme.art1
+            property color c2: vis.tint.length > 2 ? vis.tint[2] : Theme.art2
             property vector4d s0: Qt.vector4d(vis.bands[0], vis.bands[1], vis.bands[2], vis.bands[3])
             property vector4d s1: Qt.vector4d(vis.bands[4], vis.bands[5], vis.bands[6], vis.bands[7])
             property vector4d s2: Qt.vector4d(vis.bands[8], vis.bands[9], vis.bands[10], vis.bands[11])

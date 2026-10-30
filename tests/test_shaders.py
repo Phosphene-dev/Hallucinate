@@ -15,7 +15,7 @@ import build_shaders  # noqa: E402
 def test_every_shader_is_compiled_and_packaged():
     from hallucinate.shell import VISUALIZER_STYLES
 
-    names = {p.stem for p in SOURCES}
+    names = {p.stem for p in SOURCES} - {"neonscan"}  # (the neon theme's scanlines, not a visualizer)
     assert names == set(VISUALIZER_STYLES) - {"bars"}
     for source in SOURCES:
         assert (ROOT / "hallucinate" / "qml" / "shaders" / (source.name + ".qsb")).stat().st_size > 1000

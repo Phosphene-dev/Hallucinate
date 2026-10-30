@@ -171,3 +171,12 @@ label.setting { cursor: pointer; }
 body.no-backdrop .backdrop { display: none; }
 .row.played .text > span:first-child { color: var(--dim); }
 .row button.small { padding: 4px 10px; font-size: 12px; flex: none; }
+
+/* the cover as a record, turning while the music plays (Settings → Spinning record) */
+@keyframes spin { to { transform: rotate(360deg); } }
+body.spin .now-art, body.spin .mini img { border-radius: 50%; animation: spin 3.6s linear infinite; animation-play-state: paused; }
+body.spin.playing .now-art, body.spin.playing .mini img { animation-play-state: running; }
+body.spin .now-art { position: relative; }
+body.spin .now-art::after { content: ""; position: absolute; inset: 42%; border-radius: 50%; background: var(--bg);
+                            box-shadow: 0 0 0 1px rgba(255, 255, 255, .25); }
+@media (prefers-reduced-motion: reduce) { body.spin .now-art, body.spin .mini img { animation: none; } }

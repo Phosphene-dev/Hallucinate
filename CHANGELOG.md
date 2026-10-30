@@ -3,6 +3,58 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.7.0] - 2026-10-30
+
+Afterimage: a neon-noir theme with a cockpit and a terminal for Now Playing, and the tester's eighth round.
+
+### Added
+- Afterimage, a neon-noir theme in three versions: Afterimage (loud magenta and cyan), Afterimage Quiet (the same
+  look, its effects off to start with) and Afterimage Alert (warning orange). Glowing hairlines with HUD corner
+  brackets on every panel, greebles on the big ones, Chakra Petch headings, faint scanlines and a vignette, and a
+  glitch of torn slices when the song changes. Fonts: Chakra Petch and Share Tech Mono (SIL OFL).
+- Its own Now Playing, two ways (or the usual one):
+  - the cockpit: a holographic cover in a turning targeting ring, gauges for the bass, mids and highs, a sync bar
+    to seek with, signal readouts, a warning strip while paused, and a title card for each new song;
+  - the terminal: the song typed out, a bar of # for where you are, the spectrum in block characters, what's next,
+    the line of lyrics being sung, and commands to click.
+- Three visualizers of a neon theme's own: Tunnel (a warp tunnel of neon grid), Wires (a dark room strung with
+  swaying cables over one pool of light, sparks running along them) and Neon rain (signs glowing through fog over a
+  wet street, rain falling harder with the music).
+- In the cockpit, boxed readouts in the corners like a command centre's screens: time remaining and time since
+  play counted in seconds, the track number and the signal. Fog along the floor.
+- The terminal grew into a console:
+  - Panes you choose and order: now playing, the waveform (played part bright), the spectrum, lyrics scrolling
+    round the sung line, up next, the signal path, today's stats and streak, the playing file's raw tags,
+    similar artists and your library (`whoami`), and a log. Pin them with `pin`/`unpin` or in Settings.
+  - A prompt to type into, beside the panes in a wide window and below them otherwise: `play <search>`,
+    `queue <search>`, `next <search>`, `vol 50`/`vol +5`, `seek 1:30`/`seek +10`, `shuffle`, `repeat one`, `like`,
+    `sleep 30`, `radio`, `phosphor amber`, `theme <name>`, `cockpit`, `exit` and more (`help`). Any pane's name prints
+    it once. ↑ and ↓ bring back earlier commands, Tab completes. The commands are the web remote's own.
+  - A short start-up sequence when it opens (Settings can turn it off), green or amber phosphor or the theme's
+    colour.
+- The window's one-key shortcuts (Space, arrows, N, P, M, Q…) stay out of the way of any text field you're typing
+  in, not only the search box.
+- Settings → Appearance in a neon theme: the Now Playing view, the cockpit's colours (the theme's or the cover's),
+  and scanlines, glitches, HUD details and title cards, each on or off. Reduce motion stills it all.
+  None of it is loaded in any other theme.
+- Covers as a spinning record (#135): Settings → Appearance → "Covers in the player bar and mini player" makes them
+  round records that turn while the music plays and stop where they are on pause. The web remote has it too
+  (Settings → Spinning record), for its player and Now Playing.
+
+### Fixed
+- Some covers showed as a blank square, or with a grey or garbled band along the bottom, and stayed that way. Two
+  views asking for the same cover at once could leave a half-written picture in the cover cache. Each now writes its
+  own file, and a cut-short one already in the cache is noticed and made again.
+- A paired device's details ran out of their box in Settings → Remote & web with the queue open (#133); they wrap.
+- Collapsing the sidebar, the Playlists, Settings and Expand sidebar icons jumped right and slid back; they (and
+  the logo) now stay put as it narrows.
+- Importing from Strawberry or Clementine failed when the path to its library had "?", "#" or "%" in it.
+- A podcast feed could slip an entity declaration past the check for one by putting enough comments before it;
+  the whole feed is checked now. Shows found by search only keep web pictures.
+- Afterimage: the title card and the terminal's log could show the song before the new one; album cards are square
+  in it like everything else; Settings has "Reset these options" for it.
+- After disconnecting a device in the web remote, the song's cover still showed behind the pairing form (#134).
+
 ## [1.6.3] - 2026-10-30
 
 The tester's seventh round, and the web remote grows up.

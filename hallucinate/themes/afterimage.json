@@ -1,0 +1,28 @@
+{
+  "name": "Afterimage",
+  "style": "neon",
+  "loud": true,
+  "colors": {
+    "bg": "#07060f",
+    "panel": "#0e0b1e",
+    "surface": "#161233",
+    "surfaceHi": "#211b47",
+    "border": "#3b2f7d",
+    "text": "#ecf6ff",
+    "textDim": "#949fd4",
+    "accent": "#ff2bd6",
+    "error": "#ff3b4e",
+    "onAccent": "#16001c"
+  },
+  "palette": [
+    "#ff2bd6",
+    "#21f5ff",
+    "#7a5cff",
+    "#ffe14a"
+  ],
+  "radius": 2,
+  "fonts": {
+    "family": "Sans Serif",
+    "scale": 1.0
+  }
+}

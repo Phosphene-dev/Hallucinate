@@ -361,6 +361,19 @@ class ThemeManager(QObject):
         """A theme made after old hardware ("style": "retro"): Now Playing opens as the Deck unless you've chosen."""
         return self._theme().get("style") == "retro"
 
+    @Property(bool, notify=themeChanged)
+    def neon(self):
+        """A neon-noir theme ("style": "neon"): its HUD frame, scanlines and the cockpit/terminal Now Playing are
+        loaded only while one is chosen, so they cost nothing in any other theme."""
+        return self._theme().get("style") == "neon"
+
+    @Property(bool, notify=themeChanged)
+    def neonLoud(self):
+        """A neon theme turned all the way up ("loud": true): glow, scanlines and glitches on by default. A quiet one
+        keeps the look with the effects left off (each can still be turned on in Settings)."""
+        theme = self._theme()
+        return theme.get("style") == "neon" and theme.get("loud") is True
+
     @Property(str, notify=themesChanged)
     def userThemeDirectory(self):
         return str(self._user_theme_dir)
