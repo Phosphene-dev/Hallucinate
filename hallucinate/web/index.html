@@ -39,6 +39,7 @@
       <button data-view="queue" class="tab" aria-label="Queue"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Queue</span></button>
       <button data-view="library" class="tab" aria-label="Library"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Library</span></button>
       <button data-view="search" class="tab" aria-label="Search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Search</span></button>
+      <button data-view="settings" class="tab" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg><span>Settings</span></button>
     </nav>
 
     <main id="main">
@@ -107,6 +108,35 @@
         <header class="view-head"><input id="searchField" type="search" placeholder="Songs, albums, artists…" aria-label="Search" autocomplete="off"></header>
         <p id="searchNote" class="dim small"></p>
         <div id="searchBody"></div>
+      </section>
+
+      <section id="view-settings" class="view settings" hidden>
+        <header class="view-head"><h2>Settings</h2></header>
+        <div class="setting">
+          <div><b>Appearance</b><p class="dim small">Light or dark for this browser, or as the device is set.</p></div>
+          <div class="chips" id="themeChips" role="radiogroup" aria-label="Appearance">
+            <button data-theme-pick="" class="chip" role="radio">Automatic</button>
+            <button data-theme-pick="dark" class="chip" role="radio">Dark</button>
+            <button data-theme-pick="light" class="chip" role="radio">Light</button>
+          </div>
+        </div>
+        <div class="setting">
+          <div><b>Open on</b><p class="dim small">The page this browser shows first.</p></div>
+          <div class="chips" id="startChips" role="radiogroup" aria-label="Open on">
+            <button data-start-pick="now" class="chip" role="radio">Playing</button>
+            <button data-start-pick="queue" class="chip" role="radio">Queue</button>
+            <button data-start-pick="library" class="chip" role="radio">Library</button>
+            <button data-start-pick="search" class="chip" role="radio">Search</button>
+          </div>
+        </div>
+        <label class="setting"><div><b>Keep the screen on while playing</b><p class="dim small">While this page is open and showing.</p></div>
+          <input type="checkbox" id="optAwake"></label>
+        <label class="setting"><div><b>Cover-coloured background</b><p class="dim small">The playing album's colours, softly behind everything.</p></div>
+          <input type="checkbox" id="optBackdrop" checked></label>
+        <div class="setting">
+          <div><b>This device</b><p class="dim small">Disconnect it from Hallucinate. To use it again, pair it with a new code.</p></div>
+          <button id="btnForget">Disconnect this device</button>
+        </div>
       </section>
     </main>
 

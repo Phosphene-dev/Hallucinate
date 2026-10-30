@@ -106,7 +106,7 @@ function guessName() {
 function connect() {
   if (events) events.close();
   events = new EventSource("api/events");
-  events.addEventListener("state", (e) => { state = JSON.parse(e.data); stateAt = Date.now(); render(); });
+  events.addEventListener("state", (e) => { state = JSON.parse(e.data); stateAt = Date.now(); render(); syncWakeLock(); });
   events.addEventListener("queue", () => { if (currentView === "queue") loadQueue(); });
   events.onerror = async () => {
     const hello = await fetch("api/hello", { credentials: "same-origin" }).then((r) => r.json()).catch(() => null);
@@ -201,7 +201,7 @@ $("btnSleep").onclick = () => pick("Sleep timer", [
 // --- views -----------------------------------------------------------------------------------------------
 function show(view) {
   currentView = view;
-  for (const v of ["now", "queue", "library", "search", "detail"]) $(`view-${v}`).hidden = v !== view;
+  for (const v of ["now", "queue", "library", "search", "detail", "settings"]) $(`view-${v}`).hidden = v !== view;
   for (const t of document.querySelectorAll(".tab")) t.classList.toggle("active", t.dataset.view === view ||
     (view === "detail" && t.dataset.view === "library"));
   $("mini").hidden = !(state && state.song) || view === "now";
@@ -211,6 +211,80 @@ function show(view) {
   $("main").scrollTop = 0;
 }
 for (const t of document.querySelectorAll(".tab")) t.onclick = () => show(t.dataset.view);
+
+// --- settings: light or dark (#123), and disconnecting this device (#125) ----------------------------------
+function applyTheme(pick) {
+  if (pick) document.documentElement.dataset.theme = pick;
+  else delete document.documentElement.dataset.theme;
+  for (const c of document.querySelectorAll("[data-theme-pick]")) {
+    const on = c.dataset.themePick === (pick || "");
+    c.classList.toggle("active", on);
+    c.setAttribute("aria-checked", on ? "true" : "false");
+  }
+  const bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+  if (bg) document.querySelector('meta[name="theme-color"]').setAttribute("content", bg);
+}
+function savedTheme() {
+  try { return localStorage.getItem("hallucinate.theme") || ""; } catch (_) { return ""; }
+}
+for (const c of document.querySelectorAll("[data-theme-pick]")) c.onclick = () => {
+  try { localStorage.setItem("hallucinate.theme", c.dataset.themePick); } catch (_) { /* private window */ }
+  applyTheme(c.dataset.themePick);
+};
+applyTheme(savedTheme());
+
+// the rest of this browser's own choices: kept in its storage, never sent anywhere
+function pref(name, fallback) {
+  try { const v = localStorage.getItem("hallucinate." + name); return v === null ? fallback : v; } catch (_) { return fallback; }
+}
+function setPref(name, value) {
+  try { localStorage.setItem("hallucinate." + name, value); } catch (_) { /* private window: for this visit only */ }
+}
+function markStart() {
+  for (const c of document.querySelectorAll("[data-start-pick]")) {
+    const on = c.dataset.startPick === pref("start", "now");
+    c.classList.toggle("active", on);
+    c.setAttribute("aria-checked", on ? "true" : "false");
+  }
+}
+for (const c of document.querySelectorAll("[data-start-pick]")) c.onclick = () => { setPref("start", c.dataset.startPick); markStart(); };
+markStart();
+
+$("optBackdrop").checked = pref("backdrop", "1") === "1";
+document.body.classList.toggle("no-backdrop", !$("optBackdrop").checked);
+$("optBackdrop").onchange = () => {
+  setPref("backdrop", $("optBackdrop").checked ? "1" : "0");
+  document.body.classList.toggle("no-backdrop", !$("optBackdrop").checked);
+};
+
+// Keep the screen on while something plays (where the browser can: the Screen Wake Lock API)
+let wakeLock = null;
+async function syncWakeLock() {
+  const want = $("optAwake").checked && state && state.playing && document.visibilityState === "visible";
+  if (want && !wakeLock && "wakeLock" in navigator) {
+    try {
+      wakeLock = await navigator.wakeLock.request("screen");
+      wakeLock.addEventListener("release", () => { wakeLock = null; });
+    } catch (_) { wakeLock = null; }
+  } else if (!want && wakeLock) {
+    wakeLock.release().catch(() => {});
+    wakeLock = null;
+  }
+}
+$("optAwake").checked = pref("awake", "0") === "1";
+$("optAwake").disabled = !("wakeLock" in navigator);
+$("optAwake").onchange = () => { setPref("awake", $("optAwake").checked ? "1" : "0"); syncWakeLock(); };
+document.addEventListener("visibilitychange", syncWakeLock);
+
+$("btnForget").onclick = async () => {
+  if (!confirm("Disconnect this device from Hallucinate? You'll need a new pairing code to use it again.")) return;
+  const res = await fetch("api/forget", {
+    method: "POST", credentials: "same-origin",
+    headers: { "Content-Type": "application/json", "X-Hallucinate": "1" }, body: "{}",
+  }).catch(() => null);
+  if (!res || !res.ok) { toast("Couldn't disconnect: is Hallucinate still running?"); return; }
+  showPairing();
+};
 
 function songRow(song, index, onPlay, opts = {}) {
   const row = el("li", { class: "row", tabindex: "0" });
@@ -450,7 +524,7 @@ async function start() {
   $("pair").hidden = true;
   $("app").hidden = false;
   connect();
-  show("now");
+  show(pref("start", "now"));
 }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 // a pairing link from the app ("…/#pair=123456") fills the code in; it's taken out of the address at once
