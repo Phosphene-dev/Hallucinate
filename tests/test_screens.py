@@ -2468,3 +2468,45 @@ def test_now_playing_fits_the_window(qapp, app_window, size, lyrics, tmp_path):
         window.grabWindow().save(os.path.join(shots, f"np-{w}x{h}{'-lyrics' if lyrics else ''}.png"))
     assert not out, (w, h, out[:6])
     assert not warnings, warnings[:3]
+
+
+def test_an_accent_colour_of_your_own(qapp, app_window):
+    """Issue 129: a colour picker for the accent, beside the presets: it shows the colour live, Use keeps it
+    (and remembers it among the recent ones), Cancel goes back to the one before."""
+    import time
+
+    window, objects, warnings = app_window
+    manager, shell = objects["themeManager"], objects["shell"]
+
+    def settle(ms):
+        end = time.monotonic() + ms / 1000
+        while time.monotonic() < end:
+            qapp.processEvents()
+            time.sleep(0.005)
+
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "settings"))
+    settle(300)
+    picker = window.findChild(QObject, "colorPicker")
+    assert picker is not None
+    before = manager.property("accentOverride")
+    QMetaObject.invokeMethod(picker, "openWith", Q_ARG("QVariant", before))  # as the + swatch opens it
+    settle(200)
+    assert picker.property("opened")
+    picker.setProperty("hue", 0.0)
+    picker.setProperty("sat", 1.0)
+    picker.setProperty("val", 1.0)
+    settle(200)
+    assert manager.property("accentOverride") == "#ff0000"  # shown live
+    QMetaObject.invokeMethod(picker, "cancel")
+    settle(200)
+    assert manager.property("accentOverride") == before  # Cancel goes back
+    QMetaObject.invokeMethod(picker, "openWith", Q_ARG("QVariant", "#2ec4b6"))
+    picker.setProperty("val", 0.5)
+    settle(100)
+    chosen = picker.property("hex")
+    QMetaObject.invokeMethod(picker, "use")
+    settle(200)
+    assert manager.property("accentOverride") == chosen and not picker.property("opened")
+    assert plain(shell.property("ui"))["recentAccents"].split(",")[0] == chosen
+    manager.setAccentOverride(before)
+    assert not warnings, warnings[:3]
