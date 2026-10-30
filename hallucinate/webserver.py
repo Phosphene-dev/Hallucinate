@@ -735,6 +735,18 @@ class WebRemote(QObject):
         self._soon()
         return result
 
+    @Slot(str, "QVariantMap", result="QVariantMap")
+    def runCommand(self, method, params):
+        """A command typed into the app's own terminal (Afterimage's Now Playing): the same commands a remote has,
+        run here whether or not the web remote is on. {ok, result} or {ok: false, error}."""
+        try:
+            return {"ok": True, "result": self.command(method, dict(params or {}))}
+        except ApiError as exc:
+            return {"ok": False, "error": str(exc)}
+        except Exception:  # noqa: BLE001 - a typed command must never take the window down
+            logger.exception("Terminal command %s failed", method)
+            return {"ok": False, "error": "That didn't work (see the log)"}
+
     # --- pairing -------------------------------------------------------------------------------------------
     def new_code(self):
         code = self.pairing.new_code()

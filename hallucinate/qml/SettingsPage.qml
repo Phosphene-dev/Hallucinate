@@ -117,7 +117,7 @@ Item {
             id: sec_appearance
             objectName: "settings_appearance"
             title: "Appearance"
-            keywords: "spinning spin record disc vinyl rotate neon cyberpunk afterimage scanlines glitch hud greebles cockpit terminal title card marquee scroll scrolling long title titles ticker numbers thousands separator comma commas digits shelf shelves row rows sideways wheel tilt arrows theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
+            keywords: "terminal panes boot phosphor command spinning spin record disc vinyl rotate neon cyberpunk afterimage scanlines glitch hud greebles cockpit terminal title card marquee scroll scrolling long title titles ticker numbers thousands separator comma commas digits shelf shelves row rows sideways wheel tilt arrows theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
             query: page.query
             Row {
                 spacing: 12
@@ -342,6 +342,39 @@ Item {
                     text: "HUD details (corner brackets, ticks, status lights and readouts)"
                     checked: Theme.neonGreebles
                     onToggled: shell.setUiValue("neonGreebles", checked ? "1" : "0")
+                }
+                StyledCheck {
+                    objectName: "neonBoot"
+                    text: "A start-up sequence when the terminal opens"
+                    checked: shell.ui.neonBoot !== "0"
+                    onToggled: shell.setUiValue("neonBoot", checked ? "1" : "0")
+                }
+                // the terminal's panes, in the order they show (it can pin and unpin them itself too)
+                Text { textFormat: Text.PlainText; text: "Terminal panes"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13) }
+                Flow {
+                    objectName: "neonPanes"
+                    width: parent.width
+                    spacing: 8
+                    readonly property var names: ({ now: "Now playing", wave: "Waveform", spectrum: "Spectrum", lyrics: "Lyrics",
+                        queue: "Up next", signal: "Signal path", stats: "Today's stats", tags: "Tags", similar: "Similar artists",
+                        whoami: "Your library", log: "Log" })
+                    readonly property var shown: {
+                        var v = shell.ui.neonTermPanes
+                        return (v === undefined ? "now,wave,spectrum,lyrics,queue" : v).split(",").filter(function (p) { return p })
+                    }
+                    Repeater {
+                        model: ["now", "wave", "spectrum", "lyrics", "queue", "signal", "stats", "tags", "similar", "whoami", "log"]
+                        Chip {
+                            required property string modelData
+                            text: parent.names[modelData]
+                            selected: parent.shown.indexOf(modelData) >= 0
+                            onClicked: {
+                                var list = parent.shown.filter(function (p) { return p !== modelData })
+                                if (!selected) list.push(modelData)
+                                shell.setUiValue("neonTermPanes", list.join(","))
+                            }
+                        }
+                    }
                 }
                 StyledCheck {
                     objectName: "neonTitleCard"

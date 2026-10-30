@@ -20,8 +20,18 @@ All notable changes to this project are documented here. Format based on
   wet street, rain falling harder with the music).
 - In the cockpit, boxed readouts in the corners like a command centre's screens: time remaining and time since
   play counted in seconds, the track number and the signal. Fog along the floor.
-- In the terminal, green or amber phosphor (or the theme's colour), and in a wide window a second screen with a
-  log of what the player did.
+- The terminal grew into a console:
+  - Panes you choose and order: now playing, the waveform (played part bright), the spectrum, lyrics scrolling
+    round the sung line, up next, the signal path, today's stats and streak, the playing file's raw tags,
+    similar artists and your library (`whoami`), and a log. Pin them with `pin`/`unpin` or in Settings.
+  - A prompt to type into, beside the panes in a wide window and below them otherwise: `play <search>`,
+    `queue <search>`, `next <search>`, `vol 50`/`vol +5`, `seek 1:30`/`seek +10`, `shuffle`, `repeat one`, `like`,
+    `sleep 30`, `radio`, `phosphor amber`, `theme <name>`, `cockpit`, `exit` and more (`help`). Any pane's name prints
+    it once. ↑ and ↓ bring back earlier commands, Tab completes. The commands are the web remote's own.
+  - A short start-up sequence when it opens (Settings can turn it off), green or amber phosphor or the theme's
+    colour.
+- The window's one-key shortcuts (Space, arrows, N, P, M, Q…) stay out of the way of any text field you're typing
+  in, not only the search box.
 - Settings → Appearance in a neon theme: the Now Playing view, the cockpit's colours (the theme's or the cover's),
   and scanlines, glitches, HUD details and title cards, each on or off. Reduce motion stills it all.
   None of it is loaded in any other theme.

@@ -614,8 +614,35 @@ def test_the_neon_theme_loads_only_when_chosen(qapp, app_window):
     assert wait_for(lambda: find_item(window, "neonNowPlaying") is not None)
     assert wait_for(lambda: find_item(window, "neonTitle") is not None)
     shell.setUiValue("neonNowPlaying", "terminal")
-    assert wait_for(lambda: find_item(window, "terminalTitle") is not None)
-    assert "title" in find_item(window, "terminalTitle").property("text")
+    assert wait_for(lambda: find_item(window, "terminalPane_now") is not None)
+    assert "title" in find_item(window, "terminalPane_now").property("text")
+    # the terminal's console: commands drive the player, panes pin and unpin, mistakes say so
+    term = find_item(window, "neonTerminal")
+    player = objects["player"]
+
+    def run(line):
+        QMetaObject.invokeMethod(term, "run", Q_ARG("QVariant", line))
+        qapp.processEvents()
+
+    def said():
+        return [plain(o)["t"] for o in plain(term.property("out"))]
+
+    run("vol 40")
+    assert abs(player.volume - 0.4) < 0.01 and "volume 40%" in said()
+    run("vol +10")
+    assert abs(player.volume - 0.5) < 0.01
+    run("pin signal")
+    assert wait_for(lambda: find_item(window, "terminalPane_signal") is not None)
+    run("unpin signal")
+    assert wait_for(lambda: find_item(window, "terminalPane_signal") is None)
+    run("whoami")
+    assert any("library  :" in line for line in said())
+    run("frobnicate")
+    assert said()[-1] == "frobnicate: command not found (try help)"
+    run("help")
+    assert any("pin <pane>" in line for line in said())
+    run("clear")
+    assert said() == []
     shell.setUiValue("neonNowPlaying", "classic")
     assert wait_for(lambda: find_item(window, "neonNowPlaying") is None)
     view.setProperty("open", False)
@@ -624,6 +651,7 @@ def test_the_neon_theme_loads_only_when_chosen(qapp, app_window):
     assert wait_for(lambda: find_item(window, "neonOverlay") is None)
     for key in ("neonNowPlaying", "neonTitleCard"):
         shell.setUiValue(key, "")
+    player.setVolume(0.8)
     qapp.processEvents()
     assert not warnings, warnings
 

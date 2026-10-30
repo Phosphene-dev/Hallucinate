@@ -449,7 +449,7 @@ Item {
     Loader {
         anchors.fill: parent
         active: view.neonView && view.shown
-        sourceComponent: NeonNowPlaying { active: view.open; mode: view.neonMode }
+        sourceComponent: NeonNowPlaying { active: view.open; mode: view.neonMode; onCloseRequested: view.open = false }
     }
 
     // Top bar: leave, styles, vinyl, full screen. Fades out with the pointer at rest.

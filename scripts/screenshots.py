@@ -551,6 +551,10 @@ def main():
                      lambda: shell.setUiValue("neonVisStyle", "rain"), wait, wait, shot("neon-cockpit-rain"),
                      lambda: shell.setUiValue("neonVisStyle", ""),
                      neon_mode("terminal"), wait, wait, shot("neon-terminal"),
+                     lambda: [QMetaObject.invokeMethod(child("neonTerminal"), "run", Q_ARG("QVariant", c))
+                              for c in ("signal", "stats", "whoami", "vol 80", "frobnicate")],
+                     lambda: shell.setUiValue("neonTermPanes", "now,wave,lyrics,queue,signal,similar"), wait, wait,
+                     shot("neon-terminal-console"), lambda: shell.setUiValue("neonTermPanes", "now,wave,spectrum,lyrics,queue"),
                      lambda: shell.setUiValue("neonPhosphor", "green"), wait, shot("neon-terminal-green"),
                      lambda: shell.setUiValue("neonPhosphor", ""),
                      lambda: win.resize(820, 560), wait, wait, shot("neon-terminal-small"),

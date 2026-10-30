@@ -15,6 +15,7 @@ Item {
     objectName: "neonNowPlaying"
     property bool active: false
     property string mode: "cockpit"   // or "terminal"
+    signal closeRequested()           // (the terminal's `exit`)
 
     // --- what it shows ---------------------------------------------------------------------------------------
     readonly property var track: player.hasTrack ? player.current : ({})
@@ -475,152 +476,10 @@ Item {
         }
     }
 
-    // === terminal ===============================================================================================
+    // === terminal: its own file =================================================================================
     Component {
         id: terminal
-        Rectangle {
-            id: term
-            color: Qt.rgba(Theme.bg.r * 0.6, Theme.bg.g * 0.6, Theme.bg.b * 0.6, 1)
-            readonly property real fs: Math.max(12, 17 * neo.u)
-            // the phosphor: green or amber like an old monitor, or the theme's own (Settings → Appearance)
-            readonly property string phosphor: shell.ui.neonPhosphor || "theme"
-            readonly property color ink: phosphor === "green" ? "#4dff8f" : phosphor === "amber" ? "#ffb43a" : Theme.neonLoud ? neo.cb : Theme.text
-            readonly property color prompt: phosphor === "theme" ? neo.ca : Qt.lighter(ink, 1.25)
-            readonly property bool wide: width > 1100
-            readonly property color dim: Qt.rgba(ink.r, ink.g, ink.b, 0.55)
-            readonly property int barWidth: Math.max(10, Math.min(60, Math.floor((width - 220) / (fs * 0.6)) - 22))
-            function bar(p, n) {
-                var lit = Math.round(p * n)
-                return "[" + "#".repeat(lit) + "-".repeat(Math.max(0, n - lit)) + "]"
-            }
-            function pad(s, n) { s = String(s); return s.length >= n ? s : s + " ".repeat(n - s.length) }
-            // the spectrum in block characters, eight rows high
-            readonly property string spectrum: {
-                var rows = [], blocks = " ▁▂▃▄▅▆▇█", lv = neo.levels
-                if (!lv.length) return "  (turn on “React to the music” on the Visualizer page to see the spectrum)"
-                for (var r = 3; r >= 0; r--) {
-                    var line = "  "
-                    for (var i = 0; i < 24; i++) {
-                        var h = Math.max(0, Math.min(1, lv[i] || 0)) * 4 - r
-                        line += (h >= 1 ? "█" : h <= 0 ? " " : blocks[Math.round(h * 8)]) + " "
-                    }
-                    rows.push(line)
-                }
-                return rows.join("\n")
-            }
-
-            Flickable {
-                anchors { fill: parent; margins: 32 * neo.u; topMargin: 84; rightMargin: term.wide ? parent.width * 0.38 : 32 * neo.u }
-                contentHeight: lines.implicitHeight
-                clip: true
-                boundsBehavior: Flickable.StopAtBounds
-                Column {
-                    id: lines
-                    width: parent.width
-                    spacing: 2
-                    component Line: Text {
-                        width: lines.width
-                        textFormat: Text.PlainText
-                        wrapMode: Text.Wrap
-                        color: term.ink
-                        font.family: neo.mono; font.pixelSize: term.fs
-                    }
-                    Line { text: "AFTERIMAGE TERMINAL  ::  wired link " + (player.playing ? "up" : "idle"); color: term.dim }
-                    Line { text: " " }
-                    Line { text: "> now_playing --verbose"; color: term.prompt }
-                    Line { objectName: "terminalTitle"; text: "  title    : " + (player.hasTrack ? neo.track.title || "?" : "(nothing)") }
-                    Line { text: "  artist   : " + (neo.track.artist || "-") }
-                    Line { text: "  album    : " + (neo.track.album || "-") + (neo.track.year ? " (" + neo.track.year + ")" : "") }
-                    Line { text: "  signal   : " + neo.signal.toLowerCase() }
-                    Line { text: "  state    : " + (player.playing ? "playing" : "paused") + (player.shuffle ? " · shuffle" : "") + (player.repeat === 2 ? " · repeat one" : player.repeat ? " · repeat" : "") }
-                    Line { text: "  " + term.bar(neo.progress, term.barWidth) + " " + neo.clock(player.position) + " / " + neo.clock(player.duration) + "  " + Math.round(neo.progress * 100) + "%" }
-                    Line { text: " " }
-                    Line { text: "> spectrum"; color: term.prompt }
-                    Line { text: term.spectrum; wrapMode: Text.NoWrap; lineHeight: 0.9 }
-                    Line { text: " " }
-                    Line { text: "> queue --next " + neo.upNext.length; color: term.prompt; visible: neo.upNext.length > 0 }
-                    Repeater {
-                        model: neo.upNext
-                        Line {
-                            required property var modelData
-                            required property int index
-                            text: "  " + (index + 1 < 10 ? "0" : "") + (index + 1) + "  " + term.pad(modelData.title, 34) + "  " + (modelData.artist || "")
-                            wrapMode: Text.NoWrap; elide: Text.ElideRight
-                            color: index === 0 ? term.ink : term.dim
-                        }
-                    }
-                    Line { text: " "; visible: neo.upNext.length > 0 }
-                    Line { text: "> lyrics --line"; color: term.prompt; visible: lyricsCtl.status === "found" && lyricsCtl.synced }
-                    Line {
-                        visible: lyricsCtl.status === "found" && lyricsCtl.synced
-                        text: "  " + ((lyricsCtl.lines[lyricsCtl.currentLine] || {}).text || "...")
-                    }
-                    Line { text: " "; visible: lyricsCtl.status === "found" && lyricsCtl.synced }
-                    // the controls, as commands you can click
-                    Flow {
-                        width: lines.width
-                        spacing: term.fs
-                        Repeater {
-                            model: [
-                                { t: "[ prev ]", a: function () { player.previous() } },
-                                { t: player.playing ? "[ pause ]" : "[ play ]", a: function () { player.toggle() } },
-                                { t: "[ next ]", a: function () { player.next() } },
-                                { t: player.shuffle ? "[ shuffle:on ]" : "[ shuffle:off ]", a: function () { player.toggleShuffle() } },
-                                { t: player.repeat === 2 ? "[ repeat:one ]" : player.repeat ? "[ repeat:all ]" : "[ repeat:off ]", a: function () { player.cycleRepeat() } }
-                            ]
-                            Text {
-                                required property var modelData
-                                textFormat: Text.PlainText
-                                text: modelData.t
-                                color: cmd.containsMouse ? Theme.onAccent : term.prompt
-                                font.family: neo.mono; font.pixelSize: term.fs
-                                Rectangle { anchors.fill: parent; z: -1; color: term.prompt; visible: cmd.containsMouse }
-                                MouseArea { id: cmd; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: modelData.a() }
-                                Accessible.role: Accessible.Button
-                                Accessible.name: modelData.t.replace(/[\[\]]/g, "").trim()
-                                Accessible.onPressAction: modelData.a()
-                            }
-                        }
-                    }
-                    Row {
-                        Line { width: implicitWidth; text: "> " }
-                        Rectangle {  // the cursor
-                            width: term.fs * 0.55; height: term.fs
-                            color: term.ink
-                            opacity: cursorBlink.on ? 1 : 0
-                            Timer { id: cursorBlink; property bool on: true; interval: 530; repeat: true; running: neo.moving; onTriggered: on = !on }
-                        }
-                    }
-                }
-            }
-            // a second screen beside it in a wide window: a log of what the player did
-            Rectangle {
-                objectName: "terminalLog"
-                visible: term.wide
-                anchors { right: parent.right; top: parent.top; bottom: parent.bottom; margins: 32 * neo.u; topMargin: 84 }
-                width: parent.width * 0.38 - 64 * neo.u
-                color: Qt.rgba(term.ink.r, term.ink.g, term.ink.b, 0.04)
-                border.width: 1; border.color: Qt.rgba(term.ink.r, term.ink.g, term.ink.b, 0.35)
-                Column {
-                    anchors { fill: parent; margins: 14 }
-                    spacing: 2
-                    clip: true
-                    Text { textFormat: Text.PlainText; text: "> tail -f afterimage.log"; color: term.prompt; font.family: neo.mono; font.pixelSize: term.fs * 0.85 }
-                    Repeater {
-                        model: neo.log
-                        Text {
-                            required property var modelData
-                            required property int index
-                            width: parent.width; elide: Text.ElideRight
-                            textFormat: Text.PlainText
-                            text: modelData
-                            color: index === neo.log.length - 1 ? term.ink : Qt.rgba(term.ink.r, term.ink.g, term.ink.b, 0.6)
-                            font.family: neo.mono; font.pixelSize: term.fs * 0.8
-                        }
-                    }
-                }
-            }
-        }
+        NeonTerminal { np: neo }
     }
 
     // === the title card =========================================================================================
