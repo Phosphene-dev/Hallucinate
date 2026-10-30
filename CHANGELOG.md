@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [1.7.1] - 2026-10-30
 
 ### Changed
 - The web remote shows a radio station as the app does (#138): how long you've listened, a bar that can't be

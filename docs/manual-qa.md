@@ -1,5 +1,11 @@
 # Manual QA checklist
 
+## Release testing for 1.7.1
+
+- [ ] Play a song, then a radio station: "Connecting…" shows in the player bar until it plays. Then another station.
+- [ ] Web remote, a station playing: time listened, a bar that can't be dragged, LIVE at the end. A song: as before.
+- [ ] Settings → Remote & web open, then Web remote → Settings → Disconnect: the device leaves the list at once.
+
 ## Release testing for 1.7.0
 
 - [ ] Settings → Appearance → Theme → Afterimage (then Quiet, then Alert): glowing edges, HUD corners, scanlines.
