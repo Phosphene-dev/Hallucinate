@@ -214,6 +214,11 @@ Rectangle {
 
     function run(line) {
         line = String(line).trim()
+        if (bootTimer.running) {  // typing while it starts up finishes the start-up first, so nothing interleaves
+            bootTimer.stop()
+            say(bootLines, "dim")
+            bootLines = []
+        }
         say("> " + line, "prompt")
         if (!line) return
         typed = typed.concat([line]).slice(-100)
