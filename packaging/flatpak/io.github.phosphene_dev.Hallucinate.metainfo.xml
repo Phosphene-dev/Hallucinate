@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.8.0" date="2026-10-31">
+      <description>
+        <p>The music pauses when the headphones go. The web remote has lyrics that follow the song, the equaliser and recent plays. Covers that showed blank or garbled are mended, with a Repair covers button and a damaged covers check in Library health.</p>
+        <p>The Afterimage terminal learns history, top, queue editing, the equaliser, the output device and short forms of its commands.</p>
+      </description>
+    </release>
     <release version="1.7.1" date="2026-10-30">
       <description>
         <p>Radio stations show that they're connecting every time, and the web remote shows a station as live, with a bar that can't be dragged. A device disconnected from the web remote leaves the list in Settings at once.</p>

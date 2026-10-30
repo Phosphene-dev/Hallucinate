@@ -641,6 +641,19 @@ def test_the_neon_theme_loads_only_when_chosen(qapp, app_window):
     assert said()[-1] == "frobnicate: command not found (try help)"
     run("help")
     assert any("pin <pane>" in line for line in said())
+    run("top week")
+    assert any("most played, this week" in line for line in said())
+    run("history 3")
+    run("eq off")
+    assert said()[-1] == "equaliser off"
+    run("out")
+    assert any("in use" in line for line in said())
+    run("cmds")
+    assert any("eq off" in line for line in said())
+    before = len(said())
+    run("m")  # an alias (mute), and again to unmute
+    run("m")
+    assert not any("command not found" in line for line in said()[before:])
     run("clear")
     assert said() == []
     shell.setUiValue("neonNowPlaying", "classic")

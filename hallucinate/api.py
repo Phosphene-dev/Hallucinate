@@ -698,6 +698,24 @@ class Api:
 
     m_recent._api_scope = "read"
 
+    def m_top(self, period="month", limit=10):
+        """Most played artists, albums and songs over the last week, month or year (or of all time)."""
+        import time
+
+        days = {"week": 7, "month": 30, "year": 365, "all": None}
+        if period not in days:
+            raise ApiError("period is week, month, year or all")
+        start = None if days[period] is None else time.time() - days[period] * 86400
+        st = self._db.listening_stats(period_start=start, limit=_int(limit, 10, 1, 50))
+        return {"period": period,
+                "artists": [{"name": a.get("name") or "", "plays": int(a.get("plays") or 0)} for a in st.get("artists", [])],
+                "albums": [{"album": a.get("album") or "", "artist": a.get("album_artist") or "", "albumKey": a.get("album_key") or "",
+                            "plays": int(a.get("plays") or 0)} for a in st.get("albums", [])],
+                "songs": [{"title": t.get("title") or "", "artist": t.get("artist") or "", "plays": int(t.get("plays") or 0)}
+                          for t in st.get("tracks", [])]}
+
+    m_top._api_scope = "read"
+
     def art_file(self, album_key):
         """The cover file for an album key, or a station's or show's picture ("~station/3", "~podcast/7"; for the
         art endpoint, never sent to a client)."""

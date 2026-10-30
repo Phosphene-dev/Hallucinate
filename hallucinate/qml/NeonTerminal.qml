@@ -193,7 +193,10 @@ Rectangle {
 
     readonly property var commands: ["help", "clear", "play", "pause", "next", "prev", "queue", "vol", "mute", "seek",
         "shuffle", "repeat", "like", "sleep", "radio", "pin", "unpin", "panes", "phosphor", "theme", "boot", "history",
-        "cockpit", "classic", "exit"].concat(allPanes)
+        "top", "eq", "out", "cmds", "cockpit", "classic", "exit"].concat(allPanes)
+    // one-letter (or short) ways to say the everyday commands
+    readonly property var aliases: ({ n: "next", b: "prev", v: "vol", s: "shuffle", r: "repeat", q: "queue",
+        l: "lyrics", h: "help", m: "mute", t: "top", hist: "history", o: "out" })
 
     function call(method, params) {
         var r = webRemote.runCommand(method, params || {})
@@ -224,6 +227,7 @@ Rectangle {
         typed = typed.concat([line]).slice(-100)
         typedAt = -1
         var word = line.split(/\s+/)[0].toLowerCase(), arg = line.slice(word.length).trim(), argl = arg.toLowerCase()
+        if (aliases[word]) word = aliases[word]
         var songs, n
         switch (word) {
         case "help": case "?":
@@ -234,13 +238,61 @@ Rectangle {
                    "  shuffle [on|off]  repeat [off|all|one]  sleep <min|track|album|off>  radio [on|off]",
                    "  pin <pane> / unpin <pane> / panes      what shows above (" + allPanes.join(", ") + ")",
                    "  <pane>            print a pane once, e.g. signal, stats, tags, whoami, similar",
-                   "  phosphor <green|amber|theme>   theme <name>   boot   history   clear",
+                   "  queue rm <n> / queue mv <from> <to> / queue clear   change what's next (numbers as up next shows them)",
+                   "  history [n]       what you listened to last              top [week|month|year|all]",
+                   "  eq [off|<preset>] the equaliser                          out [<n>|default]  where the sound goes",
+                   "  lyrics            the whole text                         cmds  what you typed",
+                   "  n next · b prev · p play/pause · v vol · s shuffle · r repeat · q queue · l lyrics · t top",
+                   "  phosphor <green|amber|theme>   theme <name>   boot   clear",
                    "  cockpit / classic  switch Now Playing      exit  close it",
                    "  ↑ ↓ your earlier commands   Tab completes a command"], "dim")
             return
         case "clear": bootTimer.stop(); bootLines = []; out = []; return  // (a start-up still typing stops too)
         case "boot": bootTimer.stop(); out = []; boot(); return
-        case "history": say(typed.map(function (c, i) { return "  " + (i + 1) + "  " + c }), "dim"); return
+        case "cmds": say(typed.map(function (c, i) { return "  " + (i + 1) + "  " + c }), "dim"); return
+        case "history":
+            var rec = call("recent", { limit: Math.max(1, Math.min(50, parseInt(arg) || 10)) })
+            if (!rec) return
+            if (!rec.plays.length) { say("nothing listened to yet", "dim"); return }
+            say(rec.plays.map(function (p) { return "  " + pad(p.day.slice(5) + " " + p.time, 12) + pad(p.title, 34).slice(0, 40) + "  " + p.artist }))
+            return
+        case "top":
+            var period = ["week", "month", "year", "all"].indexOf(argl) >= 0 ? argl : "month"
+            var tp = call("top", { period: period, limit: 5 })
+            if (!tp) return
+            var lines = ["  most played, " + (period === "all" ? "all time" : "this " + period)]
+            lines.push("  artists : " + (tp.artists.map(function (a) { return a.name + " (" + a.plays + ")" }).join(", ") || "-"))
+            lines.push("  albums  : " + (tp.albums.map(function (a) { return a.album + " (" + a.plays + ")" }).join(", ") || "-"))
+            tp.songs.forEach(function (x, k) { lines.push("  " + (k + 1) + ".  " + pad(x.title, 34).slice(0, 40) + "  " + x.artist + "  ×" + x.plays) })
+            say(lines)
+            return
+        case "eq":
+            var e = call("eq")
+            if (!e) return
+            if (!arg) { say("equaliser " + (e.enabled ? "on: " + e.preset : "off") + "   presets: " + e.presets.join(", "), "dim"); return }
+            if (argl === "off" || argl === "on") { call("eq.set", { enabled: argl === "on" }); say("equaliser " + argl); return }
+            var preset = e.presets.filter(function (x) { return x.toLowerCase() === argl })[0]
+                || e.presets.filter(function (x) { return x.toLowerCase().indexOf(argl) === 0 })[0]
+            if (!preset) { say("no preset called “" + arg + "” (eq lists them)", "bad"); return }
+            call("eq.set", { preset: preset })
+            say("equaliser: " + preset)
+            return
+        case "out":
+            var devs = player.outputDevices
+            if (!arg) {
+                say(devs.map(function (d, k) { return "  " + k + "  " + d.name + (d.key === player.outputDevice ? "   ← in use" : "") }))
+                say("out <number> to switch; out 0 (or default) follows the system", "dim")
+                return
+            }
+            var pickAt = argl === "default" ? 0 : parseInt(arg)
+            if (isNaN(pickAt) || pickAt < 0 || pickAt >= devs.length) { say("out takes a number from the list (type out)", "bad"); return }
+            player.setOutputDevice(devs[pickAt].key)
+            say("sound to: " + devs[pickAt].name)
+            return
+        case "lyrics":
+            if (lyricsCtl.status !== "found") { say(lyricsCtl.status === "loading" ? "looking for lyrics..." : "no lyrics for this song", "dim"); return }
+            say(lyricsCtl.synced ? lyricsCtl.lines.map(function (l) { return "  " + (l.text || "") }) : String(lyricsCtl.plain).split("\n").map(function (l) { return "  " + l }))
+            return
         case "play":
             if (!arg) { call("play"); return }
             songs = search(arg)
@@ -256,6 +308,23 @@ Rectangle {
         case "prev": case "previous": call("previous"); return
         case "queue": case "enqueue":
             if (!arg) { say(paneLines("queue")); return }
+            var qa = argl.split(/\s+/)
+            if (qa[0] === "rm" || qa[0] === "remove") {  // numbers as up next shows them: 1 is the song after this one
+                var at = parseInt(qa[1])
+                if (isNaN(at) || at < 1) { say("queue rm <number>, as up next shows it", "bad"); return }
+                var gone = player.queueModel.get(player.currentIndex + at)
+                if (!gone.title) { say("nothing at " + at + " in what's next", "bad"); return }
+                if (call("queue.remove", { index: player.currentIndex + at }) !== null) say("removed: " + gone.title)
+                return
+            }
+            if (qa[0] === "mv" || qa[0] === "move") {
+                var from = parseInt(qa[1]), to = parseInt(qa[2])
+                if (isNaN(from) || isNaN(to) || from < 1 || to < 1) { say("queue mv <from> <to>, numbers as up next shows them", "bad"); return }
+                if (call("queue.move", { src: player.currentIndex + from, dst: player.currentIndex + to }) !== null) say("moved " + from + " to " + to)
+                return
+            }
+            if (qa[0] === "clear") { call("queue.clear", { upcoming: true }); say("cleared what's next"); return }
+            if (qa[0] === "shuffle") { call("queue.shuffle"); say("shuffled what's next"); return }
             songs = search(arg)
             if (songs.length) { call("queue.add", { ids: [songs[0].id] }); say("queued: " + songs[0].title + " · " + (songs[0].artist || "")) }
             return
