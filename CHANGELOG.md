@@ -15,7 +15,13 @@ All notable changes to this project are documented here. Format based on
     to seek with, signal readouts, a warning strip while paused, and a title card for each new song;
   - the terminal: the song typed out, a bar of # for where you are, the spectrum in block characters, what's next,
     the line of lyrics being sung, and commands to click.
-- Tunnel, a warp-tunnel visualizer, in a neon theme.
+- Three visualizers of a neon theme's own: Tunnel (a warp tunnel of neon grid), Wires (a dark room strung with
+  swaying cables over one pool of light, sparks running along them) and Neon rain (signs glowing through fog over a
+  wet street, rain falling harder with the music).
+- In the cockpit, boxed readouts in the corners like a command centre's screens: time remaining and time since
+  play counted in seconds, the track number and the signal. Fog along the floor.
+- In the terminal, green or amber phosphor (or the theme's colour), and in a wide window a second screen with a
+  log of what the player did.
 - Settings → Appearance in a neon theme: the Now Playing view, the cockpit's colours (the theme's or the cover's),
   and scanlines, glitches, HUD details and title cards, each on or off. Reduce motion stills it all.
   None of it is loaded in any other theme.

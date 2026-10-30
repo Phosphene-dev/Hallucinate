@@ -39,6 +39,11 @@ Item {
         return (m < 10 ? "0" : "") + m + ":" + (s % 60 < 10 ? "0" : "") + (s % 60)
     }
     function upper(s) { return String(s || "").toUpperCase() }
+    // a span in whole seconds, as a countdown shows it: 000,213 sec.
+    function seconds(ms) {
+        var s = String(Math.max(0, Math.floor(ms / 1000))).padStart(6, "0")
+        return s.slice(0, 3) + "," + s.slice(3) + " sec."
+    }
     // what the signal is, as a readout: FLAC · 24/96 · 2304 KBPS
     readonly property string signal: {
         var t = track, parts = []
@@ -58,6 +63,31 @@ Item {
         }
         return out
     }
+
+    // --- a log of what the player did, for the terminal's second screen ------------------------------------------
+    property var log: []
+    function note(what) {
+        var d = new Date(), t = [d.getHours(), d.getMinutes(), d.getSeconds()].map(function (n) { return (n < 10 ? "0" : "") + n }).join(":")
+        log = log.concat(["[" + t + "] " + what]).slice(-18)
+    }
+    Component.onCompleted: {
+        wasPlaying = player.playing
+        note("link up")
+        note("queue " + (player.upcomingCount + (player.hasTrack ? 1 : 0)) + " tracks in buffer")
+        if (player.hasTrack) note("load  " + (track.title || "") + (track.artist ? " / " + track.artist : ""))
+        note("sig   " + signal.toLowerCase())
+        note(player.playing ? "play  signal live" : "hold  signal paused")
+    }
+    Connections {
+        target: player
+        function onCurrentChanged() { if (player.hasTrack) neo.note("load  " + (neo.track.title || "") + (neo.track.artist ? " / " + neo.track.artist : "")) }
+        function onStateChanged() {
+            if (player.playing === neo.wasPlaying) return  // (the state also changes for other reasons)
+            neo.wasPlaying = player.playing
+            neo.note(player.playing ? "play  signal resumed" : "hold  signal paused at " + neo.clock(player.position))
+        }
+    }
+    property bool wasPlaying: false  // (set once at the start, not bound: it's what the state was)
 
     // --- the title card: a new song announced on black, for a moment ------------------------------------------
     readonly property bool cards: shell.ui.neonTitleCard !== "0"
@@ -83,6 +113,14 @@ Item {
                 active: neo.active
                 quality: 0.4
                 tint: neo.coverTint ? [] : [neo.ca, neo.cb, Qt.tint(neo.ca, Qt.rgba(neo.cb.r, neo.cb.g, neo.cb.b, 0.5))]
+            }
+            Rectangle {  // fog along the floor, lit by the neon
+                anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                height: parent.height * 0.32
+                gradient: Gradient {
+                    GradientStop { position: 0; color: "transparent" }
+                    GradientStop { position: 1; color: Qt.rgba(neo.ca.r, neo.ca.g, neo.ca.b, Theme.neonLoud ? 0.16 : 0.08) }
+                }
             }
             Rectangle {
                 anchors.fill: parent
@@ -405,14 +443,34 @@ Item {
                 }
             }
 
-            // HUD readouts in the corners
-            Text {
-                anchors { left: parent.left; bottom: parent.bottom; leftMargin: 24; bottomMargin: 18 }
-                visible: Theme.neonGreebles
-                textFormat: Text.PlainText
-                text: "AFTERIMAGE · LAYER " + ((player.currentIndex + 1) % 100 < 10 ? "0" : "") + ((player.currentIndex + 1) % 100) + " · " + (player.playing ? "LINK ACTIVE" : "LINK IDLE")
-                color: Qt.rgba(neo.cb.r, neo.cb.g, neo.cb.b, 0.6)
-                font.family: neo.mono; font.pixelSize: 11; font.letterSpacing: 2
+            // boxed readouts in the four corners, like a command centre's screens: the song's own clocks counted in
+            // seconds, its number and its signal (with room for them: a big enough window, HUD details on)
+            Repeater {
+                model: Theme.neonGreebles && pit.width > 1000 && pit.height > 640 ? 4 : 0
+                Rectangle {
+                    id: box
+                    required property int index
+                    readonly property bool atRight: index % 2 === 1
+                    readonly property bool atBottom: index > 1
+                    readonly property var lines: index === 0 ? ["SIGNAL PATH", neo.signal.split(" · ").slice(0, 2).join(" "), "on AFTERIMAGE-01"]
+                        : index === 1 ? ["TIME REMAINING TO END", neo.seconds(player.duration - player.position), "on AFTERIMAGE-01"]
+                        : index === 2 ? ["TRACK NO.", String(player.currentIndex + 1).padStart(3, "0"), "on " + neo.upper(neo.track.album || "the queue")]
+                        : ["TIME SINCE PLAY", neo.seconds(player.position), "on AFTERIMAGE-01"]
+                    objectName: "neonCorner" + index
+                    x: atRight ? pit.width - width - 24 : 24
+                    y: atBottom ? pit.height - height - 22 : 84
+                    width: Math.max(200, boxCol.implicitWidth + 24); height: boxCol.implicitHeight + 14
+                    color: Qt.rgba(0, 0, 0, 0.55)
+                    border.width: 2; border.color: neo.ca
+                    Column {
+                        id: boxCol
+                        anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                        spacing: 0
+                        Text { textFormat: Text.PlainText; text: box.lines[0]; color: neo.ca; font.family: Theme.displayFamily; font.pixelSize: 13; font.weight: Font.Bold; font.letterSpacing: 1 }
+                        Text { textFormat: Text.PlainText; text: box.lines[1]; color: neo.cb; font.family: Theme.displayFamily; font.pixelSize: 30; font.weight: Font.Bold }
+                        Text { textFormat: Text.PlainText; text: box.lines[2]; color: Qt.rgba(neo.ca.r, neo.ca.g, neo.ca.b, 0.75); font.family: neo.mono; font.pixelSize: 11; width: 200; elide: Text.ElideRight }
+                    }
+                }
             }
         }
     }
@@ -424,7 +482,11 @@ Item {
             id: term
             color: Qt.rgba(Theme.bg.r * 0.6, Theme.bg.g * 0.6, Theme.bg.b * 0.6, 1)
             readonly property real fs: Math.max(12, 17 * neo.u)
-            readonly property color ink: Theme.neonLoud ? neo.cb : Theme.text
+            // the phosphor: green or amber like an old monitor, or the theme's own (Settings → Appearance)
+            readonly property string phosphor: shell.ui.neonPhosphor || "theme"
+            readonly property color ink: phosphor === "green" ? "#4dff8f" : phosphor === "amber" ? "#ffb43a" : Theme.neonLoud ? neo.cb : Theme.text
+            readonly property color prompt: phosphor === "theme" ? neo.ca : Qt.lighter(ink, 1.25)
+            readonly property bool wide: width > 1100
             readonly property color dim: Qt.rgba(ink.r, ink.g, ink.b, 0.55)
             readonly property int barWidth: Math.max(10, Math.min(60, Math.floor((width - 220) / (fs * 0.6)) - 22))
             function bar(p, n) {
@@ -448,7 +510,7 @@ Item {
             }
 
             Flickable {
-                anchors { fill: parent; margins: 32 * neo.u; topMargin: 84 }
+                anchors { fill: parent; margins: 32 * neo.u; topMargin: 84; rightMargin: term.wide ? parent.width * 0.38 : 32 * neo.u }
                 contentHeight: lines.implicitHeight
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
@@ -465,7 +527,7 @@ Item {
                     }
                     Line { text: "AFTERIMAGE TERMINAL  ::  wired link " + (player.playing ? "up" : "idle"); color: term.dim }
                     Line { text: " " }
-                    Line { text: "> now_playing --verbose"; color: neo.ca }
+                    Line { text: "> now_playing --verbose"; color: term.prompt }
                     Line { objectName: "terminalTitle"; text: "  title    : " + (player.hasTrack ? neo.track.title || "?" : "(nothing)") }
                     Line { text: "  artist   : " + (neo.track.artist || "-") }
                     Line { text: "  album    : " + (neo.track.album || "-") + (neo.track.year ? " (" + neo.track.year + ")" : "") }
@@ -473,10 +535,10 @@ Item {
                     Line { text: "  state    : " + (player.playing ? "playing" : "paused") + (player.shuffle ? " · shuffle" : "") + (player.repeat === 2 ? " · repeat one" : player.repeat ? " · repeat" : "") }
                     Line { text: "  " + term.bar(neo.progress, term.barWidth) + " " + neo.clock(player.position) + " / " + neo.clock(player.duration) + "  " + Math.round(neo.progress * 100) + "%" }
                     Line { text: " " }
-                    Line { text: "> spectrum"; color: neo.ca }
+                    Line { text: "> spectrum"; color: term.prompt }
                     Line { text: term.spectrum; wrapMode: Text.NoWrap; lineHeight: 0.9 }
                     Line { text: " " }
-                    Line { text: "> queue --next " + neo.upNext.length; color: neo.ca; visible: neo.upNext.length > 0 }
+                    Line { text: "> queue --next " + neo.upNext.length; color: term.prompt; visible: neo.upNext.length > 0 }
                     Repeater {
                         model: neo.upNext
                         Line {
@@ -488,7 +550,7 @@ Item {
                         }
                     }
                     Line { text: " "; visible: neo.upNext.length > 0 }
-                    Line { text: "> lyrics --line"; color: neo.ca; visible: lyricsCtl.status === "found" && lyricsCtl.synced }
+                    Line { text: "> lyrics --line"; color: term.prompt; visible: lyricsCtl.status === "found" && lyricsCtl.synced }
                     Line {
                         visible: lyricsCtl.status === "found" && lyricsCtl.synced
                         text: "  " + ((lyricsCtl.lines[lyricsCtl.currentLine] || {}).text || "...")
@@ -510,9 +572,9 @@ Item {
                                 required property var modelData
                                 textFormat: Text.PlainText
                                 text: modelData.t
-                                color: cmd.containsMouse ? Theme.onAccent : neo.ca
+                                color: cmd.containsMouse ? Theme.onAccent : term.prompt
                                 font.family: neo.mono; font.pixelSize: term.fs
-                                Rectangle { anchors.fill: parent; z: -1; color: neo.ca; visible: cmd.containsMouse }
+                                Rectangle { anchors.fill: parent; z: -1; color: term.prompt; visible: cmd.containsMouse }
                                 MouseArea { id: cmd; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: modelData.a() }
                                 Accessible.role: Accessible.Button
                                 Accessible.name: modelData.t.replace(/[\[\]]/g, "").trim()
@@ -527,6 +589,33 @@ Item {
                             color: term.ink
                             opacity: cursorBlink.on ? 1 : 0
                             Timer { id: cursorBlink; property bool on: true; interval: 530; repeat: true; running: neo.moving; onTriggered: on = !on }
+                        }
+                    }
+                }
+            }
+            // a second screen beside it in a wide window: a log of what the player did
+            Rectangle {
+                objectName: "terminalLog"
+                visible: term.wide
+                anchors { right: parent.right; top: parent.top; bottom: parent.bottom; margins: 32 * neo.u; topMargin: 84 }
+                width: parent.width * 0.38 - 64 * neo.u
+                color: Qt.rgba(term.ink.r, term.ink.g, term.ink.b, 0.04)
+                border.width: 1; border.color: Qt.rgba(term.ink.r, term.ink.g, term.ink.b, 0.35)
+                Column {
+                    anchors { fill: parent; margins: 14 }
+                    spacing: 2
+                    clip: true
+                    Text { textFormat: Text.PlainText; text: "> tail -f afterimage.log"; color: term.prompt; font.family: neo.mono; font.pixelSize: term.fs * 0.85 }
+                    Repeater {
+                        model: neo.log
+                        Text {
+                            required property var modelData
+                            required property int index
+                            width: parent.width; elide: Text.ElideRight
+                            textFormat: Text.PlainText
+                            text: modelData
+                            color: index === neo.log.length - 1 ? term.ink : Qt.rgba(term.ink.r, term.ink.g, term.ink.b, 0.6)
+                            font.family: neo.mono; font.pixelSize: term.fs * 0.8
                         }
                     }
                 }

@@ -313,6 +313,16 @@ Item {
                         onActivated: shell.setUiValue("neonTint", modes[currentIndex])
                         Accessible.name: "Cockpit colours"
                     }
+                    Text { textFormat: Text.PlainText; text: "Terminal"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                    StyledCombo {
+                        objectName: "neonPhosphor"
+                        readonly property var modes: ["theme", "green", "amber"]
+                        width: 200
+                        model: ["The theme's colour", "Green phosphor", "Amber phosphor"]
+                        selection: Math.max(0, modes.indexOf(shell.ui.neonPhosphor || "theme"))
+                        onActivated: shell.setUiValue("neonPhosphor", modes[currentIndex])
+                        Accessible.name: "Terminal colour"
+                    }
                 }
                 StyledCheck {
                     objectName: "neonScanlines"
