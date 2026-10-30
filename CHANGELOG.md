@@ -34,6 +34,8 @@ All notable changes to this project are documented here. Format based on
   views asking for the same cover at once could leave a half-written picture in the cover cache. Each now writes its
   own file, and a cut-short one already in the cache is noticed and made again.
 - A paired device's details ran out of their box in Settings → Remote & web with the queue open (#133); they wrap.
+- Collapsing the sidebar, the Playlists, Settings and Expand sidebar icons jumped right and slid back; they (and
+  the logo) now stay put as it narrows.
 - After disconnecting a device in the web remote, the song's cover still showed behind the pairing form (#134).
 
 ## [1.6.3] - 2026-10-30

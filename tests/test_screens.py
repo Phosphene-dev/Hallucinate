@@ -544,6 +544,29 @@ def test_a_retro_theme_opens_now_playing_as_the_deck(qapp, app_window):
     assert not warnings, warnings
 
 
+def test_sidebar_icons_stay_put_as_it_collapses(qapp, app_window):
+    """Collapsing the sidebar, the icons at the bottom (Settings, the toggle) and the Playlists button used to jump
+    to the middle of their still-wide buttons and slide back. Every icon stays by the left edge throughout."""
+    import time
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    toggle = find_item(window, "sidebarToggle")
+    glyph = next(c for c in toggle.childItems() if c.objectName() == "railGlyph")
+    shell.setSidebarCollapsed(False)
+    qapp.processEvents()
+    shell.setSidebarCollapsed(True)
+    seen, t0 = [], time.time()
+    while time.time() - t0 < 0.5:
+        qapp.processEvents()
+        seen.append(glyph.property("x"))
+        time.sleep(0.01)
+    shell.setSidebarCollapsed(False)
+    qapp.processEvents()
+    assert max(seen) <= 14.5 and min(seen) >= 12, seen
+    assert not warnings, warnings
+
+
 def test_the_player_cover_can_spin_like_a_record(qapp, app_window):
     """Settings → Appearance → "Covers in the player bar and mini player" (#135): a round record that turns while
     playing; back to a still square, upright, when switched off."""
