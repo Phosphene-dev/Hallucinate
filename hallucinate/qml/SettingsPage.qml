@@ -117,7 +117,7 @@ Item {
             id: sec_appearance
             objectName: "settings_appearance"
             title: "Appearance"
-            keywords: "neon cyberpunk afterimage scanlines glitch hud greebles cockpit terminal title card marquee scroll scrolling long title titles ticker numbers thousands separator comma commas digits shelf shelves row rows sideways wheel tilt arrows theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
+            keywords: "spinning spin record disc vinyl rotate neon cyberpunk afterimage scanlines glitch hud greebles cockpit terminal title card marquee scroll scrolling long title titles ticker numbers thousands separator comma commas digits shelf shelves row rows sideways wheel tilt arrows theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
             query: page.query
             Row {
                 spacing: 12
@@ -378,6 +378,19 @@ Item {
                     selection: Math.max(0, modes.indexOf(shell.visualizerBackground))
                     onActivated: shell.setVisualizerBackground(modes[currentIndex])
                     Accessible.name: "Visualizer while the window is in the background"
+                }
+            }
+            Flow {
+                width: parent.width
+                spacing: 10
+                Text { textFormat: Text.PlainText; text: "Covers in the player bar and mini player"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                StyledCombo {
+                    objectName: "spinningArt"
+                    width: 260
+                    model: ["Still", "A record, spinning while playing"]
+                    selection: shell.ui.spinningArt === "1" ? 1 : 0
+                    onActivated: shell.setUiValue("spinningArt", currentIndex === 1 ? "1" : "0")
+                    Accessible.name: "Covers in the player bar and mini player"
                 }
             }
             StyledCheck {
@@ -1581,8 +1594,11 @@ Item {
                         Column {
                             width: parent.width - forgetButton.width - 12
                             anchors.verticalCenter: parent.verticalCenter
-                            Text { textFormat: Text.PlainText; text: modelData.name; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold }
+                            // (wrapped to the room beside the button, however narrow: #133)
+                            Text { width: parent.width; wrapMode: Text.Wrap; textFormat: Text.PlainText; text: modelData.name; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold }
                             Text {
+                                width: parent.width
+                                wrapMode: Text.Wrap
                                 textFormat: Text.PlainText
                                 text: "Paired " + new Date(modelData.paired * 1000).toLocaleDateString() + "  ·  last used " + new Date(modelData.seen * 1000).toLocaleString()
                                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)

@@ -544,6 +544,25 @@ def test_a_retro_theme_opens_now_playing_as_the_deck(qapp, app_window):
     assert not warnings, warnings
 
 
+def test_the_player_cover_can_spin_like_a_record(qapp, app_window):
+    """Settings → Appearance → "Covers in the player bar and mini player" (#135): a round record that turns while
+    playing; back to a still square, upright, when switched off."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    cover = find_item(window, "barCover")
+    assert cover.property("radius") < cover.property("width") / 2
+    shell.setUiValue("spinningArt", "1")
+    assert wait_for(lambda: cover.property("radius") == cover.property("width") / 2)
+    cover.setProperty("rotation", 40)  # (as if it had turned a little)
+    shell.setUiValue("spinningArt", "0")
+    assert wait_for(lambda: cover.property("radius") < cover.property("width") / 2 and cover.property("rotation") == 0)
+    shell.setUiValue("spinningArt", "")
+    qapp.processEvents()
+    assert not warnings, warnings
+
+
 def test_the_neon_theme_loads_only_when_chosen(qapp, app_window):
     """Afterimage's overlay, edges and cockpit/terminal Now Playing exist only in a neon theme: in any other,
     nothing of it is made. In it, the cockpit and the terminal both show the song, and Classic gives the usual

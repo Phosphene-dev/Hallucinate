@@ -75,6 +75,9 @@ function showPairing() {
   if (events) { events.close(); events = null; }
   $("app").hidden = true;
   $("pair").hidden = false;
+  // nothing of the song stays behind the pairing form (#134); it's drawn afresh once paired again
+  $("backdrop").style.backgroundImage = "none";
+  render.key = undefined;
   $("pairCode").focus();
 }
 
@@ -138,6 +141,7 @@ function render() {
     $("miniArt").src = key ? art(key, 64) : NO_ART;
     $("backdrop").style.backgroundImage = key ? `url("${art(key, 128)}")` : "none";
   }
+  document.body.classList.toggle("playing", !!s.playing);
   $("icoPlay").toggleAttribute("hidden", s.playing);  // (an svg has no .hidden: #124)
   $("icoPause").toggleAttribute("hidden", !s.playing);
   $("btnPlay").setAttribute("aria-label", s.playing ? "Pause" : "Play");
@@ -249,6 +253,14 @@ function markStart() {
 }
 for (const c of document.querySelectorAll("[data-start-pick]")) c.onclick = () => { setPref("start", c.dataset.startPick); markStart(); };
 markStart();
+
+// the cover as a record, turning while the music plays (#135)
+$("optSpin").checked = pref("spin", "0") === "1";
+document.body.classList.toggle("spin", $("optSpin").checked);
+$("optSpin").onchange = () => {
+  setPref("spin", $("optSpin").checked ? "1" : "0");
+  document.body.classList.toggle("spin", $("optSpin").checked);
+};
 
 $("optBackdrop").checked = pref("backdrop", "1") === "1";
 document.body.classList.toggle("no-backdrop", !$("optBackdrop").checked);

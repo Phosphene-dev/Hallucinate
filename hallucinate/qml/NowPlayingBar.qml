@@ -68,8 +68,9 @@ Item {
         Cover {
             id: art
             objectName: "barCover"
-            width: 60; height: 60; radius: Theme.round(14)
+            width: 60; height: 60; radius: shell.ui.spinningArt === "1" ? width / 2 : Theme.round(14)
             source: player.hasTrack ? player.current.artUrl : ""
+            SpinningCover {}
             Accessible.role: player.hasTrack ? Accessible.Button : Accessible.Graphic
             Accessible.name: player.hasTrack ? "Go to what's playing: " + (player.current.album || player.current.title || "") : "Nothing playing"
             Accessible.onPressAction: Nav.goToPlaying()
