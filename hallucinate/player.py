@@ -150,6 +150,8 @@ def _resolve_in_background(name, done=None):
 # Players set aside while they were still opening a stream or file (see _Voice._set_aside_if_loading): stopping or
 # switching one then makes the window wait for the lookup or slow disk inside it, so it's left to finish and
 # deleted after.
+CONNECTING = "Connecting…"  # shown while a stream opens (and cleared once its sound comes)
+
 _set_aside = []
 
 
@@ -2112,7 +2114,9 @@ class Player(QObject):
             self._played.clear()
         self._played.add(i)
         self._invalidate_next()
-        self._set_error("")
+        # a stream (a station, a streamed episode, a server's song) says so until its sound comes, whether or not
+        # its address had to be looked up first (#139: from a song to a station it said nothing)
+        self._set_error(CONNECTING if autoplay and is_url(track_file(self._queue[i])) else "")
         self._restore_pos = max(0, int(start_ms))
         self._transitioning = False
         self._handoff_timer.stop()
@@ -2231,7 +2235,7 @@ class Player(QObject):
         """Look a stream's host up in the background, then load it (see _resolve). A lookup that doesn't
         answer in RESOLVE_TIMEOUT_MS counts as failed."""
         token = self._host_wait
-        self._set_error("Connecting…")
+        self._set_error(CONNECTING)
 
         signal_owner = weakref.ref(self)
 
@@ -2300,6 +2304,8 @@ class Player(QObject):
         self.positionChanged.emit()
         self._maybe_preload()
         pos = self._voice.position()
+        if pos > 0 and self._error == CONNECTING:
+            self._set_error("")  # (sound is coming: the stream is connected, whatever its status said)
         dur = self._voice.duration()
         self._count_listening(pos, dur)
         if self._try_crossfade(pos, dur):

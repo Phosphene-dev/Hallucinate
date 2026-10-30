@@ -3,6 +3,18 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Changed
+- The web remote shows a radio station as the app does (#138): how long you've listened, a bar that can't be
+  dragged, and LIVE where the length would be.
+
+### Fixed
+- Switching from a song to a radio station said nothing while the station connected (#139). "Connecting…" now
+  shows whenever a stream opens, until its sound comes, whether or not its address had to be looked up.
+- A device that disconnected itself from the web remote stayed in Settings → Remote & web until you left the page
+  and came back (#137).
+
 ## [1.7.0] - 2026-10-30
 
 Afterimage: a neon-noir theme with a cockpit and a terminal for Now Playing, and the tester's eighth round.

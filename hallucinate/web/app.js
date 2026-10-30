@@ -165,10 +165,15 @@ function render() {
 
 function tick() {
   if (!state) return;
+  // a radio station has no end: how long you've listened, a bar that can't be moved, and LIVE (#138)
+  const live = !!(state.song && state.song.kind === "station");
   const dur = state.duration / 1000, pos = position() / 1000;
-  if (!dragging) $("seek").value = dur ? Math.round((pos / dur) * 1000) : 0;
+  $("seek").disabled = live;
+  $("seek").classList.toggle("live", live);
+  if (!dragging) $("seek").value = live ? 1000 : dur ? Math.round((pos / dur) * 1000) : 0;
   $("posText").textContent = fmt(pos);
-  $("durText").textContent = fmt(dur);
+  $("durText").textContent = live ? "LIVE" : fmt(dur);
+  $("durText").classList.toggle("live", live);
 }
 setInterval(tick, 500);
 
