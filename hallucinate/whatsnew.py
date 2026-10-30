@@ -2,6 +2,11 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "1.6.3": [
+        "The web remote has your internet radio and podcasts, and a Settings page (light or dark, and more).",
+        "Pick any accent colour you like: the + beside the swatches in Settings → Appearance.",
+        "Ctrl+K results can be clicked again, and genre pages scroll smoothly.",
+    ],
     "1.6.2": [
         "The mouse wheel moves Home's album shelves, covers no longer lose their top on hover, and every song "
         "list shows its album covers.",

@@ -270,7 +270,20 @@ Rectangle {
                     if (from >= 0 && to >= 0 && from !== to) player.moveItem(from, to)
                 }
                 onCanceled: { list.dragFrom = -1; list.dragTo = -1 }
-                Text { anchors.centerIn: parent; text: "⋮⋮"; color: Theme.textDim; opacity: hh.hovered || grip.pressed ? 1 : 0.35; font.pixelSize: 14; textFormat: Text.PlainText }
+                // a reorder handle (#126: two "⋮" read as menus that did nothing), shown on the row you point at
+                hoverEnabled: true
+                Icon {
+                    anchors.centerIn: parent
+                    width: 14; height: 14
+                    name: "grip"
+                    color: grip.containsMouse || grip.pressed ? Theme.text : Theme.textDim
+                    opacity: hh.hovered || grip.pressed ? 1 : 0
+                }
+                ToolTip.visible: containsMouse && !pressed
+                ToolTip.text: "Drag to reorder"
+                ToolTip.delay: 500
+                Accessible.role: Accessible.Button
+                Accessible.name: "Drag to reorder (or Alt+↑ / Alt+↓)"
             }
             Cover { id: art; x: 6; anchors.verticalCenter: parent.verticalCenter; width: 38; height: 38; radius: Theme.radiusSmall; source: model.artUrl }
             Column {

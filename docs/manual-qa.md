@@ -1,5 +1,15 @@
 # Manual QA checklist
 
+## Release testing for 1.6.3
+
+- [ ] Ctrl+K: click a result (a page, an album, a song): it opens or plays.
+- [ ] Web remote: Library → Radio plays a station; Library → Podcasts → a show → an episode plays, Next and Queue work.
+- [ ] Web remote → Settings: Light/Dark/Automatic, Open on, Keep the screen on, Cover background, Disconnect.
+- [ ] Web remote: the play button turns into pause while playing.
+- [ ] Settings → Appearance → +: pick a colour; it shows live; Cancel goes back; Use keeps it.
+- [ ] Settings → Library → Rescan now: the sidebar bar fills from the left.
+- [ ] A genre with a couple of hundred songs scrolls smoothly.
+
 ## Release testing for 1.6.2
 
 - [ ] Home: the mouse wheel over a shelf moves its albums (each "Wheel over a row of albums" choice).

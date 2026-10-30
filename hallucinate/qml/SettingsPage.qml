@@ -194,6 +194,46 @@ Item {
                             }
                         }
                     }
+                    // your own colour (#129): a picker, shown filled with the accent when it's one of yours
+                    Rectangle {
+                        id: ownAccent
+                        objectName: "accentCustom"
+                        readonly property var presets: ["", "#8f7bff", "#c08bff", "#ff7ab6", "#ff6b6b", "#ff9f43", "#f5be9d", "#ffd166",
+                                                        "#5fd38d", "#2ec4b6", "#4cc9f0", "#5b8cff", "#e8e8f0"]
+                        readonly property bool own: themeManager.accentOverride.length > 0 && presets.indexOf(themeManager.accentOverride) < 0
+                        width: 30; height: 30; radius: Theme.round(15)
+                        color: own ? themeManager.accentOverride : "transparent"
+                        border.width: own ? 3 : 1
+                        border.color: own ? Theme.text : Theme.border
+                        Text {
+                            visible: !ownAccent.own
+                            anchors.centerIn: parent
+                            text: "+"; textFormat: Text.PlainText
+                            color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.Bold
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: accentPicker.openWith(themeManager.accentOverride)
+                            Accessible.role: Accessible.Button
+                            Accessible.name: "Pick your own accent colour"
+                            Accessible.onPressAction: accentPicker.openWith(themeManager.accentOverride)
+                        }
+                        ToolTip.visible: ownHover.hovered
+                        ToolTip.text: "Your own colour…"
+                        ToolTip.delay: 500
+                        HoverHandler { id: ownHover }
+                        ColorPicker {
+                            id: accentPicker
+                            parent: Overlay.overlay
+                            x: Math.round((parent.width - width) / 2); y: Math.round((parent.height - height) / 2)
+                            property string pending: ""
+                            // shown live, a few times a second at most: every change of the accent recolours the app
+                            onPicked: function (c) { pending = c; livePreview.restart() }
+                            onDone: function (c) { if (c) { livePreview.stop(); themeManager.setAccentOverride(c) } }
+                            Timer { id: livePreview; interval: 60; onTriggered: themeManager.setAccentOverride(accentPicker.pending) }
+                        }
+                    }
                     TextField {
                         id: accentHex
                         objectName: "accentHex"

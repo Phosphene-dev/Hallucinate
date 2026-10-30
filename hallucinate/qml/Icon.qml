@@ -69,6 +69,8 @@ Canvas {
             ctx.closePath()
             if (filled) ctx.fill(); else ctx.stroke()
             break
+        case "grip":  // a reorder handle: three short bars, as lists that drag rows use
+            line([.22,.34,.78,.34]); line([.22,.5,.78,.5]); line([.22,.66,.78,.66]); break
         case "more":
             for (var k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(w*(.2 + .3*k), h*.5, w*.075, 0, Math.PI*2); ctx.fill() }
             break

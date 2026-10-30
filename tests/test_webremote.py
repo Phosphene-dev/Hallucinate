@@ -309,3 +309,63 @@ def test_odd_numbers_dont_reach_the_player(remote):
             api.call("volume", {"volume": bad})
     api.call("volume", {"volume": 7})
     assert player.volume <= 1.0
+
+
+def test_radio_and_podcasts_in_the_remote(tmp_path):
+    """Issue 128: the remote lists your stations and shows and plays them, when the app has them switched on;
+    pictures come through the art endpoint by an id, never a path."""
+    from types import SimpleNamespace
+
+    played = []
+
+    class StreamsDb:
+        def stations(self):
+            return [{"id": 3, "name": "Night Radio", "url": "http://example.invalid/s", "codec": "MP3", "bitrate": 128}]
+
+        def station(self, i):
+            return self.stations()[0] if i == 3 else None
+
+        def podcasts(self):
+            return [{"id": 7, "title": "A Show", "author": "Someone", "unplayed": 1, "episodes": 2, "image": ""}]
+
+        def podcast(self, i):
+            return self.podcasts()[0] if i == 7 else None
+
+        def episodes(self, pid):
+            return [{"id": 11, "title": "New one", "published": 1700000000, "duration": 1800, "played": 0, "position": 600},
+                    {"id": 10, "title": "Old one", "published": 1690000000, "duration": 1500, "played": 1, "position": 0}]
+
+        def episode(self, i):
+            return {"id": i} if i in (10, 11) else None
+
+    icon = tmp_path / "icon.png"
+    icon.write_bytes(b"x")
+    db = StreamsDb()
+    stations = SimpleNamespace(_db=db, _enabled=True, play=lambda i: played.append(("station", i)),
+                               _icon_file=lambda st: icon)
+    podcasts = SimpleNamespace(_db=db, _enabled=True, play=lambda i: played.append(("episode", i)),
+                               playNext=lambda i: played.append(("next", i)), enqueue=lambda i: played.append(("queue", i)),
+                               _image_file=lambda url: None)
+    api = Api()
+    assert api.call("features") == {"stations": False, "podcasts": False}
+    with pytest.raises(ApiError):
+        api.call("stations")
+    api.stations, api.podcasts = stations, podcasts
+    assert api.call("features") == {"stations": True, "podcasts": True}
+    st = api.call("stations")["stations"][0]
+    assert st["name"] == "Night Radio" and "url" not in st and st["art"] == "~station/3"
+    api.call("play.station", {"id": 3})
+    show = api.call("podcast", {"id": 7})
+    assert [e["title"] for e in show["episodes"]] == ["New one", "Old one"] and show["total"] == 2
+    api.call("play.episode", {"id": 11})
+    api.call("play.episode", {"id": 10, "next": True})
+    api.call("play.episode", {"id": 10, "queue": True})
+    assert played == [("station", 3), ("episode", 11), ("next", 10), ("queue", 10)]
+    with pytest.raises(ApiError):
+        api.call("play.station", {"id": 99})
+    assert api.art_file("~station/3") == str(icon) and api.art_file("~podcast/7") == "" and api.art_file("~station/x") == ""
+    assert api.methods["play.station"] == "control" and api.methods["stations"] == "read"
+    stations._enabled = False  # switched off in the app: gone from the remote too
+    assert api.call("features")["stations"] is False
+    with pytest.raises(ApiError):
+        api.call("stations")

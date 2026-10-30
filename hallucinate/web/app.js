@@ -106,7 +106,7 @@ function guessName() {
 function connect() {
   if (events) events.close();
   events = new EventSource("api/events");
-  events.addEventListener("state", (e) => { state = JSON.parse(e.data); stateAt = Date.now(); render(); });
+  events.addEventListener("state", (e) => { state = JSON.parse(e.data); stateAt = Date.now(); render(); syncWakeLock(); });
   events.addEventListener("queue", () => { if (currentView === "queue") loadQueue(); });
   events.onerror = async () => {
     const hello = await fetch("api/hello", { credentials: "same-origin" }).then((r) => r.json()).catch(() => null);
@@ -138,8 +138,8 @@ function render() {
     $("miniArt").src = key ? art(key, 64) : NO_ART;
     $("backdrop").style.backgroundImage = key ? `url("${art(key, 128)}")` : "none";
   }
-  $("icoPlay").hidden = s.playing;
-  $("icoPause").hidden = !s.playing;
+  $("icoPlay").toggleAttribute("hidden", s.playing);  // (an svg has no .hidden: #124)
+  $("icoPause").toggleAttribute("hidden", !s.playing);
   $("btnPlay").setAttribute("aria-label", s.playing ? "Pause" : "Play");
   $("miniIco").setAttribute("d", s.playing ? "M7 5h4v14H7zM13 5h4v14h-4z" : "M8 5l11 7-11 7z");
   $("btnShuffle").classList.toggle("on", s.shuffle);
@@ -201,7 +201,7 @@ $("btnSleep").onclick = () => pick("Sleep timer", [
 // --- views -----------------------------------------------------------------------------------------------
 function show(view) {
   currentView = view;
-  for (const v of ["now", "queue", "library", "search", "detail"]) $(`view-${v}`).hidden = v !== view;
+  for (const v of ["now", "queue", "library", "search", "detail", "settings"]) $(`view-${v}`).hidden = v !== view;
   for (const t of document.querySelectorAll(".tab")) t.classList.toggle("active", t.dataset.view === view ||
     (view === "detail" && t.dataset.view === "library"));
   $("mini").hidden = !(state && state.song) || view === "now";
@@ -211,6 +211,80 @@ function show(view) {
   $("main").scrollTop = 0;
 }
 for (const t of document.querySelectorAll(".tab")) t.onclick = () => show(t.dataset.view);
+
+// --- settings: light or dark (#123), and disconnecting this device (#125) ----------------------------------
+function applyTheme(pick) {
+  if (pick) document.documentElement.dataset.theme = pick;
+  else delete document.documentElement.dataset.theme;
+  for (const c of document.querySelectorAll("[data-theme-pick]")) {
+    const on = c.dataset.themePick === (pick || "");
+    c.classList.toggle("active", on);
+    c.setAttribute("aria-checked", on ? "true" : "false");
+  }
+  const bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+  if (bg) document.querySelector('meta[name="theme-color"]').setAttribute("content", bg);
+}
+function savedTheme() {
+  try { return localStorage.getItem("hallucinate.theme") || ""; } catch (_) { return ""; }
+}
+for (const c of document.querySelectorAll("[data-theme-pick]")) c.onclick = () => {
+  try { localStorage.setItem("hallucinate.theme", c.dataset.themePick); } catch (_) { /* private window */ }
+  applyTheme(c.dataset.themePick);
+};
+applyTheme(savedTheme());
+
+// the rest of this browser's own choices: kept in its storage, never sent anywhere
+function pref(name, fallback) {
+  try { const v = localStorage.getItem("hallucinate." + name); return v === null ? fallback : v; } catch (_) { return fallback; }
+}
+function setPref(name, value) {
+  try { localStorage.setItem("hallucinate." + name, value); } catch (_) { /* private window: for this visit only */ }
+}
+function markStart() {
+  for (const c of document.querySelectorAll("[data-start-pick]")) {
+    const on = c.dataset.startPick === pref("start", "now");
+    c.classList.toggle("active", on);
+    c.setAttribute("aria-checked", on ? "true" : "false");
+  }
+}
+for (const c of document.querySelectorAll("[data-start-pick]")) c.onclick = () => { setPref("start", c.dataset.startPick); markStart(); };
+markStart();
+
+$("optBackdrop").checked = pref("backdrop", "1") === "1";
+document.body.classList.toggle("no-backdrop", !$("optBackdrop").checked);
+$("optBackdrop").onchange = () => {
+  setPref("backdrop", $("optBackdrop").checked ? "1" : "0");
+  document.body.classList.toggle("no-backdrop", !$("optBackdrop").checked);
+};
+
+// Keep the screen on while something plays (where the browser can: the Screen Wake Lock API)
+let wakeLock = null;
+async function syncWakeLock() {
+  const want = $("optAwake").checked && state && state.playing && document.visibilityState === "visible";
+  if (want && !wakeLock && "wakeLock" in navigator) {
+    try {
+      wakeLock = await navigator.wakeLock.request("screen");
+      wakeLock.addEventListener("release", () => { wakeLock = null; });
+    } catch (_) { wakeLock = null; }
+  } else if (!want && wakeLock) {
+    wakeLock.release().catch(() => {});
+    wakeLock = null;
+  }
+}
+$("optAwake").checked = pref("awake", "0") === "1";
+$("optAwake").disabled = !("wakeLock" in navigator);
+$("optAwake").onchange = () => { setPref("awake", $("optAwake").checked ? "1" : "0"); syncWakeLock(); };
+document.addEventListener("visibilitychange", syncWakeLock);
+
+$("btnForget").onclick = async () => {
+  if (!confirm("Disconnect this device from Hallucinate? You'll need a new pairing code to use it again.")) return;
+  const res = await fetch("api/forget", {
+    method: "POST", credentials: "same-origin",
+    headers: { "Content-Type": "application/json", "X-Hallucinate": "1" }, body: "{}",
+  }).catch(() => null);
+  if (!res || !res.ok) { toast("Couldn't disconnect: is Hallucinate still running?"); return; }
+  showPairing();
+};
 
 function songRow(song, index, onPlay, opts = {}) {
   const row = el("li", { class: "row", tabindex: "0" });
@@ -320,6 +394,16 @@ async function loadLibrary() {
     const r = await call("genres");
     body.replaceChildren(el("div", { class: "grid" }, ...r.genres.map((g) =>
       card(g.name, `${g.songs} songs`, g.albumKey, () => openGenre(g.name)))));
+  } else if (libKind === "stations") {  // internet radio (#128)
+    const r = await call("stations");
+    body.replaceChildren(el("div", { class: "grid" }, ...r.stations.map((st) =>
+      card(st.name, st.detail, st.art, () => call("play.station", { id: st.id }).then(() => toast("Tuning in to " + st.name)), "📻"))));
+    if (!r.stations.length) body.append(el("p", { class: "dim", text: "Stations you add in Hallucinate show up here." }));
+  } else if (libKind === "podcasts") {
+    const r = await call("podcasts");
+    body.replaceChildren(el("div", { class: "grid" }, ...r.podcasts.map((p) =>
+      card(p.title, p.unplayed ? `${p.unplayed} new` : (p.author || `${p.episodes} episodes`), p.art, () => openShow(p.id), "🎙"))));
+    if (!r.podcasts.length) body.append(el("p", { class: "dim", text: "Shows you follow in Hallucinate show up here." }));
   } else if (libKind === "liked") {
     const r = await call("liked", { limit: 500 });
     const list = el("ol", { class: "list" }, ...r.songs.map((s, i) => songRow(s, i, (idx) => call("play.liked", { index: idx }))));
@@ -337,6 +421,7 @@ function openDetail(info, rows) {
   $("detailTitle").textContent = info.title;
   $("detailSub").textContent = info.sub || "";
   $("detailArt").hidden = !info.albumKey;
+  $("detailShuffle").hidden = info.kind === "Podcast";  // (a show plays its newest unplayed episode)
   if (info.albumKey) $("detailArt").src = art(info.albumKey, 256);
   $("detailBody").replaceChildren(...rows);
   show("detail");
@@ -344,6 +429,27 @@ function openDetail(info, rows) {
 $("detailBack").onclick = () => show("library");
 $("detailPlay").onclick = () => detail && detail.play(false);
 $("detailShuffle").onclick = () => detail && detail.play(true);
+
+async function openShow(id) {
+  const sh = await call("podcast", { id, limit: 100 });
+  const firstNew = sh.episodes.find((e) => !e.played) || sh.episodes[0];
+  const rows = sh.episodes.map((e) => {
+    const when = e.published ? new Date(e.published * 1000).toLocaleDateString() : "";
+    const left = e.position > 0 && !e.played && e.duration ? `${fmt(e.duration - e.position)} left` : (e.duration ? fmt(e.duration) : "");
+    const row = el("li", { class: "row" + (e.played ? " played" : ""), tabindex: "0" },
+      el("div", { class: "text" }, el("span", { text: e.title }),
+        el("span", { class: "dim small", text: [when, left, e.played ? "Played" : ""].filter(Boolean).join(" · ") })),
+      el("button", { class: "small", text: "Next", "aria-label": "Play next: " + e.title,
+        onclick: (ev) => { ev.stopPropagation(); call("play.episode", { id: e.id, next: true }).then(() => toast("Plays next")); } }),
+      el("button", { class: "small", text: "Queue", "aria-label": "Add to the queue: " + e.title,
+        onclick: (ev) => { ev.stopPropagation(); call("play.episode", { id: e.id, queue: true }).then(() => toast("Added to the queue")); } }));
+    row.onclick = () => call("play.episode", { id: e.id });
+    row.addEventListener("keydown", (ev) => { if (ev.key === "Enter") row.onclick(); });
+    return row;
+  });
+  openDetail({ kind: "Podcast", title: sh.title, sub: [sh.author, `${sh.total} episodes`].filter(Boolean).join(" · "),
+    albumKey: sh.art, play: () => firstNew && call("play.episode", { id: firstNew.id }) }, [el("ol", { class: "list" }, ...rows)]);
+}
 
 async function openAlbum(key) {
   const a = await call("album", { key });
@@ -450,7 +556,11 @@ async function start() {
   $("pair").hidden = true;
   $("app").hidden = false;
   connect();
-  show("now");
+  call("features").then((f) => {
+    document.querySelector('[data-lib="stations"]').hidden = !f.stations;
+    document.querySelector('[data-lib="podcasts"]').hidden = !f.podcasts;
+  }).catch(() => {});
+  show(pref("start", "now"));
 }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 // a pairing link from the app ("…/#pair=123456") fills the code in; it's taken out of the address at once

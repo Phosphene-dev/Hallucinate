@@ -21,6 +21,12 @@
     --error: #b3261e; color-scheme: light;
   }
 }
+/* chosen in Settings: the same light colours, whatever the device prefers */
+:root[data-theme="light"] {
+  --bg: #f6f3fb; --glass: rgba(40, 20, 80, 0.05); --glass-hover: rgba(40, 20, 80, 0.10);
+  --stroke: rgba(40, 20, 80, 0.12); --text: #1d1430; --dim: #5e5476; --accent: #7a4cc2; --on-accent: #fff;
+  --error: #b3261e; color-scheme: light;
+}
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); }
 body { overflow: hidden; -webkit-tap-highlight-color: transparent; }
@@ -52,10 +58,11 @@ code { background: var(--glass); padding: 1px 6px; border-radius: 6px; }
 /* pairing */
 .pair { max-width: 420px; margin: 10vh auto; padding: 24px; text-align: center; }
 .pair img { border-radius: 18px; }
-.pair form { display: grid; gap: 12px; margin-top: 20px; }
-.pair input { background: var(--glass); border: 1px solid var(--stroke); border-radius: 14px; padding: 14px;
-              text-align: center; }
-#pairCode { font-size: 32px; letter-spacing: .4em; }
+.pair form { display: grid; gap: 10px; margin: 20px auto 0; max-width: 300px; }
+.pair input { background: var(--glass); border: 1px solid var(--stroke); border-radius: 12px; padding: 10px 12px;
+              text-align: center; width: 100%; min-width: 0; }
+#pairCode { font-size: 24px; letter-spacing: .3em; padding-left: calc(12px + .3em); }
+.pair button.primary { justify-self: center; padding: 10px 28px; }
 
 /* layout: tabs at the bottom on a phone, a sidebar on a wide screen */
 .app { position: fixed; inset: 0; display: grid; grid-template-rows: 1fr auto var(--tabs-h); }
@@ -154,3 +161,13 @@ dialog button:hover { background: var(--glass); }
          opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 90vw; }
 .toast.show { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* settings */
+.setting { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+           padding: 14px 0; border-bottom: 1px solid var(--stroke); }
+.setting p { margin: 4px 0 0; }
+label.setting { cursor: pointer; }
+.setting input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--accent); }
+body.no-backdrop .backdrop { display: none; }
+.row.played .text > span:first-child { color: var(--dim); }
+.row button.small { padding: 4px 10px; font-size: 12px; flex: none; }

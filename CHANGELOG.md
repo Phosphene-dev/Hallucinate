@@ -3,6 +3,30 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.6.3] - 2026-10-30
+
+The tester's seventh round, and the web remote grows up.
+
+### Added
+- Internet radio and podcasts in the web remote (#128): Library → Radio tunes in to your stations, and
+  Library → Podcasts opens a show to play an episode from where you stopped, play it next or queue it. They show
+  when the app has them switched on.
+- A Settings page in the web remote: light, dark or automatic (#123), the page it opens on, keeping the screen on
+  while playing, the cover-coloured background, and Disconnect this device (#125). These are kept in the browser.
+- An accent colour of your own (#129): the + beside the accent swatches opens a colour picker (a
+  saturation/brightness square, a hue strip, red, green, blue and hex), shown live, with your recent colours.
+
+### Fixed
+- Results in the command palette (Ctrl+K) couldn't be clicked (#119); only the keyboard worked.
+- The web remote's play button never switched to pause (#124).
+- The queue button in the player bar had no tooltip (#127).
+- The queue's "⋮⋮" looked like menus that did nothing (#126). It's a reorder handle: now a grip that shows on the
+  row you point at, with a tooltip (drag it, or use Alt+↑ / Alt+↓).
+- The sidebar's rescan bar drew its progress from where an earlier scan's sweep had stopped, and expected the
+  wrong number of files (#131).
+- Genre pages scrolled in jerks with a lot of songs (#121): the songs are now made as they scroll into view.
+- The web remote's pairing form was oversized (#122).
+
 ## [1.6.2] - 2026-10-28
 
 The tester's sixth round.
