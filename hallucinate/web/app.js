@@ -394,6 +394,16 @@ async function loadLibrary() {
     const r = await call("genres");
     body.replaceChildren(el("div", { class: "grid" }, ...r.genres.map((g) =>
       card(g.name, `${g.songs} songs`, g.albumKey, () => openGenre(g.name)))));
+  } else if (libKind === "stations") {  // internet radio (#128)
+    const r = await call("stations");
+    body.replaceChildren(el("div", { class: "grid" }, ...r.stations.map((st) =>
+      card(st.name, st.detail, st.art, () => call("play.station", { id: st.id }).then(() => toast("Tuning in to " + st.name)), "📻"))));
+    if (!r.stations.length) body.append(el("p", { class: "dim", text: "Stations you add in Hallucinate show up here." }));
+  } else if (libKind === "podcasts") {
+    const r = await call("podcasts");
+    body.replaceChildren(el("div", { class: "grid" }, ...r.podcasts.map((p) =>
+      card(p.title, p.unplayed ? `${p.unplayed} new` : (p.author || `${p.episodes} episodes`), p.art, () => openShow(p.id), "🎙"))));
+    if (!r.podcasts.length) body.append(el("p", { class: "dim", text: "Shows you follow in Hallucinate show up here." }));
   } else if (libKind === "liked") {
     const r = await call("liked", { limit: 500 });
     const list = el("ol", { class: "list" }, ...r.songs.map((s, i) => songRow(s, i, (idx) => call("play.liked", { index: idx }))));
@@ -411,6 +421,7 @@ function openDetail(info, rows) {
   $("detailTitle").textContent = info.title;
   $("detailSub").textContent = info.sub || "";
   $("detailArt").hidden = !info.albumKey;
+  $("detailShuffle").hidden = info.kind === "Podcast";  // (a show plays its newest unplayed episode)
   if (info.albumKey) $("detailArt").src = art(info.albumKey, 256);
   $("detailBody").replaceChildren(...rows);
   show("detail");
@@ -418,6 +429,27 @@ function openDetail(info, rows) {
 $("detailBack").onclick = () => show("library");
 $("detailPlay").onclick = () => detail && detail.play(false);
 $("detailShuffle").onclick = () => detail && detail.play(true);
+
+async function openShow(id) {
+  const sh = await call("podcast", { id, limit: 100 });
+  const firstNew = sh.episodes.find((e) => !e.played) || sh.episodes[0];
+  const rows = sh.episodes.map((e) => {
+    const when = e.published ? new Date(e.published * 1000).toLocaleDateString() : "";
+    const left = e.position > 0 && !e.played && e.duration ? `${fmt(e.duration - e.position)} left` : (e.duration ? fmt(e.duration) : "");
+    const row = el("li", { class: "row" + (e.played ? " played" : ""), tabindex: "0" },
+      el("div", { class: "text" }, el("span", { text: e.title }),
+        el("span", { class: "dim small", text: [when, left, e.played ? "Played" : ""].filter(Boolean).join(" · ") })),
+      el("button", { class: "small", text: "Next", "aria-label": "Play next: " + e.title,
+        onclick: (ev) => { ev.stopPropagation(); call("play.episode", { id: e.id, next: true }).then(() => toast("Plays next")); } }),
+      el("button", { class: "small", text: "Queue", "aria-label": "Add to the queue: " + e.title,
+        onclick: (ev) => { ev.stopPropagation(); call("play.episode", { id: e.id, queue: true }).then(() => toast("Added to the queue")); } }));
+    row.onclick = () => call("play.episode", { id: e.id });
+    row.addEventListener("keydown", (ev) => { if (ev.key === "Enter") row.onclick(); });
+    return row;
+  });
+  openDetail({ kind: "Podcast", title: sh.title, sub: [sh.author, `${sh.total} episodes`].filter(Boolean).join(" · "),
+    albumKey: sh.art, play: () => firstNew && call("play.episode", { id: firstNew.id }) }, [el("ol", { class: "list" }, ...rows)]);
+}
 
 async function openAlbum(key) {
   const a = await call("album", { key });
@@ -524,6 +556,10 @@ async function start() {
   $("pair").hidden = true;
   $("app").hidden = false;
   connect();
+  call("features").then((f) => {
+    document.querySelector('[data-lib="stations"]').hidden = !f.stations;
+    document.querySelector('[data-lib="podcasts"]').hidden = !f.podcasts;
+  }).catch(() => {});
   show(pref("start", "now"));
 }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});

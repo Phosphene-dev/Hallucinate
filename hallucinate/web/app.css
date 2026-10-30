@@ -169,3 +169,5 @@ dialog button:hover { background: var(--glass); }
 label.setting { cursor: pointer; }
 .setting input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--accent); }
 body.no-backdrop .backdrop { display: none; }
+.row.played .text > span:first-child { color: var(--dim); }
+.row button.small { padding: 4px 10px; font-size: 12px; flex: none; }

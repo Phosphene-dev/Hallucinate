@@ -49,6 +49,8 @@ class Api:
         self.player = player
         self.library = library
         self.user_lib = user_lib
+        self.stations = None  # internet radio and podcasts, where the app has them (set by the app; #128)
+        self.podcasts = None
         self._methods = {}
         for name in dir(type(self)):  # (names, not bound methods: those would tie the Api to itself)
             if name.startswith("m_"):
@@ -564,7 +566,101 @@ class Api:
 
     m_library_info._api_scope = "read"
 
+    # --- internet radio and podcasts (#128) ---------------------------------------------------------------
+    def _on(self, name):
+        """The radio or podcasts service, if it's here and switched on."""
+        svc = getattr(self, name)
+        if svc is None or not getattr(svc, "_enabled", True):
+            raise ApiError("Internet radio is switched off" if name == "stations" else "Podcasts are switched off")
+        return svc
+
+    def m_features(self):
+        """What this Hallucinate has besides the library, for the remote's pages."""
+        return {"stations": self.stations is not None and getattr(self.stations, "_enabled", True),
+                "podcasts": self.podcasts is not None and getattr(self.podcasts, "_enabled", True)}
+
+    m_features._api_scope = "read"
+
+    def m_stations(self):
+        """Your internet radio stations."""
+        from .stations import detail
+
+        out = []
+        for st in self._on("stations")._db.stations():
+            out.append({"id": int(st["id"]), "name": _str(st.get("name"), 200), "detail": _str(detail(st), 200),
+                        "art": f"~station/{int(st['id'])}"})
+        return {"stations": out}
+
+    m_stations._api_scope = "read"
+
+    def m_play_station(self, id=0):  # noqa: A002
+        """Tune in to one of your stations (the others follow it, so Next changes station)."""
+        svc = self._on("stations")
+        if not svc._db.station(int(id)):
+            raise ApiError("No such station")
+        svc.play(int(id))
+        return {"ok": True}
+
+    m_play_station._api_scope = "control"
+
+    def m_podcasts(self):
+        """The shows you follow, newest episode first."""
+        out = []
+        for p in self._on("podcasts")._db.podcasts():
+            out.append({"id": int(p["id"]), "title": _str(p.get("title"), 200), "author": _str(p.get("author"), 200),
+                        "unplayed": int(p.get("unplayed") or 0), "episodes": int(p.get("episodes") or 0),
+                        "art": f"~podcast/{int(p['id'])}"})
+        return {"podcasts": out}
+
+    m_podcasts._api_scope = "read"
+
+    def m_podcast(self, id=0, offset=0, limit=50):  # noqa: A002
+        """A show's episodes, newest first."""
+        svc = self._on("podcasts")
+        show = svc._db.podcast(int(id))
+        if not show:
+            raise ApiError("No such show")
+        episodes = svc._db.episodes(int(id))
+        offset, limit = max(0, int(offset)), max(1, min(200, int(limit)))
+        rows = [{"id": int(e["id"]), "title": _str(e.get("title"), 300), "published": float(e.get("published") or 0),
+                 "duration": float(e.get("duration") or 0), "played": bool(e.get("played")),
+                 "position": float(e.get("position") or 0)} for e in episodes[offset:offset + limit]]
+        return {"title": _str(show.get("title"), 200), "author": _str(show.get("author"), 200),
+                "art": f"~podcast/{int(id)}", "episodes": rows, "total": len(episodes)}
+
+    m_podcast._api_scope = "read"
+
+    def m_play_episode(self, id=0, next=False, queue=False):  # noqa: A002 - the command's own words
+        """Play an episode from where you stopped (or put it next / at the end of the queue)."""
+        svc = self._on("podcasts")
+        if not svc._db.episode(int(id)):
+            raise ApiError("No such episode")
+        (svc.playNext if next else svc.enqueue if queue else svc.play)(int(id))
+        return {"ok": True}
+
+    m_play_episode._api_scope = "control"
+
     def art_file(self, album_key):
-        """The cover file for an album key (for the art endpoint; never sent to a client)."""
-        a = self._db.album(_str(album_key))
+        """The cover file for an album key, or a station's or show's picture ("~station/3", "~podcast/7"; for the
+        art endpoint, never sent to a client)."""
+        key = _str(album_key)
+        if key.startswith(("~station/", "~podcast/")):
+            kind, _, num = key[1:].partition("/")
+            try:
+                num = int(num)
+            except ValueError:
+                return ""
+            try:
+                if kind == "station":
+                    svc = self._on("stations")
+                    st = svc._db.station(num)
+                    f = svc._icon_file(st) if st else None
+                else:
+                    svc = self._on("podcasts")
+                    p = svc._db.podcast(num)
+                    f = svc._image_file(p.get("image")) if p else None
+            except ApiError:
+                return ""
+            return str(f) if f and f.exists() else ""
+        a = self._db.album(key)
         return (a or {}).get("art") or ""
