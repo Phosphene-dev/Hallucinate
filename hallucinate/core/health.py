@@ -43,6 +43,19 @@ def missing_covers(db):
                   "album", _albums(db, "MAX(art) IS NULL OR MAX(art) = ''"))
 
 
+def damaged_covers(db):
+    """Albums whose cover file stops part way (it shows blank or garbled). Only the first and last few kilobytes of
+    each are read. A cover file that's gone with its drive is the missing folders check's business."""
+    from .tags import folder_art_whole
+
+    rows = _albums(db, "MAX(art) IS NOT NULL AND MAX(art) != ''")
+    bad = [r for r in rows if os.path.isfile(r["art"]) and not folder_art_whole(r["art"])]
+    return _check("damagedcovers", "Damaged covers",
+                  "Their picture stops part way, so they show blank or garbled. Repair covers reads every "
+                  "song's picture again, and a damaged one makes way for the folder's cover.",
+                  "album", bad)
+
+
 def missing_genre_all(db):
     """Every album without a genre (not capped like the check)."""
     return _albums(db, "MAX(genre) = ''")
@@ -149,7 +162,7 @@ def missing_folders(db):
                   "Unplugged drives show up here too. Remove a folder only if it is gone for good.", "folder", rows)
 
 
-CHECKS = (missing_folders, unknown_artist_or_album, split_albums, missing_covers, missing_track_numbers,
+CHECKS = (missing_folders, unknown_artist_or_album, split_albums, missing_covers, damaged_covers, missing_track_numbers,
           missing_year, missing_genre, missing_replaygain, duplicates, low_bitrate)
 
 
@@ -165,7 +178,7 @@ def report(db):
     track_issues = sum(r["count"] for r in results if r["kind"] == "track")
     parts = []
     if albums:
-        parts.append(max(0.0, 1 - album_issues / (albums * 6)))  # six album checks
+        parts.append(max(0.0, 1 - album_issues / (albums * 7)))  # seven album checks
     if tracks:
         parts.append(max(0.0, 1 - track_issues / (tracks * 3)))  # three track checks
     score = round(100 * sum(parts) / len(parts)) if parts else 100

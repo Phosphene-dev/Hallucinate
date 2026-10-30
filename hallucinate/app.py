@@ -253,6 +253,7 @@ def main(argv=None) -> int:
 
     web_remote = WebRemote(paths.data_dir(), paths.data_dir() / "thumbs", player, library, user_lib)
     web_remote.api.stations, web_remote.api.podcasts = stations, podcasts  # their pages in the remote (#128)
+    web_remote.api.lyrics = lyrics  # the playing song's lyrics in the remote
     control.setApi(web_remote.api)
     control.setWebRemote(web_remote)
     shell.settingsChanged.connect(servers.recheck)  # offline mode switched off: try servers again

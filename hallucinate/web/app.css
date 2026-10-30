@@ -184,3 +184,9 @@ body.spin .now-art::after { content: ""; position: absolute; inset: 42%; border-
 /* a radio station: the bar can't be moved, and the end says LIVE (#138) */
 #seek.live { opacity: .55; cursor: default; }
 #durText.live { color: var(--accent); font-weight: 700; letter-spacing: .08em; }
+
+/* lyrics on the Now Playing page, following the song */
+.lyrics { max-height: 38vh; overflow-y: auto; margin-top: 16px; padding: 8px 4px; text-align: center; line-height: 1.5; }
+.lyrics p { margin: 4px 0; }
+.lyrics .line { color: var(--dim); transition: color .3s, transform .3s; }
+.lyrics .line.current { color: var(--text); font-weight: 700; transform: scale(1.04); }

@@ -253,6 +253,18 @@ Item {
                                 onClicked: page.expanded = card.open ? "" : card.modelData.id
                             }
                         }
+                        Row {  // damaged covers: read every song's picture again
+                            visible: card.modelData.id === "damagedcovers" && card.modelData.count > 0
+                            leftPadding: 24
+                            PillButton {
+                                objectName: "repairDamagedCovers"
+                                primary: true
+                                height: 32
+                                text: "Repair covers…"
+                                enabled: !library.scanning
+                                onClicked: repairDlg.open()
+                            }
+                        }
                         Row {
                             visible: card.modelData.id === "covers" && (card.modelData.count > 0 || metaEditor.coversBusy)
                             spacing: 12

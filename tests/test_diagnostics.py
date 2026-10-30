@@ -112,3 +112,17 @@ def test_install_kind_names_the_package(monkeypatch):
         assert diagnostics._install_kind() == kind + " package"
     monkeypatch.setenv("HALLUCINATE_PACKAGE", "<b>made up</b>")
     assert diagnostics._install_kind() == "Python package"
+
+
+def test_the_report_counts_covers_and_damaged_ones(tmp_path):
+    """Copy debug info carries how the covers stand, for reports of blank or garbled ones."""
+    from types import SimpleNamespace
+
+    from hallucinate import diagnostics
+
+    art = tmp_path / "art"
+    art.mkdir()
+    (art / "a.jpg").write_bytes(b"\xff\xd8\xff\xe0" + b"\0" * 100 + b"\xff\xd9")
+    (art / "b.jpg").write_bytes(b"\xff\xd8\xff\xe0" + b"\0" * 5000)  # cut short
+    line = diagnostics._covers_line(SimpleNamespace(_art_dir=str(art), artRevision=3))
+    assert line.startswith("Covers: 2 taken from songs (1 damaged)") and "revision 3" in line

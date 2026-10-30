@@ -823,3 +823,25 @@ def test_volume_step_and_maximum(make_player):
     assert not p.muted  # turning it up unmutes
     p.setMaxVolume(1.0)
     p.setVolumeStep(0.05)
+
+
+def test_pauses_when_the_device_playing_goes_away(make_player, clips):
+    """Headphones unplugged, Bluetooth out of range: the music pauses rather than carry on out of the speakers
+    (Settings → Playback, on by default). With it off, it carries on."""
+    p = make_player()
+    said = []
+    p.notice.connect(said.append)
+    assert p.pauseOnUnplug
+    p.playList([clips[0], clips[1]], 0)
+    assert wait_for(lambda: is_playing(p))
+    p._out_id = b"headphones that were just unplugged"
+    p._on_audio_outputs_changed()
+    assert not is_playing(p) and said and "went away" in said[0]
+
+    p.setPauseOnUnplug(False)
+    p.play()
+    assert wait_for(lambda: is_playing(p))
+    p._out_id = b"headphones that were just unplugged"
+    p._on_audio_outputs_changed()
+    assert is_playing(p)
+    p.setPauseOnUnplug(True)

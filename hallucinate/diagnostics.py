@@ -10,6 +10,7 @@ import platform
 import re
 import sys
 import time
+from pathlib import Path
 
 from . import __version__, audiobackend
 
@@ -108,6 +109,23 @@ def _os_name():
     return platform.platform()
 
 
+def _covers_line(library):
+    """How the covers stand: the ones taken from songs (and how many of those are damaged) and the scaled copies
+    made for the screen, for reports about blank or garbled covers."""
+    from .core import paths
+    from .core.tags import folder_art_whole
+
+    try:
+        art = [f for f in Path(library._art_dir).glob("*") if f.is_file()]
+        damaged = sum(1 for f in art if not folder_art_whole(str(f)))
+        thumbs = [f for f in (paths.data_dir() / "thumbs").glob("*.jpg")]
+        size = sum(f.stat().st_size for f in thumbs) / 1e6
+        return (f"Covers: {len(art)} taken from songs ({damaged} damaged), {len(thumbs)} scaled copies ({size:.1f} MB), "
+                f"revision {library.artRevision}")
+    except Exception:  # noqa: BLE001 - a report must never fail over this
+        return "Covers: unknown"
+
+
 def report(player=None, library=None, theme_manager=None, window=None):
     """The debug info as plain text, ready to paste into an issue."""
     import PySide6
@@ -158,6 +176,7 @@ def report(player=None, library=None, theme_manager=None, window=None):
     if library is not None:
         lines.append(f"Library: {library.trackCount} songs, {len(library.folders)} folder(s), "
                      f"{len(library.missingFolders)} missing, {library.unreadableFiles} unreadable files")
+        lines.append(_covers_line(library))
     if theme_manager is not None:
         lines.append(f"Theme: {theme_manager.currentTheme}"
                      + (", album colours" if theme_manager.albumArtAccent else ""))

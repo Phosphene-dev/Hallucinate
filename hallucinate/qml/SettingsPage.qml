@@ -834,8 +834,14 @@ Item {
             id: sec_playback
             objectName: "settings_playback"
             title: "Playback"
-            keywords: "sample rate resample resampling bit perfect signal path pipewire allowed rates 44.1 48 output device audio replaygain loudness preamp measure crossfade gapless album fade pause resume start startup open volume step wheel maximum limit loud speed sleep timer"
+            keywords: "unplug unplugged headphones bluetooth disconnect sample rate resample resampling bit perfect signal path pipewire allowed rates 44.1 48 output device audio replaygain loudness preamp measure crossfade gapless album fade pause resume start startup open volume step wheel maximum limit loud speed sleep timer"
             query: page.query
+            StyledCheck {
+                objectName: "pauseOnUnplug"
+                text: "Pause when the headphones (or the device playing) go away"
+                checked: player.pauseOnUnplug
+                onToggled: player.setPauseOnUnplug(checked)
+            }
             Flow {  // wraps in a narrow window
                 width: parent.width
                 spacing: 12

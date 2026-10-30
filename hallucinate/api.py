@@ -51,6 +51,7 @@ class Api:
         self.user_lib = user_lib
         self.stations = None  # internet radio and podcasts, where the app has them (set by the app; #128)
         self.podcasts = None
+        self.lyrics = None  # the lyrics of what's playing (set by the app)
         self._methods = {}
         for name in dir(type(self)):  # (names, not bound methods: those would tie the Api to itself)
             if name.startswith("m_"):
@@ -639,6 +640,63 @@ class Api:
         return {"ok": True}
 
     m_play_episode._api_scope = "control"
+
+    # --- lyrics, the equaliser, recent plays --------------------------------------------------------------
+    def m_lyrics(self):
+        """The playing song's lyrics: timed lines ({t: ms, text}) when there are, else plain text. `offset` is the
+        timing nudge (a line shows at t - offset)."""
+        lc = self.lyrics
+        if lc is None:
+            return {"status": "none", "synced": False, "lines": [], "plain": "", "offset": 0}
+        lines = []
+        for line in lc.lines or []:
+            try:
+                lines.append({"t": int(line.get("t", 0)), "text": str(line.get("text", ""))})
+            except (AttributeError, TypeError, ValueError):
+                continue
+        return {"status": str(lc.status), "synced": bool(lines), "lines": lines, "plain": str(lc.plain or ""),
+                "offset": int(lc.offset or 0)}
+
+    m_lyrics._api_scope = "read"
+
+    def m_eq(self):
+        """The equaliser: on or off, which preset, and the presets to choose from."""
+        p = self._need_player()
+        return {"available": bool(p.eqAvailable), "enabled": bool(p.eqEnabled), "preset": str(p.eqPreset or ""),
+                "presets": [str(n) for n in p.eqPresets]}
+
+    m_eq._api_scope = "read"
+
+    def m_eq_set(self, preset=None, enabled=None):
+        """Choose an equaliser preset, and/or turn the equaliser on or off."""
+        p = self._need_player()
+        if preset is not None:
+            name = _str(preset, 60)
+            if name not in [str(n) for n in p.eqPresets]:
+                raise ApiError("No such preset")
+            p.setEqPreset(name)
+            if enabled is None:
+                p.setEqEnabled(True)  # picking a preset means wanting to hear it
+        if enabled is not None:
+            p.setEqEnabled(bool(enabled))
+        return self.m_eq()
+
+    m_eq_set._api_scope = "control"
+
+    def m_recent(self, limit=30):
+        """What was listened to last, newest first: songs still in the library can be played again (`id`)."""
+        from .core import history
+
+        rows = history.plays(self._db, limit=_int(limit, 30, 1, 100))
+        out = []
+        for r in rows:
+            t = self._db.track_by_path(r["path"]) if r.get("available") and r.get("path") else None
+            out.append({"id": t.get("id") if t else None, "title": r.get("title") or "", "artist": r.get("artist") or "",
+                        "album": r.get("album") or "", "albumKey": r.get("album_key") or "", "day": r.get("day") or "",
+                        "time": r.get("time") or ""})
+        return {"plays": out}
+
+    m_recent._api_scope = "read"
 
     def art_file(self, album_key):
         """The cover file for an album key, or a station's or show's picture ("~station/3", "~podcast/7"; for the
