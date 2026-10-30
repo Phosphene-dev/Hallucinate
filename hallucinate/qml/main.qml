@@ -1123,6 +1123,14 @@ ApplicationWindow {
         }
     }
 
+    // A neon theme's scanlines, glitches and HUD corners over everything (nothing at all in any other theme)
+    Loader {
+        anchors.fill: parent
+        z: 900
+        active: Theme.neon
+        sourceComponent: NeonOverlay {}
+    }
+
     Component.onCompleted: {
         PickDrag.dropAt = function () { carried.Drag.drop() }  // (see the carried label)
         go(shell.openingPage())

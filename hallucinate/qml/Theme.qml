@@ -12,6 +12,7 @@ QtObject {
     function contentX(avail) { return Math.max(28, (avail - contentWidth(avail)) / 2) }
     // Values are plain properties (not bindings) so ColorAnimations can cross-fade them.
     Component.onCompleted: {
+        if (neon) neonChanged()
         bg = themeManager.bg
         panel = themeManager.panel
         surface = themeManager.surface
@@ -70,10 +71,20 @@ QtObject {
     property FontLoader displayBold: FontLoader { source: Qt.resolvedUrl("../assets/fonts/Unbounded-Bold.ttf") }
     property FontLoader displaySemiBold: FontLoader { source: Qt.resolvedUrl("../assets/fonts/Unbounded-SemiBold.ttf") }
     property FontLoader pixel: FontLoader { source: Qt.resolvedUrl("../assets/fonts/VT323-Regular.ttf") }
+    // A neon theme's faces (Chakra Petch and Share Tech Mono, SIL OFL), loaded only once one is chosen
+    // (made the first time one is chosen, so other themes never load them)
+    property var neonFonts: null
+    onNeonChanged: if (neon && !neonFonts) neonFonts = Qt.createQmlObject('import QtQuick; QtObject {'
+        + ' property FontLoader tech: FontLoader { source: "' + Qt.resolvedUrl("../assets/fonts/ChakraPetch-SemiBold.ttf") + '" }'
+        + ' property FontLoader mono: FontLoader { source: "' + Qt.resolvedUrl("../assets/fonts/ShareTechMono-Regular.ttf") + '" } }', root)
+    readonly property string techFamily: neon && neonFonts && neonFonts.tech.status === FontLoader.Ready ? neonFonts.tech.font.family : ""
+    // Readouts and the terminal: the neon theme's monospace, else the system's
+    readonly property string monoFamily: neon && neonFonts && neonFonts.mono.status === FontLoader.Ready ? neonFonts.mono.font.family : "Monospace"
     // Headings: Unbounded, or in a retro theme the dot-matrix face of an old display
     // the dot-matrix face is small for its size: headings in it are drawn larger
     readonly property real displayScale: retro && pixel.status === FontLoader.Ready ? 1.45 : 1
     readonly property string displayFamily: retro && pixel.status === FontLoader.Ready ? pixel.font.family
+        : techFamily !== "" ? techFamily
         : displayBold.status === FontLoader.Ready ? displayBold.font.family : fontFamily
 
     // Light themes get softer glass and ambience
@@ -113,8 +124,25 @@ QtObject {
     readonly property real fontScale: themeManager.fontScale
     readonly property int radius: themeManager.radius
     readonly property bool retro: themeManager.retro
-    // In a theme made after old hardware, corners are as square as the theme says (it's `r` everywhere else)
-    function round(r) { return retro ? Math.min(r, radius) : r }
+    // In a theme made after old hardware, or a neon one, corners are as square as the theme says (it's `r`
+    // everywhere else)
+    function round(r) { return retro || neon ? Math.min(r, radius) : r }
+
+    // A neon-noir theme ("style": "neon"; Afterimage): glowing hairlines, HUD details, scanlines, glitches and a
+    // cockpit or terminal Now Playing. Everything it adds is behind these, and loaded only while it's chosen.
+    readonly property bool neon: themeManager.neon
+    readonly property bool neonLoud: themeManager.neonLoud
+    // its second colour (cyan beside magenta): the theme's own second colour, else the accent's other side
+    readonly property color neonB: themePalette.length > 1 ? themePalette[1] : Qt.hsva((accent.hsvHue + 0.5) % 1, 0.8, 1, 1)
+    readonly property color neonGlow: Qt.rgba(accent.r, accent.g, accent.b, neonLoud ? 0.55 : 0.32)
+    // Your choices for it (Settings → Appearance, shown in a neon theme); a loud theme starts with them on
+    function neonOption(key) {
+        var v = shell.ui["neon" + key]
+        return v === undefined || v === "" ? neonLoud : v === "1"
+    }
+    readonly property bool neonScanlines: neon && neonOption("Scanlines")
+    readonly property bool neonGlitch: neon && !reduceMotion && neonOption("Glitch")
+    readonly property bool neonGreebles: neon && (shell.ui.neonGreebles === undefined || shell.ui.neonGreebles === "" || shell.ui.neonGreebles === "1")
     readonly property real radiusSmall: Math.max(2, radius * 0.6)
     readonly property real radiusLarge: radius * 2
     readonly property int sidebarWidth: themeManager.sidebarWidth

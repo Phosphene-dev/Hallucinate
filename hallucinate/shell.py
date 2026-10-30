@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QMenu, QSystemTrayIcon
 
 from .core import net
 
-VISUALIZER_STYLES = ("liquid", "aurora", "nebula", "halo", "waves", "bars")
+VISUALIZER_STYLES = ("liquid", "aurora", "nebula", "halo", "waves", "bars", "tunnel")
 # What closing the main window does. "tray" needs a visible tray icon; without one it quits.
 CLOSE_ACTIONS = ("ask", "quit", "minimize", "tray")
 # Parts of the app that can be switched off in Settings → Features, and whether they're on to begin with. A

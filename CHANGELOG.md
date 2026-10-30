@@ -3,6 +3,23 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+- Afterimage, a neon-noir theme in three versions: Afterimage (loud magenta and cyan), Afterimage Quiet (the same
+  look, its effects off to start with) and Afterimage Alert (warning orange). Glowing hairlines with HUD corner
+  brackets on every panel, greebles on the big ones, Chakra Petch headings, faint scanlines and a vignette, and a
+  glitch of torn slices when the song changes. Fonts: Chakra Petch and Share Tech Mono (SIL OFL).
+- Its own Now Playing, two ways (or the usual one):
+  - the cockpit: a holographic cover in a turning targeting ring, gauges for the bass, mids and highs, a sync bar
+    to seek with, signal readouts, a warning strip while paused, and a title card for each new song;
+  - the terminal: the song typed out, a bar of # for where you are, the spectrum in block characters, what's next,
+    the line of lyrics being sung, and commands to click.
+- Tunnel, a warp-tunnel visualizer, in a neon theme.
+- Settings → Appearance in a neon theme: the Now Playing view, the cockpit's colours (the theme's or the cover's),
+  and scanlines, glitches, HUD details and title cards, each on or off. Reduce motion stills it all.
+  None of it is loaded in any other theme.
+
 ## [1.6.3] - 2026-10-30
 
 The tester's seventh round, and the web remote grows up.

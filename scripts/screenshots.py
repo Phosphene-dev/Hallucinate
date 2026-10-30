@@ -537,6 +537,26 @@ def main():
                      lambda: shell.setSongBadge("masterBadge", False),
                      open_volume, wait, shot("volume-popup"), close_volume,
                      lambda: shell.toggleMini(), wait, wait, mini_shot("mini"), lambda: shell.showMain(), wait]
+            # Afterimage: the neon theme, its cockpit and terminal Now Playing, and its quiet and alert versions
+            def neon_mode(mode):
+                return lambda: shell.setUiValue("neonNowPlaying", mode)
+
+            def np_open(on):
+                return lambda: child("nowPlayingView").setProperty("open", on)
+
+            todo += [analyser_on, lambda: shell.setUiValue("neonTitleCard", "0"), lambda: managers[0].selectTheme("Afterimage"),
+                     go("home"), wait, wait, shot("theme-afterimage"),
+                     neon_mode("cockpit"), np_open(True), wait, wait, wait, shot("neon-cockpit"),
+                     neon_mode("terminal"), wait, wait, shot("neon-terminal"),
+                     lambda: win.resize(820, 560), wait, wait, shot("neon-terminal-small"),
+                     neon_mode("cockpit"), wait, wait, shot("neon-cockpit-small"), lambda: win.resize(1280, 800), wait,
+                     np_open(False), wait,
+                     lambda: managers[0].selectTheme("Afterimage Quiet"), wait, wait, shot("theme-afterimage-quiet"),
+                     np_open(True), wait, wait, wait, shot("neon-cockpit-quiet"), np_open(False), wait,
+                     lambda: managers[0].selectTheme("Afterimage Alert"), wait, wait, shot("theme-afterimage-alert"),
+                     np_open(True), wait, wait, wait, shot("neon-cockpit-alert"), np_open(False), wait,
+                     lambda: shell.setUiValue("neonTitleCard", ""), lambda: managers[0].selectTheme(themes[0]), wait, wait]
+
             def open_composer():
                 QMetaObject.invokeMethod(win, "openComposer", Q_ARG("QVariant", COMPOSER))
 

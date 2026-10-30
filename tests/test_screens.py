@@ -544,6 +544,48 @@ def test_a_retro_theme_opens_now_playing_as_the_deck(qapp, app_window):
     assert not warnings, warnings
 
 
+def test_the_neon_theme_loads_only_when_chosen(qapp, app_window):
+    """Afterimage's overlay, edges and cockpit/terminal Now Playing exist only in a neon theme: in any other,
+    nothing of it is made. In it, the cockpit and the terminal both show the song, and Classic gives the usual
+    view back. No QML warnings on the way."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    shell, manager = objects["shell"], objects["themeManager"]
+    view = window.findChild(QObject, "nowPlayingView")
+
+    def neon_items():
+        return [o for o in window.findChildren(QObject) if o.objectName() in ("neonOverlay", "neonNowPlaying")]
+
+    assert manager.selectTheme("Hallucinate")
+    qapp.processEvents()
+    assert neon_items() == []
+    view.setProperty("open", True)
+    assert wait_for(lambda: view.property("covering"))
+    assert find_item(window, "neonNowPlaying") is None and not view.property("neonView")
+    view.setProperty("open", False)
+
+    shell.setUiValue("neonTitleCard", "0")
+    assert manager.selectTheme("Afterimage")
+    assert wait_for(lambda: find_item(window, "neonOverlay") is not None)
+    view.setProperty("open", True)
+    assert wait_for(lambda: find_item(window, "neonNowPlaying") is not None)
+    assert wait_for(lambda: find_item(window, "neonTitle") is not None)
+    shell.setUiValue("neonNowPlaying", "terminal")
+    assert wait_for(lambda: find_item(window, "terminalTitle") is not None)
+    assert "title" in find_item(window, "terminalTitle").property("text")
+    shell.setUiValue("neonNowPlaying", "classic")
+    assert wait_for(lambda: find_item(window, "neonNowPlaying") is None)
+    view.setProperty("open", False)
+
+    assert manager.selectTheme("Hallucinate")
+    assert wait_for(lambda: find_item(window, "neonOverlay") is None)
+    for key in ("neonNowPlaying", "neonTitleCard"):
+        shell.setUiValue(key, "")
+    qapp.processEvents()
+    assert not warnings, warnings
+
+
 def test_everything_clickable_has_a_name_for_screen_readers(qapp, app_window):
     """Walk every page the way a screen reader sees it: anything that can be clicked, typed into or slid must
     be (or sit within three levels of) an element with a role and a spoken name."""

@@ -117,7 +117,7 @@ Item {
             id: sec_appearance
             objectName: "settings_appearance"
             title: "Appearance"
-            keywords: "marquee scroll scrolling long title titles ticker numbers thousands separator comma commas digits shelf shelves row rows sideways wheel tilt arrows theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
+            keywords: "neon cyberpunk afterimage scanlines glitch hud greebles cockpit terminal title card marquee scroll scrolling long title titles ticker numbers thousands separator comma commas digits shelf shelves row rows sideways wheel tilt arrows theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
             query: page.query
             Row {
                 spacing: 12
@@ -283,6 +283,64 @@ Item {
                 PillButton { objectName: "makeTheme"; text: "Make my own theme…"; onClicked: themeEditor.open() }
             }
             ThemeEditor { id: themeEditor }
+            // A neon theme's own options (Afterimage): shown only while one is chosen
+            Column {
+                objectName: "neonOptions"
+                visible: Theme.neon
+                width: parent.width
+                spacing: 8
+                Text { textFormat: Text.PlainText; text: themeManager.currentTheme + " options"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(15) * Theme.displayScale; font.weight: Font.DemiBold }
+                Flow {
+                    width: parent.width
+                    spacing: 10
+                    Text { textFormat: Text.PlainText; text: "Now Playing"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                    StyledCombo {
+                        objectName: "neonNowPlaying"
+                        readonly property var modes: ["cockpit", "terminal", "classic"]
+                        width: 320
+                        model: ["Cockpit (gauges and a hologram)", "Terminal (typed out)", "Classic (the usual one)"]
+                        selection: Math.max(0, modes.indexOf(shell.ui.neonNowPlaying || "cockpit"))
+                        onActivated: shell.setUiValue("neonNowPlaying", modes[currentIndex])
+                        Accessible.name: "Now Playing in this theme"
+                    }
+                    Text { textFormat: Text.PlainText; text: "Cockpit colours"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                    StyledCombo {
+                        objectName: "neonTint"
+                        readonly property var modes: ["theme", "cover"]
+                        width: 200
+                        model: ["The theme's neon", "The cover's"]
+                        selection: shell.ui.neonTint === "cover" ? 1 : 0
+                        onActivated: shell.setUiValue("neonTint", modes[currentIndex])
+                        Accessible.name: "Cockpit colours"
+                    }
+                }
+                StyledCheck {
+                    objectName: "neonScanlines"
+                    text: "Scanlines and a vignette over the window"
+                    checked: Theme.neonOption("Scanlines")
+                    onToggled: shell.setUiValue("neonScanlines", checked ? "1" : "0")
+                }
+                StyledCheck {
+                    objectName: "neonGlitch"
+                    text: "A glitch when the song changes (and a hologram's flicker)"
+                    checked: Theme.neonOption("Glitch")
+                    enabled: !shell.reduceMotion
+                    onToggled: shell.setUiValue("neonGlitch", checked ? "1" : "0")
+                }
+                StyledCheck {
+                    objectName: "neonGreebles"
+                    text: "HUD details (corner brackets, ticks, status lights and readouts)"
+                    checked: Theme.neonGreebles
+                    onToggled: shell.setUiValue("neonGreebles", checked ? "1" : "0")
+                }
+                StyledCheck {
+                    objectName: "neonTitleCard"
+                    text: "A title card for each new song in the cockpit"
+                    checked: shell.ui.neonTitleCard !== "0"
+                    enabled: !shell.reduceMotion
+                    onToggled: shell.setUiValue("neonTitleCard", checked ? "1" : "0")
+                }
+            }
             StyledCheck {
                 objectName: "ambientMotion"
                 text: "Animated background (slowly drifting colours from the current cover)"

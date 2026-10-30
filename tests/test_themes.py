@@ -52,7 +52,7 @@ def manager_factory(qapp, tmp_path):
 def test_builtin_themes_are_complete_and_switch_live(manager_factory):
     manager = manager_factory()
     assert manager.availableThemes == [
-        "Ace Pride", "Beige Box", "Bi Pride", "Catppuccin Latte", "Catppuccin Mocha", "Dark", "Dracula", "Gruvbox",
+        "Ace Pride", "Afterimage", "Afterimage Alert", "Afterimage Quiet", "Beige Box", "Bi Pride", "Catppuccin Latte", "Catppuccin Mocha", "Dark", "Dracula", "Gruvbox",
         "Hallucinate", "Hi-Fi Deck", "Lesbian Pride", "Light", "Nonbinary Pride", "Nord", "Pan Pride", "Pride", "Ribbon",
         "Tokyo Night", "Trans Pride", "Trans Pride Light",
     ]
@@ -559,3 +559,14 @@ def test_retro_themes_say_so(manager_factory):
         assert manager.selectTheme(name)
         assert manager.retro is retro, name
     assert manager.selectTheme("Beige Box") and manager.radius == 0
+
+
+def test_neon_themes_say_so(manager_factory):
+    """Afterimage and its versions are neon themes; only they turn on its look, and a quiet one is not loud."""
+    manager = manager_factory()
+    for name, neon, loud in (("Afterimage", True, True), ("Afterimage Alert", True, True),
+                             ("Afterimage Quiet", True, False), ("Hallucinate", False, False),
+                             ("Hi-Fi Deck", False, False), ("Ribbon", False, False)):
+        assert manager.selectTheme(name)
+        assert manager.neon is neon and manager.neonLoud is loud, name
+        assert not (manager.neon and manager.retro)

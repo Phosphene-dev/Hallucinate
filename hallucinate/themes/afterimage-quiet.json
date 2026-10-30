@@ -1,0 +1,28 @@
+{
+  "name": "Afterimage Quiet",
+  "style": "neon",
+  "loud": false,
+  "colors": {
+    "bg": "#0a0a12",
+    "panel": "#10101c",
+    "surface": "#181828",
+    "surfaceHi": "#222236",
+    "border": "#35355a",
+    "text": "#dde1ef",
+    "textDim": "#8c91b0",
+    "accent": "#5fdbe8",
+    "error": "#ff6b78",
+    "onAccent": "#001417"
+  },
+  "palette": [
+    "#5fdbe8",
+    "#d27ae0",
+    "#6d6fd8",
+    "#e8d27a"
+  ],
+  "radius": 2,
+  "fonts": {
+    "family": "Sans Serif",
+    "scale": 1.0
+  }
+}
