@@ -26,6 +26,11 @@ All notable changes to this project are documented here. Format based on
   and scanlines, glitches, HUD details and title cards, each on or off. Reduce motion stills it all.
   None of it is loaded in any other theme.
 
+### Fixed
+- Some covers showed as a blank square, or with a grey or garbled band along the bottom, and stayed that way. Two
+  views asking for the same cover at once could leave a half-written picture in the cover cache. Each now writes its
+  own file, and a cut-short one already in the cache is noticed and made again.
+
 ## [1.6.3] - 2026-10-30
 
 The tester's seventh round, and the web remote grows up.
