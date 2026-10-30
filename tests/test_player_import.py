@@ -150,3 +150,11 @@ def test_known_locations_finds_strawberry(tmp_path, monkeypatch):
     db.parent.mkdir(parents=True)
     db.write_bytes(b"SQLite format 3\x00")
     assert {"name": "Strawberry", "path": str(db)} in pi.known_locations()
+
+
+def test_a_library_with_odd_characters_in_its_path(lib, tmp_path):
+    """"?", "#" and "%" in a folder's name are part of the name, not of the URI the database is opened by."""
+    folder = tmp_path / "what? #1 100%"
+    folder.mkdir()
+    data = pi.read(strawberry(folder / "library.db"))
+    assert data["source"] == "Strawberry" and data["songs"]

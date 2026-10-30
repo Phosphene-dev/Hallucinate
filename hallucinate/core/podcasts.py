@@ -95,8 +95,8 @@ def _xml(data, what):
     that declares entities is the way to make a parser expand a few bytes into gigabytes ("billion laughs"):
     such documents are refused before parsing."""
     raw = data.encode("utf-8") if isinstance(data, str) else bytes(data)
-    head = raw[:65536].upper()
-    if b"<!ENTITY" in head or b"<!DOCTYPE" in head:
+    # anywhere in it, not only near the top: comments may come before a DOCTYPE, as many as a feed likes
+    if re.search(rb"<!(?:ENTITY|DOCTYPE)", raw, re.IGNORECASE):
         raise ValueError(f"That isn't {what}")
     try:
         return ET.fromstring(raw)
@@ -278,7 +278,7 @@ def search_directory(query, limit=30, timeout=15):
         if url.startswith(("http://", "https://")):
             out.append({"title": item.get("collectionName") or item.get("trackName") or url,
                         "author": item.get("artistName") or "", "feed_url": url,
-                        "image": item.get("artworkUrl600") or item.get("artworkUrl100") or "",
+                        "image": _web_only(item.get("artworkUrl600") or item.get("artworkUrl100") or ""),
                         "genre": item.get("primaryGenreName") or ""})
     return out
 

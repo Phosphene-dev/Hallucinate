@@ -36,5 +36,6 @@ Item {
         running: spin.on && spin.disc !== null && spin.disc.visible
         paused: running && (!player.playing || Theme.reduceMotion)
     }
-    onOnChanged: if (!on && disc) disc.rotation = 0
+    // (after the animator has let go: straightened at once, it could still write its last angle back)
+    onOnChanged: if (!on) Qt.callLater(function () { if (spin.disc) spin.disc.rotation = 0 })
 }

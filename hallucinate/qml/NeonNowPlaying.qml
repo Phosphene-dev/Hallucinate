@@ -81,7 +81,8 @@ Item {
     }
     Connections {
         target: player
-        function onCurrentChanged() { if (player.hasTrack) neo.note("load  " + (neo.track.title || "") + (neo.track.artist ? " / " + neo.track.artist : "")) }
+        // (the song itself, not neo.track: a binding on it may not have caught up when this runs)
+        function onCurrentChanged() { var t = player.current; if (player.hasTrack) neo.note("load  " + (t.title || "") + (t.artist ? " / " + t.artist : "")) }
         function onStateChanged() {
             if (player.playing === neo.wasPlaying) return  // (the state also changes for other reasons)
             neo.wasPlaying = player.playing
@@ -491,8 +492,9 @@ Item {
         opacity: 0
         visible: opacity > 0
         function show() {
-            cardTitle.text = neo.track.title || ""
-            cardWho.text = neo.upper(neo.track.artist || "")
+            var t = player.hasTrack ? player.current : ({})  // (not neo.track: its binding may lag this signal)
+            cardTitle.text = t.title || ""
+            cardWho.text = neo.upper(t.artist || "")
             cardNo.text = neo.kindLabel + " " + ((player.currentIndex + 1) < 10 ? "0" : "") + (player.currentIndex + 1)
             if (Theme.reduceMotion) return
             cardRun.restart()

@@ -31,11 +31,11 @@ Rectangle {
     readonly property var allPanes: ["now", "wave", "spectrum", "lyrics", "queue", "signal", "stats", "tags", "similar", "whoami", "log"]
     readonly property string defaultPanes: "now,wave,spectrum,lyrics,queue"
     readonly property var panes: {
-        var v = shell.ui.neonTermPanes
-        var list = (v === undefined ? defaultPanes : v).split(",")
+        var v = shell.ui.neonTermPanes  // (blank: the usual ones; "none": every one unpinned)
+        var list = (v === undefined || v === "" ? defaultPanes : v === "none" ? "" : v).split(",")
         return list.filter(function (p, i) { return term.allPanes.indexOf(p) >= 0 && list.indexOf(p) === i })
     }
-    function setPanes(list) { shell.setUiValue("neonTermPanes", list.join(",")) }
+    function setPanes(list) { shell.setUiValue("neonTermPanes", list.length ? list.join(",") : "none") }
 
     function pad(s, n) { s = String(s); return s.length >= n ? s : s + " ".repeat(n - s.length) }
     function bar(p, n) {

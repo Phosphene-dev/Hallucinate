@@ -20,6 +20,7 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 import xml.parsers.expat
+from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 from .db import fold
@@ -65,7 +66,8 @@ def _empty(source):
 # --- Strawberry / Clementine ------------------------------------------------------------------------------------
 def read_sqlite_player(path):
     """Strawberry's or Clementine's library database."""
-    con = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    # (the path quoted: a folder or file name with "?", "#" or "%" in it is part of the name, not the URI's)
+    con = sqlite3.connect(Path(path).absolute().as_uri() + "?mode=ro", uri=True)
     con.row_factory = sqlite3.Row
     try:
         tables = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}

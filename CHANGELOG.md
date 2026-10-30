@@ -46,6 +46,11 @@ All notable changes to this project are documented here. Format based on
 - A paired device's details ran out of their box in Settings → Remote & web with the queue open (#133); they wrap.
 - Collapsing the sidebar, the Playlists, Settings and Expand sidebar icons jumped right and slid back; they (and
   the logo) now stay put as it narrows.
+- Importing from Strawberry or Clementine failed when the path to its library had "?", "#" or "%" in it.
+- A podcast feed could slip an entity declaration past the check for one by putting enough comments before it;
+  the whole feed is checked now. Shows found by search only keep web pictures.
+- Afterimage: the title card and the terminal's log could show the song before the new one; album cards are square
+  in it like everything else; Settings has "Reset these options" for it.
 - After disconnecting a device in the web remote, the song's cover still showed behind the pairing form (#134).
 
 ## [1.6.3] - 2026-10-30

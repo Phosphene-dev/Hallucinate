@@ -39,7 +39,7 @@ Item {
     Accessible.role: Accessible.Button
     Accessible.name: title + (subtitle.length ? ", " + subtitle : "")
     Accessible.onPressAction: Nav.openAlbum(card.albumKey)
-    Rectangle { anchors.fill: parent; anchors.margins: -4; radius: Theme.radius + 4; color: "transparent"; border.width: 2; border.color: Theme.accent; visible: card.activeFocus }
+    Rectangle { anchors.fill: parent; anchors.margins: -4; radius: Theme.neon ? Theme.radius : Theme.radius + 4; color: "transparent"; border.width: 2; border.color: Theme.accent; visible: card.activeFocus }
 
     // Hover: the cover lifts and a soft bloom of the accent glows behind it
     Shape {
@@ -65,7 +65,7 @@ Item {
     Cover {
         id: art
         width: card.cardWidth; height: card.cardWidth
-        radius: Theme.radius + 4
+        radius: Theme.neon ? Theme.radius : Theme.radius + 4  // (a neon theme is squared off throughout)
         source: card.artUrl
         y: hh.hovered ? -4 : 0
         Behavior on y { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }

@@ -36,7 +36,7 @@ GlassPanel {
         id: cover
         x: 24; anchors.verticalCenter: parent.verticalCenter
         width: card.narrow ? Math.max(90, Math.min(140, card.width * 0.3)) : 200; height: width
-        radius: card.narrow ? 12 : 18
+        radius: Theme.neon ? Theme.radius : card.narrow ? 12 : 18
         source: card.hasAlbum ? card.album.artUrl : ""
         Accessible.role: Accessible.Button
         Accessible.name: card.hasAlbum ? "Open " + card.album.album : ""

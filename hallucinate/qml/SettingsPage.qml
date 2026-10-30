@@ -359,8 +359,8 @@ Item {
                         queue: "Up next", signal: "Signal path", stats: "Today's stats", tags: "Tags", similar: "Similar artists",
                         whoami: "Your library", log: "Log" })
                     readonly property var shown: {
-                        var v = shell.ui.neonTermPanes
-                        return (v === undefined ? "now,wave,spectrum,lyrics,queue" : v).split(",").filter(function (p) { return p })
+                        var v = shell.ui.neonTermPanes  // (blank: the usual ones; "none": every one unpinned)
+                        return (v === undefined || v === "" ? "now,wave,spectrum,lyrics,queue" : v === "none" ? "" : v).split(",").filter(function (p) { return p })
                     }
                     Repeater {
                         model: ["now", "wave", "spectrum", "lyrics", "queue", "signal", "stats", "tags", "similar", "whoami", "log"]
@@ -371,7 +371,7 @@ Item {
                             onClicked: {
                                 var list = parent.shown.filter(function (p) { return p !== modelData })
                                 if (!selected) list.push(modelData)
-                                shell.setUiValue("neonTermPanes", list.join(","))
+                                shell.setUiValue("neonTermPanes", list.length ? list.join(",") : "none")
                             }
                         }
                     }
@@ -382,6 +382,16 @@ Item {
                     checked: shell.ui.neonTitleCard !== "0"
                     enabled: !shell.reduceMotion
                     onToggled: shell.setUiValue("neonTitleCard", checked ? "1" : "0")
+                }
+                PillButton {
+                    objectName: "neonReset"
+                    text: "Reset these options"
+                    onClicked: {
+                        var keys = ["neonNowPlaying", "neonTint", "neonPhosphor", "neonScanlines", "neonGlitch", "neonGreebles",
+                                    "neonTitleCard", "neonBoot", "neonTermPanes", "neonVisStyle"]
+                        for (var i = 0; i < keys.length; i++) shell.setUiValue(keys[i], "")
+                        Nav.notify(themeManager.currentTheme + "'s options are back as they came")
+                    }
                 }
             }
             StyledCheck {
