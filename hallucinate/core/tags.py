@@ -278,6 +278,34 @@ def _image_ext(data: bytes) -> str:
     return ".png" if data[:8] == b"\x89PNG\r\n\x1a\n" else ".jpg"
 
 
+def picture_whole(data: bytes) -> bool:
+    """Whether a cover picture's bytes run to their end: a JPEG's end-of-image mark, a PNG's IEND chunk, near the
+    end (a little padding after it is common). A picture cut short (a file still being copied, a tag written by a
+    tool that stopped) still decodes, as a cover with a garbled band or nothing at all, so it's passed over for
+    another one. Other formats (WebP, GIF, BMP) aren't judged."""
+    if not data:
+        return False
+    tail = data[-4096:]
+    if data[:2] == b"\xff\xd8":
+        return b"\xff\xd9" in tail
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        return b"IEND" in tail
+    return True
+
+
+def folder_art_whole(path: str) -> bool:
+    """picture_whole for a cover file in a folder (only its first and last few kilobytes are read)."""
+    try:
+        with open(path, "rb") as fh:
+            head = fh.read(8)
+            size = fh.seek(0, os.SEEK_END)
+            fh.seek(0 if size <= 4096 + 8 else size - 4096)
+            data = fh.read() if size <= 4096 + 8 else head + fh.read()
+    except OSError:
+        return False
+    return picture_whole(data)
+
+
 def extract_embedded_art(f) -> Optional[bytes]:
     try:
         pics = getattr(f, "pictures", None)

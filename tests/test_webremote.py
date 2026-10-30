@@ -386,3 +386,24 @@ def test_a_device_that_disconnects_itself_leaves_the_apps_list(remote):
     assert r["status"] == 200
     assert wait_for(lambda: told and told[-1] == 0)
     assert server.pairedDevices == []
+
+
+def test_lyrics_eq_and_recent_plays_in_the_remote(remote):
+    """The remote's Lyrics, Equaliser and Recent: what the app has, read and set through the same commands."""
+    import time
+
+    server, lib, player = remote
+    api = server.api
+    assert api.call("lyrics")["status"] == "none"  # (no lyrics service in this test)
+    eq = api.call("eq")
+    assert eq["presets"] and set(eq) >= {"available", "enabled", "preset", "presets"}
+    name = eq["presets"][1]
+    assert api.call("eq.set", {"preset": name})["enabled"] is True and player.eqPreset == name
+    assert api.call("eq.set", {"enabled": False})["enabled"] is False
+    with pytest.raises(ApiError):
+        api.call("eq.set", {"preset": "no such preset"})
+    song = next(t for t in lib._db.tracks() if t["path"])
+    lib._db.record_play(song["path"], time.time())
+    plays = api.call("recent", {"limit": 5})["plays"]
+    assert plays[0]["title"] == song["title"] and plays[0]["id"] == song["id"]  # (it can be played again)
+    assert set(plays[0]) >= {"id", "title", "artist", "album", "albumKey", "time"}

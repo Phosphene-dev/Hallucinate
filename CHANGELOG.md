@@ -3,6 +3,40 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.8.0] - 2026-10-31
+
+Covers mended for good, the web remote catching up with the app, and the terminal's second round.
+
+### Added
+- Pause when the headphones go: unplug them (or let Bluetooth drift out of range) and the music pauses instead of
+  carrying on out of the speakers. Settings → Playback, on by default.
+- In the web remote:
+  - Lyrics on the Now Playing page, following the song line by line (the button by the sleep timer).
+  - The equaliser: turn it off or pick a preset.
+  - Library → Recent: what you listened to last, newest first; tap one to play it again.
+- Library health:
+  - Repair covers: if any covers show blank or garbled, this makes them all again. Every song's picture is read
+    afresh (a full rescan) and the scaled copies are remade. Covers you chose yourself stay.
+  - A Damaged covers check, listing the albums whose picture stops part way.
+- Copy debug info says how the covers stand: how many, how many damaged, and the scaled copies.
+- The terminal's second round:
+  - `history`: what you listened to last.
+  - `top week|month|year|all`: your most played.
+  - `queue rm 2`, `queue mv 5 1`, `queue clear`, `queue shuffle`: change what's next.
+  - `eq` / `eq <preset>` / `eq off`: the equaliser.
+  - `out` / `out <n>`: where the sound goes.
+  - `lyrics`: the whole text.
+  - `cmds`: what you typed.
+  - Short forms: `n` next, `b` back, `p` play/pause, `v` volume, `s` shuffle, `r` repeat, `q` queue, `l` lyrics,
+    `t` top, `m` mute.
+- Afterimage: sliders with a glowing fill and a diamond thumb, and a glowing bar by the open page in the sidebar.
+
+### Fixed
+- A cover picture that stops part way (in a song's tags, or a cover.jpg still being copied in) showed as a garbled
+  or blank cover. It's passed over for the folder's cover or another song's picture.
+- Covers that changed on disk during a scan kept showing the old picture until the app restarted. They're read
+  again once the scan is done.
+
 ## [1.7.1] - 2026-10-30
 
 ### Changed

@@ -109,3 +109,15 @@ def test_extra_copies_round_lengths_as_the_duplicate_query_does(db):
     add(db, "/m/a.mp3", album="One", title="Song", codec="MP3", bitrate=128_000, duration=100.5)
     add(db, "/m/b.flac", album="Two", title="Song", duration=101.4)  # SQL: both round to 101
     assert health.extra_copies(db) == ["/m/a.mp3"]
+
+
+def test_damaged_covers_are_found(db, tmp_path):
+    """A cover that stops part way shows blank or garbled: Library health lists its album (Repair covers fixes it)."""
+    whole, cut = tmp_path / "whole.png", tmp_path / "cut.jpg"
+    whole.write_bytes(b"\x89PNG\r\n\x1a\n" + b"\0" * 20 + b"IEND\xaeB`\x82")
+    cut.write_bytes(b"\xff\xd8\xff\xe0" + b"\0" * 5000)  # no end-of-image mark
+    add(db, "/m/w/1", album="Whole", art=str(whole))
+    add(db, "/m/c/1", album="Cut", art=str(cut))
+    add(db, "/m/g/1", album="Gone", art=str(tmp_path / "unplugged.jpg"))
+    checks = by_id(health.report(db))
+    assert [a["album"] for a in checks["damagedcovers"]["items"]] == ["Cut"]

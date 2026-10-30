@@ -149,10 +149,30 @@ Item {
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(14)
                     }
-                    PillButton {
-                        text: page.report.loading ? "Checking…" : "Check again"
-                        enabled: !page.report.loading
-                        onClicked: library.checkHealth()
+                    Flow {
+                        width: parent.width
+                        spacing: 10
+                        PillButton {
+                            text: page.report.loading ? "Checking…" : "Check again"
+                            enabled: !page.report.loading
+                            onClicked: library.checkHealth()
+                        }
+                        // covers blank or garbled: start them over (a full rescan; your own chosen covers stay)
+                        PillButton {
+                            objectName: "repairCovers"
+                            text: "Repair covers…"
+                            enabled: !library.scanning
+                            onClicked: repairDlg.open()
+                        }
+                    }
+                    ConfirmDialog {
+                        id: repairDlg
+                        title: "Repair covers?"
+                        body: "Covers that show blank or garbled are made again: every song's picture is read afresh "
+                              + "(a full rescan, which can take a while with a big library), and any that turn out damaged "
+                              + "make way for the folder's cover. Covers you chose yourself stay as they are."
+                        confirmText: "Repair covers"
+                        onAccepted: { library.repairCovers(); Nav.notify("Repairing covers: rescanning your library") }
                     }
                 }
             }
@@ -231,6 +251,18 @@ Item {
                                 Accessible.description: card.modelData.detail
                                 Accessible.onPressAction: page.expanded = card.open ? "" : card.modelData.id
                                 onClicked: page.expanded = card.open ? "" : card.modelData.id
+                            }
+                        }
+                        Row {  // damaged covers: read every song's picture again
+                            visible: card.modelData.id === "damagedcovers" && card.modelData.count > 0
+                            leftPadding: 24
+                            PillButton {
+                                objectName: "repairDamagedCovers"
+                                primary: true
+                                height: 32
+                                text: "Repair covers…"
+                                enabled: !library.scanning
+                                onClicked: repairDlg.open()
                             }
                         }
                         Row {

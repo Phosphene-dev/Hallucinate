@@ -1,5 +1,16 @@
 # Manual QA checklist
 
+## Release testing for 1.8.0
+
+- [ ] Play through headphones, unplug them: the music pauses with a message. Settings → Playback → off: it carries on.
+- [ ] Web remote → Now Playing → Lyrics button: the lyrics follow the song. EQ button: Off and each preset work.
+- [ ] Web remote → Library → Recent: your last songs; tapping one plays it.
+- [ ] Library health → Repair covers…: confirm, a rescan runs, covers come back whole. Damaged covers lists any left.
+- [ ] Settings → About → Copy debug info: it has a "Covers:" line.
+- [ ] Afterimage terminal: `history`, `top week`, `queue rm 1`, `queue mv 2 1`, `eq`, `eq off`, `out`, `lyrics`, `n`, `p`.
+- [ ] Afterimage: the volume slider glows with a diamond thumb; the open page has a glowing bar in the sidebar.
+- [ ] Covers: during and after a scan of new music, no blank or garbled covers; nothing needs a restart.
+
 ## Release testing for 1.7.1
 
 - [ ] Play a song, then a radio station: "Connecting…" shows in the player bar until it plays. Then another station.

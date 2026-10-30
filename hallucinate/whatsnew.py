@@ -2,6 +2,11 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "1.8.0": [
+        "The music pauses when your headphones go, instead of carrying on out of the speakers (Settings → Playback).",
+        "The web remote has lyrics that follow the song, the equaliser, and what you listened to last.",
+        "Covers that showed blank or garbled are mended, and Library health → Repair covers makes them all again.",
+    ],
     "1.7.1": [
         "Radio stations say “Connecting…” while they connect, every time, and the web remote shows them as LIVE.",
         "A device you disconnect from the web remote leaves the list in Settings straight away.",

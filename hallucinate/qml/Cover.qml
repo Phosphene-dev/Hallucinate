@@ -16,9 +16,12 @@ Rectangle {
     // A cover that didn't load (the provider sends a 1-pixel placeholder, which the image cache would keep
     // showing as a blank square: #115) shows the ♪ and is asked for again a little later, a few times
     property int attempt: 0
+    // covers that may have changed on disk (after a scan, or Library health → Repair covers) are asked for again
+    readonly property int revision: typeof library !== "undefined" && library ? library.artRevision : 0
     readonly property bool missing: img.status === Image.Ready && img.sourceSize.width <= 1
     readonly property string resolved: sourceText.length === 0 ? ""
-        : sourceText.indexOf("file:") === 0 ? "image://art/" + bucketPx + (attempt ? "~" + attempt : "") + "/" + encodeURIComponent(sourceText)
+        : sourceText.indexOf("file:") === 0 ? "image://art/" + bucketPx + (attempt ? "~" + attempt : "") + (revision ? "~r" + revision : "")
+                                              + "/" + encodeURIComponent(sourceText)
         : sourceText
     onSourceTextChanged: attempt = 0
     onMissingChanged: if (missing && attempt < 3 && sourceText.indexOf("file:") === 0) retry.restart()

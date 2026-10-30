@@ -142,7 +142,7 @@ def test_stop_request_halts_scan(db, tmp_path):
 def test_modified_art_and_folder_cover(db, scan, tmp_path):
     root = tmp_path / "l"
     mk(root / "alb" / "1.mp3", "One", "Art", "Alb")
-    (root / "alb" / "Folder.JPG").write_bytes(b"\xff\xd8\xff\xe0jpeg")
+    (root / "alb" / "Folder.JPG").write_bytes(b"\xff\xd8\xff\xe0jpeg\xff\xd9")  # (a whole one: it ends)
     scan(root)
     assert db.albums()[0]["art"].endswith("Folder.JPG")
 

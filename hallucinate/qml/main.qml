@@ -42,6 +42,10 @@ ApplicationWindow {
         target: shell
         function onNavigateRequested(page) { nowPlaying.open = false; window.go(page) }
     }
+    Connections {  // playback paused because the headphones went away
+        target: player
+        function onNotice(text) { toast.show(text) }
+    }
     Connections {  // music servers say how adding and syncing went
         target: servers
         function onMessage(text) { toast.show(text) }

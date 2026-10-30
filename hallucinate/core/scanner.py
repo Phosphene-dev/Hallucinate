@@ -249,6 +249,8 @@ class Scanner:
             return
         path = None
         chosen = self.db.chosen_art(key)
+        if raw and not tags.picture_whole(raw):
+            raw = None  # cut short: the folder's cover, or another song's picture, rather than a garbled one
         if chosen and os.path.isfile(chosen):
             path = chosen  # you picked this one: the file's own picture doesn't replace it
         elif raw:
@@ -259,6 +261,8 @@ class Scanner:
             write_atomic(path, lambda fh: fh.write(raw))  # never a half-written cover, even if stopped
         else:
             path = tags.find_folder_art(directory)
+            if path and not tags.folder_art_whole(path):
+                path = None  # (still being copied in, say: the next scan finds it whole)
         if path:
             self._art[key] = path
             t["art"] = path

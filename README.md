@@ -35,7 +35,7 @@
 - **Plays it properly.** True gapless, ReplayGain, a 10-band equalizer, headphone correction, CUE sheets, and a readout that shows when the sound is untouched.
 - **Remembers every listen.** History, weekly to yearly recaps, smart playlists, radio mode, and history brought over from Last.fm or your old player.
 - **Fast to drive.** Instant search that forgives typos, Ctrl+K for anything, multi-select, and Ctrl+Z for the queue.
-- **From your phone too.** A web interface and phone remote, off until you switch it on, for paired devices only: your library, queue, internet radio and podcasts, in light or dark.
+- **From your phone too.** A web interface and phone remote, off until you switch it on, for paired devices only: your library, queue, lyrics, equaliser, internet radio and podcasts, in light or dark.
 - **Only what you want.** Internet radio, podcasts and music servers (Jellyfin, Navidrome and other Subsonic servers) are there if you switch them on.
 - **Wear it your way.** Over twenty themes, from frosted glass and pride flags to two retro ones with a 90s hi-fi Now Playing, and Afterimage: neon noir with a cockpit or a terminal you type commands into.
 - **Yours alone.** No account, no telemetry; everything online is opt-in, and offline mode turns it all off.

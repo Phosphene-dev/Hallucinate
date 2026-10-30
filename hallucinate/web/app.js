@@ -133,6 +133,7 @@ function render() {
   $("nowArtist").textContent = song ? song.artist : "";
   $("nowAlbum").textContent = song ? [song.album, song.year || ""].filter(Boolean).join(" · ") : "";
   const key = song && song.albumKey;
+  loadLyrics();
   if (key !== render.key) {
     render.key = key;
     $("nowArt").hidden = !key;
@@ -206,6 +207,68 @@ $("btnSleep").onclick = () => pick("Sleep timer", [
   ["End of this song", () => call("sleep", { end: "track" })],
   ["End of this album", () => call("sleep", { end: "album" })],
 ]);
+
+// --- the equaliser's presets ----------------------------------------------------------------------------
+$("btnEq").onclick = async () => {
+  const eq = await call("eq");
+  if (!eq.available) { toast("The equaliser isn't available on this computer"); return; }
+  pick("Equaliser", [
+    [(eq.enabled ? "" : "✓ ") + "Off", () => call("eq.set", { enabled: false }).then(() => toast("Equaliser off"))],
+    ...eq.presets.map((name) => [(eq.enabled && eq.preset === name ? "✓ " : "") + name,
+      () => call("eq.set", { preset: name }).then(() => toast("Equaliser: " + name))]),
+  ]);
+};
+
+// --- lyrics, following the song --------------------------------------------------------------------------
+let lyrics = null;          // what the app has for the song playing
+let lyricsKey = undefined;  // which song they're for
+let lyricsLine = -1;
+function lyricsOn() { return pref("lyrics", "0") === "1"; }
+async function loadLyrics() {
+  if (!lyricsOn()) return;
+  const key = state && state.song ? `${state.song.id}|${state.song.title}` : "";
+  if (key === lyricsKey) return;
+  lyricsKey = key;
+  lyricsLine = -1;
+  const panel = $("lyricsPanel");
+  if (!key) { lyrics = null; panel.replaceChildren(); return; }
+  panel.replaceChildren(el("p", { class: "dim", text: "Looking for lyrics…" }));
+  try { lyrics = await call("lyrics"); } catch (e) { lyrics = null; }
+  if (!lyrics || (lyrics.status === "loading" && !lyrics.synced && !lyrics.plain)) {
+    setTimeout(() => { lyricsKey = undefined; loadLyrics(); }, 2500);  // the app is still looking
+    return;
+  }
+  if (lyrics.synced) {
+    panel.replaceChildren(...lyrics.lines.map((l) => el("p", { class: "line", text: l.text || "♪" })));
+  } else if (lyrics.plain) {
+    panel.replaceChildren(...lyrics.plain.split("\n").map((l) => el("p", { text: l || "\u00a0" })));
+  } else {
+    panel.replaceChildren(el("p", { class: "dim", text: "No lyrics for this song" }));
+  }
+  followLyrics();
+}
+function followLyrics() {
+  if (!lyricsOn() || !lyrics || !lyrics.synced) return;
+  const pos = position() + (lyrics.offset || 0);
+  let at = -1;
+  for (let i = 0; i < lyrics.lines.length && lyrics.lines[i].t <= pos; i++) at = i;
+  if (at === lyricsLine) return;
+  const lines = $("lyricsPanel").children;
+  if (lines[lyricsLine]) lines[lyricsLine].classList.remove("current");
+  lyricsLine = at;
+  if (lines[at]) {
+    lines[at].classList.add("current");
+    lines[at].scrollIntoView({ block: "center", behavior: "smooth" });
+  }
+}
+function showLyrics() {
+  $("lyricsPanel").hidden = !lyricsOn();
+  $("btnLyrics").classList.toggle("on", lyricsOn());
+  if (lyricsOn()) { lyricsKey = undefined; loadLyrics(); }
+}
+$("btnLyrics").onclick = () => { setPref("lyrics", lyricsOn() ? "0" : "1"); showLyrics(); };
+showLyrics();
+setInterval(followLyrics, 400);
 
 // --- views -----------------------------------------------------------------------------------------------
 function show(view) {
@@ -411,6 +474,17 @@ async function loadLibrary() {
     const r = await call("genres");
     body.replaceChildren(el("div", { class: "grid" }, ...r.genres.map((g) =>
       card(g.name, `${g.songs} songs`, g.albumKey, () => openGenre(g.name)))));
+  } else if (libKind === "recent") {  // what was listened to last; songs still in the library play again
+    const r = await call("recent", { limit: 50 });
+    body.replaceChildren(el("ul", { class: "list" }, ...r.plays.map((p) => {
+      const row = el("li", { class: "row" + (p.id ? "" : " played"), tabindex: "0" }, img(p.albumKey, 64),
+        el("div", { class: "text" }, el("span", { text: p.title }),
+          el("span", { class: "dim small", text: [p.artist, p.album].filter(Boolean).join(" · ") })),
+        el("span", { class: "time", text: p.time }));
+      if (p.id) row.onclick = () => call("play.songs", { ids: [p.id] }).then(() => toast("Playing " + p.title));
+      return row;
+    })));
+    if (!r.plays.length) body.append(el("p", { class: "dim", text: "Songs you listen to show up here." }));
   } else if (libKind === "stations") {  // internet radio (#128)
     const r = await call("stations");
     body.replaceChildren(el("div", { class: "grid" }, ...r.stations.map((st) =>

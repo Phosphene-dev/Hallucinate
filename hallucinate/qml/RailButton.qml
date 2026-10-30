@@ -56,6 +56,15 @@ Item {
         border.color: Theme.accent
         visible: item.dropping || (item.pick !== null && item.pick.selected)
     }
+    Loader {  // a neon theme marks the open page with a glowing bar at its left edge
+        active: Theme.neon && item.selected
+        anchors { left: parent.left; top: parent.top; bottom: parent.bottom; topMargin: 6; bottomMargin: 6 }
+        width: 8
+        sourceComponent: Item {
+            Rectangle { x: 0; width: 3; height: parent.height; color: Theme.accent }
+            Rectangle { x: 0; width: 8; height: parent.height; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, Theme.neonLoud ? 0.3 : 0.15) }
+        }
+    }
     Rectangle {  // a retro theme marks the open page in solid accent, and the one under the pointer plainly
         anchors.fill: parent
         visible: Theme.retro && (item.selected || ma.containsMouse)

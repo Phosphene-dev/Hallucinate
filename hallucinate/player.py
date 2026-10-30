@@ -340,6 +340,7 @@ class Player(QObject):
     skipped = Signal("QVariantMap")  # the listener moved on from a playing track before it counted as played
     visualizerChanged = Signal()
     outputDevicesChanged = Signal()
+    notice = Signal(str)  # something worth a toast: playback paused because the headphones went away
     signalPathChanged = Signal()
     waveformChanged = Signal()
     radioChanged = Signal()
@@ -386,6 +387,9 @@ class Player(QObject):
 
         self._settings = QSettings("hallucinate", "hallucinate")
         self._show_track_info = str(self._settings.value("display/showTrackInfo", "false")).lower() == "true"
+        # pause when the sound device playing goes away (headphones unplugged, Bluetooth out of range)
+        self._pause_unplug = str(self._settings.value("player/pauseOnUnplug", "true")).lower() == "true"
+        self._out_id = None  # the device the sound went to last (see _on_audio_outputs_changed)
         try:
             stored_volume = float(self._settings.value("volume", 0.8))
             self._volume = stored_volume if math.isfinite(stored_volume) else 0.8
@@ -1138,6 +1142,19 @@ class Player(QObject):
             rate_source="PipeWire" if follows and self._rate_mode == "auto" else "",
         )
 
+    @Property(bool, notify=audioSettingsChanged)
+    def pauseOnUnplug(self):
+        """Pause when the device the music plays on goes away (Settings → Playback; on by default)."""
+        return self._pause_unplug
+
+    @Slot(bool)
+    def setPauseOnUnplug(self, on):
+        on = bool(on)
+        if on != self._pause_unplug:
+            self._pause_unplug = on
+            self._settings.setValue("player/pauseOnUnplug", "true" if on else "false")
+            self.audioSettingsChanged.emit()
+
     def _output_audio_device(self):
         """The chosen device while it is connected, otherwise the current system default."""
         device = pick_output_device(QMediaDevices.audioOutputs(), self._output_key)
@@ -1145,6 +1162,7 @@ class Player(QObject):
 
     def _apply_output_device(self, reattach=False):
         device = self._output_audio_device()
+        self._out_id = bytes(device.id()) if not device.isNull() else None
         for voice in self._voices:
             if reattach and voice.audio.device() == device:
                 voice.audio.setDevice(QAudioDevice())
@@ -1155,6 +1173,11 @@ class Player(QObject):
 
     @Slot()
     def _on_audio_outputs_changed(self):
+        present = {bytes(d.id()) for d in QMediaDevices.audioOutputs()}
+        if self._out_id is not None and self._out_id not in present and self.playing and self._pause_unplug:
+            # the device the music was playing on is gone: don't carry on out of the speakers instead
+            self.pause()
+            self.notice.emit("Paused: the sound device you were listening on went away")
         if not self.playing:
             # Nothing's playing (a monitor going to sleep takes its HDMI sound with it, for one): don't touch
             # the sound system now; play sets the output up first.

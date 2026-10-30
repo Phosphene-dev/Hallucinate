@@ -233,6 +233,7 @@ class Library(QObject):
     albumsRemoved = Signal("QVariantMap")  # {"kind": "hidden"|"trashed", "albums", "songs", "failed"}
     hiddenChanged = Signal()
     detailChanged = Signal()
+    artRevisionChanged = Signal()
     _removed = Signal(object)
 
     def __init__(self, db_path, art_dir, parent=None):
@@ -242,6 +243,7 @@ class Library(QObject):
         self._scan_thread = None
         self._db_path = str(db_path)
         self._art_dir = str(art_dir)
+        self._art_rev = 0  # goes up when covers may have changed on disk (after a scan, a repair): Cover reloads
         self._db = Database(self._db_path)
         self._models = {
             "albums": DictModel(ALBUM_KEYS, self, "album_key"),
@@ -1084,6 +1086,8 @@ class Library(QObject):
     def _on_scan_finished(self, stats):
         self._scanning = False
         self.scanningChanged.emit()
+        if stats.get("added") or stats.get("updated"):
+            self._bump_art()  # a cover read while its file was still being written is read again
         for path in self._purge_after_scan:
             self._bulk.submit(lambda db, p=path: db.purge_folder(p))
         if self._purge_after_scan:
@@ -1460,3 +1464,39 @@ class Library(QObject):
     def genrePaths(self, name):
         """Every song path of a genre (all of them, not only the most played its page lists), for its menu."""
         return [t["path"] for t in genre_views.tracks(self._db, name)]
+
+    # --- covers ----------------------------------------------------------------------------------------------
+    @Property(int, notify=artRevisionChanged)
+    def artRevision(self):
+        """Goes up whenever covers may have changed on disk; each Cover asks for its picture again."""
+        return self._art_rev
+
+    def _bump_art(self):
+        self._art_rev += 1
+        self.artRevisionChanged.emit()
+
+    @Slot()
+    def repairCovers(self):
+        """Library health → Repair covers: forget every scaled cover made so far, put aside the covers taken from
+        songs that turn out to be cut short, and read every song's picture again with a full rescan. Covers you
+        chose yourself stay as they are."""
+        from .core import paths, tags
+        from .core.remote import SQL_LOCAL
+
+        thumbs = paths.data_dir() / "thumbs"
+        for f in thumbs.glob("*") if thumbs.is_dir() else ():
+            if f.suffix in (".jpg", ".tmp"):
+                try:
+                    f.unlink()
+                except OSError:
+                    pass
+        art_dir = os.path.realpath(self._art_dir)
+        for (art,) in self._db.conn.execute("SELECT DISTINCT art FROM tracks WHERE art != ''").fetchall():
+            inside = os.path.realpath(art).startswith(art_dir + os.sep)
+            if inside and not tags.folder_art_whole(art):
+                self._db.conn.execute("UPDATE tracks SET art='' WHERE art=?", (art,))
+        self._db.conn.execute(f"UPDATE tracks SET mtime=0 WHERE {SQL_LOCAL}")
+        self._db.commit()
+        self._bump_art()
+        self.rescan()
+
