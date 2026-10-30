@@ -40,17 +40,48 @@ Item {
         function onFailed() { page.renamedTo = "" }
     }
 
-    Flickable {
+    // A list of the songs, made as they scroll into view, under a header with everything else (#121: a column
+    // that made all of a big genre's rows, and their covers, at once scrolled in jerks)
+    ListView {
         WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: fl
+        objectName: "genreList"
         anchors.fill: parent
-        contentWidth: width
-        contentHeight: col.height + 40
         clip: true
         boundsBehavior: Flickable.StopAtBounds
+        cacheBuffer: 400
         ScrollBar.vertical: ScrollBar {}
-
-        Column {
+        model: page.tracksModel
+        footer: Item { width: 1; height: 40 }
+        delegate: Item {
+            width: fl.width
+            height: songRow.height + 4
+            TrackRow {
+                id: songRow
+                x: Theme.contentX(fl.width)  // (a list puts its rows at its left edge)
+                width: Theme.contentWidth(fl.width)
+                selectionSource: page.tracksModel
+                path: model.path
+                audioFormat: model.codec
+                bitDepth: model.bit_depth || 0
+                sampleRate: model.sample_rate || 0
+                explicitTag: model.explicit || 0
+                audioBitrate: model.bitrate
+                rowIndex: index
+                title: model.title
+                artist: model.artist
+                album: model.album
+                durText: model.durText
+                artUrl: model.artUrl
+                current: Rows.currentId === model.id
+                onActivated: library.playGenreSongs(page.genreName, index)
+                onEnqueue: player.enqueue(page.tracksModel.get(index))
+            }
+        }
+        header: Item {
+          width: fl.width
+          height: col.height + 24 + 10
+          Column {
             id: col
             x: Theme.contentX(fl.width); y: 24
             width: Theme.contentWidth(fl.width)
@@ -268,29 +299,8 @@ Item {
                               ? "The " + page.tracksModel.count + " most played; Play all plays every one" : ""
                 }
                 Item { width: 1; height: 6 }
-                Repeater {
-                    model: page.tracksModel
-                    TrackRow {
-                        selectionSource: page.tracksModel
-                        path: model.path
-                        audioFormat: model.codec
-                        bitDepth: model.bit_depth || 0
-                        sampleRate: model.sample_rate || 0
-                        explicitTag: model.explicit || 0
-                        audioBitrate: model.bitrate
-                        rowIndex: index
-                        width: col.width
-                        title: model.title
-                        artist: model.artist
-                        album: model.album
-                        durText: model.durText
-                        artUrl: model.artUrl
-                        current: Rows.currentId === model.id
-                        onActivated: library.playGenreSongs(page.genreName, index)
-                        onEnqueue: player.enqueue(page.tracksModel.get(index))
-                    }
-                }
             }
+          }
         }
     }
 
