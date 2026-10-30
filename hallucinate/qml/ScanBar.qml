@@ -33,13 +33,17 @@ Item {
             color: Theme.accent
             readonly property bool determinate: library.scanFraction >= 0
             width: determinate ? track.width * library.scanFraction : track.width * 0.3
-            x: 0
+            // (a sweep while the total isn't known; #131: one that had stopped partway left the next scan's real
+            // progress drawn from where it stopped, so a known total always starts from the left)
+            property real sweep: 0
+            x: determinate ? 0 : sweep
             Behavior on width { enabled: fill.determinate; NumberAnimation { duration: 150 } }
-            SequentialAnimation on x {
+            SequentialAnimation {
                 running: bar.active && !fill.determinate
                 loops: Animation.Infinite
-                NumberAnimation { from: 0; to: track.width * 0.7; duration: 900; easing.type: Easing.InOutQuad }
-                NumberAnimation { from: track.width * 0.7; to: 0; duration: 900; easing.type: Easing.InOutQuad }
+                onRunningChanged: if (!running) fill.sweep = 0
+                NumberAnimation { target: fill; property: "sweep"; from: 0; to: track.width * 0.7; duration: 900; easing.type: Easing.InOutQuad }
+                NumberAnimation { target: fill; property: "sweep"; from: track.width * 0.7; to: 0; duration: 900; easing.type: Easing.InOutQuad }
             }
         }
     }

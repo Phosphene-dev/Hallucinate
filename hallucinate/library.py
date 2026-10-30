@@ -1030,7 +1030,9 @@ class Library(QObject):
             return
         self._scanning = True
         self._scan_seen = 0
-        self._scan_hint = self._counts["tracks"]
+        # how many files to expect: as many as the last scan saw (#131: progress counts files, and a library's song
+        # count differs from its file count, with CUE sheets or files that aren't songs), else the songs known
+        self._scan_hint = self._prefs.value("library/lastScanFiles", 0, int) or self._counts["tracks"]
         # A first scan, or one bringing in a folder just added: show the songs as they're found (#91), with a
         # reload now and then. An everyday rescan finds little that's new and reloads only at its end.
         self._live = self._grow or self._counts["tracks"] == 0
@@ -1090,6 +1092,8 @@ class Library(QObject):
         self._scan_errors = stats.get("errors", 0)
         self._missing = [f for f in self._db.folders() if not os.path.isdir(f)]
         self.scanIssuesChanged.emit()
+        if not stats.get("error") and self._scan_seen > 0 and not self._scan_stop.is_set():
+            self._prefs.setValue("library/lastScanFiles", self._scan_seen)  # the next scan's expected count
         if stats.get("error"):
             self._set_status("Scan failed: " + stats["error"])
         else:
