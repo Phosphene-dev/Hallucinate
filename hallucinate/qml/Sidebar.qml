@@ -428,7 +428,7 @@ Item {
                                 objectName: "playlistFolder_" + folderBlock.modelData.name
                                 width: plList.width
                                 height: side.compact ? 32 : 36
-                                text: folderBlock.modelData.name + "  (" + folderBlock.modelData.items.length + ")"
+                                text: folderBlock.modelData.name + "  (" + Theme.num(folderBlock.modelData.items.length) + ")"
                                 icon: folderBlock.open ? "down" : "next"
                                 hasMenu: true
                                 Accessible.name: "Folder " + folderBlock.modelData.name + (folderBlock.open ? ", open" : ", closed")

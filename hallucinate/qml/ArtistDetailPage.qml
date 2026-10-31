@@ -651,7 +651,7 @@ Item {
                         Text {
                             textFormat: Text.PlainText
                             anchors.verticalCenter: parent.verticalCenter
-                            text: page.allSongs ? "Hide" : "Show " + page.tracksModel.count
+                            text: page.allSongs ? "Hide" : "Show " + Theme.num(page.tracksModel.count)
                             color: Theme.accent
                             font.family: Theme.fontFamily
                             font.pixelSize: Theme.fontSize(13)

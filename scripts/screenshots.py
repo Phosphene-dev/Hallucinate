@@ -476,6 +476,21 @@ def main():
             todo += [seed, listening, play, pause]
             for page in ("home", "songs", "history", "settings", "folders", "recap", "stats"):
                 todo += [go(page), wait, shot(page)]
+            def settings_search(text):
+                return lambda: child("settingsSearch").setProperty("text", text)
+
+            def scanning(on):
+                def set_scan():
+                    lib = ctx.contextProperty("library")
+                    lib._scanning, lib._scan_seen, lib._scan_hint = on, 420 if on else 0, 1000 if on else 0
+                    lib.scanningChanged.emit()
+                    lib.scanProgressChanged.emit()
+                    shell.setSidebarCollapsed(on)
+                return set_scan
+
+            todo += [go("settings"), settings_search("numbers"), wait, wait, shot("settings-search"),
+                     settings_search(""), wait]
+            todo += [go("home"), scanning(True), wait, wait, shot("sidebar-scan-collapsed"), scanning(False), wait]
             todo += [go("artists"), open_artist, wait, shot("artist")]
             todo += [go("songs"), wait, select_songs, wait, shot("selection"), lambda: child("selectionClear").clicked.emit()]
             todo += [welcome(1), wait, shot("welcome-themes"), welcome(-1), wait]

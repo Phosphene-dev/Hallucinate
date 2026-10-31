@@ -341,7 +341,7 @@ Item {
                         anchors { top: yearFlow.bottom; topMargin: 10 }
                         height: 30
                         visible: yearItem.shown < yearItem.albums.length
-                        text: "Show all " + yearItem.albums.length
+                        text: "Show all " + Theme.num(yearItem.albums.length)
                         onClicked: yearItem.expanded = true
                     }
                 }

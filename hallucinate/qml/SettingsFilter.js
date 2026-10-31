@@ -17,7 +17,7 @@ function textOf(item) {
     return out
 }
 
-function hits(item, ws) {
+function matches(item, ws) {
     var hay = textOf(item).join(" ").toLowerCase()
     return ws.every(function (w) { return hay.indexOf(w) >= 0 })
 }
@@ -35,6 +35,13 @@ function restore(body, holder, order) {
     return null
 }
 
+// The rows of `body` that match by their own text, not just by the explanation under them: the ones marked.
+function hits(body, query) {
+    var ws = words(query)
+    if (!ws.length) return []
+    return Array.prototype.slice.call(body.children).filter(function (r) { return !isNote(r) && matches(r, ws) })
+}
+
 // Show only the matching rows of `body`. Returns the saved row order (pass it back next time), or null when
 // every row shows: no search, or nothing in here matches row by row (the section matched by its title or
 // keywords as a whole).
@@ -43,7 +50,7 @@ function apply(body, holder, order, query) {
     order = restore(body, holder, order)
     if (!ws.length) return null
     var rows = Array.prototype.slice.call(body.children)
-    var keep = rows.map(function (r) { return hits(r, ws) })
+    var keep = rows.map(function (r) { return matches(r, ws) })
     var owner = [], last = -1
     for (var i = 0; i < rows.length; i++) {
         owner.push(isNote(rows[i]) ? last : -1)

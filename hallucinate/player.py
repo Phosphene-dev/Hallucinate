@@ -1248,6 +1248,22 @@ class Player(QObject):
     def visualizerLevels(self):
         return list(self._visualizer_levels)
 
+    def suspendVisualizer(self):
+        """Off for this run (safe start), leaving the setting as it is."""
+        self._visualizer_suspended = self._visualizer_enabled
+        if self._visualizer_enabled:
+            self._visualizer_enabled = False
+            self._visualizer_generation += 1
+            self._visualizer_levels = [0.0] * VISUALIZER_BARS
+            self._sync_audio_buffer_outputs()
+            self.visualizerChanged.emit()
+
+    def resumeVisualizer(self):
+        """Back as it was before suspendVisualizer."""
+        if getattr(self, "_visualizer_suspended", False) and not self._visualizer_enabled:
+            self._visualizer_suspended = False
+            self.setVisualizerEnabled(True)
+
     @Slot(bool)
     def setVisualizerEnabled(self, enabled):
         enabled = bool(enabled) and eq.available()

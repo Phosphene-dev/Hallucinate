@@ -33,7 +33,12 @@ Column {
     readonly property bool shown: open || found
     // while searching, only the matching rows inside show (#147); the title matching shows them all
     property var _rows: null
-    onQueryChanged: _rows = Filter.apply(inner, hidden, _rows, Filter.words(query).every(w => title.toLowerCase().indexOf(w) >= 0) ? "" : query)
+    onQueryChanged: {
+        var q = Filter.words(query).every(w => title.toLowerCase().indexOf(w) >= 0) ? "" : query
+        _rows = Filter.apply(inner, hidden, _rows, q)
+        hits = Filter.hits(inner, q)
+    }
+    property var hits: []  // the rows in here that match, marked by the section
     Item { id: hidden; visible: false; width: inner.width }
     width: parent ? parent.width : 400
     spacing: 12

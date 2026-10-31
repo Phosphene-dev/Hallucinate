@@ -325,6 +325,11 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     qapp.processEvents()
     assert appearance.property("visible") and shown("numberFormat")
     assert not shown("accentSwatches") and not shown("ambientMotion")
+    qapp.processEvents()
+    def marked(section=appearance):
+        rows = section.property("marked").toVariant()
+        return len(rows or [])
+    assert wait_for(lambda: marked() == 1)  # the Numbers row, marked beside it
     settings_search.setProperty("text", "appearance")  # the section's own name: all of it
     qapp.processEvents()
     assert shown("accentSwatches") and shown("numberFormat")

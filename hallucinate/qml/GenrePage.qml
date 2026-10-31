@@ -258,7 +258,7 @@ Item {
                         textFormat: Text.PlainText
                         visible: page.albumList.length > 24
                         anchors.verticalCenter: parent.verticalCenter
-                        text: page.allAlbums ? "Show fewer" : "Show all " + page.albumList.length
+                        text: page.allAlbums ? "Show fewer" : "Show all " + Theme.num(page.albumList.length)
                         color: Theme.accent
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(13)
@@ -296,7 +296,7 @@ Item {
                 SectionHeader {
                     title: "Songs"
                     subtitle: (page.info.tracks || 0) > (page.tracksModel ? page.tracksModel.count : 0)
-                              ? "The " + page.tracksModel.count + " most played; Play all plays every one" : ""
+                              ? "The " + Theme.num(page.tracksModel.count) + " most played; Play all plays every one" : ""
                 }
                 Item { width: 1; height: 6 }
             }

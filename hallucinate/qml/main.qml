@@ -380,7 +380,7 @@ ApplicationWindow {
             var label = fresh.length === paths.length && what ? what : n(fresh.length)
             if (!held.length) { toast.show(label + " added to “" + name + "”"); return }
             var msg = !fresh.length ? (paths.length === 1 ? "Already in “" + name + "”" : "All " + n(paths.length) + " are already in “" + name + "”")
-                                    : label + " added to “" + name + "” (" + held.length + " already there)"
+                                    : label + " added to “" + name + "” (" + Theme.num(held.length) + " already there)"
             toast.show(msg, 0, "Add anyway", function () { userLib.addPathsToPlaylist(pid, held); toast.show(n(held.length) + " added again to “" + name + "”") })
         }
         function onRemoveFromPlaylistId(pid, name, paths, what) {
@@ -508,7 +508,7 @@ ApplicationWindow {
                                                        : Theme.num(held.length) + " of these are already in “" + name + "”"
         body: fresh === 0 ? (paths.length === 1 ? "Add it again?" : "Add them again?")
                           : Theme.num(fresh) + (fresh === 1 ? " song is" : " songs are") + " new to it."
-        confirmText: again.checked ? (fresh === 0 ? "Add again" : "Add all " + paths.length) : "Add the " + fresh + " new"
+        confirmText: again.checked ? (fresh === 0 ? "Add again" : "Add all " + Theme.num(paths.length)) : "Add the " + Theme.num(fresh) + " new"
         StyledCheck {
             id: again
             visible: dupDlg.fresh > 0
@@ -709,6 +709,14 @@ ApplicationWindow {
             font.pixelSize: Theme.fontSize(13)
         }
         Timer { id: toastTimer; interval: 4500; onTriggered: toast.opacity = 0 }
+    }
+    // Safe start (the last start-up never finished): say so, with the way back
+    Timer {
+        interval: 1500
+        running: shell.safeMode
+        onTriggered: toast.show("Safe start: Hallucinate closed while starting last time, so the visualizer and moving"
+                                + " effects are off for now. Next start is a normal one.", 20000, "Turn them back on",
+                                function () { shell.leaveSafeMode() })
     }
     // e.g. a damaged library database that was restored from its backup at start-up
     Timer { interval: 800; running: shell.startupNotice.length > 0; onTriggered: toast.show(shell.startupNotice, 15000) }
@@ -1110,7 +1118,15 @@ ApplicationWindow {
         onClicked: function (mouse) { mouse.button === Qt.BackButton ? Nav.back() : window.goForward() }
     }
     Shortcut { sequences: ["Ctrl+K", "Ctrl+P"]; enabled: !welcomeView.open; onActivated: commandPalette.opened ? commandPalette.close() : commandPalette.show() }
-    Shortcut { sequences: ["/", "Ctrl+F"]; enabled: !window.typing; onActivated: { searchField.forceActiveFocus(); searchField.selectAll() } }
+    Shortcut {
+        sequences: ["/", "Ctrl+F"]
+        enabled: !window.typing
+        onActivated: {
+            // on Settings, its own search: finding a setting, not music
+            if (stack.currentItem && stack.currentItem.objectName === "settings") stack.currentItem.focusSearch()
+            else { searchField.forceActiveFocus(); searchField.selectAll() }
+        }
+    }
     Shortcut { sequence: "Ctrl+Q"; onActivated: Qt.quit() }
 
     NowPlayingView { id: nowPlaying; anchors.fill: parent }

@@ -74,7 +74,7 @@ Item {
     Component.onCompleted: {
         wasPlaying = player.playing
         note("link up")
-        note("queue " + (player.upcomingCount + (player.hasTrack ? 1 : 0)) + " tracks in buffer")
+        note("queue " + Theme.num(player.upcomingCount + (player.hasTrack ? 1 : 0)) + " tracks in buffer")
         if (player.hasTrack) note("load  " + (track.title || "") + (track.artist ? " / " + track.artist : ""))
         note("sig   " + signal.toLowerCase())
         note(player.playing ? "play  signal live" : "hold  signal paused")
@@ -383,7 +383,7 @@ Item {
                                 textFormat: Text.PlainText
                                 text: index === 0 ? "SIGNAL  " + neo.signal
                                     : index === 1 ? "TIME    " + neo.clock(player.position) + " / " + neo.clock(player.duration)
-                                    : index === 2 ? "QUEUE   " + player.upcomingCount + " TO COME"
+                                    : index === 2 ? "QUEUE   " + Theme.num(player.upcomingCount) + " TO COME"
                                     : "OUTPUT  " + (player.muted ? "MUTED" : Math.round(player.volume * 100) + "%")
                                 color: Theme.text; opacity: 0.85
                                 font.family: neo.mono; font.pixelSize: 13 * neo.u

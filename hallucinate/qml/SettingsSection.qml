@@ -36,8 +36,39 @@ Rectangle {
     Component.onCompleted: searchText = collect(body).join(" ")
     // while searching, only the matching rows show (#147); the section's own name shows all of it
     property var _rows: null
-    onQueryChanged: _rows = Filter.apply(body, hidden, _rows, Filter.words(query).every(w => title.toLowerCase().indexOf(w) >= 0) ? "" : query)
+    property string _rowQuery: ""
+    onQueryChanged: {
+        _rowQuery = Filter.words(query).every(w => title.toLowerCase().indexOf(w) >= 0) ? "" : query
+        _rows = Filter.apply(body, hidden, _rows, _rowQuery)
+        Qt.callLater(section.mark)  // after its subsections have filtered themselves
+    }
     Item { id: hidden; visible: false; width: body.width }
+
+    // the matching settings, each with a bar beside it; a subsection lends its own matching rows (or itself)
+    property var marked: []
+    function mark() {
+        var own = Filter.hits(body, _rowQuery), out = []
+        var rows = body.children
+        for (var i = 0; i < rows.length; i++) {
+            var r = rows[i]
+            if (r.found !== undefined) { if (r.hits.length) out = out.concat(r.hits); else if (own.indexOf(r) >= 0) out.push(r) }
+            else if (own.indexOf(r) >= 0) out.push(r)
+        }
+        marked = out
+    }
+    function firstMatch() { return marked.length ? marked[0] : null }
+    Repeater {
+        model: section.marked
+        Rectangle {
+            required property var modelData
+            objectName: "settingsMatchMark"
+            x: 10; width: 3; radius: 1.5
+            color: Theme.accent
+            // (re-read as the section lays out: its height changes with every row that moves)
+            y: { section.height; return modelData.mapToItem(section, 0, 0).y }
+            height: modelData.height
+        }
+    }
 
     Text {
         textFormat: Text.PlainText

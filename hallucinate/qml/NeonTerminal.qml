@@ -121,7 +121,7 @@ Rectangle {
             out.push("  today    : " + Theme.num(days.length ? days[hm.today] || 0 : 0) + " plays")
             out.push("  streak   : " + Theme.num(hm.streak || 0) + (hm.streak === 1 ? " day" : " days"))
             out.push("  26 weeks : " + Theme.num(hm.total || 0) + " plays on " + Theme.num(hm.activeDays || 0) + " days")
-            if (top.length) out.push("  top 30d  : " + top.slice(0, 5).map(function (a) { return a.name + (a.plays ? " (" + a.plays + ")" : "") }).join(", "))
+            if (top.length) out.push("  top 30d  : " + top.slice(0, 5).map(function (a) { return a.name + (a.plays ? " (" + Theme.num(a.plays) + ")" : "") }).join(", "))
             return out
         case "whoami":
             var f = (userLib.home || {}).facts || {}
@@ -302,9 +302,9 @@ Rectangle {
             var tp = call("top", { period: period, limit: 5 })
             if (!tp) return
             var lines = ["  most played, " + (period === "all" ? "all time" : "this " + period)]
-            lines.push("  artists : " + (tp.artists.map(function (a) { return a.name + " (" + a.plays + ")" }).join(", ") || "-"))
-            lines.push("  albums  : " + (tp.albums.map(function (a) { return a.album + " (" + a.plays + ")" }).join(", ") || "-"))
-            tp.songs.forEach(function (x, k) { lines.push("  " + (k + 1) + ".  " + pad(x.title, 34).slice(0, 40) + "  " + x.artist + "  ×" + x.plays) })
+            lines.push("  artists : " + (tp.artists.map(function (a) { return a.name + " (" + Theme.num(a.plays) + ")" }).join(", ") || "-"))
+            lines.push("  albums  : " + (tp.albums.map(function (a) { return a.album + " (" + Theme.num(a.plays) + ")" }).join(", ") || "-"))
+            tp.songs.forEach(function (x, k) { lines.push("  " + (k + 1) + ".  " + pad(x.title, 34).slice(0, 40) + "  " + x.artist + "  ×" + Theme.num(x.plays)) })
             say(lines)
             return
         case "eq":
@@ -337,7 +337,7 @@ Rectangle {
         case "play":
             if (!arg) { call("play"); return }
             songs = search(arg)
-            if (songs.length) { call("play.songs", { ids: songs.map(function (s) { return s.id }) }); say("playing " + songs.length + (songs.length === 1 ? " song" : " songs") + " matching “" + arg + "”") }
+            if (songs.length) { call("play.songs", { ids: songs.map(function (s) { return s.id }) }); say("playing " + Theme.num(songs.length) + (songs.length === 1 ? " song" : " songs") + " matching “" + arg + "”") }
             return
         case "pause": call("pause"); return
         case "toggle": case "p": call("toggle"); return

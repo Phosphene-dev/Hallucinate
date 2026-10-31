@@ -140,8 +140,8 @@ QtObject {
         var v = shell.ui["neon" + key]
         return v === undefined || v === "" ? neonLoud : v === "1"
     }
-    readonly property bool neonScanlines: neon && neonOption("Scanlines")
-    readonly property bool neonGlitch: neon && !reduceMotion && neonOption("Glitch")
+    readonly property bool neonScanlines: neon && !shell.safeMode && neonOption("Scanlines")
+    readonly property bool neonGlitch: neon && !reduceMotion && !shell.safeMode && neonOption("Glitch")
     readonly property bool neonGreebles: neon && (shell.ui.neonGreebles === undefined || shell.ui.neonGreebles === "" || shell.ui.neonGreebles === "1")
     readonly property real radiusSmall: Math.max(2, radius * 0.6)
     readonly property real radiusLarge: radius * 2

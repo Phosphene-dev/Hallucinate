@@ -337,7 +337,7 @@ class DesktopShell(QObject):
     @Property(bool, notify=settingsChanged)
     def ambientMotion(self):
         """Whether the ambient backdrop drifts (off: it stays still, for less motion and lower power use)."""
-        return self._ambient_motion
+        return self._ambient_motion and not self.safeMode
 
     @Slot(bool)
     def setAmbientMotion(self, on):
@@ -403,7 +403,7 @@ class DesktopShell(QObject):
     def reduceMotion(self):
         """Keep movement to a minimum: no page transitions, zooms, spinning record, hover growth or drifting
         backdrop (for motion sensitivity, or just a calmer window)."""
-        return self._reduce_motion
+        return self._reduce_motion or self.safeMode
 
     @Slot(bool)
     def setReduceMotion(self, on):
@@ -555,6 +555,30 @@ class DesktopShell(QObject):
         self.settingsChanged.emit()
 
     crashReportChanged = Signal()
+    safeModeChanged = Signal()
+
+    @Property(bool, notify=safeModeChanged)
+    def safeMode(self):
+        """Started without the visualizer and moving effects, because the previous start-up never finished (or
+        with --safe-mode). Nothing is saved: the next start is a normal one."""
+        return getattr(self, "_safe_mode", False)
+
+    def setSafeMode(self, on):
+        self._safe_mode = bool(on)
+        if on:
+            self._player.suspendVisualizer()
+        self.safeModeChanged.emit()
+        self.settingsChanged.emit()
+
+    @Slot()
+    def leaveSafeMode(self):
+        """Back to your own settings for the rest of this run."""
+        if not self.safeMode:
+            return
+        self._safe_mode = False
+        self._player.resumeVisualizer()
+        self.safeModeChanged.emit()
+        self.settingsChanged.emit()
 
     def setCrashReport(self, text, crashed):
         self._crash_report, self._crashed = text or "", bool(crashed)

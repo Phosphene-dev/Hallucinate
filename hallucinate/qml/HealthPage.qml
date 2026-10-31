@@ -311,7 +311,7 @@ Item {
                                 visible: !metaEditor.genresBusy && metaEditor.genreProposals.length > 0
                                 primary: true
                                 height: 32
-                                text: "Review " + metaEditor.genreProposals.length + " found…"
+                                text: "Review " + Theme.num(metaEditor.genreProposals.length) + " found…"
                                 onClicked: genreReview.open()
                             }
                             Text {
