@@ -28,6 +28,10 @@ All notable changes to this project are documented here. Format based on
   Enter scrolls to the first, and Ctrl+F on Settings goes to its search.
 
 ### Fixed
+- Covers in long lists went missing at random while scrolling (during and after a scan) and came back after
+  scrolling away and back. A cover that failed to load once left a blank placeholder in Qt's image cache, and
+  rows made again were handed that blank. Each try now asks afresh, rows try again sooner and more often, a cover
+  stuck loading is asked for again, and a cover file that fails to read once is read again straight away.
 - The recap's totals and counts ignored Settings → Appearance → Numbers (#145); so did counts in menus ("3 of 12"
   in Add to playlist), buttons ("Show all 24"), Library health, scrobbling, duplicate copies and the terminal. A
   test now catches a count that skips the setting.

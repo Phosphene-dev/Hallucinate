@@ -14,18 +14,32 @@ Rectangle {
     readonly property int bucketPx: wantedPx <= 64 ? 64 : wantedPx <= 128 ? 128 : wantedPx <= 256 ? 256 : 512
     readonly property string sourceText: source.toString()
     // A cover that didn't load (the provider sends a 1-pixel placeholder, which the image cache would keep
-    // showing as a blank square: #115) shows the ♪ and is asked for again a little later, a few times
+    // showing as a blank square: #115) shows the ♪ and is asked for again a little later. Each try has an address
+    // of its own (the time it was made), so Qt's image cache can't hand back a placeholder kept from an earlier
+    // failure: rows made again while scrolling were getting those, and stayed blank until the cache let go of them
     property int attempt: 0
+    property string tryTag: ""
     // covers that may have changed on disk (after a scan, or Library health → Repair covers) are asked for again
     readonly property int revision: typeof library !== "undefined" && library ? library.artRevision : 0
     readonly property bool missing: img.status === Image.Ready && img.sourceSize.width <= 1
     readonly property string resolved: sourceText.length === 0 ? ""
-        : sourceText.indexOf("file:") === 0 ? "image://art/" + bucketPx + (attempt ? "~" + attempt : "") + (revision ? "~r" + revision : "")
+        : sourceText.indexOf("file:") === 0 ? "image://art/" + bucketPx + (attempt ? "~" + tryTag : "") + (revision ? "~r" + revision : "")
                                               + "/" + encodeURIComponent(sourceText)
         : sourceText
-    onSourceTextChanged: attempt = 0
-    onMissingChanged: if (missing && attempt < 3 && sourceText.indexOf("file:") === 0) retry.restart()
-    Timer { id: retry; interval: 1500 * (cover.attempt + 1); onTriggered: cover.attempt++ }
+    onSourceTextChanged: { attempt = 0; retry.stop() }
+    onMissingChanged: if (missing && attempt < 6 && sourceText.indexOf("file:") === 0) retry.restart()
+    // the first try again comes quickly (it's usually the image cache's old placeholder), then further apart
+    Timer {
+        id: retry
+        interval: cover.attempt === 0 ? 250 : 1200 * cover.attempt
+        onTriggered: { cover.tryTag = cover.attempt + 1 + "-" + Date.now(); cover.attempt++ }
+    }
+    // a picture still loading after a long while (its request lost while rows came and went) is asked for again
+    Timer {
+        interval: 6000
+        running: img.status === Image.Loading && cover.attempt < 6
+        onTriggered: { cover.tryTag = cover.attempt + 1 + "-" + Date.now(); cover.attempt++ }
+    }
 
     Rectangle {
         anchors.fill: parent
