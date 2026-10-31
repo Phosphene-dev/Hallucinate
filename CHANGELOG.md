@@ -14,6 +14,8 @@ All notable changes to this project are documented here. Format based on
   the console wraps between words. `help <topic>` shows one part.
 - In the cockpit, the shuffle, previous, next and repeat buttons sat higher than the play key and the volume; they
   all line up now. The hologram keeps clear of the corner readouts.
+- The Flatpak no longer stops with a bare traceback when the KDE runtime and the PySide6 it was built with are a Qt
+  release apart; it says so and asks for `flatpak update`.
 
 ## [1.8.0] - 2026-10-31
 

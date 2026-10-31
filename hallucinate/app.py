@@ -7,7 +7,15 @@ import sys
 import time
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer, QUrl
+try:
+    from PySide6.QtCore import Qt, QTimer, QUrl
+except ImportError as exc:
+    # In the Flatpak, PySide6 comes from io.qt.PySide.BaseApp, built for one Qt patch release, while the KDE runtime
+    # updates on its own; when they're a release apart Qt won't load at all. Say so instead of a bare traceback.
+    if os.environ.get("FLATPAK_ID") and "Qt_6_PRIVATE_API" in str(exc):
+        sys.exit(f"Hallucinate can't start: the Qt runtime and PySide6 are different versions ({exc}).\n"
+                 "Run `flatpak update` to bring the KDE runtime up to date, then start Hallucinate again.")
+    raise
 from PySide6.QtGui import QIcon
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
