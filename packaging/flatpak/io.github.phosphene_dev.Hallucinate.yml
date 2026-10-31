@@ -68,11 +68,15 @@ modules:
       # FFmpeg plays and decodes everything, as on every other build. The aarch64 wheel also has a GStreamer backend,
       # which Qt picks first there, and the runtime's GStreamer can't decode these formats
       - rm -f ${FLATPAK_DEST}/lib/python3*/site-packages/PySide6/Qt/plugins/multimedia/libgstreamermediaplugin.so
-      # The aarch64 wheel's FFmpeg asks for bzip2 by its Debian name (libbz2.so.1.0); the runtime has libbz2.so.1
+      # The aarch64 wheel's FFmpeg asks for bzip2 by its Debian name (libbz2.so.1.0); the runtime has libbz2.so.1.
+      # The name goes beside FFmpeg's libraries, which look in their own folder first: the loader's cache only knows
+      # each library by its own name, so a differently named link in /app/lib would never be found
       - bz=$(ls /usr/lib/*/libbz2.so.1 /usr/lib*/libbz2.so.1 2>/dev/null | head -n1); if [ -n "$bz" ] && ! ls /usr/lib/*/libbz2.so.1.0
-        /usr/lib*/libbz2.so.1.0 >/dev/null 2>&1; then ln -sf "$bz" ${FLATPAK_DEST}/lib/libbz2.so.1.0; fi
+        /usr/lib*/libbz2.so.1.0 >/dev/null 2>&1; then qtlib=$(echo ${FLATPAK_DEST}/lib/python3*/site-packages/PySide6/Qt/lib); ln -sf
+        "$bz" "$qtlib/libbz2.so.1.0"; fi
       # Without every library the FFmpeg backend needs, Qt quietly has no way to play anything: fail the build instead
-      - "! LD_LIBRARY_PATH=${FLATPAK_DEST}/lib ldd ${FLATPAK_DEST}/lib/python3*/site-packages/PySide6/Qt/plugins/multimedia/libffmpegmediaplugin.so
+      # (no LD_LIBRARY_PATH: find them the way the app will)
+      - "! ldd ${FLATPAK_DEST}/lib/python3*/site-packages/PySide6/Qt/plugins/multimedia/libffmpegmediaplugin.so
         ${FLATPAK_DEST}/lib/python3*/site-packages/PySide6/Qt/lib/libav*.so.* | grep 'not found'"
     sources:
       # The same versions and checksums as the other release builds (packaging/build-requirements.txt), for

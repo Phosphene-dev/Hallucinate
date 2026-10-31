@@ -307,6 +307,23 @@ jobs:
             --env=HALLUCINATE_DISABLE_LEGACY_MIGRATION=1 \
             --env=HALLUCINATE_CONTROL_SOCKET=hallucinate-release-flatpak-arm-smoke \
             io.github.phosphene_dev.Hallucinate --quit-after 3000
+      - name: It plays music (a build that can't isn't published)
+        run: |
+          sudo apt-get install -y ffmpeg
+          clips="$RUNNER_TEMP/clips"
+          mkdir -p "$clips"
+          src=(-loglevel error -f lavfi -i sine=frequency=440:duration=3 -ac 2)
+          ffmpeg "${src[@]}" -c:a libmp3lame "$clips/tone.mp3"
+          ffmpeg "${src[@]}" -c:a aac "$clips/aac.m4a"
+          ffmpeg "${src[@]}" -c:a alac "$clips/alac.m4a"
+          ffmpeg "${src[@]}" -c:a flac "$clips/tone.flac"
+          ffmpeg "${src[@]}" -c:a libvorbis "$clips/tone.ogg"
+          ffmpeg "${src[@]}" -c:a libopus "$clips/tone.opus"
+          cp packaging/flatpak/decode_check.py "$clips/"
+          dbus-run-session -- flatpak run --env=QT_QPA_PLATFORM=offscreen --filesystem="$clips":ro \
+            --command=python3 io.github.phosphene_dev.Hallucinate "$clips/decode_check.py" \
+            "$clips/tone.mp3" "$clips/aac.m4a" "$clips/alac.m4a" "$clips/tone.flac" \
+            "$clips/tone.ogg" "$clips/tone.opus"
       - name: Hand the build to the signing job
         run: tar -cf arm-repo.tar -C arm-repo .
       - uses: actions/upload-artifact@v6
