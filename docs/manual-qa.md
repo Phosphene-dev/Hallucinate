@@ -1,5 +1,17 @@
 # Manual QA checklist
 
+## Release testing for 1.9.0
+
+- [ ] Start a library rescan and Library health → Measure loudness at once: the sidebar's foot shows both (a ring
+      with "2" when collapsed); click it, Stop each.
+- [ ] Settings → search "numbers": only the Numbers row, with a bar beside it; Enter scrolls to it; Ctrl+F from
+      Settings focuses the search; "appearance" shows the whole section.
+- [ ] `hallucinate --safe-mode`: the visualizer and moving effects are off, the message's button turns them back on.
+- [ ] Afterimage terminal: `search <artist>`, then `play 2`, `queue 1`; `album <name>`; `tune`; `scan`.
+- [ ] Web remote on a phone: drag a queue song by its handle; swipe one away, then Undo.
+- [ ] Recap and the other pages: counts follow Settings → Appearance → Numbers.
+- [ ] aarch64 (a Linux phone or ARM laptop): `flatpak install` from the .flatpakref; it starts and plays.
+
 ## Release testing for 1.8.1
 
 - [ ] Now Playing → each visualizer (Aurora, Halo, Waves, Neon rain, Tunnel especially): none is blank, on any GPU.
