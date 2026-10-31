@@ -165,15 +165,19 @@ Rectangle {
     // help: one command per line under a heading, its description in a column beside it, or on its own indented
     // line when the console is too narrow for both (then nothing wraps in the middle of a word or a command)
     readonly property var helpTopics: [
-        ["playback", [["play [search]", "play songs matching, or carry on"], ["pause · p", "pause, or carry on"],
+        ["playback", [["play [search|n]", "play songs matching, a numbered result, or carry on"], ["pause · p", "pause, or carry on"],
+                      ["album <search> · artist <search>", "play the best matching album or artist"],
+                      ["tune [search|n]", "your radio stations, or tune in to one"],
                       ["next [search] · n", "skip, or play a song next"], ["prev · b", "back a song"],
                       ["seek <1:30|+10|-10>", "move in the song"], ["vol <n|+n|-n> · v", "volume, 0 to 100"],
                       ["mute · m", "mute or unmute"], ["shuffle [on|off] · s", "shuffle"],
                       ["repeat [off|all|one] · r", "repeat"], ["like", "like the playing song"],
                       ["sleep <min|track|album|off>", "sleep timer"], ["radio [on|off]", "keep similar songs coming"]]],
-        ["queue", [["queue <search> · q", "add the best match"], ["queue rm <n>", "take one out (numbers as up next shows them)"],
+        ["queue", [["queue <search|n> · q", "add the best match, or a numbered result"], ["queue rm <n>", "take one out (numbers as up next shows them)"],
                    ["queue mv <from> <to>", "move one"], ["queue clear", "clear what's next"], ["queue shuffle", "shuffle what's next"]]],
-        ["looking around", [["history [n]", "what you listened to last"], ["top [week|month|year|all] · t", "your most played"],
+        ["looking around", [["search <text> · f", "songs, albums and artists, numbered to play or queue"],
+                            ["scan", "look through your music folders again, and watch it go"],
+                            ["history [n]", "what you listened to last"], ["top [week|month|year|all] · t", "your most played"],
                             ["lyrics · l", "the whole text"], ["eq [off|<preset>]", "the equaliser"],
                             ["out [<n>|default]", "where the sound goes"],
                             ["<pane>", "print a pane once: " + allPanes.join(", ")]]],
@@ -246,12 +250,31 @@ Rectangle {
         }
     }
 
+    // `scan`: the library's progress, a line each time it changes (at most twice a second), then the total
+    Timer {
+        id: scanWatch
+        property string last: ""
+        property int ticks: 0
+        interval: 500; repeat: true
+        onTriggered: {
+            ticks++
+            if (library.scanning) {
+                if (library.status && library.status !== last) { last = library.status; term.say("  " + last, "dim") }
+            } else if (ticks > 1) {  // (a scan can be over before the first look)
+                stop()
+                term.say("scan done: " + Theme.num(library.trackCount) + " songs, " + Theme.num(library.albumCount) + " albums")
+            }
+        }
+        onRunningChanged: if (running) ticks = 0
+    }
+
     readonly property var commands: ["help", "clear", "play", "pause", "next", "prev", "queue", "vol", "mute", "seek",
         "shuffle", "repeat", "like", "sleep", "radio", "pin", "unpin", "panes", "phosphor", "theme", "boot", "history",
-        "top", "eq", "out", "cmds", "cockpit", "classic", "exit"].concat(allPanes)
+        "top", "eq", "out", "cmds", "cockpit", "classic", "exit", "search", "album", "artist", "tune", "scan"].concat(allPanes)
     // one-letter (or short) ways to say the everyday commands
     readonly property var aliases: ({ n: "next", b: "prev", v: "vol", s: "shuffle", r: "repeat", q: "queue",
-        l: "lyrics", h: "help", m: "mute", t: "top", hist: "history", o: "out" })
+        l: "lyrics", h: "help", m: "mute", t: "top", hist: "history", o: "out", f: "search", find: "search",
+        station: "tune" })
 
     function call(method, params) {
         var r = webRemote.runCommand(method, params || {})
@@ -261,6 +284,29 @@ Rectangle {
     function seconds(s) {
         var m = /^(\d+):(\d{1,2})$/.exec(s)
         return m ? parseInt(m[1]) * 60 + parseInt(m[2]) : parseFloat(s)
+    }
+    // the last numbered list (search, tune): play 3 / queue 3 / next 3 pick from it
+    property var found: []
+    function pick(arg) {
+        var n = /^\d+$/.test(arg) ? parseInt(arg) : 0
+        if (!n || !found.length) return null  // (with nothing numbered, "play 1999" searches for it)
+        if (n > found.length) { say("pick 1 to " + found.length, "bad"); return undefined }
+        return found[n - 1]
+    }
+    function playPicked(it, how) {  // how: "play", "queue" or "next"
+        if (it.kind === "song") {
+            if (how === "play") call("play.songs", { ids: [it.id] })
+            else call("queue.add", { ids: [it.id], next: how === "next" })
+        } else if (it.kind === "album") {
+            if (how !== "play") { say("albums play straight away: play " + (found.indexOf(it) + 1), "bad"); return }
+            call("play.album", { key: it.key })
+        } else if (it.kind === "artist") {
+            if (how !== "play") { say("artists play straight away: play " + (found.indexOf(it) + 1), "bad"); return }
+            call("play.artist", { name: it.name })
+        } else if (it.kind === "station") {
+            call("play.station", { id: it.id })
+        }
+        say((how === "play" ? "playing: " : how === "next" ? "next up: " : "queued: ") + it.label)
     }
     function search(q) {
         var r = call("search", { query: q, limit: 50 })
@@ -336,13 +382,66 @@ Rectangle {
             return
         case "play":
             if (!arg) { call("play"); return }
+            var it = pick(arg)
+            if (it === undefined) return
+            if (it) { playPicked(it, "play"); return }
             songs = search(arg)
             if (songs.length) { call("play.songs", { ids: songs.map(function (s) { return s.id }) }); say("playing " + Theme.num(songs.length) + (songs.length === 1 ? " song" : " songs") + " matching “" + arg + "”") }
+            return
+        case "search":
+            if (!arg) { say("search <text>", "bad"); return }
+            var sr = call("search", { query: arg, limit: 10 })
+            if (!sr) return
+            if (sr.corrected) say("(did you mean “" + sr.corrected + "”?)", "dim")
+            var list = []
+            sr.songs.slice(0, 10).forEach(function (s) { list.push({ kind: "song", id: s.id, label: s.title + " · " + (s.artist || "") }) })
+            sr.albums.slice(0, 5).forEach(function (a) { list.push({ kind: "album", key: a.key, label: a.title + " · " + a.artist + (a.year ? " (" + a.year + ")" : "") }) })
+            sr.artists.slice(0, 5).forEach(function (a) { list.push({ kind: "artist", name: a.name, label: a.name + " · " + Theme.num(a.songs) + (a.songs === 1 ? " song" : " songs") }) })
+            if (!list.length) { say("nothing found for “" + arg + "”", "bad"); return }
+            found = list
+            var lastKind = ""
+            list.forEach(function (x, k) {
+                if (x.kind !== lastKind) { say(x.kind === "song" ? "songs" : x.kind === "album" ? "albums" : "artists", "prompt"); lastKind = x.kind }
+                say("  " + pad(String(k + 1), 4) + x.label)
+            })
+            say("play <n> · queue <n> · next <n>", "dim")
+            return
+        case "album": case "artist":
+            if (!arg) { say(word + " <search>", "bad"); return }
+            var ar = call("search", { query: arg, limit: 1 })
+            if (!ar) return
+            var hit = word === "album" ? ar.albums[0] : ar.artists[0]
+            if (!hit) { say("no " + word + " matching “" + arg + "”", "bad"); return }
+            playPicked(word === "album" ? { kind: "album", key: hit.key, label: hit.title + " · " + hit.artist }
+                                        : { kind: "artist", name: hit.name, label: hit.name }, "play")
+            return
+        case "tune":
+            var tp = pick(arg)
+            if (tp === undefined) return
+            if (tp) { playPicked(tp, "play"); return }
+            var st = call("stations")
+            if (!st) return
+            var match = st.stations.filter(function (s) { return !argl || s.name.toLowerCase().indexOf(argl) >= 0 })
+            if (!match.length) { say(st.stations.length ? "no station matching “" + arg + "”" : "no radio stations yet: add some in Internet radio", "bad"); return }
+            if (argl && match.length === 1) { playPicked({ kind: "station", id: match[0].id, label: match[0].name }, "play"); return }
+            found = match.slice(0, 20).map(function (s) { return { kind: "station", id: s.id, label: s.name } })
+            found.forEach(function (x, k) { say("  " + pad(String(k + 1), 4) + x.label + "  " + (match[k].detail || "")) })
+            say("tune <n>", "dim")
+            return
+        case "scan":
+            if (library.scanning) { say("already scanning: " + library.status, "dim"); return }
+            if (call("library.rescan") === null) return
+            say("scanning your music folders...")
+            scanWatch.last = ""
+            scanWatch.start()
             return
         case "pause": call("pause"); return
         case "toggle": case "p": call("toggle"); return
         case "next":
             if (!arg) { call("next"); return }
+            var nx = pick(arg)
+            if (nx === undefined) return
+            if (nx) { playPicked(nx, "next"); return }
             songs = search(arg)
             if (songs.length) { call("queue.add", { ids: [songs[0].id], next: true }); say("next up: " + songs[0].title + " · " + (songs[0].artist || "")) }
             return
@@ -366,6 +465,9 @@ Rectangle {
             }
             if (qa[0] === "clear") { call("queue.clear", { upcoming: true }); say("cleared what's next"); return }
             if (qa[0] === "shuffle") { call("queue.shuffle"); say("shuffled what's next"); return }
+            var qp = pick(arg)
+            if (qp === undefined) return
+            if (qp) { playPicked(qp, "queue"); return }
             songs = search(arg)
             if (songs.length) { call("queue.add", { ids: [songs[0].id] }); say("queued: " + songs[0].title + " · " + (songs[0].artist || "")) }
             return

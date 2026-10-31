@@ -650,6 +650,29 @@ def test_the_neon_theme_loads_only_when_chosen(qapp, app_window):
     assert any("in use" in line for line in said())
     run("cmds")
     assert any("eq off" in line for line in said())
+    # round three: numbered search results to play or queue, albums and artists by name, a rescan to watch
+    run("search aurora")
+    assert any(line.strip().startswith("1") and "Aurora Vale" in line for line in said())
+    assert said()[-1].startswith("play <n>")
+    found = plain(term.property("found"))
+    album_at = next(i for i, x in enumerate(found) if x["kind"] == "album") + 1
+    run(f"play {album_at}")
+    assert said()[-1] == "playing: Northern Lights · Aurora Vale (2000)"
+    run("queue 1")
+    assert said()[-1].startswith("queued: ")
+    run(f"queue {album_at}")
+    assert said()[-1].startswith("albums play straight away")
+    run("play 99")
+    assert said()[-1] == f"pick 1 to {len(found)}"
+    run("artist blue harbor")
+    assert said()[-1] == "playing: Blue Harbor"
+    run("album tidal")
+    assert said()[-1] == "playing: Tidal · Blue Harbor"
+    run("f nothing-like-this")
+    assert "nothing found" in said()[-1]
+    run("scan")
+    assert said()[-1] == "scanning your music folders..."
+    assert wait_for(lambda: said()[-1].startswith("scan done:"), timeout=10)
     before = len(said())
     run("m")  # an alias (mute), and again to unmute
     run("m")
