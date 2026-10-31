@@ -35,6 +35,30 @@ modules:
   # PySide6 from its own wheels, with the Qt it was built against inside them, like the AppImage. Not the runtime's
   # Qt (through io.qt.PySide.BaseApp): PySide6 uses Qt's private API, which changes with every Qt patch release,
   # and the runtime updates on its own, so each runtime update stopped the app from starting until a rebuild.
+  # Qt's network library links to Kerberos (GSSAPI), which the KDE runtime doesn't carry. Only the libraries.
+  - name: krb5
+    buildsystem: simple
+    subdir: src
+    build-commands:
+      - autoreconf -fi
+      - ./configure --prefix=${FLATPAK_DEST} --disable-static --disable-rpath --with-crypto-impl=builtin
+        --without-system-verto --without-ldap --without-keyutils --without-libedit --without-readline
+      - make -j${FLATPAK_BUILDER_N_JOBS}
+      - make install
+    cleanup:
+      - /bin
+      - /sbin
+      - /include
+      - /lib/pkgconfig
+      - /share/man
+      - /share/examples
+      - /share/et
+      - /var
+    sources:
+      - type: git
+        url: https://github.com/krb5/krb5.git
+        tag: krb5-1.22.2-final
+        commit: 8570e77819563e036027e1da789d08ec9333ed4d
   - name: pyside6
     buildsystem: simple
     build-commands:
