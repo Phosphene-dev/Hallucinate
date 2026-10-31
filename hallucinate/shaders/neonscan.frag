@@ -42,8 +42,8 @@ void main() {
         }
         // an occasional bright tear line
         float tear = abs(uv.y - hash(frame * 2.3));
-        light += smoothstep(0.004, 0.0, tear) * 0.5 * glitch;
-        col = mix(col, cb.rgb, smoothstep(0.004, 0.0, tear));
+        light += (1.0 - smoothstep(0.0, 0.004, tear)) * 0.5 * glitch;
+        col = mix(col, cb.rgb, (1.0 - smoothstep(0.0, 0.004, tear)));
     }
     // light over (the glitch) or shade (scanlines, vignette)
     float a = max(shade, light);

@@ -25,10 +25,10 @@ void main() {
     float fog = smoothstep(0.0, 0.45, r);                 // the far end fades into the dark
     vec3 tint = mix(a, b, 0.5 + 0.5 * sin(depth * 0.7 + twist * 6.2831853));
     vec3 col = vec3(0.0);
-    col += tint * rings * (0.35 + 0.9 * bass + 0.6 * beat) * fog;
-    col += mix(b, c, side) * spokes * (0.15 + 1.4 * level) * fog;
+    col += tint * rings * (1.0 + 0.8 * bass + 0.6 * beat) * fog;  // (lit even when quiet)
+    col += mix(b, c, side) * spokes * (0.5 + 1.2 * level) * fog;
     // a hot core at the vanishing point, and the flash of a beat running down the walls
-    col += mix(c, a, 0.5) * exp(-r * 9.0) * (0.25 + 0.6 * treble);
+    col += mix(c, a, 0.5) * exp(-r * 9.0) * (0.4 + 0.5 * treble);
     float flash = exp(-abs(fract(depth * 0.25 - time * 0.4) - 0.5) * 14.0) * beat;
     col += a * flash * 0.5 * fog;
     // faint stars between the lines

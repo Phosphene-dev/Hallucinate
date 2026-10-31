@@ -12,7 +12,7 @@ float wire(vec2 p, float seed, float sag, float thick) {
     float sway = 0.02 * sin(time * (0.3 + 0.3 * hash(vec2(seed, 4.4))) + seed * 6.0) * (1.0 + 2.0 * bass);
     float wob = 0.012 * (noise(vec2(x * 3.0 + seed * 9.0, time * 0.2)) - 0.5);
     float y = y0 + bend + sway + wob;
-    return smoothstep(thick, 0.0, abs(p.y - y));
+    return 1.0 - smoothstep(0.0, thick, abs(p.y - y));  // (edges low to high: reversed ones are undefined on some GPUs)
 }
 
 void main() {
@@ -23,7 +23,7 @@ void main() {
     float horizon = 0.12;
     if (p.y > horizon) {
         float depth = (p.y - horizon);
-        float planks = smoothstep(0.02, 0.0, abs(fract(p.x / (depth + 0.05) * 1.2) - 0.5) - 0.47);
+        float planks = (1.0 - smoothstep(0.0, 0.02, abs(fract(p.x / (depth + 0.05) * 1.2) - 0.5) - 0.47));
         col += vec3(0.03, 0.025, 0.022) * (0.6 + 0.4 * planks) * smoothstep(0.0, 0.4, depth);
     }
     // the pool of light on the floor

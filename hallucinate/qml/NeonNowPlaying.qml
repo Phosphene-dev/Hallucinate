@@ -108,6 +108,9 @@ Item {
         id: cockpit
         Item {
             id: pit
+            // the boxed readouts in the corners (a big enough window, HUD details on); the hologram keeps clear of them
+            readonly property bool corners: Theme.neonGreebles && width > 1000 && height > 640
+            readonly property real cornerRoom: corners ? 170 : 0  // how far down (and up) the corner boxes reach
             Rectangle { anchors.fill: parent; color: "#030208" }
             Visualizer {
                 anchors.fill: parent
@@ -137,7 +140,8 @@ Item {
             // the holographic cover in its ring
             Item {
                 id: holo
-                readonly property real side: Math.min(pit.height * 0.5, pit.width * 0.3)
+                readonly property real side: Math.min(pit.height * 0.5, pit.width * 0.3,
+                                                      (pit.height - 2 * pit.cornerRoom - 60) / 1.32)
                 width: side * 1.32; height: width
                 x: Math.max(24 * neo.u, pit.width * 0.08 - side * 0.16)
                 anchors.verticalCenter: parent.verticalCenter
@@ -426,8 +430,9 @@ Item {
 
                 Row {
                     spacing: 6
-                    IconButton { icon: "shuffle"; size: 22; active: player.shuffle; onClicked: player.toggleShuffle() }
-                    IconButton { icon: "prev"; size: 26; onClicked: player.previous() }
+                    // (each centred on the row: the play key is taller than the rest)
+                    IconButton { anchors.verticalCenter: parent.verticalCenter; icon: "shuffle"; size: 22; active: player.shuffle; onClicked: player.toggleShuffle() }
+                    IconButton { anchors.verticalCenter: parent.verticalCenter; icon: "prev"; size: 26; onClicked: player.previous() }
                     Rectangle {
                         width: 58; height: 58
                         color: neo.ca
@@ -439,8 +444,8 @@ Item {
                         Accessible.onPressAction: player.toggle()
                         Bevel {}
                     }
-                    IconButton { icon: "next"; size: 26; onClicked: player.next() }
-                    IconButton { icon: player.repeat === 2 ? "repeat1" : "repeat"; size: 22; active: player.repeat !== 0; onClicked: player.cycleRepeat() }
+                    IconButton { anchors.verticalCenter: parent.verticalCenter; icon: "next"; size: 26; onClicked: player.next() }
+                    IconButton { anchors.verticalCenter: parent.verticalCenter; icon: player.repeat === 2 ? "repeat1" : "repeat"; size: 22; active: player.repeat !== 0; onClicked: player.cycleRepeat() }
                     VolumeButton { anchors.verticalCenter: parent.verticalCenter; popupSlider: true; iconSize: 22 }
                 }
             }
@@ -448,7 +453,7 @@ Item {
             // boxed readouts in the four corners, like a command centre's screens: the song's own clocks counted in
             // seconds, its number and its signal (with room for them: a big enough window, HUD details on)
             Repeater {
-                model: Theme.neonGreebles && pit.width > 1000 && pit.height > 640 ? 4 : 0
+                model: pit.corners ? 4 : 0
                 Rectangle {
                     id: box
                     required property int index

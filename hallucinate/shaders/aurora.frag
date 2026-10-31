@@ -7,7 +7,7 @@ void main() {
     vec2 uv = qt_TexCoord0;   // y grows downwards
     vec2 p = aspectUv();
     vec3 col = mix(a * 0.03, b * 0.07, uv.y);
-    col += stars(uv * res, 9.0, 0.06, 0.6 + 0.4 * treble) * (0.6 + 0.6 * treble) * smoothstep(1.0, 0.3, uv.y);
+    col += stars(uv * res, 9.0, 0.06, 0.6 + 0.4 * treble) * (0.6 + 0.6 * treble) * (1.0 - smoothstep(0.3, 1.0, uv.y));
 
     for (int i = 0; i < 3; i++) {
         float fi = float(i);
