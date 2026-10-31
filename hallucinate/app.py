@@ -81,6 +81,8 @@ def main(argv=None) -> int:
     server.add_argument("--port", type=int, help="the web interface's port (kept for next time; default 8483)")
     server.add_argument("--no-web", action="store_true", help="don't start the web interface")
     # the launcher's right-click actions: start Hallucinate when it isn't running, then do it
+    ap.add_argument("--safe-mode", action="store_true",
+                    help="start without the visualizer and moving effects (for a graphics driver that crashes)")
     ap.add_argument("--launch", action="store_true", help=argparse.SUPPRESS)
     ap.add_argument("--quit-after", type=int, metavar="MS", help=argparse.SUPPRESS)
     ap.add_argument("--decode-check", nargs="+", metavar="FILE", help=argparse.SUPPRESS)  # packaging CI
@@ -161,6 +163,10 @@ def main(argv=None) -> int:
     crash_dir = paths.data_dir() / "crash"
     last_crash, last_crashed = crashlog.take_previous(crash_dir)
     crashlog.install(crash_dir)
+    # Safe start: the last start-up never finished, so leave out what most often brings one down (the
+    # visualizer's shaders on a bad graphics driver, the moving effects) for this run only
+    safe_mode = bool(getattr(args, "safe_mode", False)) or crashlog.start_failed(crash_dir)
+    crashlog.starting(crash_dir)
 
     from PySide6.QtCore import QSettings
 
@@ -231,6 +237,8 @@ def main(argv=None) -> int:
     shell.setReportSources(library=library, theme_manager=theme_manager)
     shell.setStartupNotice(db_notice)
     shell.setCrashReport(last_crash, last_crashed)
+    if safe_mode:
+        shell.setSafeMode(True)
     from .podcasts import Podcasts
     from .stations import Stations
 
@@ -357,6 +365,10 @@ def main(argv=None) -> int:
         window.frameSwapped.connect(lambda: _mark("first-frame"), Qt.ConnectionType.SingleShotConnection)
         library.readyChanged.connect(lambda: library.ready and _mark("library-ready"))
     shell.setWindow(engine.rootObjects()[0])
+    diagnostics.watch_graphics(engine.rootObjects()[0])
+    # the start-up went fine once the window has drawn and stayed up for a while
+    engine.rootObjects()[0].frameSwapped.connect(lambda: QTimer.singleShot(8000, lambda: crashlog.started(crash_dir)),
+                                                 Qt.ConnectionType.SingleShotConnection)
     root_window = engine.rootObjects()[0]
 
     def freeze_context():

@@ -476,6 +476,29 @@ def main():
             todo += [seed, listening, play, pause]
             for page in ("home", "songs", "history", "settings", "folders", "recap", "stats"):
                 todo += [go(page), wait, shot(page)]
+            def settings_search(text):
+                return lambda: child("settingsSearch").setProperty("text", text)
+
+            def scanning(on, collapsed=False):
+                # a scan and loudness being measured at once: the activity indicator at the sidebar's foot
+                def set_scan():
+                    lib, rg = ctx.contextProperty("library"), ctx.contextProperty("replayGain")
+                    lib._scanning, lib._scan_seen, lib._scan_hint = on, 420 if on else 0, 1000 if on else 0
+                    lib.scanningChanged.emit()
+                    lib.scanProgressChanged.emit()
+                    rg._albums, rg._total_tracks, rg._done_tracks = (["x"], 37, 12) if on else ([], 0, 0)
+                    rg.changed.emit()
+                    shell.setSidebarCollapsed(collapsed)
+                return set_scan
+
+            def activity_popup(show):
+                return lambda: child("activityPopup").open() if show else child("activityPopup").close()
+
+            todo += [go("settings"), settings_search("numbers"), wait, wait, shot("settings-search"),
+                     settings_search(""), wait]
+            todo += [go("home"), scanning(True, collapsed=True), wait, wait, shot("sidebar-scan-collapsed"),
+                     scanning(True), wait, wait, shot("sidebar-activity"), activity_popup(True), wait, wait,
+                     shot("activity-popup"), activity_popup(False), scanning(False), wait]
             todo += [go("artists"), open_artist, wait, shot("artist")]
             todo += [go("songs"), wait, select_songs, wait, shot("selection"), lambda: child("selectionClear").clicked.emit()]
             todo += [welcome(1), wait, shot("welcome-themes"), welcome(-1), wait]

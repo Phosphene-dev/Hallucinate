@@ -2,6 +2,11 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "1.9.0": [
+        "Everything working in the background shows at the foot of the sidebar, with Stop for each.",
+        "Settings search shows just the settings that match, and the Afterimage terminal can search, tune in and scan.",
+        "The web remote's queue: drag songs by their handle, swipe one away. And the Flatpak runs on ARM now.",
+    ],
     "1.8.1": [
         "The Flatpak starts again after Flathub's runtime update, and runtime updates can't stop it any more.",
         "Aurora, Halo, Waves and Neon rain draw on every graphics card, and Tunnel glows when the music is quiet.",

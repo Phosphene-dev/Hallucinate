@@ -208,7 +208,7 @@ Item {
                     textFormat: Text.PlainText
                     objectName: "searchPlayAll"
                     anchors.baseline: parent.children[0].baseline
-                    text: "Play all " + page.tracks.length
+                    text: "Play all " + Theme.num(page.tracks.length)
                     color: Theme.accent
                     font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); font.weight: Font.DemiBold
                     LinkArea { name: "Play all songs found"; onClicked: library.playSearchTracks(0) }

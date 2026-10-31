@@ -3,6 +3,39 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.9.0] - 2026-10-31
+
+### Added
+- Background work in one place: the foot of the sidebar shows whatever's working (a library scan, covers or genres
+  being found or saved, loudness being measured, podcast episodes downloading). Collapsed it's a ring with the
+  percentage and how many things are running (#146); expanded, a line and a bar. Click either for the list, with
+  Stop for each.
+- Safe start: if Hallucinate closed while starting (a graphics driver that crashes on the visualizer, say), the
+  next start leaves out the visualizer and moving effects for that run, and a message has the button to turn them
+  back on. `hallucinate --safe-mode` does it on request.
+- The Afterimage terminal: `search` (or `f`) lists songs, albums and artists numbered, and `play 3`, `queue 3` or
+  `next 3` picks one; `album` and `artist` play the best match by name; `tune` lists your radio stations or tunes
+  in; `scan` looks through your music folders again and prints its progress as it goes.
+- The web remote's queue: drag a song by its handle (or move it with the arrow keys), and swipe one sideways to
+  take it out, with Undo.
+- The Flatpak for aarch64 too (#130): Linux phones, ARM laptops and single-board computers. The same repository
+  has both, and each release has an aarch64 bundle.
+- Copy debug info names the graphics card, driver and graphics API, for reports like the blank visualizers.
+
+### Changed
+- Searching Settings shows only the matching settings in each section, not the whole section (#147). A setting's
+  explanation comes with it, and searching a section's own name still shows all of it. A bar marks each match,
+  Enter scrolls to the first, and Ctrl+F on Settings goes to its search.
+
+### Fixed
+- Covers in long lists went missing at random while scrolling (during and after a scan) and came back after
+  scrolling away and back. A cover that failed to load once left a blank placeholder in Qt's image cache, and
+  rows made again were handed that blank. Each try now asks afresh, rows try again sooner and more often, a cover
+  stuck loading is asked for again, and a cover file that fails to read once is read again straight away.
+- The recap's totals and counts ignored Settings → Appearance → Numbers (#145); so did counts in menus ("3 of 12"
+  in Add to playlist), buttons ("Show all 24"), Library health, scrobbling, duplicate copies and the terminal. A
+  test now catches a count that skips the setting.
+
 ## [1.8.1] - 2026-10-31
 
 ### Fixed

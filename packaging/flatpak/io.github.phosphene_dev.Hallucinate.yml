@@ -31,6 +31,7 @@ finish-args:
   - --env=QT_PLUGIN_PATH=
   - --env=QML_IMPORT_PATH=
   - --env=QML2_IMPORT_PATH=
+  - --env=QT_MEDIA_BACKEND=ffmpeg
 modules:
   # PySide6 from its own wheels, with the Qt it was built against inside them, like the AppImage. Not the runtime's
   # Qt (through io.qt.PySide.BaseApp): PySide6 uses Qt's private API, which changes with every Qt patch release,
@@ -64,23 +65,62 @@ modules:
     build-commands:
       - pip3 install --no-deps --no-index --no-build-isolation --prefix=${FLATPAK_DEST} *.whl
       - python3 qt_prune.py ${FLATPAK_DEST}/lib/python3*/site-packages # drop the parts of Qt the app never uses
+      # FFmpeg plays and decodes everything, as on every other build. The aarch64 wheel also has a GStreamer backend,
+      # which Qt picks first there, and the runtime's GStreamer can't decode these formats
+      - rm -f ${FLATPAK_DEST}/lib/python3*/site-packages/PySide6/Qt/plugins/multimedia/libgstreamermediaplugin.so
+      # The aarch64 wheel's FFmpeg asks for bzip2 by its Debian name (libbz2.so.1.0); the runtime has libbz2.so.1.
+      # The name goes beside FFmpeg's libraries, which look in their own folder first: the loader's cache only knows
+      # each library by its own name, so a differently named link in /app/lib would never be found
+      - bz=$(ls /usr/lib/*/libbz2.so.1 /usr/lib*/libbz2.so.1 2>/dev/null | head -n1); if [ -n "$bz" ] && ! ls /usr/lib/*/libbz2.so.1.0
+        /usr/lib*/libbz2.so.1.0 >/dev/null 2>&1; then qtlib=$(echo ${FLATPAK_DEST}/lib/python3*/site-packages/PySide6/Qt/lib); ln -sf
+        "$bz" "$qtlib/libbz2.so.1.0"; fi
+      # Without every library the FFmpeg backend needs, Qt quietly has no way to play anything: fail the build instead
+      # (no LD_LIBRARY_PATH: find them the way the app will)
+      - "! ldd ${FLATPAK_DEST}/lib/python3*/site-packages/PySide6/Qt/plugins/multimedia/libffmpegmediaplugin.so
+        ${FLATPAK_DEST}/lib/python3*/site-packages/PySide6/Qt/lib/libav*.so.* | grep 'not found'"
     sources:
-      # The same versions and checksums as the other release builds (packaging/build-requirements.txt)
+      # The same versions and checksums as the other release builds (packaging/build-requirements.txt), for
+      # each processor the Flatpak is built for
       - type: file
         url: https://files.pythonhosted.org/packages/49/c2/a04fa003b4360e99d8e3fc2829abacf37396ace63ea1cd616402209ec7c6/shiboken6-6.12.0-cp310-abi3-manylinux_2_34_x86_64.whl
         sha256: 3bde565bb0890044b5c7f63808adddede5abc241e9395a2bfed61919884d6240
+        only-arches: [x86_64]
       - type: file
         url: https://files.pythonhosted.org/packages/2f/53/db0cabed1e70d0bc4666b8cbc2611b72bff2f9d2c4813820182621a8c6ee/pyside6-6.12.0-cp310-abi3-manylinux_2_34_x86_64.whl
         sha256: d13ed4d0053cc20f3e4e0fdbf12790a9b7f958d7e22c0843411ecfa8c799e2a9
+        only-arches: [x86_64]
       - type: file
         url: https://files.pythonhosted.org/packages/7b/3c/7597d8dcb36aa8315427635ec6ec9d850ffbad4ce78b9118ac854889f2d3/pyside6_essentials-6.12.0-cp310-abi3-manylinux_2_34_x86_64.whl
         sha256: 16f4b5e41daf49235ae048458243da9efe5f3d8040f9cc5aa454ce69893d3bd9
+        only-arches: [x86_64]
       - type: file
         url: https://files.pythonhosted.org/packages/ff/3e/0d6c5934de575286ac0699a701d4155048185035b8da0ee78d57a38bc7ef/pyside6_addons-6.12.0-cp310-abi3-manylinux_2_34_x86_64.whl
         sha256: 4ab38c0017f0453671a9313d3a53ca1c0e378924f54b07e596bcea94a9642391
+        only-arches: [x86_64]
       - type: file
         url: https://files.pythonhosted.org/packages/da/24/3bd070f3269dc609d8f26b2643f62ef91bb415841c0b294805aaf7fe06da/numpy-2.5.4-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
         sha256: 6ffa07666f8da0eef81d149934a626d0d95fbd6838432a33e66245423a9062c0
+        only-arches: [x86_64]
+      - type: file
+        url: https://files.pythonhosted.org/packages/97/ca/a4415e6218e0dff764fe2b2d30db2fc8f499a08ace07634232ade3f73adc/shiboken6-6.12.0-cp310-abi3-manylinux_2_39_aarch64.whl
+        sha256: ff72a72b3277b418902d562b987b33a6f6818bed9fe40a49d634d09bc67f620e
+        only-arches: [aarch64]
+      - type: file
+        url: https://files.pythonhosted.org/packages/4d/8c/dfd4f339285d2e6c31067789b9b7dd2cee26c098ecc78ac7200fb04aa344/pyside6-6.12.0-cp310-abi3-manylinux_2_39_aarch64.whl
+        sha256: 8920e163f60493e18822d20f1e01c7c4bcf9c1c5cfbc68284788896f692594f8
+        only-arches: [aarch64]
+      - type: file
+        url: https://files.pythonhosted.org/packages/5e/4e/f4fd4c016719be832ec49d3c87940459e87fd666179a0a199a3998d07916/pyside6_essentials-6.12.0-cp310-abi3-manylinux_2_39_aarch64.whl
+        sha256: 08c5841063fc1df69b7fa1ee405f539e66576a83fc48004be3e2c5e35ccbfa69
+        only-arches: [aarch64]
+      - type: file
+        url: https://files.pythonhosted.org/packages/94/14/b6c5683614601448c3ea8f19613ca378db75158ba594b662a8a8041e3e5f/pyside6_addons-6.12.0-cp310-abi3-manylinux_2_39_aarch64.whl
+        sha256: 48cd0b639c06c9f79685f340ccae4319614b66d6efcdf06c2ce3836790d8c46e
+        only-arches: [aarch64]
+      - type: file
+        url: https://files.pythonhosted.org/packages/db/b6/135bb0953b61dc21c6cafa14b424ae666944e4899cf140e00c2b322a1a45/numpy-2.5.4-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl
+        sha256: 1c2e71b04c6cad90026e544501bbe0ab9290fa8a4d845e7e8c0d124fb429c988
+        only-arches: [aarch64]
       - type: file
         path: ../qt_prune.py
   - python3-requirements.yaml

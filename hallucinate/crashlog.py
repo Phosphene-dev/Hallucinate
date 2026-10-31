@@ -241,6 +241,34 @@ def _write_freeze(text):
         pass
 
 
+# Safe start: a file that says a start-up is under way, removed once the window has been up for a few seconds.
+# Found at the next start, that one never got going (a graphics driver that crashes on the visualizer, say), so
+# the next start leaves out what's most likely to blame (app.py).
+STARTING = "starting"
+
+
+def start_failed(folder):
+    """Whether the previous start-up never finished: it crashed, hung or was closed while starting."""
+    return (Path(folder) / STARTING).exists()
+
+
+def starting(folder):
+    """Note that a start-up is under way."""
+    try:
+        Path(folder).mkdir(parents=True, exist_ok=True)
+        (Path(folder) / STARTING).write_text(time.strftime("%Y-%m-%d %H:%M:%S") + "\n", encoding="utf-8")
+    except OSError:
+        pass
+
+
+def started(folder):
+    """The start-up went fine."""
+    try:
+        (Path(folder) / STARTING).unlink()
+    except OSError:
+        pass
+
+
 def record_fatal(message):
     """A fatal Qt message: Qt aborts right after it, and faulthandler then adds the stacks."""
     native = _state["native"]

@@ -62,12 +62,16 @@ function fmt(seconds) {
 }
 
 let toastTimer = 0;
-function toast(text) {
+function toast(text, actionText, action) {
   const t = $("toast");
-  t.textContent = text;
+  t.replaceChildren(el("span", { text }));
+  if (action) {
+    t.append(el("button", { class: "small", text: actionText || "Undo", onclick: () => { t.classList.remove("show"); action(); } }));
+  }
+  t.classList.toggle("act", !!action);
   t.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+  toastTimer = setTimeout(() => t.classList.remove("show"), action ? 5000 : 2200);
 }
 
 // --- pairing ---------------------------------------------------------------------------------------------
@@ -412,20 +416,128 @@ function card(title, sub, albumKey, onClick, placeholder) {
 }
 
 // queue
+// While a song is being dragged or swiped, the list isn't redrawn under the finger: an update waits for the end
+let queueGesture = false, queueStale = false;
+function gestureDone() {
+  queueGesture = false;
+  if (queueStale) { queueStale = false; loadQueue(); }
+}
 async function loadQueue() {
+  if (queueGesture) { queueStale = true; return; }
   const q = await call("queue");
   const list = $("queueList");
   list.replaceChildren(...q.songs.map((s, i) => {
     const row = songRow(s, i, (idx) => call("queue.jump", { index: idx }), { art: true });
     row.dataset.index = i;
-    const remove = el("button", { class: "icon", "aria-label": "Remove", onclick: (e) => { e.stopPropagation(); call("queue.remove", { index: i }).then(loadQueue); } });
+    // a handle to drag the song to another place (or move it with the arrow keys)
+    const grip = el("button", { class: "icon grip", "aria-label": `Move ${s.title} (arrow keys move it)`, text: "≡" });
+    grip.addEventListener("click", (e) => e.stopPropagation());
+    grip.addEventListener("keydown", (e) => {
+      const to = e.key === "ArrowUp" ? i - 1 : e.key === "ArrowDown" ? i + 1 : -1;
+      if (to < 0 || to >= q.songs.length) return;
+      e.preventDefault();
+      call("queue.move", { src: i, dst: to }).then(() => loadQueue().then(() => {
+        const moved = $("queueList").children[to];
+        if (moved) moved.querySelector(".grip").focus();
+      }));
+    });
+    grip.addEventListener("pointerdown", (e) => dragQueueRow(e, row, i));
+    row.prepend(grip);
+    const remove = el("button", { class: "icon", "aria-label": "Remove", onclick: (e) => { e.stopPropagation(); removeFromQueue(i, s.title); } });
     remove.textContent = "×";
     row.append(remove);
+    swipeToRemove(row, i, s.title);
     return row;
   }));
   if (!q.songs.length) list.append(el("p", { class: "dim", text: "The queue is empty. Play something from your library." }));
   markCurrent();
 }
+function removeFromQueue(i, title) {
+  call("queue.remove", { index: i }).then(() => {
+    loadQueue();
+    toast(`Removed: ${title}`, "Undo", () => call("queue.undo").then(loadQueue));
+  });
+}
+
+// Drag a song by its handle: it follows the finger or pointer, the others make room, and letting go moves it.
+function dragQueueRow(e, row, from) {
+  e.preventDefault();
+  e.stopPropagation();
+  const list = $("queueList");
+  const rows = [...list.children].filter((r) => r.dataset.index !== undefined);
+  const h = row.getBoundingClientRect().height;
+  const startY = e.clientY;
+  let to = from;
+  queueGesture = true;
+  row.classList.add("dragging");
+  row.setPointerCapture(e.pointerId);
+  const move = (ev) => {
+    const dy = ev.clientY - startY;
+    row.style.transform = `translateY(${dy}px)`;
+    to = Math.max(0, Math.min(rows.length - 1, from + Math.round(dy / h)));
+    rows.forEach((r, k) => {
+      if (r === row) return;
+      const shift = from < to && k > from && k <= to ? -h : from > to && k < from && k >= to ? h : 0;
+      r.style.transform = shift ? `translateY(${shift}px)` : "";
+    });
+  };
+  const done = () => {
+    row.removeEventListener("pointermove", move);
+    row.removeEventListener("pointerup", done);
+    row.removeEventListener("pointercancel", done);
+    rows.forEach((r) => { r.style.transform = ""; });
+    row.classList.remove("dragging");
+    queueGesture = false;
+    if (to !== from) call("queue.move", { src: from, dst: to }).then(gestureDone, gestureDone);
+    else gestureDone();
+  };
+  row.addEventListener("pointermove", move);
+  row.addEventListener("pointerup", done);
+  row.addEventListener("pointercancel", done);
+}
+
+// Swipe a song sideways to take it out of the queue (touch and pen; a mouse has the × button).
+function swipeToRemove(row, i, title) {
+  let x0 = 0, y0 = 0, dx = 0, swiping = false, id = null;
+  row.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" || e.target.closest("button")) return;
+    x0 = e.clientX; y0 = e.clientY; dx = 0; swiping = false; id = e.pointerId;
+  });
+  row.addEventListener("pointermove", (e) => {
+    if (e.pointerId !== id) return;
+    dx = e.clientX - x0;
+    if (!swiping && Math.abs(dx) > 12 && Math.abs(dx) > 2 * Math.abs(e.clientY - y0)) {
+      swiping = true;
+      queueGesture = true;
+      row.setPointerCapture(id);
+      row.classList.add("swiping");
+    }
+    if (swiping) {
+      row.style.transform = `translateX(${dx}px)`;
+      row.style.opacity = String(Math.max(0.2, 1 - Math.abs(dx) / row.offsetWidth));
+    }
+  });
+  const end = (e) => {
+    if (e.pointerId !== id) return;
+    id = null;
+    if (!swiping) return;
+    row.classList.remove("swiping");
+    if (Math.abs(dx) > row.offsetWidth * 0.35) {
+      row.style.transform = `translateX(${dx > 0 ? "" : "-"}110%)`;
+      row.style.opacity = "0";
+      setTimeout(() => { queueGesture = false; removeFromQueue(i, title); }, 150);
+    } else {
+      row.style.transform = "";
+      row.style.opacity = "";
+      gestureDone();
+    }
+    // (the swipe isn't also a tap that plays the song)
+    row.addEventListener("click", (c) => c.stopImmediatePropagation(), { capture: true, once: true });
+  };
+  row.addEventListener("pointerup", end);
+  row.addEventListener("pointercancel", end);
+}
+
 function markCurrent() {
   for (const row of $("queueList").children) row.classList.toggle("current", state && Number(row.dataset.index) === state.index);
 }

@@ -71,8 +71,18 @@ jobs:
       - run: pytest -vv tests/test_smtc.py tests/test_app_smoke.py
 
   flatpak:
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # each processor the Flatpak is built for: x86_64, and aarch64 (Linux phones, ARM laptops: #130)
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            os: ubuntu-latest
+          - arch: aarch64
+            os: ubuntu-24.04-arm
+    name: flatpak (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - name: Install Flatpak and Flathub's builder
@@ -133,6 +143,18 @@ jobs:
             --command=python3 io.github.phosphene_dev.Hallucinate "$clips/decode_check.py" \
             "$clips/tone.mp3" "$clips/aac.m4a" "$clips/alac.m4a" "$clips/tone.flac" \
             "$clips/tone.ogg" "$clips/tone.opus"
+      - name: Why Qt has no sound backend (when the check above fails)
+        if: failure()
+        run: |
+          plugin=$(flatpak run --command=sh io.github.phosphene_dev.Hallucinate -c \
+            'ls /app/lib/python3*/site-packages/PySide6/Qt/plugins/multimedia/*.so')
+          echo "plugins: $plugin"
+          flatpak run --command=sh io.github.phosphene_dev.Hallucinate -c \
+            "ldd $plugin /app/lib/python3*/site-packages/PySide6/Qt/lib/libQt6Multimedia.so.6 | grep -E 'not found|=> /usr' | sort -u" || true
+          dbus-run-session -- flatpak run --env=QT_QPA_PLATFORM=offscreen --env=QT_DEBUG_PLUGINS=1 \
+            --command=python3 io.github.phosphene_dev.Hallucinate -c \
+            "from PySide6.QtWidgets import QApplication; from PySide6.QtMultimedia import QMediaPlayer; a = QApplication([]); QMediaPlayer()" \
+            2>&1 | grep -iE "multimedia|ffmpeg|cannot|error|not found|failed" | head -40 || true
 
   aur:
     runs-on: ubuntu-latest

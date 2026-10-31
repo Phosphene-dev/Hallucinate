@@ -126,3 +126,16 @@ def test_the_report_counts_covers_and_damaged_ones(tmp_path):
     (art / "b.jpg").write_bytes(b"\xff\xd8\xff\xe0" + b"\0" * 5000)  # cut short
     line = diagnostics._covers_line(SimpleNamespace(_art_dir=str(art), artRevision=3))
     assert line.startswith("Covers: 2 taken from songs (1 damaged)") and "revision 3" in line
+
+
+def test_debug_info_names_the_graphics_card(monkeypatch):
+    """Blank visualizers on some cards: the debug info says which card and driver drew the window."""
+    from hallucinate import diagnostics
+
+    monkeypatch.setattr(diagnostics, "_graphics", {})
+    assert diagnostics._graphics_line() == "Graphics: not read yet"
+    monkeypatch.setattr(diagnostics, "_graphics", {"api": "OpenGL", "vendor": "Mesa", "renderer": "AMD Radeon RX 6600",
+                                                   "version": "4.6 Mesa 25.2.8"})
+    assert diagnostics._graphics_line() == "Graphics: OpenGL, AMD Radeon RX 6600 (Mesa), driver 4.6 Mesa 25.2.8"
+    monkeypatch.setattr(diagnostics, "_graphics", {"api": "Vulkan"})
+    assert diagnostics._graphics_line() == "Graphics: Vulkan"

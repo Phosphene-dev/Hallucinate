@@ -158,8 +158,9 @@ def build(out, flatpak_repo=None, releases=None):
     if flatpak_files(out, flatpak_repo):
         values["LINUX_MORE"] = (
             'Prefer Flatpak? <a href="hallucinate.flatpakref">Install it from our signed repository</a> and it '
-            f'updates with your other apps, or get the <a href="{REPO}/releases/latest/download/Hallucinate-x86_64.flatpak">'
-            'single-file bundle</a>. Software centres may call it "unverified": it isn\'t on Flathub, but it is '
+            f'updates with your other apps (on x86_64 and ARM), or get the single-file bundle for '
+            f'<a href="{REPO}/releases/latest/download/Hallucinate-x86_64.flatpak">x86_64</a> or '
+            f'<a href="{REPO}/releases/latest/download/Hallucinate-aarch64.flatpak">ARM</a>. Software centres may call it "unverified": it isn\'t on Flathub, but it is '
             f'signed. Arch users can build the <a href="{REPO}#arch-linux">package</a> from source.')
     else:
         values["LINUX_MORE"] = f'Flatpak and Arch (AUR) packages can be <a href="{REPO}#install">built from source</a>.'

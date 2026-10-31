@@ -126,6 +126,51 @@ def _covers_line(library):
         return "Covers: unknown"
 
 
+# The graphics card and driver the window draws with, read once on the render thread (see watch_graphics). Blank
+# visualizers on one card but not another were guesswork without it.
+_graphics = {}
+
+
+def watch_graphics(window):
+    """Note the GPU, driver and graphics API `window` renders with, once its scene graph starts."""
+    from PySide6.QtCore import Qt
+
+    def probe():
+        try:
+            from PySide6.QtQuick import QQuickWindow
+
+            api = QQuickWindow.graphicsApi()
+            _graphics["api"] = api.name if hasattr(api, "name") else str(api)
+            from PySide6.QtGui import QOpenGLContext
+
+            ctx = QOpenGLContext.currentContext()
+            if ctx is not None:
+                f = ctx.functions()
+                # GL_VENDOR, GL_RENDERER, GL_VERSION
+                _graphics["vendor"] = f.glGetString(0x1F00) or ""
+                _graphics["renderer"] = f.glGetString(0x1F01) or ""
+                _graphics["version"] = f.glGetString(0x1F02) or ""
+        except Exception as exc:  # noqa: BLE001 - the report says what it couldn't find
+            _graphics.setdefault("error", str(exc))
+
+    window.sceneGraphInitialized.connect(probe, Qt.ConnectionType.DirectConnection)
+
+
+def _graphics_line():
+    if not _graphics:
+        return "Graphics: not read yet"
+    gpu = " ".join(x for x in (_graphics.get("renderer"), f"({_graphics['vendor']})" if _graphics.get("vendor") else "")
+                   if x)
+    parts = [f"Graphics: {_graphics.get('api', '?')}"]
+    if gpu:
+        parts.append(gpu)
+    if _graphics.get("version"):
+        parts.append(f"driver {_graphics['version']}")
+    if os.environ.get("LIBGL_ALWAYS_SOFTWARE"):
+        parts.append("software rendering forced")
+    return ", ".join(parts)
+
+
 def report(player=None, library=None, theme_manager=None, window=None):
     """The debug info as plain text, ready to paste into an issue."""
     import PySide6
@@ -152,6 +197,7 @@ def report(player=None, library=None, theme_manager=None, window=None):
             lines.append(f"Window: {window.width()}x{window.height()}, graphics {api.name if hasattr(api, 'name') else api}")
         except Exception:  # noqa: BLE001
             pass
+        lines.append(_graphics_line())
     if player is not None:
         try:
             device = player._output_audio_device()
@@ -180,7 +226,7 @@ def report(player=None, library=None, theme_manager=None, window=None):
     if theme_manager is not None:
         lines.append(f"Theme: {theme_manager.currentTheme}"
                      + (", album colours" if theme_manager.albumArtAccent else ""))
-    env = [k for k in ("QT_QPA_PLATFORM", "QSG_RHI_BACKEND", "QT_SCALE_FACTOR", "QT_MEDIA_BACKEND") if os.environ.get(k)]
+    env = [k for k in ("QT_QPA_PLATFORM", "QSG_RHI_BACKEND", "QT_QUICK_BACKEND", "QT_SCALE_FACTOR", "QT_MEDIA_BACKEND", "LIBGL_ALWAYS_SOFTWARE") if os.environ.get(k)]
     if env:
         lines.append("Environment: " + ", ".join(f"{k}={os.environ[k]}" for k in env))
     log = recent_log()

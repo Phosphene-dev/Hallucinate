@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.9.0" date="2026-10-31">
+      <description>
+        <p>Background work (scans, cover and genre lookups, loudness, downloads) shows in one place at the foot of the sidebar, with Stop for each. Settings search shows just the settings that match. A start-up that crashed is followed by a safe one, without the visualizer.</p>
+        <p>The Afterimage terminal can search, play by album or artist, tune in to radio and watch a scan. The web remote's queue can be dragged and swiped. The Flatpak is built for ARM too.</p>
+      </description>
+    </release>
     <release version="1.8.1" date="2026-10-31">
       <description>
         <p>Aurora, Halo, Waves and Neon rain no longer show a blank screen on some graphics cards, and Tunnel glows when the music is quiet. The Afterimage terminal's help is easier to read and the cockpit's buttons line up. The Flatpak starts again after the KDE runtime update, and carries its own Qt so runtime updates can't stop it.</p>

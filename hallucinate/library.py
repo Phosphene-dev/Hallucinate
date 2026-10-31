@@ -972,6 +972,13 @@ class Library(QObject):
             self._grow = True  # its songs come in during the scan, not only at its end
             self.rescan()
 
+    @Slot()
+    def stopScan(self):
+        """Stop the scan between files: what it found so far stays, and the next scan (or the folder watcher)
+        picks up the rest."""
+        if self._scanning:
+            self._scan_stop.set()
+
     @Slot(str)
     def removeFolder(self, path):
         self._db.forget_folder(path)

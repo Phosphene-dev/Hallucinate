@@ -160,6 +160,16 @@ dialog button:hover { background: var(--glass); }
          background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-size: 14px;
          opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 90vw; }
 .toast.show { opacity: 1; }
+.toast.act { display: flex; align-items: center; gap: 12px; padding-right: 8px; }
+.toast.act.show { pointer-events: auto; }
+.toast button { background: transparent; color: var(--bg); border: 1px solid currentColor; border-radius: 999px;
+                padding: 4px 12px; font-weight: 600; }
+/* the queue: a handle to drag a song by, and rows that slide while dragged or swiped */
+#queueList .row { touch-action: pan-y; transition: transform .15s; }
+#queueList .row.dragging, #queueList .row.swiping { transition: none; position: relative; z-index: 2; }
+#queueList .row.dragging { background: var(--glass); box-shadow: 0 6px 20px rgba(0, 0, 0, .35); }
+#queueList .grip { touch-action: none; cursor: grab; color: var(--dim); font-size: 18px; flex: none; width: 28px; }
+#queueList .grip:active { cursor: grabbing; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
 /* settings */

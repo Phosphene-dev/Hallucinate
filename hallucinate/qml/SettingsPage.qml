@@ -41,6 +41,18 @@ Item {
         jumped = i
     }
     Connections { target: flick; function onContentYChanged() { if (!page.jumping) page.jumped = -1 } }
+    function focusSearch() { search.forceActiveFocus(); search.selectAll() }
+    // Enter in the search: scroll to the first matching setting (its row is marked; see SettingsSection)
+    function showFirstMatch() {
+        for (var i = 0; i < sectionIds.length; i++) {
+            var s = sectionItem(i)
+            if (!s || !s.visible) continue
+            var row = s.firstMatch()
+            var y = (row || s).mapToItem(flick.contentItem, 0, 0).y - 24
+            flick.contentY = Math.max(0, Math.min(y, flick.contentHeight - flick.height))
+            return
+        }
+    }
 
     // Search and jump to a section; the page below scrolls
     Column {
@@ -58,7 +70,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 width: Math.min(340, parent.width - pageTitle.width - 16)
                 height: 36
-                placeholderText: "Search settings"
+                placeholderText: "Search settings   (Ctrl+F)"
                 color: Theme.text
                 placeholderTextColor: Theme.textDim
                 font.family: Theme.fontFamily
@@ -68,6 +80,8 @@ Item {
                 background: Rectangle { radius: Theme.round(height / 2); color: Theme.surface; border.color: search.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                 onTextChanged: { page.query = text; flick.contentY = 0 }
                 Keys.onEscapePressed: text = ""
+                Keys.onReturnPressed: page.showFirstMatch()
+                Keys.onEnterPressed: page.showFirstMatch()
             }
         }
         Flow {
@@ -1889,8 +1903,8 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
-                text: scrobbler.status + (scrobbler.pendingCount > 0 ? " · " + scrobbler.pendingCount + " waiting to be sent" : "")
-                      + (scrobbler.rejectedCount > 0 ? " · " + scrobbler.rejectedCount + " turned down by Last.fm" : "")
+                text: scrobbler.status + (scrobbler.pendingCount > 0 ? " · " + Theme.num(scrobbler.pendingCount) + " waiting to be sent" : "")
+                      + (scrobbler.rejectedCount > 0 ? " · " + Theme.num(scrobbler.rejectedCount) + " turned down by Last.fm" : "")
                       + (scrobbler.lastError ? " · last try: " + scrobbler.lastError : "")
                 color: scrobbler.connected ? Theme.accent : Theme.textDim
                 font.family: Theme.fontFamily
@@ -2022,8 +2036,8 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
-                text: listenbrainz.status + (listenbrainz.pendingCount > 0 ? " · " + listenbrainz.pendingCount + " waiting to be sent" : "")
-                      + (listenbrainz.rejectedCount > 0 ? " · " + listenbrainz.rejectedCount + " turned down by ListenBrainz" : "")
+                text: listenbrainz.status + (listenbrainz.pendingCount > 0 ? " · " + Theme.num(listenbrainz.pendingCount) + " waiting to be sent" : "")
+                      + (listenbrainz.rejectedCount > 0 ? " · " + Theme.num(listenbrainz.rejectedCount) + " turned down by ListenBrainz" : "")
                       + (listenbrainz.lastError ? " · last try: " + listenbrainz.lastError : "")
                 color: listenbrainz.connected ? Theme.accent : Theme.textDim
                 font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); wrapMode: Text.WordWrap

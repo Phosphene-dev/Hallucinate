@@ -172,3 +172,38 @@ def test_a_clean_run_leaves_no_freeze_record(qapp, tmp_path):
     crashlog.stop_watching()
     crashlog.finish()
     assert crashlog.take_previous(tmp_path) == ("", False)
+
+
+def test_a_start_that_never_finished_is_noticed_next_time(tmp_path):
+    """Safe start: the marker stays only when a start-up didn't get going (a crash, a hang, closed early)."""
+    from hallucinate import crashlog
+
+    assert not crashlog.start_failed(tmp_path)
+    crashlog.starting(tmp_path)
+    assert crashlog.start_failed(tmp_path)  # what the next start sees if this one goes no further
+    crashlog.started(tmp_path)
+    assert not crashlog.start_failed(tmp_path)
+    crashlog.started(tmp_path)  # twice is fine
+
+
+def test_safe_start_turns_off_the_visualizer_and_motion_for_this_run_only(qapp):
+    from PySide6.QtGui import QIcon
+
+    from hallucinate.player import Player
+    from hallucinate.shell import DesktopShell
+
+    player = Player(session_file=None)
+    shell = DesktopShell(qapp, player, QIcon())
+    try:
+        player.setVisualizerEnabled(True)
+        shell.setReduceMotion(False)
+        visualizer_on = player.visualizerEnabled  # (False where there's no spectrum support)
+        shell.setSafeMode(True)
+        assert shell.safeMode and shell.reduceMotion and not player.visualizerEnabled
+        assert player._settings.value("visualizer/enabled") == ("true" if visualizer_on else "false")  # unchanged
+        shell.leaveSafeMode()
+        assert not shell.safeMode and not shell.reduceMotion and player.visualizerEnabled == visualizer_on
+    finally:
+        player.setVisualizerEnabled(False)  # (as test_visualizer leaves it: torn down with buffer outputs attached,
+        shell.shutdown()                    # Qt Multimedia can trip over itself at interpreter exit)
+        player.shutdown()

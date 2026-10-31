@@ -650,6 +650,29 @@ def test_the_neon_theme_loads_only_when_chosen(qapp, app_window):
     assert any("in use" in line for line in said())
     run("cmds")
     assert any("eq off" in line for line in said())
+    # round three: numbered search results to play or queue, albums and artists by name, a rescan to watch
+    run("search aurora")
+    assert any(line.strip().startswith("1") and "Aurora Vale" in line for line in said())
+    assert said()[-1].startswith("play <n>")
+    found = plain(term.property("found"))
+    album_at = next(i for i, x in enumerate(found) if x["kind"] == "album") + 1
+    run(f"play {album_at}")
+    assert said()[-1] == "playing: Northern Lights · Aurora Vale (2000)"
+    run("queue 1")
+    assert said()[-1].startswith("queued: ")
+    run(f"queue {album_at}")
+    assert said()[-1].startswith("albums play straight away")
+    run("play 99")
+    assert said()[-1] == f"pick 1 to {len(found)}"
+    run("artist blue harbor")
+    assert said()[-1] == "playing: Blue Harbor"
+    run("album tidal")
+    assert said()[-1] == "playing: Tidal · Blue Harbor"
+    run("f nothing-like-this")
+    assert "nothing found" in said()[-1]
+    run("scan")
+    assert said()[-1] == "scanning your music folders..."
+    assert wait_for(lambda: said()[-1].startswith("scan done:"), timeout=10)
     before = len(said())
     run("m")  # an alias (mute), and again to unmute
     run("m")
@@ -2635,3 +2658,71 @@ def test_an_accent_colour_of_your_own(qapp, app_window):
     assert plain(shell.property("ui"))["recentAccents"].split(",")[0] == chosen
     manager.setAccentOverride(before)
     assert not warnings, warnings[:3]
+
+
+def test_collapsed_sidebar_shows_scan_progress(qapp, app_window):
+    """Issue 146, and the activity indicator it grew into: whatever runs in the background (a scan, loudness being
+    measured, ...) shows at the foot of the sidebar, a ring when it's collapsed; it opens a list of everything
+    running, each with Stop."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    shell, library, rg = objects["shell"], objects["library"], objects["replayGain"]
+    library._scanning, library._scan_seen, library._scan_hint = True, 25, 100
+    library.scanningChanged.emit()
+    library.scanProgressChanged.emit()
+    try:
+        shell.setSidebarCollapsed(True)
+        for _ in range(3):
+            qapp.processEvents()
+        act = find_item(window, "activityIndicator")
+        assert act.property("visible") and act.property("compact")
+        assert len(act.property("jobs").toVariant()) == 1
+        # loudness being measured too: two jobs, the scan first
+        rg._albums = ["k0"]
+        rg._total_tracks, rg._done_tracks = 10, 4
+        rg.changed.emit()
+        qapp.processEvents()
+        jobs = act.property("jobs").toVariant()
+        assert [j["key"] for j in jobs] == ["scan", "loudness"]
+        assert jobs[1]["label"] == "Measuring loudness: 4 of 10 songs" and abs(jobs[1]["fraction"] - 0.4) < 1e-6
+        popup = window.findChild(QObject, "activityPopup")
+        QMetaObject.invokeMethod(popup, "open")
+        assert wait_for(lambda p=popup: p.property("opened"), timeout=2)
+
+        def in_popup(item, name):
+            for child in item.childItems():
+                if child.objectName() == name:
+                    return child
+                found = in_popup(child, name)
+                if found is not None:
+                    return found
+            return None
+        stop = in_popup(popup.property("contentItem"), "activityStop_scan")
+        stop.clicked.emit()
+        assert library._scan_stop.is_set()  # the scan stops between files
+        QMetaObject.invokeMethod(popup, "close")
+        shell.setSidebarCollapsed(False)
+        for _ in range(3):
+            qapp.processEvents()
+        assert act.property("visible") and not act.property("compact")
+        del act, popup, stop
+    finally:
+        library._scan_stop.clear()
+        rg._albums, rg._total_tracks, rg._done_tracks = [], 0, 0
+        rg.changed.emit()
+        library._scanning, library._scan_seen, library._scan_hint = False, 0, 0
+        library.scanningChanged.emit()
+        library.scanProgressChanged.emit()
+        shell.setSidebarCollapsed(False)
+    assert not warnings, warnings[:3]
+
+
+def test_recap_numbers_follow_the_numbers_setting(qapp, app_window):
+    """Issue 145: the recap's counts were shown as bare numbers, whatever Settings → Appearance → Numbers said."""
+    import pathlib
+
+    src = (pathlib.Path(__file__).parent.parent / "hallucinate" / "qml" / "RecapPage.qml").read_text()
+    assert "text: Theme.num(modelData[0])" in src
+    assert "Theme.num(page.hoursText(" in src
+    assert 'v: Theme.num(page.rc.discoveryCount' in src and 'v: Theme.num(page.rc.albumsAdded' in src

@@ -5,6 +5,7 @@ large embedded covers never touches the GUI thread. Scaled results are cached on
 import hashlib
 import os
 import tempfile
+import time
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -78,12 +79,11 @@ def load_thumbnail(cache_dir, path: str, px: int) -> QImage:
             cached.unlink()  # cut short: made again below
         except OSError:
             pass
-    reader = QImageReader(path)
-    reader.setAutoTransform(True)
-    native = reader.size()
-    if native.isValid() and max(native.width(), native.height()) > px:
-        reader.setScaledSize(native.scaled(QSize(px, px), Qt.AspectRatioMode.KeepAspectRatio))
-    image = reader.read()
+    image = _read_scaled(path, px)
+    if image.isNull():
+        # A file that's there but didn't read (written over by a scan just then, or a busy disk): once more
+        time.sleep(0.05)
+        image = _read_scaled(path, px)
     if image.isNull():
         return image
     if max(image.width(), image.height()) > px:
@@ -108,6 +108,15 @@ def load_thumbnail(cache_dir, path: str, px: int) -> QImage:
             except OSError:
                 pass
     return image
+
+
+def _read_scaled(path: str, px: int) -> QImage:
+    reader = QImageReader(path)
+    reader.setAutoTransform(True)
+    native = reader.size()
+    if native.isValid() and max(native.width(), native.height()) > px:
+        reader.setScaledSize(native.scaled(QSize(px, px), Qt.AspectRatioMode.KeepAspectRatio))
+    return reader.read()
 
 
 def complete(path) -> bool:

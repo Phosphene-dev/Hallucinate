@@ -428,7 +428,7 @@ Item {
                                 objectName: "playlistFolder_" + folderBlock.modelData.name
                                 width: plList.width
                                 height: side.compact ? 32 : 36
-                                text: folderBlock.modelData.name + "  (" + folderBlock.modelData.items.length + ")"
+                                text: folderBlock.modelData.name + "  (" + Theme.num(folderBlock.modelData.items.length) + ")"
                                 icon: folderBlock.open ? "down" : "next"
                                 hasMenu: true
                                 Accessible.name: "Folder " + folderBlock.modelData.name + (folderBlock.open ? ", open" : ", closed")
@@ -465,11 +465,10 @@ Item {
             id: footer
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: side.compact ? 8 : 12; leftMargin: 10; rightMargin: 10 }
             spacing: side.compact ? 2 : 4
-            ScanBar {
-                width: parent.width - 16
-                x: 8
-                compact: true
-                visible: active && !side.collapsed
+            ActivityIndicator {  // a scan, covers or genres, loudness, downloads: whatever's working
+                width: side.collapsed ? parent.width : parent.width - 16
+                x: side.collapsed ? 0 : 8
+                compact: side.collapsed
             }
             RailButton {  // only with the update check turned on and a newer release out
                 objectName: "updateAvailable"
