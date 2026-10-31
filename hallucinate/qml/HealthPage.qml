@@ -320,7 +320,7 @@ Item {
                                 width: Math.min(implicitWidth, card.width - 360)
                                 elide: Text.ElideRight
                                 text: metaEditor.genresSaving
-                                      ? "Saving genres to your files: " + Theme.num(metaEditor.genresSaved) + " of " + metaEditor.genresToSave
+                                      ? "Saving genres to your files: " + Theme.num(metaEditor.genresSaved) + " of " + Theme.num(metaEditor.genresToSave)
                                         + " albums. You can carry on meanwhile."
                                       : metaEditor.genresBusy
                                       ? "Looked up " + Theme.num(metaEditor.genresDone) + " of " + Theme.num(metaEditor.genresTotal) + " albums  ·  "
@@ -458,7 +458,7 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 visible: card.modelData.count > card.modelData.items.length
-                                text: "Showing the first " + Theme.num(card.modelData.items.length) + " of " + card.modelData.count
+                                text: "Showing the first " + Theme.num(card.modelData.items.length) + " of " + Theme.num(card.modelData.count)
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily
                                 font.pixelSize: Theme.fontSize(12)

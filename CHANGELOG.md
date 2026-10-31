@@ -3,6 +3,18 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Changed
+- Searching Settings shows only the matching settings in each section, not the whole section (#147). A setting's
+  explanation comes with it; searching a section's own name still shows all of it.
+- The collapsed sidebar shows a library scan's progress as a ring with the percentage (#146); hover it for the
+  same line the expanded sidebar shows.
+
+### Fixed
+- The recap's totals and counts ignored Settings → Appearance → Numbers (#145); so did a few counts in menus
+  ("3 of 12" in Add to playlist), Library health and duplicate copies.
+
 ## [1.8.1] - 2026-10-31
 
 ### Fixed

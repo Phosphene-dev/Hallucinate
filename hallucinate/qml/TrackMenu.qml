@@ -133,7 +133,7 @@ Menu {
                 readonly property int have: plMenu.held[String(id)] || 0
                 readonly property bool full: have > 0 && have >= songMenu.paths.length
                 checkable: true
-                text: Theme.plain(name) + (have > 0 && !full ? "  (" + Theme.num(have) + " of " + songMenu.paths.length + ")" : "")
+                text: Theme.plain(name) + (have > 0 && !full ? "  (" + Theme.num(have) + " of " + Theme.num(songMenu.paths.length) + ")" : "")
                 onTriggered: {
                     var p = songMenu.paths.slice(), w = songMenu.what
                     songMenu.done("")

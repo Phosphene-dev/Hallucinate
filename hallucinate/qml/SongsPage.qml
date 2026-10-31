@@ -143,7 +143,7 @@ Item {
             rowIndex: index
             width: ListView.view.width - 12
             title: model.title
-            artist: model.artist + (page.duplicatesVisible ? " · " + model.duplicateCount + " copies" : "")
+            artist: model.artist + (page.duplicatesVisible ? " · " + Theme.num(model.duplicateCount) + " copies" : "")
             // what the list is ordered by, beside the album
             album: library.songSort === "genre" && model.genre ? model.album + "  ·  " + shell.genresText(model.genre, false)
                  : library.songSort === "composer" && model.composer ? model.album + "  ·  " + model.composer

@@ -271,7 +271,7 @@ Item {
                     Text {
                         textFormat: Text.PlainText
                         objectName: "recapTime"
-                        text: page.empty ? "—" : page.hoursText(page.summary.seconds || 0).n
+                        text: page.empty ? "—" : Theme.num(page.hoursText(page.summary.seconds || 0).n)
                         color: "white"
                         font.family: Theme.displayFamily
                         font.pixelSize: (Theme.fontSize(76)) * Theme.displayScale
@@ -308,7 +308,7 @@ Item {
                                 required property var modelData
                                 Text {
                                     textFormat: Text.PlainText
-                                    text: modelData[0]
+                                    text: Theme.num(modelData[0])
                                     color: "white"
                                     font.family: Theme.displayFamily
                                     font.pixelSize: (Theme.fontSize(20)) * Theme.displayScale
@@ -486,13 +486,13 @@ Item {
                 visible: !page.empty
                 Repeater {
                     model: [
-                        { t: "New artists", v: page.rc.discoveryCount || 0,
+                        { t: "New artists", v: Theme.num(page.rc.discoveryCount || 0),
                           s: (page.rc.discoveries || []).slice(0, 3).map(d => d.name).join(", ") },
                         { t: "Longest streak", v: page.plural(page.rc.streak || 0, "day", "days"), s: "in a row" },
                         { t: "Busiest day", v: page.rc.busiestDay ? Qt.formatDate(new Date(page.rc.busiestDay.day + "T12:00:00"), "ddd d MMM") : "—",
                           s: page.rc.busiestDay ? page.plural(page.rc.busiestDay.plays, "play", "plays") : "" },
                         { t: "Top genres", v: (page.rc.genres || []).slice(0, 1).join("") || "—", s: (page.rc.genres || []).slice(1).join(", ") },
-                        { t: "Albums added", v: page.rc.albumsAdded || 0, s: "to your library" }
+                        { t: "Albums added", v: Theme.num(page.rc.albumsAdded || 0), s: "to your library" }
                     ]
                     GlassPanel {
                         required property var modelData

@@ -79,7 +79,7 @@ Menu {
                 readonly property int have: plMenu.held[String(id)] || 0
                 readonly property bool full: have > 0 && have >= plMenu.heldPaths.length
                 checkable: true
-                text: Theme.plain(name) + (have > 0 && !full ? "  (" + Theme.num(have) + " of " + plMenu.heldPaths.length + ")" : "")
+                text: Theme.plain(name) + (have > 0 && !full ? "  (" + Theme.num(have) + " of " + Theme.num(plMenu.heldPaths.length) + ")" : "")
                 onTriggered: full ? Nav.removeFromPlaylistId(id, name, collectionMenu.paths(), "")
                                   : Nav.addToPlaylist(id, name, collectionMenu.paths(), "")
             }

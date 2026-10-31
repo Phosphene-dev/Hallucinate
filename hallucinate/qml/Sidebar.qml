@@ -471,6 +471,10 @@ Item {
                 compact: true
                 visible: active && !side.collapsed
             }
+            ScanRing {
+                width: parent.width
+                visible: active && side.collapsed
+            }
             RailButton {  // only with the update check turned on and a newer release out
                 objectName: "updateAvailable"
                 width: parent.width

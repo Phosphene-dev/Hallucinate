@@ -1,5 +1,6 @@
 import QtQuick
 import "."
+import "SettingsFilter.js" as Filter
 
 // A subsection of settings that opens and closes: the options people rarely need, out of the way until
 // wanted. It remembers whether you left it open, and opens by itself while the Settings search matches
@@ -30,6 +31,10 @@ Column {
         return q.split(/\s+/).some(function (w) { return w.length > 1 && hay.indexOf(w) >= 0 })
     }
     readonly property bool shown: open || found
+    // while searching, only the matching rows inside show (#147); the title matching shows them all
+    property var _rows: null
+    onQueryChanged: _rows = Filter.apply(inner, hidden, _rows, Filter.words(query).every(w => title.toLowerCase().indexOf(w) >= 0) ? "" : query)
+    Item { id: hidden; visible: false; width: inner.width }
     width: parent ? parent.width : 400
     spacing: 12
 

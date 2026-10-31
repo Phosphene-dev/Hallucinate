@@ -2635,3 +2635,39 @@ def test_an_accent_colour_of_your_own(qapp, app_window):
     assert plain(shell.property("ui"))["recentAccents"].split(",")[0] == chosen
     manager.setAccentOverride(before)
     assert not warnings, warnings[:3]
+
+
+def test_collapsed_sidebar_shows_scan_progress(qapp, app_window):
+    """Issue 146: the scan's progress showed only in the expanded sidebar. Collapsed, a ring shows it."""
+    window, objects, warnings = app_window
+    shell, library = objects["shell"], objects["library"]
+    library._scanning, library._scan_seen, library._scan_hint = True, 25, 100
+    library.scanningChanged.emit()
+    library.scanProgressChanged.emit()
+    try:
+        shell.setSidebarCollapsed(True)
+        for _ in range(3):
+            qapp.processEvents()
+        ring = find_item(window, "scanRing")
+        assert ring.property("visible") and ring.property("determinate")
+        shell.setSidebarCollapsed(False)
+        for _ in range(3):
+            qapp.processEvents()
+        assert not ring.property("visible")
+        del ring
+    finally:
+        library._scanning, library._scan_seen, library._scan_hint = False, 0, 0
+        library.scanningChanged.emit()
+        library.scanProgressChanged.emit()
+        shell.setSidebarCollapsed(False)
+    assert not warnings, warnings[:3]
+
+
+def test_recap_numbers_follow_the_numbers_setting(qapp, app_window):
+    """Issue 145: the recap's counts were shown as bare numbers, whatever Settings → Appearance → Numbers said."""
+    import pathlib
+
+    src = (pathlib.Path(__file__).parent.parent / "hallucinate" / "qml" / "RecapPage.qml").read_text()
+    assert "text: Theme.num(modelData[0])" in src
+    assert "Theme.num(page.hoursText(" in src
+    assert 'v: Theme.num(page.rc.discoveryCount' in src and 'v: Theme.num(page.rc.albumsAdded' in src

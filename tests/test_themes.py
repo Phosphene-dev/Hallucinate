@@ -312,9 +312,27 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     settings_search.setProperty("text", "musicbee")  # matched by the text of a control, not just keywords
     qapp.processEvents()
     assert window.findChild(QObject, "settings_library").property("visible") and not sound.property("visible")
+    # ... and in a section, only the matching rows (#147)
+    def shown(name, window=window):
+        item = window.findChild(QObject, name)
+        while item is not None:
+            if not item.property("visible"):
+                return False
+            item = item.parentItem()
+        return True
+    swatches_y = window.findChild(QObject, "accentSwatches").property("y")
+    settings_search.setProperty("text", "numbers")
+    qapp.processEvents()
+    assert appearance.property("visible") and shown("numberFormat")
+    assert not shown("accentSwatches") and not shown("ambientMotion")
+    settings_search.setProperty("text", "appearance")  # the section's own name: all of it
+    qapp.processEvents()
+    assert shown("accentSwatches") and shown("numberFormat")
     settings_search.setProperty("text", "")
     qapp.processEvents()
     assert sound.property("visible") and appearance.property("visible")
+    assert shown("accentSwatches") and shown("ambientMotion")  # (Numbers is in a subsection, closed again)
+    assert window.findChild(QObject, "accentSwatches").property("y") == swatches_y  # back in its place
     del settings_search, sound, appearance
 
     assert manager.selectTheme("Font Test")
