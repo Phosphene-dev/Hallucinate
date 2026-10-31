@@ -31,6 +31,7 @@ finish-args:
   - --env=QT_PLUGIN_PATH=
   - --env=QML_IMPORT_PATH=
   - --env=QML2_IMPORT_PATH=
+  - --env=QT_MEDIA_BACKEND=ffmpeg
 modules:
   # PySide6 from its own wheels, with the Qt it was built against inside them, like the AppImage. Not the runtime's
   # Qt (through io.qt.PySide.BaseApp): PySide6 uses Qt's private API, which changes with every Qt patch release,
@@ -64,6 +65,9 @@ modules:
     build-commands:
       - pip3 install --no-deps --no-index --no-build-isolation --prefix=${FLATPAK_DEST} *.whl
       - python3 qt_prune.py ${FLATPAK_DEST}/lib/python3*/site-packages # drop the parts of Qt the app never uses
+      # FFmpeg plays and decodes everything, as on every other build. The aarch64 wheel also has a GStreamer backend,
+      # which Qt picks first there, and the runtime's GStreamer can't decode these formats
+      - rm -f ${FLATPAK_DEST}/lib/python3*/site-packages/PySide6/Qt/plugins/multimedia/libgstreamermediaplugin.so
     sources:
       # The same versions and checksums as the other release builds (packaging/build-requirements.txt), for
       # each processor the Flatpak is built for
