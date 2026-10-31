@@ -68,6 +68,12 @@ modules:
       # FFmpeg plays and decodes everything, as on every other build. The aarch64 wheel also has a GStreamer backend,
       # which Qt picks first there, and the runtime's GStreamer can't decode these formats
       - rm -f ${FLATPAK_DEST}/lib/python3*/site-packages/PySide6/Qt/plugins/multimedia/libgstreamermediaplugin.so
+      # The aarch64 wheel's FFmpeg asks for bzip2 by its Debian name (libbz2.so.1.0); the runtime has libbz2.so.1
+      - for d in /usr/lib/$(gcc -dumpmachine) /usr/lib64 /usr/lib; do if [ -e $d/libbz2.so.1 ] && [ ! -e $d/libbz2.so.1.0
+        ]; then ln -sf $d/libbz2.so.1 ${FLATPAK_DEST}/lib/libbz2.so.1.0; break; fi; done
+      # Without every library the FFmpeg backend needs, Qt quietly has no way to play anything: fail the build instead
+      - "! LD_LIBRARY_PATH=${FLATPAK_DEST}/lib ldd ${FLATPAK_DEST}/lib/python3*/site-packages/PySide6/Qt/plugins/multimedia/libffmpegmediaplugin.so
+        ${FLATPAK_DEST}/lib/python3*/site-packages/PySide6/Qt/lib/libav*.so.* | grep 'not found'"
     sources:
       # The same versions and checksums as the other release builds (packaging/build-requirements.txt), for
       # each processor the Flatpak is built for
