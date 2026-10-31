@@ -754,6 +754,26 @@ class Podcasts(QObject):
 
         self._dl_pool.submit(lambda: self._done.emit(work()))
 
+    @Property(int, notify=episodesChanged)
+    def downloadingCount(self):
+        """How many episodes are downloading right now (the activity indicator)."""
+        with self._lock:
+            return len(self._downloading)
+
+    @Property(float, notify=episodesChanged)
+    def downloadsFraction(self):
+        """How far the downloads in progress are, together (0..1)."""
+        with self._lock:
+            parts = list(self._downloading.values())
+        return sum(parts) / len(parts) if parts else 0.0
+
+    @Slot()
+    def cancelAllDownloads(self):
+        with self._lock:
+            ids = list(self._downloading)
+        for episode_id in ids:
+            self.cancelDownload(episode_id)
+
     @Slot(int)
     def cancelDownload(self, episode_id):
         with self._lock:

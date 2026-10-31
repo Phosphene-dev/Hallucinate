@@ -71,8 +71,18 @@ jobs:
       - run: pytest -vv tests/test_smtc.py tests/test_app_smoke.py
 
   flatpak:
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # each processor the Flatpak is built for: x86_64, and aarch64 (Linux phones, ARM laptops: #130)
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            os: ubuntu-latest
+          - arch: aarch64
+            os: ubuntu-24.04-arm
+    name: flatpak (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - name: Install Flatpak and Flathub's builder

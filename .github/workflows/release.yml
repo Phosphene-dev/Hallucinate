@@ -276,8 +276,48 @@ jobs:
   # Our own Flatpak repository, served from the website (packaging/flatpak/README.md). The build is committed on
   # top of the previous release's repository, so updates download only what changed, then signed with the
   # FLATPAK_GPG_PRIVATE_KEY secret. Without that secret the job only says so.
-  flatpak:
+  # The aarch64 Flatpak (Linux phones and ARM laptops, #130), built and tried on an ARM runner. Unsigned here: the
+  # flatpak job below copies it into the published repository and signs it there, beside the x86_64 one.
+  flatpak-arm:
     needs: tag
+    if: ${{ !cancelled() && needs.tag.result != 'failure' }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+          persist-credentials: false
+      - name: Install Flatpak and Flathub's builder
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak
+          flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive flathub org.flatpak.Builder
+      - name: Build
+        run: |
+          dbus-run-session -- flatpak run org.flatpak.Builder --user --force-clean --disable-rofiles-fuse --install-deps-from=flathub \
+            --arch=aarch64 --default-branch=stable --repo=arm-repo flatpak-build \
+            packaging/flatpak/io.github.phosphene_dev.Hallucinate.yml
+      - name: Smoke test (offscreen)
+        run: |
+          flatpak remote-add --user --no-gpg-verify arm-local "file://$PWD/arm-repo"
+          flatpak install --user -y --noninteractive arm-local io.github.phosphene_dev.Hallucinate
+          dbus-run-session -- flatpak run --env=QT_QPA_PLATFORM=offscreen \
+            --env=HALLUCINATE_DISABLE_LEGACY_MIGRATION=1 \
+            --env=HALLUCINATE_CONTROL_SOCKET=hallucinate-release-flatpak-arm-smoke \
+            io.github.phosphene_dev.Hallucinate --quit-after 3000
+      - name: Hand the build to the signing job
+        run: tar -cf arm-repo.tar -C arm-repo .
+      - uses: actions/upload-artifact@v6
+        with:
+          name: flatpak-arm-repo
+          path: arm-repo.tar
+          retention-days: 2
+
+  flatpak:
+    needs: [tag, flatpak-arm]
+    # (an ARM build that failed leaves the x86_64 one to go out on its own)
     if: ${{ !cancelled() && needs.tag.result != 'failure' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -324,11 +364,27 @@ jobs:
           dbus-run-session -- flatpak run org.flatpak.Builder --user --force-clean --disable-rofiles-fuse --install-deps-from=flathub \
             --default-branch=stable --repo=flatpak-repo flatpak-build \
             packaging/flatpak/io.github.phosphene_dev.Hallucinate.yml
+      - uses: actions/download-artifact@v6
+        if: steps.key.outputs.id && needs.flatpak-arm.result == 'success'
+        with:
+          name: flatpak-arm-repo
+      - name: Bring in the aarch64 build
+        if: steps.key.outputs.id && needs.flatpak-arm.result == 'success'
+        run: |
+          mkdir arm-repo && tar -xf arm-repo.tar -C arm-repo
+          for ref in app/io.github.phosphene_dev.Hallucinate/aarch64/stable \
+                     runtime/io.github.phosphene_dev.Hallucinate.Locale/aarch64/stable \
+                     runtime/io.github.phosphene_dev.Hallucinate.Debug/aarch64/stable; do
+            if [ -e "arm-repo/refs/heads/$ref" ]; then
+              flatpak build-commit-from --src-repo=arm-repo flatpak-repo "$ref"
+            fi
+          done
+          echo "ARM_BUNDLE=hallucinate-${LABEL#v}-aarch64.flatpak" >> "$GITHUB_ENV"
       - name: Sign, update the repository and make the bundle
         if: steps.key.outputs.id
         run: |
           packaging/flatpak/publish.sh flatpak-repo "${{ steps.key.outputs.id }}" "${{ steps.key.outputs.home }}" \
-            packaging/flatpak/hallucinate-repo.gpg "hallucinate-${LABEL#v}-x86_64.flatpak"
+            packaging/flatpak/hallucinate-repo.gpg "hallucinate-${LABEL#v}-x86_64.flatpak" "${ARM_BUNDLE:-}"
       - name: Smoke test the bundle (offscreen)
         if: steps.key.outputs.id
         run: |
@@ -347,8 +403,12 @@ jobs:
           fi
           cp "hallucinate-${LABEL#v}-x86_64.flatpak" Hallucinate-x86_64.flatpak  # fixed name for latest-download links
           tar -cf flatpak-repo.tar -C flatpak-repo .  # the website serves this; the next release builds on it
-          gh release upload "$TAG" "hallucinate-${LABEL#v}-x86_64.flatpak" Hallucinate-x86_64.flatpak flatpak-repo.tar \
-            --clobber
+          files=("hallucinate-${LABEL#v}-x86_64.flatpak" Hallucinate-x86_64.flatpak flatpak-repo.tar)
+          if [ -n "${ARM_BUNDLE:-}" ]; then
+            cp "$ARM_BUNDLE" Hallucinate-aarch64.flatpak
+            files+=("$ARM_BUNDLE" Hallucinate-aarch64.flatpak)
+          fi
+          gh release upload "$TAG" "${files[@]}" --clobber
 
   # Once every download is attached: one SHA256SUMS for all of them, signed with the project key (the one the
   # Flatpak repository uses, packaging/flatpak/hallucinate-repo.gpg), and GitHub's signed build provenance for

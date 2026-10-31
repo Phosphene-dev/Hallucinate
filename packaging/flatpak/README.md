@@ -20,13 +20,14 @@ flatpak install --user https://phosphene-dev.github.io/Hallucinate/hallucinate.f
 ```
 or open that link in GNOME Software or KDE Discover. Either adds the `hallucinate` remote (signed with the
 project's key, `hallucinate-repo.gpg`) and Flathub for the runtime. Each release also has a single-file
-`hallucinate-<version>-x86_64.flatpak` bundle; installing it (`flatpak install --user ./hallucinate-….flatpak`)
+`hallucinate-<version>-x86_64.flatpak` bundle (and an `-aarch64` one); installing it (`flatpak install --user ./hallucinate-….flatpak`)
 sets up the same remote, so it updates too.
 
 ## How releases publish it
 The `flatpak` job in `.github/workflows/release.yml`:
 
-1. downloads the previous release's repository (`flatpak-repo.tar`, via `fetch_repo.sh`);
+1. downloads the previous release's repository (`flatpak-repo.tar`, via `fetch_repo.sh`), and the aarch64 build
+   the `flatpak-arm` job made and smoke-tested on an ARM runner (copied in with `flatpak build-commit-from`);
 2. builds the tagged source into it on the `stable` branch, so the new version has the old one as its parent;
 3. signs it with `publish.sh`, which also writes a delta from the previous version (small updates), prunes
    anything older, and makes the bundle;

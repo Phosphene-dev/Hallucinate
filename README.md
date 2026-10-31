@@ -263,6 +263,9 @@ or open [that link](https://phosphene-dev.github.io/Hallucinate/hallucinate.flat
 KDE Discover. Each release also has a single-file
 [`.flatpak` bundle](https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-x86_64.flatpak)
 (`flatpak install --user ./Hallucinate-x86_64.flatpak`), which sets up the same repository for updates.
+The repository has builds for x86_64 and for aarch64 (ARM: Linux phones, ARM laptops and single-board computers);
+Flatpak picks the right one, and there's an
+[aarch64 bundle](https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-aarch64.flatpak) too.
 
 The sandbox grants read-only access to `~/Music`; use the folder picker portal to grant access to other music
 directories. To build it yourself, and how the repository is published:

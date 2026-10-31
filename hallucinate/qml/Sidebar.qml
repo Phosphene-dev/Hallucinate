@@ -465,15 +465,10 @@ Item {
             id: footer
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: side.compact ? 8 : 12; leftMargin: 10; rightMargin: 10 }
             spacing: side.compact ? 2 : 4
-            ScanBar {
-                width: parent.width - 16
-                x: 8
-                compact: true
-                visible: active && !side.collapsed
-            }
-            ScanRing {
-                width: parent.width
-                visible: active && side.collapsed
+            ActivityIndicator {  // a scan, covers or genres, loudness, downloads: whatever's working
+                width: side.collapsed ? parent.width : parent.width - 16
+                x: side.collapsed ? 0 : 8
+                compact: side.collapsed
             }
             RailButton {  // only with the update check turned on and a newer release out
                 objectName: "updateAvailable"
