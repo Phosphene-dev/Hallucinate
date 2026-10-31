@@ -290,7 +290,7 @@ Rectangle {
     function pick(arg) {
         var n = /^\d+$/.test(arg) ? parseInt(arg) : 0
         if (!n || !found.length) return null  // (with nothing numbered, "play 1999" searches for it)
-        if (n > found.length) { say("pick 1 to " + found.length, "bad"); return undefined }
+        if (n > found.length) { say("pick 1 to " + Theme.num(found.length), "bad"); return undefined }
         return found[n - 1]
     }
     function playPicked(it, how) {  // how: "play", "queue" or "next"
