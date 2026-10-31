@@ -19,7 +19,7 @@
 <h3 align="center">
   <a href="https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-windows-x64-setup.exe">⬇ Windows</a> &nbsp;·&nbsp;
   <a href="https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-x86_64.AppImage">⬇ Linux (AppImage)</a> &nbsp;·&nbsp;
-  <a href="https://github.com/Phosphene-dev/Hallucinate/releases/download/v1.6.0/Hallucinate-macos-arm64.zip">⬇ macOS (Apple silicon)</a>
+  <a href="https://github.com/Phosphene-dev/Hallucinate/releases/download/v1.9.0/Hallucinate-macos-arm64.zip">⬇ macOS (Apple silicon)</a>
 </h3>
 <p align="center">
   <a href="https://phosphene-dev.github.io/Hallucinate/"><b>Website</b></a> · Flatpak, Arch (AUR) and pip: see <a href="#install">Install</a> · <a href="https://github.com/Phosphene-dev/Hallucinate/releases">all releases</a> · <a href="CHANGELOG.md">what's new</a>
@@ -273,7 +273,7 @@ directories. To build it yourself, and how the repository is published:
 
 ### macOS
 Major releases include a self-contained `.app` zip for Apple silicon (point releases bring the AppImage,
-Flatpak and Windows builds only). Download the [macOS zip](https://github.com/Phosphene-dev/Hallucinate/releases/download/v1.6.0/Hallucinate-macos-arm64.zip),
+Flatpak and Windows builds only). Download the [macOS zip](https://github.com/Phosphene-dev/Hallucinate/releases/download/v1.9.0/Hallucinate-macos-arm64.zip),
 unzip it, and move `Hallucinate.app` to Applications. The build isn't signed or
 notarized by Apple, so the first launch is blocked ("Apple could not verify…"). Open it once anyway in
 **System Settings → Privacy & Security → Open Anyway**, or from a terminal:
