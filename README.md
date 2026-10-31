@@ -268,9 +268,6 @@ The sandbox grants read-only access to `~/Music`; use the folder picker portal t
 directories. To build it yourself, and how the repository is published:
 [packaging/flatpak/README.md](packaging/flatpak/README.md).
 
-If it won't start after an update and says the Qt runtime and PySide6 are different versions, run
-`flatpak update`: the KDE runtime and the app's copy of PySide6 have to be on the same Qt release.
-
 ### macOS
 Major releases include a self-contained `.app` zip for Apple silicon (point releases bring the AppImage,
 Flatpak and Windows builds only). Download the [macOS zip](https://github.com/Phosphene-dev/Hallucinate/releases/download/v1.6.0/Hallucinate-macos-arm64.zip),

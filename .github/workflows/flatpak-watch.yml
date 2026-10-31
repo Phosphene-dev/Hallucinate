@@ -1,9 +1,9 @@
 name: Flatpak still starts
 
-# The published Flatpak runs on Flathub's KDE runtime, which updates on its own schedule, while PySide6 is built into
-# the app (io.qt.PySide.BaseApp) for one Qt patch release. When the runtime moves on, installed copies stop starting
-# ("undefined symbol ... Qt_6_PRIVATE_API") until a rebuild. Once a day, install the published Flatpak with the
-# newest runtime and start it; if that fails, open an issue (once) so a rebuild goes out before people find it.
+# The published Flatpak runs on Flathub's KDE runtime, which updates on its own schedule. (1.8.0 used the runtime's
+# Qt and stopped starting when it moved to a new Qt release; it carries its own Qt now.) Once a day, install the
+# published Flatpak with the newest runtime and start it; if that fails, open an issue (once) so a fix goes out
+# before people find it.
 on:
   schedule:
     - cron: "17 5 * * *"
@@ -48,5 +48,4 @@ jobs:
           gh issue create --title "$title" --body "The daily check installed the published Flatpak with the newest \
           Flathub runtime and it failed to start: $RUN
 
-          Most likely the KDE runtime moved to a Qt release the bundled PySide6 wasn't built for. Rebuild once \
-          io.qt.PySide.BaseApp has caught up (a release, or rerun release.yml for the current version)."
+          Something in the runtime update broke it: the run log has the error."

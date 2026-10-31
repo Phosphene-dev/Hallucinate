@@ -14,8 +14,9 @@ All notable changes to this project are documented here. Format based on
   the console wraps between words. `help <topic>` shows one part.
 - In the cockpit, the shuffle, previous, next and repeat buttons sat higher than the play key and the volume; they
   all line up now. The hologram keeps clear of the corner readouts.
-- The Flatpak no longer stops with a bare traceback when the KDE runtime and the PySide6 it was built with are a Qt
-  release apart; it says so and asks for `flatpak update`.
+- The Flatpak wouldn't start after Flathub's KDE runtime updated ("undefined symbol ... Qt_6_PRIVATE_API"). It
+  used the runtime's Qt with a PySide6 built for one exact Qt release, so every runtime update could break it. It
+  now carries its own Qt, the one PySide6 is built for (as the AppImage does), and runtime updates can't break it.
 - A daily check installs the published Flatpak with Flathub's newest runtime and starts it, so a runtime update
   that breaks it is caught (and rebuilt for) before you run into it.
 

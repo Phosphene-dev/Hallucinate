@@ -5,7 +5,7 @@
 - [ ] Now Playing → each visualizer (Aurora, Halo, Waves, Neon rain, Tunnel especially): none is blank, on any GPU.
 - [ ] Afterimage terminal: `help` reads in columns under headings; `help queue` shows one part; narrow the window too.
 - [ ] Afterimage cockpit: shuffle, previous, play, next, repeat and volume sit on one line.
-- [ ] Flatpak: after `flatpak update` it starts.
+- [ ] Flatpak: `flatpak update` (runtime and app), then it starts, plays, shows the tray icon and follows the theme.
 
 ## Release testing for 1.8.0
 

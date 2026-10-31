@@ -3,6 +3,7 @@ in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
     "1.8.1": [
+        "The Flatpak starts again after Flathub's runtime update, and runtime updates can't stop it any more.",
         "Aurora, Halo, Waves and Neon rain draw on every graphics card, and Tunnel glows when the music is quiet.",
         "The Afterimage terminal's help is laid out to read, and the cockpit's buttons sit in one line.",
     ],
