@@ -2,6 +2,10 @@
 in ten seconds; the changelog has the rest."""
 
 HIGHLIGHTS = {
+    "1.8.1": [
+        "Aurora, Halo, Waves and Neon rain draw on every graphics card, and Tunnel glows when the music is quiet.",
+        "The Afterimage terminal's help is laid out to read, and the cockpit's buttons sit in one line.",
+    ],
     "1.8.0": [
         "The music pauses when your headphones go, instead of carrying on out of the speakers (Settings → Playback).",
         "The web remote has lyrics that follow the song, the equaliser, and what you listened to last.",

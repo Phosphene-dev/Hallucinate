@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [1.8.1] - 2026-10-31
 
 ### Fixed
 - Aurora, Halo, Waves and Neon rain showed a blank screen on some graphics cards. They used a form of a shader
@@ -16,6 +16,8 @@ All notable changes to this project are documented here. Format based on
   all line up now. The hologram keeps clear of the corner readouts.
 - The Flatpak no longer stops with a bare traceback when the KDE runtime and the PySide6 it was built with are a Qt
   release apart; it says so and asks for `flatpak update`.
+- A daily check installs the published Flatpak with Flathub's newest runtime and starts it, so a runtime update
+  that breaks it is caught (and rebuilt for) before you run into it.
 
 ## [1.8.0] - 2026-10-31
 

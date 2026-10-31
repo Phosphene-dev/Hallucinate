@@ -1,0 +1,52 @@
+name: Flatpak still starts
+
+# The published Flatpak runs on Flathub's KDE runtime, which updates on its own schedule, while PySide6 is built into
+# the app (io.qt.PySide.BaseApp) for one Qt patch release. When the runtime moves on, installed copies stop starting
+# ("undefined symbol ... Qt_6_PRIVATE_API") until a rebuild. Once a day, install the published Flatpak with the
+# newest runtime and start it; if that fails, open an issue (once) so a rebuild goes out before people find it.
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  start:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Install Flatpak
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak
+          flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
+      - name: Install the published Flatpak with the newest runtime
+        run: |
+          flatpak install --user -y --noninteractive --from https://phosphene-dev.github.io/Hallucinate/hallucinate.flatpakref
+          flatpak update --user -y --noninteractive
+          flatpak info --user org.kde.Platform//6.11 | sed -n '1,12p'
+      - name: Start it (offscreen)
+        run: |
+          dbus-run-session -- flatpak run --env=QT_QPA_PLATFORM=offscreen \
+            --env=HALLUCINATE_DISABLE_LEGACY_MIGRATION=1 \
+            --env=HALLUCINATE_CONTROL_SOCKET=hallucinate-flatpak-watch \
+            io.github.phosphene_dev.Hallucinate --quit-after 3000
+      - name: Open an issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="The published Flatpak no longer starts on the current runtime"
+          if gh issue list --state open --search "in:title \"$title\"" --json number --jq '.[].number' | grep -q .; then
+            exit 0
+          fi
+          gh issue create --title "$title" --body "The daily check installed the published Flatpak with the newest \
+          Flathub runtime and it failed to start: $RUN
+
+          Most likely the KDE runtime moved to a Qt release the bundled PySide6 wasn't built for. Rebuild once \
+          io.qt.PySide.BaseApp has caught up (a release, or rerun release.yml for the current version)."
