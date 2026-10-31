@@ -7,7 +7,7 @@ void main() {
     vec3 a = vivid(c0), b = vivid(c1), c = vivid(c2);
     vec2 uv = qt_TexCoord0;                          // y grows downwards
     vec3 col = mix(b * 0.06, a * 0.02, uv.y);
-    col += stars(uv * res, 9.0, 0.05, 0.6 + 0.4 * treble) * 0.5 * smoothstep(0.55, 0.1, uv.y);
+    col += stars(uv * res, 9.0, 0.05, 0.6 + 0.4 * treble) * 0.5 * (1.0 - smoothstep(0.1, 0.55, uv.y));
     for (int i = 0; i < 5; i++) {
         float fi = float(i);
         float depth = fi / 4.0;                       // 0 far away, 1 close

@@ -95,6 +95,11 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.8.1" date="2026-10-31">
+      <description>
+        <p>Aurora, Halo, Waves and Neon rain no longer show a blank screen on some graphics cards, and Tunnel glows when the music is quiet. The Afterimage terminal's help is easier to read and the cockpit's buttons line up. The Flatpak starts again after the KDE runtime update, and carries its own Qt so runtime updates can't stop it.</p>
+      </description>
+    </release>
     <release version="1.8.0" date="2026-10-31">
       <description>
         <p>The music pauses when the headphones go. The web remote has lyrics that follow the song, the equaliser and recent plays. Covers that showed blank or garbled are mended, with a Repair covers button and a damaged covers check in Library health.</p>

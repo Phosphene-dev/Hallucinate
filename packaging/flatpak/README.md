@@ -1,8 +1,11 @@
 # Flatpak
 
-`io.github.phosphene_dev.Hallucinate.yml` builds Hallucinate on the KDE 6.11 runtime with the
-[PySide BaseApp](https://github.com/flathub/io.qt.PySide.BaseApp) (PySide6 and numpy). The remaining
-Python dependencies are pinned with checksums in `python3-requirements.yaml`, so the build needs no network
+`io.github.phosphene_dev.Hallucinate.yml` builds Hallucinate on the KDE 6.11 runtime with PySide6 and
+numpy from their own wheels, so it carries the Qt that PySide6 was built for rather than using the runtime's. (The
+[PySide BaseApp](https://github.com/flathub/io.qt.PySide.BaseApp) uses the runtime's Qt; PySide6 relies on Qt's
+private API, which changes with every Qt patch release, so each runtime update stopped the app from starting
+until the BaseApp and then the app were rebuilt.) The unused parts of Qt are removed (`packaging/qt_prune.py`),
+as for the other builds. The remaining Python dependencies are pinned with checksums in `python3-requirements.yaml`, so the build needs no network
 access. On every pull request CI builds this manifest, checks it with Flathub's linter, signs and publishes it
 the way a release does (with a throwaway key), installs the resulting bundle, launches it offscreen and checks
 that MP3, AAC, ALAC, FLAC, Vorbis and Opus actually decode inside the sandbox (`decode_check.py`).

@@ -1,4 +1,4 @@
-# Python dependencies not provided by io.qt.PySide.BaseApp (which ships PySide6 and numpy).
+# Python dependencies other than PySide6 and numpy (the pyside6 module in the manifest).
 # Regenerate with flatpak-builder-tools' pip generator (needs org.kde.Sdk//6.11 installed):
 #   flatpak-pip-generator --runtime org.kde.Sdk//6.11 --prefer-wheels cryptography --yaml \
 #     --output python3-requirements 'mutagen>=1.48.1' 'keyring>=25.7.0'

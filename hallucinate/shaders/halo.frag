@@ -19,7 +19,7 @@ void main() {
     vec3 col = mix(a * 0.025, b * 0.05, smoothstep(0.0, 0.9, r));
     col += stars(qt_TexCoord0 * res, 10.0, 0.05, 0.5 + 0.5 * treble) * 0.6 * smoothstep(0.25, 0.7, r);
     col += tint * exp(-abs(d) * (70.0 - 30.0 * level)) * (0.9 + 0.8 * level + 0.4 * beat);   // the ring
-    col += tint * exp(-max(d, 0.0) * 9.0) * smoothstep(0.0, -0.02, -d) * 0.18 * (0.5 + energy); // its glow outward
+    col += tint * exp(-max(d, 0.0) * 9.0) * (1.0 - smoothstep(-0.02, 0.0, -d)) * 0.18 * (0.5 + energy); // its glow outward
     col += mix(b, c, 0.5) * exp(-r * 7.0) * (0.12 + 0.25 * bass);                           // a soft core
     for (int i = 0; i < 3; i++) {                                                             // ripples
         float fi = float(i);

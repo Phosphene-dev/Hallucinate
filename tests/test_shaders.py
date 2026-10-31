@@ -41,3 +41,16 @@ def test_no_shader_builds_an_array(source):
     then the shader draws nothing at all: Aurora, Halo and Waves were blank on such a machine."""
     text = build_shaders.expand(source)
     assert not re.search(r"\w+\s*\[\s*\d+\s*\]\s*=", text), f"{source.name} builds an array"
+
+
+@pytest.mark.parametrize("source", SOURCES, ids=lambda p: p.stem)
+def test_no_shader_reverses_smoothstep(source):
+    """smoothstep(a, b, x) with a >= b is undefined in GLSL: Mesa happens to handle it, other GPU drivers draw
+    black (a tester saw Aurora, Halo, Waves and Neon rain blank). Write 1.0 - smoothstep(b, a, x) instead."""
+    text = source.read_text(encoding="utf-8")
+    for m in re.finditer(r"smoothstep\(\s*([^,()]+)\s*,\s*([^,()]+)\s*,", text):
+        a, b = m.group(1).strip(), m.group(2).strip()
+        try:
+            assert float(a) < float(b), m.group(0)
+        except ValueError:
+            assert not (b in ("0.0", "0") and a not in ("0.0", "0")), m.group(0)  # (thick, 0.0, …): reversed

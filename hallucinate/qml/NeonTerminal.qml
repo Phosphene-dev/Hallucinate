@@ -162,6 +162,61 @@ Rectangle {
         var add = (Array.isArray(lines) ? lines : [lines]).map(function (l) { return { t: String(l), k: kind || "ink" } })
         out = out.concat(add).slice(-400)
     }
+    // help: one command per line under a heading, its description in a column beside it, or on its own indented
+    // line when the console is too narrow for both (then nothing wraps in the middle of a word or a command)
+    readonly property var helpTopics: [
+        ["playback", [["play [search]", "play songs matching, or carry on"], ["pause · p", "pause, or carry on"],
+                      ["next [search] · n", "skip, or play a song next"], ["prev · b", "back a song"],
+                      ["seek <1:30|+10|-10>", "move in the song"], ["vol <n|+n|-n> · v", "volume, 0 to 100"],
+                      ["mute · m", "mute or unmute"], ["shuffle [on|off] · s", "shuffle"],
+                      ["repeat [off|all|one] · r", "repeat"], ["like", "like the playing song"],
+                      ["sleep <min|track|album|off>", "sleep timer"], ["radio [on|off]", "keep similar songs coming"]]],
+        ["queue", [["queue <search> · q", "add the best match"], ["queue rm <n>", "take one out (numbers as up next shows them)"],
+                   ["queue mv <from> <to>", "move one"], ["queue clear", "clear what's next"], ["queue shuffle", "shuffle what's next"]]],
+        ["looking around", [["history [n]", "what you listened to last"], ["top [week|month|year|all] · t", "your most played"],
+                            ["lyrics · l", "the whole text"], ["eq [off|<preset>]", "the equaliser"],
+                            ["out [<n>|default]", "where the sound goes"],
+                            ["<pane>", "print a pane once: " + allPanes.join(", ")]]],
+        ["the terminal", [["pin <pane> / unpin <pane>", "what shows on the left"], ["panes", "which are showing"],
+                          ["phosphor <green|amber|theme>", "the colour"], ["theme <name>", "another theme"],
+                          ["boot · clear · cmds", "start over · empty this · what you typed"],
+                          ["cockpit · classic", "switch Now Playing"], ["exit", "close it"],
+                          ["up / down · Tab", "earlier commands · complete a command"]]]
+    ]
+    // `text` in lines of at most `width` characters, broken between words
+    function wrapWords(text, width) {
+        var lines = [], line = ""
+        String(text).split(" ").forEach(function (w) {
+            if (line && (line + " " + w).length > width) { lines.push(line); line = w }
+            else line = line ? line + " " + w : w
+        })
+        if (line) lines.push(line)
+        return lines.length ? lines : [""]
+    }
+    function help(topic) {
+        var cols = Math.max(30, Math.floor((scrollback.width - 8) / Math.max(1, consoleChar.advanceWidth / 10)))
+        var shown = helpTopics.filter(function (t) { return !topic || t[0].indexOf(topic) === 0 })
+        if (!shown.length) { say("help topics: " + helpTopics.map(function (t) { return t[0] }).join(", "), "bad"); return }
+        var widest = 0
+        shown.forEach(function (t) { t[1].forEach(function (c) { widest = Math.max(widest, c[0].length) }) })
+        var column = Math.min(widest + 3, 34)
+        var side = cols >= column + 24  // room for the description beside it
+        shown.forEach(function (t, k) {
+            if (k) say(" ")
+            say(t[0], "prompt")
+            t[1].forEach(function (c) {
+                if (side && c[0].length + 3 <= column) {
+                    // a long description carries on in its own column, not back at the left edge
+                    wrapWords(c[1], cols - column - 3).forEach(function (part, i) { say("  " + pad(i ? "" : c[0], column) + part) })
+                } else {
+                    say("  " + c[0])
+                    wrapWords(c[1], cols - 7).forEach(function (part) { say("      " + part, "dim") })
+                }
+            })
+        })
+        if (!topic) say(["", "help <topic> for one of: " + helpTopics.map(function (t) { return t[0] }).join(", ")], "dim")
+    }
+    TextMetrics { id: consoleChar; font.family: np.mono; font.pixelSize: term.fs * 0.9; text: "MMMMMMMMMM" }  // (the console's own letters)
     function colorOf(k) { return k === "dim" ? dim : k === "prompt" ? prompt : k === "bad" ? bad : ink }
 
     // a short start-up, as an old machine would (Settings → Appearance; off, it only says how to get help)
@@ -231,21 +286,7 @@ Rectangle {
         var songs, n
         switch (word) {
         case "help": case "?":
-            say(["  play [search]     play songs matching, or carry on      pause / next / prev",
-                   "  queue <search>    add the best match to the queue      next <search>  play it next",
-                   "  vol [n|+n|-n]     volume, 0 to 100                      mute",
-                   "  seek <m:ss|+s|-s> move in the song                      like  the playing song",
-                   "  shuffle [on|off]  repeat [off|all|one]  sleep <min|track|album|off>  radio [on|off]",
-                   "  pin <pane> / unpin <pane> / panes      what shows above (" + allPanes.join(", ") + ")",
-                   "  <pane>            print a pane once, e.g. signal, stats, tags, whoami, similar",
-                   "  queue rm <n> / queue mv <from> <to> / queue clear   change what's next (numbers as up next shows them)",
-                   "  history [n]       what you listened to last              top [week|month|year|all]",
-                   "  eq [off|<preset>] the equaliser                          out [<n>|default]  where the sound goes",
-                   "  lyrics            the whole text                         cmds  what you typed",
-                   "  n next · b prev · p play/pause · v vol · s shuffle · r repeat · q queue · l lyrics · t top",
-                   "  phosphor <green|amber|theme>   theme <name>   boot   clear",
-                   "  cockpit / classic  switch Now Playing      exit  close it",
-                   "  ↑ ↓ your earlier commands   Tab completes a command"], "dim")
+            help(argl)
             return
         case "clear": bootTimer.stop(); bootLines = []; out = []; return  // (a start-up still typing stops too)
         case "boot": bootTimer.stop(); out = []; boot(); return
@@ -513,7 +554,7 @@ Rectangle {
                 required property var modelData
                 width: scrollback.width
                 textFormat: Text.PlainText
-                wrapMode: Text.WrapAnywhere
+                wrapMode: Text.Wrap  // (at spaces; a word longer than the line still breaks)
                 text: modelData.t
                 color: term.colorOf(modelData.k)
                 font.family: np.mono; font.pixelSize: term.fs * 0.9

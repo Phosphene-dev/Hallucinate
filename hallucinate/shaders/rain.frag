@@ -28,7 +28,7 @@ void main() {
         signs += tint * (box + glow) * (0.5 + 0.9 * lvl) * flick * (1.0 - 0.7 * d);
     }
     // fog swallows the far end
-    float fog = fbm(vec2(p.x * 2.0 + time * 0.05, p.y * 3.0)) * smoothstep(0.7, 0.2, abs(p.x));
+    float fog = fbm(vec2(p.x * 2.0 + time * 0.05, p.y * 3.0)) * (1.0 - smoothstep(0.2, 0.7, abs(p.x)));
     if (uv.y < horizon) {
         col += signs;
         col += mix(a, b, 0.5 + 0.5 * p.x) * fog * 0.12;
@@ -52,8 +52,8 @@ void main() {
     }
     // rain: thin slanted streaks
     vec2 r = uv * vec2(90.0, 9.0) + vec2(uv.y * 6.0, -time * (2.5 + 2.0 * energy));
-    float drop = step(0.93 - 0.05 * energy, hash(floor(r))) * smoothstep(0.0, 0.5, fract(r.y)) * smoothstep(1.0, 0.6, fract(r.y));
-    drop *= smoothstep(0.5, 0.0, abs(fract(r.x) - 0.5) - 0.42);
+    float drop = step(0.93 - 0.05 * energy, hash(floor(r))) * smoothstep(0.0, 0.5, fract(r.y)) * (1.0 - smoothstep(0.6, 1.0, fract(r.y)));
+    drop *= (1.0 - smoothstep(0.0, 0.5, abs(fract(r.x) - 0.5) - 0.42));
     col += vec3(0.55, 0.65, 0.8) * drop * 0.22;
     fragColor = vec4(finish(col), 1.0) * qt_Opacity;
 }
