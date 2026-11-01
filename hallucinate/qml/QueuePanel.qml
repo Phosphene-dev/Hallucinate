@@ -21,14 +21,12 @@ Rectangle {
             // how many, and how long until the queue runs out (the rest of this song and all those to come)
             readonly property real leftSeconds: player.upcomingSeconds
                 + (player.hasTrack && player.current.kind !== "station" ? Math.max(0, player.duration - player.position) / 1000 : 0)
-            text: Theme.num(player.queueModel.count) + " tracks" + (leftSeconds >= 60 ? " · " + panel.fmtLeft(leftSeconds) + " left" : "")
+            text: Theme.counted(qsTr("%n track(s)", "", player.queueModel.count), player.queueModel.count)
+                  + (leftSeconds >= 60 ? " · " + qsTr("%1 left").arg(Theme.fmtMinutes(leftSeconds)) : "")
             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); anchors.verticalCenter: parent.verticalCenter; textFormat: Text.PlainText
         }
     }
-    function fmtLeft(seconds) {
-        var m = Math.round(seconds / 60), h = Math.floor(m / 60)
-        return h > 0 ? h + " h " + (m % 60) + " min" : m + " min"
-    }
+
     function removeRow(i, keepFocus) {
         player.removeAt(i)
         Nav.notifyAction(qsTr("Removed from the queue"), qsTr("Undo"), function () { player.undoQueue() })
@@ -73,7 +71,7 @@ Rectangle {
             text: qsTr("Undo")
             Accessible.description: player.undoLabel
             ToolTip.visible: undoHover.hovered
-            ToolTip.text: "Undo: " + player.undoLabel.toLowerCase() + " (Ctrl+Z)"
+            ToolTip.text: qsTr("Undo: %1 (Ctrl+Z)").arg(player.undoLabel)
             ToolTip.delay: 400
             HoverHandler { id: undoHover }
             onClicked: player.undoQueue()
@@ -131,7 +129,7 @@ Rectangle {
             var p = Selection.songPaths()
             userLib.enqueuePaths(p)
             Selection.clear()
-            Nav.notify(Theme.num(p.length) + (p.length === 1 ? qsTr(" song") : qsTr(" songs")) + " added to the queue")
+            Nav.notify(Theme.counted(qsTr("%n song(s) added to the queue", "", p.length), p.length))
             drop.accept()
         }
         Rectangle {
@@ -227,7 +225,7 @@ Rectangle {
                     var n = Selection.count
                     player.removeIndexes(Selection.items.map(function (i) { return parseInt(i.key) }))
                     Selection.clear()
-                    Nav.notifyAction(Theme.num(n) + " songs removed from the queue", qsTr("Undo"), function () { player.undoQueue() })
+                    Nav.notifyAction(Theme.counted(qsTr("%n song(s) removed from the queue", "", n), n), qsTr("Undo"), function () { player.undoQueue() })
                     e.accepted = true
                     return
                 }
@@ -283,7 +281,7 @@ Rectangle {
                 ToolTip.text: qsTr("Drag to reorder")
                 ToolTip.delay: 500
                 Accessible.role: Accessible.Button
-                Accessible.name: "Drag to reorder (or Alt+↑ / Alt+↓)"
+                Accessible.name: qsTr("Drag to reorder (or Alt+↑ / Alt+↓)")
             }
             Cover { id: art; x: 6; anchors.verticalCenter: parent.verticalCenter; width: 38; height: 38; radius: Theme.radiusSmall; source: model.artUrl }
             Column {

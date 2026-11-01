@@ -49,10 +49,10 @@ Item {
             onClicked: popup.opened ? popup.close() : popup.open()
         }
         ToolTip.visible: pillMouse.containsMouse && !popup.opened
-        ToolTip.text: Theme.plain(sp.path.summary || "") + " — click for the signal path"
+        ToolTip.text: qsTr("%1 — click for the signal path").arg(Theme.plain(sp.path.summary || ""))
         ToolTip.delay: 500
         Accessible.role: Accessible.Button
-        Accessible.name: "Signal path: " + (sp.path.summary || "")
+        Accessible.name: qsTr("Signal path: %1").arg(sp.path.summary || "")
     }
 
     Popup {
@@ -110,7 +110,7 @@ Item {
                     // A step that leaves the sound alone is marked in the accent, as "Untouched" is; one that changes it
                     // in the grey of "Processed" (the tester found the accent on what spoils it backwards)
                     Rectangle {
-                        objectName: modelData.active ? qsTr("signalStepChanging") : qsTr("signalStep")
+                        objectName: modelData.active ? "signalStepChanging" : "signalStep"
                         x: 0; y: 15; width: 12; height: 12; radius: Theme.round(6)
                         color: modelData.active ? Theme.surface : Theme.accent
                         border.width: 2

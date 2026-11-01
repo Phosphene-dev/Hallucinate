@@ -14,26 +14,26 @@ Dialog {
     title: qsTr("Make my own theme")
     standardButtons: Dialog.Save | Dialog.Cancel
     readonly property var keys: [["bg", qsTr("Background")], ["surface", qsTr("Cards and fields")], ["text", qsTr("Text")],
-                                 [qsTr("textDim"), qsTr("Quieter text")], ["accent", qsTr("Accent")]]
+                                 ["textDim", qsTr("Quieter text")], ["accent", qsTr("Accent")]]
     property var values: ({})
     onOpened: {
         var colors = themeManager.themeColors(themeManager.currentTheme)
         var v = {}
         for (var i = 0; i < keys.length; i++) v[keys[i][0]] = colors[keys[i][0]]
         values = v
-        nameField.text = themeManager.currentTheme + " (mine)"
+        nameField.text = qsTr("%1 (mine)").arg(themeManager.currentTheme)
         nameField.forceActiveFocus()
         nameField.selectAll()
     }
     onAccepted: {
         var err = themeManager.saveCustomTheme(nameField.text, values)
-        Nav.notify(err.length ? err : "Saved “" + nameField.text.trim() + "” in your themes")
+        Nav.notify(err.length ? err : qsTr("Saved “%1” in your themes").arg(nameField.text.trim()))
     }
     Column {
         width: dlg.availableWidth
         spacing: 10
         TextField {
-            id: nameField; width: parent.width; placeholderText: qsTr("Theme name"); selectByMouse: true; Accessible.name: "Theme name"
+            id: nameField; width: parent.width; placeholderText: qsTr("Theme name"); selectByMouse: true; Accessible.name: qsTr("Theme name")
             onTextChanged: { var b = dlg.standardButton(Dialog.Save) || dlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }  // keeps your colours until it has a name
             onVisibleChanged: if (visible) { var b = dlg.standardButton(Dialog.Save) || dlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
         }
@@ -59,7 +59,7 @@ Dialog {
                     width: 130
                     text: dlg.values[modelData[0]] || ""
                     selectByMouse: true
-                    Accessible.name: modelData[1] + " colour"
+                    Accessible.name: qsTr("%1 colour").arg(modelData[1])
                     onTextEdited: if (/^#[0-9a-fA-F]{6}$/.test(text)) { var v = Object.assign({}, dlg.values); v[modelData[0]] = text; dlg.values = v }
                 }
             }

@@ -17,7 +17,7 @@ Item {
     function nudge(steps) { player.nudgeVolume(steps) }  // one notch of the wheel: the volume step
 
     Accessible.role: Accessible.Button
-    Accessible.name: vb.popupSlider ? "Volume " + Math.round(player.volume * 100) + "%" : (player.muted ? qsTr("Unmute") : qsTr("Mute"))
+    Accessible.name: vb.popupSlider ? qsTr("Volume %1%").arg(Math.round(player.volume * 100)) : (player.muted ? qsTr("Unmute") : qsTr("Mute"))
     Accessible.description: qsTr("Scroll to change the volume; middle-click to mute")
     Accessible.onPressAction: vb.popupSlider ? pop.open() : player.toggleMute()
 
@@ -59,8 +59,8 @@ Item {
         }
         ToolTip.visible: containsMouse && !pop.opened
         ToolTip.delay: 400
-        ToolTip.text: (player.muted ? qsTr("Muted") : "Volume " + Math.round(player.volume * 100) + "%")
-                      + " — scroll to change, middle-click to " + (player.muted ? "unmute" : "mute")
+        ToolTip.text: player.muted ? qsTr("Muted — scroll to change, middle-click to unmute")
+                                   : qsTr("Volume %1% — scroll to change, middle-click to mute").arg(Math.round(player.volume * 100))
     }
 
     Popup {
@@ -104,7 +104,7 @@ Item {
                     player.setVolume(value)
                     if (player.muted && value > 0) player.toggleMute()
                 }
-                Accessible.name: "Volume"
+                Accessible.name: qsTr("Volume")
                 background: Rectangle {
                     x: vslider.leftPadding + vslider.availableWidth / 2 - width / 2
                     y: vslider.topPadding

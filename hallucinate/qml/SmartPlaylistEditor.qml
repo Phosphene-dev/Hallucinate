@@ -115,10 +115,10 @@ Dialog {
             Text { anchors.verticalCenter: parent.verticalCenter; text: qsTr("Songs matching"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
             StyledCombo {
                 width: 110
-                model: [{ k: "all", t: "all" }, { k: "any", t: "any" }]
+                model: [{ k: "all", t: qsTr("all") }, { k: "any", t: qsTr("any") }]
                 textRole: "t"
                 currentIndex: dlg.matchMode === "any" ? 1 : 0
-                onActivated: { dlg.matchMode = currentIndex === 1 ? "any" : "all"; dlg.update() }
+                onActivated: { dlg.matchMode = currentIndex === 1 ? "any" : "all"; dlg.update() }  // i18n: keep
             }
             Text { anchors.verticalCenter: parent.verticalCenter; text: qsTr("of these rules:"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
         }
@@ -164,7 +164,7 @@ Dialog {
                     inputMethodHints: dlg.fieldKind(ruleRow.field) === "text" ? Qt.ImhNone : Qt.ImhFormattedNumbersOnly
                     onTextEdited: { rulesModel.setProperty(ruleRow.index, "value", text); dlg.update() }
                 }
-                Text { visible: ruleRow.op === "between"; anchors.verticalCenter: parent.verticalCenter; text: "and"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                Text { visible: ruleRow.op === "between"; anchors.verticalCenter: parent.verticalCenter; text: qsTr("and"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 TextField {
                     visible: ruleRow.op === "between"
                     width: 90
@@ -202,7 +202,7 @@ Dialog {
                 validator: IntValidator { bottom: 0; top: 100000 }
                 onTextEdited: dlg.update()
             }
-            Text { anchors.verticalCenter: parent.verticalCenter; text: "songs"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+            Text { anchors.verticalCenter: parent.verticalCenter; text: qsTr("songs"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
         }
         Text {
             textFormat: Text.PlainText
@@ -211,7 +211,7 @@ Dialog {
             wrapMode: Text.WordWrap
             readonly property int matches: dlg.matches
             text: matches < 0 ? userLib.describeRules(dlg.rulesJson)
-                              : userLib.describeRules(dlg.rulesJson) + " — " + Theme.num(matches) + (matches === 1 ? qsTr(" song now") : qsTr(" songs now"))
+                              : userLib.describeRules(dlg.rulesJson) + " — " + Theme.counted(qsTr("%n song(s) now", "", matches), matches)
             color: matches < 0 ? Theme.error : Theme.textDim
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize(13)

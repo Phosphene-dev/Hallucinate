@@ -6,7 +6,7 @@ Item {
     id: badge
     property string formatName: ""
     property int bitrate: 0
-    readonly property string bitrateText: bitrate > 0 ? "~" + Math.round(bitrate / 1000) + " kb/s" : ""
+    readonly property string bitrateText: bitrate > 0 ? qsTr("~%1 kb/s").arg(Theme.num(Math.round(bitrate / 1000))) : ""
     readonly property string label: {
         var format = formatName.trim().toUpperCase()
         if (bitrateText.length)
@@ -16,9 +16,9 @@ Item {
     readonly property string spokenLabel: {
         var format = formatName.trim().toUpperCase()
         if (bitrate > 0)
-            return (format.length ? format + " audio, " : qsTr("Audio, ")) +
-                   "approximately " + Math.round(bitrate / 1000) + " kilobits per second"
-        return format.length ? format + " audio, bitrate unavailable" : qsTr("Audio bitrate unavailable")
+            return (format.length ? qsTr("%1 audio, approximately %2 kilobits per second").arg(format)
+                                  : qsTr("Audio, approximately %1 kilobits per second")).arg(Theme.num(Math.round(bitrate / 1000)))
+        return format.length ? qsTr("%1 audio, bitrate unavailable").arg(format) : qsTr("Audio bitrate unavailable")
     }
     implicitWidth: labelText.implicitWidth + 14
     implicitHeight: 18

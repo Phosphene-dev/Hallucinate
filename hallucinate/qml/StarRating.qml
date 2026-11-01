@@ -16,7 +16,7 @@ Row {
     spacing: Math.round(size * 0.12)
     enabled: path.length > 0
     Accessible.role: Accessible.Slider
-    Accessible.name: "Rating: " + (value ? Theme.num(value) + " of 5 stars" : qsTr("not rated"))
+    Accessible.name: value ? qsTr("Rating: %1 of 5 stars").arg(Theme.num(value)) : qsTr("Rating: not rated")
 
     Repeater {
         model: 5

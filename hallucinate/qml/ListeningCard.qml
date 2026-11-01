@@ -29,8 +29,8 @@ GlassPanel {
             Text {
                 textFormat: Text.PlainText
                 id: streak
-                text: (card.heat.streak || 0) > 1 ? card.heat.streak + "-day streak"
-                    : (card.heat.activeDays || 0) + ((card.heat.activeDays || 0) === 1 ? qsTr(" active day") : qsTr(" active days"))
+                text: (card.heat.streak || 0) > 1 ? Theme.counted(qsTr("%n-day streak", "", card.heat.streak), card.heat.streak)
+                    : Theme.counted(qsTr("%n active day(s)", "", card.heat.activeDays || 0), card.heat.activeDays || 0)
                 color: Theme.accent
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(13)

@@ -26,10 +26,10 @@ Item {
         anchors.centerIn: parent
         width: Math.min(560, (parent ? parent.width : 560) - 40)
         modal: true
-        title: "Settings for " + (page.info.title || qsTr("this show"))
+        title: page.info.title ? qsTr("Settings for %1").arg(page.info.title) : qsTr("Settings for this show")
         standardButtons: Dialog.Close
         readonly property var secs: [0, 15, 30, 45, 60, 90, 120]
-        function secLabels(none) { return secs.map(function (n) { return n ? n + " seconds" : none }) }
+        function secLabels(none) { return secs.map(function (n) { return n ? Theme.counted(qsTr("%n second(s)", "", n), n) : none }) }
         Column {
             width: showSettings.availableWidth
             spacing: 12
@@ -47,7 +47,7 @@ Item {
             OptionCombo {
                 label: qsTr("Speed")
                 values: [0, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3]
-                labels: ["Your podcast speed (" + player.podcastSpeed + "×)", "0.75×", "1×", "1.25×", "1.5×", "1.75×", "2×", "2.5×", "3×"]
+                labels: [qsTr("Your podcast speed (%1)").arg(Theme.speed(player.podcastSpeed))].concat([0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3].map(Theme.speed))
                 current: page.info.speed || 0
                 onPicked: function (v) { podcasts.setShowOption(page.podcastId, "speed", v) }
             }
@@ -82,7 +82,7 @@ Item {
     ConfirmDialog {
         id: unfollowDlg
         title: qsTr("Unfollow this show?")
-        body: "“" + (page.info.title || "") + "” and where you were in its episodes go away"
+        body: qsTr("“%1” and where you were in its episodes go away").arg(page.info.title || "")
               + (page.info.folder ? qsTr(". The files in its folder stay where they are.") : qsTr(", along with its downloads."))
         confirmText: qsTr("Unfollow")
         destructive: true
@@ -145,7 +145,7 @@ Item {
                                 visible: (page.info.error || "").length > 0
                                 width: parent.width
                                 wrapMode: Text.WordWrap
-                                text: "Couldn't check the feed: " + (page.info.error || "")
+                                text: qsTr("Couldn't check the feed: %1").arg(page.info.error || "")
                                 color: Theme.error; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                             }
                             Flow {
@@ -193,7 +193,7 @@ Item {
                         visible: (page.info.episodes || 0) > 8 || text.length > 0
                         placeholderText: qsTr("Find an episode")
                         selectByMouse: true
-                        Accessible.name: "Find an episode"
+                        Accessible.name: qsTr("Find an episode")
                         onTextChanged: podcasts.setEpisodeFilter(text)
                         Keys.onEscapePressed: text = ""
                     }

@@ -75,11 +75,8 @@ Item {
         id: extraDlg
         objectName: "removeExtraCopiesDialog"
         title: qsTr("Keep only the best copies?")
-        confirmText: "Remove " + what
-        body: qsTr("Of each set of probable duplicates, the best copy stays: lossless first, then the higher bitrate. ")
-              + "The other " + what + " are taken out of the library; the files stay on your disk, and Settings → "
-              + "Library can bring them back. Check the list first if some are on purpose, like a song on both an album "
-              + "and a compilation: right-click one to keep or remove it on its own."
+        confirmText: qsTr("Remove %1").arg(what)
+        body: qsTr("Of each set of probable duplicates, the best copy stays: lossless first, then the higher bitrate. The other %1 are taken out of the library; the files stay on your disk, and Settings → Library can bring them back. Check the list first if some are on purpose, like a song on both an album and a compilation: right-click one to keep or remove it on its own.").arg(what)
         onAccepted: library.removeExtraCopies()
     }
 
@@ -143,8 +140,8 @@ Item {
                         objectName: "healthSummary"
                         text: page.report.loading && !page.checks.length ? qsTr("Checking your library…")
                             : (page.report.issues || 0) === 0 ? qsTr("Nothing to fix. Your library is in great shape.")
-                            : Theme.num(page.report.issues) + (page.report.issues === 1 ? qsTr(" thing") : qsTr(" things")) + " worth a look across "
-                              + Theme.num((page.report.albums || 0)) + " albums and " + Theme.num((page.report.tracks || 0)) + " songs"
+                            : Theme.counted(qsTr("%n thing(s) worth a look across %1 albums and %2 songs", "", page.report.issues), page.report.issues)
+                              .arg(Theme.num(page.report.albums || 0)).arg(Theme.num(page.report.tracks || 0))
                         color: Theme.textDim
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(14)
@@ -168,9 +165,7 @@ Item {
                     ConfirmDialog {
                         id: repairDlg
                         title: qsTr("Repair covers?")
-                        body: qsTr("Covers that show blank or garbled are made again: every song's picture is read afresh ")
-                              + "(a full rescan, which can take a while with a big library), and any that turn out damaged "
-                              + "make way for the folder's cover. Covers you chose yourself stay as they are."
+                        body: qsTr("Covers that show blank or garbled are made again: every song's picture is read afresh (a full rescan, which can take a while with a big library), and any that turn out damaged make way for the folder's cover. Covers you chose yourself stay as they are.")
                         confirmText: qsTr("Repair covers")
                         onAccepted: { library.repairCovers(); Nav.notify(qsTr("Repairing covers: rescanning your library")) }
                     }
@@ -283,8 +278,8 @@ Item {
                                 width: Math.min(implicitWidth, card.width - 220)
                                 elide: Text.ElideRight
                                 text: metaEditor.coversBusy
-                                      ? "Looked up " + Theme.num(metaEditor.coversDone) + " of " + Theme.num(metaEditor.coversTotal) + " albums  ·  "
-                                        + metaEditor.coversFound + " found" + (metaEditor.coversCurrent ? "  ·  " + metaEditor.coversCurrent : "")
+                                      ? qsTr("Looked up %1 of %2 albums  ·  %3 found").arg(Theme.num(metaEditor.coversDone)).arg(Theme.num(metaEditor.coversTotal))
+                                        .arg(Theme.num(metaEditor.coversFound)) + (metaEditor.coversCurrent ? "  ·  " + metaEditor.coversCurrent : "")
                                       : qsTr("Searches MusicBrainz and the Cover Art Archive, about one album a second.")
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily
@@ -311,7 +306,7 @@ Item {
                                 visible: !metaEditor.genresBusy && metaEditor.genreProposals.length > 0
                                 primary: true
                                 height: 32
-                                text: "Review " + Theme.num(metaEditor.genreProposals.length) + " found…"
+                                text: qsTr("Review %1 found…").arg(Theme.num(metaEditor.genreProposals.length))
                                 onClicked: genreReview.open()
                             }
                             Text {
@@ -320,11 +315,10 @@ Item {
                                 width: Math.min(implicitWidth, card.width - 360)
                                 elide: Text.ElideRight
                                 text: metaEditor.genresSaving
-                                      ? "Saving genres to your files: " + Theme.num(metaEditor.genresSaved) + " of " + Theme.num(metaEditor.genresToSave)
-                                        + " albums. You can carry on meanwhile."
+                                      ? qsTr("Saving genres to your files: %1 of %2 albums. You can carry on meanwhile.").arg(Theme.num(metaEditor.genresSaved)).arg(Theme.num(metaEditor.genresToSave))
                                       : metaEditor.genresBusy
-                                      ? "Looked up " + Theme.num(metaEditor.genresDone) + " of " + Theme.num(metaEditor.genresTotal) + " albums  ·  "
-                                        + metaEditor.genresFound + " found" + (metaEditor.genresCurrent ? "  ·  " + metaEditor.genresCurrent : "")
+                                      ? qsTr("Looked up %1 of %2 albums  ·  %3 found").arg(Theme.num(metaEditor.genresDone)).arg(Theme.num(metaEditor.genresTotal))
+                                        .arg(Theme.num(metaEditor.genresFound)) + (metaEditor.genresCurrent ? "  ·  " + metaEditor.genresCurrent : "")
                                       : qsTr("Asks MusicBrainz, a couple of seconds an album. You check what it finds before anything is saved.")
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily
@@ -342,7 +336,7 @@ Item {
                                 text: qsTr("Keep the best copies")
                                 onClicked: {
                                     var n = card.modelData.extra
-                                    extraDlg.what = Theme.num(n) + (n === 1 ? qsTr(" copy") : qsTr(" copies"))
+                                    extraDlg.what = Theme.counted(qsTr("%n copies", "", n), n)
                                     extraDlg.open()
                                 }
                             }
@@ -351,8 +345,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: Math.min(implicitWidth, card.width - 260)
                                 elide: Text.ElideRight
-                                text: "Takes the " + card.modelData.extra + " extra " + (card.modelData.extra === 1 ? "copy" : "copies")
-                                      + " out of the library and keeps the best of each. Right-click a song for more."
+                                text: Theme.counted(qsTr("Takes the %n extra copies out of the library and keeps the best of each. Right-click a song for more.", "", card.modelData.extra), card.modelData.extra)
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily
                                 font.pixelSize: Theme.fontSize(12)
@@ -373,8 +366,8 @@ Item {
                                 textFormat: Text.PlainText
                                 anchors.verticalCenter: parent.verticalCenter
                                 visible: replayGain.busy
-                                text: "Measured " + Theme.num(replayGain.done) + " of " + Theme.num(replayGain.total) + " songs"
-                                      + (replayGain.failed ? "  ·  " + replayGain.failed + " couldn't be read" : "")
+                                text: qsTr("Measured %1 of %2 songs").arg(Theme.num(replayGain.done)).arg(Theme.num(replayGain.total))
+                                      + (replayGain.failed ? "  ·  " + qsTr("%1 couldn't be read").arg(Theme.num(replayGain.failed)) : "")
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily
                                 font.pixelSize: Theme.fontSize(12)
@@ -433,9 +426,9 @@ Item {
                                             width: parent.width
                                             visible: card.modelData.kind !== "folder"
                                             text: card.modelData.kind === "album"
-                                                ? itemRow.modelData.album_artist + (itemRow.modelData.parts ? "  ·  " + itemRow.modelData.parts + " parts" : "")
+                                                ? itemRow.modelData.album_artist + (itemRow.modelData.parts ? "  ·  " + Theme.counted(qsTr("%n part(s)", "", itemRow.modelData.parts), itemRow.modelData.parts) : "")
                                                 : itemRow.modelData.artist + "  ·  " + itemRow.modelData.album
-                                                  + (card.modelData.id === "bitrate" ? "  ·  " + Math.round(itemRow.modelData.bitrate / 1000) + " kbps" : "")
+                                                  + (card.modelData.id === "bitrate" ? "  ·  " + qsTr("%1 kbps").arg(Math.round(itemRow.modelData.bitrate / 1000)) : "")
                                                   + (card.modelData.id === "duplicates" ? "  ·  " + itemRow.modelData.path : "")
                                             color: Theme.textDim
                                             elide: Text.ElideMiddle
@@ -458,7 +451,7 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 visible: card.modelData.count > card.modelData.items.length
-                                text: "Showing the first " + Theme.num(card.modelData.items.length) + " of " + Theme.num(card.modelData.count)
+                                text: qsTr("Showing the first %1 of %2").arg(Theme.num(card.modelData.items.length)).arg(Theme.num(card.modelData.count))
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily
                                 font.pixelSize: Theme.fontSize(12)

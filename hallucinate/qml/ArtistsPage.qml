@@ -33,10 +33,10 @@ Item {
     // Python's models (made in the background): handing the view thousands of composers as a JS list froze it
     readonly property var composerRows: !composers ? null : order === "az" ? library.composersAz : library.composers
     function subtitle(a) {
-        if (composers) return a.works > 0 ? Theme.num(a.works) + (a.works === 1 ? qsTr(" work") : qsTr(" works")) : Theme.num(a.tracks) + (a.tracks === 1 ? qsTr(" song") : qsTr(" songs"))
-        if (order === "songs") return Theme.num(a.tracks) + (a.tracks === 1 ? qsTr(" song") : qsTr(" songs"))
-        if (order === "plays") return (a.plays || 0) + (a.plays === 1 ? qsTr(" play") : qsTr(" plays"))
-        return Theme.num(a.albums) + (a.albums === 1 ? qsTr(" album") : qsTr(" albums"))
+        if (composers) return a.works > 0 ? Theme.counted(qsTr("%n work(s)", "", a.works), a.works) : Theme.counted(qsTr("%n song(s)", "", a.tracks), a.tracks)
+        if (order === "songs") return Theme.counted(qsTr("%n song(s)", "", a.tracks), a.tracks)
+        if (order === "plays") return Theme.counted(qsTr("%n play(s)", "", a.plays || 0), a.plays || 0)
+        return Theme.counted(qsTr("%n album(s)", "", a.albums), a.albums)
     }
 
     Text {

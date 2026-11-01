@@ -30,7 +30,7 @@ Menu {
                 readonly property int have: plSub.held[String(id)] || 0
                 readonly property bool full: have > 0 && have >= plSub.heldPaths.length
                 checkable: true
-                text: Theme.plain(name) + (have > 0 && !full ? "  (" + Theme.num(have) + " of " + Theme.num(plSub.heldPaths.length) + ")" : "")
+                text: Theme.plain(name) + (have > 0 && !full ? "  " + qsTr("(%1 of %2)").arg(Theme.num(have)).arg(Theme.num(plSub.heldPaths.length)) : "")
                 onTriggered: full ? Nav.removeFromPlaylistId(id, name, [player.current.path], "“" + (player.current.title || qsTr("This song")) + "”")
                                   : Nav.addToPlaylist(id, name, [player.current.path], "“" + (player.current.title || qsTr("This song")) + "”")
             }
@@ -51,12 +51,12 @@ Menu {
         icon.name: "wave"
         readonly property bool episode: player.hasTrack && player.current.kind === "episode"
         // podcasts keep a speed of their own, and go up to 3×
-        title: (episode ? qsTr("Podcast speed") : qsTr("Playback speed")) + (player.speed !== 1 ? " (" + player.speed + "×)" : "")
+        title: (episode ? qsTr("Podcast speed") : qsTr("Playback speed")) + (player.speed !== 1 ? " (" + Theme.speed(player.speed) + ")" : "")
         Repeater {
             model: speedMenu.episode ? [0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3] : [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
             MenuItem {
                 required property real modelData
-                text: modelData + "×"
+                text: Theme.speed(modelData)
                 checkable: true
                 checked: Math.abs(player.speed - modelData) < 0.001
                 onTriggered: player.setSpeed(modelData)
@@ -65,7 +65,8 @@ Menu {
     }
     Menu {
         icon.name: "history"
-        title: "Sleep timer" + (player.sleepRemaining >= 0 ? " (" + Math.ceil(player.sleepRemaining / 60) + " min)" : player.sleepAfterTrack ? qsTr(" (end of track)") : player.sleepAfterAlbum ? qsTr(" (end of album)") : "")
+        title: player.sleepRemaining >= 0 ? qsTr("Sleep timer (%1 min)").arg(Theme.num(Math.ceil(player.sleepRemaining / 60)))
+     : player.sleepAfterTrack ? qsTr("Sleep timer (end of track)") : player.sleepAfterAlbum ? qsTr("Sleep timer (end of album)") : qsTr("Sleep timer")
         MenuItem { text: qsTr("Off"); onTriggered: player.setSleepMinutes(0) }
         MenuItem {
             objectName: "sleepMore"
@@ -78,7 +79,7 @@ Menu {
             model: [5, 10, 15, 30, 45, 60, 90]
             MenuItem {
                 required property int modelData
-                text: Theme.num(modelData) + " minutes"
+                text: Theme.counted(qsTr("%n minute(s)", "", modelData), modelData)
                 onTriggered: player.setSleepMinutes(modelData)
             }
         }

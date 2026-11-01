@@ -88,7 +88,7 @@ Popup {
             { t: qsTr("Forward"), s: qsTr("Go to  ·  Alt+Right"), i: "next", run: () => w.goForward() },
             { t: qsTr("Find duplicates"), s: qsTr("Library  ·  songs that look the same"), i: "duplicates", run: () => {
                 w.go("songs")
-                var p = w.findItem(qsTr("pageStack")).currentItem
+                var p = w.findItem("pageStack").currentItem
                 if (p && p.duplicatesVisible !== undefined) { p.duplicatesVisible = true; library.findDuplicates() }
             } },
         ]
@@ -97,13 +97,13 @@ Popup {
             var cur = player.current
             if (!(cur.kind || "").length && cur.path && shell.features.liked !== false) {
                 var liked = userLib.likesRevision >= 0 && userLib.isLiked(cur.path)
-                c.push({ t: liked ? qsTr("Unlike this song") : qsTr("Like this song"), s: "Playback  ·  " + (cur.title || ""), i: "heart",
+                c.push({ t: liked ? qsTr("Unlike this song") : qsTr("Like this song"), s: qsTr("Playback") + "  ·  " + (cur.title || ""), i: "heart",
                          run: () => userLib.toggleLike(cur.path) })
             }
         }
         var styles = [["liquid", qsTr("Liquid")], ["aurora", qsTr("Aurora")], ["nebula", qsTr("Nebula")], ["halo", qsTr("Halo")], ["waves", qsTr("Waves")], ["bars", qsTr("Bars")]]
-        styles.forEach(st => c.push({ t: "Visualizer: " + st[1], s: qsTr("Style"), i: "wave", run: () => shell.setVisualizerStyle(st[0]) }))
-        themeManager.availableThemes.forEach(name => c.push({ t: "Theme: " + name, s: qsTr("Appearance"), i: "settings", run: () => themeManager.selectTheme(name) }))
+        styles.forEach(st => c.push({ t: qsTr("Visualizer: %1").arg(st[1]), s: qsTr("Style"), i: "wave", run: () => shell.setVisualizerStyle(st[0]) }))
+        themeManager.availableThemes.forEach(name => c.push({ t: qsTr("Theme: %1").arg(name), s: qsTr("Appearance"), i: "settings", run: () => themeManager.selectTheme(name) }))
         for (var p = 0; p < userLib.playlists.count; p++) {
             var pl = userLib.playlists.get(p)
             c.push({ t: pl.name, s: qsTr("Playlist"), i: "playlist", run: ((id) => () => Nav.openPlaylist(id))(pl.id) })
@@ -153,16 +153,16 @@ Popup {
             // genres, from the full list (the library search doesn't look at them)
             library.genreList.map(g => ({ g: g, s: score(g.name, q) })).filter(x => x.s >= 0)
                 .sort((a, b) => b.s - a.s).slice(0, 3).forEach(x => out.push({
-                    t: x.g.name, s: "Genre  ·  " + Theme.num(x.g.tracks) + (x.g.tracks === 1 ? qsTr(" song") : qsTr(" songs")), i: "note",
+                    t: x.g.name, s: qsTr("Genre") + "  ·  " + Theme.counted(qsTr("%n song(s)", "", x.g.tracks), x.g.tracks), i: "note",
                     run: ((n) => () => Nav.openGenre(n))(x.g.name) }))
             library.composerList.map(c => ({ c: c, s: score(c.name, q) })).filter(x => x.s >= 0)
                 .sort((a, b) => b.s - a.s).slice(0, 2).forEach(x => out.push({
-                    t: x.c.name, s: "Composer  ·  " + Theme.num(x.c.tracks) + (x.c.tracks === 1 ? qsTr(" song") : qsTr(" songs")), i: "note",
+                    t: x.c.name, s: qsTr("Composer") + "  ·  " + Theme.counted(qsTr("%n song(s)", "", x.c.tracks), x.c.tracks), i: "note",
                     run: ((n) => () => Nav.openComposer(n))(x.c.name) }))
             var m = library.searchAlbums
             for (var i = 0; i < Math.min(4, m.count); i++) {
                 var a = m.get(i)
-                out.push({ t: a.album, s: "Album  ·  " + a.album_artist, art: a.artUrl, run: ((k) => () => Nav.openAlbum(k))(a.album_key) })
+                out.push({ t: a.album, s: qsTr("Album") + "  ·  " + a.album_artist, art: a.artUrl, run: ((k) => () => Nav.openAlbum(k))(a.album_key) })
             }
             m = library.searchArtists
             for (i = 0; i < Math.min(3, m.count); i++) {
@@ -172,7 +172,7 @@ Popup {
             m = library.searchTracks
             for (i = 0; i < Math.min(5, m.count); i++) {
                 var tr = m.get(i)
-                out.push({ t: tr.title, s: "Song  ·  " + tr.artist, art: tr.artUrl, run: ((ix) => () => library.playSearchTracks(ix))(i) })
+                out.push({ t: tr.title, s: qsTr("Song") + "  ·  " + tr.artist, art: tr.artUrl, run: ((ix) => () => library.playSearchTracks(ix))(i) })
             }
         }
         results = out

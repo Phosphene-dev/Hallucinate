@@ -119,7 +119,7 @@ Menu {
                 color: Theme.text; selectionColor: Theme.accent; selectedTextColor: Theme.onAccent
                 font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                 Accessible.role: Accessible.StaticText
-                Accessible.name: "Show notes"
+                Accessible.name: qsTr("Show notes")
             }
         }
     }

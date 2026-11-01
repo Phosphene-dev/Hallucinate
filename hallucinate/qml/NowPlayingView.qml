@@ -181,7 +181,7 @@ Item {
                         source: player.hasTrack ? player.current.artUrl || "" : ""
                         fallback: player.hasTrack ? (player.current.title || "?").charAt(0) : ""
                         Accessible.role: Accessible.Graphic
-                        Accessible.name: player.hasTrack ? "Cover of " + (player.current.album || player.current.title || "") : qsTr("No cover")
+                        Accessible.name: player.hasTrack ? qsTr("Cover of %1").arg(player.current.album || player.current.title || "") : qsTr("No cover")
                         MouseArea {  // right-click the cover for the song's menu
                             anchors.fill: parent
                             enabled: player.hasTrack
@@ -394,7 +394,7 @@ Item {
                     readonly property bool episode: player.hasTrack && player.current.kind === "episode"
                     readonly property bool music: player.hasTrack && !(player.current.kind || "").length
                     IconButton { anchors.verticalCenter: parent.verticalCenter; visible: !parent.episode; icon: "shuffle"; size: 22; active: player.shuffle; onClicked: player.toggleShuffle() }
-                    IconButton { anchors.verticalCenter: parent.verticalCenter; visible: parent.episode; icon: "skipback:" + podcasts.options.skipBack; size: 24; tip: "Back " + podcasts.options.skipBack + " seconds"; onClicked: player.seekBy(-1000 * podcasts.options.skipBack) }
+                    IconButton { anchors.verticalCenter: parent.verticalCenter; visible: parent.episode; icon: "skipback:" + podcasts.options.skipBack; size: 24; tip: Theme.counted(qsTr("Back %n second(s)", "", podcasts.options.skipBack), podcasts.options.skipBack); onClicked: player.seekBy(-1000 * podcasts.options.skipBack) }
                     IconButton { anchors.verticalCenter: parent.verticalCenter; icon: "prev"; size: 24; onClicked: player.previous() }
                     Rectangle {
                         width: 64; height: 64; radius: Theme.round(32)
@@ -413,7 +413,7 @@ Item {
                         Accessible.name: player.playing ? qsTr("Pause") : qsTr("Play")
                     }
                     IconButton { anchors.verticalCenter: parent.verticalCenter; icon: "next"; size: 24; onClicked: player.next() }
-                    IconButton { anchors.verticalCenter: parent.verticalCenter; visible: parent.episode; icon: "skipfwd:" + podcasts.options.skipForward; size: 24; tip: "Forward " + podcasts.options.skipForward + " seconds"; onClicked: player.seekBy(1000 * podcasts.options.skipForward) }
+                    IconButton { anchors.verticalCenter: parent.verticalCenter; visible: parent.episode; icon: "skipfwd:" + podcasts.options.skipForward; size: 24; tip: Theme.counted(qsTr("Forward %n second(s)", "", podcasts.options.skipForward), podcasts.options.skipForward); onClicked: player.seekBy(1000 * podcasts.options.skipForward) }
                     IconButton {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: !parent.episode
@@ -555,5 +555,5 @@ Item {
     }
     // swallow clicks and wheel so nothing underneath reacts
     MouseArea { anchors.fill: parent; z: -2; onWheel: wheel => wheel.accepted = true
-                Accessible.role: Accessible.Pane; Accessible.name: "Now Playing" }
+                Accessible.role: Accessible.Pane; Accessible.name: qsTr("Now Playing") }
 }

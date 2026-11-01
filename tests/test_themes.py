@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 from conftest import wait_for
-from PySide6.QtCore import Q_ARG, QMetaObject, QObject, Qt, QUrl, Signal
+from PySide6.QtCore import Q_ARG, QCoreApplication, QMetaObject, QObject, Qt, QUrl, Signal
 from PySide6.QtGui import QColor, QIcon, QImage
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
@@ -224,8 +224,13 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     player = Player(session_file=tmp_path / "session.json")
     scrobbler = LastFmScrobbler(player, tmp_path / "data")
     manager = ThemeManager(config_dir, player)
+    from hallucinate.i18n import Translations
+
+    translations = Translations(QCoreApplication.instance())
     engine = QQmlApplicationEngine()
     context = engine.rootContext()
+    context.setContextProperty("i18n", translations)
+    translations.setEngine(engine)
     context.setContextProperty("library", library)
     user_lib = UserLibrary(tmp_path / "library.db", player)
     context.setContextProperty("userLib", user_lib)

@@ -20,7 +20,7 @@ Menu {
     // a song on a music server: no file here to show, edit or put in the trash
     readonly property bool onServer: paths.some(function (p) { return /^(subsonic|jellyfin):\/\//.test(p) })
     property var copies: ({ servers: 0, kept: 0, waiting: 0 })  // songs from a music server, kept here or not
-    readonly property string what: single ? "“" + trackTitle + "”" : Theme.num(paths.length) + " songs"
+    readonly property string what: single ? qsTr("“%1”").arg(trackTitle) : Theme.counted(qsTr("%n song(s)", "", paths.length), paths.length)
 
     function show(p, t, c, i) {
         path = p; trackTitle = t; context = c; index = i; paths = [p]
@@ -46,7 +46,7 @@ Menu {
         if (pid < 0 || !rows.length) return
         var removed = rows.map(function (i) { return model.get(i).path })
         rows.forEach(function (i) { userLib.removeFromPlaylist(i) })
-        Nav.notifyAction(rows.length === 1 ? qsTr("Removed from the playlist") : Theme.num(rows.length) + " songs removed from the playlist",
+        Nav.notifyAction(rows.length === 1 ? qsTr("Removed from the playlist") : Theme.counted(qsTr("%n song(s) removed from the playlist", "", rows.length), rows.length),
                          qsTr("Undo"), function () {
             userLib.addPathsToPlaylist(pid, removed)  // back at the end...
             if (userLib.currentPlaylist !== pid) return
@@ -97,12 +97,12 @@ Menu {
     MenuItem {
         visible: !songMenu.stream; height: visible ? implicitHeight : 0
         text: qsTr("Play next"); icon.name: "next"
-        onTriggered: { userLib.playNextPaths(songMenu.paths); songMenu.done(songMenu.single ? "" : songMenu.what + " will play next") }
+        onTriggered: { userLib.playNextPaths(songMenu.paths); songMenu.done(songMenu.single ? "" : qsTr("%1 will play next").arg(songMenu.what)) }
     }
     MenuItem {
         visible: !songMenu.stream; height: visible ? implicitHeight : 0
         text: qsTr("Add to queue"); icon.name: "queue"
-        onTriggered: { userLib.enqueuePaths(songMenu.paths); songMenu.done(songMenu.what + " added to the queue") }
+        onTriggered: { userLib.enqueuePaths(songMenu.paths); songMenu.done(qsTr("%1 added to the queue").arg(songMenu.what)) }
     }
     MenuItem {
         readonly property bool liked: userLib.likesRevision >= 0 && userLib.allLiked(songMenu.paths)
@@ -133,7 +133,7 @@ Menu {
                 readonly property int have: plMenu.held[String(id)] || 0
                 readonly property bool full: have > 0 && have >= songMenu.paths.length
                 checkable: true
-                text: Theme.plain(name) + (have > 0 && !full ? "  (" + Theme.num(have) + " of " + Theme.num(songMenu.paths.length) + ")" : "")
+                text: Theme.plain(name) + (have > 0 && !full ? "  " + qsTr("(%1 of %2)").arg(Theme.num(have)).arg(Theme.num(songMenu.paths.length)) : "")
                 onTriggered: {
                     var p = songMenu.paths.slice(), w = songMenu.what
                     songMenu.done("")
@@ -160,7 +160,7 @@ Menu {
         visible: songMenu.single && (songMenu.info.album_artist || songMenu.info.artist || "").length > 0
                  && !(songMenu.context === "artist" && ownRecord)
         height: visible ? implicitHeight : 0
-        text: "Go to " + Theme.plain(songMenu.info.album_artist || songMenu.info.artist || "")
+        text: qsTr("Go to %1").arg(Theme.plain(songMenu.info.album_artist || songMenu.info.artist || ""))
         icon.name: "artist"
         onTriggered: Nav.openArtist(songMenu.info.album_artist || songMenu.info.artist)
     }
@@ -172,7 +172,7 @@ Menu {
         MenuItem {
             required property string modelData
             objectName: "trackGenre_" + modelData
-            text: "Go to genre " + Theme.plain(modelData)
+            text: qsTr("Go to genre %1").arg(Theme.plain(modelData))
             icon.name: "note"
             onTriggered: Nav.openGenre(modelData)
         }
@@ -189,7 +189,7 @@ Menu {
         objectName: "trackComposer"
         visible: songMenu.composerName.length > 0 && songMenu.context !== "composer"
         height: visible ? implicitHeight : 0
-        text: "Go to composer " + Theme.plain(songMenu.composerName)
+        text: qsTr("Go to composer %1").arg(Theme.plain(songMenu.composerName))
         icon.name: "note"
         onTriggered: Nav.openComposer(songMenu.composerName)
     }

@@ -30,9 +30,9 @@ Item {
     readonly property real u: Math.max(0.55, Math.min(width / 1280, height / 760))  // one unit of size
 
     // fonts for the display: seven-segment digits, fourteen-segment letters and a dot-matrix face
-    FontLoader { id: seg7; source: Qt.resolvedUrl(qsTr("../assets/fonts/DSEG7Classic-Bold.ttf")) }
-    FontLoader { id: seg14; source: Qt.resolvedUrl(qsTr("../assets/fonts/DSEG14Classic-Regular.ttf")) }
-    FontLoader { id: dots; source: Qt.resolvedUrl(qsTr("../assets/fonts/VT323-Regular.ttf")) }
+    FontLoader { id: seg7; source: Qt.resolvedUrl("../assets/fonts/DSEG7Classic-Bold.ttf") }
+    FontLoader { id: seg14; source: Qt.resolvedUrl("../assets/fonts/DSEG14Classic-Regular.ttf") }
+    FontLoader { id: dots; source: Qt.resolvedUrl("../assets/fonts/VT323-Regular.ttf") }
     readonly property string seg7Family: seg7.status === FontLoader.Ready ? seg7.font.family : "Monospace"
     readonly property string seg14Family: seg14.status === FontLoader.Ready ? seg14.font.family : "Monospace"
     readonly property string dotsFamily: dots.status === FontLoader.Ready ? dots.font.family : "Monospace"
@@ -45,7 +45,7 @@ Item {
     }
     // What a fourteen-segment display can show: plain capitals, digits and a little punctuation
     function segText(s) {
-        s = String(s || "").normalize(qsTr("NFD")).replace(/[̀-ͯ]/g, "").toUpperCase()
+        s = String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase()
         return s.replace(/[^A-Z0-9 \-.,'!?/()&+*:]/g, " ").replace(/\s+/g, " ").trim()
     }
     function save(key, value) { shell.setUiValue(key, value) }
@@ -192,9 +192,9 @@ Item {
                     border.width: deck.lcd === modelData ? 2 : 1
                     border.color: deck.lcd === modelData ? "#ffffff" : "#000000"
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                                onClicked: { deck.lcd = parent.modelData; deck.save(qsTr("deckLcd"), parent.modelData) } }
+                                onClicked: { deck.lcd = parent.modelData; deck.save("deckLcd", parent.modelData) } }
                     Accessible.role: Accessible.RadioButton
-                    Accessible.name: modelData + " display"
+                    Accessible.name: qsTr("%1 display").arg(modelData)
                     Accessible.checked: deck.lcd === modelData
                 }
             }
@@ -203,7 +203,7 @@ Item {
                 objectName: "deckCrt"
                 label: qsTr("CRT"); latched: deck.crt
                 implicitWidth: 56 * deck.u; implicitHeight: 30 * deck.u
-                onActivated: { deck.crt = !deck.crt; deck.save(qsTr("deckCrt"), deck.crt ? "1" : "0") }
+                onActivated: { deck.crt = !deck.crt; deck.save("deckCrt", deck.crt ? "1" : "0") }
             }
             Item { width: 12 * deck.u; height: 1 }
             Led { lit: true; tint: "#3dff6a"; label: qsTr("POWER") }
@@ -269,7 +269,7 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 width: parent.width
-                                text: deck.track.album ? "SIDE A · " + deck.track.album : ""
+                                text: deck.track.album ? qsTr("SIDE A · %1").arg(deck.track.album) : ""
                                 elide: Text.ElideRight
                                 color: "#6b6555"
                                 font.family: deck.dotsFamily
@@ -435,10 +435,10 @@ Item {
                                     text: (deck.remaining ? "-" : "") + deck.clock(deck.remaining ? player.duration - player.position : player.position)
                                     ghost: (deck.remaining ? "8" : "") + "88:88"; size: 64 * deck.u
                                     align: Text.AlignRight
-                                    function flip() { deck.remaining = !deck.remaining; deck.save(qsTr("deckRemaining"), deck.remaining ? "1" : "0") }
+                                    function flip() { deck.remaining = !deck.remaining; deck.save("deckRemaining", deck.remaining ? "1" : "0") }
                                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: parent.flip() }
                                     Accessible.role: Accessible.Button
-                                    Accessible.name: (deck.remaining ? qsTr("Time left ") : qsTr("Time played ")) + text + ", click to switch"
+                                    Accessible.name: (deck.remaining ? qsTr("Time left %1, click to switch") : qsTr("Time played %1, click to switch")).arg(text)
                                     Accessible.onPressAction: flip()
                                 }
                             }
@@ -499,7 +499,7 @@ Item {
                                     var bits = []
                                     if (deck.track.codec) bits.push(String(deck.track.codec).toUpperCase())
                                     if (deck.track.sample_rate) bits.push((deck.track.sample_rate / 1000).toFixed(1) + "K")
-                                    if (deck.track.bitrate) bits.push(Math.round(deck.track.bitrate / 1000) + "KBPS")
+                                    if (deck.track.bitrate) bits.push(Math.round(deck.track.bitrate / 1000) + "KBPS")  // i18n: keep (a unit on the display)
                                     return bits.join("  ")
                                 }
                             }
@@ -569,7 +569,7 @@ Item {
                                     onClicked: player.setVisualizerEnabled(true)
                                 }
                                 Accessible.role: Accessible.Button
-                                Accessible.name: "Switch on the spectrum analyser"
+                                Accessible.name: qsTr("Switch on the spectrum analyser")
                                 Accessible.onPressAction: player.setVisualizerEnabled(true)
                             }
                         }
@@ -631,7 +631,7 @@ Item {
                         onReleased: if (player.duration > 0) player.seek(Math.round(at * player.duration))
                     }
                     Accessible.role: Accessible.Slider
-                    Accessible.name: "Position in the song"
+                    Accessible.name: qsTr("Position in the song")
                 }
             }
         }
@@ -682,7 +682,7 @@ Item {
                     Text {
                         textFormat: Text.PlainText
                         anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 8 * deck.u }
-                        text: "VU  " + vu.modelData.t
+                        text: "VU  " + vu.modelData.t  // i18n: keep
                         color: "#2a2a2a"
                         font.family: deck.dotsFamily; font.pixelSize: 16 * deck.u
                     }
@@ -775,7 +775,7 @@ Item {
                         onDoubleClicked: player.toggleMute()
                     }
                     Accessible.role: Accessible.Slider
-                    Accessible.name: "Volume " + Math.round(player.volume * 100) + "%"
+                    Accessible.name: qsTr("Volume %1%").arg(Math.round(player.volume * 100))
                 }
                 Legend { anchors.horizontalCenter: parent.horizontalCenter; text: player.muted ? qsTr("MUTED") : qsTr("VOLUME") }
             }

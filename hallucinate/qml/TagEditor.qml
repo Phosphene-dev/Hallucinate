@@ -49,7 +49,7 @@ Dialog {
     anchors.centerIn: parent
     modal: true
     width: Math.min(560, parent ? parent.width - 40 : 560)
-    title: albumMode ? qsTr("Edit album") : manyMode ? "Edit " + Theme.num(paths.length) + " songs" : qsTr("Edit tags")
+    title: albumMode ? qsTr("Edit album") : manyMode ? Theme.counted(qsTr("Edit %n song(s)", "", paths.length), paths.length) : qsTr("Edit tags")
     standardButtons: Dialog.Save | Dialog.Cancel
 
     readonly property var keys: albumMode || manyMode
@@ -150,8 +150,8 @@ Dialog {
             dlg.trackTags = r.tracks
             dlg.mbResults = []
             dlg.mbStatus = r.matched ? qsTr("Filled in from MusicBrainz. Check the fields, then Save.")
-                : "Filled in the album from MusicBrainz. Its " + Theme.num(r.releaseTracks) + " tracks don't match this album's "
-                  + Theme.num(r.songs) + " songs, so song titles are left as they are."
+                : qsTr("Filled in the album from MusicBrainz. Its %1 tracks don't match this album's %2 songs, so song titles are left as they are.")
+                  .arg(Theme.num(r.releaseTracks)).arg(Theme.num(r.songs))
         }
         function onGenreFound(r) {
             if (!dlg.opened) return
@@ -161,7 +161,7 @@ Dialog {
             var from = (r.sources || [qsTr("MusicBrainz")]).join(", ")
             dlg.genreStatus = r.source === "artist"
                 ? qsTr("No source has a genre for this album, so this is the artist's (from MusicBrainz). Click genres below to add or remove them, or type your own, then Save.")
-                : "From " + from + ". The first genre is the main one. Click genres below to add or remove them, or type your own, then Save."
+                : qsTr("From %1. The first genre is the main one. Click genres below to add or remove them, or type your own, then Save.").arg(from)
         }
         function onCoverResult(ok, msg) { dlg.message = msg; if (ok) dlg.artUrl = library.albumInfo(dlg.albumKey).artUrl || "" }
         function onFailed(msg) { dlg.message = msg }
@@ -180,7 +180,7 @@ Dialog {
             textFormat: Text.PlainText
             visible: dlg.albumMode || dlg.manyMode
             Layout.fillWidth: true
-            text: Theme.num(dlg.paths.length) + " tracks. Only changed fields are written to every track."
+            text: Theme.counted(qsTr("%n track(s). Only changed fields are written to every track.", "", dlg.paths.length), dlg.paths.length)
                 + (dlg.manyMode && dlg.mixed.length ? qsTr(" Empty fields marked “mixed” differ between them and stay as they are.") : "")
             color: Theme.textDim
             wrapMode: Text.WordWrap
@@ -221,7 +221,7 @@ Dialog {
                     text: qsTr("Find online")
                     enabled: !shell.offlineMode && dlg.fieldValue("album").length > 0
                     onClicked: dlg.findGenre()
-                    Accessible.name: "Find the genre online"
+                    Accessible.name: qsTr("Find the genre online")
                 }
             }
         }
@@ -254,7 +254,7 @@ Dialog {
                     text: modelData
                     selected: dlg.hasGenre(modelData)
                     onClicked: dlg.toggleGenre(modelData)
-                    Accessible.name: (selected ? qsTr("Remove ") : "Add ") + modelData
+                    Accessible.name: (selected ? qsTr("Remove %1") : qsTr("Add %1")).arg(modelData)
                 }
             }
         }
@@ -298,7 +298,7 @@ Dialog {
                     Text { textFormat: Text.PlainText; width: parent.width; elide: Text.ElideRight; text: modelData.title + " · " + modelData.artist; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); font.weight: Font.DemiBold }
                     Text {
                         textFormat: Text.PlainText; width: parent.width; elide: Text.ElideRight
-                        text: [modelData.year, modelData.country, modelData.format, Theme.num(modelData.tracks) + " tracks", modelData.label].filter(function (x) { return x }).join("  ·  ")
+                        text: [modelData.year, modelData.country, modelData.format, Theme.counted(qsTr("%n track(s)", "", modelData.tracks), modelData.tracks), modelData.label].filter(function (x) { return x }).join("  ·  ")
                         color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11)
                     }
                 }
@@ -309,7 +309,7 @@ Dialog {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: { dlg.mbStatus = qsTr("Fetching the release…"); metaEditor.chooseRelease(modelData.id, dlg.albumKey) }
                     Accessible.role: Accessible.Button
-                    Accessible.name: "Use " + modelData.title + " by " + modelData.artist + " " + modelData.year
+                    Accessible.name: qsTr("Use %1 by %2 %3").arg(modelData.title).arg(modelData.artist).arg(modelData.year)
                     Accessible.onPressAction: metaEditor.chooseRelease(modelData.id, dlg.albumKey)
                 }
             }
@@ -319,7 +319,7 @@ Dialog {
             objectName: "mbTrackTitles"
             visible: dlg.trackTags.length > 0
             checked: true
-            text: "Also set each song's title and number from MusicBrainz (" + Theme.num(dlg.trackTags.length) + " songs)"
+            text: Theme.counted(qsTr("Also set each song's title and number from MusicBrainz (%n song(s))", "", dlg.trackTags.length), dlg.trackTags.length)
         }
         RowLayout {
             Layout.fillWidth: true

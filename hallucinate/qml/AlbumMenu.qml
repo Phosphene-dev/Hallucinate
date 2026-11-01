@@ -11,7 +11,8 @@ Menu {
     property string albumTitle: ""
     property string artist: ""
     readonly property bool single: keys.length === 1
-    readonly property string what: single ? "“" + albumTitle + "”" : Theme.num(keys.length) + " albums"
+    //: an album's title in quotes, in a sentence ("“Blue” will play next")
+readonly property string what: single ? qsTr("“%1”").arg(albumTitle) : Theme.counted(qsTr("%n album(s)", "", keys.length), keys.length)
 
     // Read when the menu opens: whether every song is liked already, the first song (for its folder), the genre
     property bool allLiked: false
@@ -41,8 +42,8 @@ Menu {
 
     MenuItem { text: qsTr("Play"); icon.name: "play"; onTriggered: albumMenu.single ? library.playAlbum(albumMenu.keys[0], 0) : userLib.playPaths(albumMenu.paths()) }
     MenuItem { objectName: "albumShuffle"; text: qsTr("Shuffle"); icon.name: "shuffle"; onTriggered: albumMenu.shuffle() }
-    MenuItem { text: qsTr("Play next"); icon.name: "next"; onTriggered: { userLib.playNextPaths(albumMenu.paths()); Nav.notify(albumMenu.what + " will play next") } }
-    MenuItem { text: qsTr("Add to queue"); icon.name: "queue"; onTriggered: { userLib.enqueuePaths(albumMenu.paths()); Nav.notify(albumMenu.what + " added to the queue") } }
+    MenuItem { text: qsTr("Play next"); icon.name: "next"; onTriggered: { userLib.playNextPaths(albumMenu.paths()); Nav.notify(qsTr("%1 will play next").arg(albumMenu.what)) } }
+    MenuItem { text: qsTr("Add to queue"); icon.name: "queue"; onTriggered: { userLib.enqueuePaths(albumMenu.paths()); Nav.notify(qsTr("%1 added to the queue").arg(albumMenu.what)) } }
     Menu {
         id: plMenu
         objectName: "addToPlaylistMenu"
@@ -66,7 +67,7 @@ Menu {
                 readonly property int have: plMenu.held[String(id)] || 0
                 readonly property bool full: have > 0 && have >= plMenu.heldPaths.length
                 checkable: true
-                text: Theme.plain(name) + (have > 0 && !full ? "  (" + Theme.num(have) + " of " + Theme.num(plMenu.heldPaths.length) + ")" : "")
+                text: Theme.plain(name) + (have > 0 && !full ? "  " + qsTr("(%1 of %2)").arg(Theme.num(have)).arg(Theme.num(plMenu.heldPaths.length)) : "")
                 onTriggered: full ? Nav.removeFromPlaylistId(id, name, albumMenu.paths(), albumMenu.what)
                                   : Nav.addToPlaylist(id, name, albumMenu.paths(), albumMenu.what)
             }
@@ -83,7 +84,7 @@ Menu {
         onTriggered: {
             var p = albumMenu.paths()
             userLib.setLikedPaths(p, !albumMenu.allLiked)
-            Nav.notify((albumMenu.allLiked ? qsTr("Unliked") : qsTr("Liked")) + " every song on " + albumMenu.what)
+            Nav.notify((albumMenu.allLiked ? qsTr("Unliked every song on %1") : qsTr("Liked every song on %1")).arg(albumMenu.what))
         }
     }
     MenuSeparator {}
@@ -97,7 +98,7 @@ Menu {
     MenuItem {
         visible: albumMenu.single && albumMenu.artist.length > 0
         height: visible ? implicitHeight : 0
-        text: "Go to " + Theme.plain(albumMenu.artist)
+        text: qsTr("Go to %1").arg(Theme.plain(albumMenu.artist))
         icon.name: "artist"
         onTriggered: Nav.openArtist(albumMenu.artist)
     }
@@ -105,7 +106,7 @@ Menu {
         objectName: "albumGoToGenre"
         visible: albumMenu.single && albumMenu.genre.length > 0
         height: visible ? implicitHeight : 0
-        text: "Go to genre " + Theme.plain(albumMenu.genre)
+        text: qsTr("Go to genre %1").arg(Theme.plain(albumMenu.genre))
         icon.name: "note"
         onTriggered: Nav.openGenre(albumMenu.genre)
     }

@@ -15,6 +15,7 @@ from .core import composers, genre_views, remote, spelling
 from .core import folders as folder_views
 from .core import health as health_checks
 from .core.db import Database, fold, group_index, search_groups
+from .core.i18n import fill, translate
 from .core.radio import radio_tracks
 from .core.scanner import Scanner
 from .core.tags import AUDIO_EXTS, find_folder_art, read_track
@@ -890,7 +891,7 @@ class Library(QObject):
         if gen != self._filter_gen:
             return
         if error:
-            self._set_status("Filter failed: " + error)
+            self._set_status(fill(translate("Library", "Filter failed: %1"), error))
             return
         self._models["filteredTracks"].update_items(rows, ops, revision)
 
@@ -931,7 +932,7 @@ class Library(QObject):
         if not error:
             self._models["duplicates"].update_items(rows, ops, revision)
         if error:
-            self._set_status("Duplicate detection failed: " + error)
+            self._set_status(fill(translate("Library", "Duplicate detection failed: %1"), error))
         self.duplicatesChanged.emit()
 
     @Slot(str, int)
@@ -1106,7 +1107,7 @@ class Library(QObject):
         if not stats.get("error") and self._scan_seen > 0 and not self._scan_stop.is_set():
             self._prefs.setValue("library/lastScanFiles", self._scan_seen)  # the next scan's expected count
         if stats.get("error"):
-            self._set_status("Scan failed: " + stats["error"])
+            self._set_status(fill(translate("Library", "Scan failed: %1"), stats["error"]))
         else:
             self._set_status("")
         if (stats.get("added") or stats.get("updated") or stats.get("removed") or stats.get("relinked")

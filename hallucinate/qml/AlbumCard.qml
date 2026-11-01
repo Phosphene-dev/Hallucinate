@@ -90,7 +90,7 @@ Item {
         Icon { anchors.centerIn: parent; width: 16; height: 16; name: "more"; color: Theme.text }
         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: card.openMenu() }
         Accessible.role: Accessible.Button
-        Accessible.name: "More actions for " + card.title
+        Accessible.name: qsTr("More actions for %1").arg(card.title)
     }
     Rectangle {
         id: playBtn

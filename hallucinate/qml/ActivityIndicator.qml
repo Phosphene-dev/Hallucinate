@@ -17,23 +17,23 @@ Item {
             out.push({ key: "scan", label: library.status || qsTr("Scanning your music"), fraction: library.scanFraction,
                        stop: function () { library.stopScan() } })
         if (metaEditor.coversBusy)
-            out.push({ key: "covers", label: "Finding covers: " + Theme.num(metaEditor.coversDone) + " of " + Theme.num(metaEditor.coversTotal) + " albums",
+            out.push({ key: "covers", label: Theme.counted(qsTr("Finding covers: %1 of %n album(s)", "", metaEditor.coversTotal), metaEditor.coversTotal).arg(Theme.num(metaEditor.coversDone)),
                        fraction: metaEditor.coversTotal > 0 ? metaEditor.coversDone / metaEditor.coversTotal : -1,
                        stop: function () { metaEditor.cancelCovers() } })
         if (metaEditor.genresBusy)
-            out.push({ key: "genres", label: "Finding genres: " + Theme.num(metaEditor.genresDone) + " of " + Theme.num(metaEditor.genresTotal) + " albums",
+            out.push({ key: "genres", label: Theme.counted(qsTr("Finding genres: %1 of %n album(s)", "", metaEditor.genresTotal), metaEditor.genresTotal).arg(Theme.num(metaEditor.genresDone)),
                        fraction: metaEditor.genresTotal > 0 ? metaEditor.genresDone / metaEditor.genresTotal : -1,
                        stop: function () { metaEditor.cancelGenres() } })
         if (metaEditor.genresSaving)
-            out.push({ key: "genresSave", label: "Saving genres: " + Theme.num(metaEditor.genresSaved) + " of " + Theme.num(metaEditor.genresToSave) + " albums",
+            out.push({ key: "genresSave", label: Theme.counted(qsTr("Saving genres: %1 of %n album(s)", "", metaEditor.genresToSave), metaEditor.genresToSave).arg(Theme.num(metaEditor.genresSaved)),
                        fraction: metaEditor.genresToSave > 0 ? metaEditor.genresSaved / metaEditor.genresToSave : -1,
                        stop: function () { metaEditor.stopSavingGenres() } })
         if (replayGain.busy)
-            out.push({ key: "loudness", label: "Measuring loudness: " + Theme.num(replayGain.done) + " of " + Theme.num(replayGain.total) + " songs",
+            out.push({ key: "loudness", label: Theme.counted(qsTr("Measuring loudness: %1 of %n song(s)", "", replayGain.total), replayGain.total).arg(Theme.num(replayGain.done)),
                        fraction: replayGain.total > 0 ? replayGain.done / replayGain.total : -1,
                        stop: function () { replayGain.cancel() } })
         if (podcasts.downloadingCount > 0)
-            out.push({ key: "downloads", label: "Downloading " + Theme.num(podcasts.downloadingCount) + (podcasts.downloadingCount === 1 ? qsTr(" episode") : qsTr(" episodes")),
+            out.push({ key: "downloads", label: Theme.counted(qsTr("Downloading %n episode(s)", "", podcasts.downloadingCount), podcasts.downloadingCount),
                        fraction: podcasts.downloadsFraction, stop: function () { podcasts.cancelAllDownloads() } })
         return out
     }
@@ -134,7 +134,7 @@ Item {
         Text {
             textFormat: Text.PlainText
             visible: act.jobs.length > 1
-            text: "+ " + (act.jobs.length - 1) + " more"
+            text: qsTr("+ %1 more").arg(Theme.num(act.jobs.length - 1))
             color: Theme.textDim
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize(10)
@@ -155,7 +155,7 @@ Item {
     Keys.onReturnPressed: popup.open()
     Keys.onSpacePressed: popup.open()
     Accessible.role: Accessible.Button
-    Accessible.name: "Working in the background: " + act.jobs.map(j => j.label).join("; ")
+    Accessible.name: qsTr("Working in the background: %1").arg(act.jobs.map(j => j.label).join("; "))
     Accessible.onPressAction: popup.open()
 
     // everything running, each with its own Stop

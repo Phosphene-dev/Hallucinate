@@ -20,7 +20,7 @@ Item {
         id: deleteDlg
         objectName: "deleteSmartPlaylistDialog"
         title: qsTr("Delete this smart playlist?")
-        body: "“" + page.playlistName + "” and its rules go away for good. No songs are touched."
+        body: qsTr("“%1” and its rules go away for good. No songs are touched.").arg(page.playlistName)
         confirmText: qsTr("Delete playlist")
         destructive: true
         onAccepted: { var id = page.smartId; userLib.deleteSmartPlaylist(id); Nav.goHome(); Nav.routeGone("smart", id) }
@@ -59,7 +59,7 @@ Item {
                     width: parent.width
                     elide: Text.ElideRight
                     objectName: "smartCount"
-                    text: Theme.num(list.count) + (list.count === 1 ? qsTr(" song") : qsTr(" songs")) + " · " + page.info.summary
+                    text: Theme.counted(qsTr("%n song(s)", "", list.count), list.count) + " · " + page.info.summary
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
                 }
                 Row {

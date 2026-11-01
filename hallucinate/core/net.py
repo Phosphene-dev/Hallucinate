@@ -6,6 +6,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from .i18n import fill, translate
+
 _lock = threading.Lock()
 _offline = False
 
@@ -29,37 +31,37 @@ def describe(exc):
     import ssl
 
     if isinstance(exc, OfflineError):
-        return "offline mode is on"
+        return translate("Net", "offline mode is on")
     if isinstance(exc, NotWebLink):
-        return "that isn't a web link"
+        return translate("Net", "that isn't a web link")
     if isinstance(exc, ResponseTooLarge):
-        return "the server sent far more than expected"
+        return translate("Net", "the server sent far more than expected")
     if isinstance(exc, urllib.error.HTTPError):
-        return {401: "it needs a login", 403: "the server refused", 404: "nothing was found at that link",
-                410: "it's gone from that link", 429: "the server is busy; try again later"}.get(
-            exc.code, f"the server answered with an error ({exc.code})" if exc.code < 500
-            else "the server is having trouble; try again later")
+        return {401: translate("Net", "it needs a login"), 403: translate("Net", "the server refused"), 404: translate("Net", "nothing was found at that link"),
+                410: translate("Net", "it's gone from that link"), 429: translate("Net", "the server is busy; try again later")}.get(
+            exc.code, fill(translate("Net", "the server answered with an error (%1)"), exc.code) if exc.code < 500
+            else translate("Net", "the server is having trouble; try again later"))
     reason = exc.reason if isinstance(exc, urllib.error.URLError) else exc
     if isinstance(reason, (socket.timeout, TimeoutError)):
-        return "the server took too long to answer"
+        return translate("Net", "the server took too long to answer")
     if isinstance(reason, ssl.SSLError):
-        return "the secure connection couldn't be set up"
+        return translate("Net", "the secure connection couldn't be set up")
     if isinstance(reason, socket.gaierror):
-        return "the server couldn't be found (check the link and your connection)"
+        return translate("Net", "the server couldn't be found (check the link and your connection)")
     if isinstance(reason, ConnectionRefusedError):
-        return "the server refused the connection"
+        return translate("Net", "the server refused the connection")
     if isinstance(reason, (ConnectionError, http.client.HTTPException)):
-        return "the connection dropped"
+        return translate("Net", "the connection dropped")
     if type(exc) is OSError and len(exc.args) == 1 and isinstance(exc.args[0], str):
         text = exc.args[0]  # one of ours, already in words
         return text[:1].lower() + text[1:]
     if isinstance(exc, urllib.error.URLError) or isinstance(reason, OSError):
         if "tunnel" in str(reason).lower() or "proxy" in str(reason).lower():
-            return "the proxy wouldn't connect"
-        return "the server couldn't be reached"
+            return translate("Net", "the proxy wouldn't connect")
+        return translate("Net", "the server couldn't be reached")
     if isinstance(exc, ValueError):
         text = str(exc).strip()
-        return text[:1].lower() + text[1:] if text else "that doesn't look like what was expected"
+        return text[:1].lower() + text[1:] if text else translate("Net", "that doesn't look like what was expected")
     return str(exc)
 
 

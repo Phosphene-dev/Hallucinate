@@ -5,6 +5,7 @@ since (damage comes from a crash or power loss mid-write, and the check reads th
 for a quarter of a million songs); it still gets one at least weekly. A damaged one is moved aside, never deleted,
 and the newest daily backup takes its place; with no backup, Hallucinate starts a fresh one and rescans. Once a day a backup is
 taken (SQLite's online backup, so it is consistent even while the app writes) and the last few are kept."""
+import datetime
 import json
 import logging
 import os
@@ -13,6 +14,8 @@ import sqlite3
 import threading
 import time
 from pathlib import Path
+
+from .core.i18n import fill, format_date, translate
 
 logger = logging.getLogger(__name__)
 
@@ -111,19 +114,21 @@ def check(db_path, backup_dir) -> str:
         if part.exists():
             os.replace(part, str(aside) + suffix)
     logger.error("The database %s was damaged; moved it to %s", db.name, aside)
-    what = "library database" if db.stem == "library" else "radio and podcasts database"
+    library = db.stem == "library"
     for backup in backups(backup_dir, db.stem):
         if _healthy(backup):
             shutil.copy2(backup, db)
-            when = time.strftime("%d %b", time.localtime(backup.stat().st_mtime))
+            when = format_date(datetime.date.fromtimestamp(backup.stat().st_mtime), translate("DbGuard", "d MMM", "date format (Qt)"))
             logger.warning("Restored the library database from %s", backup)
-            return (f"Your {what} was damaged, so the backup from {when} was restored. "
-                    f"The damaged copy was kept as {aside.name}.")
-    if db.stem != "library":
-        return (f"Your {what} was damaged and there was no backup, so it was started again. "
-                f"The damaged copy was kept as {aside.name}.")
-    return (f"Your library database was damaged and there was no backup, so it was started again: choose your "
-            f"music folders to rescan. The damaged copy was kept as {aside.name}.")
+            return fill(translate("DbGuard", "Your library database was damaged, so the backup from %1 was restored. "
+                                  "The damaged copy was kept as %2.") if library
+                        else translate("DbGuard", "Your radio and podcasts database was damaged, so the backup from %1 was "
+                                       "restored. The damaged copy was kept as %2."), when, aside.name)
+    if not library:
+        return fill(translate("DbGuard", "Your radio and podcasts database was damaged and there was no backup, so it was "
+                              "started again. The damaged copy was kept as %1."), aside.name)
+    return fill(translate("DbGuard", "Your library database was damaged and there was no backup, so it was started again: "
+                          "choose your music folders to rescan. The damaged copy was kept as %1."), aside.name)
 
 
 def backup_now(db_path, backup_dir, keep=KEEP) -> Path:

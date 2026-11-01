@@ -74,7 +74,7 @@ Rectangle {
     Keys.onEnterPressed: row.activated()
     Accessible.role: Accessible.ListItem
     Accessible.name: title + (artist.length ? ", " + artist : "") +
-                     (Rows.showTrackInfo && audioFormat.length ? ", " + audioFormat + " audio" : "") +
+                     (Rows.showTrackInfo && audioFormat.length ? ", " + qsTr("%1 audio").arg(audioFormat) : "") +
                      (quality.showExplicit ? qsTr(", explicit") : "") + (quality.showHiRes ? qsTr(", Hi-Res") : "")
     Accessible.onPressAction: row.activated()
     Accessible.selected: row.selected
@@ -249,7 +249,7 @@ Rectangle {
         activeFocusOnTab: false
         tip: qsTr("Add to queue")
         // says so: with the queue panel closed, nothing else on screen changes
-        onClicked: { row.enqueue(); Nav.notify("“" + row.title + "” added to the queue") }
+        onClicked: { row.enqueue(); Nav.notify(qsTr("“%1” added to the queue").arg(row.title)) }
     }
     Text {
         textFormat: Text.PlainText

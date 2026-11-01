@@ -9,6 +9,7 @@ from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import QMenu, QSystemTrayIcon
 
 from .core import net
+from .core.i18n import QT_TRANSLATE_NOOP, fill, translate
 
 VISUALIZER_STYLES = ("liquid", "aurora", "nebula", "halo", "waves", "bars", "tunnel", "wires", "rain")
 # What closing the main window does. "tray" needs a visible tray icon; without one it quits.
@@ -144,17 +145,19 @@ class DesktopShell(QObject):
             return
         self._tray = QSystemTrayIcon(self._icon, self)
         menu = QMenu()
-        self._act_toggle = QAction("Play", menu)
+        self._act_toggle = QAction(menu)
         self._act_toggle.triggered.connect(self._player.toggle)
-        prev, nxt = QAction("Previous", menu), QAction("Next", menu)
+        prev, nxt = QAction(menu), QAction(menu)
         prev.triggered.connect(self._player.previous)
         nxt.triggered.connect(self._player.next)
-        show, mini, quit_ = QAction("Show Hallucinate", menu), QAction("Mini Player", menu), QAction("Quit", menu)
+        show, mini, quit_ = QAction(menu), QAction(menu), QAction(menu)
         show.triggered.connect(self.showMain)
         mini.triggered.connect(self.toggleMini)
         quit_.triggered.connect(self._app.quit)
         # Go to: the sidebar's pages, in its order, without the ones switched off (rebuilt each time it opens)
-        self._goto = QMenu("Go To", menu)  # title case, as tray menus are (KDE, GNOME's AppIndicator)
+        self._goto = QMenu(menu)
+        self._tray_actions = (prev, nxt, show, mini, quit_)
+        self.retranslateTray()
         self._goto.aboutToShow.connect(self._fill_goto)
         self._fill_goto()
         for a in (show, mini, None, self._act_toggle, prev, nxt, None):
@@ -170,17 +173,35 @@ class DesktopShell(QObject):
         self._sync_quit_policy()
         self.settingsChanged.emit()  # Settings shows the tray switch now
 
-    PAGE_TITLES = {"home": "Home", "albums": "Albums", "artists": "Artists", "genres": "Genres", "songs": "Songs",
-                   "folders": "Folders",
-                   "liked": "Liked Songs", "stats": "Stats", "history": "History", "recap": "Recap",
-                   "visualizer": "Visualizer", "stations": "Internet Radio", "podcasts": "Podcasts",
-                   "settings": "Settings"}
+    # (title case, as tray menus are: KDE, GNOME's AppIndicator)
+    PAGE_TITLES = {"home": QT_TRANSLATE_NOOP("Tray", "Home"), "albums": QT_TRANSLATE_NOOP("Tray", "Albums"),
+                   "artists": QT_TRANSLATE_NOOP("Tray", "Artists"), "genres": QT_TRANSLATE_NOOP("Tray", "Genres"),
+                   "songs": QT_TRANSLATE_NOOP("Tray", "Songs"), "folders": QT_TRANSLATE_NOOP("Tray", "Folders"),
+                   "liked": QT_TRANSLATE_NOOP("Tray", "Liked Songs"), "stats": QT_TRANSLATE_NOOP("Tray", "Stats"),
+                   "history": QT_TRANSLATE_NOOP("Tray", "History"), "recap": QT_TRANSLATE_NOOP("Tray", "Recap"),
+                   "visualizer": QT_TRANSLATE_NOOP("Tray", "Visualizer"),
+                   "stations": QT_TRANSLATE_NOOP("Tray", "Internet Radio"), "podcasts": QT_TRANSLATE_NOOP("Tray", "Podcasts"),
+                   "settings": QT_TRANSLATE_NOOP("Tray", "Settings")}
+
+    @Slot()
+    def retranslateTray(self):
+        """The tray menu's words, in the language chosen (again when it changes)."""
+        if self._tray is None or not hasattr(self, "_tray_actions"):
+            return
+        prev, nxt, show, mini, quit_ = self._tray_actions
+        prev.setText(translate("Tray", "Previous"))
+        nxt.setText(translate("Tray", "Next"))
+        show.setText(translate("Tray", "Show Hallucinate"))
+        mini.setText(translate("Tray", "Mini Player"))
+        quit_.setText(translate("Tray", "Quit"))
+        self._goto.setTitle(translate("Tray", "Go To"))
+        self._refresh()
 
     def _fill_goto(self):
         self._goto.clear()
         for page in [*self.sidebarOrder, "settings"]:
             if self._shown(page):
-                self._goto.addAction(self.PAGE_TITLES.get(page, page.title())).triggered.connect(
+                self._goto.addAction(translate("Tray", self.PAGE_TITLES[page]) if page in self.PAGE_TITLES else page.title()).triggered.connect(
                     lambda _=False, p=page: self.goTo(p))
 
     @Slot(str)
@@ -201,7 +222,7 @@ class DesktopShell(QObject):
     def _refresh(self):
         if self._tray is None:
             return
-        self._act_toggle.setText("Pause" if self._player.playing else "Play")
+        self._act_toggle.setText(translate("Tray", "Pause") if self._player.playing else translate("Tray", "Play"))
         cur = self._player.current if self._player.hasTrack else {}
         self._tray.setToolTip(f"{cur['title']} — {cur['artist']}" if cur else "Hallucinate")
 
@@ -460,7 +481,7 @@ class DesktopShell(QObject):
 
         error = desktopentry.install()
         self.settingsChanged.emit()
-        return error or "Added to your app launcher; docks show its icon from the next start"
+        return error or translate("Shell", "Added to your app launcher; docks show its icon from the next start")
 
     @Slot()
     def removeFromLauncher(self):
@@ -709,7 +730,7 @@ class DesktopShell(QObject):
         if not self._notify_always and self._in_front():
             return
         track = self._player.current
-        title = track.get("title") or "Unknown track"
+        title = track.get("title") or translate("Shell", "Unknown track")
         body = " — ".join(x for x in (track.get("artist", ""), track.get("album", "")) if x)
         art = str(track.get("artUrl") or "")
         self._send_notification(title, body, key="track", image=art if art.startswith("file://") else "")
@@ -727,16 +748,16 @@ class DesktopShell(QObject):
 
         library_db, streams_db, _ = getattr(self, "_backup", (None, None, None))
         if library_db is None:
-            return "Backups aren't available here"
+            return translate("Shell", "Backups aren't available here")
         path = QUrl(url).toLocalFile() if url.startswith("file:") else url
         if not path.endswith(".hallucinate-backup"):
             path += ".hallucinate-backup"
         try:
             s = backup.export(library_db, streams_db, path)
         except (OSError, ValueError, sqlite3.Error) as exc:
-            return f"Couldn't save the backup: {exc}"
-        return (f"Backed up {s['likes']} likes, {s['ratings']} ratings, {s['playlists']} playlists, "
-                f"{s['listens']} listens, {s['stations']} stations and {s['podcasts']} shows")
+            return fill(translate("Shell", "Couldn't save the backup: %1"), exc)
+        return fill(translate("Shell", "Backed up %1 likes, %2 ratings, %3 playlists, %4 listens, %5 stations and %6 shows"),
+                    s["likes"], s["ratings"], s["playlists"], s["listens"], s["stations"], s["podcasts"])
 
     @Slot(str, result=str)
     def importBackup(self, url):
@@ -746,16 +767,16 @@ class DesktopShell(QObject):
 
         library_db, streams_db, after = getattr(self, "_backup", (None, None, None))
         if library_db is None:
-            return "Backups aren't available here"
+            return translate("Shell", "Backups aren't available here")
         path = QUrl(url).toLocalFile() if url.startswith("file:") else url
         try:
             s = backup.restore(backup.read(path), library_db, streams_db)
         except (OSError, ValueError, sqlite3.Error) as exc:
-            return f"Couldn't restore that backup: {exc}"
+            return fill(translate("Shell", "Couldn't restore that backup: %1"), exc)
         if after is not None:
             after()
-        return (f"Restored {s['likes']} likes, {s['ratings']} ratings, {s['playlists']} playlists, "
-                f"{s['listens']} listens, {s['stations']} stations and {s['podcasts']} shows")
+        return fill(translate("Shell", "Restored %1 likes, %2 ratings, %3 playlists, %4 listens, %5 stations and %6 shows"),
+                    s["likes"], s["ratings"], s["playlists"], s["listens"], s["stations"], s["podcasts"])
 
     whatsNewChanged = Signal()
 
@@ -842,8 +863,8 @@ class DesktopShell(QObject):
             self._window.hide()
             if not self._tray_visible() and not self._told_background:
                 self._told_background = True  # no icon to find it by: say once how to get it back
-                self.notify("Hallucinate is still playing",
-                            "Open Hallucinate again to bring the window back.")
+                self.notify(translate("Shell", "Hallucinate is still playing"),
+                            translate("Shell", "Open Hallucinate again to bring the window back."))
             return "kept"
         self._app.quit()
         return "quit"

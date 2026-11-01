@@ -51,8 +51,10 @@ Item {
                     width: parent.width
                     wrapMode: Text.WordWrap
                     visible: library.trackCount > 0
-                    text: [Theme.num(library.albumCount) + " albums", Theme.num(library.trackCount) + " songs", Theme.num(library.artistCount) + " artists",
-                           page.facts.seconds ? Theme.fmtHours(page.facts.seconds) + " of music" : ""].filter(s => s).join("  ·  ")
+                    text: [Theme.counted(qsTr("%n album(s)", "", library.albumCount), library.albumCount),
+                           Theme.counted(qsTr("%n song(s)", "", library.trackCount), library.trackCount),
+                           Theme.counted(qsTr("%n artist(s)", "", library.artistCount), library.artistCount),
+                           page.facts.seconds ? qsTr("%1 of music").arg(Theme.fmtHours(page.facts.seconds)) : ""].filter(s => s).join("  ·  ")
                     color: Theme.textDim
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(14)
@@ -94,7 +96,7 @@ Item {
                         textFormat: Text.PlainText
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: library.scanning ? qsTr("Songs appear here as they are found.")
-                            : library.missingFolders.length > 0 ? "Folder not found or unreadable: " + library.missingFolders.join(", ")
+                            : library.missingFolders.length > 0 ? qsTr("Folder not found or unreadable: %1").arg(library.missingFolders.join(", "))
                             : library.hasFolders ? qsTr("Your folders contain no supported audio files. Add another folder or check Settings.")
                             : qsTr("Choose the folder that holds your music to get started.")
                         color: Theme.textDim
@@ -155,7 +157,7 @@ Item {
                 }
                 Fact { value: page.facts.seconds ? Theme.fmtHours(page.facts.seconds).replace(" ", "\u2009") : "–"; label: qsTr("of music") }
                 Fact { value: page.facts.bytes ? Theme.fmtBytes(page.facts.bytes) : "–"; label: qsTr("on disk") }
-                Fact { value: page.facts.tracks ? Math.round(page.facts.lossless * 100) + "%" : "–"; label: "lossless" }
+                Fact { value: page.facts.tracks ? Math.round(page.facts.lossless * 100) + "%" : "–"; label: qsTr("lossless") }
                 GlassPanel {
                     id: formatsTile
                     objectName: "formatsTile"

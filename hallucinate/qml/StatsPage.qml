@@ -61,7 +61,7 @@ Item {
                     Column {
                         anchors.centerIn: parent
                         Text { anchors.horizontalCenter: parent.horizontalCenter; text: Theme.num(userLib.statsSummary.listens || 0); color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(21)) * Theme.displayScale; font.weight: Font.Bold; textFormat: Text.PlainText }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: "listens"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: qsTr("listens"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
                     }
                 }
                 Rectangle {
@@ -112,7 +112,7 @@ Item {
                         rowIndex: index
                         number: index + 1
                         title: model.title
-                        artist: model.artist + " · " + Theme.num(model.plays) + (model.plays === 1 ? qsTr(" listen") : qsTr(" listens"))
+                        artist: model.artist + " · " + Theme.counted(qsTr("%n listen(s)", "", model.plays), model.plays)
                         album: model.album
                         durText: model.durText
                         artUrl: model.artUrl
@@ -142,14 +142,14 @@ Item {
                         required property string name
                         required property int plays
                         required property int albums
-                        objectName: index === 0 ? qsTr("statsTopArtist") : ""
+                        objectName: index === 0 ? "statsTopArtist" : ""
                         width: parent.width
                         height: 42
                         color: artistHover.hovered ? Theme.glassHover : index % 2 ? "transparent" : Theme.surface
                         radius: Theme.radiusSmall
                         HoverHandler { id: artistHover }
                         Accessible.role: Accessible.Button
-                        Accessible.name: name + ", " + Theme.num(plays) + (plays === 1 ? qsTr(" listen") : qsTr(" listens"))
+                        Accessible.name: name + ", " + Theme.counted(qsTr("%n listen(s)", "", plays), plays)
                         Accessible.onPressAction: Nav.openArtist(name)
                         MouseArea {
                             anchors.fill: parent
@@ -163,8 +163,8 @@ Item {
                             anchors.leftMargin: 12
                             anchors.rightMargin: 12
                             Text { Layout.fillWidth: true; text: name; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); elide: Text.ElideRight; textFormat: Text.PlainText }
-                            Text { text: Theme.num(albums) + (albums === 1 ? qsTr(" album") : qsTr(" albums")); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
-                            Text { text: Theme.num(plays) + (plays === 1 ? qsTr(" listen") : qsTr(" listens")); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
+                            Text { text: Theme.counted(qsTr("%n album(s)", "", albums), albums); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
+                            Text { text: Theme.counted(qsTr("%n listen(s)", "", plays), plays); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
                         }
                     }
                 }
@@ -190,14 +190,14 @@ Item {
                         required property string album_artist
                         required property string album_key
                         required property int plays
-                        objectName: index === 0 ? qsTr("statsTopAlbum") : ""
+                        objectName: index === 0 ? "statsTopAlbum" : ""
                         width: parent.width
                         height: 42
                         color: albumHover.hovered ? Theme.glassHover : index % 2 ? "transparent" : Theme.surface
                         radius: Theme.radiusSmall
                         HoverHandler { id: albumHover }
                         Accessible.role: Accessible.Button
-                        Accessible.name: album + ", " + album_artist + ", " + Theme.num(plays) + (plays === 1 ? qsTr(" listen") : qsTr(" listens"))
+                        Accessible.name: album + ", " + album_artist + ", " + Theme.counted(qsTr("%n listen(s)", "", plays), plays)
                         Accessible.onPressAction: Nav.openAlbum(album_key)
                         MouseArea {
                             anchors.fill: parent
@@ -213,7 +213,7 @@ Item {
                             anchors.leftMargin: 12
                             anchors.rightMargin: 12
                             Text { Layout.fillWidth: true; text: album + " · " + album_artist; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); elide: Text.ElideRight; textFormat: Text.PlainText }
-                            Text { text: Theme.num(plays) + (plays === 1 ? qsTr(" listen") : qsTr(" listens")); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
+                            Text { text: Theme.counted(qsTr("%n listen(s)", "", plays), plays); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
                         }
                     }
                 }

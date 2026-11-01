@@ -134,7 +134,7 @@ def test_history_import_runs_off_thread_into_user_library(db, scan, music, tmp_p
 
     scrobbler.importHistory("listenbrainz", "listener")
     assert wait_for(lambda: not scrobbler.importing)
-    assert "Imported 1 new listens (1 matched" in scrobbler.importStatus
+    assert "Imported 1 new listen (1 matched" in scrobbler.importStatus
     assert db.most_played(5)[0]["plays"] == 1
 
     scrobbler.shutdown()

@@ -15,6 +15,7 @@ from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
 
 from .core import net, remote
 from .core.db import Database
+from .core.i18n import translate
 from .core.tags import AUDIO_EXTS
 
 logger = logging.getLogger(__name__)
@@ -126,7 +127,7 @@ class OfflineCopies(QObject):
             if remote.is_remote(p) and not remote.local_copy(p) and p not in pending:
                 new.append(p)
         if not new:
-            self.message.emit("Those songs are kept on this computer already")
+            self.message.emit(translate("Offline", "Those songs are kept on this computer already"))
             return
         self._db.conn.executemany(
             "INSERT INTO offline_copies(path, wanted) VALUES(?, ?) ON CONFLICT(path) DO UPDATE SET wanted=excluded.wanted",
@@ -137,9 +138,9 @@ class OfflineCopies(QObject):
             self._queue.extend(new)
         n = len(new)
         if net.is_offline():
-            self.message.emit(f"Offline mode is on: {n} song{'s' if n != 1 else ''} will download when it's off")
+            self.message.emit(translate("Offline", "Offline mode is on: %n song(s) will download when it's off", None, n))
         else:
-            self.message.emit(f"Keeping {n} song{'s' if n != 1 else ''} on this computer")
+            self.message.emit(translate("Offline", "Keeping %n song(s) on this computer", None, n))
             self._start()
         self.changed.emit()
 
@@ -160,7 +161,7 @@ class OfflineCopies(QObject):
             self._db.conn.execute("DELETE FROM offline_copies WHERE path=?", (p,))
         self._db.conn.commit()
         if gone:
-            self.message.emit(f"Removed {gone} cop{'ies' if gone != 1 else 'y'} from this computer")
+            self.message.emit(translate("Offline", "Removed %n copies from this computer", None, gone))
         self.changed.emit()
 
     @Slot()
@@ -223,7 +224,7 @@ class OfflineCopies(QObject):
             self._tick.emit()
             url = remote.stream_url(path)
             if not url or url.startswith("file:"):
-                self._done.emit(path, "", 0, "" if url else "its server can't be reached")
+                self._done.emit(path, "", 0, "" if url else translate("Offline", "its server can't be reached"))
                 continue
             target = self._folder / self._names.get(path, "song.audio")
 
@@ -239,7 +240,7 @@ class OfflineCopies(QObject):
                 break
             except Exception as exc:  # noqa: BLE001 - one song that won't download doesn't stop the rest
                 logger.warning("A server song couldn't be kept: %s", type(exc).__name__)
-                self._done.emit(path, "", 0, "it couldn't be downloaded")
+                self._done.emit(path, "", 0, translate("Offline", "it couldn't be downloaded"))
         with self._lock:
             self._current, self._fraction = "", 0.0
         self._tick.emit()
@@ -265,8 +266,8 @@ class OfflineCopies(QObject):
         if not left:
             self._progress.stop()
             if self._failed:
-                self.message.emit(f"{self._failed} song{'s' if self._failed != 1 else ''} couldn't be kept on this "
-                                  "computer (is the server there?)")
+                self.message.emit(translate("Offline", "%n song(s) couldn't be kept on this computer (is the server there?)",
+                                            None, self._failed))
                 self._failed = 0
         self.changed.emit()
 

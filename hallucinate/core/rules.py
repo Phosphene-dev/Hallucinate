@@ -14,36 +14,37 @@ import time
 
 from . import genres
 from .db import fold
+from .i18n import QT_TRANSLATE_NOOP, translate
 
 # field -> (kind, SQL expression, label)
 FIELDS = {
-    "title": ("text", "t.title", "Title"),
-    "artist": ("text", "t.artist", "Artist"),
-    "album": ("text", "t.album", "Album"),
-    "album_artist": ("text", "t.album_artist", "Album artist"),
-    "genre": ("text", "t.genre", "Genre"),
-    "composer": ("text", "t.composer", "Composer"),
-    "work": ("text", "t.work", "Work"),
-    "music_key": ("text", "t.music_key", "Key"),
-    "format": ("text", "t.codec", "Format"),
-    "path": ("text", "t.path", "File path"),
-    "year": ("number", "t.year", "Year"),
-    "track_no": ("number", "t.track_no", "Track number"),
-    "disc_no": ("number", "t.disc_no", "Disc number"),
-    "duration": ("number", "t.duration / 60.0", "Length (minutes)"),
-    "bpm": ("number", "NULLIF(t.bpm, 0)", "Tempo (BPM)"),  # 0 is "not known": it matches no number
-    "bitrate": ("number", "t.bitrate / 1000.0", "Bitrate (kb/s)"),
-    "plays": ("number", "COALESCE(p.count, 0)", "Play count"),
-    "added": ("date", "t.added", "Date added"),
-    "last_played": ("date", "p.last", "Last played"),
-    "liked": ("bool", "l.path IS NOT NULL", "Liked"),
-    "rating": ("number", "COALESCE(r.stars, 0)", "Rating (stars)"),
-    "skips": ("number", "COALESCE(s.count, 0)", "Skip count"),
-    "lossless": ("bool", "UPPER(COALESCE(t.codec, '')) IN ({lossless})", "Lossless"),
-    "sample_rate": ("number", "t.sample_rate / 1000.0", "Sample rate (kHz)"),
-    "bit_depth": ("number", "NULLIF(t.bit_depth, 0)", "Bit depth"),  # 0: lossy, or not known
-    "explicit": ("bool", "t.explicit = 1", "Explicit"),
-    "liked_at": ("date", "l.liked_at", "Date liked"),
+    "title": ("text", "t.title", QT_TRANSLATE_NOOP("SmartRules", "Title")),
+    "artist": ("text", "t.artist", QT_TRANSLATE_NOOP("SmartRules", "Artist")),
+    "album": ("text", "t.album", QT_TRANSLATE_NOOP("SmartRules", "Album")),
+    "album_artist": ("text", "t.album_artist", QT_TRANSLATE_NOOP("SmartRules", "Album artist")),
+    "genre": ("text", "t.genre", QT_TRANSLATE_NOOP("SmartRules", "Genre")),
+    "composer": ("text", "t.composer", QT_TRANSLATE_NOOP("SmartRules", "Composer")),
+    "work": ("text", "t.work", QT_TRANSLATE_NOOP("SmartRules", "Work")),
+    "music_key": ("text", "t.music_key", QT_TRANSLATE_NOOP("SmartRules", "Key")),
+    "format": ("text", "t.codec", QT_TRANSLATE_NOOP("SmartRules", "Format")),
+    "path": ("text", "t.path", QT_TRANSLATE_NOOP("SmartRules", "File path")),
+    "year": ("number", "t.year", QT_TRANSLATE_NOOP("SmartRules", "Year")),
+    "track_no": ("number", "t.track_no", QT_TRANSLATE_NOOP("SmartRules", "Track number")),
+    "disc_no": ("number", "t.disc_no", QT_TRANSLATE_NOOP("SmartRules", "Disc number")),
+    "duration": ("number", "t.duration / 60.0", QT_TRANSLATE_NOOP("SmartRules", "Length (minutes)")),
+    "bpm": ("number", "NULLIF(t.bpm, 0)", QT_TRANSLATE_NOOP("SmartRules", "Tempo (BPM)")),  # 0 is "not known": it matches no number
+    "bitrate": ("number", "t.bitrate / 1000.0", QT_TRANSLATE_NOOP("SmartRules", "Bitrate (kb/s)")),
+    "plays": ("number", "COALESCE(p.count, 0)", QT_TRANSLATE_NOOP("SmartRules", "Play count")),
+    "added": ("date", "t.added", QT_TRANSLATE_NOOP("SmartRules", "Date added")),
+    "last_played": ("date", "p.last", QT_TRANSLATE_NOOP("SmartRules", "Last played")),
+    "liked": ("bool", "l.path IS NOT NULL", QT_TRANSLATE_NOOP("SmartRules", "Liked")),
+    "rating": ("number", "COALESCE(r.stars, 0)", QT_TRANSLATE_NOOP("SmartRules", "Rating (stars)")),
+    "skips": ("number", "COALESCE(s.count, 0)", QT_TRANSLATE_NOOP("SmartRules", "Skip count")),
+    "lossless": ("bool", "UPPER(COALESCE(t.codec, '')) IN ({lossless})", QT_TRANSLATE_NOOP("SmartRules", "Lossless")),
+    "sample_rate": ("number", "t.sample_rate / 1000.0", QT_TRANSLATE_NOOP("SmartRules", "Sample rate (kHz)")),
+    "bit_depth": ("number", "NULLIF(t.bit_depth, 0)", QT_TRANSLATE_NOOP("SmartRules", "Bit depth")),  # 0: lossy, or not known
+    "explicit": ("bool", "t.explicit = 1", QT_TRANSLATE_NOOP("SmartRules", "Explicit")),
+    "liked_at": ("date", "l.liked_at", QT_TRANSLATE_NOOP("SmartRules", "Date liked")),
 }
 
 def _lossless_list():
@@ -56,30 +57,30 @@ FIELDS["lossless"] = (FIELDS["lossless"][0], FIELDS["lossless"][1].format(lossle
 
 # kind -> {op: label}
 OPS = {
-    "text": {"contains": "contains", "not_contains": "does not contain", "is": "is", "is_not": "is not",
-             "starts_with": "starts with", "ends_with": "ends with", "is_empty": "is empty",
-             "is_not_empty": "is not empty"},
-    "number": {"eq": "is", "ne": "is not", "gt": "is more than", "lt": "is less than",
-               "ge": "is at least", "le": "is at most", "between": "is between"},
-    "date": {"in_last": "in the last (days)", "not_in_last": "not in the last (days)", "never": "never"},
-    "bool": {"is_true": "is yes", "is_false": "is no"},
+    "text": {"contains": QT_TRANSLATE_NOOP("SmartRules", "contains"), "not_contains": QT_TRANSLATE_NOOP("SmartRules", "does not contain"), "is": QT_TRANSLATE_NOOP("SmartRules", "is"), "is_not": QT_TRANSLATE_NOOP("SmartRules", "is not"),
+             "starts_with": QT_TRANSLATE_NOOP("SmartRules", "starts with"), "ends_with": QT_TRANSLATE_NOOP("SmartRules", "ends with"), "is_empty": QT_TRANSLATE_NOOP("SmartRules", "is empty"),
+             "is_not_empty": QT_TRANSLATE_NOOP("SmartRules", "is not empty")},
+    "number": {"eq": QT_TRANSLATE_NOOP("SmartRules", "is"), "ne": QT_TRANSLATE_NOOP("SmartRules", "is not"), "gt": QT_TRANSLATE_NOOP("SmartRules", "is more than"), "lt": QT_TRANSLATE_NOOP("SmartRules", "is less than"),
+               "ge": QT_TRANSLATE_NOOP("SmartRules", "is at least"), "le": QT_TRANSLATE_NOOP("SmartRules", "is at most"), "between": QT_TRANSLATE_NOOP("SmartRules", "is between")},
+    "date": {"in_last": QT_TRANSLATE_NOOP("SmartRules", "in the last (days)"), "not_in_last": QT_TRANSLATE_NOOP("SmartRules", "not in the last (days)"), "never": QT_TRANSLATE_NOOP("SmartRules", "never")},
+    "bool": {"is_true": QT_TRANSLATE_NOOP("SmartRules", "is yes"), "is_false": QT_TRANSLATE_NOOP("SmartRules", "is no")},
 }
 
 SORTS = {
-    "random": ("Random", "random()"),
-    "title": ("Title", "t.s_title, t.s_artist"),
-    "artist": ("Artist", "t.s_artist, t.s_album, t.disc_no, t.track_no"),
-    "album": ("Album", "t.s_album, t.disc_no, t.track_no"),
-    "composer": ("Composer", "t.s_composer = '', t.s_composer, t.work, t.movement_no, t.s_album, t.disc_no, t.track_no"),
-    "bpm_asc": ("Slowest first", "t.bpm = 0, t.bpm, t.s_title"),
-    "bpm_desc": ("Fastest first", "t.bpm = 0, t.bpm DESC, t.s_title"),
-    "year_desc": ("Newest first", "t.year DESC, t.s_album, t.disc_no, t.track_no"),
-    "year_asc": ("Oldest first", "t.year, t.s_album, t.disc_no, t.track_no"),
-    "added_desc": ("Recently added", "t.added DESC"),
-    "plays_desc": ("Most played", "COALESCE(p.count, 0) DESC, t.s_title"),
-    "rating_desc": ("Highest rated", "COALESCE(r.stars, 0) DESC, COALESCE(p.count, 0) DESC, t.s_title"),
-    "last_played_desc": ("Recently played", "p.last IS NULL, p.last DESC"),
-    "last_played_asc": ("Least recently played", "p.last IS NOT NULL, p.last"),
+    "random": (QT_TRANSLATE_NOOP("SmartRules", "Random"), "random()"),
+    "title": (QT_TRANSLATE_NOOP("SmartRules", "Title"), "t.s_title, t.s_artist"),
+    "artist": (QT_TRANSLATE_NOOP("SmartRules", "Artist"), "t.s_artist, t.s_album, t.disc_no, t.track_no"),
+    "album": (QT_TRANSLATE_NOOP("SmartRules", "Album"), "t.s_album, t.disc_no, t.track_no"),
+    "composer": (QT_TRANSLATE_NOOP("SmartRules", "Composer"), "t.s_composer = '', t.s_composer, t.work, t.movement_no, t.s_album, t.disc_no, t.track_no"),
+    "bpm_asc": (QT_TRANSLATE_NOOP("SmartRules", "Slowest first"), "t.bpm = 0, t.bpm, t.s_title"),
+    "bpm_desc": (QT_TRANSLATE_NOOP("SmartRules", "Fastest first"), "t.bpm = 0, t.bpm DESC, t.s_title"),
+    "year_desc": (QT_TRANSLATE_NOOP("SmartRules", "Newest first"), "t.year DESC, t.s_album, t.disc_no, t.track_no"),
+    "year_asc": (QT_TRANSLATE_NOOP("SmartRules", "Oldest first"), "t.year, t.s_album, t.disc_no, t.track_no"),
+    "added_desc": (QT_TRANSLATE_NOOP("SmartRules", "Recently added"), "t.added DESC"),
+    "plays_desc": (QT_TRANSLATE_NOOP("SmartRules", "Most played"), "COALESCE(p.count, 0) DESC, t.s_title"),
+    "rating_desc": (QT_TRANSLATE_NOOP("SmartRules", "Highest rated"), "COALESCE(r.stars, 0) DESC, COALESCE(p.count, 0) DESC, t.s_title"),
+    "last_played_desc": (QT_TRANSLATE_NOOP("SmartRules", "Recently played"), "p.last IS NULL, p.last DESC"),
+    "last_played_asc": (QT_TRANSLATE_NOOP("SmartRules", "Least recently played"), "p.last IS NOT NULL, p.last"),
 }
 
 FROM = ("FROM tracks t LEFT JOIN plays p ON p.path = t.path LEFT JOIN likes l ON l.path = t.path "
@@ -233,38 +234,52 @@ def _format_number(value):
     return str(int(value)) if float(value).is_integer() else f"{value:g}"
 
 
+def _t(text):
+    return translate("SmartRules", text)
+
+
 def describe(rules):
-    """Short human-readable summary, e.g. "Liked is yes and Last played not in the last 60 days"."""
+    """Short human-readable summary, e.g. "Liked is yes and Last played not in the last 60 days", in the language
+    chosen (the words are translated; the order of field, operator and value is the translator's to change)."""
     rules = normalize(rules)
     parts = []
     for rule in rules["rules"]:
         kind, _expr, label = FIELDS[rule["field"]]
-        op_label = OPS[kind][rule["op"]]
+        label = _t(label)
+        op_label = _t(OPS[kind][rule["op"]])
         value = rule["value"]
         if kind == "date" and rule["op"] != "never":
-            op_label = op_label.replace("(days)", f"{_format_number(value)} days")
-            parts.append(f"{label} {op_label}")
+            days = int(value) if float(value).is_integer() else value
+            if isinstance(days, int):
+                text = (translate("SmartRules", "%1 in the last %n day(s)", None, days) if rule["op"] == "in_last"
+                        else translate("SmartRules", "%1 not in the last %n day(s)", None, days))
+            else:
+                text = (_t("%1 in the last %2 days") if rule["op"] == "in_last" else _t("%1 not in the last %2 days"))
+                text = text.replace("%2", _format_number(value))
+            parts.append(text.replace("%1", label))
         elif rule["op"] == "never":
-            parts.append("Never played")
+            parts.append(_t("Never played"))
         elif kind == "bool" or rule["op"] in ("is_empty", "is_not_empty"):
-            parts.append(f"{label} {op_label}")
+            parts.append(_t("%1 %2").replace("%1", label).replace("%2", op_label))
         elif rule["op"] == "between":
-            parts.append(f"{label} {op_label} {_format_number(value[0])} and {_format_number(value[1])}")
+            parts.append(_t("%1 %2 %3 and %4").replace("%1", label).replace("%2", op_label)
+                         .replace("%3", _format_number(value[0])).replace("%4", _format_number(value[1])))
         elif kind == "number":
-            parts.append(f"{label} {op_label} {_format_number(value)}")
+            parts.append(_t("%1 %2 %3").replace("%1", label).replace("%2", op_label).replace("%3", _format_number(value)))
         else:
-            parts.append(f'{label} {op_label} "{value}"')
-    text = (" and " if rules["match"] == "all" else " or ").join(parts) or "All songs"
-    text += f" · {SORTS[rules['sort']][0].lower()}"
+            parts.append(_t("%1 %2 “%3”").replace("%1", label).replace("%2", op_label).replace("%3", str(value)))
+    joiner = _t(" and ") if rules["match"] == "all" else _t(" or ")
+    text = joiner.join(parts) or _t("All songs")
+    text += " · " + _t(SORTS[rules["sort"]][0]).lower()
     if rules["limit"]:
-        text += f" · up to {rules['limit']} songs"
+        text += " · " + translate("SmartRules", "up to %n song(s)", None, rules["limit"])
     return text
 
 
 def schema():
     """Fields, operators and sorts for the QML editor."""
     return {
-        "fields": [{"key": k, "label": v[2], "kind": v[0]} for k, v in FIELDS.items()],
-        "ops": {kind: [{"key": k, "label": v} for k, v in ops.items()] for kind, ops in OPS.items()},
-        "sorts": [{"key": k, "label": v[0]} for k, v in SORTS.items()],
+        "fields": [{"key": k, "label": _t(v[2]), "kind": v[0]} for k, v in FIELDS.items()],
+        "ops": {kind: [{"key": k, "label": _t(v)} for k, v in ops.items()] for kind, ops in OPS.items()},
+        "sorts": [{"key": k, "label": _t(v[0])} for k, v in SORTS.items()],
     }

@@ -34,8 +34,7 @@ Item {
     readonly property int monthMax: Math.max(1, ...months.map(m => m.plays))
     property bool allSongs: false
 
-    function fmtDate(ts) { return ts > 0 ? Qt.formatDate(new Date(ts * 1000), "d MMM yyyy") : "" }
-    function plural(n, one, many) { return Theme.num(n) + " " + (n === 1 ? one : many) }
+    function fmtDate(ts) { return ts > 0 ? Theme.date(new Date(ts * 1000), "short") : "" }
     function yearsActive() {
         var a = profile.firstYear || 0, b = profile.lastYear || 0
         return a && b ? (a === b ? String(a) : a + "–" + b) : ""
@@ -155,8 +154,8 @@ Item {
                             textFormat: Text.PlainText
                             objectName: "artistFacts"
                             width: parent.width
-                            text: [page.plural(page.profile.albums || 0, "album", "albums"),
-                                   page.plural(page.profile.tracks || 0, "song", "songs"),
+                            text: [Theme.counted(qsTr("%n album(s)", "", page.profile.albums || 0), page.profile.albums || 0),
+                                   Theme.counted(qsTr("%n song(s)", "", page.profile.tracks || 0), page.profile.tracks || 0),
                                    page.profile.seconds ? Theme.fmtHours(page.profile.seconds) : "",
                                    page.yearsActive()].filter(s => s).join("  ·  ")
                             color: Theme.textDim
@@ -229,7 +228,7 @@ Item {
                                 objectName: "bioSource"
                                 height: 32; verticalAlignment: Text.AlignVCenter
                                 visible: text.length > 0 && !about.editing
-                                text: about.bio.own ? qsTr("written by you") : (about.bio.source ? "from " + about.bio.source : "")
+                                text: about.bio.own ? qsTr("written by you") : (about.bio.source ? qsTr("from %1").arg(about.bio.source) : "")
                                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                                 font.underline: !about.bio.own && sourceMouse.containsMouse
                                 MouseArea {
@@ -343,12 +342,12 @@ Item {
                                 objectName: "bioEdit"
                                 wrapMode: TextArea.Wrap
                                 selectByMouse: true
-                                placeholderText: "Write about " + page.artistName
+                                placeholderText: qsTr("Write about %1").arg(page.artistName)
                                 placeholderTextColor: Theme.textDim
                                 color: Theme.text
                                 font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
                                 background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: bioEdit.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
-                                Accessible.name: "Bio for " + page.artistName
+                                Accessible.name: qsTr("Bio for %1").arg(page.artistName)
                                 Keys.onEscapePressed: about.editing = false
                             }
                         }
@@ -383,12 +382,13 @@ Item {
                         spacing: parent.width < 640 ? 16 : 36  // closer together in a narrow page, so the last one fits
                         Stat {
                             value: page.profile.plays ? page.profile.plays : "—"
-                            label: page.profile.plays === 1 ? "play" : "plays"
+                            //: under the number of plays, as in "12 / plays"
+label: qsTr("play(s)", "", page.profile.plays || 0)
                         }
                         Stat {
                             value: page.profile.listenSeconds ? (page.profile.listenSeconds >= 3600 ? Theme.fmtHours(page.profile.listenSeconds)
-                                                                 : Math.round(page.profile.listenSeconds / 60) + " min") : "—"
-                            label: "listened"
+                                                                 : qsTr("%1 min").arg(Theme.num(Math.round(page.profile.listenSeconds / 60)))) : "—"
+                            label: qsTr("listened")
                         }
                         Stat {
                             visible: (page.profile.rank || 0) > 0
@@ -421,14 +421,14 @@ Item {
                                     opacity: modelData.plays ? 0.45 + 0.55 * modelData.plays / page.monthMax : 1
                                     HoverHandler { id: barHover }
                                     ToolTip.visible: barHover.hovered
-                                    ToolTip.text: Qt.formatDate(new Date(modelData.month + "-15"), "MMMM yyyy") + ": "
-                                                  + page.plural(modelData.plays, "play", "plays")
+                                    ToolTip.text: Theme.date(new Date(modelData.month + "-15"), "month") + ": "
+                                                  + Theme.counted(qsTr("%n play(s)", "", modelData.plays), modelData.plays)
                                 }
                                 }
                                 Text {
                                     textFormat: Text.PlainText
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    text: Qt.formatDate(new Date(modelData.month + "-15"), "MMM").charAt(0)
+                                    text: Qt.locale().monthName(new Date(modelData.month + "-15").getMonth() + 1, Locale.NarrowFormat)
                                     color: Theme.textDim
                                     font.family: Theme.fontFamily
                                     font.pixelSize: Theme.fontSize(9)
@@ -457,7 +457,7 @@ Item {
                             number: index + 1
                             path: modelData.path
                             title: modelData.title
-                            artist: modelData.plays ? page.plural(modelData.plays, "play", "plays") : modelData.album
+                            artist: modelData.plays ? Theme.counted(qsTr("%n play(s)", "", modelData.plays), modelData.plays) : modelData.album
                             linkArtist: false  // the line holds plays, not the artist
                             album: modelData.album
                             showAlbum: false
@@ -519,7 +519,7 @@ Item {
                                         albumKey: modelData.album_key
                                         title: modelData.album
                                         artist: page.artistName
-                                        subtitle: Theme.num(modelData.n) + (modelData.n === 1 ? qsTr(" song") : qsTr(" songs")) + "  ·  " + modelData.durText
+                                        subtitle: Theme.counted(qsTr("%n song(s)", "", modelData.n), modelData.n) + "  ·  " + modelData.durText
                                         artUrl: modelData.artUrl
                                     }
                                 }
@@ -592,7 +592,7 @@ Item {
                             font.pixelSize: Theme.fontSize(13)
                             font.weight: Font.DemiBold
                             LinkArea {
-                                name: "Play a mix of " + page.artistName + " and similar artists you have"
+                                name: qsTr("Play a mix of %1 and similar artists you have").arg(page.artistName)
                                 onClicked: library.playArtistMix([page.artistName].concat(similarBox.have.map(function (a) { return a.name })))
                             }
                         }
@@ -611,7 +611,7 @@ Item {
                                 selectionSource: similarBox.have.slice(0, 12)
                                 cardWidth: 130
                                 name: modelData.name
-                                subtitle: Theme.num(modelData.albums) + (modelData.albums === 1 ? qsTr(" album") : qsTr(" albums"))
+                                subtitle: Theme.counted(qsTr("%n album(s)", "", modelData.albums), modelData.albums)
                                 artUrl: modelData.artUrl || ""
                             }
                         }
@@ -635,7 +635,7 @@ Item {
                                 required property var modelData
                                 text: modelData.name
                                 onClicked: Qt.openUrlExternally(modelData.url)
-                                Accessible.name: modelData.name + ", opens on Last.fm"
+                                Accessible.name: qsTr("%1, opens on Last.fm").arg(modelData.name)
                             }
                         }
                     }
@@ -651,13 +651,13 @@ Item {
                         Text {
                             textFormat: Text.PlainText
                             anchors.verticalCenter: parent.verticalCenter
-                            text: page.allSongs ? qsTr("Hide") : "Show " + Theme.num(page.tracksModel.count)
+                            text: page.allSongs ? qsTr("Hide") : qsTr("Show %1").arg(Theme.num(page.tracksModel.count))
                             color: Theme.accent
                             font.family: Theme.fontFamily
                             font.pixelSize: Theme.fontSize(13)
                             font.weight: Font.DemiBold
                             LinkArea {
-                                name: page.allSongs ? qsTr("Hide all songs") : "Show all " + Theme.num(page.tracksModel.count) + " songs"
+                                name: page.allSongs ? qsTr("Hide all songs") : Theme.counted(qsTr("Show all %n song(s)", "", page.tracksModel.count), page.tracksModel.count)
                                 onClicked: page.allSongs = !page.allSongs
                             }
                         }

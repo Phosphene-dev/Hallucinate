@@ -68,9 +68,9 @@ QtObject {
     readonly property string fontFamily: themeManager.fontFamily
 
     // Display typeface for headings, numbers and the wordmark (Unbounded, SIL OFL; bundled in assets/fonts).
-    property FontLoader displayBold: FontLoader { source: Qt.resolvedUrl(qsTr("../assets/fonts/Unbounded-Bold.ttf")) }
-    property FontLoader displaySemiBold: FontLoader { source: Qt.resolvedUrl(qsTr("../assets/fonts/Unbounded-SemiBold.ttf")) }
-    property FontLoader pixel: FontLoader { source: Qt.resolvedUrl(qsTr("../assets/fonts/VT323-Regular.ttf")) }
+    property FontLoader displayBold: FontLoader { source: Qt.resolvedUrl("../assets/fonts/Unbounded-Bold.ttf") }
+    property FontLoader displaySemiBold: FontLoader { source: Qt.resolvedUrl("../assets/fonts/Unbounded-SemiBold.ttf") }
+    property FontLoader pixel: FontLoader { source: Qt.resolvedUrl("../assets/fonts/VT323-Regular.ttf") }
     // A neon theme's faces (Chakra Petch and Share Tech Mono, SIL OFL), loaded only once one is chosen
     // (made the first time one is chosen, so other themes never load them)
     property var neonFonts: null
@@ -157,8 +157,38 @@ QtObject {
     }
     function fmtHours(seconds) {
         var h = seconds / 3600
-        if (h >= 48) return num(Math.round(h / 24)) + " days"
-        return (h >= 10 ? num(Math.round(h)) : num(h, 1)) + " hours"
+        if (h >= 48) { var d = Math.round(h / 24); return counted(qsTr("%n day(s)", "", d), d) }
+        //: a number of hours that can have a decimal ("2.5 hours"); %1 is already written out
+        return qsTr("%1 hours").arg(h >= 10 ? num(Math.round(h)) : num(h, 1))
+    }
+    // A playback speed: 1.25×, with the decimal mark of the chosen number style and no trailing zeros
+    function speed(v) {
+        var t = num(Number(v), 2), m = t.match(/^(.*\d)([.,])(\d+)$/)
+        if (m) { var d = m[3].replace(/0+$/, ""); t = d.length ? m[1] + m[2] + d : m[1] }
+        return t + "×"
+    }
+    // A length of time to the minute: "45 min", "2 h 5 min"
+    function fmtMinutes(seconds) {
+        var m = Math.round(seconds / 60)
+        if (m < 60) return qsTr("%1 min").arg(num(m))
+        return qsTr("%1 h %2 min").arg(num(Math.floor(m / 60))).arg(m % 60)
+    }
+    // A date in the language you chose: the words, and their order, come from the translation.
+    // style: "long" (Monday 3 March 2025), "longThisYear" (Monday 3 March), "medium" (Mon 3 Mar 2025),
+    // "mediumThisYear" (Mon 3 Mar), "short" (3 Mar 2025), "month" (March 2025), "weekday" (Monday)
+    function date(d, style) {
+        var f = style === "long" ? qsTr("dddd d MMMM yyyy", "date format (Qt): Monday 3 March 2025")
+              : style === "longThisYear" ? qsTr("dddd d MMMM", "date format (Qt): Monday 3 March")
+              : style === "medium" ? qsTr("ddd d MMM yyyy", "date format (Qt): Mon 3 Mar 2025")
+              : style === "mediumThisYear" ? qsTr("ddd d MMM", "date format (Qt): Mon 3 Mar")
+              : style === "month" ? qsTr("MMMM yyyy", "date format (Qt): March 2025")
+              : style === "weekday" ? "dddd"  // i18n: keep
+              : qsTr("d MMM yyyy", "date format (Qt): 3 Mar 2025")
+        return Qt.locale().toString(d, f)
+    }
+    // An hour of the day, as people say it: "3 pm", "15 h"
+    function hourOfDay(h) {
+        return Qt.locale().toString(new Date(2000, 0, 1, h, 0), qsTr("h ap", "time format (Qt) for a whole hour: 3 pm"))
     }
 
     // A count as you read numbers (Settings → Appearance → Numbers): 12,345 · 12.345 · 12 345 · 12345, or as
@@ -167,8 +197,10 @@ QtObject {
     // A translated count ("%n song(s)", filled in by Qt with a plain number) with the number written the way
     // Settings → Appearance → Numbers says: Theme.counted(qsTr("%n song(s)", "", n), n)
     function counted(text, n) {
-        var plain = String(n), nice = num(n)
-        return plain === nice ? String(text) : String(text).replace(plain, nice)
+        var plain = String(n), nice = num(n), out = String(text)
+        // no catalogue loaded (a broken install): "(s)" worked out in English rather than shown
+        if (out.indexOf("(s)") >= 0) out = out.replace(/\(s\)/g, Number(n) === 1 ? "" : "s")  // i18n: keep
+        return plain === nice ? out : out.replace(plain, nice)
     }
     function num(n, decimals) {
         var v = Number(n)

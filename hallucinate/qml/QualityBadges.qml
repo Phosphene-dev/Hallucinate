@@ -21,7 +21,7 @@ Row {
     readonly property bool pill: (showHiRes && !master) || showDepth
     readonly property color gold: light ? "#f5cf5b" : (Theme.light ? "#b07d00" : "#e2b53e")
     readonly property string depthText: bitDepth === 1 ? qsTr("DSD")
-        : bitDepth + "-bit" + (sampleRate > 0 ? " · " + (sampleRate / 1000).toFixed(sampleRate % 1000 ? 1 : 0) + " kHz" : "")
+        : qsTr("%1-bit").arg(bitDepth) + (sampleRate > 0 ? " · " + qsTr("%1 kHz").arg(Theme.num(sampleRate / 1000, sampleRate % 1000 ? 1 : 0)) : "")
     readonly property color ink: light ? Qt.rgba(1, 1, 1, 0.85) : Theme.textDim
     spacing: 4
     visible: showExplicit || showClean || master || pill
@@ -43,7 +43,7 @@ Row {
             font.weight: Font.Bold
         }
         Accessible.role: Accessible.StaticText
-        Accessible.name: "Explicit"
+        Accessible.name: qsTr("Explicit")
         HoverHandler { id: eHover }
         ToolTip.visible: eHover.hovered
         ToolTip.text: qsTr("Explicit")
@@ -67,7 +67,7 @@ Row {
             font.weight: Font.Bold
         }
         Accessible.role: Accessible.StaticText
-        Accessible.name: "Clean version"
+        Accessible.name: qsTr("Clean version")
         HoverHandler { id: cHover }
         ToolTip.visible: cHover.hovered
         ToolTip.text: qsTr("Clean version")
@@ -91,10 +91,10 @@ Row {
             font.weight: Font.Bold
         }
         Accessible.role: Accessible.StaticText
-        Accessible.name: "Master (Hi-Res), " + (badges.bitDepth === 1 ? qsTr("DSD") : badges.bitDepth + "-bit")
+        Accessible.name: qsTr("Master (Hi-Res), %1").arg(badges.bitDepth === 1 ? qsTr("DSD") : qsTr("%1-bit").arg(badges.bitDepth))  // i18n: keep
         HoverHandler { id: mHover }
         ToolTip.visible: mHover.hovered
-        ToolTip.text: "Master (Hi-Res) · " + (badges.bitDepth === 1 ? qsTr("DSD (1-bit)") : badges.depthText)
+        ToolTip.text: qsTr("Master (Hi-Res) · %1").arg(badges.bitDepth === 1 ? qsTr("DSD (1-bit)") : badges.depthText)
     }
     Rectangle {
         objectName: "hiResBadge"
@@ -111,7 +111,7 @@ Row {
             textFormat: Text.PlainText
             id: depthLabel
             anchors.centerIn: parent
-            text: parent.hiResLook ? (badges.showDepth ? "Hi-Res " + badges.depthText : qsTr("Hi-Res")) : badges.depthText
+            text: parent.hiResLook ? (badges.showDepth ? qsTr("Hi-Res %1").arg(badges.depthText) : qsTr("Hi-Res")) : badges.depthText
             color: parent.hiResLook ? (badges.light ? "white" : Theme.accent) : badges.ink
             font.family: Theme.fontFamily
             font.pixelSize: Math.round(badges.size * 0.6)

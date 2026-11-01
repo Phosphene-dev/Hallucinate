@@ -37,9 +37,9 @@ Item {
     Text {
         textFormat: Text.PlainText
         anchors { left: title.right; leftMargin: 14; baseline: title.baseline }
-        text: duplicatesVisible ? Theme.num(library.duplicates.count) + " probable duplicates"
-            : library.filtersActive ? Theme.num(library.filteredTracks.count) + (library.filteredTracks.count === 1 ? qsTr(" song") : qsTr(" songs")) + " shown"
-            : Theme.num(library.trackCount) + (library.trackCount === 1 ? qsTr(" song") : qsTr(" songs"))
+        text: duplicatesVisible ? Theme.counted(qsTr("%n probable duplicate(s)", "", library.duplicates.count), library.duplicates.count)
+            : library.filtersActive ? Theme.counted(qsTr("%n song(s) shown", "", library.filteredTracks.count), library.filteredTracks.count)
+            : Theme.counted(qsTr("%n song(s)", "", library.trackCount), library.trackCount)
         color: Theme.textDim
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSize(14)
@@ -61,7 +61,7 @@ Item {
             currentIndex: Math.max(0, keys.indexOf(library.songSort))
             onActivated: function (i) { library.setSongSort(keys[i]); shell.setUiValue("songSort", keys[i]) }
             Component.onCompleted: library.setSongSort(shell.uiValue("songSort", "title"))
-            Accessible.name: "Order of the songs"
+            Accessible.name: qsTr("Order of the songs")
         }
         StyledCombo {
             id: genreFilter
@@ -69,7 +69,7 @@ Item {
             height: 38
             model: [qsTr("All genres")].concat(library.genres)
             selection: library.activeFilters[0] ? model.indexOf(library.activeFilters[0]) : 0  // the filter in force
-            Accessible.name: "Genre to show"
+            Accessible.name: qsTr("Genre to show")
             onActivated: page.applyFilters()
         }
         StyledCombo {
@@ -78,7 +78,7 @@ Item {
             height: 38
             model: [qsTr("All years")].concat(library.years.map(function(value) { return String(value) }))
             selection: library.activeFilters[1] ? model.indexOf(String(library.activeFilters[1])) : 0
-            Accessible.name: "Year to show"
+            Accessible.name: qsTr("Year to show")
             onActivated: page.applyFilters()
         }
         StyledCombo {
@@ -87,7 +87,7 @@ Item {
             height: 38
             model: [qsTr("All formats")].concat(library.formats)
             selection: library.activeFilters[2] ? model.indexOf(library.activeFilters[2]) : 0
-            Accessible.name: "Format to show"
+            Accessible.name: qsTr("Format to show")
             onActivated: page.applyFilters()
         }
         PillButton {
@@ -143,11 +143,11 @@ Item {
             rowIndex: index
             width: ListView.view.width - 12
             title: model.title
-            artist: model.artist + (page.duplicatesVisible ? " · " + Theme.num(model.duplicateCount) + " copies" : "")
+            artist: model.artist + (page.duplicatesVisible ? " · " + Theme.counted(qsTr("%n copies", "", model.duplicateCount), model.duplicateCount) : "")
             // what the list is ordered by, beside the album
             album: library.songSort === "genre" && model.genre ? model.album + "  ·  " + shell.genresText(model.genre, false)
                  : library.songSort === "composer" && model.composer ? model.album + "  ·  " + model.composer
-                 : library.songSort === "bpm" && model.bpm ? model.album + "  ·  " + model.bpm + " BPM" + (model.music_key ? "  ·  " + model.music_key : "")
+                 : library.songSort === "bpm" && model.bpm ? model.album + "  ·  " + qsTr("%1 BPM").arg(model.bpm) + (model.music_key ? "  ·  " + model.music_key : "")
                  : model.album
             durText: model.durText
             artUrl: model.artUrl

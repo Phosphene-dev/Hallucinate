@@ -220,7 +220,7 @@ Item {
                     Text {
                         textFormat: Text.PlainText
                         anchors { left: decadeLabel.right; leftMargin: 14; baseline: decadeLabel.baseline }
-                        text: Theme.num(parent.row.count) + (parent.row.count === 1 ? qsTr(" album") : qsTr(" albums"))
+                        text: Theme.counted(qsTr("%n album(s)", "", parent.row.count), parent.row.count)
                         color: Theme.textDim
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(13)
@@ -341,7 +341,7 @@ Item {
                         anchors { top: yearFlow.bottom; topMargin: 10 }
                         height: 30
                         visible: yearItem.shown < yearItem.albums.length
-                        text: "Show all " + Theme.num(yearItem.albums.length)
+                        text: qsTr("Show all %1").arg(Theme.num(yearItem.albums.length))
                         onClicked: yearItem.expanded = true
                     }
                 }
@@ -425,8 +425,8 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 width: parent.width
-                                text: Theme.num(modelData.albums) + (modelData.albums === 1 ? qsTr(" album") : qsTr(" albums")) + "  ·  "
-                                      + Theme.num(modelData.tracks) + (modelData.tracks === 1 ? qsTr(" song") : qsTr(" songs"))
+                                text: Theme.counted(qsTr("%n album(s)", "", modelData.albums), modelData.albums) + "  ·  "
+                                      + Theme.counted(qsTr("%n song(s)", "", modelData.tracks), modelData.tracks)
                                 elide: Text.ElideRight
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily
@@ -449,7 +449,7 @@ Item {
                             }
                         }
                         Accessible.role: Accessible.Link
-                        Accessible.name: "Genre: " + modelData.name
+                        Accessible.name: qsTr("Genre: %1").arg(modelData.name)
                         Accessible.onPressAction: Nav.openGenre(modelData.name)
                     }
                 }

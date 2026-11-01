@@ -13,9 +13,8 @@ Menu {
     readonly property bool artist: kind === "artist"
     readonly property bool genre: kind === "genre"
     readonly property bool composer: kind === "composer"
-    readonly property string what: artist ? "Every song by " + name : genre ? "Every " + name + " song"
-                                 : composer ? "Every song " + name + " wrote"
-                                                                          : "Everything in “" + name + "”"
+    readonly property string what: (artist ? qsTr("Every song by %1") : genre ? qsTr("Every %1 song")
+                                    : composer ? qsTr("Every song %1 wrote") : qsTr("Everything in “%1”")).arg(name)
 
     property var copies: ({ servers: 0, kept: 0, waiting: 0 })  // songs from a music server, kept here or not
     function showNow() { if (ofSelection()) return; copies = serverCopies.status(paths()); popup() }
@@ -44,7 +43,6 @@ Menu {
         else if (composer) { if (shuffle) player.setShuffle(true); library.playComposer(name, shuffle) }
         else library.playFolder(path, shuffle)
     }
-    function songCount(list) { return Theme.num(list.length) + (list.length === 1 ? qsTr(" song") : qsTr(" songs")) }
 
     MenuItem { text: qsTr("Play"); icon.name: "play"; onTriggered: collectionMenu.play(false) }
     MenuItem { text: qsTr("Shuffle"); icon.name: "shuffle"; onTriggered: collectionMenu.play(true) }
@@ -54,8 +52,8 @@ Menu {
         text: qsTr("Start radio"); icon.name: "radio"
         onTriggered: library.startArtistRadio(collectionMenu.name)
     }
-    MenuItem { text: qsTr("Play next"); icon.name: "next"; onTriggered: { var p = collectionMenu.paths(); userLib.playNextPaths(p); Nav.notify(collectionMenu.songCount(p) + " will play next") } }
-    MenuItem { text: qsTr("Add to queue"); icon.name: "queue"; onTriggered: { var p = collectionMenu.paths(); userLib.enqueuePaths(p); Nav.notify(collectionMenu.songCount(p) + " added to the queue") } }
+    MenuItem { text: qsTr("Play next"); icon.name: "next"; onTriggered: { var p = collectionMenu.paths(); userLib.playNextPaths(p); Nav.notify(Theme.counted(qsTr("%n song(s) will play next", "", p.length), p.length)) } }
+    MenuItem { text: qsTr("Add to queue"); icon.name: "queue"; onTriggered: { var p = collectionMenu.paths(); userLib.enqueuePaths(p); Nav.notify(Theme.counted(qsTr("%n song(s) added to the queue", "", p.length), p.length)) } }
     Menu {
         id: plMenu
         objectName: "addToPlaylistMenu"
@@ -79,7 +77,7 @@ Menu {
                 readonly property int have: plMenu.held[String(id)] || 0
                 readonly property bool full: have > 0 && have >= plMenu.heldPaths.length
                 checkable: true
-                text: Theme.plain(name) + (have > 0 && !full ? "  (" + Theme.num(have) + " of " + Theme.num(plMenu.heldPaths.length) + ")" : "")
+                text: Theme.plain(name) + (have > 0 && !full ? "  " + qsTr("(%1 of %2)").arg(Theme.num(have)).arg(Theme.num(plMenu.heldPaths.length)) : "")
                 onTriggered: full ? Nav.removeFromPlaylistId(id, name, collectionMenu.paths(), "")
                                   : Nav.addToPlaylist(id, name, collectionMenu.paths(), "")
             }
@@ -91,21 +89,21 @@ Menu {
     MenuItem {
         visible: collectionMenu.artist
         height: visible ? implicitHeight : 0
-        text: "Go to " + Theme.plain(collectionMenu.name); icon.name: "artist"
+        text: qsTr("Go to %1").arg(Theme.plain(collectionMenu.name)); icon.name: "artist"
         onTriggered: Nav.openArtist(collectionMenu.name)
     }
     MenuItem {
         objectName: "collectionGoToGenre"
         visible: collectionMenu.genre
         height: visible ? implicitHeight : 0
-        text: "Go to genre " + Theme.plain(collectionMenu.name); icon.name: "note"
+        text: qsTr("Go to genre %1").arg(Theme.plain(collectionMenu.name)); icon.name: "note"
         onTriggered: Nav.openGenre(collectionMenu.name)
     }
     MenuItem {
         objectName: "collectionGoToComposer"
         visible: collectionMenu.composer
         height: visible ? implicitHeight : 0
-        text: "Go to composer " + Theme.plain(collectionMenu.name); icon.name: "note"
+        text: qsTr("Go to composer %1").arg(Theme.plain(collectionMenu.name)); icon.name: "note"
         onTriggered: Nav.openComposer(collectionMenu.name)
     }
     MenuItem {
@@ -159,7 +157,7 @@ Menu {
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true
-        title: "Rename “" + Theme.plain(collectionMenu.name) + "”"
+        title: qsTr("Rename “%1”").arg(Theme.plain(collectionMenu.name))
         standardButtons: Dialog.Ok | Dialog.Cancel
         readonly property string newName: rf.text.trim()
         readonly property bool joins: newName.length > 0 && newName.toLowerCase() !== collectionMenu.name.toLowerCase()
@@ -168,7 +166,7 @@ Menu {
         onAccepted: {
             if (!newName.length || newName === collectionMenu.name) return
             metaEditor.renameGenre(collectionMenu.name, newName)
-            Nav.notify("Renaming " + collectionMenu.name + " to " + newName + " in its songs…")
+            Nav.notify(qsTr("Renaming %1 to %2 in its songs…").arg(collectionMenu.name).arg(newName))
             collectionMenu.genreRenamed(collectionMenu.name, newName)
         }
         Column {
@@ -183,7 +181,7 @@ Menu {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.Wrap
-                text: renameDlg.joins ? "You already have " + renameDlg.newName + ": the two become one genre."
+                text: renameDlg.joins ? qsTr("You already have %1: the two become one genre.").arg(renameDlg.newName)
                                       : qsTr("Written to the tags of every song with this genre.")
                 color: renameDlg.joins ? Theme.accent : Theme.textDim
                 font.family: Theme.fontFamily

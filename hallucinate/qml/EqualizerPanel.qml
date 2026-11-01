@@ -16,7 +16,7 @@ Column {
         objectName: "eqPerDevice"
         enabled: player.eqAvailable
         text: player.eqPerDevice && player.eqDeviceName.length
-              ? "Separate settings for each output (now: " + player.eqDeviceName + ")"
+              ? qsTr("Separate settings for each output (now: %1)").arg(player.eqDeviceName)
               : qsTr("Separate settings for each output (headphones, speakers…)")
         checked: player.eqPerDevice
         onToggled: player.setEqPerDevice(checked)
@@ -58,7 +58,7 @@ Column {
                     height: 120
                     anchors.horizontalCenter: parent.horizontalCenter
                     from: -12; to: 12; stepSize: 1
-                    Accessible.name: modelData + "Hz band"
+                    Accessible.name: qsTr("%1 Hz band").arg(modelData)
                     value: player.eqGains[index]
                     onMoved: player.setEqBand(index, value)
                     background: Rectangle {
@@ -94,8 +94,7 @@ Column {
         textFormat: Text.PlainText
         width: Math.min(560, panel.width)
         wrapMode: Text.Wrap
-        text: qsTr("Make your headphones sound neutral with an AutoEQ profile. It's applied under the bands above; the ")
-              + "volume is lowered a little so the correction can't clip."
+        text: qsTr("Make your headphones sound neutral with an AutoEQ profile. It's applied under the bands above; the volume is lowered a little so the correction can't clip.")
         color: Theme.textDim
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSize(12)
@@ -133,7 +132,7 @@ Column {
             Text {
                 textFormat: Text.PlainText
                 objectName: "headphoneName"
-                text: "Correcting for " + player.headphoneName
+                text: qsTr("Correcting for %1").arg(player.headphoneName)
                 color: Theme.text
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(14)
@@ -211,7 +210,7 @@ Column {
                 textFormat: Text.PlainText
                 id: sourceText
                 anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
-                text: "measured by " + modelData.source
+                text: qsTr("measured by %1").arg(modelData.source)
                 color: Theme.textDim
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(11)

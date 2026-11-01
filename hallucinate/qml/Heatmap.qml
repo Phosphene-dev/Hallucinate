@@ -28,7 +28,7 @@ Item {
         d.setDate(d.getDate() + index)
         return d
     }
-    function isoAt(index) { return heat.first ? Qt.formatDate(dateAt(index), "yyyy-MM-dd") : "" }
+    function isoAt(index) { return heat.first ? Qt.formatDate(dateAt(index), "yyyy-MM-dd") : "" }  // i18n: keep (a key)
 
     // Month names above the first week that starts in each month
     Repeater {
@@ -39,7 +39,7 @@ Item {
             readonly property var monday: map.dateAt(index * 7)
             visible: monday.getDate() <= 7 && index < map.weeks - 1 && index >= map.firstWeek
             x: (index - map.firstWeek) * (map.cell + map.gap)
-            text: Qt.formatDate(monday, "MMM")
+            text: Qt.locale().monthName(monday.getMonth() + 1, Locale.ShortFormat)
             color: Theme.textDim
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize(11)
@@ -65,8 +65,7 @@ Item {
             scale: Theme.reduceMotion ? 1 : (cellMouse.containsMouse && count > 0 ? 1.25 : 1)
             Behavior on scale { NumberAnimation { duration: 90 } }
             Accessible.role: count > 0 ? Accessible.Button : Accessible.StaticText
-            Accessible.name: Qt.formatDate(map.dateAt(index), "dddd d MMMM yyyy") + ": "
-                             + (count === 1 ? qsTr("1 play") : Theme.num(count) + " plays")
+            Accessible.name: Theme.date(map.dateAt(index), "long") + ": " + Theme.counted(qsTr("%n play(s)", "", count), count)
             Accessible.onPressAction: if (count > 0) map.dayClicked(iso)
             MouseArea {
                 id: cellMouse
@@ -76,8 +75,7 @@ Item {
                 onClicked: if (cellRect.count > 0) map.dayClicked(cellRect.iso)
             }
             ToolTip.visible: cellMouse.containsMouse
-            ToolTip.text: Qt.formatDate(map.dateAt(index), "ddd d MMM yyyy") + ": "
-                          + (count === 1 ? qsTr("1 play") : Theme.num(count) + " plays")
+            ToolTip.text: Theme.date(map.dateAt(index), "medium") + ": " + Theme.counted(qsTr("%n play(s)", "", count), count)
             ToolTip.delay: 150
         }
     }

@@ -113,8 +113,7 @@ FocusScope {
                     spacing: 14
                     Heading { text: qsTr("Where's your music?") }
                     Body {
-                        text: qsTr("Choose the folders that hold your music. Hallucinate reads them without changing a ")
-                            + "thing, and keeps an eye out for new songs."
+                        text: qsTr("Choose the folders that hold your music. Hallucinate reads them without changing a thing, and keeps an eye out for new songs.")
                     }
                     ListView {
                         WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
@@ -164,8 +163,8 @@ FocusScope {
                         Layout.fillWidth: true
                         visible: !library.scanning && library.folders.length > 0
                         text: library.trackCount > 0
-                              ? library.trackCount.toLocaleString(Qt.locale(), "f", 0) + (library.trackCount === 1 ? qsTr(" song") : qsTr(" songs")) + " found"
-                              : library.missingFolders.length > 0 ? "Can't read " + library.missingFolders.join(", ")
+                              ? Theme.counted(qsTr("%n song(s) found", "", library.trackCount), library.trackCount)
+                              : library.missingFolders.length > 0 ? qsTr("Can't read %1").arg(library.missingFolders.join(", "))
                               : qsTr("No songs found there yet")
                         color: library.trackCount > 0 ? Theme.accent : Theme.textDim
                         font.family: Theme.fontFamily
@@ -278,8 +277,7 @@ FocusScope {
                         spacing: 8
                         Heading { text: qsTr("What would you like?") }
                         Body {
-                            text: qsTr("Switch on what you'll use. Nothing here goes online unless you tick it, and it can all be ")
-                                + "changed later in Settings → Features and Settings → Internet & sharing."
+                            text: qsTr("Switch on what you'll use. Nothing here goes online unless you tick it, and it can all be changed later in Settings → Features and Settings → Internet & sharing.")
                         }
                         Group { text: qsTr("Features") }
                         Flow {
@@ -325,8 +323,7 @@ FocusScope {
                             onToggled: shell.setOfflineMode(checked)
                         }
                         Body {
-                            text: qsTr("Covers, tags and genres are only looked up when you ask. Radio, podcasts and music servers ")
-                                + "only connect to the stations, feeds and servers you add."
+                            text: qsTr("Covers, tags and genres are only looked up when you ask. Radio, podcasts and music servers only connect to the stations, feeds and servers you add.")
                         }
                     }
                 }
@@ -336,8 +333,7 @@ FocusScope {
                     spacing: 12
                     Heading { text: qsTr("Keep a record of what you play?") }
                     Body {
-                        text: qsTr("Hallucinate keeps your listening history on this computer either way. Scrobbling also ")
-                            + "sends it to ListenBrainz or Last.fm. It's optional, and you can set it up later in Settings."
+                        text: qsTr("Hallucinate keeps your listening history on this computer either way. Scrobbling also sends it to ListenBrainz or Last.fm. It's optional, and you can set it up later in Settings.")
                     }
                     Text {
                         textFormat: Text.PlainText
@@ -431,7 +427,7 @@ FocusScope {
                     Keys.onReturnPressed: welcome.finish()
                     Keys.onEnterPressed: welcome.finish()
                     Accessible.role: Accessible.Button
-                    Accessible.name: "Skip setup"
+                    Accessible.name: qsTr("Skip setup")
                     Accessible.description: qsTr("Close the welcome; everything can be set later in Settings")
                     Accessible.onPressAction: welcome.finish()
                     Rectangle {

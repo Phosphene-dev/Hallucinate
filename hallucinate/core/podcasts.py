@@ -16,6 +16,7 @@ from pathlib import Path
 
 from .. import __version__
 from . import net
+from .i18n import translate
 
 USER_AGENT = f"Hallucinate/{__version__}"
 NS = {
@@ -90,34 +91,34 @@ def _attr(node, path, name):
     return (found.get(name) or "").strip() if found is not None else ""
 
 
-def _xml(data, what):
+def _xml(data, what):  # what: the error to give ("That isn't a podcast feed")
     """Parse XML from the internet (or a file someone sent). Feeds and OPML never need a DOCTYPE, and one
     that declares entities is the way to make a parser expand a few bytes into gigabytes ("billion laughs"):
     such documents are refused before parsing."""
     raw = data.encode("utf-8") if isinstance(data, str) else bytes(data)
     # anywhere in it, not only near the top: comments may come before a DOCTYPE, as many as a feed likes
     if re.search(rb"<!(?:ENTITY|DOCTYPE)", raw, re.IGNORECASE):
-        raise ValueError(f"That isn't {what}")
+        raise ValueError(what)
     try:
         return ET.fromstring(raw)
     except ET.ParseError as exc:
-        raise ValueError(f"That isn't {what}") from exc
+        raise ValueError(what) from exc
 
 
 def parse_feed(data, feed_url=""):
     """(podcast, episodes) from an RSS or Atom feed. Episodes without audio are left out. Raises ValueError
     when it isn't a feed."""
-    root = _xml(data, "a podcast feed")
+    root = _xml(data, translate("Podcasts", "That isn't a podcast feed"))
     tag = root.tag.split("}")[-1]
     if tag == "rss":
         channel = root.find("channel")
         if channel is None:
-            raise ValueError("The feed has no channel")
+            raise ValueError(translate("Podcasts", "The feed has no channel"))
         items, atom = channel.findall("item"), False
     elif tag == "feed":
         channel, items, atom = root, root.findall("atom:entry", NS), True
     else:
-        raise ValueError("That isn't a podcast feed")
+        raise ValueError(translate("Podcasts", "That isn't a podcast feed"))
 
     def link_of(node):
         if atom:
@@ -190,7 +191,7 @@ def _feed_link(url):
         if url.startswith("feed://") or url.startswith("pcast://"):
             url = "https://" + url.split("://", 1)[1]
         else:
-            raise OSError("A feed link starts with http:// or https://")
+            raise OSError(translate("Podcasts", "A feed link starts with http:// or https://"))
     return url
 
 
@@ -240,7 +241,7 @@ def fetch_feed_if_changed(url, etag="", modified="", timeout=20):
 # --- OPML ------------------------------------------------------------------------------------------------
 def parse_opml(text):
     """[{title, feed_url}] from an OPML subscription list (what other podcast apps export)."""
-    root = _xml(text, "an OPML file")
+    root = _xml(text, translate("Podcasts", "That isn't an OPML file"))
     feeds, seen = [], set()
     for outline in root.iter("outline"):
         url = (outline.get("xmlUrl") or outline.get("xmlurl") or "").strip()
@@ -387,7 +388,7 @@ def _resume_from(resp, have):
         match = re.match(r"\s*bytes\s+(\d+)-", resp.headers.get("Content-Range") or "")
         if match and int(match.group(1)) == have:
             return have
-        raise OSError("The server sent a different part of the episode than asked for")
+        raise OSError(translate("Podcasts", "The server sent a different part of the episode than asked for"))
     return 0
 
 
@@ -429,9 +430,9 @@ def download(url, target, progress=None, cancelled=None, timeout=30, paused=None
                 while True:
                     if cancelled is not None and cancelled():
                         keep_part = False
-                        raise InterruptedError("Download cancelled")
+                        raise InterruptedError(translate("Podcasts", "Download cancelled"))
                     if paused is not None and paused():
-                        raise InterruptedError("Download paused")
+                        raise InterruptedError(translate("Podcasts", "Download paused"))
                     chunk = resp.read(256 * 1024)
                     if not chunk:
                         break
@@ -442,7 +443,7 @@ def download(url, target, progress=None, cancelled=None, timeout=30, paused=None
                         last = now
                         progress(done, total)
         if total and done < total:
-            raise OSError("The download stopped before the end")
+            raise OSError(translate("Podcasts", "The download stopped before the end"))
         os.replace(part, target)
         if progress is not None:
             progress(done, total or done)

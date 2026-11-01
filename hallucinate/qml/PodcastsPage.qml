@@ -33,7 +33,7 @@ Item {
         objectName: "unfollowDialog"
         property var show: ({})
         title: qsTr("Unfollow this show?")
-        body: "“" + (show.title || "") + "” and where you were in its episodes go away"
+        body: qsTr("“%1” and where you were in its episodes go away").arg(show.title || "")
               + (show.folder ? qsTr(". The files in its folder stay where they are.") : qsTr(", along with its downloads."))
         confirmText: qsTr("Unfollow")
         destructive: true
@@ -65,7 +65,7 @@ Item {
                 width: parent.width
                 placeholderText: "https://…/feed.xml"
                 selectByMouse: true
-                Accessible.name: "Feed link"
+                Accessible.name: qsTr("Feed link")
                 onAccepted: followDlg.accept()
             }
         }
@@ -116,7 +116,7 @@ Item {
                 }
                 Text {
                     textFormat: Text.PlainText
-                    text: podcasts.busy ? qsTr("Checking feeds…") : podcasts.count === 1 ? qsTr("1 show") : Theme.num(podcasts.count) + " shows"
+                    text: podcasts.busy ? qsTr("Checking feeds…") : Theme.counted(qsTr("%n show(s)", "", podcasts.count), podcasts.count)
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
                 }
             }
@@ -143,7 +143,7 @@ Item {
                 font.pixelSize: Theme.fontSize(14)
                 leftPadding: 16
                 selectByMouse: true
-                Accessible.name: "Find shows"
+                Accessible.name: qsTr("Find shows")
                 background: Rectangle { radius: Theme.round(height / 2); color: Theme.surface; border.color: search.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                 onAccepted: { page.query = text.trim(); podcasts.search(page.query) }
                 onTextChanged: if (!text.length) { page.query = ""; podcasts.search("") }

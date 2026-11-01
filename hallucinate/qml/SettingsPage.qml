@@ -105,7 +105,7 @@ Item {
         Text {
             textFormat: Text.PlainText
             visible: page.query.length > 0
-            text: noMatches ? "No settings match “" + page.query + "”" : "Showing settings that match “" + page.query + "”"
+            text: (noMatches ? qsTr("No settings match “%1”") : qsTr("Showing settings that match “%1”")).arg(page.query)
             // (a section hidden because its feature is off doesn't count, even if it matches)
             readonly property bool noMatches: !(sec_appearance.visible || sec_features.visible || sec_podcasts.visible || sec_playback.visible || sec_sound.visible || sec_library.visible || sec_servers.visible || sec_remote.visible || sec_sharing.visible || sec_scrobbling.visible || sec_desktop.visible || sec_about.visible)
             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
@@ -216,7 +216,7 @@ Item {
                                 onClicked: themeManager.setAccentOverride(modelData)
                                 Accessible.role: Accessible.RadioButton
                                 Accessible.name: modelData === "#f5be9d" ? qsTr("Accent Shrimp Boat")  // PPG's paint colour
-                                                 : modelData.length ? "Accent " + modelData : qsTr("The theme's own accent")
+                                                 : modelData.length ? qsTr("Accent %1").arg(modelData) : qsTr("The theme's own accent")
                                 Accessible.checked: chosen
                                 Accessible.onPressAction: themeManager.setAccentOverride(modelData)
                             }
@@ -244,7 +244,7 @@ Item {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: accentPicker.openWith(themeManager.accentOverride)
                             Accessible.role: Accessible.Button
-                            Accessible.name: "Pick your own accent colour"
+                            Accessible.name: qsTr("Pick your own accent colour")
                             Accessible.onPressAction: accentPicker.openWith(themeManager.accentOverride)
                         }
                         ToolTip.visible: ownHover.hovered
@@ -269,7 +269,7 @@ Item {
                         placeholderText: "#hex"
                         text: themeManager.accentOverride
                         selectByMouse: true
-                        Accessible.name: "Accent colour as a hex code"
+                        Accessible.name: qsTr("Accent colour as a hex code")
                         // typing breaks the binding above: follow the accent again once it changes elsewhere
                         Connections { target: themeManager; function onThemeChanged() { if (!accentHex.activeFocus) accentHex.text = themeManager.accentOverride } }
                         onAccepted: themeManager.setAccentOverride(text)
@@ -297,7 +297,7 @@ Item {
                         model: themeManager.availableThemes
                         selection: themeManager.availableThemes.indexOf(themeManager.lightTheme)
                         onActivated: themeManager.setSystemThemes(currentText, themeManager.darkTheme)
-                        Accessible.name: "Theme in light mode"
+                        Accessible.name: qsTr("Theme in light mode")
                     }
                     Text { textFormat: Text.PlainText; text: qsTr("Dark"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
                     StyledCombo {
@@ -305,7 +305,7 @@ Item {
                         model: themeManager.availableThemes
                         selection: themeManager.availableThemes.indexOf(themeManager.darkTheme)
                         onActivated: themeManager.setSystemThemes(themeManager.lightTheme, currentText)
-                        Accessible.name: "Theme in dark mode"
+                        Accessible.name: qsTr("Theme in dark mode")
                     }
                 }
                 PillButton { objectName: "makeTheme"; text: qsTr("Make my own theme…"); onClicked: themeEditor.open() }
@@ -317,7 +317,7 @@ Item {
                 visible: Theme.neon
                 width: parent.width
                 spacing: 8
-                Text { textFormat: Text.PlainText; text: themeManager.currentTheme + " options"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(15) * Theme.displayScale; font.weight: Font.DemiBold }
+                Text { textFormat: Text.PlainText; text: qsTr("%1 options").arg(themeManager.currentTheme); color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(15) * Theme.displayScale; font.weight: Font.DemiBold }
                 Flow {
                     width: parent.width
                     spacing: 10
@@ -329,7 +329,7 @@ Item {
                         model: [qsTr("Cockpit (gauges and a hologram)"), qsTr("Terminal (typed out)"), qsTr("Classic (the usual one)")]
                         selection: Math.max(0, modes.indexOf(shell.ui.neonNowPlaying || "cockpit"))
                         onActivated: shell.setUiValue("neonNowPlaying", modes[currentIndex])
-                        Accessible.name: "Now Playing in this theme"
+                        Accessible.name: qsTr("Now Playing in this theme")
                     }
                     Text { textFormat: Text.PlainText; text: qsTr("Cockpit colours"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
                     StyledCombo {
@@ -339,7 +339,7 @@ Item {
                         model: [qsTr("The theme's neon"), qsTr("The cover's")]
                         selection: shell.ui.neonTint === "cover" ? 1 : 0
                         onActivated: shell.setUiValue("neonTint", modes[currentIndex])
-                        Accessible.name: "Cockpit colours"
+                        Accessible.name: qsTr("Cockpit colours")
                     }
                     Text { textFormat: Text.PlainText; text: qsTr("Terminal"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
                     StyledCombo {
@@ -349,7 +349,7 @@ Item {
                         model: [qsTr("The theme's colour"), qsTr("Green phosphor"), qsTr("Amber phosphor")]
                         selection: Math.max(0, modes.indexOf(shell.ui.neonPhosphor || "theme"))
                         onActivated: shell.setUiValue("neonPhosphor", modes[currentIndex])
-                        Accessible.name: "Terminal colour"
+                        Accessible.name: qsTr("Terminal colour")
                     }
                 }
                 StyledCheck {
@@ -415,10 +415,10 @@ Item {
                     objectName: "neonReset"
                     text: qsTr("Reset these options")
                     onClicked: {
-                        var keys = [qsTr("neonNowPlaying"), qsTr("neonTint"), qsTr("neonPhosphor"), qsTr("neonScanlines"), qsTr("neonGlitch"), qsTr("neonGreebles"),
-                                    qsTr("neonTitleCard"), qsTr("neonBoot"), qsTr("neonTermPanes"), qsTr("neonVisStyle")]
+                        var keys = ["neonNowPlaying", "neonTint", "neonPhosphor", "neonScanlines", "neonGlitch", "neonGreebles",
+                                    "neonTitleCard", "neonBoot", "neonTermPanes", "neonVisStyle"]
                         for (var i = 0; i < keys.length; i++) shell.setUiValue(keys[i], "")
-                        Nav.notify(themeManager.currentTheme + "'s options are back as they came")
+                        Nav.notify(qsTr("%1's options are back as they came").arg(themeManager.currentTheme))
                     }
                 }
             }
@@ -448,7 +448,7 @@ Item {
                     model: [qsTr("Full speed"), qsTr("Slower (saves power)"), qsTr("Paused")]
                     selection: Math.max(0, modes.indexOf(shell.visualizerBackground))
                     onActivated: shell.setVisualizerBackground(modes[currentIndex])
-                    Accessible.name: "Visualizer while the window is in the background"
+                    Accessible.name: qsTr("Visualizer while the window is in the background")
                 }
             }
             Flow {
@@ -460,8 +460,8 @@ Item {
                     width: 260
                     model: [qsTr("Still"), qsTr("A record, spinning while playing")]
                     selection: shell.ui.spinningArt === "1" ? 1 : 0
-                    onActivated: shell.setUiValue("spinningArt", currentIndex === 1 ? "1" : "0")
-                    Accessible.name: "Covers in the player bar and mini player"
+                    onActivated: shell.setUiValue("spinningArt", currentIndex === 1 ? "1" : "0")  // i18n: keep
+                    Accessible.name: qsTr("Covers in the player bar and mini player")
                 }
             }
             StyledCheck {
@@ -486,7 +486,7 @@ Item {
                         model: [qsTr("Smaller"), qsTr("As the theme has it"), qsTr("Larger"), qsTr("Larger still"), qsTr("Largest")]
                         selection: sizes.indexOf(themeManager.textScale)
                         onActivated: function (i) { themeManager.setTextScale(sizes[i]) }
-                        Accessible.name: "Text size"
+                        Accessible.name: qsTr("Text size")
                     }
                 }
                 Row {
@@ -499,7 +499,7 @@ Item {
                         model: [qsTr("Slowest"), qsTr("Slow"), qsTr("Normal"), qsTr("Fast"), qsTr("Faster"), qsTr("Fastest")]
                         selection: speeds.indexOf(shell.scrollSpeed) >= 0 ? speeds.indexOf(shell.scrollSpeed) : 2
                         onActivated: function (i) { shell.setScrollSpeed(speeds[i]) }
-                        Accessible.name: "Scroll speed (mouse wheel)"
+                        Accessible.name: qsTr("Scroll speed (mouse wheel)")
                     }
                 }
                 Row {
@@ -512,7 +512,7 @@ Item {
                         model: [qsTr("Moves the row (a page scroll carries on past it)"), qsTr("Always moves the row, then the page"), qsTr("Scrolls the page")]
                         selection: Math.max(0, modes.indexOf(shell.ui.shelfWheel || "auto"))
                         onActivated: function (i) { shell.setUiValue("shelfWheel", modes[i]) }
-                        Accessible.name: "Mouse wheel over a row of albums"
+                        Accessible.name: qsTr("Mouse wheel over a row of albums")
                     }
                 }
                 Row {
@@ -525,7 +525,7 @@ Item {
                         model: [qsTr("Scroll while playing"), qsTr("Scroll when pointed at"), qsTr("Don't scroll (end in …)")]
                         selection: Math.max(0, modes.indexOf(shell.ui.marquee || "playing"))
                         onActivated: function (i) { shell.setUiValue("marquee", modes[i]) }
-                        Accessible.name: "Long song titles in the player bar and mini player"
+                        Accessible.name: qsTr("Long song titles in the player bar and mini player")
                     }
                 }
                 Row {
@@ -535,11 +535,11 @@ Item {
                         objectName: "numberFormat"
                         width: 260
                         readonly property var formats: ["locale", "comma", "period", "space", "none"]
-                        model: ["As your language writes them (" + Number(12345).toLocaleString(Qt.locale(), "f", 0) + ")",
+                        model: [qsTr("As your language writes them (%1)").arg(Number(12345).toLocaleString(Qt.locale(), "f", 0)),
                                 "12,345", "12.345", "12\u202f345", "12345"]
                         selection: Math.max(0, formats.indexOf(Theme.numberFormat))
                         onActivated: function (i) { shell.setUiValue("numberFormat", formats[i]) }
-                        Accessible.name: "How numbers are written"
+                        Accessible.name: qsTr("How numbers are written")
                     }
                 }
                 StyledCheck {
@@ -559,7 +559,7 @@ Item {
                     text: qsTr("Show audio format and average bitrate on tracks")
                     checked: player.showTrackInfo
                     onToggled: player.setShowTrackInfo(checked)
-                    Accessible.name: "Show track audio format and average bitrate"
+                    Accessible.name: qsTr("Show track audio format and average bitrate")
                 }
                 Text {
                     textFormat: Text.PlainText
@@ -572,19 +572,19 @@ Item {
                     objectName: "explicitBadges"
                     text: qsTr("Mark explicit songs with an E")
                     checked: Rows.explicitBadges
-                    onToggled: shell.setSongBadge(qsTr("explicitBadges"), checked)
+                    onToggled: shell.setSongBadge("explicitBadges", checked)
                 }
                 StyledCheck {
                     objectName: "cleanBadges"
                     text: qsTr("Mark clean (edited) versions with a C")
                     checked: Rows.cleanBadges
-                    onToggled: shell.setSongBadge(qsTr("cleanBadges"), checked)
+                    onToggled: shell.setSongBadge("cleanBadges", checked)
                 }
                 StyledCheck {
                     objectName: "hiResBadges"
                     text: qsTr("Show a Hi-Res badge on 24-bit and higher songs")
                     checked: Rows.hiResBadges
-                    onToggled: shell.setSongBadge(qsTr("hiResBadges"), checked)
+                    onToggled: shell.setSongBadge("hiResBadges", checked)
                 }
                 Row {
                     visible: Rows.hiResBadges
@@ -596,15 +596,15 @@ Item {
                         width: 230
                         model: [qsTr("\"Hi-Res\""), qsTr("A gold M (Master)")]
                         selection: Rows.masterBadge ? 1 : 0
-                        onActivated: function (i) { shell.setSongBadge(qsTr("masterBadge"), i === 1) }
-                        Accessible.name: "Hi-Res badge style"
+                        onActivated: function (i) { shell.setSongBadge("masterBadge", i === 1) }
+                        Accessible.name: qsTr("Hi-Res badge style")
                     }
                 }
                 StyledCheck {
                     objectName: "bitDepthBadges"
                     text: qsTr("Show every song's bit depth and sample rate")
                     checked: Rows.bitDepth
-                    onToggled: shell.setSongBadge(qsTr("bitDepth"), checked)
+                    onToggled: shell.setSongBadge("bitDepth", checked)
                 }
                 Text {
                     textFormat: Text.PlainText
@@ -617,7 +617,7 @@ Item {
                     textFormat: Text.PlainText
                     width: parent.width
                     wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-                    text: "Custom themes: " + themeManager.userThemeDirectory + "/*.json"
+                    text: qsTr("Custom themes: %1").arg(themeManager.userThemeDirectory + "/*.json")
                     color: Theme.textDim
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(12)
@@ -680,8 +680,8 @@ Item {
             }
             FeatureGroup {
                 heading: qsTr("Home")
-                items: [[qsTr("homeRandom"), qsTr("Random album")], [qsTr("homeListening"), qsTr("Listening card")],
-                        [qsTr("homeFacts"), qsTr("Library facts")], [qsTr("homeShelves"), qsTr("Album shelves")]]
+                items: [["homeRandom", qsTr("Random album")], ["homeListening", qsTr("Listening card")],
+                        ["homeFacts", qsTr("Library facts")], ["homeShelves", qsTr("Album shelves")]]
             }
             SettingsGroup {
                 id: sidebarGroup
@@ -739,14 +739,14 @@ Item {
                                     icon: "up"; size: 16
                                     enabled: index > 0
                                     opacity: enabled ? 1 : 0.35
-                                    tip: "Move " + sidebarOrderBox.names[modelData] + " up"
+                                    tip: qsTr("Move %1 up").arg(sidebarOrderBox.names[modelData])
                                     onClicked: shell.moveSidebarPage(modelData, -1)
                                 }
                                 IconButton {
                                     icon: "down"; size: 16
                                     enabled: index < sidebarOrderBox.shown.length - 1
                                     opacity: enabled ? 1 : 0.35
-                                    tip: "Move " + sidebarOrderBox.names[modelData] + " down"
+                                    tip: qsTr("Move %1 down").arg(sidebarOrderBox.names[modelData])
                                     onClicked: shell.moveSidebarPage(modelData, 1)
                                 }
                             }
@@ -764,31 +764,31 @@ Item {
             query: page.query
             visible: matches && shell.features.podcasts !== false
             readonly property var o: podcasts.options
-            function secs(list) { return list.map(function (n) { return n + " seconds" }) }
+            function secs(list) { return list.map(function (n) { return Theme.counted(qsTr("%n second(s)", "", n), n) }) }
             OptionCombo {
                 label: qsTr("Skip back")
                 values: [5, 10, 15, 30, 45, 60]; labels: sec_podcasts.secs(values)
                 current: sec_podcasts.o.skipBack
-                onPicked: function (v) { podcasts.setOption(qsTr("skipBack"), v) }
+                onPicked: function (v) { podcasts.setOption("skipBack", v) }
             }
             OptionCombo {
                 label: qsTr("Skip forward")
                 values: [10, 15, 30, 45, 60, 90]; labels: sec_podcasts.secs(values)
                 current: sec_podcasts.o.skipForward
-                onPicked: function (v) { podcasts.setOption(qsTr("skipForward"), v) }
+                onPicked: function (v) { podcasts.setOption("skipForward", v) }
             }
             OptionCombo {
                 label: qsTr("After an episode")
                 values: ["next", "stop"]
                 labels: [qsTr("Play the show's next one"), qsTr("Stop")]
                 current: sec_podcasts.o.afterEpisode
-                onPicked: function (v) { podcasts.setOption(qsTr("afterEpisode"), v) }
+                onPicked: function (v) { podcasts.setOption("afterEpisode", v) }
             }
             StyledCheck {
                 objectName: "notifyNewEpisodes"
                 text: qsTr("Tell me when a show I follow has a new episode (a desktop notification)")
                 checked: sec_podcasts.o.notifyNew === 1
-                onToggled: podcasts.setOption(qsTr("notifyNew"), checked ? 1 : 0)
+                onToggled: podcasts.setOption("notifyNew", checked ? 1 : 0)
             }
             SettingsGroup {
                 key: "podcastsMore"
@@ -799,14 +799,14 @@ Item {
                     values: [1, 2, 4, 8, 12, 24, 0]
                     labels: [qsTr("Every hour"), qsTr("Every 2 hours"), qsTr("Every 4 hours"), qsTr("Every 8 hours"), qsTr("Twice a day"), qsTr("Once a day"), qsTr("Only when I ask")]
                     current: sec_podcasts.o.refreshHours
-                    onPicked: function (v) { podcasts.setOption(qsTr("refreshHours"), v) }
+                    onPicked: function (v) { podcasts.setOption("refreshHours", v) }
                 }
                 OptionCombo {
                     label: qsTr("Played when this close to the end")
                     values: [10, 30, 45, 60, 120, 300]
                     labels: [qsTr("10 seconds"), qsTr("30 seconds"), qsTr("45 seconds"), qsTr("1 minute"), qsTr("2 minutes"), qsTr("5 minutes")]
                     current: sec_podcasts.o.playedWindow
-                    onPicked: function (v) { podcasts.setOption(qsTr("playedWindow"), v) }
+                    onPicked: function (v) { podcasts.setOption("playedWindow", v) }
                 }
             }
             Text { textFormat: Text.PlainText; text: qsTr("Downloads"); color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold }
@@ -815,7 +815,7 @@ Item {
                 values: [0, 1, 2, 3, 5]
                 labels: [qsTr("Nothing by itself"), qsTr("Its newest episode"), qsTr("Its newest 2"), qsTr("Its newest 3"), qsTr("Its newest 5")]
                 current: sec_podcasts.o.newShowDownloads
-                onPicked: function (v) { podcasts.setOption(qsTr("newShowDownloads"), v) }
+                onPicked: function (v) { podcasts.setOption("newShowDownloads", v) }
             }
             OptionCombo {
                 label: qsTr("Keep downloads")
@@ -829,14 +829,14 @@ Item {
                 label: qsTr("Newest to keep per show")
                 values: [1, 2, 3, 5, 10]; labels: ["1", "2", "3", "5", "10"]
                 current: sec_podcasts.o.keepCount
-                onPicked: function (v) { podcasts.setOption(qsTr("keepCount"), v) }
+                onPicked: function (v) { podcasts.setOption("keepCount", v) }
             }
             Row {
                 spacing: 12
                 Text {
                     textFormat: Text.PlainText
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Downloads take " + Theme.fmtBytes(podcasts.downloadsSize)
+                    text: qsTr("Downloads take %1").arg(Theme.fmtBytes(podcasts.downloadsSize))
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
                 }
                 PillButton { text: qsTr("Remove all downloads"); enabled: podcasts.downloadsSize > 0; onClicked: removeDownloadsDlg.open() }
@@ -899,11 +899,11 @@ Item {
                     objectName: "outputRateMode"
                     width: Math.min(360, parent.width)
                     readonly property var modes: ["auto", "follows", "fixed"]
-                    model: [player.pipewireRates ? "Find out (PipeWire switches: " + player.pipewireRates + ")" : qsTr("Find out (the device's own rate)"),
+                    model: [player.pipewireRates ? qsTr("Find out (PipeWire switches: %1)").arg(player.pipewireRates) : qsTr("Find out (the device's own rate)"),
                             qsTr("Follows each song (set up for it)"), qsTr("Fixed at the device's rate")]
                     selection: Math.max(0, modes.indexOf(player.outputRateMode))
                     onActivated: function (i) { player.setOutputRateMode(modes[i]) }
-                    Accessible.name: "Output sample rate, for the signal path"
+                    Accessible.name: qsTr("Output sample rate, for the signal path")
                 }
             }
             Text {
@@ -932,7 +932,7 @@ Item {
                 Flow {
                     width: parent.width
                     spacing: 12
-                    Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Preamp " + player.replayGainPreamp.toFixed(1) + " dB"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                    Text { height: 38; verticalAlignment: Text.AlignVCenter; text: qsTr("Preamp %1 dB").arg(Theme.num(player.replayGainPreamp, 1)); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                     StyledSlider {
                         width: 140
                         from: -15; to: 15; stepSize: 0.5
@@ -958,7 +958,7 @@ Item {
                         textFormat: Text.PlainText
                         width: Math.min(implicitWidth, parent.width)
                         wrapMode: Text.WordWrap
-                        text: replayGain.busy ? "Measured " + Theme.num(replayGain.done) + " of " + Theme.num(replayGain.total) + " songs…"
+                        text: replayGain.busy ? Theme.counted(qsTr("Measured %1 of %n song(s)…", "", replayGain.total), replayGain.total).arg(Theme.num(replayGain.done))
                             : qsTr("Measures loudness (EBU R128) for songs whose files have no ReplayGain tags. Files aren't changed.")
                         color: Theme.textDim
                         font.family: Theme.fontFamily
@@ -969,7 +969,7 @@ Item {
             Flow {
                 width: parent.width
                 spacing: 12
-                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Crossfade " + (player.crossfade > 0 ? player.crossfade + " s" : "off"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: player.crossfade > 0 ? qsTr("Crossfade %1 s").arg(Theme.num(player.crossfade, player.crossfade % 1 ? 1 : 0)) : qsTr("Crossfade off"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledSlider {
                     objectName: "crossfade"
                     width: 200
@@ -989,16 +989,16 @@ Item {
                     model: ["1%", "2%", "5%", "10%"]
                     selection: Math.max(0, steps.findIndex(s => Math.abs(s - player.volumeStep) < 0.001))
                     onActivated: player.setVolumeStep(steps[currentIndex])
-                    Accessible.name: "Volume step for the mouse wheel and arrow keys"
+                    Accessible.name: qsTr("Volume step for the mouse wheel and arrow keys")
                 }
-                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Maximum volume " + Math.round(player.maxVolume * 100) + "%"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: qsTr("Maximum volume %1%").arg(Math.round(player.maxVolume * 100)); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledSlider {
                     objectName: "maxVolume"
                     width: 160
                     from: 0.1; to: 1; stepSize: 0.05
                     value: player.maxVolume
                     onMoved: player.setMaxVolume(value)
-                    Accessible.name: "Maximum volume"
+                    Accessible.name: qsTr("Maximum volume")
                 }
             }
             StyledCheck {
@@ -1025,7 +1025,7 @@ Item {
                     model: [qsTr("Off"), qsTr("Quick"), qsTr("Gentle"), qsTr("Slow")]
                     selection: Math.max(0, lengths.indexOf(player.pauseFade))
                     onActivated: player.setPauseFade(lengths[currentIndex])
-                    Accessible.name: "Fade on pause and play"
+                    Accessible.name: qsTr("Fade on pause and play")
                 }
             }
             Text { width: parent.width; wrapMode: Text.WordWrap; text: qsTr("Gapless playback is always on; with crossfade off, consecutive tracks play back to back. Playback speed and the sleep timer are in the ⋯ menu of the player bar."); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
@@ -1053,8 +1053,7 @@ Item {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: qsTr("Lets each ear hear a little of the other channel, as from speakers. Old stereo recordings with ")
-                    + "instruments hard left or right get much easier on the ears over headphones."
+                text: qsTr("Lets each ear hear a little of the other channel, as from speakers. Old stereo recordings with instruments hard left or right get much easier on the ears over headphones.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
 
@@ -1069,8 +1068,10 @@ Item {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Folders are scanned in the background" + (library.scanAtStart ? qsTr(" at every start") : "")
-                      + (library.watching ? qsTr(" and watched for changes.") : qsTr(". Rescan picks up what's new."))
+                text: library.scanAtStart ? (library.watching ? qsTr("Folders are scanned in the background at every start and watched for changes.")
+                                                              : qsTr("Folders are scanned in the background at every start. Rescan picks up what's new."))
+                                          : (library.watching ? qsTr("Folders are scanned in the background and watched for changes.")
+                                                              : qsTr("Folders are scanned in the background. Rescan picks up what's new."))
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             StyledCheck {
@@ -1144,13 +1145,13 @@ Item {
                 width: parent.width
                 visible: library.missingFolders.length > 0
                 wrapMode: Text.WordWrap
-                text: "Folder not found or unreadable: " + library.missingFolders.join(", ")
+                text: qsTr("Folder not found or unreadable: %1").arg(library.missingFolders.join(", "))
                 color: Theme.error; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Text {
                 textFormat: Text.PlainText
                 visible: library.unreadableFiles > 0 && !library.scanning
-                text: Theme.num(library.unreadableFiles) + " files could not be read and were skipped."
+                text: Theme.counted(qsTr("%n file(s) could not be read and were skipped.", "", library.unreadableFiles), library.unreadableFiles)
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Flow {
@@ -1161,8 +1162,7 @@ Item {
                     textFormat: Text.PlainText
                     objectName: "hiddenCount"
                     height: 32; verticalAlignment: Text.AlignVCenter
-                    text: Theme.num(library.hiddenCount) + (library.hiddenCount === 1 ? qsTr(" file") : qsTr(" files"))
-                          + " removed from the library (still on disk)"
+                    text: Theme.counted(qsTr("%n file(s) removed from the library (still on disk)", "", library.hiddenCount), library.hiddenCount)
                     color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                 }
                 PillButton {
@@ -1210,8 +1210,7 @@ Item {
                     textFormat: Text.PlainText
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    text: qsTr("Select with Ctrl+click (one more), Shift+click (everything between), Ctrl+A (the whole list) or Shift+arrow keys. ")
-                          + "Esc clears it, with Undo."
+                    text: qsTr("Select with Ctrl+click (one more), Shift+click (everything between), Ctrl+A (the whole list) or Shift+arrow keys. Esc clears it, with Undo.")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
             }
@@ -1260,9 +1259,7 @@ Item {
                     textFormat: Text.PlainText
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    text: qsTr("Bring over play counts, skips, ratings and playlists from Strawberry, Clementine, Rhythmbox, MusicBee ")
-                        + "or iTunes. Songs are matched to your library; importing again never counts anything twice, and "
-                        + "ratings you set here are kept."
+                    text: qsTr("Bring over play counts, skips, ratings and playlists from Strawberry, Clementine, Rhythmbox, MusicBee or iTunes. Songs are matched to your library; importing again never counts anything twice, and ratings you set here are kept.")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                 }
                 Flow {
@@ -1273,7 +1270,7 @@ Item {
                         model: userLib.otherPlayerLibraries()
                         PillButton {
                             required property var modelData
-                            text: "Import from " + modelData.name
+                            text: qsTr("Import from %1").arg(modelData.name)
                             enabled: !userLib.playerImportBusy
                             onClicked: userLib.importFromPlayer(modelData.path)
                         }
@@ -1294,9 +1291,7 @@ Item {
                     textFormat: Text.PlainText
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    text: qsTr("MusicBee: turn on Preferences → Library → “make library and playlists accessible to other ")
-                        + "applications”, then choose its iTunes Music Library.xml. foobar2000 keeps its statistics to "
-                        + "itself, so write them to the files with foo_playcount first; its playlists come over as M3U files."
+                    text: qsTr("MusicBee: turn on Preferences → Library → “make library and playlists accessible to other applications”, then choose its iTunes Music Library.xml. foobar2000 keeps its statistics to itself, so write them to the files with foo_playcount first; its playlists come over as M3U files.")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
                 FileDialog {
@@ -1372,9 +1367,9 @@ Item {
                             readonly property var m: serverRow.modelData
                             text: (m.status === "syncing" ? qsTr("Reading its songs…")
                                    : m.status === "checking" ? qsTr("Checking…")
-                                   : m.status === "down" ? "Can't be reached" + (m.error ? ": " + m.error : "") + " (tried again every few minutes)"
+                                   : m.status === "down" ? (m.error ? qsTr("Can't be reached: %1 (tried again every few minutes)").arg(m.error) : qsTr("Can't be reached (tried again every few minutes)"))
                                    : m.status === "error" ? m.error
-                                   : m.songs.toLocaleString(Qt.locale(), "f", 0) + (m.songs === 1 ? qsTr(" song") : qsTr(" songs"))
+                                   : Theme.counted(qsTr("%n song(s)", "", m.songs), m.songs)
                                      + (m.error ? "  ·  " + m.error : ""))
                                   + (m.secure ? "" : qsTr("  ·  not a secure link"))
                             color: m.status === "down" || m.status === "error" ? Theme.error : Theme.textDim
@@ -1421,11 +1416,11 @@ Item {
                 width: parent.width
                 wrapMode: Text.WordWrap
                 text: (serverCopies.count > 0
-                       ? serverCopies.count.toLocaleString(Qt.locale(), "f", 0) + (serverCopies.count === 1 ? qsTr(" song") : qsTr(" songs"))
-                         + " kept on this computer (" + Theme.fmtBytes(serverCopies.bytes) + "): they play without the server, in offline mode too."
+                       ? Theme.counted(qsTr("%n song(s) kept on this computer (%1): they play without the server, in offline mode too.", "", serverCopies.count), serverCopies.count).arg(Theme.fmtBytes(serverCopies.bytes))
                        : qsTr("To play a server's songs without it (on a train, say), right-click an album, playlist or song and choose Keep on this computer."))
-                      + (serverCopies.waiting > 0 ? "  Downloading " + Theme.num(serverCopies.waiting) + " more"
-                         + (serverCopies.busy ? " (" + Math.round(serverCopies.progress * 100) + "% of the current one)" : shell.offlineMode ? qsTr(", once offline mode is off") : "") + "." : "")
+                      + (serverCopies.waiting <= 0 ? "" : "  " + (serverCopies.busy ? qsTr("Downloading %1 more (%2% of the current one).").arg(Theme.num(serverCopies.waiting)).arg(Math.round(serverCopies.progress * 100))
+                                                                 : shell.offlineMode ? qsTr("Downloading %1 more, once offline mode is off.").arg(Theme.num(serverCopies.waiting))
+                                                                 : qsTr("Downloading %1 more.").arg(Theme.num(serverCopies.waiting))))
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             PillButton {
@@ -1451,7 +1446,7 @@ Item {
                 anchors.centerIn: parent
                 modal: true
                 width: Math.min(420, (parent ? parent.width : 420) - 40)
-                title: "Sign in to " + what + " again"
+                title: qsTr("Sign in to %1 again").arg(what)
                 standardButtons: Dialog.Ok | Dialog.Cancel
                 onAboutToShow: newPassword.text = ""
                 onAccepted: servers.signInAgain(serverId, newPassword.text)
@@ -1475,7 +1470,7 @@ Item {
                         font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
                         background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: newPassword.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                         onAccepted: signInDlg.accept()
-                        Accessible.name: "Password"
+                        Accessible.name: qsTr("Password")
                     }
                 }
             }
@@ -1529,7 +1524,7 @@ Item {
                     }
                     TextField {
                         id: serverLink; objectName: "serverLink"; width: parent.width; selectByMouse: true
-                        placeholderText: "Server link (https://music.example.com)"; Accessible.name: "Server link"
+                        placeholderText: "Server link (https://music.example.com)"; Accessible.name: qsTr("Server link")
                         onAccepted: if (addServerDlg.ready) addServerDlg.accept()
                     }
                     Text {
@@ -1542,17 +1537,17 @@ Item {
                     }
                     TextField {
                         id: serverUser; objectName: "serverUser"; width: parent.width; selectByMouse: true
-                        placeholderText: qsTr("User name"); Accessible.name: "User name"
+                        placeholderText: qsTr("User name"); Accessible.name: qsTr("User name")
                         onAccepted: if (addServerDlg.ready) addServerDlg.accept()
                     }
                     TextField {
                         id: serverPassword; objectName: "serverPassword"; width: parent.width
-                        echoMode: TextInput.Password; placeholderText: qsTr("Password"); Accessible.name: "Password"
+                        echoMode: TextInput.Password; placeholderText: qsTr("Password"); Accessible.name: qsTr("Password")
                         onAccepted: if (addServerDlg.ready) addServerDlg.accept()
                     }
                     TextField {
                         id: serverName; width: parent.width; selectByMouse: true
-                        placeholderText: qsTr("Name (optional)"); Accessible.name: "Server name"
+                        placeholderText: qsTr("Name (optional)"); Accessible.name: qsTr("Server name")
                         onAccepted: if (addServerDlg.ready) addServerDlg.accept()
                     }
                 }
@@ -1650,7 +1645,8 @@ Item {
                         }
                         Text {
                             textFormat: Text.PlainText
-                            text: "Works once, for " + Math.max(0, Math.ceil(webRemote.codeSeconds / 60)) + " more minute" + (webRemote.codeSeconds > 60 ? "s" : "")
+                            readonly property int minutes: Math.max(0, Math.ceil(webRemote.codeSeconds / 60))
+                            text: Theme.counted(qsTr("Works once, for %n more minute(s)", "", minutes), minutes)
                             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                         }
                         PillButton { height: 30; text: qsTr("Cancel"); onClicked: webRemote.cancelCode() }
@@ -1660,7 +1656,7 @@ Item {
             SettingsGroup {
                 key: "remoteDevices"
                 title: qsTr("Paired devices")
-                summary: webRemote.pairedDevices.length ? Theme.num(webRemote.pairedDevices.length) + (webRemote.pairedDevices.length === 1 ? qsTr(" device") : qsTr(" devices")) : qsTr("None yet")
+                summary: webRemote.pairedDevices.length ? Theme.counted(qsTr("%n device(s)", "", webRemote.pairedDevices.length), webRemote.pairedDevices.length) : qsTr("None yet")
                 query: page.query
                 Repeater {
                     model: webRemote.pairedDevices
@@ -1677,7 +1673,8 @@ Item {
                                 width: parent.width
                                 wrapMode: Text.Wrap
                                 textFormat: Text.PlainText
-                                text: "Paired " + new Date(modelData.paired * 1000).toLocaleDateString() + "  ·  last used " + new Date(modelData.seen * 1000).toLocaleString()
+                                text: qsTr("Paired %1  ·  last used %2").arg(Theme.date(new Date(modelData.paired * 1000), "short"))
+                                      .arg(Qt.locale().toString(new Date(modelData.seen * 1000), Locale.ShortFormat))
                                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                             }
                         }
@@ -1693,7 +1690,7 @@ Item {
                     textFormat: Text.PlainText
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    text: "Lost a phone, or not sure who has access? Remove the device here: it can't connect again without a new code. Port: " + webRemote.portNumber + "."
+                    text: qsTr("Lost a phone, or not sure who has access? Remove the device here: it can't connect again without a new code. Port: %1.").arg(webRemote.portNumber)
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
             }
@@ -1737,12 +1734,12 @@ Item {
                 StyledCombo {
                     objectName: "bioSource"
                     width: 220
-                    readonly property var names: ["", qsTr("Wikipedia"), qsTr("Last.fm"), qsTr("Discogs")]
-                    model: [qsTr("Wikipedia, then Last.fm, then Discogs"), qsTr("Wikipedia only"), "Last.fm only" + (sources.lastfmAvailable ? "" : qsTr(" (not set up)")),
-                            "Discogs only" + (sources.discogsConnected ? "" : qsTr(" (not set up)"))]
+                    readonly property var names: ["", "Wikipedia", "Last.fm", "Discogs"]  // i18n: keep (the keys)
+                    model: [qsTr("Wikipedia, then Last.fm, then Discogs"), qsTr("Wikipedia only"), sources.lastfmAvailable ? qsTr("Last.fm only") : qsTr("Last.fm only (not set up)"),
+                            sources.discogsConnected ? qsTr("Discogs only") : qsTr("Discogs only (not set up)")]
                     selection: names.indexOf(sources.bioSource)
                     onActivated: function (i) { sources.setBioSource(names[i]) }
-                    Accessible.name: "Where artist bios come from"
+                    Accessible.name: qsTr("Where artist bios come from")
                 }
             }
             StyledCheck {
@@ -1785,7 +1782,8 @@ Item {
                     width: parent.width
                     wrapMode: Text.WordWrap
                     text: sources.discogsConnected
-                          ? "Discogs: connected" + (sources.discogsUser ? " as " + sources.discogsUser : "") + ". The token is kept in the system keyring."
+                          ? (sources.discogsUser ? qsTr("Discogs: connected as %1. The token is kept in the system keyring.").arg(sources.discogsUser)
+                             : qsTr("Discogs: connected. The token is kept in the system keyring."))
                           : qsTr("Discogs needs a personal access token: make one at discogs.com → Settings → Developers, then paste it here. It's kept in the system keyring.")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                 }
@@ -1804,7 +1802,7 @@ Item {
                         font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                         background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: discogsToken.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                         onAccepted: sources.connectDiscogs(text)
-                        Accessible.name: "Discogs personal access token"
+                        Accessible.name: qsTr("Discogs personal access token")
                     }
                     PillButton {
                         objectName: "connectDiscogs"
@@ -1917,9 +1915,9 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
-                text: scrobbler.status + (scrobbler.pendingCount > 0 ? " · " + Theme.num(scrobbler.pendingCount) + " waiting to be sent" : "")
-                      + (scrobbler.rejectedCount > 0 ? " · " + Theme.num(scrobbler.rejectedCount) + " turned down by Last.fm" : "")
-                      + (scrobbler.lastError ? " · last try: " + scrobbler.lastError : "")
+                text: scrobbler.status + (scrobbler.pendingCount > 0 ? " · " + qsTr("%1 waiting to be sent").arg(Theme.num(scrobbler.pendingCount)) : "")
+                      + (scrobbler.rejectedCount > 0 ? " · " + qsTr("%1 turned down by Last.fm").arg(Theme.num(scrobbler.rejectedCount)) : "")
+                      + (scrobbler.lastError ? " · " + qsTr("last try: %1").arg(scrobbler.lastError) : "")
                 color: scrobbler.connected ? Theme.accent : Theme.textDim
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(13)
@@ -1952,7 +1950,7 @@ Item {
                             qsTr("Three quarters of the way"), qsTr("90% of the way"), qsTr("At the end")]
                     selection: Math.max(0, points.indexOf(scrobbler.listenPoint))
                     onActivated: scrobbler.setListenPoint(points[currentIndex])
-                    Accessible.name: "Scrobble a song after"
+                    Accessible.name: qsTr("Scrobble a song after")
                 }
             }
             StyledCheck {
@@ -2050,9 +2048,9 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
-                text: listenbrainz.status + (listenbrainz.pendingCount > 0 ? " · " + Theme.num(listenbrainz.pendingCount) + " waiting to be sent" : "")
-                      + (listenbrainz.rejectedCount > 0 ? " · " + Theme.num(listenbrainz.rejectedCount) + " turned down by ListenBrainz" : "")
-                      + (listenbrainz.lastError ? " · last try: " + listenbrainz.lastError : "")
+                text: listenbrainz.status + (listenbrainz.pendingCount > 0 ? " · " + qsTr("%1 waiting to be sent").arg(Theme.num(listenbrainz.pendingCount)) : "")
+                      + (listenbrainz.rejectedCount > 0 ? " · " + qsTr("%1 turned down by ListenBrainz").arg(Theme.num(listenbrainz.rejectedCount)) : "")
+                      + (listenbrainz.lastError ? " · " + qsTr("last try: %1").arg(listenbrainz.lastError) : "")
                 color: listenbrainz.connected ? Theme.accent : Theme.textDim
                 font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); wrapMode: Text.WordWrap
             }
@@ -2077,7 +2075,7 @@ Item {
                             qsTr("Three quarters of the way"), qsTr("90% of the way"), qsTr("At the end")]
                     selection: Math.max(0, points.indexOf(listenbrainz.listenPoint))
                     onActivated: listenbrainz.setListenPoint(points[currentIndex])
-                    Accessible.name: "Count a listen after"
+                    Accessible.name: qsTr("Count a listen after")
                 }
             }
             PillButton {
@@ -2149,7 +2147,7 @@ Item {
                     textFormat: Text.PlainText
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    text: "Create an application at discord.com/developers, paste its Application ID below and upload your icon as an art asset named “hallucinate”. Status: " + discord.status
+                    text: qsTr("Create an application at discord.com/developers, paste its Application ID below and upload your icon as an art asset named “hallucinate”. Status: %1").arg(discord.status)
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
                 TextField {
@@ -2164,10 +2162,10 @@ Item {
                     onEditingFinished: discord.setAppId(text)
                     Component.onCompleted: text = discord.appId
                     Connections { target: discord; function onChanged() { if (!discordAppId.activeFocus) discordAppId.text = discord.appId } }
-                    Accessible.name: "Discord application ID"
+                    Accessible.name: qsTr("Discord application ID")
                 }
-                StyledCheck { text: qsTr("Hide when paused"); checked: discord.hidePaused; onToggled: discord.setPref(qsTr("hidePaused"), checked) }
-                StyledCheck { text: qsTr("Hide cover art"); checked: discord.hideCover; onToggled: discord.setPref(qsTr("hideCover"), checked) }
+                StyledCheck { text: qsTr("Hide when paused"); checked: discord.hidePaused; onToggled: discord.setPref("hidePaused", checked) }
+                StyledCheck { text: qsTr("Hide cover art"); checked: discord.hideCover; onToggled: discord.setPref("hideCover", checked) }
                 StyledCheck { text: qsTr("Privacy mode (don't share track details)"); checked: discord.privacy; onToggled: discord.setPref("privacy", checked) }
             }
         }
@@ -2208,8 +2206,8 @@ Item {
                     width: 200
                     model: [qsTr("Right"), qsTr("Left")]
                     selection: shell.titleBarSide === "left" ? 1 : 0
-                    onActivated: shell.setTitleBarSide(currentIndex === 1 ? "left" : "right")
-                    Accessible.name: "Title bar buttons side"
+                    onActivated: shell.setTitleBarSide(currentIndex === 1 ? "left" : "right")  // i18n: keep
+                    Accessible.name: qsTr("Title bar buttons side")
                 }
             }
             Text {
@@ -2269,7 +2267,7 @@ Item {
                     model: [qsTr("Home"), qsTr("The page I left it on"), qsTr("Albums"), qsTr("Artists"), qsTr("Genres"), qsTr("Songs"), qsTr("Folders"), qsTr("Liked Songs"), qsTr("Stats"), qsTr("History")]
                     selection: Math.max(0, pages.indexOf(shell.startPage))
                     onActivated: shell.setStartPage(pages[currentIndex])
-                    Accessible.name: "Page Hallucinate opens on"
+                    Accessible.name: qsTr("Page Hallucinate opens on")
                 }
             }
             Flow {
@@ -2315,13 +2313,13 @@ Item {
                 fillMode: Image.PreserveAspectFit
                 sourceSize: Qt.size(600, 600)
                 smooth: true
-                Accessible.name: "Hallucinate logo"
+                Accessible.name: qsTr("Hallucinate logo")
             }
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Hallucinate " + shell.appVersion + " — a modern music library and player"
+                text: qsTr("Hallucinate %1 — a modern music library and player").arg(shell.appVersion)
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Flow {
@@ -2389,8 +2387,7 @@ Item {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: qsTr("Debug info lists versions, your system, display and audio setup and the recent log. It leaves out ")
-                    + "file paths, your music and account names."
+                text: qsTr("Debug info lists versions, your system, display and audio setup and the recent log. It leaves out file paths, your music and account names.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
         }

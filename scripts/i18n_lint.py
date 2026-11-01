@@ -15,15 +15,18 @@ QML = Path(__file__).resolve().parent.parent / "hallucinate" / "qml"
 _STRING = re.compile(r'"((?:\\.|[^"\\])*)"')
 # where a string is a key, a name or a value compared against, not something shown
 _NOT_SHOWN_BEFORE = re.compile(
-    r"(objectName|source|icon|name|key|family|fontFamily|mode|kind|role|state|section|sequence|sequences|"
+    r"(objectName|source|icon|(?<!Accessible\.)(?<!LinkArea )name|key|family|fontFamily|mode|kind|role|state|section|sequence|sequences|"
     r"easing\.type|color|Theme\.\w+|shell\.ui\w*|uiValue|setUiValue|setFeature|feature|go|navigate|openSettings|"
     r"emit|Qt\.formatDate|formatDate|formatTime|toLocaleString|indexOf|startsWith|endsWith|split|replace|"
     r"call|runCommand|hasOwnProperty|property|typeof|import|setProperty|findChild|"
     r"===|!==|==|!=|[\w\])]\[|case)\s*[:(=]?\s*$")
 # words: two letters together, and a space or a capital or an ellipsis beside them (" plays", "Play", "Edit…")
 _LOOKS_LIKE_WORDS = re.compile(r"(?=.*[A-Za-zÀ-ÿ]{2})(?=.*(\s|[A-Z]|…))")
+# never shown: an identifier (a settings key, an objectName: "deckLcd", "genreLink_"), a file path, a short code
+# in capitals ("NFD", "IV")
+_CODE_LIKE = re.compile(r"^([a-z][a-z0-9]*([A-Z][A-Za-z0-9]*)+|[a-z][A-Za-z0-9]*_|[A-Z]{1,4}|[\w./-]+\.\w{2,4})$")
 # a count's plural chosen in code (n === 1 ? "song" : "songs"): Qt's plural forms instead, qsTr("%n song(s)", "", n)
-_PLURAL = re.compile(r"""===?\s*1\s*\?\s*["'][^"']*["']\s*:\s*["']""")
+_PLURAL = re.compile(r"""===?\s*1\s*\?\s*(qsTr\()?["'][^"']*["']\)?\s*:\s*(qsTr\()?["']""")
 
 
 def offenders(path):
@@ -34,7 +37,7 @@ def offenders(path):
             continue
         for m in _STRING.finditer(code):
             text = m.group(1)
-            if not _LOOKS_LIKE_WORDS.search(text) or text.startswith(("image://", "file:", "qrc:", "http", "#")):
+            if not _LOOKS_LIKE_WORDS.search(text) or _CODE_LIKE.match(text) or text.startswith(("image://", "file:", "qrc:", "http", "#")):
                 continue
             before = code[: m.start()]
             if re.search(r"\bqsTr\s*\(\s*$", before) or re.search(r"\bqsTr\s*\([^()]*$", before):

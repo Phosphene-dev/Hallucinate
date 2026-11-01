@@ -22,7 +22,7 @@ Item {
     readonly property var spokenNames: ({
         play: qsTr("Play"), pause: qsTr("Pause"), prev: qsTr("Previous track"), next: qsTr("Next track"), shuffle: qsTr("Shuffle"),
         repeat: qsTr("Repeat"), repeat1: qsTr("Repeat one song"), radio: qsTr("Radio"), queue: qsTr("Queue"), heart: qsTr("Like"),
-        close: qsTr("Close"), more: qsTr("More actions"), plus: "Add", minus: qsTr("Remove"), back: qsTr("Back"), search: qsTr("Search"),
+        close: qsTr("Close"), more: qsTr("More actions"), plus: qsTr("Add"), minus: qsTr("Remove"), back: qsTr("Back"), search: qsTr("Search"),
         settings: qsTr("Settings"), sidebar: qsTr("Sidebar"), fullscreen: qsTr("Full screen"), expand: qsTr("Mini player"),
         note: qsTr("Lyrics"), folder: qsTr("Open folder"), vinyl: qsTr("Vinyl"), download: qsTr("Download"), down: qsTr("Show more"),
         history: qsTr("History"), playlist: qsTr("Playlist"), smartlist: qsTr("Smart playlist"), duplicates: qsTr("Duplicates")

@@ -16,6 +16,7 @@ from PySide6.QtGui import QDesktopServices
 
 from . import __version__, keyringwait
 from .core import net
+from .core.i18n import QT_TRANSLATE_NOOP, fill, translate
 from .core.kinds import counts_for_scrobbling, scrobble_fields, track_kind
 
 API_URL = "https://ws.audioscrobbler.com/2.0/"
@@ -30,8 +31,8 @@ REJECTED_KEPT = 50  # rejected scrobbles remembered (for Settings to show), newe
 REJECTED_ERRORS = {6, 13}  # invalid parameters, invalid method signature
 SESSION_ERRORS = {9}  # ...and this one that the sign-in is no longer valid
 DAILY_LIMIT = 5  # an ignored scrobble's code when the daily limit was reached: sent again later
-IGNORED = {1: "Last.fm ignored the artist", 2: "Last.fm ignored the track", 3: "the timestamp is too old",
-           4: "the timestamp is too new", DAILY_LIMIT: "Last.fm's daily scrobble limit was reached"}
+IGNORED = {1: QT_TRANSLATE_NOOP("Scrobbling", "Last.fm ignored the artist"), 2: QT_TRANSLATE_NOOP("Scrobbling", "Last.fm ignored the track"), 3: QT_TRANSLATE_NOOP("Scrobbling", "the timestamp is too old"),
+           4: QT_TRANSLATE_NOOP("Scrobbling", "the timestamp is too new"), DAILY_LIMIT: QT_TRANSLATE_NOOP("Scrobbling", "Last.fm's daily scrobble limit was reached")}
 logger = logging.getLogger(__name__)
 
 
@@ -46,7 +47,7 @@ class LastFmError(RuntimeError):
 def _words(exc):
     """A network or parsing error in plain words (never the request, which holds the API key)."""
     if isinstance(exc, ValueError) and not isinstance(exc, OSError):
-        return "its answer couldn't be read"
+        return translate("Scrobbling", "its answer couldn't be read")
     return net.describe(exc)
 
 
@@ -106,7 +107,7 @@ def scrobble_codes(result, count):
     ignoredMessage code, -1 when it gave none). None when the answer doesn't say which were accepted."""
     block = result.get("scrobbles") if isinstance(result, dict) else None
     if not isinstance(block, dict):
-        raise LastFmError(0, "Last.fm returned an invalid response")
+        raise LastFmError(0, translate("Scrobbling", "Last.fm returned an invalid response"))
     try:
         accepted = int((block.get("@attr") or {}).get("accepted") or 0)
     except (TypeError, ValueError):
@@ -150,17 +151,17 @@ def api_request(method, params, api_key, api_secret, session_key=None, signed=Tr
         except (OSError, ValueError, AttributeError):
             data = None
         if not (isinstance(data, dict) and "error" in data):
-            raise LastFmError(0, f"Couldn't reach Last.fm: {_words(exc)}") from exc
+            raise LastFmError(0, fill(translate("Scrobbling", "Couldn't reach Last.fm: %1"), _words(exc))) from exc
     except (URLError, TimeoutError, OSError, ValueError) as exc:
-        raise LastFmError(0, f"Couldn't reach Last.fm: {_words(exc)}") from exc
+        raise LastFmError(0, fill(translate("Scrobbling", "Couldn't reach Last.fm: %1"), _words(exc))) from exc
     if not isinstance(data, dict):
-        raise LastFmError(0, "Last.fm returned an invalid response")
+        raise LastFmError(0, translate("Scrobbling", "Last.fm returned an invalid response"))
     if "error" in data:
         try:
             code = int(data["error"])
         except (TypeError, ValueError):
             code = 0
-        raise LastFmError(code, f"Last.fm error {data['error']}: {data.get('message', 'request rejected')}")
+        raise LastFmError(code, fill(translate("Scrobbling", "Last.fm error %1: %2"), data["error"], data.get("message") or translate("Scrobbling", "request rejected")))
     return data
 
 
@@ -259,7 +260,7 @@ class LastFmScrobbler(QObject):
         got = keyringwait.read(lambda k: keyring.get_password(KEYRING_SERVICE, k),
                                ("api_key", "api_secret", "session"), late=self._keyring_late.emit)
         if got is None:
-            self._set_status("Waiting for the system keyring to unlock…")
+            self._set_status(translate("Scrobbling", "Waiting for the system keyring to unlock…"))
             return
         self._apply_keyring(got)
 
@@ -292,15 +293,15 @@ class LastFmScrobbler(QObject):
             return
         except (OSError, ValueError, TypeError) as exc:
             logger.warning("Could not load Last.fm offline queue %s: %s", self._queue_path, exc)
-            self._set_status(f"Could not load queued scrobbles: {exc}")
+            self._set_status(fill(translate("Scrobbling", "Could not load queued scrobbles: %1"), exc))
         self.pendingCountChanged.emit()
 
     def _initial_status(self):
         if self._keyring_error:
-            return f"System keyring unavailable: {self._keyring_error}"
+            return fill(translate("Scrobbling", "System keyring unavailable: %1"), self._keyring_error)
         if not (self._api_key and self._api_secret):
-            return "Add Last.fm API key and secret to connect."
-        return "Connected to Last.fm." if self._session_key else "Not connected to Last.fm."
+            return translate("Scrobbling", "Add Last.fm API key and secret to connect.")
+        return translate("Scrobbling", "Connected to Last.fm.") if self._session_key else translate("Scrobbling", "Not connected to Last.fm.")
 
     @Property(bool, notify=connectionChanged)
     def connected(self):
@@ -390,22 +391,22 @@ class LastFmScrobbler(QObject):
     def setApiCredentials(self, api_key, api_secret):
         api_key, api_secret = api_key.strip(), api_secret.strip()
         if not api_key or not api_secret:
-            self._set_status("Both the Last.fm API key and secret are required.")
+            self._set_status(translate("Scrobbling", "Both the Last.fm API key and secret are required."))
             return
         if self._keyring_error:
-            self._set_status(f"Cannot store API credentials securely: {self._keyring_error}")
+            self._set_status(fill(translate("Scrobbling", "Cannot store API credentials securely: %1"), self._keyring_error))
             return
         def then(error):
             if error:
-                self._set_status(f"Could not save API credentials to the system keyring: {error}")
+                self._set_status(fill(translate("Scrobbling", "Could not save API credentials to the system keyring: %1"), error))
                 return
             self._api_key, self._api_secret = api_key, api_secret
             self.statusChanged.emit()
-            self._set_status("Last.fm API credentials saved securely. "
-                             + ("Turn off offline mode (Settings → Online & privacy) to connect your account."
-                                if net.is_offline() else "Next, connect your account."))
+            self._set_status(translate("Scrobbling", "Last.fm API credentials saved securely. ")
+                             + (translate("Scrobbling", "Turn off offline mode (Settings → Online & privacy) to connect your account.")
+                                if net.is_offline() else translate("Scrobbling", "Next, connect your account.")))
 
-        self._set_status("Saving the API credentials…")
+        self._set_status(translate("Scrobbling", "Saving the API credentials…"))
         self._store(lambda: (keyring.set_password(KEYRING_SERVICE, "api_key", api_key),
                              keyring.set_password(KEYRING_SERVICE, "api_secret", api_secret)), then)
 
@@ -414,17 +415,17 @@ class LastFmScrobbler(QObject):
         if self._busy:
             return
         if not self.configured:
-            self._set_status("Add Last.fm API key and secret before connecting.")
+            self._set_status(translate("Scrobbling", "Add Last.fm API key and secret before connecting."))
             return
         if self._keyring_error:
-            self._set_status(f"System keyring is required: {self._keyring_error}")
+            self._set_status(fill(translate("Scrobbling", "System keyring is required: %1"), self._keyring_error))
             return
         if net.is_offline():
-            self._set_status("Offline mode is on, so Hallucinate can't reach Last.fm. Turn it off in Settings → "
-                             "Online & privacy to connect.")
+            self._set_status(translate("Scrobbling", "Offline mode is on, so Hallucinate can't reach Last.fm. Turn it off in Settings → "
+                             "Online & privacy to connect."))
             return
         self._set_authorization_url("")
-        self._set_status("Requesting Last.fm authorization token…")
+        self._set_status(translate("Scrobbling", "Requesting Last.fm authorization token…"))
         api_key, secret = self._api_key, self._api_secret
         self._start_job(
             "token",
@@ -434,7 +435,7 @@ class LastFmScrobbler(QObject):
     @Slot()
     def openAuthorizationUrl(self):
         if self._authorization_url and not QDesktopServices.openUrl(QUrl(self._authorization_url)):
-            self._set_status("Could not open the Last.fm authorization page in a browser.")
+            self._set_status(translate("Scrobbling", "Could not open the Last.fm authorization page in a browser."))
 
     @Slot()
     def completeAuthorization(self):
@@ -442,7 +443,7 @@ class LastFmScrobbler(QObject):
             return
         token = self._auth_token
         api_key, secret = self._api_key, self._api_secret
-        self._set_status("Completing Last.fm authorization…")
+        self._set_status(translate("Scrobbling", "Completing Last.fm authorization…"))
         self._start_job(
             "session",
             lambda: api_request("auth.getSession", {"token": token}, api_key, secret),
@@ -451,11 +452,11 @@ class LastFmScrobbler(QObject):
     @Slot()
     def disconnectAccount(self):
         if self._busy:
-            self._set_status("Wait for the current Last.fm request to finish before disconnecting.")
+            self._set_status(translate("Scrobbling", "Wait for the current Last.fm request to finish before disconnecting."))
             return
         self._forget_session()
         self._set_authorization_url("")
-        self._set_status("Disconnected from Last.fm. Pending scrobbles are kept.")
+        self._set_status(translate("Scrobbling", "Disconnected from Last.fm. Pending scrobbles are kept."))
 
     def _forget_session(self):
         """Sign out here at once, and take the session out of the keyring in the background."""
@@ -471,7 +472,7 @@ class LastFmScrobbler(QObject):
 
         def then(error):
             if error:
-                self._set_status(f"{self._status} (the session couldn't be removed from the system keyring: {error})")
+                self._set_status(fill(translate("Scrobbling", "%1 (the session couldn't be removed from the system keyring: %2)"), self._status, error))
 
         self._store(forget, then)
 
@@ -500,8 +501,8 @@ class LastFmScrobbler(QObject):
             if code in SESSION_ERRORS and action in ("nowplaying", "scrobble"):
                 # the session was revoked (or the app's access taken back): asking again won't help
                 self._forget_session()
-                self._set_status("Last.fm no longer accepts this sign-in: connect Last.fm again. "
-                                 "Pending scrobbles are kept.")
+                self._set_status(translate("Scrobbling", "Last.fm no longer accepts this sign-in: connect Last.fm again. "
+                                 "Pending scrobbles are kept."))
                 return
             if code in REJECTED_ERRORS and action == "scrobble":
                 if len(item) > 1:
@@ -531,37 +532,38 @@ class LastFmScrobbler(QObject):
         if action == "token":
             token = result.get("token")
             if not token:
-                self._set_status("Last.fm did not return an authorization token.")
+                self._set_status(translate("Scrobbling", "Last.fm did not return an authorization token."))
                 return
             self._auth_token = token
             self._set_authorization_url(f"{AUTH_URL}?{urlencode({'api_key': self._api_key, 'token': token})}")
-            self._set_status("Authorize Hallucinate on Last.fm, then confirm here.")
+            self._set_status(translate("Scrobbling", "Authorize Hallucinate on Last.fm, then confirm here."))
         elif action == "session":
             try:
                 session_key = result["session"]["key"]
                 username = result["session"].get("name", "")
             except (KeyError, TypeError, AttributeError):
-                self._set_status("Last.fm didn't return a session.")
+                self._set_status(translate("Scrobbling", "Last.fm didn't return a session."))
                 return
             def then(error):
                 if error:
-                    self._set_status(f"Could not store Last.fm session securely: {error}")
+                    self._set_status(fill(translate("Scrobbling", "Could not store Last.fm session securely: %1"), error))
                     return
                 self._session_key = session_key
                 self._auth_token = ""
                 self._set_authorization_url("")
                 self.connectionChanged.emit()
-                self._set_status(f"Connected to Last.fm{f' as {username}' if username else ''}.")
+                self._set_status(fill(translate("Scrobbling", "Connected to Last.fm as %1."), username) if username
+                             else translate("Scrobbling", "Connected to Last.fm."))
                 self._ensure_nowplaying()
                 self._send_pending()
 
-            self._set_status("Saving the Last.fm session…")
+            self._set_status(translate("Scrobbling", "Saving the Last.fm session…"))
             self._store(lambda: keyring.set_password(KEYRING_SERVICE, "session", session_key), then)
         elif action == "nowplaying":
             self._sent_nowplaying_key = item
             self._attempted_nowplaying_key = item
             self._pending_nowplaying = None
-            self._set_status("Last.fm now-playing updated.")
+            self._set_status(translate("Scrobbling", "Last.fm now-playing updated."))
         elif action == "scrobble":
             batch, codes = item, result
             if codes is None:  # refused, without saying which: send them one at a time to find out
@@ -572,13 +574,13 @@ class LastFmScrobbler(QObject):
                 later = [b for b, c in zip(batch, codes) if c == DAILY_LIMIT]  # sent again later
                 for b, c in zip(batch, codes):
                     if c not in (0, DAILY_LIMIT):
-                        self._reject(b, IGNORED.get(c, "Last.fm didn't accept it"))
+                        self._reject(b, translate("Scrobbling", IGNORED[c]) if c in IGNORED else translate("Scrobbling", "Last.fm didn't accept it"))
                 self._pending[:len(batch)] = later
                 self._save_queue()
                 self.pendingCountChanged.emit()
                 if later:
                     self._retry_at = time.monotonic() + 3600
-                    self._set_status(IGNORED[DAILY_LIMIT] + ": the rest are sent later.")
+                    self._set_status(fill(translate("Scrobbling", "%1: the rest are sent later."), translate("Scrobbling", IGNORED[DAILY_LIMIT])))
                     return
             if not self._pending:
                 self._single = False
@@ -693,7 +695,7 @@ class LastFmScrobbler(QObject):
         artist = track.get("artist", "")
         title = track.get("title", "")
         if not artist or not title:
-            raise ValueError("Last.fm requires a track title and artist.")
+            raise ValueError(translate("Scrobbling", "Last.fm requires a track title and artist."))
         fields = {"artist": artist, "track": title}
         if track.get("album"):
             fields["album"] = track["album"]
@@ -745,7 +747,7 @@ class LastFmScrobbler(QObject):
             os.replace(temporary, self._queue_path)
         except (OSError, TypeError, ValueError) as exc:
             logger.warning("Could not persist Last.fm offline queue to %s: %s", self._queue_path, exc)
-            self._set_status(f"Could not persist offline scrobbles: {exc}")
+            self._set_status(fill(translate("Scrobbling", "Could not persist offline scrobbles: %1"), exc))
 
     @Property(str, notify=syncChanged)
     def listenPoint(self):
@@ -811,7 +813,7 @@ class LastFmScrobbler(QObject):
         if self._loves_busy or not self.connected:
             return
         if net.is_offline():
-            self._set_status("Offline mode is on, so your Last.fm loves can't be fetched.")
+            self._set_status(translate("Scrobbling", "Offline mode is on, so your Last.fm loves can't be fetched."))
             return
         self._loves_busy = True
         self.syncChanged.emit()
@@ -830,7 +832,7 @@ class LastFmScrobbler(QObject):
         self._loves_busy = False
         self.syncChanged.emit()
         if isinstance(result, str):
-            self._set_status(f"Couldn't fetch your Last.fm loves: {result}")
+            self._set_status(fill(translate("Scrobbling", "Couldn't fetch your Last.fm loves: %1"), result))
             return
         self.lovesImported.emit(result)
 

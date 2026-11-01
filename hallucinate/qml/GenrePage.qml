@@ -26,7 +26,6 @@ Item {
     readonly property var albumList: info.albumList || []
     readonly property var artistList: info.artistList || []
     property bool allAlbums: false
-    function plural(n, one, many) { return Theme.num(n) + " " + (n === 1 ? one : many) }
     // Play next, add to the queue or a playlist: every song of the genre
     CollectionMenu {
         id: genreMenu; objectName: "genreMenu"
@@ -142,9 +141,9 @@ Item {
                         textFormat: Text.PlainText
                         objectName: "genreFacts"
                         width: parent.width
-                        text: [page.plural(page.info.albums || 0, "album", "albums"),
-                               page.plural(page.info.artists || 0, "artist", "artists"),
-                               page.plural(page.info.tracks || 0, "song", "songs"),
+                        text: [Theme.counted(qsTr("%n album(s)", "", page.info.albums || 0), page.info.albums || 0),
+                               Theme.counted(qsTr("%n artist(s)", "", page.info.artists || 0), page.info.artists || 0),
+                               Theme.counted(qsTr("%n song(s)", "", page.info.tracks || 0), page.info.tracks || 0),
                                page.info.seconds ? Theme.fmtHours(page.info.seconds) : ""].filter(s => s).join("  ·  ")
                         color: Theme.textDim
                         wrapMode: Text.Wrap
@@ -192,7 +191,7 @@ Item {
                             required property var modelData
                             text: modelData.name
                             onClicked: Nav.openGenre(modelData.name)
-                            Accessible.name: "Genre: " + modelData.name
+                            Accessible.name: qsTr("Genre: %1").arg(modelData.name)
                         }
                     }
                 }
@@ -258,7 +257,7 @@ Item {
                         textFormat: Text.PlainText
                         visible: page.albumList.length > 24
                         anchors.verticalCenter: parent.verticalCenter
-                        text: page.allAlbums ? qsTr("Show fewer") : "Show all " + Theme.num(page.albumList.length)
+                        text: page.allAlbums ? qsTr("Show fewer") : qsTr("Show all %1").arg(Theme.num(page.albumList.length))
                         color: Theme.accent
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(13)
@@ -296,7 +295,7 @@ Item {
                 SectionHeader {
                     title: qsTr("Songs")
                     subtitle: (page.info.tracks || 0) > (page.tracksModel ? page.tracksModel.count : 0)
-                              ? "The " + Theme.num(page.tracksModel.count) + " most played; Play all plays every one" : ""
+                              ? Theme.counted(qsTr("The %n most played; Play all plays every one", "", page.tracksModel.count), page.tracksModel.count) : ""
                 }
                 Item { width: 1; height: 6 }
             }
@@ -308,7 +307,7 @@ Item {
         anchors.centerIn: parent
         visible: page.info.tracks === 0
         icon: "search"
-        title: "No songs in " + page.genreName
+        title: qsTr("No songs in %1").arg(page.genreName)
         hint: qsTr("None of your songs carry this genre any more.")
     }
 }

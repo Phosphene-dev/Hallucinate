@@ -16,6 +16,8 @@ import threading
 import numpy as np
 from PySide6.QtCore import Property, QObject, QRectF, Qt, QUrl, Signal, Slot
 
+from .core.i18n import translate
+
 logger = logging.getLogger(__name__)
 
 FFT = 4096  # samples per column: 10.8 Hz bins at 44.1 kHz
@@ -254,7 +256,7 @@ class Spectrograms(QObject):
         from .core import remote
 
         if not path or remote.is_remote(path):
-            self._set(path=path, busy=False, error="Only songs on this computer can be analysed", image="")
+            self._set(path=path, busy=False, error=translate("Spectrum", "Only songs on this computer can be analysed"), image="")
             return
         row = self._row(path)
         file = self._db.file_of(path)
@@ -282,7 +284,7 @@ class Spectrograms(QObject):
         if job != self._job:
             return
         if not result or result.get("columns") is None or not len(result["columns"]):
-            self._set(busy=False, error="This file couldn't be decoded")
+            self._set(busy=False, error=translate("Spectrum", "This file couldn't be decoded"))
             return
         columns, rate = result["columns"], int(result.get("rate") or 0)
         start, end = float(row.get("cue_start") or 0), float(row.get("cue_end") or 0)
@@ -310,7 +312,7 @@ class Spectrograms(QObject):
         job, image, details = payload
         if job != self._job:
             return
-        self._set(busy=False, image=image, details=details, error="" if image else "The image couldn't be drawn")
+        self._set(busy=False, image=image, details=details, error="" if image else translate("Spectrum", "The image couldn't be drawn"))
 
     @Slot(result=str)
     def save(self):

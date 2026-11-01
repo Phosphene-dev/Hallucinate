@@ -72,7 +72,7 @@ Item {
             source: player.hasTrack ? player.current.artUrl : ""
             SpinningCover {}
             Accessible.role: player.hasTrack ? Accessible.Button : Accessible.Graphic
-            Accessible.name: player.hasTrack ? "Go to what's playing: " + (player.current.album || player.current.title || "") : qsTr("Nothing playing")
+            Accessible.name: player.hasTrack ? qsTr("Go to what's playing: %1").arg(player.current.album || player.current.title || "") : qsTr("Nothing playing")
             Accessible.onPressAction: Nav.goToPlaying()
             MouseArea {
                 anchors.fill: parent
@@ -185,7 +185,7 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: bar.tight ? 0 : 6
             IconButton { visible: !bar.episode; icon: "shuffle"; active: player.shuffle; onClicked: player.toggleShuffle() }
-            IconButton { objectName: "skipBack"; visible: bar.episode; icon: "skipback:" + podcasts.options.skipBack; tip: "Back " + podcasts.options.skipBack + " seconds"; onClicked: player.seekBy(-1000 * podcasts.options.skipBack) }
+            IconButton { objectName: "skipBack"; visible: bar.episode; icon: "skipback:" + podcasts.options.skipBack; tip: Theme.counted(qsTr("Back %n second(s)", "", podcasts.options.skipBack), podcasts.options.skipBack); onClicked: player.seekBy(-1000 * podcasts.options.skipBack) }
             IconButton { icon: "prev"; onClicked: player.previous() }
             Rectangle {
                 width: 44; height: 44; radius: Theme.round(22)
@@ -208,7 +208,7 @@ Item {
                 MouseArea { id: pp; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: player.toggle() }
             }
             IconButton { icon: "next"; onClicked: player.next() }
-            IconButton { objectName: "skipForward"; visible: bar.episode; icon: "skipfwd:" + podcasts.options.skipForward; tip: "Forward " + podcasts.options.skipForward + " seconds"; onClicked: player.seekBy(1000 * podcasts.options.skipForward) }
+            IconButton { objectName: "skipForward"; visible: bar.episode; icon: "skipfwd:" + podcasts.options.skipForward; tip: Theme.counted(qsTr("Forward %n second(s)", "", podcasts.options.skipForward), podcasts.options.skipForward); onClicked: player.seekBy(1000 * podcasts.options.skipForward) }
             IconButton {
                 visible: !bar.episode
                 icon: player.repeat === 2 ? "repeat1" : "repeat"

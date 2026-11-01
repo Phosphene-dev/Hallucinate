@@ -39,7 +39,7 @@ GlassPanel {
         radius: Theme.neon ? Theme.radius : card.narrow ? 12 : 18
         source: card.hasAlbum ? card.album.artUrl : ""
         Accessible.role: Accessible.Button
-        Accessible.name: card.hasAlbum ? "Open " + card.album.album : ""
+        Accessible.name: card.hasAlbum ? qsTr("Open %1").arg(card.album.album) : ""
         Accessible.onPressAction: if (card.hasAlbum) Nav.openAlbum(card.album.album_key)
         MouseArea {
             anchors.fill: parent
@@ -95,7 +95,7 @@ GlassPanel {
             width: parent.width
             wrapMode: Text.WordWrap
             visible: card.hasAlbum
-            text: card.hasAlbum ? [card.album.year > 0 ? card.album.year : "", Theme.num(card.album.n) + (card.album.n === 1 ? qsTr(" song") : qsTr(" songs")),
+            text: card.hasAlbum ? [card.album.year > 0 ? card.album.year : "", Theme.counted(qsTr("%n song(s)", "", card.album.n), card.album.n),
                                     card.album.durText].filter(s => s !== "").join("  ·  ") : ""
             color: Theme.textDim
             font.family: Theme.fontFamily

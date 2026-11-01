@@ -39,7 +39,7 @@ Item {
         id: deleteDlg
         objectName: "deletePlaylistDialog"
         title: qsTr("Delete this playlist?")
-        body: "“" + page.playlistName + "” goes away for good. The songs in it stay in your library."
+        body: qsTr("“%1” goes away for good. The songs in it stay in your library.").arg(page.playlistName)
         confirmText: qsTr("Delete playlist")
         destructive: true
         onAccepted: { var id = page.playlistId; userLib.deletePlaylist(id); Nav.goHome(); Nav.routeGone("playlist", id) }
@@ -69,15 +69,15 @@ Item {
             objectName: "duplicatePlaylist"
             visible: !page.liked; height: visible ? implicitHeight : 0
             text: qsTr("Make a copy"); icon.name: "plus"
-            onTriggered: Nav.openPlaylist(userLib.duplicatePlaylist(page.playlistId, page.playlistName + " (copy)"))
+            onTriggered: Nav.openPlaylist(userLib.duplicatePlaylist(page.playlistId, qsTr("%1 (copy)").arg(page.playlistName)))
         }
         MenuItem {
             objectName: "dedupePlaylist"
             visible: !page.liked; height: visible ? implicitHeight : 0
             enabled: page.summary.twice > 0
-            text: page.summary.twice > 0 ? "Remove " + Theme.num(page.summary.twice) + (page.summary.twice === 1 ? qsTr(" repeat") : qsTr(" repeats")) : qsTr("No songs repeat")
+            text: page.summary.twice > 0 ? Theme.counted(qsTr("Remove %n repeat(s)", "", page.summary.twice), page.summary.twice) : qsTr("No songs repeat")
             icon.name: "duplicates"
-            onTriggered: { var n = userLib.removePlaylistDuplicates(page.playlistId); Nav.notify(Theme.num(n) + (n === 1 ? qsTr(" repeat") : qsTr(" repeats")) + " taken out; each song is in it once") }
+            onTriggered: { var n = userLib.removePlaylistDuplicates(page.playlistId); Nav.notify(Theme.counted(qsTr("%n repeat(s) taken out; each song is in it once", "", n), n)) }
         }
         MenuItem {
             objectName: "playlistKeep"
@@ -127,7 +127,7 @@ Item {
                 }
                 Text {
                     objectName: "playlistCount"
-                    text: Theme.num(list.count) + (list.count === 1 ? qsTr(" song") : qsTr(" songs")) + (page.seconds >= 60 ? "  ·  " + Theme.fmtHours(page.seconds) : "")
+                    text: Theme.counted(qsTr("%n song(s)", "", list.count), list.count) + (page.seconds >= 60 ? "  ·  " + Theme.fmtHours(page.seconds) : "")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText
                 }
                 Row {

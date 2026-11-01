@@ -88,6 +88,50 @@ def pseudo_text(s):
     return "[" + body + " " + "~" * max(2, len(s) * 2 // 5) + "]"
 
 
+# English plural forms that "(s)" can't spell: source → (one, many)
+ENGLISH_PLURALS = {
+    "%n copies": ("%n copy", "%n copies"),
+    "Add it again?": ("Add it again?", "Add them again?"),
+    "%n of these are already in “%1”": ("%n of these is already in “%1”", "%n of these are already in “%1”"),
+    "Also add the %n that are already there": ("Also add the %n that's already there", "Also add the %n that are already there"),
+    "%n song(s) new to it.": ("%n song is new to it.", "%n songs are new to it."),
+    "Takes the %n extra copies out of the library and keeps the best of each. Right-click a song for more.":
+        ("Takes the %n extra copy out of the library and keeps the best of each. Right-click a song for more.",
+         "Takes the %n extra copies out of the library and keeps the best of each. Right-click a song for more."),
+    "hours of music": ("hour of music", "hours of music"),
+    "minutes of music": ("minute of music", "minutes of music"),
+}
+
+
+def english_forms(src):
+    if src in ENGLISH_PLURALS:
+        return ENGLISH_PLURALS[src]
+    if "(s)" in src:
+        return src.replace("(s)", ""), src.replace("(s)", "s")
+    return src, src  # "%n-day streak", "The %n most played…": the same either way
+
+
+def fill_english(ts):
+    """Every plural in the English catalogue gets its two forms, unless someone has written them already."""
+    tree = ET.parse(ts)
+    for msg in tree.getroot().iter("message"):
+        if msg.get("numerus") != "yes":
+            continue
+        tr = msg.find("translation")
+        forms = [f.text or "" for f in tr.findall("numerusform")] if tr is not None else []
+        if tr is not None and tr.get("type") != "unfinished" and any(forms):
+            continue
+        if tr is None:
+            tr = ET.SubElement(msg, "translation")
+        for f in list(tr):
+            tr.remove(f)
+        tr.attrib.pop("type", None)
+        for text in english_forms(msg.findtext("source") or ""):
+            ET.SubElement(tr, "numerusform").text = text
+    # written every time, so the file is the same whether or not anything was filled in (--check compares it)
+    tree.write(ts, encoding="utf-8", xml_declaration=True)
+
+
 def make_pseudo(template, target):
     tree = ET.parse(template)
     for msg in tree.getroot().iter("message"):
@@ -130,6 +174,8 @@ def build(check=False):
             if ts.exists():
                 shutil.copy(ts, work)
             lupdate(work, ["-target-language", lang] + (["-pluralonly"] if lang == "en" else []))
+            if lang == "en":
+                fill_english(work)
             if check:
                 if digest(work) != digest(ts):
                     stale.append(ts.name)

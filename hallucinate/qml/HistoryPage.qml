@@ -37,15 +37,12 @@ Item {
         var age = Math.round((today - day) / 86400000)
         if (age === 0) return qsTr("Today")
         if (age === 1) return qsTr("Yesterday")
-        if (age > 1 && age < 7) return Qt.formatDate(day, "dddd")
-        return Qt.formatDate(day, day.getFullYear() === today.getFullYear() ? "dddd d MMMM" : "dddd d MMMM yyyy")
+        if (age > 1 && age < 7) return Theme.date(day, "weekday")
+        return Theme.date(day, day.getFullYear() === today.getFullYear() ? "longThisYear" : "long")  // i18n: keep
     }
     function fmtListening(seconds) {
-        var m = Math.round(seconds / 60)
-        if (m < 60) return m + " min"
-        return seconds >= 36000 ? Theme.fmtHours(seconds) : Math.floor(m / 60) + " h " + (m % 60) + " min"
+        return seconds >= 36000 ? Theme.fmtHours(seconds) : Theme.fmtMinutes(seconds)
     }
-    function plural(n, one, many) { return Theme.num(n) + " " + (n === 1 ? one : many) }
     function sourceName(s) {
         return s === "lastfm" ? qsTr("Last.fm") : s === "listenbrainz" ? qsTr("ListenBrainz") : s
     }
@@ -90,9 +87,9 @@ Item {
                     width: parent.width
                     wrapMode: Text.Wrap
                     text: (page.summary.plays || 0) === 0 ? (page.filtered ? qsTr("No listens match.") : qsTr("Nothing played yet."))
-                        : [page.plural(page.summary.plays, "play", "plays"), page.fmtListening(page.summary.seconds || 0),
-                           page.plural(page.summary.songs, "song", "songs"), page.plural(page.summary.artists, "artist", "artists"),
-                           page.plural(page.summary.days, "day", "days")].join("  ·  ")
+                        : [Theme.counted(qsTr("%n play(s)", "", page.summary.plays), page.summary.plays), page.fmtListening(page.summary.seconds || 0),
+                           Theme.counted(qsTr("%n song(s)", "", page.summary.songs), page.summary.songs), Theme.counted(qsTr("%n artist(s)", "", page.summary.artists), page.summary.artists),
+                           Theme.counted(qsTr("%n day(s)", "", page.summary.days), page.summary.days)].join("  ·  ")
                     color: Theme.textDim
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(14)
@@ -121,8 +118,8 @@ Item {
                             textFormat: Text.PlainText
                             id: streakText
                             readonly property var heat: page.info.heatmap || ({})
-                            text: (heat.streak || 0) > 1 ? heat.streak + "-day streak  ·  " + page.plural(heat.activeDays || 0, qsTr("active day"), qsTr("active days"))
-                                : page.plural(heat.activeDays || 0, qsTr("active day"), qsTr("active days"))
+                            text: (heat.streak || 0) > 1 ? Theme.counted(qsTr("%n-day streak", "", heat.streak), heat.streak) + "  ·  " + Theme.counted(qsTr("%n active day(s)", "", heat.activeDays || 0), heat.activeDays || 0)
+                                : Theme.counted(qsTr("%n active day(s)", "", heat.activeDays || 0), heat.activeDays || 0)
                             color: Theme.accent
                             font.family: Theme.fontFamily
                             font.pixelSize: Theme.fontSize(13)
@@ -143,7 +140,7 @@ Item {
                         textFormat: Text.PlainText
                         objectName: "heatmapTrimmed"
                         visible: historyHeatmap.firstWeek > 0
-                        text: "The last " + historyHeatmap.shownWeeks + " weeks: widen the window for the whole year"
+                        text: Theme.counted(qsTr("The last %n week(s): widen the window for the whole year", "", historyHeatmap.shownWeeks), historyHeatmap.shownWeeks)
                         color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11)
                     }
                     Text {
@@ -198,7 +195,7 @@ Item {
                     visible: page.dayPicked
                     selected: true
                     closable: true
-                    text: page.dayPicked ? Qt.formatDate(page.dateOf(page.period.slice(4)), "ddd d MMM yyyy") : ""
+                    text: page.dayPicked ? Theme.date(page.dateOf(page.period.slice(4)), "medium") : ""
                     onClicked: page.period = "all"
                 }
                 Chip {
@@ -241,7 +238,7 @@ Item {
                 textFormat: Text.PlainText
                 anchors { right: parent.right; rightMargin: 36; bottom: parent.bottom; bottomMargin: 9 }
                 visible: (parent.totals.plays || 0) > 0
-                text: page.plural(parent.totals.plays || 0, "play", "plays") + "  ·  " + page.fmtListening(parent.totals.seconds || 0)
+                text: Theme.counted(qsTr("%n play(s)", "", parent.totals.plays || 0), parent.totals.plays || 0) + "  ·  " + page.fmtListening(parent.totals.seconds || 0)
                 color: Theme.textDim
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(12)
@@ -360,7 +357,7 @@ Item {
                             }
                         }
                         ToolTip.visible: artistMouse.containsMouse
-                        ToolTip.text: "Only show " + Theme.plain(row.model.artist)
+                        ToolTip.text: qsTr("Only show %1").arg(Theme.plain(row.model.artist))
                         ToolTip.delay: 700
                     }
                     Text {
@@ -408,7 +405,7 @@ Item {
                     }
                     ToolTip.visible: badgeMouse.containsMouse
                     ToolTip.text: row.model.source === "local" ? qsTr("This file is no longer in your library")
-                                  : "Imported from " + page.sourceName(row.model.source)
+                                  : qsTr("Imported from %1").arg(page.sourceName(row.model.source))
                     MouseArea { id: badgeMouse; anchors.fill: parent; hoverEnabled: true }
                 }
                 Text {

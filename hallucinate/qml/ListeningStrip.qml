@@ -45,12 +45,12 @@ Column {
             Text {
                 textFormat: Text.PlainText
                 text: strip.info.hours < 1 && strip.info.hours > 0 ? qsTr("under an hour")
-                      : strip.info.hours === 1 ? qsTr("1 hour") : Theme.num(strip.info.hours) + " hours"
+                      : Theme.counted(qsTr("%n hour(s)", "", strip.info.hours), strip.info.hours)
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(20)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Text {
                 textFormat: Text.PlainText
-                text: "listened"
+                text: qsTr("listened")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
         }

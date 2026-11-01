@@ -6,7 +6,7 @@ Slider {
     id: s
     implicitHeight: Theme.retro ? 20 : 18
     padding: 0
-    Accessible.name: "Slider"
+    Accessible.name: qsTr("Slider")
     background: Rectangle {
         x: s.leftPadding
         y: s.topPadding + s.availableHeight / 2 - height / 2

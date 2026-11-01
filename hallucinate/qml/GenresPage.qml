@@ -38,7 +38,6 @@ Item {
         showingSongs = true
         songList.positionViewAtBeginning()
     }
-    function plural(n, one, many) { return Theme.num(n) + " " + (n === 1 ? one : many) }
 
     // ---- the genres --------------------------------------------------------------------------------------------
     Item {
@@ -160,8 +159,8 @@ Item {
                     Text {
                         textFormat: Text.PlainText
                         width: parent.width
-                        text: page.plural(entry.tracks, "song", "songs") + "  ·  " + page.plural(entry.albums, "album", "albums")
-                              + (page.order === "plays" ? "  ·  " + page.plural(entry.plays, "play", "plays") : "")
+                        text: Theme.counted(qsTr("%n song(s)", "", entry.tracks), entry.tracks) + "  ·  " + Theme.counted(qsTr("%n album(s)", "", entry.albums), entry.albums)
+                              + (page.order === "plays" ? "  ·  " + Theme.counted(qsTr("%n play(s)", "", entry.plays), entry.plays) : "")
                         elide: Text.ElideRight
                         color: entry.picked ? Theme.selectedText : Theme.textDim
                         font.family: Theme.fontFamily
@@ -183,7 +182,7 @@ Item {
                     }
                 }
                 Accessible.role: Accessible.ListItem
-                Accessible.name: entry.name + ", " + page.plural(entry.tracks, "song", "songs")
+                Accessible.name: entry.name + ", " + Theme.counted(qsTr("%n song(s)", "", entry.tracks), entry.tracks)
                 Accessible.onPressAction: page.pick(entry.name)
             }
         }
@@ -246,12 +245,12 @@ Item {
                     model: [qsTr("Album by album"), qsTr("Title"), qsTr("Artist"), qsTr("Newest year"), qsTr("Most played"), qsTr("Recently added")]
                     selection: Math.max(0, page.sorts.indexOf(page.songSort))
                     onActivated: function (i) { page.songSort = page.sorts[i] }
-                    Accessible.name: "Order of the songs"
+                    Accessible.name: qsTr("Order of the songs")
                 }
             }
             Text {
                 textFormat: Text.PlainText
-                text: page.songs ? page.plural(songList.count, "song", "songs") + " tagged " + page.selected : ""
+                text: page.songs ? Theme.counted(qsTr("%n song(s) tagged %1", "", songList.count), songList.count).arg(page.selected) : ""
                 color: Theme.textDim
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(12)

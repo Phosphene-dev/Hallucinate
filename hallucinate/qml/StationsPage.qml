@@ -28,7 +28,7 @@ Item {
         function popupFor(s) { song = s; popup() }
         readonly property string text: (song.artist ? song.artist + " – " : "") + (song.title || "")
         MenuItem { text: qsTr("Find in your library"); icon.name: "search"; onTriggered: Nav.search(logMenu.text.replace(" – ", " ")) }
-        MenuItem { text: qsTr("Copy artist and title"); icon.name: "playlist"; onTriggered: { shell.copyText(logMenu.text); Nav.notify("Copied “" + logMenu.text + "”") } }
+        MenuItem { text: qsTr("Copy artist and title"); icon.name: "playlist"; onTriggered: { shell.copyText(logMenu.text); Nav.notify(qsTr("Copied “%1”").arg(logMenu.text)) } }
         MenuSeparator {}
         MenuItem {
             text: qsTr("Remove from the log"); icon.name: "remove"; icon.color: Theme.error
@@ -100,7 +100,7 @@ Item {
                 width: parent.width
                 placeholderText: "https://…"
                 selectByMouse: true
-                Accessible.name: "Stream link"
+                Accessible.name: qsTr("Stream link")
                 onAccepted: if (addDlg.linkOk) addDlg.accept()
             }
             TextField {
@@ -108,7 +108,7 @@ Item {
                 width: parent.width
                 placeholderText: qsTr("Name (optional: the station's own name is used)")
                 selectByMouse: true
-                Accessible.name: "Station name"
+                Accessible.name: qsTr("Station name")
                 onAccepted: if (addDlg.linkOk) addDlg.accept()
             }
         }
@@ -124,7 +124,7 @@ Item {
         onOpened: renameField.forceActiveFocus()
         onAccepted: if (renameField.text.trim().length) stations.rename(stationId, renameField.text.trim())
         TextField {
-            id: renameField; implicitWidth: 280; selectByMouse: true; Accessible.name: "Station name"
+            id: renameField; implicitWidth: 280; selectByMouse: true; Accessible.name: qsTr("Station name")
             onAccepted: if (text.trim().length) renameDlg.accept()
             onTextChanged: { var b = renameDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
         }
@@ -269,7 +269,7 @@ Item {
                     }
                     Text {
                         textFormat: Text.PlainText
-                        text: stations.count === 1 ? qsTr("1 station") : Theme.num(stations.count) + " stations"
+                        text: Theme.counted(qsTr("%n station(s)", "", stations.count), stations.count)
                         color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
                     }
                 }
@@ -296,7 +296,7 @@ Item {
                 font.pixelSize: Theme.fontSize(14)
                 leftPadding: 16
                 selectByMouse: true
-                Accessible.name: "Find stations"
+                Accessible.name: qsTr("Find stations")
                 background: Rectangle { radius: Theme.round(height / 2); color: Theme.surface; border.color: search.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                 onAccepted: { page.query = text.trim(); stations.search(page.query) }
                 onTextChanged: if (!text.length) { page.query = ""; stations.search("") }
@@ -409,7 +409,7 @@ Item {
                     font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                     leftPadding: 14
                     selectByMouse: true
-                    Accessible.name: "Find a song you heard on the radio"
+                    Accessible.name: qsTr("Find a song you heard on the radio")
                     background: Rectangle { radius: Theme.round(height / 2); color: Theme.surface; border.color: logSearch.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                     onTextChanged: stations.setLogQuery(text)
                     Keys.onEscapePressed: text = ""
@@ -427,7 +427,7 @@ Item {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: logSearch.text.length ? "No song you heard matches “" + logSearch.text + "”"
+                text: logSearch.text.length ? qsTr("No song you heard matches “%1”").arg(logSearch.text)
                       : qsTr("Nothing yet. Songs show up here once a station has said what it's playing and you've listened for a minute.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
@@ -449,7 +449,7 @@ Item {
                             textFormat: Text.PlainText
                             topPadding: logRow.index === 0 ? 0 : 12
                             bottomPadding: 4
-                            text: Qt.formatDate(new Date(logRow.modelData.ts * 1000), "dddd d MMMM yyyy")
+                            text: Theme.date(new Date(logRow.modelData.ts * 1000), "long")
                             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold
                         }
                         Rectangle {
@@ -486,8 +486,8 @@ Item {
                                 onClicked: logMenu.popupFor(logRow.modelData)
                                 onPressAndHold: logMenu.popupFor(logRow.modelData)
                                 Accessible.role: Accessible.Button
-                                Accessible.name: logRow.modelData.title + " by " + logRow.modelData.artist + ", on "
-                                                 + logRow.modelData.station + " at " + logRow.modelData.time
+                                Accessible.name: qsTr("%1 by %2, on %3 at %4").arg(logRow.modelData.title).arg(logRow.modelData.artist)
+                                                 .arg(logRow.modelData.station).arg(logRow.modelData.time)
                                 Accessible.onPressAction: logMenu.popupFor(logRow.modelData)
                             }
                         }

@@ -32,14 +32,13 @@ Item {
         out.push(n)
         return out
     }
-    function plural(n, one, many) { return Theme.num(n) + " " + (n === 1 ? one : many) }
     // a movement as it's usually written: "III. Allegro", else the song's own title
     function movementTitle(t) {
         if (!t.movement) return t.title
         return (t.movement_no > 0 ? page.roman(t.movement_no) + ". " : "") + t.movement
     }
     function roman(n) {
-        var r = "", vals = [[10, "X"], [9, qsTr("IX")], [5, "V"], [4, qsTr("IV")], [1, "I"]]
+        var r = "", vals = [[10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]]
         if (n > 39) return String(n)
         for (var i = 0; i < vals.length; i++) while (n >= vals[i][0]) { r += vals[i][1]; n -= vals[i][0] }
         return r
@@ -116,9 +115,9 @@ Item {
                         textFormat: Text.PlainText
                         objectName: "composerFacts"
                         width: parent.width
-                        text: [page.works.length ? page.plural(page.works.length, "work", "works") : "",
-                               page.plural(page.info.tracks || 0, "song", "songs"),
-                               page.plural(page.albumList.length, "album", "albums"),
+                        text: [page.works.length ? Theme.counted(qsTr("%n work(s)", "", page.works.length), page.works.length) : "",
+                               Theme.counted(qsTr("%n song(s)", "", page.info.tracks || 0), page.info.tracks || 0),
+                               Theme.counted(qsTr("%n album(s)", "", page.albumList.length), page.albumList.length),
                                page.info.seconds ? Theme.fmtHours(page.info.seconds) : ""].filter(s => s).join("  ·  ")
                         color: Theme.textDim
                         wrapMode: Text.Wrap
@@ -165,7 +164,7 @@ Item {
                             required property var modelData
                             text: modelData.name
                             onClicked: Nav.openArtist(modelData.name)
-                            Accessible.name: "Artist: " + modelData.name
+                            Accessible.name: qsTr("Artist: %1").arg(modelData.name)
                         }
                     }
                 }
@@ -202,7 +201,7 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 anchors.baseline: parent.children[0].baseline
-                                text: page.plural(workBlock.modelData.songs.length, "movement", "movements")
+                                text: Theme.counted(qsTr("%n movement(s)", "", workBlock.modelData.songs.length), workBlock.modelData.songs.length)
                                       + (workBlock.modelData.seconds >= 60 ? "  ·  " + Theme.fmtHours(workBlock.modelData.seconds) : "")
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily
@@ -316,7 +315,7 @@ Item {
         anchors.centerIn: parent
         visible: page.info.tracks === 0
         icon: "note"
-        title: "Nothing by " + page.composerName
+        title: qsTr("Nothing by %1").arg(page.composerName)
         hint: qsTr("None of your songs credit this composer any more.")
     }
 }

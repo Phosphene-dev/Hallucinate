@@ -24,6 +24,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 from .db import fold
+from .i18n import fill, translate
 
 
 def _url_path(url):
@@ -72,11 +73,11 @@ def read_sqlite_player(path):
     try:
         tables = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         if "songs" not in tables:
-            raise ValueError("Not a Strawberry or Clementine library")
+            raise ValueError(translate("PlayerImport", "Not a Strawberry or Clementine library"))
         cols = {r[1] for r in con.execute("PRAGMA table_info(songs)")}
         loc = "url" if "url" in cols else "filename" if "filename" in cols else None
         if loc is None:
-            raise ValueError("Not a Strawberry or Clementine library")
+            raise ValueError(translate("PlayerImport", "Not a Strawberry or Clementine library"))
         source = "Strawberry" if loc == "url" else "Clementine"
         out = _empty(source)
         skip = "skipcount" if "skipcount" in cols else "0"
@@ -119,7 +120,7 @@ def read_rhythmbox(path):
     out = _empty("Rhythmbox")
     root = ET.parse(path).getroot()
     if root.tag != "rhythmdb":
-        raise ValueError("Not a Rhythmbox database")
+        raise ValueError(translate("PlayerImport", "Not a Rhythmbox database"))
     for e in root.iter("entry"):
         if e.get("type") != "song":
             continue
@@ -144,7 +145,7 @@ def read_itunes_xml(path):
     with open(path, "rb") as fh:
         data = plistlib.load(fh)
     if not isinstance(data, dict) or "Tracks" not in data:
-        raise ValueError("Not an iTunes-style library XML")
+        raise ValueError(translate("PlayerImport", "Not an iTunes-style library XML"))
     app = str(data.get("Application Version", ""))
     out = _empty("MusicBee" if "musicbee" in str(data.get("Music Folder", "")).lower() or "MusicBee" in app
                  else "iTunes library")
@@ -276,9 +277,9 @@ def read(path):
             return read_itunes_xml(path)
     except (ET.ParseError, xml.parsers.expat.ExpatError, plistlib.InvalidFileException, sqlite3.DatabaseError,
             AttributeError, TypeError, KeyError) as exc:
-        raise ValueError(f"That file looks damaged ({exc.__class__.__name__})") from exc
-    raise ValueError("That isn't a library file Hallucinate can read (Strawberry, Clementine, Rhythmbox, "
-                     "MusicBee or iTunes)")
+        raise ValueError(fill(translate("PlayerImport", "That file looks damaged (%1)"), exc.__class__.__name__)) from exc
+    raise ValueError(translate("PlayerImport", "That isn't a library file Hallucinate can read (Strawberry, Clementine, Rhythmbox, "
+                     "MusicBee or iTunes)"))
 
 
 def merge(db, imported, now=None):

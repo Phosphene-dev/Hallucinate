@@ -56,11 +56,11 @@ Window {
             spacing: 4
             readonly property bool episode: player.hasTrack && player.current.kind === "episode"
             readonly property bool live: player.hasTrack && player.current.kind === "station"
-            IconButton { visible: parent.episode; icon: "skipback:" + podcasts.options.skipBack; tip: "Back " + podcasts.options.skipBack + " seconds"; onClicked: player.seekBy(-1000 * podcasts.options.skipBack) }
+            IconButton { visible: parent.episode; icon: "skipback:" + podcasts.options.skipBack; tip: Theme.counted(qsTr("Back %n second(s)", "", podcasts.options.skipBack), podcasts.options.skipBack); onClicked: player.seekBy(-1000 * podcasts.options.skipBack) }
             IconButton { icon: "prev"; tip: qsTr("Previous"); onClicked: player.previous() }
             IconButton { icon: player.playing ? "pause" : "play"; tip: player.playing ? qsTr("Pause") : qsTr("Play"); size: 24; onClicked: player.toggle() }
             IconButton { icon: "next"; tip: qsTr("Next"); onClicked: player.next() }
-            IconButton { visible: parent.episode; icon: "skipfwd:" + podcasts.options.skipForward; tip: "Forward " + podcasts.options.skipForward + " seconds"; onClicked: player.seekBy(1000 * podcasts.options.skipForward) }
+            IconButton { visible: parent.episode; icon: "skipfwd:" + podcasts.options.skipForward; tip: Theme.counted(qsTr("Forward %n second(s)", "", podcasts.options.skipForward), podcasts.options.skipForward); onClicked: player.seekBy(1000 * podcasts.options.skipForward) }
             Item { Layout.fillWidth: true }
             Text {
                 visible: parent.live

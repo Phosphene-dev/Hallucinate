@@ -18,16 +18,16 @@ Item {
     onKindChanged: userLib.loadRecap(kind)
 
     function hoursText(seconds) {
-        if (seconds >= 3600 * 1.5) return { n: Math.round(seconds / 3600), u: "hours" }
-        return { n: Math.round(seconds / 60), u: "minutes" }
+        // under a big number: "12 / hours of music"
+        if (seconds >= 3600 * 1.5) { var h = Math.round(seconds / 3600); return { n: h, u: qsTr("hours of music", "", h) } }
+        var m = Math.round(seconds / 60)
+        return { n: m, u: qsTr("minutes of music", "", m) }
     }
-    function plural(n, one, many) { return Theme.num(n) + " " + (n === 1 ? one : many) }
     function peakHour() {
         var h = rc.hours || [], best = -1, at = 0
         for (var i = 0; i < h.length; i++) if (h[i] > best) { best = h[i]; at = i }
         if (best <= 0) return ""
-        var d = new Date(2000, 0, 1, at, 0)
-        return Qt.formatTime(d, "h ap").replace(":00", "")
+        return Theme.hourOfDay(at)
     }
     function weekdayName(i) { return [qsTr("Mondays"), qsTr("Tuesdays"), qsTr("Wednesdays"), qsTr("Thursdays"), qsTr("Fridays"), qsTr("Saturdays"), qsTr("Sundays")][i] }
     function peakWeekday() {
@@ -279,7 +279,7 @@ Item {
                     }
                     Text {
                         textFormat: Text.PlainText
-                        text: page.empty ? qsTr("Nothing played yet") : page.hoursText(page.summary.seconds || 0).u + " of music"
+                        text: page.empty ? qsTr("Nothing played yet") : page.hoursText(page.summary.seconds || 0).u
                         color: "white"
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(17)
@@ -287,8 +287,9 @@ Item {
                     Text {
                         textFormat: Text.PlainText
                         visible: page.rc.change !== null && page.rc.change !== undefined && !page.empty
-                        text: (page.rc.change >= 0 ? "▲ " : "▼ ") + Math.abs(Math.round((page.rc.change || 0) * 100)) + "% vs the "
-                              + (page.kind === "week" ? "week" : page.kind === "month" ? "month" : "year") + " before"
+                        text: (page.rc.change >= 0 ? "▲ " : "▼ ")
+                              + (page.kind === "week" ? qsTr("%1% vs the week before") : page.kind === "month" ? qsTr("%1% vs the month before")
+                                 : qsTr("%1% vs the year before")).arg(Theme.num(Math.abs(Math.round((page.rc.change || 0) * 100))))
                         color: page.rc.change >= 0 ? "#b9f5c8" : "#f5c2b9"
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(12)
@@ -339,7 +340,7 @@ Item {
                                 required property int index
                                 rank: index + 1; label: modelData.name; round: true
                                 labelRoom: shareCard.width - hero.x - hero.width - 10 - 18 - 44 - 24 - 24
-                                sub: page.plural(modelData.plays, "play", "plays"); art: modelData.artUrl || ""
+                                sub: Theme.counted(qsTr("%n play(s)", "", modelData.plays), modelData.plays); art: modelData.artUrl || ""
                             }
                         }
                     }
@@ -353,7 +354,7 @@ Item {
                                 required property var modelData
                                 required property int index
                                 rank: index + 1; label: modelData.title
-                                sub: modelData.artist + "  ·  " + page.plural(modelData.plays, "play", "plays"); art: modelData.artUrl || ""
+                                sub: modelData.artist + "  ·  " + Theme.counted(qsTr("%n play(s)", "", modelData.plays), modelData.plays); art: modelData.artUrl || ""
                             }
                         }
                     }
@@ -373,7 +374,7 @@ Item {
                     textFormat: Text.PlainText
                     anchors.verticalCenter: parent.verticalCenter
                     visible: page.savedTo.length > 0
-                    text: page.savedTo === "-" ? qsTr("Couldn't save the image") : "Saved to " + page.savedTo
+                    text: page.savedTo === "-" ? qsTr("Couldn't save the image") : qsTr("Saved to %1").arg(page.savedTo)
                     color: Theme.textDim
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(12)
@@ -408,7 +409,7 @@ Item {
                                 cardWidth: Math.min(150, (parent.width - 28) / 3)
                                 albumKey: modelData.album_key || ""
                                 title: modelData.album
-                                subtitle: page.plural(modelData.plays, "play", "plays")
+                                subtitle: Theme.counted(qsTr("%n play(s)", "", modelData.plays), modelData.plays)
                                 artUrl: modelData.artUrl || ""
                             }
                         }
@@ -430,7 +431,7 @@ Item {
                             number: index + 1
                             path: modelData.path || ""
                             title: modelData.title
-                            artist: modelData.artist + "  ·  " + page.plural(modelData.plays, "play", "plays")
+                            artist: modelData.artist + "  ·  " + Theme.counted(qsTr("%n play(s)", "", modelData.plays), modelData.plays)
                             showAlbum: false
                             durText: modelData.durText || ""
                             artUrl: modelData.artUrl || ""
@@ -457,16 +458,16 @@ Item {
                     Bars {
                         width: page.kind === "year" ? (col.width - 44 - 80) * 0.4 : (col.width - 44 - 40) * 0.62
                         title: qsTr("Time of day")
-                        note: page.peakHour() ? "Most often around " + page.peakHour() : ""
+                        note: page.peakHour() ? qsTr("Most often around %1").arg(page.peakHour()) : ""
                         values: page.rc.hours || []
                         labels: (page.rc.hours || []).map((v, i) => i % 6 === 0 ? String(i) : "")
                     }
                     Bars {
                         width: page.kind === "year" ? (col.width - 44 - 80) * 0.22 : (col.width - 44 - 40) * 0.38
                         title: qsTr("Day of the week")
-                        note: page.peakWeekday() ? "Busiest on " + page.peakWeekday() : ""
+                        note: page.peakWeekday() ? qsTr("Busiest on %1").arg(page.peakWeekday()) : ""
                         values: page.rc.weekdays || []
-                        labels: ["M", "T", "W", "T", "F", "S", "S"]
+                        labels: [1, 2, 3, 4, 5, 6, 0].map(d => Qt.locale().dayName(d, Locale.NarrowFormat))
                     }
                     Bars {
                         visible: page.kind === "year"
@@ -488,9 +489,9 @@ Item {
                     model: [
                         { t: qsTr("New artists"), v: Theme.num(page.rc.discoveryCount || 0),
                           s: (page.rc.discoveries || []).slice(0, 3).map(d => d.name).join(", ") },
-                        { t: qsTr("Longest streak"), v: page.plural(page.rc.streak || 0, "day", "days"), s: qsTr("in a row") },
-                        { t: qsTr("Busiest day"), v: page.rc.busiestDay ? Qt.formatDate(new Date(page.rc.busiestDay.day + "T12:00:00"), "ddd d MMM") : "—",
-                          s: page.rc.busiestDay ? page.plural(page.rc.busiestDay.plays, "play", "plays") : "" },
+                        { t: qsTr("Longest streak"), v: Theme.counted(qsTr("%n day(s)", "", page.rc.streak || 0), page.rc.streak || 0), s: qsTr("in a row") },
+                        { t: qsTr("Busiest day"), v: page.rc.busiestDay ? Theme.date(new Date(page.rc.busiestDay.day + "T12:00:00"), "mediumThisYear") : "—",  // i18n: keep
+                          s: page.rc.busiestDay ? Theme.counted(qsTr("%n play(s)", "", page.rc.busiestDay.plays), page.rc.busiestDay.plays) : "" },
                         { t: qsTr("Top genres"), v: (page.rc.genres || []).slice(0, 1).join("") || "—", s: (page.rc.genres || []).slice(1).join(", ") },
                         { t: qsTr("Albums added"), v: Theme.num(page.rc.albumsAdded || 0), s: qsTr("to your library") }
                     ]

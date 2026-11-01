@@ -16,6 +16,7 @@ from PySide6.QtCore import Property, QObject, QSettings, QTimer, QUrl, Signal, S
 
 from .core import net
 from .core import stations as st
+from .core.i18n import fill, translate
 from .core.kinds import track_kind
 from .core.streams_db import StreamsDB
 from .listentime import ListenClock
@@ -152,10 +153,10 @@ class Stations(QObject):
         """Save a station from a link (a stream or a .pls/.m3u playlist), checking it plays first."""
         url = (url or "").strip()
         if not st.is_stream_url(url):
-            self.message.emit("That isn't a web link: it should start with http:// or https://")
+            self.message.emit(translate("Stations", "That isn't a web link: it should start with http:// or https://"))
             return
         if net.is_offline():
-            self.message.emit("Offline mode is on, so the station can't be checked")
+            self.message.emit(translate("Stations", "Offline mode is on, so the station can't be checked"))
             return
         self._busy = True
         self.changed.emit()
@@ -164,7 +165,7 @@ class Stations(QObject):
             try:
                 info = st.resolve(url)
             except Exception as exc:  # noqa: BLE001 - a worker must always report back
-                return ("added", None, f"Couldn't add that station: {net.describe(exc)}")
+                return ("added", None, fill(translate("Stations", "Couldn't add that station: %1"), net.describe(exc)))
             info["name"] = (name or "").strip() or info.get("name") or urlname(info["url"])
             return ("added", info, "")
 
@@ -198,7 +199,8 @@ class Stations(QObject):
         for station in reversed(found):
             self._player.playNext(self._entry(station))
         if found:
-            self.message.emit(f"{len(found)} stations will play next" if len(found) > 1 else f"“{found[0]['name']}” will play next")
+            self.message.emit(translate("Stations", "%n station(s) will play next", None, len(found)) if len(found) > 1
+                              else fill(translate("Stations", "“%1” will play next"), found[0]["name"]))
 
     @Slot()
     def undo(self):
@@ -248,7 +250,7 @@ class Stations(QObject):
         if index < 0:
             return
         if net.is_offline():
-            self.message.emit("Offline mode is on, so stations can't play")
+            self.message.emit(translate("Stations", "Offline mode is on, so stations can't play"))
             return
         self._player.playList([self._entry(s) for s in stations], index)
         self._db.station_played(station_id)  # kept here: nothing about what you play is sent anywhere
@@ -259,7 +261,7 @@ class Stations(QObject):
         station = self._db.station(station_id)
         if station:
             self._player.playNext(self._entry(station))
-            self.message.emit(f"“{station['name']}” will play next")
+            self.message.emit(fill(translate("Stations", "“%1” will play next"), station["name"]))
 
     # --- files -------------------------------------------------------------------------------------------
     @Slot(str, result=str)
@@ -269,19 +271,19 @@ class Stations(QObject):
         try:
             text = Path(path).read_text(encoding="utf-8", errors="replace")
         except OSError as exc:
-            return f"Couldn't read the file: {exc.strerror or exc}"
+            return fill(translate("Stations", "Couldn't read the file: %1"), exc.strerror or exc)
         links = st.parse_playlist(text)
         if not links:
             if "#EXT-X-" in text:
-                return "That's a stream itself, not a list of stations: add it by its link instead"
-            return "No station links in that file"
+                return translate("Stations", "That's a stream itself, not a list of stations: add it by its link instead")
+            return translate("Stations", "No station links in that file")
         titles = st.playlist_titles(text)
         before = len(self._db.stations())
         for link in links:
             self._db.add_station({"url": link, "name": titles.get(link) or urlname(link)})
         added = len(self._db.stations()) - before
         self.refresh()
-        return f"Added {added} station{'s' if added != 1 else ''}" if added else "Those stations are already saved"
+        return translate("Stations", "Added %n station(s)", None, added) if added else translate("Stations", "Those stations are already saved")
 
     @Slot(str, result=str)
     def exportFile(self, url):
@@ -297,8 +299,8 @@ class Stations(QObject):
 
             write_text(path, "\n".join(lines) + "\n")
         except OSError as exc:
-            return f"Couldn't save: {exc.strerror or exc}"
-        return f"Saved {len(lines) // 2} stations to {Path(path).name}"
+            return fill(translate("Stations", "Couldn't save: %1"), exc.strerror or exc)
+        return fill(translate("Stations", "Saved %n station(s) to %1", None, len(lines) // 2), Path(path).name)
 
     # --- the directory -------------------------------------------------------------------------------------
     @Property(QObject, constant=True)
@@ -323,7 +325,7 @@ class Stations(QObject):
             self.resultsChanged.emit()
             return
         if net.is_offline():
-            self._status, self._searching = "Offline mode is on, so the directory can't be searched", False
+            self._status, self._searching = translate("Stations", "Offline mode is on, so the directory can't be searched"), False
             self.resultsChanged.emit()
             return
         self._searching, self._status = True, ""
@@ -360,7 +362,7 @@ class Stations(QObject):
         if not 0 <= row < len(self._results):
             return
         if net.is_offline():
-            self.message.emit("Offline mode is on, so stations can't play")
+            self.message.emit(translate("Stations", "Offline mode is on, so stations can't play"))
             return
         found = dict(self._results[row])
         saved = self._db.station_by_url(found["url"])
@@ -442,14 +444,15 @@ class Stations(QObject):
             existing = self._db.station_by_url(what["url"])
             self._db.add_station(what)
             self.refresh()
-            self.message.emit(f"“{existing['name']}” is already saved" if existing else f"Saved “{what['name']}”")
+            self.message.emit(fill(translate("Stations", "“%1” is already saved"), existing["name"]) if existing
+                              else fill(translate("Stations", "Saved “%1”"), what["name"]))
         elif kind == "results":
             self._searching = False
             if value is None:
-                self._results, self._status = [], "Couldn't reach the station directory. Check your connection."
+                self._results, self._status = [], translate("Stations", "Couldn't reach the station directory. Check your connection.")
             else:
                 self._results = value
-                self._status = "" if value else f"No stations match “{what}”"
+                self._status = "" if value else fill(translate("Stations", "No stations match “%1”"), what)
             self._mark_saved()
             self.resultsChanged.emit()
         elif kind == "icons":

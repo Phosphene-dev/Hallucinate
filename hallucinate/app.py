@@ -16,6 +16,7 @@ from PySide6.QtWidgets import QApplication
 from . import __version__
 from .control import ControlServer, send_control
 from .core import atomic, paths, remote  # noqa: F401 - atomic reads the umask before any threads start
+from .core.i18n import fill, translate
 from .discord import DiscordPresence
 from .headphones import HeadphoneFinder
 from .library import Library
@@ -300,7 +301,7 @@ def main(argv=None) -> int:
 
     apply_features()
     shell.featuresChanged.connect(apply_features)
-    podcasts.newEpisodes.connect(lambda show, title: shell.notify(f"New from {show}", title))
+    podcasts.newEpisodes.connect(lambda show, title: shell.notify(fill(translate("Podcasts", "New from %1"), show), title))
 
     def after_restore():
         library.reload()
@@ -350,6 +351,7 @@ def main(argv=None) -> int:
     ctx.setContextProperty("shell", shell)
     ctx.setContextProperty("i18n", translations)
     translations.setEngine(engine)
+    translations.changed.connect(shell.retranslateTray)  # the tray menu is Qt widgets, not QML
     ctx.setContextProperty("discord", discord)
     ctx.setContextProperty("themeManager", theme_manager)
     ctx.setContextProperty("stations", stations)

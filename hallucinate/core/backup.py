@@ -13,6 +13,7 @@ import time
 
 from .. import __version__
 from .atomic import write_atomic
+from .i18n import fill, translate
 
 FORMAT = "hallucinate-backup"
 VERSION = 1
@@ -180,20 +181,20 @@ def read(source):
         with gzip.open(source, "rb") as f:
             raw = f.read(MAX_BYTES + 1)
     except (OSError, EOFError) as exc:
-        raise ValueError(f"That isn't a Hallucinate backup ({exc})") from exc
+        raise ValueError(fill(translate("Backup", "That isn't a Hallucinate backup (%1)"), exc)) from exc
     if len(raw) > MAX_BYTES:
-        raise ValueError("That backup is far bigger than any real one")
+        raise ValueError(translate("Backup", "That backup is far bigger than any real one"))
     try:
         data = json.loads(raw.decode("utf-8"))
     except (UnicodeError, ValueError) as exc:
-        raise ValueError("That isn't a Hallucinate backup") from exc
+        raise ValueError(translate("Backup", "That isn't a Hallucinate backup")) from exc
     if not isinstance(data, dict) or data.get("format") != FORMAT:
-        raise ValueError("That isn't a Hallucinate backup")
+        raise ValueError(translate("Backup", "That isn't a Hallucinate backup"))
     version = data.get("version", 0)
     if not isinstance(version, int) or isinstance(version, bool):
-        raise ValueError("That isn't a Hallucinate backup")
+        raise ValueError(translate("Backup", "That isn't a Hallucinate backup"))
     if version > VERSION:
-        raise ValueError("That backup is from a newer Hallucinate; update to restore it")
+        raise ValueError(translate("Backup", "That backup is from a newer Hallucinate; update to restore it"))
     return clean(data)
 
 

@@ -5,6 +5,7 @@ in the album_colors table, keyed by the art file so a new cover is measured agai
 from collections import Counter
 
 from . import genres as genre_names
+from .i18n import fill, translate
 from .insights import LOSSLESS
 
 
@@ -107,12 +108,13 @@ def timeline(albums):
         by_year.setdefault(a.get("year") or 0, []).append(a)
     decades = {}
     for year in sorted(by_year):
-        label = f"{year // 10 * 10}s" if year > 0 else "Unknown year"
-        group = decades.setdefault(label, {"decade": label, "count": 0, "years": []})
+        key = year // 10 * 10 if year > 0 else 0
+        label = fill(translate("Albums", "%1s", "a decade: 1990s"), key) if key else translate("Albums", "Unknown year")
+        group = decades.setdefault(key, {"decade": label, "count": 0, "years": []})
         items = sorted(by_year[year], key=lambda a: ((a.get("album_artist") or "").casefold(), a.get("album") or ""))
         group["years"].append({"year": year, "albums": items})
         group["count"] += len(items)
-    out = [g for k, g in decades.items() if k != "Unknown year"]
-    if "Unknown year" in decades:
-        out.append(decades["Unknown year"])
+    out = [g for k, g in decades.items() if k]
+    if 0 in decades:
+        out.append(decades[0])
     return out

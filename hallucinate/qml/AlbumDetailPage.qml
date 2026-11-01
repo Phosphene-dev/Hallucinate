@@ -35,7 +35,7 @@ Item {
     readonly property color glow1: coverColors.length > 1 ? coverColors[1] : Theme.art1
     readonly property bool multiDisc: (notes.discs || 0) > 1
 
-    function fmtDate(ts) { return ts > 0 ? Qt.formatDate(new Date(ts * 1000), "d MMM yyyy") : "" }  // i18n: keep (a date format: month names follow the language)
+    function fmtDate(ts) { return ts > 0 ? Theme.date(new Date(ts * 1000), "short") : "" }
     function formatLine() {
         var parts = []
         if ((notes.formats || []).length) parts.push(notes.formats.join(" / "))

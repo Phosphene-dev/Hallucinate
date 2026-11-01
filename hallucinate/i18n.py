@@ -115,7 +115,8 @@ class Translations(QObject):
 
 def web_catalog(code):
     """The web remote's strings in `code`, as {English: translated}: read from the same .ts the app uses, the
-    "app" context (its app.js) and the ones its page shares. Empty for English or an unknown language."""
+    "web" context (its app.js), and "Api" (the errors the control API answers with, in English on the wire). Empty
+    for English or an unknown language."""
     if code in ("", "en"):
         return {}
     path = HERE / f"hallucinate_{code}.ts"
@@ -125,7 +126,7 @@ def web_catalog(code):
         return {}
     out = {}
     for ctx in root.iter("context"):
-        if ctx.findtext("name") not in ("app", "web"):
+        if ctx.findtext("name") not in ("app", "web", "Api"):
             continue
         for msg in ctx.iter("message"):
             src = msg.findtext("source") or ""

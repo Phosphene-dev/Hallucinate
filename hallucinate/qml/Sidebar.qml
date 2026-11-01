@@ -307,7 +307,7 @@ Item {
                                     var p = Selection.songPaths()
                                     userLib.setLikedPaths(p, true)
                                     Selection.clear()
-                                    Nav.notify(Theme.num(p.length) + (p.length === 1 ? qsTr(" song") : qsTr(" songs")) + " liked")
+                                    Nav.notify(Theme.counted(qsTr("%n song(s) liked", "", p.length), p.length))
                                     drop.accept()
                                 }
                             }
@@ -359,7 +359,7 @@ Item {
                         objectName: "playlistSortButton"
                         visible: !side.collapsed
                         anchors { right: newPlButton.left; rightMargin: 2; verticalCenter: parent.verticalCenter }
-                        icon: "sort"; size: 14; tip: "Order: " + (side.plSorts.filter(function (o) { return o.id === side.plSort })[0] || side.plSorts[0]).t
+                        icon: "sort"; size: 14; tip: qsTr("Order: %1").arg((side.plSorts.filter(function (o) { return o.id === side.plSort })[0] || side.plSorts[0]).t)
                         onClicked: sortPlMenu.popup(sortPlButton, 0, sortPlButton.height)
                     }
                     Menu {
@@ -431,7 +431,7 @@ Item {
                                 text: folderBlock.modelData.name + "  (" + Theme.num(folderBlock.modelData.items.length) + ")"
                                 icon: folderBlock.open ? "down" : "next"
                                 hasMenu: true
-                                Accessible.name: "Folder " + folderBlock.modelData.name + (folderBlock.open ? qsTr(", open") : qsTr(", closed"))
+                                Accessible.name: (folderBlock.open ? qsTr("Folder %1, open") : qsTr("Folder %1, closed")).arg(folderBlock.modelData.name)
                                 onMenuRequested: folderMenu.show(folderBlock.modelData.name)
                                 onClicked: side.setFolderOpen(folderBlock.modelData.name, !folderBlock.open)
                             }
@@ -475,8 +475,8 @@ Item {
                 width: parent.width
                 height: side.entryHeight
                 visible: shell.updates.enabled && shell.updates.available
-                text: shell.updates.installing ? "Updating… " + Math.round(shell.updates.installProgress * 100) + "%"
-                                               : "Update to " + shell.updates.latestVersion
+                text: shell.updates.installing ? qsTr("Updating… %1%").arg(Theme.num(Math.round(shell.updates.installProgress * 100)))
+                                               : qsTr("Update to %1").arg(shell.updates.latestVersion)
                 icon: "download"
                 collapsed: side.collapsed
                 selected: true
@@ -542,7 +542,7 @@ Item {
             MenuItem {
                 visible: plItemMenu.folder.length > 0
                 height: visible ? implicitHeight : 0
-                text: "Out of “" + Theme.plain(plItemMenu.folder) + "”"
+                text: qsTr("Out of “%1”").arg(Theme.plain(plItemMenu.folder))
                 onTriggered: userLib.setPlaylistFolder(plItemMenu.pid, plItemMenu.smart, "")
             }
             MenuSeparator { visible: side.folderNames.length > 0; height: visible ? implicitHeight : 0 }
@@ -605,7 +605,7 @@ Item {
         MenuItem {
             objectName: "ungroupFolder"
             text: qsTr("Ungroup"); icon.name: "remove"
-            onTriggered: { userLib.renamePlaylistFolder(folderMenu.name, ""); Nav.notify("The playlists in “" + folderMenu.name + "” are out of the folder") }
+            onTriggered: { userLib.renamePlaylistFolder(folderMenu.name, ""); Nav.notify(qsTr("The playlists in “%1” are out of the folder").arg(folderMenu.name)) }
         }
     }
     Dialog {
@@ -640,7 +640,7 @@ Item {
         title: plItemMenu.smart ? qsTr("Delete this smart playlist?") : qsTr("Delete this playlist?")
         confirmText: qsTr("Delete playlist")
         destructive: true
-        body: what + " is deleted. The songs in it stay in your library."
+        body: qsTr("%1 is deleted. The songs in it stay in your library.").arg(what)
         onAccepted: {
             var open = side.section === (plItemMenu.smart ? "smart" : "pl") + plItemMenu.pid
             if (plItemMenu.smart) userLib.deleteSmartPlaylist(plItemMenu.pid)

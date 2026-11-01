@@ -204,7 +204,7 @@ ApplicationWindow {
             if (box.x + box.width > edge + 3 && (inPage || box.x < edge))
                 out.push((root.objectName || cls.split("_QML")[0].split("(")[0])
                          + (typeof root.text === "string" && root.text ? " “" + root.text + "”" : "")
-                         + " reaches x=" + Math.round(box.x + box.width) + (inPage ? " in a page ending at x=" + Math.round(edge) : ""))
+                         + " reaches x=" + Math.round(box.x + box.width) + (inPage ? " in a page ending at x=" + Math.round(edge) : ""))  // i18n: keep (a layout check for tests)
         }
         // A list, a popup or something that scrolls sideways hides what's past its edge on purpose. Anything
         // else that clips (a page, one that scrolls up and down) cuts off what reaches past its right edge.
@@ -360,7 +360,7 @@ ApplicationWindow {
                 var paths = many ? Selection.paths.slice() : [path]
                 userLib.setLikedPaths(paths, false)
                 if (many) Selection.clear()
-                Nav.notifyAction(paths.length === 1 ? qsTr("Removed from Liked Songs") : Theme.num(paths.length) + " songs removed from Liked Songs",
+                Nav.notifyAction(paths.length === 1 ? qsTr("Removed from Liked Songs") : Theme.counted(qsTr("%n song(s) removed from Liked Songs", "", paths.length), paths.length),
                                  qsTr("Undo"), function () { userLib.setLikedPaths(paths, true) })
                 return
             }
@@ -376,16 +376,20 @@ ApplicationWindow {
             if (mode === "ask" && held.length) { dupDlg.ask(pid, name, paths, held, what); return }
             var fresh = paths.filter(function (p) { return held.indexOf(p) < 0 })
             if (fresh.length) userLib.addPathsToPlaylist(pid, fresh)
-            var n = function (k) { return Theme.num(k) + (k === 1 ? qsTr(" song") : qsTr(" songs")) }
+            var n = function (k) { return Theme.counted(qsTr("%n song(s)", "", k), k) }
             var label = fresh.length === paths.length && what ? what : n(fresh.length)
-            if (!held.length) { toast.show(label + " added to “" + name + "”"); return }
-            var msg = !fresh.length ? (paths.length === 1 ? "Already in “" + name + "”" : "All " + n(paths.length) + " are already in “" + name + "”")
-                                    : label + " added to “" + name + "” (" + Theme.num(held.length) + " already there)"
-            toast.show(msg, 0, qsTr("Add anyway"), function () { userLib.addPathsToPlaylist(pid, held); toast.show(n(held.length) + " added again to “" + name + "”") })
+            if (!held.length) { toast.show(qsTr("%1 added to “%2”").arg(label).arg(name)); return }
+            var msg = !fresh.length ? (paths.length === 1 ? qsTr("Already in “%1”").arg(name)
+                                                          : Theme.counted(qsTr("All %n song(s) are already in “%1”", "", paths.length), paths.length).arg(name))
+                                    : qsTr("%1 added to “%2” (%3 already there)").arg(label).arg(name).arg(Theme.num(held.length))
+            toast.show(msg, 0, qsTr("Add anyway"), function () {
+                userLib.addPathsToPlaylist(pid, held)
+                toast.show(Theme.counted(qsTr("%n song(s) added again to “%1”", "", held.length), held.length).arg(name))
+            })
         }
         function onRemoveFromPlaylistId(pid, name, paths, what) {
             var removed = userLib.removePathsFromPlaylistId(pid, paths)
-            if (removed) toast.show((what || Theme.num(removed) + (removed === 1 ? qsTr(" song") : qsTr(" songs"))) + " removed from “" + name + "”", 0, qsTr("Undo"),
+            if (removed) toast.show(qsTr("%1 removed from “%2”").arg(what || Theme.counted(qsTr("%n song(s)", "", removed), removed)).arg(name), 0, qsTr("Undo"),
                                     function () { userLib.restorePlaylistRemoval() })
         }
         function onSelectionMenu() { if (Selection.domain === "music") trackMenu.showMany(Selection.songPaths(), "") }
@@ -467,14 +471,15 @@ ApplicationWindow {
         target: userLib
         function onPlayerImported(result) {
             if (result.error) { toast.show(result.error); return }
-            toast.show(result.source + ": matched " + Theme.num(result.matched) + " of " + Theme.num(result.songs) + " songs · "
-                       + Theme.num(result.plays) + " plays, " + Theme.num(result.ratings) + " ratings, " + Theme.num(result.playlists) + " playlists")
+            toast.show(qsTr("%1: matched %2 of %3 songs · %4 plays, %5 ratings, %6 playlists").arg(result.source)
+                       .arg(Theme.num(result.matched)).arg(Theme.num(result.songs)).arg(Theme.num(result.plays))
+                       .arg(Theme.num(result.ratings)).arg(Theme.num(result.playlists)))
         }
         function onPlaylistImported(result) {
             if (result.error) { toast.show(result.error); return }
             if (result.id < 0) { toast.show(qsTr("None of those songs are in your library")); return }
-            toast.show("Imported “" + result.name + "”: " + Theme.num(result.added) + (result.added === 1 ? qsTr(" song") : qsTr(" songs"))
-                       + (result.missing ? ", " + result.missing + " not found in your library" : ""))
+            toast.show(Theme.counted(qsTr("Imported “%1”: %n song(s)", "", result.added), result.added).arg(result.name)
+                       + (result.missing ? qsTr(", %1 not found in your library").arg(Theme.num(result.missing)) : ""))
             window.openPlaylist(result.id, result.name)
         }
     }
@@ -504,21 +509,21 @@ ApplicationWindow {
         property var held: []
         readonly property int fresh: paths.length - held.length
         function ask(p, n, all, h, w) { pid = p; name = n; paths = all; held = h; what = w; again.checked = fresh === 0; open() }
-        title: held.length === 1 && paths.length === 1 ? "Already in “" + name + "”"
-                                                       : Theme.num(held.length) + " of these are already in “" + name + "”"
-        body: fresh === 0 ? (paths.length === 1 ? qsTr("Add it again?") : qsTr("Add them again?"))
-                          : Theme.num(fresh) + (fresh === 1 ? qsTr(" song is") : qsTr(" songs are")) + " new to it."
-        confirmText: again.checked ? (fresh === 0 ? qsTr("Add again") : "Add all " + Theme.num(paths.length)) : "Add the " + Theme.num(fresh) + " new"
+        title: held.length === 1 && paths.length === 1 ? qsTr("Already in “%1”").arg(name)
+                                                       : Theme.counted(qsTr("%n of these are already in “%1”", "", held.length), held.length).arg(name)
+        body: fresh === 0 ? qsTr("Add it again?", "", paths.length)
+                          : Theme.counted(qsTr("%n song(s) new to it.", "", fresh), fresh)
+        confirmText: again.checked ? (fresh === 0 ? qsTr("Add again") : qsTr("Add all %1").arg(Theme.num(paths.length))) : qsTr("Add the %1 new").arg(Theme.num(fresh))
         StyledCheck {
             id: again
             visible: dupDlg.fresh > 0
-            text: "Also add the " + Theme.num(dupDlg.held.length) + (dupDlg.held.length === 1 ? qsTr(" that's") : qsTr(" that are")) + " already there"
+            text: Theme.counted(qsTr("Also add the %n that are already there", "", dupDlg.held.length), dupDlg.held.length)
         }
         onAccepted: {
             var add = again.checked ? paths : paths.filter(function (p) { return held.indexOf(p) < 0 })
             if (!add.length) return
             userLib.addPathsToPlaylist(pid, add)
-            toast.show(Theme.num(add.length) + (add.length === 1 ? qsTr(" song") : qsTr(" songs")) + " added to “" + name + "”")
+            toast.show(Theme.counted(qsTr("%n song(s) added to “%1”", "", add.length), add.length).arg(name))
         }
     }
     Shortcut {
@@ -577,8 +582,7 @@ ApplicationWindow {
         property string path: ""
         title: qsTr("Remove this music folder?")
         confirmText: qsTr("Remove")
-        body: "“" + path + "” and the songs in it leave the library. The files stay on your disk; add the folder "
-              + "again to bring them back (a full rescan). If it's on a drive that's only unplugged, plug it back in instead."
+        body: qsTr("“%1” and the songs in it leave the library. The files stay on your disk; add the folder again to bring them back (a full rescan). If it's on a drive that's only unplugged, plug it back in instead.").arg(path)
         onAccepted: library.removeFolder(path)
     }
     Connections {
@@ -592,8 +596,7 @@ ApplicationWindow {
         objectName: "removeAlbumsDialog"
         title: qsTr("Remove from the library?")
         confirmText: qsTr("Remove")
-        body: what + ": the music stays on your disk; Hallucinate just stops showing it, and rescans leave it out. "
-              + "Settings → Library can bring it back. Plays, likes and playlists are kept."
+        body: qsTr("%1: the music stays on your disk; Hallucinate just stops showing it, and rescans leave it out. Settings → Library can bring it back. Plays, likes and playlists are kept.").arg(what)
         property bool songs: false  // keys are song paths rather than album keys
         onAccepted: {
             if (songs) library.removeSongs(keys)
@@ -607,8 +610,7 @@ ApplicationWindow {
         title: qsTr("Move to the trash?")
         confirmText: qsTr("Move to trash")
         destructive: true
-        body: what + ": the music files go to your system's trash, where you can restore them from. A folder left with only "
-              + "covers or logs goes too; anything else in it stays."
+        body: qsTr("%1: the music files go to your system's trash, where you can restore them from. A folder left with only covers or logs goes too; anything else in it stays.").arg(what)
               + (cue ? qsTr(" Songs from a CUE sheet share one audio file with the rest of their album, so that whole file goes.") : "")
         property bool songs: false
         property bool cue: false  // a CUE sheet's songs share one file: trashing one trashes the whole sheet's audio
@@ -621,12 +623,13 @@ ApplicationWindow {
     Connections {
         target: library
         function onAlbumsRemoved(r) {
-            var n = r.albums > 0 ? Theme.num(r.albums) + (r.albums === 1 ? qsTr(" album") : qsTr(" albums"))
-                                 : Theme.num(r.songs) + (r.songs === 1 ? qsTr(" song") : qsTr(" songs"))
-            if (r.kind === "hidden") toast.show(n + " removed from the library", 0, qsTr("Undo"),
+            var n = r.albums > 0 ? Theme.counted(qsTr("%n album(s)", "", r.albums), r.albums)
+                                 : Theme.counted(qsTr("%n song(s)", "", r.songs), r.songs)
+            if (r.kind === "hidden") toast.show(qsTr("%1 removed from the library").arg(n), 0, qsTr("Undo"),
                                                 function () { library.unhidePaths(r.paths || []) })
             else if (r.failed && !r.songs) toast.show(qsTr("Couldn't move the files to the trash"))
-            else toast.show(n + " moved to the trash" + (r.failed ? " (" + Theme.num(r.failed) + " files couldn't be moved)" : ""))
+            else toast.show(r.failed ? Theme.counted(qsTr("%1 moved to the trash (%n file(s) couldn't be moved)", "", r.failed), r.failed).arg(n)
+                                     : qsTr("%1 moved to the trash").arg(n))
             if (r.songs > 0 && stack.currentItem && r.keys.indexOf(stack.currentItem.albumKey) >= 0) {
                 window.goBack()  // its page is gone, so it can't be gone forward to either
                 window.forwardRoutes = window.forwardRoutes.slice(0, -1)
@@ -636,7 +639,7 @@ ApplicationWindow {
 
     Connections {
         target: userLib
-        function onLovesMatched(n) { toast.show(n ? "Liked " + Theme.num(n) + (n === 1 ? qsTr(" song") : qsTr(" songs")) + " you'd loved on Last.fm" : qsTr("No new songs to like from your Last.fm loves")) }
+        function onLovesMatched(n) { toast.show(n ? Theme.counted(qsTr("Liked %n song(s) you'd loved on Last.fm", "", n), n) : qsTr("No new songs to like from your Last.fm loves")) }
     }
     Connections {
         target: serverCopies
@@ -714,8 +717,7 @@ ApplicationWindow {
     Timer {
         interval: 1500
         running: shell.safeMode
-        onTriggered: toast.show(qsTr("Safe start: Hallucinate closed while starting last time, so the visualizer and moving")
-                                + " effects are off for now. Next start is a normal one.", 20000, qsTr("Turn them back on"),
+        onTriggered: toast.show(qsTr("Safe start: Hallucinate closed while starting last time, so the visualizer and moving effects are off for now. Next start is a normal one."), 20000, qsTr("Turn them back on"),
                                 function () { shell.leaveSafeMode() })
     }
     // e.g. a damaged library database that was restored from its backup at start-up
@@ -731,8 +733,7 @@ ApplicationWindow {
         body: (shell.lastRunCrashed ? qsTr("Last time, Hallucinate closed unexpectedly.")
                : froze ? qsTr("Last time, Hallucinate's window stopped responding for a while.")
                : qsTr("Last time, Hallucinate hit an error it couldn't handle."))
-              + " A report of what happened is ready: paste it into a bug report so it can be fixed. It describes your setup"
-              + " and the error, without file paths, names or anything from your library."
+              + " " + qsTr("A report of what happened is ready: paste it into a bug report so it can be fixed. It describes your setup and the error, without file paths, names or anything from your library.")
         Component.onCompleted: { var b = standardButton(Dialog.Cancel); if (b) b.text = qsTr("Not now") }
         onAccepted: { shell.copyCrashReport(); toast.show(qsTr("Report copied — paste it into a bug report"), 6000) }
         onRejected: shell.dismissCrashReport()
@@ -746,7 +747,7 @@ ApplicationWindow {
         anchors.centerIn: parent
         width: Math.min(520, window.width - 40)
         modal: true
-        title: "New in Hallucinate " + shell.appVersion
+        title: qsTr("New in Hallucinate %1").arg(shell.appVersion)
         standardButtons: Dialog.Ok
         onClosed: shell.dismissWhatsNew()
         Flickable {
@@ -863,7 +864,7 @@ ApplicationWindow {
             if (!name.length) return
             if (paths.length) {
                 userLib.addPathsToNewPlaylist(name, paths)
-                toast.show((paths.length === 1 ? qsTr("Added to “") : Theme.num(paths.length) + " songs added to “") + name + "”")
+                toast.show((paths.length === 1 ? qsTr("Added to “%1”") : Theme.counted(qsTr("%n song(s) added to “%1”", "", paths.length), paths.length)).arg(name))
             } else window.openPlaylist(userLib.createPlaylist(name), name)
         }
         TextField {
@@ -881,7 +882,7 @@ ApplicationWindow {
         anchors.centerIn: parent
         width: 420
         modal: true
-        title: "Update to Hallucinate " + Theme.plain(shell.updates.latestVersion) + "?"
+        title: qsTr("Update to Hallucinate %1?").arg(Theme.plain(shell.updates.latestVersion))
         standardButtons: Dialog.Ok | Dialog.Cancel
         Component.onCompleted: { var b = standardButton(Dialog.Ok); if (b) b.text = qsTr("Update now") }
         onAccepted: shell.updates.installNow()
@@ -889,8 +890,7 @@ ApplicationWindow {
             textFormat: Text.PlainText
             width: updateDlg.availableWidth
             wrapMode: Text.WordWrap
-            text: qsTr("Hallucinate downloads the new version from GitHub, checks it against the release's checksum, ")
-                  + "then closes and reopens to finish. Your library, playlists and settings stay as they are."
+            text: qsTr("Hallucinate downloads the new version from GitHub, checks it against the release's checksum, then closes and reopens to finish. Your library, playlists and settings stay as they are.")
                   + (Qt.platform.os === "windows" ? qsTr(" Windows may ask for permission to install.") : "")
             color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
         }
@@ -1083,7 +1083,7 @@ ApplicationWindow {
     Shortcut {
         sequence: "Ctrl+Z"
         enabled: !window.typing && player.canUndoQueue
-        onActivated: { var what = player.undoQueue(); if (what) toast.show("Undone: " + what.toLowerCase()) }
+        onActivated: { var what = player.undoQueue(); if (what) toast.show(qsTr("Undone: %1").arg(what)) }
     }
     Repeater {
         model: 6  // Ctrl+1…5 rates the playing song, Ctrl+0 clears it
@@ -1114,12 +1114,12 @@ ApplicationWindow {
         z: 1000
         acceptedButtons: Qt.BackButton | Qt.ForwardButton
         Accessible.role: Accessible.Pane
-        Accessible.name: "Hallucinate"
+        Accessible.name: "Hallucinate"  // i18n: keep
         onClicked: function (mouse) { mouse.button === Qt.BackButton ? Nav.back() : window.goForward() }
     }
-    Shortcut { sequences: [qsTr("Ctrl+K"), qsTr("Ctrl+P")]; enabled: !welcomeView.open; onActivated: commandPalette.opened ? commandPalette.close() : commandPalette.show() }
+    Shortcut { sequences: ["Ctrl+K", "Ctrl+P"]; /* i18n: keep */ enabled: !welcomeView.open; onActivated: commandPalette.opened ? commandPalette.close() : commandPalette.show() }
     Shortcut {
-        sequences: ["/", qsTr("Ctrl+F")]
+        sequences: ["/", "Ctrl+F"]  // i18n: keep
         enabled: !window.typing
         onActivated: {
             // on Settings, its own search: finding a setting, not music
@@ -1160,7 +1160,7 @@ ApplicationWindow {
         // an AppImage nothing has added to the app launcher: docks can't show its icon (once; Settings → Desktop)
         if (!welcomeView.open && shell.offerLauncher())
             toast.show(qsTr("Add Hallucinate to your app launcher? Docks and taskbars need it for its icon."), 15000,
-                       "Add", function () { toast.show(shell.addToLauncher()) })
+                       qsTr("Add"), function () { toast.show(shell.addToLauncher()) })
     }
     WindowEdges {}  // resizing by the edges when the title bar is built in (no system frame)
 }

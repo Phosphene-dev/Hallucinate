@@ -4,6 +4,8 @@ Pure functions over a Database; they run on a worker thread. `now` is a Unix tim
 import datetime
 import time
 
+from .i18n import fill, month_name, translate
+
 LOSSLESS = {"FLAC", "ALAC", "WAV", "AIFF", "WAVPACK", "APE", "TTA", "DSF", "DFF"}
 DAY = 86_400
 _ALBUM_COLS = """t.album_key AS album_key, MIN(t.album) AS album, MIN(t.album_artist) AS album_artist,
@@ -49,7 +51,7 @@ def rediscover_albums(db, now=None, limit=12, min_age_days=90):
         (cutoff, limit),
     )
     for album in played:
-        album["reason"] = "Last played " + _month_year(album["last"])
+        album["reason"] = fill(translate("Home", "Last played %1"), _month_year(album["last"]))
     if len(played) < limit:
         never = db._rows(
             f"""SELECT {_ALBUM_COLS} FROM tracks t
@@ -58,7 +60,7 @@ def rediscover_albums(db, now=None, limit=12, min_age_days=90):
             (limit - len(played),),
         )
         for album in never:
-            album["reason"] = "Never played"
+            album["reason"] = translate("Home", "Never played")
         played += never
     return played
 
@@ -93,7 +95,7 @@ def on_this_day(db, now=None, window_days=3, limit=12):
     for key in keys:
         if key in by_key:
             album = by_key[key]
-            album["reason"] = "Played on this day in " + ", ".join(str(y) for y in sorted(years[key], reverse=True))
+            album["reason"] = fill(translate("Home", "Played on this day in %1"), ", ".join(str(y) for y in sorted(years[key], reverse=True)))
             out.append(album)
     return out
 
@@ -130,4 +132,5 @@ def top_artists(db, now=None, days=30, limit=5):
 
 
 def _month_year(ts):
-    return f"{datetime.date.fromtimestamp(ts):%b %Y}"
+    day = datetime.date.fromtimestamp(ts)
+    return f"{month_name(day.month, short=True)} {day.year}"
