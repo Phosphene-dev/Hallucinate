@@ -27,6 +27,9 @@ def test_the_catalogues_are_up_to_date(capsys):
     """Run scripts/build_translations.py after changing text, so translators (and the .qm) see it."""
     import build_translations
 
+    too_old = build_translations.lupdate_too_old()
+    if too_old:  # (Python 3.10/3.11 get PySide6 6.11; 3.12+ check the catalogues)
+        pytest.skip(too_old)
     assert build_translations.build(check=True) == 0, capsys.readouterr().out
 
 

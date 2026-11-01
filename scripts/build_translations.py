@@ -128,6 +128,26 @@ def tool(name):
     return found
 
 
+# lupdate before 6.12 can't read counts in Python (translate(ctx, text, None, n)): it drops some and records the rest
+# as plain strings, which would strip every Python plural out of the catalogues.
+LUPDATE_MIN = (6, 12)
+
+
+def lupdate_version():
+    out = subprocess.run([tool("lupdate"), "-version"], capture_output=True, text=True).stdout
+    m = re.search(r"(\d+)\.(\d+)", out)
+    return (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+
+
+def lupdate_too_old():
+    """Why this lupdate can't build the catalogues, or "" if it can."""
+    v = lupdate_version()
+    if v < LUPDATE_MIN:
+        return (f"lupdate {v[0]}.{v[1]} can't read counts in Python; build the catalogues with PySide6 "
+                f"{LUPDATE_MIN[0]}.{LUPDATE_MIN[1]} or newer (pip install -U PySide6)")
+    return ""
+
+
 def lupdate(ts, extra=()):
     subprocess.run([tool("lupdate"), "-silent", "-locations", "none", "-no-obsolete", *extra, *sources(),
                     "-ts", str(ts)], check=True)
@@ -256,6 +276,10 @@ def qm_says(qm, catalogue):
 
 
 def build(check=False):
+    too_old = lupdate_too_old()
+    if too_old:
+        print(too_old)
+        return 2
     OUT.mkdir(exist_ok=True)
     stale = []
     global _TMP

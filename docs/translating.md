@@ -10,8 +10,9 @@ Everything goes in one file per language: the desktop app, its messages, and the
 
 - A copy of Hallucinate's source: `git clone https://github.com/Phosphene-dev/Hallucinate`. You can also download
   just the file you need from GitHub (see below).
-- Python 3.10 or newer with PySide6 (`pip install PySide6`). This gives you `pyside6-linguist`, the editor, and
-  the tools that build translations.
+- Python 3.12 or newer with PySide6 6.12 or newer (`pip install -U PySide6`). This gives you `pyside6-linguist`,
+  the editor, and the tools that build translations. (Older versions of the tools can't read the app's counts, so
+  the build script stops and says so rather than damaging the file.)
 
 ## Starting a new language
 
