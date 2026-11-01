@@ -8,8 +8,9 @@ program (`hallucinate --analysis-worker`), one song at a time. It reports progre
 making progress for STALL_S, or dies, it's ended and the next song gets a fresh one. It quits by itself after
 IDLE_MS with nothing to do.
 
-The protocol is one JSON object per line. Asked: {"id", "path", "kind": "waveform" | "loudness" | "spectrogram",
-"envelope": bool}. Answered: {"id", "beat": buffers decoded so far} while working, then {"id", "result"}
+The protocol is one JSON object per line. Asked: {"id", "path", "kind": "waveform" | "loudness" | "spectrogram" |
+"render", "envelope": bool, "options": {…}} ("render" writes the song as heard here to a WAV file for a cast
+device: see core/cast/render.py and render_options). Answered: {"id", "beat": buffers decoded so far} while working, then {"id", "result"}
 (None when the file couldn't be decoded; {"silent": true} for loudness of a silent song)."""
 import base64
 import json
@@ -130,8 +131,19 @@ def serve():
         job = state["job"] = queue.pop(0)
         state["buffers"] = 0
         state.update(ms=[], peak=[], rate=0, meter=loudness.Meter() if job.get("kind") == "loudness" else None,
-                     spectrum=Accumulator() if job.get("kind") == "spectrogram" else None)
+                     spectrum=Accumulator() if job.get("kind") == "spectrogram" else None, render=None)
         decoder = state["decoder"] = QAudioDecoder()
+        if job.get("kind") == "render":
+            try:
+                state["render"], fmt = _start_render(job)
+            except (OSError, ValueError, TypeError, KeyError) as e:
+                say({"id": job["id"], "result": None, "why": str(e)})
+                state["job"] = state["decoder"] = None
+                decoder.deleteLater()
+                QTimer.singleShot(0, start_next)
+                return
+            if fmt is not None:
+                decoder.setAudioFormat(fmt)
         decoder.bufferReady.connect(on_buffer)
         decoder.finished.connect(on_finished)
         decoder.error.connect(lambda _e: QTimer.singleShot(0, lambda: finish(None)))
@@ -147,6 +159,13 @@ def serve():
             return
         state["buffers"] += 1
         rate = buf.format().sampleRate()
+        if state["render"] is not None:
+            samples = channel_samples(buf)
+            if samples is not None and samples.size and not state["render"].add(samples, rate):
+                state["render_done"] = True
+                decoder.blockSignals(True)  # past the song's end (a CUE song): no need to decode the rest
+                QTimer.singleShot(0, on_finished)
+            return
         if state["meter"] is not None:
             samples = channel_samples(buf)
             if samples is not None and samples.size:
@@ -169,7 +188,11 @@ def serve():
         job = state["job"]
         if job is None:
             return
-        if state["spectrum"] is not None:
+        if state["render"] is not None:
+            result = state["render"].finish()
+            if not result["frames"]:
+                result = None
+        elif state["spectrum"] is not None:
             got = state["spectrum"].result()
             cols = got["columns"]
             result = {"columns": _pack(cols, np.uint8), "count": int(cols.shape[0]), "rows": int(cols.shape[1]),
@@ -192,6 +215,8 @@ def serve():
         if job is None:
             return
         state["job"] = state["decoder"] = None
+        if state.get("render") is not None and not state["render"].done:
+            state["render"].abandon()  # the file couldn't be decoded: what was written is no use
         if decoder is not None:
             decoder.blockSignals(True)
             decoder.deleteLater()  # (if this is where FFmpeg is stuck, the app ends this process)
@@ -210,6 +235,44 @@ def serve():
     return app.exec()
 
 
+def render_options(gain=1.0, start=0.0, end=0.0, rate=0, channels=2, eq_on=False, gains=None, curve=None,
+                   crossfeed=""):
+    """The options of a "render" job (what this computer's sound is set to, for one song)."""
+    return {"gain": float(gain), "start": float(start), "end": float(end), "rate": int(rate or 0),
+            "channels": int(channels or 2), "eq": {"on": bool(eq_on), "gains": list(gains or [0.0] * 10),
+                                                   "curve": curve, "crossfeed": crossfeed or ""}}
+
+
+def _start_render(job):
+    """(Renderer, the QAudioFormat to ask the decoder for or None) for a render job."""
+    from PySide6.QtMultimedia import QAudioFormat
+
+    from . import eq
+    from .core.cast.render import Renderer
+
+    opts = job.get("options") or {}
+    out = job["out"]
+    processor, delay = None, 0
+    e = opts.get("eq") or {}
+    if eq.available() and (e.get("on") or e.get("crossfeed") in eq.CROSSFEED):
+        processor = eq.EqProcessor()
+        processor.eq_on = bool(e.get("on"))
+        processor.set_gains([float(g) for g in (e.get("gains") or [0.0] * 10)][:10])
+        processor.set_curve(e.get("curve") or None)
+        processor.set_crossfeed(e.get("crossfeed") or "")
+        delay = 0 if processor.eq_flat else eq.TAPS // 2
+    renderer = Renderer(out, processor=processor, delay=delay, gain=float(opts.get("gain", 1.0)),
+                        start=float(opts.get("start", 0.0)), end=float(opts.get("end", 0.0)))
+    fmt = None
+    rate = int(opts.get("rate") or 0)
+    if rate:
+        fmt = QAudioFormat()
+        fmt.setSampleRate(rate)
+        fmt.setChannelCount(max(1, min(2, int(opts.get("channels") or 2))))
+        fmt.setSampleFormat(QAudioFormat.SampleFormat.Float)
+    return renderer, fmt
+
+
 # --- the app's side ------------------------------------------------------------------------------------------
 class Analyser(QObject):
     """submit(path, kind, then, envelope=False) decodes `path` in the helper and calls then(result) on this
@@ -221,7 +284,7 @@ class Analyser(QObject):
         self._program = program or command()
         self._proc = None
         self._buffer = b""
-        self._queue = []  # [(id, path, kind, envelope, then)]
+        self._queue = []  # [(id, path, kind, envelope, then, extra)]
         self._current = None
         self._next_id = 0
         self._progress = (0, 0.0)  # (buffers decoded, when that last went up)
@@ -238,9 +301,10 @@ class Analyser(QObject):
     def busy(self):
         return self._current is not None or bool(self._queue)
 
-    def submit(self, path, kind, then, envelope=False, first=False):
+    def submit(self, path, kind, then, envelope=False, first=False, extra=None):
+        """`extra`: more fields for the job (a render's "out" and "options")."""
         self._next_id += 1
-        job = (self._next_id, str(path), kind, bool(envelope), then)
+        job = (self._next_id, str(path), kind, bool(envelope), then, dict(extra or {}))
         self._queue.insert(0, job) if first else self._queue.append(job)
         self._idle.stop()
         self._send_next()
@@ -297,10 +361,10 @@ class Analyser(QObject):
         if self._current is not None or not self._queue:
             return
         self._current = self._queue.pop(0)
-        job_id, path, kind, envelope, _then = self._current
+        job_id, path, kind, envelope, _then, extra = self._current
         self._ensure_process()
         self._progress = (0, self._clock())
-        self._proc.write(json.dumps({"id": job_id, "path": path, "kind": kind, "envelope": envelope}).encode("utf-8")
+        self._proc.write(json.dumps(dict(extra, id=job_id, path=path, kind=kind, envelope=envelope)).encode("utf-8")
                          + b"\n")
         self._watch.start()
 

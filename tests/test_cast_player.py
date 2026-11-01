@@ -163,14 +163,64 @@ def test_a_device_that_cant_reach_us_says_so(setup, songs, monkeypatch):
     assert player.currentIndex == 0 and len(dev.loads) == 1  # not run through the whole queue
 
 
-def test_a_format_the_device_cant_play_is_said(setup, songs, tmp_path):
+def test_a_format_the_device_cant_play_is_converted(setup, songs, tmp_path):
+    player, casting, dev = setup()
+    wv = encode(tmp_path / "x.wv", "wv", seconds=2.0)
+    player.playList([track(wv, 9, dur=2.0, codec="WavPack")] + songs, 0)
+    connect(casting)
+    assert wait_for(lambda: dev.loads, timeout=30)
+    assert wait_for(lambda: dev.fetched)
+    status, ctype, body = dev.fetched
+    assert status == 200 and ctype == "audio/wav" and body[:4] == b"RIFF"  # converted, so it plays there
+    assert player.currentIndex == 0 and player.error == ""
+
+
+def test_a_song_that_cant_be_got_ready_is_passed_over(setup, songs, tmp_path):
     player, casting, dev = setup()
     ape = tmp_path / "x.ape"
-    ape.write_bytes(b"MAC " + b"\0" * 100)
+    ape.write_bytes(b"MAC " + b"\0" * 100)  # can't be decoded at all
     player.playList([track(ape, 9, codec="APE")] + songs, 0)
     connect(casting)
-    assert wait_for(lambda: "can't play APE" in player.error), player.error
-    assert not dev.loads
+    assert wait_for(lambda: player.currentIndex == 1, timeout=30), player.error
+    assert wait_for(lambda: dev.loads and dev.loads[0][3]["title"] == "T0")
+
+
+def test_hallucinates_own_sound(setup, songs):
+    player, casting, dev = setup()
+    casting.setSending("processed")
+    try:
+        player.setEqEnabled(True)
+        player.setEqBand(0, 6)
+        player.playList(songs, 0)
+        connect(casting)
+        assert wait_for(lambda: dev.fetched, timeout=30)
+        status, ctype, body = dev.fetched
+        assert ctype == "audio/wav" and body[:4] == b"RIFF"
+        url, start, autoplay, meta = dev.loads[0]
+        assert meta["title"] == "T0" and autoplay
+        assert len(casting._renders) >= 1
+        assert wait_for(lambda: len([r for r in casting._renders.values() if "file" in r]) >= 2, timeout=30)  # the next song got ready too
+    finally:
+        casting.setSending("original")
+        player.setEqEnabled(False)
+        player.setEqBand(0, 0)
+    casting.stopCasting()
+    assert not (casting._render_dir and casting._render_dir.exists())  # nothing left behind
+
+
+def test_a_cue_song_is_cut_out_for_the_device(setup, songs):
+    player, casting, dev = setup()
+    album = songs[0]["path"]
+    cue = {"id": 50, "path": album + "#2", "file": album, "cue_start": 1.0, "cue_end": 2.5, "title": "Middle",
+           "artist": "A", "album": "B", "duration": 1.5, "artUrl": ""}
+    player.playList([cue], 0)
+    connect(casting)
+    assert wait_for(lambda: dev.fetched, timeout=30)
+    import io
+    import wave
+    with wave.open(io.BytesIO(dev.fetched[2])) as w:
+        assert abs(w.getnframes() / w.getframerate() - 1.5) < 0.05  # just that song, not the whole album
+    assert dev.loads[0][3]["title"] == "Middle"
 
 
 # --- a DLNA renderer ----------------------------------------------------------------------------------------

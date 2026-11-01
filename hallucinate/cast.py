@@ -9,8 +9,10 @@ computer at the place the device had reached.
 The protocols and the media server are in core/cast; this side runs their blocking calls on one worker thread
 per session (so commands reach a device in the order they were given) and brings results to the window's
 thread through queued signals."""
+import hashlib
 import logging
 import os
+import shutil
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -36,6 +38,8 @@ CHROMECAST_TYPES = {"audio/mpeg", "audio/flac", "audio/mp4", "audio/aac", "audio
 CHROMECAST_MAX_RATE = 96000
 UPNP_ASSUMED = {"audio/mpeg", "audio/flac", "audio/wav"}  # when a device won't say what it plays
 UNPLAYABLE_CODECS = {"alac", "ape", "wavpack", "dsd", "dsf", "dff", "wma", "mpc", "tta", "tak"}
+RENDER_MAX_RATE = 48000  # what every Chromecast and TV takes as WAV
+KEEP_RENDERS = 4  # prepared songs kept while casting (the playing one, the next, a couple just played)
 
 FIREWALL_HINT = QT_TRANSLATE_NOOP(
     "Casting", "%1 couldn't fetch the song from this computer. A firewall may be blocking port %2: allow it for "
@@ -144,6 +148,13 @@ class CastSession(QObject):
         self._set("LOADING" if autoplay else "PAUSED", self._window[0] + _seconds(start_ms))
         self._do_load(media, self._window[0] + _seconds(start_ms), autoplay, self._gen)
         self._poll.start()
+
+    def preparing(self, start_ms=0, autoplay=True):
+        """The next song is being got ready (see Casting.media_for): show it as starting, send nothing yet."""
+        self._gen += 1
+        self._window = (0.0, 0.0)
+        self._poll.stop()
+        self._set("LOADING" if autoplay else "PAUSED", _seconds(start_ms))
 
     def play(self):
         if self.state in ("PAUSED", "IDLE"):
@@ -468,6 +479,9 @@ class Casting(QObject):
         self._connected.connect(self._on_connected, Qt.ConnectionType.QueuedConnection)
         self.session_factories = {"chromecast": ChromecastSession, "upnp": UpnpSession}  # (tests swap these)
         self.discover = _discover
+        self._analyser = None  # the decoding helper that prepares songs (made when first needed)
+        self._render_dir = None
+        self._renders = {}  # key -> {"file", "seconds"} (done) or {"waiting": [callbacks]} (in progress)
 
     # --- settings -------------------------------------------------------------------------------------------
     @Property(str, notify=changed)
@@ -606,7 +620,7 @@ class Casting(QObject):
         session.lost.connect(self._on_lost)
         session.failed.connect(self._on_failed)
         if self._player is not None:
-            self._player.attachCast(session, self.media_for)
+            self._player.attachCast(session, self.media_for, self.prepare)
         self.changed.emit()
         self.devicesChanged.emit()
         self.notice.emit(fill(translate("Casting", "Playing on %1"), session.name))
@@ -626,6 +640,7 @@ class Casting(QObject):
             self._player.detachCast(resume_here)
         session.close(stop_device=True)
         self._server.stop()
+        self._clear_renders()
         self.changed.emit()
         self.devicesChanged.emit()
 
@@ -636,6 +651,7 @@ class Casting(QObject):
         if self._player is not None:
             self._player.detachCast(False)  # the device is gone: hold here, paused, rather than blast the room
         self._server.stop()
+        self._clear_renders()
         self._error = message
         self.changed.emit()
         self.devicesChanged.emit()
@@ -647,9 +663,10 @@ class Casting(QObject):
             self.changed.emit()
 
     # --- what's sent ----------------------------------------------------------------------------------------
-    def media_for(self, track, session):
-        """How a queue entry reaches the device: {"link", "url", "ctype", "title", …}, or None with a reason in
-        `error` when it can't be played there (yet)."""
+    def media_for(self, track, session, ready=None):
+        """How a queue entry reaches the device: {"link", "url", "ctype", "title", …}; {"error": why} when it
+        can't be played there; or {"pending": True} while it's being got ready (a song in Hallucinate's sound,
+        a format the device doesn't play, a CUE sheet song), and `ready(media)` is called with the answer."""
         from .player import track_file, track_window
 
         path = track_file(track)
@@ -681,17 +698,106 @@ class Casting(QObject):
                 url.split("?", 1)[0])[1][:6]), ctype=ctype, live=live)
         else:
             ctype = mediaserver.content_type(path)
-            if not session.plays(ctype, track):
-                fmt = track.get("codec") or os.path.splitext(path)[1].lstrip(".").upper() or "?"
-                return {"error": fill(translate("Casting", "%1 can't play %2 files as they are."), session.name,
-                                      fmt)}
+            processed = self.sending == "processed" and self._player is not None
+            if processed or start or end or not session.plays(ctype, track):
+                return self._prepare(track, path, session, out, processed, ready)
             out.update(link=self._server.share(host, path=path, ctype=ctype), ctype=ctype)
+        return self._finish_media(track, session, out)
+
+    def _finish_media(self, track, session, out):
+        host = session.device["host"]
         out["url"] = self._server.url(host, out["link"])
         image = self._cover(track)
         if image:
             out["image"] = self._server.url(host, self._server.share(host, data=image, ctype="image/jpeg",
                                                                       name="cover.jpg"))
         return out
+
+    def _render_options(self, track, processed):
+        from .analysis import render_options
+        from .player import track_window
+
+        start, end = track_window(track)
+        rate = track.get("sample_rate") or 0
+        rate = min(int(rate) if isinstance(rate, (int, float)) and rate > 0 else 44100, RENDER_MAX_RATE)
+        sound = self._player.cast_sound(track) if processed else {}
+        return render_options(start=start / 1000, end=end / 1000, rate=rate, **sound)
+
+    def _prepare(self, track, path, session, out, processed, ready):
+        """Renders the song (on the decoding helper) and hands `ready` the media once it's written."""
+        options = self._render_options(track, processed)
+        key = hashlib.sha256(repr((path, sorted(options.items(), key=str))).encode()).hexdigest()[:32]
+        host = session.device["host"]
+
+        def deliver(done):
+            if done is None:
+                return {"error": fill(translate("Casting", "Couldn't get this song ready for %1."), session.name),
+                        "skippable": True}
+            media = dict(out, start=0.0, end=0.0, file_duration=done["seconds"] or None, ctype="audio/wav",
+                         link=self._server.share(host, path=done["file"], ctype="audio/wav"))
+            return self._finish_media(track, session, media)
+
+        entry = self._renders.get(key)
+        if entry and "file" in entry and os.path.isfile(entry["file"]):
+            return deliver(entry)
+        waiting = entry["waiting"] if entry and "waiting" in entry else None
+        if waiting is not None:
+            if ready is not None:
+                waiting.append(lambda done: ready(deliver(done)))
+            return {"pending": True}
+        self._renders[key] = {"waiting": [lambda done: ready(deliver(done))] if ready is not None else []}
+        target = self._render_path(key)
+
+        def rendered(result):
+            entry = self._renders.pop(key, None)
+            done = None
+            if result and result.get("frames") and os.path.isfile(target):
+                done = {"file": target, "seconds": float(result.get("seconds") or 0)}
+                self._renders[key] = done
+                self._trim_renders()
+            for callback in (entry or {}).get("waiting", []):
+                callback(done)
+        self._ensure_analyser().submit(path, "render", rendered, first=ready is not None,
+                                       extra={"out": target, "options": options})
+        return {"pending": True}
+
+    def prepare(self, track, session):
+        """Gets the next song ready ahead of time when it will need it (so moving on doesn't wait)."""
+        try:
+            self.media_for(track, session, None)
+        except Exception as e:  # noqa: BLE001 - only a head start: the real request will say what's wrong
+            logger.info("Couldn't get the next song ready for %s: %s", session.name, e)
+
+    def _ensure_analyser(self):
+        if self._analyser is None:
+            from .analysis import Analyser
+
+            self._analyser = Analyser(self)
+        return self._analyser
+
+    def _render_path(self, key):
+        if self._render_dir is None:
+            from .core import paths
+
+            self._render_dir = paths.cache_dir() / "cast"
+            self._render_dir.mkdir(parents=True, exist_ok=True)
+        return str(self._render_dir / f"{key}.wav")
+
+    def _trim_renders(self):
+        done = [(k, v) for k, v in self._renders.items() if "file" in v]
+        for k, v in done[:-KEEP_RENDERS]:
+            self._renders.pop(k, None)
+            try:
+                os.remove(v["file"])
+            except OSError:
+                pass
+
+    def _clear_renders(self):
+        if self._analyser is not None:
+            self._analyser.cancel()
+        self._renders.clear()
+        if self._render_dir is not None:
+            shutil.rmtree(self._render_dir, ignore_errors=True)
 
     def _cover(self, track):
         art = track.get("art") or ""
@@ -723,6 +829,9 @@ class Casting(QObject):
             self._session.close(stop_device=True)
             self._session = None
         self._server.stop()
+        self._clear_renders()
+        if self._analyser is not None:
+            self._analyser.shutdown()
 
 
 def _discover():

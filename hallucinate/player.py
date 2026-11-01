@@ -352,7 +352,9 @@ class Player(QObject):
         super().__init__(parent)
         self._cast = None  # a CastSession while playing on another device (see cast.py)
         self._cast_media = None
+        self._cast_prepare = None
         self._cast_failures = 0
+        self._cast_gen = 0
         self._session_file = Path(session_file) if session_file else None
         self._restore_pos = 0
         self._parked = False  # a station shown but not connected (see _park_station)
@@ -1550,9 +1552,10 @@ class Player(QObject):
     def casting(self):
         return self._cast is not None
 
-    def attachCast(self, session, media_for):
+    def attachCast(self, session, media_for, prepare=None):
         """Play on another device from here on: the song carries on there from where it is here.
-        `media_for(track, session)` says how a queue entry reaches the device (see Casting.media_for)."""
+        `media_for(track, session, ready)` says how a queue entry reaches the device (see Casting.media_for);
+        `prepare(track, session)` gets the next one ready ahead of time."""
         if self._cast is not None:
             self.detachCast(False)
         was_playing = self.playing and not self._pausing
@@ -1564,7 +1567,7 @@ class Player(QObject):
         for voice in self._voices:  # this computer goes quiet
             voice.player.pause()
             voice.finishing = False
-        self._cast, self._cast_media, self._cast_failures = session, media_for, 0
+        self._cast, self._cast_media, self._cast_prepare, self._cast_failures = session, media_for, prepare, 0
         session.changed.connect(self._on_cast_changed)
         session.ended.connect(self._on_cast_ended)
         session.failed.connect(self._on_cast_failed)
@@ -1589,7 +1592,8 @@ class Player(QObject):
                 signal.disconnect(slot)
             except (RuntimeError, TypeError):
                 pass
-        self._cast = self._cast_media = None
+        self._cast = self._cast_media = self._cast_prepare = None
+        self._cast_gen += 1  # a song still being got ready for the device isn't wanted any more
         if self.hasTrack and not self._ended:
             if self._error == CONNECTING:
                 self._set_error("")
@@ -1602,14 +1606,45 @@ class Player(QObject):
 
     def _cast_load(self, i, autoplay, start_ms):
         track = self._queue[i]
-        media = self._cast_media(track, self._cast) if self._cast_media else {"error": "?"}
+        session = self._cast
+        self._cast_gen += 1
+        gen = self._cast_gen
+
+        def ready(media):  # a song that had to be got ready first (Hallucinate's sound, a format, a CUE song)
+            if gen == self._cast_gen and self._cast is session and self._index == i:
+                self._cast_start(media, start_ms, autoplay)
+        media = self._cast_media(track, session, ready) if self._cast_media else {"error": "?"}
+        if media.get("pending"):
+            session.preparing(start_ms, autoplay)
+            self._set_error(fill(translate("Player", "Getting ready for %1…"), session.name) if autoplay else "")
+            return True
+        return self._cast_start(media, start_ms, autoplay)
+
+    def _cast_start(self, media, start_ms, autoplay):
+        session = self._cast
         if media.get("error"):
             self._set_error(media["error"])
-            self._cast.stop()
+            session.stop()
+            if media.get("skippable"):
+                self._on_cast_failed(media["error"], True)
+            self.stateChanged.emit()
             return False
-        self._set_error(CONNECTING if autoplay and is_url(track_file(track)) else "")
-        self._cast.load(media, start_ms, autoplay)
+        self._set_error(CONNECTING if autoplay and media.get("live") else "")
+        session.load(media, start_ms, autoplay)
+        self.durationChanged.emit()
+        if self._cast_prepare is not None:  # get the next song ready while this one plays
+            nxt = self._compute_next(auto=True)
+            if nxt is not None and nxt != self._index:
+                self._cast_prepare(self._queue[nxt], session)
         return True
+
+    def cast_sound(self, track):
+        """How this computer would sound a song (for a cast device sent Hallucinate's sound): ReplayGain, the
+        equalizer, the headphone correction and crossfeed."""
+        return {"gain": replaygain_factor(track, self._rg_mode, self._rg_preamp),
+                "eq_on": bool(self._eq_enabled and eq.available()), "gains": list(self._eq_gains),
+                "curve": self._headphone["curve"], "crossfeed": self._crossfeed if self._crossfeed in eq.CROSSFEED
+                else ""}
 
     def _cast_play(self):
         if not self.hasTrack:
