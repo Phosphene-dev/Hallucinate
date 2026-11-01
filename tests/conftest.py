@@ -99,7 +99,10 @@ def touch_newer(path):
 @pytest.fixture(scope="session")
 def qapp():
     pytest.importorskip("PySide6.QtMultimedia", exc_type=ImportError)
+    from PySide6.QtQuick import QQuickWindow
     from PySide6.QtWidgets import QApplication
+
+    QQuickWindow.setDefaultAlphaBuffer(True)  # as the app does (rounded window corners)
     app = QApplication.instance() or QApplication([])
     yield app
 

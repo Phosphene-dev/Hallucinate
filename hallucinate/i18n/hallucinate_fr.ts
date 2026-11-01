@@ -7077,6 +7077,14 @@
         <translation>D’où viennent les biographies d’artistes</translation>
     </message>
     <message>
+        <source>tray notifications focus close quit minimize exit background mini player title bar window frame decorations frameless maximize buttons left right side start page open on rounded corners round</source>
+        <translation>barre système notifications focus fermer quitter réduire sortir arrière-plan mini-lecteur barre de titre fenêtre cadre décorations sans cadre agrandir boutons gauche droite côté page de démarrage ouvrir sur coins arrondis arrondir tray close quit minimize exit background mini player title bar window frame frameless maximize buttons left right side start page open on rounded corners round</translation>
+    </message>
+    <message>
+        <source>Round the window&apos;s corners, like the panels inside it</source>
+        <translation>Arrondir les coins de la fenêtre, comme les panneaux qu’elle contient</translation>
+    </message>
+    <message>
         <source>Debug info lists versions, your system, display and audio setup and the recent log. It leaves out file paths, your music and account names.</source>
         <translation>Les infos de débogage listent les versions, votre système, votre affichage et votre configuration audio, et le journal récent. Elles laissent de côté les chemins de fichiers, votre musique et les noms de compte.</translation>
     </message>
@@ -8430,10 +8438,6 @@
     <message>
         <source>Privacy mode (don&apos;t share track details)</source>
         <translation>Mode confidentiel (ne pas partager les détails du morceau)</translation>
-    </message>
-    <message>
-        <source>tray notifications focus close quit minimize exit background mini player title bar window frame decorations frameless maximize buttons left right side start page open on</source>
-        <translation>barre système notifications focus fermer quitter réduire sortir arrière-plan mini-lecteur barre de titre fenêtre cadre décorations sans cadre agrandir boutons gauche droite côté page de démarrage ouvrir sur tray close quit minimize exit background mini player title bar window frame frameless maximize buttons left right side start page open on</translation>
     </message>
     <message>
         <source>Show system tray icon</source>

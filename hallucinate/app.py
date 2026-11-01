@@ -135,6 +135,10 @@ def main(argv=None) -> int:
 
     _mark("imports")
     QQuickStyle.setStyle(QML_STYLE)
+    # A window that can be see-through at its edges: with the built-in title bar its corners are rounded (#151)
+    from PySide6.QtQuick import QQuickWindow
+
+    QQuickWindow.setDefaultAlphaBuffer(True)
     app = QApplication([sys.argv[0], *qt_args])
     from . import diagnostics
 

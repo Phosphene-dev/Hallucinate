@@ -2173,7 +2173,7 @@ Item {
             id: sec_desktop
             objectName: "settings_desktop"
             title: qsTr("Desktop")
-            keywords: qsTr("tray notifications focus close quit minimize exit background mini player title bar window frame decorations frameless maximize buttons left right side start page open on")
+            keywords: qsTr("tray notifications focus close quit minimize exit background mini player title bar window frame decorations frameless maximize buttons left right side start page open on rounded corners round")
             query: page.query
             StyledCheck {
                 visible: shell.trayAvailable
@@ -2186,6 +2186,14 @@ Item {
                 text: qsTr("Use Hallucinate's own title bar, built into the window")
                 checked: shell.customTitleBar
                 onToggled: shell.setCustomTitleBar(checked)
+            }
+            StyledCheck {
+                objectName: "roundWindow"
+                visible: shell.customTitleBar
+                leftPadding: 28
+                text: qsTr("Round the window's corners, like the panels inside it")
+                checked: shell.ui.roundWindow !== "0"
+                onToggled: shell.setUiValue("roundWindow", checked ? "1" : "0")
             }
             StyledCheck {
                 objectName: "titleBarMinimize"

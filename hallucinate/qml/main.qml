@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
+import QtQuick.Effects
 import QtCore
 import "."
 
@@ -15,7 +16,15 @@ ApplicationWindow {
     // The title bar built into the window (Settings → Desktop) means no system frame around it
     flags: shell.customTitleBar ? (Qt.Window | Qt.FramelessWindowHint) : Qt.Window
     title: player.hasTrack ? player.current.title + " — " + player.current.artist : qsTr("Hallucinate")
-    color: Theme.bg
+    // Rounded corners (#151): with the title bar built in, the window draws its own edge, rounded to sit around the
+    // panels inside it (their radius and the gap between them and the edge), so the curves follow each other.
+    // Square when it fills the screen (maximized, full screen, tiled), in themes with square corners, where the
+    // graphics can't mask (software rendering), or when switched off in Settings → Desktop.
+    readonly property real cornerRadius: shell.customTitleBar && shell.ui.roundWindow !== "0"
+        && visibility === Window.Windowed && GraphicsInfo.api !== GraphicsInfo.Software && Theme.round(24) > 0
+        ? Theme.round(24) + 10 : 0
+    color: cornerRadius > 0 ? "transparent" : Theme.bg
+    background: Rectangle { color: Theme.bg; radius: window.cornerRadius; antialiasing: true }
 
     palette.window: Theme.bg
     palette.windowText: Theme.text
@@ -1156,6 +1165,8 @@ ApplicationWindow {
 
     Component.onCompleted: {
         PickDrag.dropAt = function () { carried.Drag.drop() }  // (see the carried label)
+        window.contentItem.layer.effect = cornerEffect  // the rounded corners' mask (below)
+        window.contentItem.layer.enabled = Qt.binding(function () { return window.cornerRadius > 0 })
         go(shell.openingPage())
         // an AppImage nothing has added to the app launcher: docks can't show its icon (once; Settings → Desktop)
         if (!welcomeView.open && shell.offerLauncher())
@@ -1163,4 +1174,22 @@ ApplicationWindow {
                        qsTr("Add"), function () { toast.show(shell.addToLauncher()) })
     }
     WindowEdges {}  // resizing by the edges when the title bar is built in (no system frame)
+
+    // What's in the window is cut to the rounded corners (only while they're rounded: a mask costs a little)
+    Rectangle {
+        id: cornerMask
+        parent: window.contentItem.parent
+        width: window.width; height: window.height
+        radius: window.cornerRadius
+        antialiasing: true
+        visible: false
+        layer.enabled: window.cornerRadius > 0
+        layer.smooth: true
+        // twice the size, its edge fading over the threshold: smooth corners, not stair steps (as in RoundClip)
+        layer.textureSize: Qt.size(Math.ceil(width * 2 * Screen.devicePixelRatio), Math.ceil(height * 2 * Screen.devicePixelRatio))
+    }
+    Component {
+        id: cornerEffect
+        MultiEffect { maskEnabled: true; maskSource: cornerMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1.0 }
+    }
 }

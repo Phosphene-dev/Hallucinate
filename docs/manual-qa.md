@@ -13,6 +13,8 @@
       English or Français and remembers it.
 - [ ] Windows and macOS builds: the web remote opens (it couldn't in 1.9), and French works.
 - [ ] Untagged songs show « Artiste inconnu » / « Album inconnu » in French.
+- [ ] Settings → Desktop → own title bar: the window's corners are rounded around the sidebar panel's (GNOME,
+      KDE, a tiling compositor); maximized and full screen they're square; the switch beneath turns them off.
 
 ## Release testing for 1.9.0
 

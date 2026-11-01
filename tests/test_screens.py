@@ -2767,3 +2767,37 @@ def test_every_page_in_another_language(qapp, app_window, language):
     finally:
         i18n.setLanguage("en")
         qapp.processEvents()
+
+
+def test_the_window_has_rounded_corners_with_its_own_title_bar(qapp, app_window):
+    """#151: with the title bar built in, the window's corners are rounded like the panels inside it (see-through
+    beyond the curve); square when maximized or switched off, and with the system's own frame."""
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    radius_before = window.property("cornerRadius")
+    try:
+        shell.setCustomTitleBar(True)
+        shell.setUiValue("roundWindow", "1")
+        qapp.processEvents()
+        if window.property("cornerRadius") == 0:
+            pytest.skip("no masking with this renderer (software): the corners stay square")
+        assert window.property("cornerRadius") == 34  # the panels' 24, and the 10 between them and the edge
+        window.show()
+        for _ in range(6):
+            qapp.processEvents()
+        image = window.grabWindow()
+        assert image.pixelColor(1, 1).alpha() < 40  # past the curve: see-through
+        assert image.pixelColor(image.width() // 2, image.height() // 2).alpha() == 255
+        shell.setUiValue("roundWindow", "0")
+        assert window.property("cornerRadius") == 0
+        shell.setUiValue("roundWindow", "1")
+        window.showMaximized()
+        qapp.processEvents()
+        assert window.property("cornerRadius") == 0
+        window.showNormal()
+        shell.setCustomTitleBar(False)
+        assert window.property("cornerRadius") == 0
+    finally:
+        shell.setCustomTitleBar(False)
+        shell.setUiValue("roundWindow", "1")
+    assert radius_before == 0  # (the tests run with the system's frame)

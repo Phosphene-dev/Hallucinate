@@ -13,6 +13,9 @@ All notable changes to this project are documented here. Format based on
   hours are written its way, and Qt's own dialog buttons follow it too.
 - The web remote speaks the phone's language (the first of its languages Hallucinate has), or one picked in its
   own Settings; errors from the computer are translated on the phone.
+- Rounded window corners with Hallucinate's own title bar (#151), curving around the panels inside so the edges
+  follow each other. They're square when the window is maximized, full screen or in a theme with square corners,
+  and Settings → Desktop can turn them off.
 - A guide for translators, no programming needed: [docs/translating.md](https://github.com/Phosphene-dev/Hallucinate/blob/main/docs/translating.md). Each language is one
   file, edited in Qt Linguist or any text editor.
 
