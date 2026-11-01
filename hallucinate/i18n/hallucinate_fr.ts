@@ -11366,6 +11366,18 @@
 <context>
     <name>WhatsNew</name>
     <message>
+        <source>Play on a Chromecast, a Google or Nest speaker, or a DLNA/UPnP TV or speaker: the cast button beside the volume.</source>
+        <translation>Écoutez sur un Chromecast, une enceinte Google ou Nest, ou un téléviseur ou une enceinte DLNA/UPnP : le bouton de diffusion à côté du volume.</translation>
+    </message>
+    <message>
+        <source>Send the original files, untouched, or Hallucinate&apos;s sound with your equalizer and ReplayGain (Settings → Casting).</source>
+        <translation>Envoyez les fichiers d’origine, intacts, ou le son d’Hallucinate avec votre égaliseur et le ReplayGain (Paramètres → Diffusion).</translation>
+    </message>
+    <message>
+        <source>The window opens at the size you left it, maximized if it was.</source>
+        <translation>La fenêtre s’ouvre à la taille où vous l’avez laissée, agrandie si elle l’était.</translation>
+    </message>
+    <message>
         <source>Hallucinate speaks French now: pick a language in Settings → Appearance, or let it follow your system.</source>
         <translation>Hallucinate parle français&#xa0;: choisissez une langue dans Paramètres → Apparence, ou laissez-le suivre votre système.</translation>
     </message>

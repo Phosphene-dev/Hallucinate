@@ -4,6 +4,11 @@ newest version's lines are ever shown, so translators can leave the older ones."
 from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication
 
 HIGHLIGHTS = {
+    "1.11.0": [
+        QT_TRANSLATE_NOOP("WhatsNew", "Play on a Chromecast, a Google or Nest speaker, or a DLNA/UPnP TV or speaker: the cast button beside the volume."),
+        QT_TRANSLATE_NOOP("WhatsNew", "Send the original files, untouched, or Hallucinate's sound with your equalizer and ReplayGain (Settings → Casting)."),
+        QT_TRANSLATE_NOOP("WhatsNew", "The window opens at the size you left it, maximized if it was."),
+    ],
     "1.10.0": [
         QT_TRANSLATE_NOOP("WhatsNew", "Hallucinate speaks French now: pick a language in Settings → Appearance, or let it follow your system."),
         QT_TRANSLATE_NOOP("WhatsNew", "The web remote follows your phone's language, and Qt's own dialogs follow the app's."),

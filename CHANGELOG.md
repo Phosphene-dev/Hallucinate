@@ -3,6 +3,40 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.11.0] - 2026-11-01
+
+### Added
+- Casting: play your music on a Chromecast, a Google or Nest speaker, or a TV, receiver or speaker that takes
+  DLNA/UPnP. The cast button beside the volume (in the ⋯ menu when the window is narrow) lists this computer and
+  the devices found on your network; the song carries on there from where it was. Your queue, shuffle, repeat,
+  play counts and scrobbling stay here, and Hallucinate's controls, media keys, the tray, Ctrl+K and the phone
+  remote all control the device. "Play here instead" brings it back at the device's place; if the device goes
+  away, the music waits here, paused.
+- Settings → Casting → What to send: the original files (untouched, bit for bit; the default), or Hallucinate's
+  sound (ReplayGain, equalizer, headphone correction and crossfeed applied, sent as lossless WAV). Songs a device
+  can't play as they are (WavPack, APE, ALAC on a Chromecast, very high sample rates) and CUE sheet songs are
+  converted for it either way. The next song is got ready while one plays.
+- Music server songs are relayed through this computer, so the device never sees your server's sign-in.
+- The phone remote can choose where the music plays, and shows which device is playing; the API has
+  `cast.devices`, `cast.search`, `cast.to` and `cast.stop`.
+- The signal path says what's sent to the device, and whether anything is changed on the way.
+
+### Fixed
+- The window opens at the size it was left, maximized if it was (#153); its place on screen too, except on
+  Wayland, where the desktop places windows. It's never larger than the screen it opens on.
+
+### Security
+- Casting is built on Python's standard library, with no new dependencies. Devices are found with mDNS and SSDP
+  and everything they send is parsed defensively: sizes are capped, compressed names can't loop, XML with a
+  DOCTYPE is refused, and a device may only point at its own address. The media server runs only while casting,
+  listens only on the network that reaches the device, and hands each song out under a long random link that
+  only that device can use.
+
+### Known limits
+- A cast device pauses for a moment between songs (no gapless there yet).
+- If nothing plays, a firewall may be blocking the casting port (8484 by default); Settings → Casting shows how
+  to allow it.
+
 ## [1.10.0] - 2026-11-01
 
 ### Added

@@ -19,7 +19,7 @@
 <h3 align="center">
   <a href="https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-windows-x64-setup.exe">⬇ Windows</a> &nbsp;·&nbsp;
   <a href="https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-x86_64.AppImage">⬇ Linux (AppImage)</a> &nbsp;·&nbsp;
-  <a href="https://github.com/Phosphene-dev/Hallucinate/releases/download/v1.10.0/Hallucinate-macos-arm64.zip">⬇ macOS (Apple silicon)</a>
+  <a href="https://github.com/Phosphene-dev/Hallucinate/releases/download/v1.11.0/Hallucinate-macos-arm64.zip">⬇ macOS (Apple silicon)</a>
 </h3>
 <p align="center">
   <a href="https://phosphene-dev.github.io/Hallucinate/"><b>Website</b></a> · Flatpak, Arch (AUR) and pip: see <a href="#install">Install</a> · <a href="https://github.com/Phosphene-dev/Hallucinate/releases">all releases</a> · <a href="CHANGELOG.md">what's new</a>
@@ -35,6 +35,7 @@
 - **Plays it properly.** True gapless, ReplayGain, a 10-band equalizer, headphone correction, CUE sheets, and a readout that shows when the sound is untouched.
 - **Remembers every listen.** History, weekly to yearly recaps, smart playlists, radio mode, and history brought over from Last.fm or your old player.
 - **Fast to drive.** Instant search that forgives typos, Ctrl+K for anything, multi-select, and Ctrl+Z for the queue.
+- **Plays where you are.** Cast to a Chromecast, a Google or Nest speaker, or a DLNA/UPnP TV or speaker, with the original files untouched or with your equalizer along; your queue and play counts stay here.
 - **From your phone too.** A web interface and phone remote, off until you switch it on, for paired devices only: your library, queue, lyrics, equaliser, internet radio and podcasts, in light or dark.
 - **Only what you want.** Internet radio, podcasts and music servers (Jellyfin, Navidrome and other Subsonic servers) are there if you switch them on.
 - **Wear it your way.** Over twenty themes, from frosted glass and pride flags to two retro ones with a 90s hi-fi Now Playing, and Afterimage: neon noir with a cockpit or a terminal you type commands into.
@@ -168,6 +169,7 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - Album pages with liner notes (genre, format and sample rate, discs, size, date added, your plays with first and last listen, liked songs) and tracks split by disc. The Albums page also has a colour wall (covers ordered by measured colour, cached) and a timeline by decade and year.
 - Now Playing (F): full-window view with the visualizer as backdrop, a large cover or a spinning record in its sleeve, a large waveform seek bar, and controls that fade when the pointer rests.
 - Visualizers drawn with GPU shaders and tinted by the cover: Liquid, Aurora, Nebula, Halo and Waves (bars without hardware graphics), driven by the spectrum, smoothed band energies and a beat detector.
+- Casting to Chromecasts, Google/Nest speakers and DLNA/UPnP renderers (TVs, receivers, speakers, Kodi), found on your network: the original files untouched, or Hallucinate's sound (ReplayGain, equalizer, headphone correction, crossfeed) as lossless WAV. Formats a device can't play and CUE sheet songs are converted for it; music server songs are relayed so the device never sees your sign-in. Your queue, play counts and scrobbling stay here; the app, media keys, Ctrl+K and the phone remote control the device. Settings → Casting has the port and firewall help.
 - Signal path readout: source format, ReplayGain, equalizer, speed, volume, crossfade and output device with its rate, marking which stages change the sound and when the system resamples.
 - Library health: missing folders, untagged songs, split albums, missing covers, track numbers, years and genres, probable duplicates and low-bitrate files, each with a fix.
 - Artist pages: a picture lit by its own colours, facts, your listening (plays, rank, first listen, plays per month), most played songs, the discography by year and albums they appear on; radio from their most played song.
@@ -274,7 +276,7 @@ directories. To build it yourself, and how the repository is published:
 
 ### macOS
 Major releases include a self-contained `.app` zip for Apple silicon (point releases bring the AppImage,
-Flatpak and Windows builds only). Download the [macOS zip](https://github.com/Phosphene-dev/Hallucinate/releases/download/v1.10.0/Hallucinate-macos-arm64.zip),
+Flatpak and Windows builds only). Download the [macOS zip](https://github.com/Phosphene-dev/Hallucinate/releases/download/v1.11.0/Hallucinate-macos-arm64.zip),
 unzip it, and move `Hallucinate.app` to Applications. The build isn't signed or
 notarized by Apple, so the first launch is blocked ("Apple could not verify…"). Open it once anyway in
 **System Settings → Privacy & Security → Open Anyway**, or from a terminal:
@@ -351,6 +353,7 @@ What does go online, and only when:
 | Internet radio, podcasts | Only if you switch them on and use them | Requests to the station or feed you chose; directory searches send your search words |
 | Headphone EQ (AutoEQ) | Only when you search for headphones | The profile list is downloaded from GitHub |
 | Update check | Off unless you switch it on; once a day | Asks GitHub for the latest version |
+| Casting | Only on your own network, when you open the cast menu or pick a device | Asks the network which devices are there (mDNS, SSDP); the device you pick fetches each song from this computer, under a link only it can use |
 
 Crash records stay on your computer. When the app starts after a crash, it offers a report you can read and copy yourself. Debug info works the same way. Neither is sent anywhere, and both leave out song files, music folders, links and your user name.
 
@@ -491,6 +494,9 @@ with representative files from your playback backend and device.
   chosen in Settings). Hallucinate has no PipeWire-specific exclusive-output mode; see
   [the audio backend notes](docs/platform-audio.md) for details.
 - macOS bundles are CI-built but unsigned and not notarized.
+- Casting: a cast device pauses briefly between songs (no gapless there yet), and Hallucinate's sound is sent as
+  16-bit WAV at up to 48 kHz. A firewall can block the device from fetching songs; Settings → Casting shows how
+  to allow the port.
 
 ## Supported formats
 FLAC, MP3, OGG/Vorbis, Opus, WAV, AAC/M4A, ALAC, WMA, WavPack, AIFF and APE
@@ -500,8 +506,9 @@ FLAC, MP3, OGG/Vorbis, Opus, WAV, AAC/M4A, ALAC, WMA, WavPack, AIFF and APE
 - Signed Windows builds, and signed and notarized macOS builds
 - The AUR packages, once AUR account sign-ups reopen
 - Real-device verification of APE playback and desktop media keys
-- Being considered: casting to Chromecast and DLNA/UPnP speakers, copying playlists to a device, and
-  bit-perfect output
+- Gapless playback on cast devices; handing playback between computers; the phone as a player; AirPlay and
+  Snapcast
+- Being considered: copying playlists to a device, and bit-perfect output
 
 ## Contributing
 See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). Translations are welcome,

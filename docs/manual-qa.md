@@ -1,5 +1,27 @@
 # Manual QA checklist
 
+## Release testing for 1.11.0
+
+Casting needs real devices: as many of these as you have.
+
+- [ ] A Chromecast or Google/Nest speaker: the cast button lists it within a few seconds; picking it carries the
+      playing song on there from the same place, and this computer goes quiet. Pause, seek, next, previous, the
+      volume slider (the device's volume), media keys and the tray control it. A song finishing moves to the next.
+- [ ] A DLNA/UPnP TV, receiver or speaker (or Kodi, or BubbleUPnP's renderer on a phone): the same.
+- [ ] "Play here instead" (the menu, Ctrl+K or Settings → Casting) resumes here at the device's place; this
+      computer's volume is as it was.
+- [ ] Unplug the device or switch off its Wi-Fi while playing: the music waits here, paused, and a toast says so.
+- [ ] Settings → Casting → Hallucinate's sound with the equalizer on: the difference is audible on the device, and
+      the next song starts without a long wait. A WavPack or APE file and a CUE sheet album play in either setting.
+- [ ] A music server's song and an internet radio station play on the device.
+- [ ] With the firewall on (firewalld on Fedora/Bazzite): if nothing plays, the message names the port; the
+      command in Settings → Casting fixes it.
+- [ ] The phone remote: Play on lists the devices, casts and comes back, and says which device is playing.
+- [ ] Settings → Features → Casting off: the button, menu item, Ctrl+K entries, settings section and the phone
+      remote's button all go.
+- [ ] The window (#153): resize it, quit, start again: same size; maximize, quit, start: maximized. On X11 and
+      Windows it opens in the same place; a place on a monitor that's since been unplugged isn't used.
+
 ## Release testing for 1.10.0
 
 - [ ] Settings → Appearance → Language: pick Français. Every page, the sidebar, menus, dialogs (OK/Annuler too), toasts

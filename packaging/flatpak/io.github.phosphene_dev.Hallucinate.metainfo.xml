@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.11.0" date="2026-11-01">
+      <description>
+        <p>Casting: play your music on a Chromecast, a Google or Nest speaker, or a TV, receiver or speaker that takes DLNA/UPnP, found on your network. Your queue, play counts and scrobbling stay here, and Hallucinate's controls, media keys and the phone remote control the device. Send the original files untouched, or Hallucinate's sound with your equalizer and ReplayGain.</p>
+        <p>The window opens at the size it was left, maximized if it was.</p>
+      </description>
+    </release>
     <release version="1.10.0" date="2026-11-01">
       <description>
         <p>Hallucinate speaks French as well as English: every page, menu and message, with the language picked in Settings or following the system, switched without a restart. The web remote follows the phone's language. A guide explains how to add another language, no programming needed. With Hallucinate's own title bar, the window has rounded corners.</p>
