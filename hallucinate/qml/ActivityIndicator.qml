@@ -14,7 +14,7 @@ Item {
     readonly property var jobs: {
         var out = []
         if (library.scanning)
-            out.push({ key: "scan", label: library.status || "Scanning your music", fraction: library.scanFraction,
+            out.push({ key: "scan", label: library.status || qsTr("Scanning your music"), fraction: library.scanFraction,
                        stop: function () { library.stopScan() } })
         if (metaEditor.coversBusy)
             out.push({ key: "covers", label: "Finding covers: " + Theme.num(metaEditor.coversDone) + " of " + Theme.num(metaEditor.coversTotal) + " albums",
@@ -33,7 +33,7 @@ Item {
                        fraction: replayGain.total > 0 ? replayGain.done / replayGain.total : -1,
                        stop: function () { replayGain.cancel() } })
         if (podcasts.downloadingCount > 0)
-            out.push({ key: "downloads", label: "Downloading " + Theme.num(podcasts.downloadingCount) + (podcasts.downloadingCount === 1 ? " episode" : " episodes"),
+            out.push({ key: "downloads", label: "Downloading " + Theme.num(podcasts.downloadingCount) + (podcasts.downloadingCount === 1 ? qsTr(" episode") : qsTr(" episodes")),
                        fraction: podcasts.downloadsFraction, stop: function () { podcasts.cancelAllDownloads() } })
         return out
     }
@@ -179,7 +179,7 @@ Item {
             spacing: 12
             Text {
                 textFormat: Text.PlainText
-                text: "In the background"
+                text: qsTr("In the background")
                 color: Theme.text
                 font.family: Theme.displayFamily
                 font.pixelSize: (Theme.fontSize(14)) * Theme.displayScale
@@ -216,7 +216,7 @@ Item {
                         id: stopBtn
                         objectName: "activityStop_" + modelData.key
                         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                        text: "Stop"
+                        text: qsTr("Stop")
                         onClicked: modelData.stop()
                     }
                 }

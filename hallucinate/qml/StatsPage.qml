@@ -38,7 +38,7 @@ Item {
                 Text {
                     textFormat: Text.PlainText
                     Layout.fillWidth: true
-                    text: "Listening stats"
+                    text: qsTr("Listening stats")
                     color: Theme.text
                     font.family: Theme.displayFamily
                     font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale
@@ -47,7 +47,7 @@ Item {
                 StyledCombo {
                     id: period
                     Layout.preferredWidth: 170
-                    model: ["All time", "Last 7 days", "Last 30 days", "Last 12 months"]
+                    model: [qsTr("All time"), qsTr("Last 7 days"), qsTr("Last 30 days"), qsTr("Last 12 months")]
                     currentIndex: page.periodIndex()
                     onActivated: userLib.setStatsPeriod(["all", "7d", "30d", "365d"][currentIndex])
                 }
@@ -83,14 +83,14 @@ Item {
                             font.pixelSize: (Theme.fontSize(21)) * Theme.displayScale
                             font.weight: Font.Bold
                         }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: "estimated listening time"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: qsTr("estimated listening time"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
                     }
                 }
             }
 
             Text {
                 textFormat: Text.PlainText
-                text: userLib.topTracks.count > 0 ? "Top tracks" : "No listening history for this period yet."
+                text: userLib.topTracks.count > 0 ? qsTr("Top tracks") : qsTr("No listening history for this period yet.")
                 color: Theme.text
                 font.family: Theme.displayFamily
                 font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale
@@ -112,7 +112,7 @@ Item {
                         rowIndex: index
                         number: index + 1
                         title: model.title
-                        artist: model.artist + " · " + Theme.num(model.plays) + (model.plays === 1 ? " listen" : " listens")
+                        artist: model.artist + " · " + Theme.num(model.plays) + (model.plays === 1 ? qsTr(" listen") : qsTr(" listens"))
                         album: model.album
                         durText: model.durText
                         artUrl: model.artUrl
@@ -126,7 +126,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 visible: userLib.topArtists.count > 0
-                text: "Top artists"
+                text: qsTr("Top artists")
                 color: Theme.text
                 font.family: Theme.displayFamily
                 font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale
@@ -142,14 +142,14 @@ Item {
                         required property string name
                         required property int plays
                         required property int albums
-                        objectName: index === 0 ? "statsTopArtist" : ""
+                        objectName: index === 0 ? qsTr("statsTopArtist") : ""
                         width: parent.width
                         height: 42
                         color: artistHover.hovered ? Theme.glassHover : index % 2 ? "transparent" : Theme.surface
                         radius: Theme.radiusSmall
                         HoverHandler { id: artistHover }
                         Accessible.role: Accessible.Button
-                        Accessible.name: name + ", " + Theme.num(plays) + (plays === 1 ? " listen" : " listens")
+                        Accessible.name: name + ", " + Theme.num(plays) + (plays === 1 ? qsTr(" listen") : qsTr(" listens"))
                         Accessible.onPressAction: Nav.openArtist(name)
                         MouseArea {
                             anchors.fill: parent
@@ -163,8 +163,8 @@ Item {
                             anchors.leftMargin: 12
                             anchors.rightMargin: 12
                             Text { Layout.fillWidth: true; text: name; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); elide: Text.ElideRight; textFormat: Text.PlainText }
-                            Text { text: Theme.num(albums) + (albums === 1 ? " album" : " albums"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
-                            Text { text: Theme.num(plays) + (plays === 1 ? " listen" : " listens"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
+                            Text { text: Theme.num(albums) + (albums === 1 ? qsTr(" album") : qsTr(" albums")); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
+                            Text { text: Theme.num(plays) + (plays === 1 ? qsTr(" listen") : qsTr(" listens")); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
                         }
                     }
                 }
@@ -173,7 +173,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 visible: userLib.topAlbums.count > 0
-                text: "Top albums"
+                text: qsTr("Top albums")
                 color: Theme.text
                 font.family: Theme.displayFamily
                 font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale
@@ -190,14 +190,14 @@ Item {
                         required property string album_artist
                         required property string album_key
                         required property int plays
-                        objectName: index === 0 ? "statsTopAlbum" : ""
+                        objectName: index === 0 ? qsTr("statsTopAlbum") : ""
                         width: parent.width
                         height: 42
                         color: albumHover.hovered ? Theme.glassHover : index % 2 ? "transparent" : Theme.surface
                         radius: Theme.radiusSmall
                         HoverHandler { id: albumHover }
                         Accessible.role: Accessible.Button
-                        Accessible.name: album + ", " + album_artist + ", " + Theme.num(plays) + (plays === 1 ? " listen" : " listens")
+                        Accessible.name: album + ", " + album_artist + ", " + Theme.num(plays) + (plays === 1 ? qsTr(" listen") : qsTr(" listens"))
                         Accessible.onPressAction: Nav.openAlbum(album_key)
                         MouseArea {
                             anchors.fill: parent
@@ -213,7 +213,7 @@ Item {
                             anchors.leftMargin: 12
                             anchors.rightMargin: 12
                             Text { Layout.fillWidth: true; text: album + " · " + album_artist; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); elide: Text.ElideRight; textFormat: Text.PlainText }
-                            Text { text: Theme.num(plays) + (plays === 1 ? " listen" : " listens"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
+                            Text { text: Theme.num(plays) + (plays === 1 ? qsTr(" listen") : qsTr(" listens")); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
                         }
                     }
                 }
@@ -221,7 +221,7 @@ Item {
 
             SectionHeader {
                 visible: userLib.recentPlayed.count > 0
-                title: "Recently played"
+                title: qsTr("Recently played")
             }
             Item {
                 visible: userLib.recentPlayed.count > 0
@@ -254,8 +254,8 @@ Item {
 
             SectionHeader {
                 visible: userLib.homeMix.count > 0
-                title: "Your mix"
-                subtitle: "Songs you play and like most, a few per artist"
+                title: qsTr("Your mix")
+                subtitle: qsTr("Songs you play and like most, a few per artist")
             }
             Column {
                 visible: userLib.homeMix.count > 0

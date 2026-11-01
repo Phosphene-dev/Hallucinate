@@ -54,7 +54,7 @@ Column {
         border.color: Theme.stroke
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
-        Accessible.name: group.title + (group.shown ? ", open" : ", closed")
+        Accessible.name: group.title + (group.shown ? qsTr(", open") : qsTr(", closed"))
         Accessible.onPressAction: group.open = !group.open
         Keys.onSpacePressed: group.open = !group.open
         Keys.onReturnPressed: group.open = !group.open

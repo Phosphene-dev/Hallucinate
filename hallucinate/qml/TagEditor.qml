@@ -49,16 +49,16 @@ Dialog {
     anchors.centerIn: parent
     modal: true
     width: Math.min(560, parent ? parent.width - 40 : 560)
-    title: albumMode ? "Edit album" : manyMode ? "Edit " + Theme.num(paths.length) + " songs" : "Edit tags"
+    title: albumMode ? qsTr("Edit album") : manyMode ? "Edit " + Theme.num(paths.length) + " songs" : qsTr("Edit tags")
     standardButtons: Dialog.Save | Dialog.Cancel
 
     readonly property var keys: albumMode || manyMode
         ? ["album", "album_artist", "artist", "year", "genre", "composer", "work"]
         : ["title", "artist", "album", "album_artist", "track_no", "disc_no", "year", "genre",
            "composer", "work", "movement", "bpm", "music_key"]
-    readonly property var labels: ({ title: "Title", artist: "Artist", album: "Album", album_artist: "Album artist",
-                                     track_no: "Track #", disc_no: "Disc #", year: "Year", genre: "Genre",
-                                     composer: "Composer", work: "Work", movement: "Movement", bpm: "Tempo (BPM)",
+    readonly property var labels: ({ title: qsTr("Title"), artist: qsTr("Artist"), album: qsTr("Album"), album_artist: qsTr("Album artist"),
+                                     track_no: qsTr("Track #"), disc_no: qsTr("Disc #"), year: qsTr("Year"), genre: qsTr("Genre"),
+                                     composer: qsTr("Composer"), work: qsTr("Work"), movement: qsTr("Movement"), bpm: qsTr("Tempo (BPM)"),
                                      music_key: "Key" })
     // fields most songs leave empty: under "More fields" until wanted (or one of them has a value)
     readonly property var extraKeys: ["composer", "work", "movement", "bpm", "music_key"]
@@ -131,7 +131,7 @@ Dialog {
     }
     function findGenre() {
         genreChoices = []
-        genreStatus = "Looking it up…"
+        genreStatus = qsTr("Looking it up…")
         metaEditor.findGenre(fieldValue("album_artist") || fieldValue("artist"), fieldValue("album"))
     }
     function setField(key, value, evenEmpty) {
@@ -149,7 +149,7 @@ Dialog {
             dlg.setField("genre", r.fields.genre)
             dlg.trackTags = r.tracks
             dlg.mbResults = []
-            dlg.mbStatus = r.matched ? "Filled in from MusicBrainz. Check the fields, then Save."
+            dlg.mbStatus = r.matched ? qsTr("Filled in from MusicBrainz. Check the fields, then Save.")
                 : "Filled in the album from MusicBrainz. Its " + Theme.num(r.releaseTracks) + " tracks don't match this album's "
                   + Theme.num(r.songs) + " songs, so song titles are left as they are."
         }
@@ -158,9 +158,9 @@ Dialog {
             if (r.error) { dlg.genreStatus = r.error; return }
             dlg.setField("genre", r.genre)
             dlg.genreChoices = r.genres
-            var from = (r.sources || ["MusicBrainz"]).join(", ")
+            var from = (r.sources || [qsTr("MusicBrainz")]).join(", ")
             dlg.genreStatus = r.source === "artist"
-                ? "No source has a genre for this album, so this is the artist's (from MusicBrainz). Click genres below to add or remove them, or type your own, then Save."
+                ? qsTr("No source has a genre for this album, so this is the artist's (from MusicBrainz). Click genres below to add or remove them, or type your own, then Save.")
                 : "From " + from + ". The first genre is the main one. Click genres below to add or remove them, or type your own, then Save."
         }
         function onCoverResult(ok, msg) { dlg.message = msg; if (ok) dlg.artUrl = library.albumInfo(dlg.albumKey).artUrl || "" }
@@ -169,8 +169,8 @@ Dialog {
 
     FileDialog {
         id: imagePicker
-        title: "Choose cover image"
-        nameFilters: ["Images (*.png *.jpg *.jpeg)"]
+        title: qsTr("Choose cover image")
+        nameFilters: [qsTr("Images (*.png *.jpg *.jpeg)")]
         onAccepted: metaEditor.setCoverFromFile(dlg.albumKey, selectedFile.toString(), embedBox.checked)
     }
 
@@ -181,7 +181,7 @@ Dialog {
             visible: dlg.albumMode || dlg.manyMode
             Layout.fillWidth: true
             text: Theme.num(dlg.paths.length) + " tracks. Only changed fields are written to every track."
-                + (dlg.manyMode && dlg.mixed.length ? " Empty fields marked “mixed” differ between them and stay as they are." : "")
+                + (dlg.manyMode && dlg.mixed.length ? qsTr(" Empty fields marked “mixed” differ between them and stay as they are.") : "")
             color: Theme.textDim
             wrapMode: Text.WordWrap
             font.family: Theme.fontFamily
@@ -209,7 +209,7 @@ Dialog {
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(14)
                     placeholderText: dlg.mixed.indexOf(rowItem.key) >= 0 ? "mixed"
-                                     : rowItem.key === "music_key" ? "Am, F#, 8A…" : rowItem.key === "bpm" ? "120" : ""
+                                     : rowItem.key === "music_key" ? qsTr("Am, F#, 8A…") : rowItem.key === "bpm" ? "120" : ""
                     validator: rowItem.key === "bpm" ? bpmValidator : null
                     placeholderTextColor: Theme.textDim
                     background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: field.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
@@ -218,7 +218,7 @@ Dialog {
                     objectName: "findGenre"
                     visible: rowItem.key === "genre"
                     height: 32
-                    text: "Find online"
+                    text: qsTr("Find online")
                     enabled: !shell.offlineMode && dlg.fieldValue("album").length > 0
                     onClicked: dlg.findGenre()
                     Accessible.name: "Find the genre online"
@@ -230,7 +230,7 @@ Dialog {
             textFormat: Text.PlainText
             objectName: "moreTagFields"
             visible: !dlg.moreShown
-            text: dlg.albumMode || dlg.manyMode ? "More fields: composer, work" : "More fields: composer, work, movement, tempo, key"
+            text: dlg.albumMode || dlg.manyMode ? qsTr("More fields: composer, work") : qsTr("More fields: composer, work, movement, tempo, key")
             color: Theme.accent
             font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12.5); font.weight: Font.DemiBold
             LinkArea { onClicked: dlg.moreShown = true }
@@ -254,7 +254,7 @@ Dialog {
                     text: modelData
                     selected: dlg.hasGenre(modelData)
                     onClicked: dlg.toggleGenre(modelData)
-                    Accessible.name: (selected ? "Remove " : "Add ") + modelData
+                    Accessible.name: (selected ? qsTr("Remove ") : "Add ") + modelData
                 }
             }
         }
@@ -264,10 +264,10 @@ Dialog {
             spacing: 10
             PillButton {
                 objectName: "lookupMusicBrainz"
-                text: "Look up on MusicBrainz"
+                text: qsTr("Look up on MusicBrainz")
                 enabled: !shell.offlineMode
                 onClicked: {
-                    dlg.mbStatus = "Searching MusicBrainz…"
+                    dlg.mbStatus = qsTr("Searching MusicBrainz…")
                     var artist = "", album = ""
                     for (var i = 0; i < rep.count; i++) {
                         if (rep.itemAt(i).key === "album") album = rep.itemAt(i).value
@@ -307,7 +307,7 @@ Dialog {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: { dlg.mbStatus = "Fetching the release…"; metaEditor.chooseRelease(modelData.id, dlg.albumKey) }
+                    onClicked: { dlg.mbStatus = qsTr("Fetching the release…"); metaEditor.chooseRelease(modelData.id, dlg.albumKey) }
                     Accessible.role: Accessible.Button
                     Accessible.name: "Use " + modelData.title + " by " + modelData.artist + " " + modelData.year
                     Accessible.onPressAction: metaEditor.chooseRelease(modelData.id, dlg.albumKey)
@@ -330,16 +330,16 @@ Dialog {
                 spacing: 6
                 RowLayout {
                     spacing: 8
-                    PillButton { text: "Choose cover…"; onClicked: imagePicker.open() }
+                    PillButton { text: qsTr("Choose cover…"); onClicked: imagePicker.open() }
                     PillButton {
-                        text: metaEditor.busy ? "Working…" : "Find cover online"
+                        text: metaEditor.busy ? qsTr("Working…") : qsTr("Find cover online")
                         enabled: !metaEditor.busy && !shell.offlineMode
                         onClicked: metaEditor.fetchCover(dlg.albumKey, dlg.original.album_artist || dlg.original.artist || "", dlg.original.album || "", embedBox.checked)
                     }
                 }
                 StyledCheck {
                     id: embedBox
-                    text: "Also embed in the audio files"
+                    text: qsTr("Also embed in the audio files")
                     checked: metaEditor.embedCovers
                     onToggled: metaEditor.setEmbedCovers(checked)  // remembered for next time
                 }

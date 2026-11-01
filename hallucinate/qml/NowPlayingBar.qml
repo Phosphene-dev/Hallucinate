@@ -72,7 +72,7 @@ Item {
             source: player.hasTrack ? player.current.artUrl : ""
             SpinningCover {}
             Accessible.role: player.hasTrack ? Accessible.Button : Accessible.Graphic
-            Accessible.name: player.hasTrack ? "Go to what's playing: " + (player.current.album || player.current.title || "") : "Nothing playing"
+            Accessible.name: player.hasTrack ? "Go to what's playing: " + (player.current.album || player.current.title || "") : qsTr("Nothing playing")
             Accessible.onPressAction: Nav.goToPlaying()
             MouseArea {
                 anchors.fill: parent
@@ -93,7 +93,7 @@ Item {
             MarqueeText {  // a long title glides to its end and back while it plays (#112)
                 objectName: "barTitle"
                 width: parent.width
-                text: player.hasTrack ? player.current.title : "Nothing playing"
+                text: player.hasTrack ? player.current.title : qsTr("Nothing playing")
                 active: player.playing
                 color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
                 Accessible.role: Accessible.StaticText
@@ -190,7 +190,7 @@ Item {
             Rectangle {
                 width: 44; height: 44; radius: Theme.round(22)
                 Accessible.role: Accessible.Button
-                Accessible.name: player.playing ? "Pause" : "Play"
+                Accessible.name: player.playing ? qsTr("Pause") : qsTr("Play")
                 Accessible.onPressAction: player.toggle()
                 scale: Theme.reduceMotion ? 1 : (pp.pressed ? 0.94 : (pp.containsMouse ? 1.06 : 1))
                 Behavior on scale { NumberAnimation { duration: 120 } }
@@ -220,7 +220,7 @@ Item {
                 visible: !bar.episode && !bar.tight  // (also in Ctrl+K)
                 icon: "radio"
                 active: player.radio
-                tip: player.radio ? "Radio on: similar songs keep playing after the queue" : "Radio: keep playing similar songs when the queue ends"
+                tip: player.radio ? qsTr("Radio on: similar songs keep playing after the queue") : qsTr("Radio: keep playing similar songs when the queue ends")
                 onClicked: player.setRadio(!player.radio)
             }
         }
@@ -235,7 +235,7 @@ Item {
             Text {
                 objectName: "barDuration"
                 readonly property bool live: player.hasTrack && player.current.kind === "station"
-                text: live ? "LIVE" : Theme.fmtTime(player.duration)
+                text: live ? qsTr("LIVE") : Theme.fmtTime(player.duration)
                 color: live ? Theme.accent : Theme.textDim
                 font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); font.weight: live ? Font.Bold : Font.Normal
                 Layout.preferredWidth: 38; textFormat: Text.PlainText
@@ -251,7 +251,7 @@ Item {
         spacing: 6
         IconButton {
             visible: !bar.tight
-            icon: "more"; tip: "Speed and sleep timer"
+            icon: "more"; tip: qsTr("Speed and sleep timer")
             active: player.speed !== 1 || player.sleepRemaining >= 0 || player.sleepAfterTrack || player.sleepAfterAlbum
             onClicked: playbackMenu.popup()
             PlaybackMenu { id: playbackMenu }
@@ -260,7 +260,7 @@ Item {
             id: chaptersButton
             objectName: "chaptersButton"
             visible: bar.episode && podcasts.chapters.length > 0
-            icon: "playlist"; tip: "Chapters"
+            icon: "playlist"; tip: qsTr("Chapters")
             onClicked: chaptersMenu.popup(chaptersButton, 0, -chaptersMenu.implicitHeight - 6)
             Menu {
                 id: chaptersMenu
@@ -281,10 +281,10 @@ Item {
                 }
             }
         }
-        IconButton { objectName: "openNowPlaying"; icon: "fullscreen"; tip: "Now playing (F)"; onClicked: Nav.toggleNowPlaying() }
-        IconButton { icon: "expand"; tip: "Mini player (Ctrl+M)"; visible: !bar.compact; onClicked: shell.toggleMini() }
-        IconButton { visible: shell.features.lyrics !== false && !bar.tight; icon: "note"; active: bar.lyricsOpen; tip: "Lyrics"; onClicked: bar.toggleLyrics() }
-        IconButton { icon: "queue"; active: bar.queueOpen; tip: "Queue (Q)"; onClicked: bar.toggleQueue() }
+        IconButton { objectName: "openNowPlaying"; icon: "fullscreen"; tip: qsTr("Now playing (F)"); onClicked: Nav.toggleNowPlaying() }
+        IconButton { icon: "expand"; tip: qsTr("Mini player (Ctrl+M)"); visible: !bar.compact; onClicked: shell.toggleMini() }
+        IconButton { visible: shell.features.lyrics !== false && !bar.tight; icon: "note"; active: bar.lyricsOpen; tip: qsTr("Lyrics"); onClicked: bar.toggleLyrics() }
+        IconButton { icon: "queue"; active: bar.queueOpen; tip: qsTr("Queue (Q)"); onClicked: bar.toggleQueue() }
         VolumeButton {
             objectName: "muteButton"
             anchors.verticalCenter: parent.verticalCenter

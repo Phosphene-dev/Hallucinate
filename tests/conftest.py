@@ -172,6 +172,8 @@ def _isolated_qsettings(tmp_path_factory):
     for scope in (QSettings.Scope.UserScope, QSettings.Scope.SystemScope):
         QSettings.setPath(QSettings.Format.NativeFormat, scope, root)
         QSettings.setPath(QSettings.Format.IniFormat, scope, root)
+    # The interface in English whatever the machine's language: tests read its text
+    QSettings("hallucinate", "hallucinate").setValue("ui/language", "en")
     yield
 
 

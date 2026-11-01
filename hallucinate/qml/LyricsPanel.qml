@@ -15,7 +15,7 @@ Rectangle {
         textFormat: Text.PlainText
         id: head
         x: 24; y: 18
-        text: "Lyrics"
+        text: qsTr("Lyrics")
         color: Theme.text
         font.family: Theme.displayFamily
         font.pixelSize: (Theme.fontSize(15)) * Theme.displayScale
@@ -40,8 +40,8 @@ Rectangle {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap
-            text: ({ idle: "Nothing playing", loading: "Looking for lyrics…", none: "No lyrics found for this track",
-                     offline: "Couldn’t reach LRCLIB — check your connection",
+            text: ({ idle: qsTr("Nothing playing"), loading: qsTr("Looking for lyrics…"), none: qsTr("No lyrics found for this track"),
+                     offline: qsTr("Couldn’t reach LRCLIB — check your connection"),
                      offlinemode: "Offline mode is on, so lyrics can’t be looked up" })[lyricsCtl.status] || ""
             color: Theme.textDim
             font.family: Theme.fontFamily
@@ -53,7 +53,7 @@ Rectangle {
             height: 32
             // LRCLIB had nothing last time (or couldn't be reached): look again now, not in a month
             visible: lyricsCtl.onlineLookup && (lyricsCtl.status === "none" || lyricsCtl.status === "offline")
-            text: "Search again"
+            text: qsTr("Search again")
             onClicked: lyricsCtl.searchAgain()
         }
     }

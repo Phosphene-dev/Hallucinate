@@ -32,9 +32,9 @@ Item {
     // songs, or your own (Move up and Move down in a playlist's menu). Folders keep to A–Z; inside one, the same order.
     readonly property string plSort: shell.ui.playlistSort || "name"
     readonly property var plCustom: (shell.ui.playlistOrder || "").split(",").filter(function (k) { return k.length })
-    readonly property var plSorts: [{ id: "name", t: "Name, A–Z" }, { id: "name-desc", t: "Name, Z–A" }, { id: "newest", t: "Newest first" },
-                                    { id: "oldest", t: "Oldest first" }, { id: "added", t: "Recently added to" },
-                                    { id: "songs", t: "Most songs" }, { id: "custom", t: "My own order" }]
+    readonly property var plSorts: [{ id: "name", t: qsTr("Name, A–Z") }, { id: "name-desc", t: qsTr("Name, Z–A") }, { id: "newest", t: qsTr("Newest first") },
+                                    { id: "oldest", t: qsTr("Oldest first") }, { id: "added", t: qsTr("Recently added to") },
+                                    { id: "songs", t: qsTr("Most songs") }, { id: "custom", t: qsTr("My own order") }]
     function plKey(item) { return (item.smart ? "s" : "p") + item.id }
     function plCompare(a, b) {
         var byName = a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true })
@@ -130,14 +130,14 @@ Item {
     Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
     readonly property var allPages: [
-        { id: "home", t: "Home", i: "home" }, { id: "albums", t: "Albums", i: "album" },
-        { id: "artists", t: "Artists", i: "artist" }, { id: "genres", t: "Genres", i: "genre" },
-        { id: "songs", t: "Songs", i: "songs" },
-        { id: "folders", t: "Folders", i: "folder" },
-        { id: "liked", t: "Liked Songs", i: "heart" }, { id: "stats", t: "Stats", i: "stats" },
-        { id: "history", t: "History", i: "history" },
-        { id: "recap", t: "Recap", i: "recap" }, { id: "visualizer", t: "Visualizer", i: "wave" },
-        { id: "stations", t: "Internet radio", i: "station" }, { id: "podcasts", t: "Podcasts", i: "podcast" }
+        { id: "home", t: qsTr("Home"), i: "home" }, { id: "albums", t: qsTr("Albums"), i: "album" },
+        { id: "artists", t: qsTr("Artists"), i: "artist" }, { id: "genres", t: qsTr("Genres"), i: "genre" },
+        { id: "songs", t: qsTr("Songs"), i: "songs" },
+        { id: "folders", t: qsTr("Folders"), i: "folder" },
+        { id: "liked", t: qsTr("Liked Songs"), i: "heart" }, { id: "stats", t: qsTr("Stats"), i: "stats" },
+        { id: "history", t: qsTr("History"), i: "history" },
+        { id: "recap", t: qsTr("Recap"), i: "recap" }, { id: "visualizer", t: qsTr("Visualizer"), i: "wave" },
+        { id: "stations", t: qsTr("Internet radio"), i: "station" }, { id: "podcasts", t: qsTr("Podcasts"), i: "podcast" }
     ]
     // In the order you've arranged them (Settings → Appearance → Sidebar, or right-click an entry)
     readonly property var pages: {
@@ -152,13 +152,13 @@ Item {
         objectName: "sidebarPageMenu"
         property string page: ""
         readonly property int at: side.shownPages.map(function (p) { return p.id }).indexOf(page)
-        MenuItem { text: "Move up"; icon.name: "up"; enabled: pageMenu.at > 0; onTriggered: shell.moveSidebarPage(pageMenu.page, -1) }
+        MenuItem { text: qsTr("Move up"); icon.name: "up"; enabled: pageMenu.at > 0; onTriggered: shell.moveSidebarPage(pageMenu.page, -1) }
         MenuItem {
-            text: "Move down"; icon.name: "down"; enabled: pageMenu.at >= 0 && pageMenu.at < side.shownPages.length - 1
+            text: qsTr("Move down"); icon.name: "down"; enabled: pageMenu.at >= 0 && pageMenu.at < side.shownPages.length - 1
             onTriggered: shell.moveSidebarPage(pageMenu.page, 1)
         }
         MenuSeparator {}
-        MenuItem { text: "Rearrange…"; icon.name: "settings"; onTriggered: side.rearrange() }
+        MenuItem { text: qsTr("Rearrange…"); icon.name: "settings"; onTriggered: side.rearrange() }
     }
     signal rearrange()  // open Settings at the sidebar list
 
@@ -230,7 +230,7 @@ Item {
                     Text {
                         textFormat: Text.PlainText
                         anchors { left: logo.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                        text: "Hallucinate"
+                        text: qsTr("Hallucinate")
                         opacity: side.collapsed ? 0 : 1
                         visible: opacity > 0
                         Behavior on opacity { NumberAnimation { duration: 140 } }
@@ -267,7 +267,7 @@ Item {
                             z: dragger.active ? 3 : 0
                             opacity: dragger.active ? 0.85 : 1
                             transform: Translate { y: dragger.active ? dragger.activeTranslation.y : 0 }
-                            Accessible.description: "Alt+Up or Alt+Down moves it"
+                            Accessible.description: qsTr("Alt+Up or Alt+Down moves it")
                             Keys.onPressed: function (event) {
                                 if (!(event.modifiers & Qt.AltModifier)) return
                                 if (event.key === Qt.Key_Up) { shell.moveSidebarPage(modelData.id, -1); event.accepted = true }
@@ -307,7 +307,7 @@ Item {
                                     var p = Selection.songPaths()
                                     userLib.setLikedPaths(p, true)
                                     Selection.clear()
-                                    Nav.notify(Theme.num(p.length) + (p.length === 1 ? " song" : " songs") + " liked")
+                                    Nav.notify(Theme.num(p.length) + (p.length === 1 ? qsTr(" song") : qsTr(" songs")) + " liked")
                                     drop.accept()
                                 }
                             }
@@ -330,7 +330,7 @@ Item {
                     RailButton {
                         anchors.fill: parent
                         visible: side.collapsed
-                        text: "Playlists"
+                        text: qsTr("Playlists")
                         icon: "playlist"
                         collapsed: true
                         selected: (side.section.indexOf("pl") === 0 || side.section.indexOf("smart") === 0) && side.atRoot
@@ -340,7 +340,7 @@ Item {
                         textFormat: Text.PlainText
                         visible: !side.collapsed
                         anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
-                        text: "PLAYLISTS"
+                        text: qsTr("PLAYLISTS")
                         color: Theme.textDim
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(11)
@@ -351,7 +351,7 @@ Item {
                         id: newPlButton
                         visible: !side.collapsed
                         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                        icon: "plus"; size: 14; tip: "New playlist"
+                        icon: "plus"; size: 14; tip: qsTr("New playlist")
                         onClicked: newPlMenu.popup(newPlButton, 0, newPlButton.height)
                     }
                     IconButton {
@@ -378,15 +378,15 @@ Item {
                     }
                     Menu {
                         id: newPlMenu
-                        MenuItem { text: "New playlist"; icon.name: "playlist"; onTriggered: side.newPlaylist() }
-                        MenuItem { text: "New smart playlist"; icon.name: "smartlist"; onTriggered: side.newSmartPlaylist() }
-                        MenuItem { text: "Import playlist file…"; icon.name: "folder"; onTriggered: Nav.importPlaylist() }
+                        MenuItem { text: qsTr("New playlist"); icon.name: "playlist"; onTriggered: side.newPlaylist() }
+                        MenuItem { text: qsTr("New smart playlist"); icon.name: "smartlist"; onTriggered: side.newSmartPlaylist() }
+                        MenuItem { text: qsTr("Import playlist file…"); icon.name: "folder"; onTriggered: Nav.importPlaylist() }
                     }
                     Menu {
                         id: playlistMenu
-                        MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: side.newPlaylist() }
-                        MenuItem { text: "New smart playlist…"; icon.name: "smartlist"; onTriggered: side.newSmartPlaylist() }
-                        MenuItem { text: "Import playlist file…"; icon.name: "folder"; onTriggered: Nav.importPlaylist() }
+                        MenuItem { text: qsTr("New playlist…"); icon.name: "plus"; onTriggered: side.newPlaylist() }
+                        MenuItem { text: qsTr("New smart playlist…"); icon.name: "smartlist"; onTriggered: side.newSmartPlaylist() }
+                        MenuItem { text: qsTr("Import playlist file…"); icon.name: "folder"; onTriggered: Nav.importPlaylist() }
                         MenuSeparator {}
                         Instantiator {
                             model: userLib.playlists
@@ -431,7 +431,7 @@ Item {
                                 text: folderBlock.modelData.name + "  (" + Theme.num(folderBlock.modelData.items.length) + ")"
                                 icon: folderBlock.open ? "down" : "next"
                                 hasMenu: true
-                                Accessible.name: "Folder " + folderBlock.modelData.name + (folderBlock.open ? ", open" : ", closed")
+                                Accessible.name: "Folder " + folderBlock.modelData.name + (folderBlock.open ? qsTr(", open") : qsTr(", closed"))
                                 onMenuRequested: folderMenu.show(folderBlock.modelData.name)
                                 onClicked: side.setFolderOpen(folderBlock.modelData.name, !folderBlock.open)
                             }
@@ -489,7 +489,7 @@ Item {
             RailButton {
                 width: parent.width
                 height: side.entryHeight
-                text: "Settings"
+                text: qsTr("Settings")
                 icon: "settings"
                 collapsed: side.collapsed
                 selected: side.section === "settings" && side.atRoot
@@ -500,7 +500,7 @@ Item {
                 visible: !side.squeezed  // there's no room to expand it
                 width: parent.width
                 height: side.entryHeight
-                text: side.collapsed ? "Expand sidebar" : "Collapse sidebar"
+                text: side.collapsed ? qsTr("Expand sidebar") : qsTr("Collapse sidebar")
                 icon: "sidebar"
                 collapsed: side.collapsed
                 onClicked: shell.setSidebarCollapsed(!side.collapsed)
@@ -518,27 +518,27 @@ Item {
         property string folder: ""
         function show(id, n, isSmart, inFolder) { pid = id; name = n; smart = isSmart; folder = inFolder || ""; popup() }
         MenuItem {
-            text: "Open"; icon.name: plItemMenu.smart ? "smartlist" : "playlist"
+            text: qsTr("Open"); icon.name: plItemMenu.smart ? "smartlist" : "playlist"
             onTriggered: plItemMenu.smart ? side.openSmartPlaylist(plItemMenu.pid, plItemMenu.name) : side.openPlaylist(plItemMenu.pid, plItemMenu.name)
         }
         MenuItem {
             visible: !plItemMenu.smart
             height: visible ? implicitHeight : 0
-            text: "Rename…"; icon.name: "edit"
+            text: qsTr("Rename…"); icon.name: "edit"
             onTriggered: { renameField.text = plItemMenu.name; renamePl.open() }
         }
         MenuItem {
             visible: plItemMenu.smart
             height: visible ? implicitHeight : 0
-            text: "Edit rules…"; icon.name: "edit"
+            text: qsTr("Edit rules…"); icon.name: "edit"
             onTriggered: Nav.editSmartPlaylist(plItemMenu.pid, plItemMenu.name)
         }
         Menu {
             id: moveMenu
             objectName: "moveToFolder"
-            title: "Move to folder"
+            title: qsTr("Move to folder")
             icon.name: "folder"
-            MenuItem { text: "New folder…"; icon.name: "plus"; onTriggered: { folderField.text = ""; newFolder.open() } }
+            MenuItem { text: qsTr("New folder…"); icon.name: "plus"; onTriggered: { folderField.text = ""; newFolder.open() } }
             MenuItem {
                 visible: plItemMenu.folder.length > 0
                 height: visible ? implicitHeight : 0
@@ -561,16 +561,16 @@ Item {
         }
         MenuItem {
             objectName: "playlistMoveUp"
-            text: "Move up"; icon.name: "up"
+            text: qsTr("Move up"); icon.name: "up"
             onTriggered: side.plMove({ id: plItemMenu.pid, smart: plItemMenu.smart, folder: plItemMenu.folder }, -1)
         }
         MenuItem {
-            text: "Move down"; icon.name: "down"
+            text: qsTr("Move down"); icon.name: "down"
             onTriggered: side.plMove({ id: plItemMenu.pid, smart: plItemMenu.smart, folder: plItemMenu.folder }, 1)
         }
         MenuSeparator {}
         MenuItem {
-            text: "Delete…"; icon.name: "trash"; icon.color: Theme.error
+            text: qsTr("Delete…"); icon.name: "trash"; icon.color: Theme.error
             onTriggered: { deletePl.what = "“" + plItemMenu.name + "”"; deletePl.open() }
         }
     }
@@ -580,7 +580,7 @@ Item {
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true
-        title: "New folder"
+        title: qsTr("New folder")
         standardButtons: Dialog.Ok | Dialog.Cancel
         onOpened: folderField.forceActiveFocus()
         onAccepted: {
@@ -590,7 +590,7 @@ Item {
             side.setFolderOpen(name, true)
         }
         TextField {
-            id: folderField; implicitWidth: 280; selectByMouse: true; placeholderText: "Folder name (Workout, Moods…)"
+            id: folderField; implicitWidth: 280; selectByMouse: true; placeholderText: qsTr("Folder name (Workout, Moods…)")
             onAccepted: if (text.trim().length) newFolder.accept()
             onTextChanged: { var b = newFolder.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
         }
@@ -601,10 +601,10 @@ Item {
         objectName: "playlistFolderMenu"
         property string name: ""
         function show(n) { name = n; popup() }
-        MenuItem { text: "Rename folder…"; icon.name: "edit"; onTriggered: { renameFolderField.text = folderMenu.name; renameFolder.open() } }
+        MenuItem { text: qsTr("Rename folder…"); icon.name: "edit"; onTriggered: { renameFolderField.text = folderMenu.name; renameFolder.open() } }
         MenuItem {
             objectName: "ungroupFolder"
-            text: "Ungroup"; icon.name: "remove"
+            text: qsTr("Ungroup"); icon.name: "remove"
             onTriggered: { userLib.renamePlaylistFolder(folderMenu.name, ""); Nav.notify("The playlists in “" + folderMenu.name + "” are out of the folder") }
         }
     }
@@ -613,7 +613,7 @@ Item {
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true
-        title: "Rename folder"
+        title: qsTr("Rename folder")
         standardButtons: Dialog.Ok | Dialog.Cancel
         onOpened: { renameFolderField.forceActiveFocus(); renameFolderField.selectAll() }
         onAccepted: {
@@ -629,7 +629,7 @@ Item {
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true
-        title: "Rename playlist"
+        title: qsTr("Rename playlist")
         standardButtons: Dialog.Ok | Dialog.Cancel
         onOpened: { renameField.forceActiveFocus(); renameField.selectAll() }
         onAccepted: if (renameField.text.trim().length) userLib.renamePlaylist(plItemMenu.pid, renameField.text.trim())
@@ -637,8 +637,8 @@ Item {
     }
     ConfirmDialog {
         id: deletePl
-        title: plItemMenu.smart ? "Delete this smart playlist?" : "Delete this playlist?"
-        confirmText: "Delete playlist"
+        title: plItemMenu.smart ? qsTr("Delete this smart playlist?") : qsTr("Delete this playlist?")
+        confirmText: qsTr("Delete playlist")
         destructive: true
         body: what + " is deleted. The songs in it stay in your library."
         onAccepted: {

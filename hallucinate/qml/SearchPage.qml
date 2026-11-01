@@ -35,7 +35,7 @@ Item {
     function findsWhat() {
         var kinds = ["songs", "albums", "artists", "genres"]
         if (library.composerList.length) kinds.push("composers")
-        if (shell.features.stations === true) kinds.push("radio stations")
+        if (shell.features.stations === true) kinds.push(qsTr("radio stations"))
         if (shell.features.podcasts === true) kinds.push("podcasts")
         var s = kinds.slice(0, -1).join(", ") + " and " + kinds[kinds.length - 1]
         return s.charAt(0).toUpperCase() + s.slice(1)
@@ -75,15 +75,15 @@ Item {
                 visible: page.query.length === 0 || (page.tracks.length === 0 && page.albums.length === 0
                                                       && page.artists.length === 0 && !page.anyExtra)
                 icon: "search"
-                title: page.query.length === 0 ? "Search your library" : "No results for “" + page.query + "”"
+                title: page.query.length === 0 ? qsTr("Search your library") : "No results for “" + page.query + "”"
                 hint: page.query.length === 0 ? page.findsWhat() + ". Ctrl+K also finds pages and commands."
-                                              : "Check the spelling, or try fewer words."
+                                              : qsTr("Check the spelling, or try fewer words.")
             }
 
             Text {
                 textFormat: Text.PlainText
                 visible: page.artists.length > 0
-                text: "Artists"
+                text: qsTr("Artists")
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Item {
@@ -107,7 +107,7 @@ Item {
                         rowIndex: index
                         selectionSource: page.artists
                         name: modelData.name
-                        subtitle: Theme.num(modelData.albums) + (modelData.albums === 1 ? " album" : " albums")
+                        subtitle: Theme.num(modelData.albums) + (modelData.albums === 1 ? qsTr(" album") : qsTr(" albums"))
                         artUrl: modelData.artUrl
                     }
                 }
@@ -117,7 +117,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 visible: page.genreHits.length > 0
-                text: "Genres"
+                text: qsTr("Genres")
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Flow {
@@ -140,7 +140,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 visible: page.composerHits.length > 0
-                text: "Composers"
+                text: qsTr("Composers")
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Flow {
@@ -163,7 +163,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 visible: page.albums.length > 0
-                text: "Albums"
+                text: qsTr("Albums")
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Item {
@@ -201,7 +201,7 @@ Item {
                 spacing: 14
                 Text {
                     textFormat: Text.PlainText
-                    text: "Songs"
+                    text: qsTr("Songs")
                     color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
                 }
                 Text {  // every song found, in the order shown
@@ -276,7 +276,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 visible: page.stationHits.length > 0
-                text: "Stations"
+                text: qsTr("Stations")
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Repeater {
@@ -290,7 +290,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 visible: page.podcastHits.shows.length > 0
-                text: "Podcasts"
+                text: qsTr("Podcasts")
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Repeater {
@@ -304,7 +304,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 visible: page.podcastHits.episodes.length > 0
-                text: "Episodes"
+                text: qsTr("Episodes")
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             EpisodeMenu { id: searchEpisodeMenu }

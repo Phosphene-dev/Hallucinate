@@ -23,8 +23,8 @@ Flow {
             font.underline: genreMouse.containsMouse
             LinkArea {
                 id: genreMouse
-                objectName: (links.composers ? "composerLink_" : "genreLink_") + parent.modelData
-                name: (links.composers ? "Composer: " : "Genre: ") + parent.modelData
+                objectName: (links.composers ? qsTr("composerLink_") : qsTr("genreLink_")) + parent.modelData
+                name: (links.composers ? qsTr("Composer: ") : qsTr("Genre: ")) + parent.modelData
                 hoverEnabled: true
                 onClicked: {
                     links.picked(parent.modelData)

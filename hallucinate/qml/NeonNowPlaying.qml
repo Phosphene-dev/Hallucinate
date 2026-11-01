@@ -52,9 +52,9 @@ Item {
         if (t.bit && t.sample) parts.push(t.bit + "/" + Math.round(t.sample / 1000 * 10) / 10)
         else if (t.sample) parts.push(Math.round(t.sample / 100) / 10 + " KHZ")
         if (t.bitrate) parts.push(Math.round(t.bitrate / 1000) + " KBPS")
-        return parts.length ? parts.join(" · ") : (player.hasTrack ? "SIGNAL OK" : "NO SIGNAL")
+        return parts.length ? parts.join(" · ") : (player.hasTrack ? qsTr("SIGNAL OK") : qsTr("NO SIGNAL"))
     }
-    readonly property string kindLabel: track.kind === "station" ? "LIVE FEED" : track.kind === "episode" ? "TRANSMISSION" : "TRACK"
+    readonly property string kindLabel: track.kind === "station" ? qsTr("LIVE FEED") : track.kind === "episode" ? qsTr("TRANSMISSION") : qsTr("TRACK")
     // the next few songs in the queue's order
     readonly property var upNext: {
         var out = [], n = player.upcomingCount, at = player.currentIndex  // (both re-read this when they change)
@@ -73,11 +73,11 @@ Item {
     }
     Component.onCompleted: {
         wasPlaying = player.playing
-        note("link up")
+        note(qsTr("link up"))
         note("queue " + Theme.num(player.upcomingCount + (player.hasTrack ? 1 : 0)) + " tracks in buffer")
         if (player.hasTrack) note("load  " + (track.title || "") + (track.artist ? " / " + track.artist : ""))
         note("sig   " + signal.toLowerCase())
-        note(player.playing ? "play  signal live" : "hold  signal paused")
+        note(player.playing ? qsTr("play  signal live") : qsTr("hold  signal paused"))
     }
     Connections {
         target: player
@@ -86,7 +86,7 @@ Item {
         function onStateChanged() {
             if (player.playing === neo.wasPlaying) return  // (the state also changes for other reasons)
             neo.wasPlaying = player.playing
-            neo.note(player.playing ? "play  signal resumed" : "hold  signal paused at " + neo.clock(player.position))
+            neo.note(player.playing ? qsTr("play  signal resumed") : "hold  signal paused at " + neo.clock(player.position))
         }
     }
     property bool wasPlaying: false  // (set once at the start, not bound: it's what the state was)
@@ -289,7 +289,7 @@ Item {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         textFormat: Text.PlainText
-                        text: !player.playing ? "SIGNAL HOLD" : neo.kindLabel === "TRACK" ? "SYNC NOMINAL" : neo.kindLabel
+                        text: !player.playing ? qsTr("SIGNAL HOLD") : neo.track.kind !== "station" && neo.track.kind !== "episode" ? qsTr("SYNC NOMINAL") : neo.kindLabel
                         color: !player.playing ? Theme.error : neo.ca
                         font.family: neo.mono; font.pixelSize: 14 * neo.u; font.letterSpacing: 3
                         opacity: !player.playing && neo.moving ? blink.value : 1
@@ -328,7 +328,7 @@ Item {
                         objectName: "neonTitle"
                         width: parent.width; elide: Text.ElideRight; maximumLineCount: 2; wrapMode: Text.Wrap
                         textFormat: Text.PlainText
-                        text: player.hasTrack ? neo.track.title || "" : "Nothing playing"
+                        text: player.hasTrack ? neo.track.title || "" : qsTr("Nothing playing")
                         color: "#ffffff"
                         font.family: Theme.displayFamily; font.pixelSize: Math.max(24, 54 * neo.u); font.weight: Font.DemiBold
                     }
@@ -348,7 +348,7 @@ Item {
                         model: 3  // (a number, not a list of values: the delegates stay as the levels change)
                         Item {
                             required property int index
-                            readonly property var modelData: ({ n: ["LOW", "MID", "HIGH"][index], v: index === 0 ? neo.bass : index === 1 ? neo.mids : neo.highs })
+                            readonly property var modelData: ({ n: [qsTr("LOW"), qsTr("MID"), qsTr("HIGH")][index], v: index === 0 ? neo.bass : index === 1 ? neo.mids : neo.highs })
                             width: 86 * neo.u; height: 64 * neo.u
                             Shape {
                                 anchors.fill: parent
@@ -384,7 +384,7 @@ Item {
                                 text: index === 0 ? "SIGNAL  " + neo.signal
                                     : index === 1 ? "TIME    " + neo.clock(player.position) + " / " + neo.clock(player.duration)
                                     : index === 2 ? "QUEUE   " + Theme.num(player.upcomingCount) + " TO COME"
-                                    : "OUTPUT  " + (player.muted ? "MUTED" : Math.round(player.volume * 100) + "%")
+                                    : "OUTPUT  " + (player.muted ? qsTr("MUTED") : Math.round(player.volume * 100) + "%")
                                 color: Theme.text; opacity: 0.85
                                 font.family: neo.mono; font.pixelSize: 13 * neo.u
                             }
@@ -440,7 +440,7 @@ Item {
                         Icon { anchors.centerIn: parent; width: 26; height: 26; name: player.playing ? "pause" : "play"; color: Theme.onAccent }
                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: player.toggle() }
                         Accessible.role: Accessible.Button
-                        Accessible.name: player.playing ? "Pause" : "Play"
+                        Accessible.name: player.playing ? qsTr("Pause") : qsTr("Play")
                         Accessible.onPressAction: player.toggle()
                         Bevel {}
                     }
@@ -459,10 +459,10 @@ Item {
                     required property int index
                     readonly property bool atRight: index % 2 === 1
                     readonly property bool atBottom: index > 1
-                    readonly property var lines: index === 0 ? ["SIGNAL PATH", neo.signal.split(" · ").slice(0, 2).join(" "), "on AFTERIMAGE-01"]
-                        : index === 1 ? ["TIME REMAINING TO END", neo.seconds(player.duration - player.position), "on AFTERIMAGE-01"]
-                        : index === 2 ? ["TRACK NO.", String(player.currentIndex + 1).padStart(3, "0"), "on " + neo.upper(neo.track.album || "the queue")]
-                        : ["TIME SINCE PLAY", neo.seconds(player.position), "on AFTERIMAGE-01"]
+                    readonly property var lines: index === 0 ? [qsTr("SIGNAL PATH"), neo.signal.split(" · ").slice(0, 2).join(" "), qsTr("on AFTERIMAGE-01")]
+                        : index === 1 ? [qsTr("TIME REMAINING TO END"), neo.seconds(player.duration - player.position), qsTr("on AFTERIMAGE-01")]
+                        : index === 2 ? [qsTr("TRACK NO."), String(player.currentIndex + 1).padStart(3, "0"), "on " + neo.upper(neo.track.album || qsTr("the queue"))]
+                        : [qsTr("TIME SINCE PLAY"), neo.seconds(player.position), qsTr("on AFTERIMAGE-01")]
                     objectName: "neonCorner" + index
                     x: atRight ? pit.width - width - 24 : 24
                     y: atBottom ? pit.height - height - 22 : 84

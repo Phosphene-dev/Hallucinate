@@ -39,7 +39,7 @@ Item {
         return (t.movement_no > 0 ? page.roman(t.movement_no) + ". " : "") + t.movement
     }
     function roman(n) {
-        var r = "", vals = [[10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]]
+        var r = "", vals = [[10, "X"], [9, qsTr("IX")], [5, "V"], [4, qsTr("IV")], [1, "I"]]
         if (n > 39) return String(n)
         for (var i = 0; i < vals.length; i++) while (n >= vals[i][0]) { r += vals[i][1]; n -= vals[i][0] }
         return r
@@ -92,7 +92,7 @@ Item {
                     spacing: 8
                     Text {
                         textFormat: Text.PlainText
-                        text: "COMPOSER"
+                        text: qsTr("COMPOSER")
                         color: Theme.accent
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(11)
@@ -130,12 +130,12 @@ Item {
                         spacing: 10
                         topPadding: 10
                         PillButton {
-                            primary: true; text: "Play all"
+                            primary: true; text: qsTr("Play all")
                             enabled: (page.info.tracks || 0) > 0
                             onClicked: library.playComposer(page.composerName, false)
                         }
                         PillButton {
-                            text: "Shuffle"
+                            text: qsTr("Shuffle")
                             enabled: (page.info.tracks || 0) > 0
                             onClicked: { player.setShuffle(true); library.playComposer(page.composerName, true) }
                         }
@@ -143,7 +143,7 @@ Item {
                             objectName: "composerPageMore"
                             height: 38
                             enabled: (page.info.tracks || 0) > 0
-                            icon: "more"; size: 18; tip: "More: play next, add to the queue or a playlist"
+                            icon: "more"; size: 18; tip: qsTr("More: play next, add to the queue or a playlist")
                             onClicked: composerMenu.showComposer(page.composerName)
                         }
                     }
@@ -155,7 +155,7 @@ Item {
                 width: col.width
                 spacing: 10
                 visible: (page.info.performers || []).length > 0
-                SectionHeader { title: "Performed by" }
+                SectionHeader { title: qsTr("Performed by") }
                 Flow {
                     width: col.width
                     spacing: 8
@@ -177,7 +177,7 @@ Item {
                 width: col.width
                 spacing: 18
                 visible: page.works.length > 0
-                SectionHeader { title: "Works" }
+                SectionHeader { title: qsTr("Works") }
                 Repeater {
                     model: page.works
                     Column {
@@ -211,7 +211,7 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 anchors.baseline: parent.children[0].baseline
-                                text: "Play"
+                                text: qsTr("Play")
                                 color: Theme.accent
                                 font.family: Theme.fontFamily
                                 font.pixelSize: Theme.fontSize(12.5)
@@ -256,7 +256,7 @@ Item {
                 width: col.width
                 spacing: 4
                 visible: page.others.length > 0
-                SectionHeader { title: page.works.length ? "Other songs" : "Songs" }
+                SectionHeader { title: page.works.length ? qsTr("Other songs") : qsTr("Songs") }
                 Item { width: 1; height: 6 }
                 Repeater {
                     model: page.others
@@ -288,7 +288,7 @@ Item {
                 width: col.width
                 spacing: 14
                 visible: page.albumList.length > 0
-                SectionHeader { title: "Albums" }
+                SectionHeader { title: qsTr("Albums") }
                 Flow {
                     width: col.width
                     spacing: 18
@@ -317,6 +317,6 @@ Item {
         visible: page.info.tracks === 0
         icon: "note"
         title: "Nothing by " + page.composerName
-        hint: "None of your songs credit this composer any more."
+        hint: qsTr("None of your songs credit this composer any more.")
     }
 }

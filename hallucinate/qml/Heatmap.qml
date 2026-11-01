@@ -66,7 +66,7 @@ Item {
             Behavior on scale { NumberAnimation { duration: 90 } }
             Accessible.role: count > 0 ? Accessible.Button : Accessible.StaticText
             Accessible.name: Qt.formatDate(map.dateAt(index), "dddd d MMMM yyyy") + ": "
-                             + (count === 1 ? "1 play" : Theme.num(count) + " plays")
+                             + (count === 1 ? qsTr("1 play") : Theme.num(count) + " plays")
             Accessible.onPressAction: if (count > 0) map.dayClicked(iso)
             MouseArea {
                 id: cellMouse
@@ -77,7 +77,7 @@ Item {
             }
             ToolTip.visible: cellMouse.containsMouse
             ToolTip.text: Qt.formatDate(map.dateAt(index), "ddd d MMM yyyy") + ": "
-                          + (count === 1 ? "1 play" : Theme.num(count) + " plays")
+                          + (count === 1 ? qsTr("1 play") : Theme.num(count) + " plays")
             ToolTip.delay: 150
         }
     }

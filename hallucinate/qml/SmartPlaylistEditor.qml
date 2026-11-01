@@ -10,7 +10,7 @@ Dialog {
     anchors.centerIn: parent
     width: Math.min(760, parent ? parent.width - 40 : 760)
     modal: true
-    title: smartId >= 0 ? "Edit smart playlist" : "New smart playlist"
+    title: smartId >= 0 ? qsTr("Edit smart playlist") : qsTr("New smart playlist")
     standardButtons: Dialog.Save | Dialog.Cancel
 
     property int smartId: -1
@@ -104,7 +104,7 @@ Dialog {
             id: nameField
             objectName: "smartName"
             width: parent.width
-            placeholderText: "Playlist name"
+            placeholderText: qsTr("Playlist name")
             selectByMouse: true
             // a smart playlist needs a name: Save waits for one rather than closing and losing the rules
             onTextChanged: { var b = dlg.standardButton(Dialog.Save) || dlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
@@ -112,7 +112,7 @@ Dialog {
         }
         Row {
             spacing: 8
-            Text { anchors.verticalCenter: parent.verticalCenter; text: "Songs matching"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+            Text { anchors.verticalCenter: parent.verticalCenter; text: qsTr("Songs matching"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
             StyledCombo {
                 width: 110
                 model: [{ k: "all", t: "all" }, { k: "any", t: "any" }]
@@ -120,7 +120,7 @@ Dialog {
                 currentIndex: dlg.matchMode === "any" ? 1 : 0
                 onActivated: { dlg.matchMode = currentIndex === 1 ? "any" : "all"; dlg.update() }
             }
-            Text { anchors.verticalCenter: parent.verticalCenter; text: "of these rules:"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+            Text { anchors.verticalCenter: parent.verticalCenter; text: qsTr("of these rules:"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
         }
         Repeater {
             model: rulesModel
@@ -176,15 +176,15 @@ Dialog {
                 }
                 IconButton {
                     anchors.verticalCenter: parent.verticalCenter
-                    icon: "close"; size: 14; tip: "Remove rule"
+                    icon: "close"; size: 14; tip: qsTr("Remove rule")
                     onClicked: { rulesModel.remove(ruleRow.index); dlg.update() }
                 }
             }
         }
-        PillButton { text: "Add rule"; height: 32; onClicked: dlg.addRule() }
+        PillButton { text: qsTr("Add rule"); height: 32; onClicked: dlg.addRule() }
         Row {
             spacing: 8
-            Text { anchors.verticalCenter: parent.verticalCenter; text: "Order"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+            Text { anchors.verticalCenter: parent.verticalCenter; text: qsTr("Order"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
             StyledCombo {
                 width: 200
                 model: dlg.schema.sorts
@@ -192,12 +192,12 @@ Dialog {
                 currentIndex: dlg.schema.sorts.findIndex(s => s.key === dlg.sortKey)
                 onActivated: { dlg.sortKey = dlg.schema.sorts[currentIndex].key; dlg.update() }
             }
-            Text { anchors.verticalCenter: parent.verticalCenter; text: "Limit to"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+            Text { anchors.verticalCenter: parent.verticalCenter; text: qsTr("Limit to"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
             TextField {
                 id: limitField
                 width: 80
                 height: 38
-                placeholderText: "no limit"
+                placeholderText: qsTr("no limit")
                 selectByMouse: true
                 validator: IntValidator { bottom: 0; top: 100000 }
                 onTextEdited: dlg.update()
@@ -211,7 +211,7 @@ Dialog {
             wrapMode: Text.WordWrap
             readonly property int matches: dlg.matches
             text: matches < 0 ? userLib.describeRules(dlg.rulesJson)
-                              : userLib.describeRules(dlg.rulesJson) + " — " + Theme.num(matches) + (matches === 1 ? " song now" : " songs now")
+                              : userLib.describeRules(dlg.rulesJson) + " — " + Theme.num(matches) + (matches === 1 ? qsTr(" song now") : qsTr(" songs now"))
             color: matches < 0 ? Theme.error : Theme.textDim
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize(13)

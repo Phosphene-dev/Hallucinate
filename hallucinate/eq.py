@@ -28,6 +28,15 @@ PRESETS = {
     "Electronic": [5, 4, 1, 0, -2, 2, 1, 1, 4, 5],
     "Loudness": [6, 4, 0, 0, -1, 0, -1, 0, 4, 2],
 }
+# The presets' names as people read them (the keys above stay English: they're saved in settings and sent by the
+# web remote). Listed for the translation catalogues; player.eqPresetLabel looks them up.
+from PySide6.QtCore import QT_TRANSLATE_NOOP  # noqa: E402
+
+_LABELS = [QT_TRANSLATE_NOOP("Equalizer", "Flat"), QT_TRANSLATE_NOOP("Equalizer", "Bass boost"),
+           QT_TRANSLATE_NOOP("Equalizer", "Treble boost"), QT_TRANSLATE_NOOP("Equalizer", "Vocal"),
+           QT_TRANSLATE_NOOP("Equalizer", "Rock"), QT_TRANSLATE_NOOP("Equalizer", "Pop"),
+           QT_TRANSLATE_NOOP("Equalizer", "Jazz"), QT_TRANSLATE_NOOP("Equalizer", "Classical"),
+           QT_TRANSLATE_NOOP("Equalizer", "Electronic"), QT_TRANSLATE_NOOP("Equalizer", "Loudness")]
 MAX_GAIN_DB = 12.0
 TAPS = 4097
 

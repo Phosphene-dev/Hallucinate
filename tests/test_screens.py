@@ -152,7 +152,11 @@ def app_window(qapp, tmp_path, monkeypatch, request):
     from hallucinate.webserver import WebRemote
 
     objects["webRemote"] = WebRemote(tmp_path / "data", tmp_path / "thumbs", player, library, user_lib)
+    from hallucinate.i18n import Translations
+
+    objects["i18n"] = Translations(qapp)
     engine = QQmlApplicationEngine()
+    objects["i18n"].setEngine(engine)
     for key, value in objects.items():
         engine.rootContext().setContextProperty(key, value)
     from pathlib import Path

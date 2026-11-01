@@ -75,7 +75,7 @@ Rectangle {
     Accessible.role: Accessible.ListItem
     Accessible.name: title + (artist.length ? ", " + artist : "") +
                      (Rows.showTrackInfo && audioFormat.length ? ", " + audioFormat + " audio" : "") +
-                     (quality.showExplicit ? ", explicit" : "") + (quality.showHiRes ? ", Hi-Res" : "")
+                     (quality.showExplicit ? qsTr(", explicit") : "") + (quality.showHiRes ? qsTr(", Hi-Res") : "")
     Accessible.onPressAction: row.activated()
     Accessible.selected: row.selected
     Rectangle { anchors.fill: parent; anchors.margins: -2; radius: Theme.radiusSmall; color: "transparent"; border.width: 2; border.color: Theme.accent; visible: row.activeFocus }
@@ -247,7 +247,7 @@ Rectangle {
         icon: "plus"; size: 14
         opacity: row.showButtons ? 1 : 0
         activeFocusOnTab: false
-        tip: "Add to queue"
+        tip: qsTr("Add to queue")
         // says so: with the queue panel closed, nothing else on screen changes
         onClicked: { row.enqueue(); Nav.notify("“" + row.title + "” added to the queue") }
     }

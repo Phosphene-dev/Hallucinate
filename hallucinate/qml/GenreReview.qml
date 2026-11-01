@@ -13,7 +13,7 @@ Dialog {
     width: Math.min(720, (parent ? parent.width : 720) - 40)
     height: Math.min(640, (parent ? parent.height : 640) - 60)
     modal: true
-    title: "Genres found online"
+    title: qsTr("Genres found online")
     standardButtons: Dialog.Save | Dialog.Cancel
     property int kept: 0
     function recount() { var n = 0; for (var i = 0; i < rows.count; i++) if (rows.get(i).keep) n++; kept = n }
@@ -57,7 +57,7 @@ Dialog {
             if (r.keep && r.genre.trim().length) out.push({ album_key: r.albumKey, genre: r.genre.trim() })
         }
         metaEditor.saveGenres(out)
-        Nav.notify(out.length === 1 ? "Saving 1 album's genre" : "Saving genres for " + Theme.num(out.length) + " albums")
+        Nav.notify(out.length === 1 ? qsTr("Saving 1 album's genre") : "Saving genres for " + Theme.num(out.length) + " albums")
     }
 
     Column {
@@ -68,17 +68,17 @@ Dialog {
             textFormat: Text.PlainText
             width: parent.width
             wrapMode: Text.WordWrap
-            text: "Ticked albums get their genres written to every song; the first is the main one. Click a genre to add "
+            text: qsTr("Ticked albums get their genres written to every song; the first is the main one. Click a genre to add ")
                   + "or remove it, or type your own (separate several with “;”). Genres marked “the artist's” came from "
                   + "the artist because no source has any for the album, so they start unticked."
             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
         }
         Row {
             spacing: 8
-            PillButton { height: 30; text: "Tick all"; onClicked: { for (var i = 0; i < rows.count; i++) dlg.setKeep(i, true) } }
-            PillButton { height: 30; text: "Untick all"; onClicked: { for (var i = 0; i < rows.count; i++) dlg.setKeep(i, false) } }
+            PillButton { height: 30; text: qsTr("Tick all"); onClicked: { for (var i = 0; i < rows.count; i++) dlg.setKeep(i, true) } }
+            PillButton { height: 30; text: qsTr("Untick all"); onClicked: { for (var i = 0; i < rows.count; i++) dlg.setKeep(i, false) } }
             PillButton {
-                height: 30; text: "Discard these"
+                height: 30; text: qsTr("Discard these")
                 onClicked: { metaEditor.clearGenreProposals(); dlg.close() }
             }
         }
@@ -119,8 +119,8 @@ Dialog {
                 }
                 Text {
                     textFormat: Text.PlainText; width: parent.width; elide: Text.ElideRight
-                    text: [row.model.artist, row.model.songs === 1 ? "1 song" : Theme.num(row.model.songs) + " songs",
-                           row.model.fromArtist ? "the artist's genre" : (row.model.sources ? "from " + row.model.sources : "")]
+                    text: [row.model.artist, row.model.songs === 1 ? qsTr("1 song") : Theme.num(row.model.songs) + " songs",
+                           row.model.fromArtist ? qsTr("the artist's genre") : (row.model.sources ? "from " + row.model.sources : "")]
                           .filter(function (x) { return x }).join("  ·  ")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11)
                 }
@@ -149,7 +149,7 @@ Dialog {
                         text: modelData
                         selected: dlg.indexIn(row.picked, modelData) >= 0
                         onClicked: dlg.toggle(row.index, modelData)
-                        Accessible.name: (selected ? "Remove " : "Add ") + modelData + " for " + row.model.album
+                        Accessible.name: (selected ? qsTr("Remove ") : "Add ") + modelData + " for " + row.model.album
                     }
                 }
             }

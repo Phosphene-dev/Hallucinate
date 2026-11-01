@@ -19,8 +19,8 @@ Item {
     readonly property bool dayPicked: period.indexOf("day:") === 0
     readonly property bool filtered: period !== "all" || query.length > 0 || artist.length > 0 || source.length > 0
     readonly property var periods: [
-        { id: "all", t: "All time" }, { id: "today", t: "Today" }, { id: "7d", t: "7 days" },
-        { id: "30d", t: "30 days" }, { id: "month", t: "This month" }, { id: "year", t: "This year" }
+        { id: "all", t: qsTr("All time") }, { id: "today", t: qsTr("Today") }, { id: "7d", t: qsTr("7 days") },
+        { id: "30d", t: qsTr("30 days") }, { id: "month", t: qsTr("This month") }, { id: "year", t: qsTr("This year") }
     ]
 
     function reload() { userLib.loadHistory(query, period, artist, source) }
@@ -35,8 +35,8 @@ Item {
         var day = dateOf(iso), today = new Date()
         today.setHours(12, 0, 0, 0)
         var age = Math.round((today - day) / 86400000)
-        if (age === 0) return "Today"
-        if (age === 1) return "Yesterday"
+        if (age === 0) return qsTr("Today")
+        if (age === 1) return qsTr("Yesterday")
         if (age > 1 && age < 7) return Qt.formatDate(day, "dddd")
         return Qt.formatDate(day, day.getFullYear() === today.getFullYear() ? "dddd d MMMM" : "dddd d MMMM yyyy")
     }
@@ -47,7 +47,7 @@ Item {
     }
     function plural(n, one, many) { return Theme.num(n) + " " + (n === 1 ? one : many) }
     function sourceName(s) {
-        return s === "lastfm" ? "Last.fm" : s === "listenbrainz" ? "ListenBrainz" : s
+        return s === "lastfm" ? qsTr("Last.fm") : s === "listenbrainz" ? qsTr("ListenBrainz") : s
     }
 
     ListView {
@@ -78,7 +78,7 @@ Item {
                 width: parent.width
                 Text {
                     textFormat: Text.PlainText
-                    text: "History"
+                    text: qsTr("History")
                     color: Theme.text
                     font.family: Theme.displayFamily
                     font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale
@@ -89,7 +89,7 @@ Item {
                     objectName: "historySummary"
                     width: parent.width
                     wrapMode: Text.Wrap
-                    text: (page.summary.plays || 0) === 0 ? (page.filtered ? "No listens match." : "Nothing played yet.")
+                    text: (page.summary.plays || 0) === 0 ? (page.filtered ? qsTr("No listens match.") : qsTr("Nothing played yet."))
                         : [page.plural(page.summary.plays, "play", "plays"), page.fmtListening(page.summary.seconds || 0),
                            page.plural(page.summary.songs, "song", "songs"), page.plural(page.summary.artists, "artist", "artists"),
                            page.plural(page.summary.days, "day", "days")].join("  ·  ")
@@ -111,7 +111,7 @@ Item {
                         Text {
                             textFormat: Text.PlainText
                             width: parent.width - streakText.width
-                            text: "The last 12 months"
+                            text: qsTr("The last 12 months")
                             color: Theme.text
                             font.family: Theme.displayFamily
                             font.pixelSize: (Theme.fontSize(15)) * Theme.displayScale
@@ -121,8 +121,8 @@ Item {
                             textFormat: Text.PlainText
                             id: streakText
                             readonly property var heat: page.info.heatmap || ({})
-                            text: (heat.streak || 0) > 1 ? heat.streak + "-day streak  ·  " + page.plural(heat.activeDays || 0, "active day", "active days")
-                                : page.plural(heat.activeDays || 0, "active day", "active days")
+                            text: (heat.streak || 0) > 1 ? heat.streak + "-day streak  ·  " + page.plural(heat.activeDays || 0, qsTr("active day"), qsTr("active days"))
+                                : page.plural(heat.activeDays || 0, qsTr("active day"), qsTr("active days"))
                             color: Theme.accent
                             font.family: Theme.fontFamily
                             font.pixelSize: Theme.fontSize(13)
@@ -148,7 +148,7 @@ Item {
                     }
                     Text {
                         textFormat: Text.PlainText
-                        text: "Click a day to see what you played."
+                        text: qsTr("Click a day to see what you played.")
                         color: Theme.textDim
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(12)
@@ -165,7 +165,7 @@ Item {
                     width: 260
                     height: 34
                     text: page.query
-                    placeholderText: "Search history"
+                    placeholderText: qsTr("Search history")
                     placeholderTextColor: Theme.textDim
                     color: Theme.text
                     font.family: Theme.fontFamily
@@ -212,7 +212,7 @@ Item {
                 StyledCombo {
                     width: 170
                     height: 34
-                    model: ["All sources", "Played here", "Imported"]
+                    model: [qsTr("All sources"), qsTr("Played here"), qsTr("Imported")]
                     currentIndex: ["", "local", "imported"].indexOf(page.source)
                     onActivated: page.source = ["", "local", "imported"][currentIndex]
                 }
@@ -401,13 +401,13 @@ Item {
                         textFormat: Text.PlainText
                         id: badge
                         anchors.centerIn: parent
-                        text: !row.available ? "Not in library" : page.sourceName(row.model.source)
+                        text: !row.available ? qsTr("Not in library") : page.sourceName(row.model.source)
                         color: Theme.textDim
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(11)
                     }
                     ToolTip.visible: badgeMouse.containsMouse
-                    ToolTip.text: row.model.source === "local" ? "This file is no longer in your library"
+                    ToolTip.text: row.model.source === "local" ? qsTr("This file is no longer in your library")
                                   : "Imported from " + page.sourceName(row.model.source)
                     MouseArea { id: badgeMouse; anchors.fill: parent; hoverEnabled: true }
                 }
@@ -426,7 +426,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     icon: "close"
                     size: 14
-                    tip: "Remove from history"
+                    tip: qsTr("Remove from history")
                     opacity: rowHover.hovered || activeFocus ? 1 : 0
                     onClicked: userLib.removeHistoryEntry(row.model.id)
                 }
@@ -446,10 +446,10 @@ Item {
                 anchors.centerIn: parent
                 visible: list.count === 0 && !page.info.loading
                 icon: "history"
-                title: page.filtered ? "No listens match" : "Nothing played yet"
-                hint: page.filtered ? "Try a longer period, or clear the search and filters."
-                                    : "Every song you play shows up here, grouped by day."
-                actionText: page.filtered ? "Clear filters" : ""
+                title: page.filtered ? qsTr("No listens match") : qsTr("Nothing played yet")
+                hint: page.filtered ? qsTr("Try a longer period, or clear the search and filters.")
+                                    : qsTr("Every song you play shows up here, grouped by day.")
+                actionText: page.filtered ? qsTr("Clear filters") : ""
                 onAction: { page.query = ""; page.artist = ""; page.source = ""; page.period = "all"; page.reload() }
             }
         }

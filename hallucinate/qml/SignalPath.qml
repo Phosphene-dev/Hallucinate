@@ -34,7 +34,7 @@ Item {
             }
             Text {
                 textFormat: Text.PlainText
-                text: sp.path.untouched ? "Untouched" : "Processed"
+                text: sp.path.untouched ? qsTr("Untouched") : qsTr("Processed")
                 color: sp.path.untouched ? (sp.light ? "white" : Theme.accent) : (sp.light ? Qt.rgba(1, 1, 1, 0.75) : Theme.textDim)
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(10)
@@ -74,7 +74,7 @@ Item {
             spacing: 0
             Text {
                 textFormat: Text.PlainText
-                text: "Signal path"
+                text: qsTr("Signal path")
                 color: Theme.text
                 font.family: Theme.displayFamily
                 font.pixelSize: (Theme.fontSize(15)) * Theme.displayScale
@@ -85,7 +85,7 @@ Item {
                 textFormat: Text.PlainText
                 width: 294
                 text: sp.path.untouched
-                    ? "Nothing between the file and the output changes the sound."
+                    ? qsTr("Nothing between the file and the output changes the sound.")
                     : (sp.path.summary || "") + "."
                 color: sp.path.untouched ? Theme.accent : Theme.textDim
                 wrapMode: Text.Wrap
@@ -110,7 +110,7 @@ Item {
                     // A step that leaves the sound alone is marked in the accent, as "Untouched" is; one that changes it
                     // in the grey of "Processed" (the tester found the accent on what spoils it backwards)
                     Rectangle {
-                        objectName: modelData.active ? "signalStepChanging" : "signalStep"
+                        objectName: modelData.active ? qsTr("signalStepChanging") : qsTr("signalStep")
                         x: 0; y: 15; width: 12; height: 12; radius: Theme.round(6)
                         color: modelData.active ? Theme.surface : Theme.accent
                         border.width: 2

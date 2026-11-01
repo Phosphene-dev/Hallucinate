@@ -132,7 +132,7 @@ Item {
                         spacing: 8
                         Text {
                             textFormat: Text.PlainText
-                            text: "ARTIST"
+                            text: qsTr("ARTIST")
                             color: Theme.accent
                             font.family: Theme.fontFamily
                             font.pixelSize: Theme.fontSize(11)
@@ -174,21 +174,21 @@ Item {
                             width: parent.width
                             spacing: 10
                             topPadding: 10
-                            PillButton { primary: true; text: "Play all"; onClicked: library.playArtist(page.artistName, false) }
+                            PillButton { primary: true; text: qsTr("Play all"); onClicked: library.playArtist(page.artistName, false) }
                             PillButton {
-                                text: "Shuffle"
+                                text: qsTr("Shuffle")
                                 onClicked: { player.setShuffle(true); library.playArtist(page.artistName, true) }
                             }
                             PillButton {
                                 objectName: "artistRadio"
-                                text: "Radio"
+                                text: qsTr("Radio")
                                 onClicked: library.startArtistRadio(page.artistName)
                             }
                             IconButton {
                                 id: artistMoreButton
                                 objectName: "artistPageMore"
                                 height: 38
-                                icon: "more"; size: 18; tip: "More: play next, add to a playlist, remove…"
+                                icon: "more"; size: 18; tip: qsTr("More: play next, add to a playlist, remove…")
                                 onClicked: Nav.artistMenu(page.artistName)
                             }
                         }
@@ -221,7 +221,7 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 height: 32; verticalAlignment: Text.AlignVCenter
-                                text: "About"
+                                text: qsTr("About")
                                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(18)) * Theme.displayScale; font.weight: Font.DemiBold
                             }
                             Text {
@@ -229,7 +229,7 @@ Item {
                                 objectName: "bioSource"
                                 height: 32; verticalAlignment: Text.AlignVCenter
                                 visible: text.length > 0 && !about.editing
-                                text: about.bio.own ? "written by you" : (about.bio.source ? "from " + about.bio.source : "")
+                                text: about.bio.own ? qsTr("written by you") : (about.bio.source ? "from " + about.bio.source : "")
                                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                                 font.underline: !about.bio.own && sourceMouse.containsMouse
                                 MouseArea {
@@ -246,7 +246,7 @@ Item {
                                 objectName: "bioMenuButton"
                                 visible: !about.editing
                                 height: 32
-                                icon: "more"; size: 16; tip: "Bio options: write your own, look up again, choose the source"
+                                icon: "more"; size: 16; tip: qsTr("Bio options: write your own, look up again, choose the source")
                                 onClicked: bioMenu.popup(bioMenuButton, 0, bioMenuButton.height + 4)
                             }
                             Menu {
@@ -254,7 +254,7 @@ Item {
                                 objectName: "bioMenu"
                                 MenuItem {
                                     objectName: "editBio"
-                                    text: about.bio.own ? "Edit your bio" : "Write your own"
+                                    text: about.bio.own ? qsTr("Edit your bio") : qsTr("Write your own")
                                     icon.name: "edit"
                                     onTriggered: about.startEditing()
                                 }
@@ -263,7 +263,7 @@ Item {
                                     visible: !about.bio.own
                                     height: visible ? implicitHeight : 0
                                     enabled: !shell.offlineMode && !about.bio.busy
-                                    text: about.bio.text ? "Look up again" : "Look one up"
+                                    text: about.bio.text ? qsTr("Look up again") : qsTr("Look one up")
                                     icon.name: "search"
                                     onTriggered: artistBios.refresh(page.artistName)
                                 }
@@ -271,19 +271,19 @@ Item {
                                     objectName: "clearBioMenu"
                                     visible: about.bio.own === true
                                     height: visible ? implicitHeight : 0
-                                    text: "Remove yours, use the one found online"
+                                    text: qsTr("Remove yours, use the one found online")
                                     icon.name: "remove"
                                     onTriggered: { artistBios.setOwn(page.artistName, ""); artistBios.ensure(page.artistName) }
                                 }
                                 Menu {
                                     id: bioSourceMenu
                                     objectName: "bioPick"
-                                    title: "Bio from"
+                                    title: qsTr("Bio from")
                                     icon.name: "artist"
                                     Repeater {
-                                        model: [["", "Usual sources"], ["Wikipedia", "Wikipedia"],
-                                                ["Last.fm", "Last.fm" + (sources.lastfmAvailable ? "" : " (not set up)")],
-                                                ["Discogs", "Discogs" + (sources.discogsConnected ? "" : " (not set up)")]]
+                                        model: [["", qsTr("Usual sources")], ["Wikipedia", "Wikipedia"],  // i18n: keep (a source's name, and its key)
+                                                ["Last.fm", sources.lastfmAvailable ? "Last.fm" : qsTr("%1 (not set up)").arg("Last.fm")],  // i18n: keep (the key)
+                                                ["Discogs", sources.discogsConnected ? "Discogs" : qsTr("%1 (not set up)").arg("Discogs")]]  // i18n: keep (the key)
                                         MenuItem {
                                             required property var modelData
                                             text: modelData[1]
@@ -307,9 +307,9 @@ Item {
                             }
                             visible: !about.editing
                             text: about.bio.text ? about.bio.text
-                                  : about.bio.busy ? "Looking for a bio…"
-                                  : shell.offlineMode ? "No bio yet. Offline mode is on, so none can be looked up."
-                                  : "No bio yet. Write your own, or look one up, from the ⋯ menu."
+                                  : about.bio.busy ? qsTr("Looking for a bio…")
+                                  : shell.offlineMode ? qsTr("No bio yet. Offline mode is on, so none can be looked up.")
+                                  : qsTr("No bio yet. Write your own, or look one up, from the ⋯ menu.")
                             color: about.bio.text ? Theme.text : Theme.textDim
                             wrapMode: Text.Wrap
                             maximumLineCount: about.expanded ? 400 : 6
@@ -321,7 +321,7 @@ Item {
                             objectName: "bioMore"
                             visible: !about.editing && (about.bio.text || "").length > 0 && (about.expanded || bioMeasure.lineCount > 6)
                             height: 30
-                            text: about.expanded ? "Show less" : "Show more"
+                            text: about.expanded ? qsTr("Show less") : qsTr("Show more")
                             onClicked: about.expanded = !about.expanded
                         }
                         Text {  // the whole bio laid out unseen, to tell whether "Show more" has anything to show
@@ -358,15 +358,15 @@ Item {
                             spacing: 10
                             PillButton {
                                 objectName: "saveBio"
-                                primary: true; height: 32; text: "Save"
+                                primary: true; height: 32; text: qsTr("Save")
                                 onClicked: { artistBios.setOwn(page.artistName, bioEdit.text); about.editing = false }
                             }
-                            PillButton { height: 32; text: "Cancel"; onClicked: about.editing = false }
+                            PillButton { height: 32; text: qsTr("Cancel"); onClicked: about.editing = false }
                             PillButton {
                                 objectName: "clearBio"
                                 visible: about.bio.own
                                 height: 32
-                                text: "Remove mine, use the one found online"
+                                text: qsTr("Remove mine, use the one found online")
                                 onClicked: { artistBios.setOwn(page.artistName, ""); about.editing = false; artistBios.ensure(page.artistName) }
                             }
                         }
@@ -393,12 +393,12 @@ Item {
                         Stat {
                             visible: (page.profile.rank || 0) > 0
                             value: "#" + page.profile.rank
-                            label: "among your artists"
+                            label: qsTr("among your artists")
                         }
                         Stat {
                             visible: (page.profile.firstPlayed || 0) > 0
                             value: page.fmtDate(page.profile.firstPlayed)
-                            label: "first listen"
+                            label: qsTr("first listen")
                         }
                     }
                     // plays per month, last 12 months
@@ -443,7 +443,7 @@ Item {
                     width: col.width
                     spacing: 4
                     visible: (page.profile.topTracks || []).length > 0
-                    SectionHeader { title: page.profile.plays ? "Most played" : "Songs to start with" }
+                    SectionHeader { title: page.profile.plays ? qsTr("Most played") : qsTr("Songs to start with") }
                     Item { width: 1; height: 6 }
                     Repeater {
                         model: page.profile.topTracks || []
@@ -480,7 +480,7 @@ Item {
                     width: col.width
                     spacing: 14
                     visible: (page.profile.discography || []).length > 0
-                    SectionHeader { title: "Discography"; subtitle: page.yearsActive() }
+                    SectionHeader { title: qsTr("Discography"); subtitle: page.yearsActive() }
                     Repeater {
                         model: page.profile.discography || []
                         Item {
@@ -519,7 +519,7 @@ Item {
                                         albumKey: modelData.album_key
                                         title: modelData.album
                                         artist: page.artistName
-                                        subtitle: Theme.num(modelData.n) + (modelData.n === 1 ? " song" : " songs") + "  ·  " + modelData.durText
+                                        subtitle: Theme.num(modelData.n) + (modelData.n === 1 ? qsTr(" song") : qsTr(" songs")) + "  ·  " + modelData.durText
                                         artUrl: modelData.artUrl
                                     }
                                 }
@@ -533,7 +533,7 @@ Item {
                     width: col.width
                     spacing: 12
                     visible: (page.profile.appearsOn || []).length > 0
-                    SectionHeader { title: "Appears on" }
+                    SectionHeader { title: qsTr("Appears on") }
                     Flow {
                         width: col.width
                         spacing: 18
@@ -578,15 +578,15 @@ Item {
                     Row {
                         spacing: 14
                         SectionHeader {
-                            title: "Similar artists"
-                            subtitle: similarBox.found.busy ? "Asking Last.fm…" : "From Last.fm"
+                            title: qsTr("Similar artists")
+                            subtitle: similarBox.found.busy ? qsTr("Asking Last.fm…") : qsTr("From Last.fm")
                         }
                         Text {
                             textFormat: Text.PlainText
                             objectName: "similarMix"
                             visible: similarBox.have.length > 0
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "Play a mix"
+                            text: qsTr("Play a mix")
                             color: Theme.accent
                             font.family: Theme.fontFamily
                             font.pixelSize: Theme.fontSize(13)
@@ -611,7 +611,7 @@ Item {
                                 selectionSource: similarBox.have.slice(0, 12)
                                 cardWidth: 130
                                 name: modelData.name
-                                subtitle: Theme.num(modelData.albums) + (modelData.albums === 1 ? " album" : " albums")
+                                subtitle: Theme.num(modelData.albums) + (modelData.albums === 1 ? qsTr(" album") : qsTr(" albums"))
                                 artUrl: modelData.artUrl || ""
                             }
                         }
@@ -619,7 +619,7 @@ Item {
                     Text {
                         textFormat: Text.PlainText
                         visible: similarBox.discover.length > 0
-                        text: similarBox.have.length ? "Not in your library" : "None of them are in your library yet"
+                        text: similarBox.have.length ? qsTr("Not in your library") : qsTr("None of them are in your library yet")
                         color: Theme.textDim
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(12.5)
@@ -647,17 +647,17 @@ Item {
                     spacing: 4
                     Row {
                         spacing: 14
-                        SectionHeader { title: "All songs" }
+                        SectionHeader { title: qsTr("All songs") }
                         Text {
                             textFormat: Text.PlainText
                             anchors.verticalCenter: parent.verticalCenter
-                            text: page.allSongs ? "Hide" : "Show " + Theme.num(page.tracksModel.count)
+                            text: page.allSongs ? qsTr("Hide") : "Show " + Theme.num(page.tracksModel.count)
                             color: Theme.accent
                             font.family: Theme.fontFamily
                             font.pixelSize: Theme.fontSize(13)
                             font.weight: Font.DemiBold
                             LinkArea {
-                                name: page.allSongs ? "Hide all songs" : "Show all " + Theme.num(page.tracksModel.count) + " songs"
+                                name: page.allSongs ? qsTr("Hide all songs") : "Show all " + Theme.num(page.tracksModel.count) + " songs"
                                 onClicked: page.allSongs = !page.allSongs
                             }
                         }

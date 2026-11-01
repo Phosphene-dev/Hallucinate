@@ -57,7 +57,7 @@ Popup {
         spacing: 12
         Text {
             textFormat: Text.PlainText
-            text: "Your own accent colour"
+            text: qsTr("Your own accent colour")
             color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
         }
         // saturation (across) and brightness (up)
@@ -136,7 +136,7 @@ Popup {
                         validator: IntValidator { bottom: 0; top: 255 }
                         selectByMouse: true
                         horizontalAlignment: TextInput.AlignHCenter
-                        Accessible.name: { return { R: "Red", G: "Green", B: "Blue" }[modelData.n] + ", 0 to 255" }
+                        Accessible.name: { return { R: qsTr("Red"), G: qsTr("Green"), B: qsTr("Blue") }[modelData.n] + ", 0 to 255" }
                         onEditingFinished: {
                             var c = cp.current, v = Math.max(0, Math.min(255, parseInt(text) || 0)) / 255
                             var rgb = { r: c.r, g: c.g, b: c.b }
@@ -148,7 +148,7 @@ Popup {
             }
             Column {
                 spacing: 2
-                Text { textFormat: Text.PlainText; text: "Hex"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11) }
+                Text { textFormat: Text.PlainText; text: qsTr("Hex"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11) }
                 TextField {
                     objectName: "colorHex"
                     width: 92; height: 30
@@ -182,8 +182,8 @@ Popup {
             spacing: 8
             layoutDirection: Qt.RightToLeft
             width: 284
-            PillButton { objectName: "colorUse"; primary: true; text: "Use"; onClicked: cp.use() }
-            PillButton { text: "Cancel"; onClicked: cp.cancel() }
+            PillButton { objectName: "colorUse"; primary: true; text: qsTr("Use"); onClicked: cp.use() }
+            PillButton { text: qsTr("Cancel"); onClicked: cp.cancel() }
         }
     }
 }

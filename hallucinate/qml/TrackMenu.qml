@@ -46,8 +46,8 @@ Menu {
         if (pid < 0 || !rows.length) return
         var removed = rows.map(function (i) { return model.get(i).path })
         rows.forEach(function (i) { userLib.removeFromPlaylist(i) })
-        Nav.notifyAction(rows.length === 1 ? "Removed from the playlist" : Theme.num(rows.length) + " songs removed from the playlist",
-                         "Undo", function () {
+        Nav.notifyAction(rows.length === 1 ? qsTr("Removed from the playlist") : Theme.num(rows.length) + " songs removed from the playlist",
+                         qsTr("Undo"), function () {
             userLib.addPathsToPlaylist(pid, removed)  // back at the end...
             if (userLib.currentPlaylist !== pid) return
             var kept = n - rows.length  // ...then each to its old place, first to last
@@ -71,7 +71,7 @@ Menu {
             textFormat: Text.PlainText
             x: 14
             anchors.verticalCenter: parent.verticalCenter
-            text: "Rating"
+            text: qsTr("Rating")
             color: Theme.textDim
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize(13)
@@ -87,34 +87,34 @@ Menu {
         objectName: "trackCopyLink"
         visible: songMenu.stream && songMenu.single && /^https?:\/\//.test(songMenu.path)
         height: visible ? implicitHeight : 0
-        text: "Copy stream link"; icon.name: "playlist"
-        onTriggered: { shell.copyText(songMenu.path); Nav.notify("Stream link copied") }
+        text: qsTr("Copy stream link"); icon.name: "playlist"
+        onTriggered: { shell.copyText(songMenu.path); Nav.notify(qsTr("Stream link copied")) }
     }
     MenuItem {
         visible: !songMenu.stream; height: visible ? implicitHeight : 0
-        text: "Play"; icon.name: "play"; onTriggered: { userLib.playPaths(songMenu.paths); songMenu.done("") }
+        text: qsTr("Play"); icon.name: "play"; onTriggered: { userLib.playPaths(songMenu.paths); songMenu.done("") }
     }
     MenuItem {
         visible: !songMenu.stream; height: visible ? implicitHeight : 0
-        text: "Play next"; icon.name: "next"
+        text: qsTr("Play next"); icon.name: "next"
         onTriggered: { userLib.playNextPaths(songMenu.paths); songMenu.done(songMenu.single ? "" : songMenu.what + " will play next") }
     }
     MenuItem {
         visible: !songMenu.stream; height: visible ? implicitHeight : 0
-        text: "Add to queue"; icon.name: "queue"
+        text: qsTr("Add to queue"); icon.name: "queue"
         onTriggered: { userLib.enqueuePaths(songMenu.paths); songMenu.done(songMenu.what + " added to the queue") }
     }
     MenuItem {
         readonly property bool liked: userLib.likesRevision >= 0 && userLib.allLiked(songMenu.paths)
         visible: !songMenu.stream && shell.features.liked !== false; height: visible ? implicitHeight : 0
-        text: liked ? "Remove from Liked Songs" : "Add to Liked Songs"
+        text: liked ? qsTr("Remove from Liked Songs") : qsTr("Add to Liked Songs")
         icon.name: "heart"
         onTriggered: { userLib.setLikedPaths(songMenu.paths, !liked); songMenu.done("") }
     }
     Menu {
         id: plMenu
         objectName: "addToPlaylistMenu"
-        title: "Add to playlist"
+        title: qsTr("Add to playlist")
         icon.name: "playlist"
         enabled: !songMenu.stream
         // which playlists already hold the song(s): ticked, and a click takes them out (issue 101)
@@ -123,7 +123,7 @@ Menu {
             held = userLib.playlistCounts(songMenu.paths)
             for (var i = 0; i < count; i++) { var it = itemAt(i); if (it && it.have !== undefined) it.checked = it.full }
         }
-        MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: newDlg.open() }
+        MenuItem { text: qsTr("New playlist…"); icon.name: "plus"; onTriggered: newDlg.open() }
         MenuSeparator {}
         Instantiator {
             model: userLib.playlists
@@ -149,7 +149,7 @@ Menu {
     MenuItem {
         visible: songMenu.single && (songMenu.info.album_key || "").length > 0 && songMenu.context !== "album"
         height: visible ? implicitHeight : 0
-        text: "Go to album"
+        text: qsTr("Go to album")
         icon.name: "album"
         onTriggered: Nav.openAlbum(songMenu.info.album_key)
     }
@@ -197,14 +197,14 @@ Menu {
         objectName: "trackKeep"
         visible: songMenu.copies.servers > 0 && songMenu.copies.kept + songMenu.copies.waiting < songMenu.copies.servers
         height: visible ? implicitHeight : 0
-        text: "Keep on this computer"; icon.name: "download"
+        text: qsTr("Keep on this computer"); icon.name: "download"
         onTriggered: serverCopies.keep(songMenu.paths)
     }
     MenuItem {
         objectName: "trackUnkeep"
         visible: songMenu.copies.kept + songMenu.copies.waiting > 0
         height: visible ? implicitHeight : 0
-        text: songMenu.copies.waiting > 0 && songMenu.copies.kept === 0 ? "Stop keeping on this computer" : "Remove the copies from this computer"
+        text: songMenu.copies.waiting > 0 && songMenu.copies.kept === 0 ? qsTr("Stop keeping on this computer") : qsTr("Remove the copies from this computer")
         icon.name: "remove"
         onTriggered: serverCopies.remove(songMenu.paths)
     }
@@ -213,7 +213,7 @@ Menu {
         visible: songMenu.single && !songMenu.stream && !songMenu.onServer
         height: visible ? implicitHeight : 0
         enabled: songMenu.info.exists === true
-        text: "Show in folder"
+        text: qsTr("Show in folder")
         icon.name: "folder"
         onTriggered: library.showInFolder(songMenu.path)
     }
@@ -222,13 +222,13 @@ Menu {
         visible: songMenu.single && !songMenu.stream && !songMenu.onServer
         height: visible ? implicitHeight : 0
         enabled: songMenu.info.exists === true
-        text: "Spectrum analyzer…"
+        text: qsTr("Spectrum analyzer…")
         icon.name: "wave"
         onTriggered: Nav.openSpectrum(songMenu.path)
     }
     MenuItem {
         visible: !songMenu.stream; height: visible ? implicitHeight : 0
-        text: "Edit tags…"
+        text: qsTr("Edit tags…")
         icon.name: "edit"
         // CUE sheet songs are edited in the .cue file, and a server's songs on the server
         enabled: !songMenu.onServer && songMenu.paths.every(function (p) { return !/\.[A-Za-z0-9]+#\d+$/.test(p) })
@@ -238,15 +238,15 @@ Menu {
         objectName: "trackRemoveFromQueue"
         visible: songMenu.single && songMenu.context === "queue"
         height: visible ? implicitHeight : 0
-        text: "Remove from the queue"
+        text: qsTr("Remove from the queue")
         icon.name: "close"
-        onTriggered: { player.removeAt(songMenu.index); Nav.notifyAction("Removed from the queue", "Undo", function () { player.undoQueue() }) }
+        onTriggered: { player.removeAt(songMenu.index); Nav.notifyAction(qsTr("Removed from the queue"), qsTr("Undo"), function () { player.undoQueue() }) }
     }
     MenuItem {
         objectName: "trackRemoveFromPlaylist"
         visible: songMenu.context === "playlist"
         height: visible ? implicitHeight : 0
-        text: "Remove from this playlist"
+        text: qsTr("Remove from this playlist")
         icon.name: "remove"
         icon.color: Theme.error
         onTriggered: songMenu.single ? songMenu.removeFromPlaylist([songMenu.index]) : songMenu.removePathsFromPlaylist(songMenu.paths)
@@ -255,13 +255,13 @@ Menu {
     MenuItem {
         objectName: "trackRemove"
         visible: !songMenu.stream; height: visible ? implicitHeight : 0
-        text: "Remove from library…"; icon.name: "remove"; icon.color: Theme.error
+        text: qsTr("Remove from library…"); icon.name: "remove"; icon.color: Theme.error
         onTriggered: Nav.removeSongs(songMenu.paths, songMenu.what)
     }
     MenuItem {
         objectName: "trackTrash"
         visible: !songMenu.stream && !songMenu.onServer; height: visible ? implicitHeight : 0
-        text: "Move to trash…"; icon.name: "trash"; icon.color: Theme.error
+        text: qsTr("Move to trash…"); icon.name: "trash"; icon.color: Theme.error
         enabled: !songMenu.single || songMenu.info.exists === true
         onTriggered: Nav.trashSongs(songMenu.paths, songMenu.what)
     }
@@ -271,12 +271,12 @@ Menu {
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true
-        title: "New playlist"
+        title: qsTr("New playlist")
         standardButtons: Dialog.Ok | Dialog.Cancel
         onOpened: { nf.text = ""; nf.forceActiveFocus() }
         onAccepted: if (nf.text.trim().length) { Nav.openPlaylist(userLib.addPathsToNewPlaylist(nf.text.trim(), songMenu.paths)); songMenu.done("") }
         TextField {
-            id: nf; implicitWidth: 280; placeholderText: "Playlist name"; selectByMouse: true
+            id: nf; implicitWidth: 280; placeholderText: qsTr("Playlist name"); selectByMouse: true
             onAccepted: if (text.trim().length) newDlg.accept()  // no nameless playlists
             onTextChanged: { var b = newDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
             onVisibleChanged: if (visible) { var b = newDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }

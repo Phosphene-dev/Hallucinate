@@ -157,8 +157,8 @@ QtObject {
     readonly property var nouns: ({ song: ["song", "songs"], album: ["album", "albums"], artist: ["artist", "artists"],
                                      genre: ["genre", "genres"], composer: ["composer", "composers"],
                                      folder: ["folder", "folders"], history: ["play", "plays"],
-                                     playlist: ["playlist", "playlists"], smart: ["smart playlist", "smart playlists"],
-                                     liked: ["Liked Songs", "Liked Songs"], queue: ["song in the queue", "songs in the queue"],
+                                     playlist: ["playlist", "playlists"], smart: [qsTr("smart playlist"), qsTr("smart playlists")],
+                                     liked: [qsTr("Liked Songs"), qsTr("Liked Songs")], queue: [qsTr("song in the queue"), qsTr("songs in the queue")],
                                      episode: ["episode", "episodes"], station: ["station", "stations"] })
     function summary(tight) {
         if (!count) return ""

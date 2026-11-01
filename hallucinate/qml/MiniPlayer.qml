@@ -12,7 +12,7 @@ Window {
     minimumHeight: 112
     maximumHeight: 112
     visible: shell.miniOpen
-    title: "Hallucinate — Mini"
+    title: qsTr("Hallucinate — Mini")
     flags: Qt.Window | Qt.WindowStaysOnTopHint | (shell.customTitleBar ? Qt.FramelessWindowHint : 0)
     color: Theme.panel
     onClosing: shell.showMain()
@@ -39,7 +39,7 @@ Window {
         MarqueeText {  // a long title glides to its end and back while it plays (#112)
             objectName: "miniTitle"
             Layout.fillWidth: true
-            text: player.hasTrack ? player.current.title : "Nothing playing"
+            text: player.hasTrack ? player.current.title : qsTr("Nothing playing")
             active: player.playing
             color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
         }
@@ -57,15 +57,15 @@ Window {
             readonly property bool episode: player.hasTrack && player.current.kind === "episode"
             readonly property bool live: player.hasTrack && player.current.kind === "station"
             IconButton { visible: parent.episode; icon: "skipback:" + podcasts.options.skipBack; tip: "Back " + podcasts.options.skipBack + " seconds"; onClicked: player.seekBy(-1000 * podcasts.options.skipBack) }
-            IconButton { icon: "prev"; tip: "Previous"; onClicked: player.previous() }
-            IconButton { icon: player.playing ? "pause" : "play"; tip: player.playing ? "Pause" : "Play"; size: 24; onClicked: player.toggle() }
-            IconButton { icon: "next"; tip: "Next"; onClicked: player.next() }
+            IconButton { icon: "prev"; tip: qsTr("Previous"); onClicked: player.previous() }
+            IconButton { icon: player.playing ? "pause" : "play"; tip: player.playing ? qsTr("Pause") : qsTr("Play"); size: 24; onClicked: player.toggle() }
+            IconButton { icon: "next"; tip: qsTr("Next"); onClicked: player.next() }
             IconButton { visible: parent.episode; icon: "skipfwd:" + podcasts.options.skipForward; tip: "Forward " + podcasts.options.skipForward + " seconds"; onClicked: player.seekBy(1000 * podcasts.options.skipForward) }
             Item { Layout.fillWidth: true }
             Text {
                 visible: parent.live
                 textFormat: Text.PlainText
-                text: "LIVE"
+                text: qsTr("LIVE")
                 color: Theme.accent; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); font.weight: Font.Bold
             }
             VolumeButton {  // a click mutes, the wheel turns it up and down (no room here for a slider above it)
@@ -73,7 +73,7 @@ Window {
                 Layout.alignment: Qt.AlignVCenter
                 iconSize: 16
             }
-            IconButton { icon: "expand"; tip: "Back to full window"; onClicked: shell.showMain() }
+            IconButton { icon: "expand"; tip: qsTr("Back to full window"); onClicked: shell.showMain() }
         }
         StyledSlider {
             Layout.fillWidth: true

@@ -44,22 +44,22 @@ Menu {
         else if (composer) { if (shuffle) player.setShuffle(true); library.playComposer(name, shuffle) }
         else library.playFolder(path, shuffle)
     }
-    function songCount(list) { return Theme.num(list.length) + (list.length === 1 ? " song" : " songs") }
+    function songCount(list) { return Theme.num(list.length) + (list.length === 1 ? qsTr(" song") : qsTr(" songs")) }
 
-    MenuItem { text: "Play"; icon.name: "play"; onTriggered: collectionMenu.play(false) }
-    MenuItem { text: "Shuffle"; icon.name: "shuffle"; onTriggered: collectionMenu.play(true) }
+    MenuItem { text: qsTr("Play"); icon.name: "play"; onTriggered: collectionMenu.play(false) }
+    MenuItem { text: qsTr("Shuffle"); icon.name: "shuffle"; onTriggered: collectionMenu.play(true) }
     MenuItem {
         visible: collectionMenu.artist
         height: visible ? implicitHeight : 0
-        text: "Start radio"; icon.name: "radio"
+        text: qsTr("Start radio"); icon.name: "radio"
         onTriggered: library.startArtistRadio(collectionMenu.name)
     }
-    MenuItem { text: "Play next"; icon.name: "next"; onTriggered: { var p = collectionMenu.paths(); userLib.playNextPaths(p); Nav.notify(collectionMenu.songCount(p) + " will play next") } }
-    MenuItem { text: "Add to queue"; icon.name: "queue"; onTriggered: { var p = collectionMenu.paths(); userLib.enqueuePaths(p); Nav.notify(collectionMenu.songCount(p) + " added to the queue") } }
+    MenuItem { text: qsTr("Play next"); icon.name: "next"; onTriggered: { var p = collectionMenu.paths(); userLib.playNextPaths(p); Nav.notify(collectionMenu.songCount(p) + " will play next") } }
+    MenuItem { text: qsTr("Add to queue"); icon.name: "queue"; onTriggered: { var p = collectionMenu.paths(); userLib.enqueuePaths(p); Nav.notify(collectionMenu.songCount(p) + " added to the queue") } }
     Menu {
         id: plMenu
         objectName: "addToPlaylistMenu"
-        title: "Add to playlist"
+        title: qsTr("Add to playlist")
         icon.name: "playlist"
         // which playlists already hold these songs: ticked, and a click takes them out (issue 101)
         property var held: ({})
@@ -69,7 +69,7 @@ Menu {
             held = userLib.playlistCounts(heldPaths)
             for (var i = 0; i < count; i++) { var it = itemAt(i); if (it && it.have !== undefined) it.checked = it.full }
         }
-        MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: newDlg.open() }
+        MenuItem { text: qsTr("New playlist…"); icon.name: "plus"; onTriggered: newDlg.open() }
         MenuSeparator {}
         Instantiator {
             model: userLib.playlists
@@ -112,27 +112,27 @@ Menu {
         objectName: "collectionRenameGenre"
         visible: collectionMenu.genre
         height: visible ? implicitHeight : 0
-        text: "Rename genre…"; icon.name: "edit"
+        text: qsTr("Rename genre…"); icon.name: "edit"
         onTriggered: renameDlg.open()
     }
     MenuItem {
         visible: collectionMenu.kind === "folder"
         height: visible ? implicitHeight : 0
-        text: "Show in file manager"; icon.name: "folder"
+        text: qsTr("Show in file manager"); icon.name: "folder"
         onTriggered: library.showInFolder(collectionMenu.path)
     }
     MenuItem {
         objectName: "collectionKeep"
         visible: collectionMenu.copies.servers > 0 && collectionMenu.copies.kept + collectionMenu.copies.waiting < collectionMenu.copies.servers
         height: visible ? implicitHeight : 0
-        text: "Keep on this computer"; icon.name: "download"
+        text: qsTr("Keep on this computer"); icon.name: "download"
         onTriggered: serverCopies.keep(collectionMenu.paths())
     }
     MenuItem {
         objectName: "collectionUnkeep"
         visible: collectionMenu.copies.kept + collectionMenu.copies.waiting > 0
         height: visible ? implicitHeight : 0
-        text: "Remove the copies from this computer"; icon.name: "remove"
+        text: qsTr("Remove the copies from this computer"); icon.name: "remove"
         onTriggered: serverCopies.remove(collectionMenu.paths())
     }
     MenuSeparator { visible: !collectionMenu.genre && !collectionMenu.composer; height: visible ? implicitHeight : 0 }
@@ -141,14 +141,14 @@ Menu {
         objectName: "collectionRemove"
         visible: !collectionMenu.genre && !collectionMenu.composer
         height: visible ? implicitHeight : 0
-        text: "Remove from library…"; icon.name: "remove"; icon.color: Theme.error
+        text: qsTr("Remove from library…"); icon.name: "remove"; icon.color: Theme.error
         onTriggered: Nav.removeSongs(collectionMenu.paths(), collectionMenu.what)
     }
     MenuItem {
         objectName: "collectionTrash"
         visible: !collectionMenu.genre && !collectionMenu.composer
         height: visible ? implicitHeight : 0
-        text: "Move to trash…"; icon.name: "trash"; icon.color: Theme.error
+        text: qsTr("Move to trash…"); icon.name: "trash"; icon.color: Theme.error
         onTriggered: Nav.trashSongs(collectionMenu.paths(), collectionMenu.what)
     }
 
@@ -175,7 +175,7 @@ Menu {
             spacing: 10
             width: 320
             TextField {
-                id: rf; width: parent.width; placeholderText: "Genre name"; selectByMouse: true
+                id: rf; width: parent.width; placeholderText: qsTr("Genre name"); selectByMouse: true
                 onAccepted: if (text.trim().length) renameDlg.accept()
                 onTextChanged: { var b = renameDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
             }
@@ -184,7 +184,7 @@ Menu {
                 width: parent.width
                 wrapMode: Text.Wrap
                 text: renameDlg.joins ? "You already have " + renameDlg.newName + ": the two become one genre."
-                                      : "Written to the tags of every song with this genre."
+                                      : qsTr("Written to the tags of every song with this genre.")
                 color: renameDlg.joins ? Theme.accent : Theme.textDim
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(12.5)
@@ -197,12 +197,12 @@ Menu {
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true
-        title: "New playlist"
+        title: qsTr("New playlist")
         standardButtons: Dialog.Ok | Dialog.Cancel
         onOpened: { nf.text = ""; nf.forceActiveFocus() }
         onAccepted: if (nf.text.trim().length) Nav.openPlaylist(userLib.addPathsToNewPlaylist(nf.text.trim(), collectionMenu.paths()))
         TextField {
-            id: nf; implicitWidth: 280; placeholderText: "Playlist name"; selectByMouse: true
+            id: nf; implicitWidth: 280; placeholderText: qsTr("Playlist name"); selectByMouse: true
             onAccepted: if (text.trim().length) newDlg.accept()  // no nameless playlists
             onTextChanged: { var b = newDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
             onVisibleChanged: if (visible) { var b = newDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }

@@ -816,6 +816,11 @@ class Player(QObject):
     def eqPresets(self):
         return list(eq.PRESETS)
 
+    @Slot(str, result=str)
+    def eqPresetLabel(self, key):
+        """A preset's name in your language (the key itself stays English)."""
+        return QCoreApplication.translate("Equalizer", key)
+
     @Property("QVariantList", constant=True)
     def eqBands(self):
         return [f"{b // 1000}k" if b >= 1000 else str(b) for b in eq.BANDS]

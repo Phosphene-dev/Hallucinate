@@ -15,7 +15,7 @@ Rectangle {
         id: head
         x: 18; y: 16
         spacing: 12
-        Text { text: "Queue"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(15)) * Theme.displayScale; font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter; textFormat: Text.PlainText }
+        Text { text: qsTr("Queue"); color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(15)) * Theme.displayScale; font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter; textFormat: Text.PlainText }
         Text {
             objectName: "queueSummary"
             // how many, and how long until the queue runs out (the rest of this song and all those to come)
@@ -31,7 +31,7 @@ Rectangle {
     }
     function removeRow(i, keepFocus) {
         player.removeAt(i)
-        Nav.notifyAction("Removed from the queue", "Undo", function () { player.undoQueue() })
+        Nav.notifyAction(qsTr("Removed from the queue"), qsTr("Undo"), function () { player.undoQueue() })
         if (keepFocus) Qt.callLater(function () {  // the keyboard stays on the row that took its place
             var row = list.itemAtIndex(Math.min(i, list.count - 1))
             if (row) row.forceActiveFocus()
@@ -55,14 +55,14 @@ Rectangle {
         spacing: 8
         PillButton {
             height: 30
-            text: "Export"
+            text: qsTr("Export")
             enabled: player.queueModel.count > 0
-            onClicked: Nav.exportPlaylist("queue", "Queue")
+            onClicked: Nav.exportPlaylist("queue", qsTr("Queue"))
         }
         PillButton {
             objectName: "saveQueue"
             height: 30
-            text: "Save"
+            text: qsTr("Save")
             enabled: player.queueModel.count > 0
             onClicked: saveDlg.open()
         }
@@ -70,7 +70,7 @@ Rectangle {
             objectName: "undoQueue"
             height: 30
             visible: player.canUndoQueue
-            text: "Undo"
+            text: qsTr("Undo")
             Accessible.description: player.undoLabel
             ToolTip.visible: undoHover.hovered
             ToolTip.text: "Undo: " + player.undoLabel.toLowerCase() + " (Ctrl+Z)"
@@ -82,23 +82,23 @@ Rectangle {
             objectName: "shuffleUpcoming"
             height: 30
             visible: player.upcomingCount > 1 && !player.shuffle
-            text: "Shuffle"
-            Accessible.description: "Mix up the order of the songs still to come"
-            onClicked: { player.shuffleUpcoming(); Nav.notifyAction("Upcoming songs shuffled", "Undo", function () { player.undoQueue() }) }
+            text: qsTr("Shuffle")
+            Accessible.description: qsTr("Mix up the order of the songs still to come")
+            onClicked: { player.shuffleUpcoming(); Nav.notifyAction(qsTr("Upcoming songs shuffled"), qsTr("Undo"), function () { player.undoQueue() }) }
         }
         PillButton {
             objectName: "clearUpcoming"
             height: 30
             visible: player.upcomingCount > 0
-            text: "Clear upcoming"
-            Accessible.description: "Remove the songs still to come, keeping the one playing"
-            onClicked: { player.clearUpcoming(); Nav.notifyAction("Upcoming songs cleared", "Undo", function () { player.undoQueue() }) }
+            text: qsTr("Clear upcoming")
+            Accessible.description: qsTr("Remove the songs still to come, keeping the one playing")
+            onClicked: { player.clearUpcoming(); Nav.notifyAction(qsTr("Upcoming songs cleared"), qsTr("Undo"), function () { player.undoQueue() }) }
         }
         PillButton {
             height: 30
-            text: "Clear"
+            text: qsTr("Clear")
             enabled: list.count > 0
-            onClicked: { player.clearQueue(); Nav.notifyAction("Queue cleared", "Undo", function () { player.undoQueue() }) }
+            onClicked: { player.clearQueue(); Nav.notifyAction(qsTr("Queue cleared"), qsTr("Undo"), function () { player.undoQueue() }) }
         }
     }
     Dialog {
@@ -106,7 +106,7 @@ Rectangle {
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true
-        title: "Save queue as playlist"
+        title: qsTr("Save queue as playlist")
         standardButtons: Dialog.Ok | Dialog.Cancel
         onOpened: { saveField.text = ""; saveField.forceActiveFocus() }
         onAccepted: {
@@ -116,7 +116,7 @@ Rectangle {
             if (id >= 0) Nav.openPlaylist(id)
         }
         TextField {
-            id: saveField; implicitWidth: 280; placeholderText: "Playlist name"; selectByMouse: true
+            id: saveField; implicitWidth: 280; placeholderText: qsTr("Playlist name"); selectByMouse: true
             onAccepted: if (text.trim().length) saveDlg.accept()  // no nameless playlists
             onTextChanged: { var b = saveDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
             onVisibleChanged: if (visible) { var b = saveDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
@@ -131,7 +131,7 @@ Rectangle {
             var p = Selection.songPaths()
             userLib.enqueuePaths(p)
             Selection.clear()
-            Nav.notify(Theme.num(p.length) + (p.length === 1 ? " song" : " songs") + " added to the queue")
+            Nav.notify(Theme.num(p.length) + (p.length === 1 ? qsTr(" song") : qsTr(" songs")) + " added to the queue")
             drop.accept()
         }
         Rectangle {
@@ -143,7 +143,7 @@ Rectangle {
             Text {
                 textFormat: Text.PlainText
                 anchors.centerIn: parent
-                text: "Drop to add to queue"
+                text: qsTr("Drop to add to queue")
                 color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
             }
         }
@@ -166,7 +166,7 @@ Rectangle {
             Text {
                 textFormat: Text.PlainText
                 anchors.centerIn: parent
-                text: "Drop to add to queue"
+                text: qsTr("Drop to add to queue")
                 color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.DemiBold
             }
         }
@@ -175,8 +175,8 @@ Rectangle {
         visible: player.queueModel.count === 0
         anchors.centerIn: parent
         icon: "queue"
-        title: "The queue is empty"
-        hint: "Play an album or a song, or turn on radio to keep the music going."
+        title: qsTr("The queue is empty")
+        hint: qsTr("Play an album or a song, or turn on radio to keep the music going.")
     }
     ListView {
         WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
@@ -227,7 +227,7 @@ Rectangle {
                     var n = Selection.count
                     player.removeIndexes(Selection.items.map(function (i) { return parseInt(i.key) }))
                     Selection.clear()
-                    Nav.notifyAction(Theme.num(n) + " songs removed from the queue", "Undo", function () { player.undoQueue() })
+                    Nav.notifyAction(Theme.num(n) + " songs removed from the queue", qsTr("Undo"), function () { player.undoQueue() })
                     e.accepted = true
                     return
                 }
@@ -280,7 +280,7 @@ Rectangle {
                     opacity: hh.hovered || grip.pressed ? 1 : 0
                 }
                 ToolTip.visible: containsMouse && !pressed
-                ToolTip.text: "Drag to reorder"
+                ToolTip.text: qsTr("Drag to reorder")
                 ToolTip.delay: 500
                 Accessible.role: Accessible.Button
                 Accessible.name: "Drag to reorder (or Alt+↑ / Alt+↓)"

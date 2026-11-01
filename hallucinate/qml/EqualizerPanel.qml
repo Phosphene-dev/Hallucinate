@@ -7,7 +7,7 @@ Column {
     id: panel
     spacing: 12
     StyledCheck {
-        text: "Enable equalizer"
+        text: qsTr("Enable equalizer")
         enabled: player.eqAvailable
         checked: player.eqEnabled
         onToggled: player.setEqEnabled(checked)
@@ -17,14 +17,14 @@ Column {
         enabled: player.eqAvailable
         text: player.eqPerDevice && player.eqDeviceName.length
               ? "Separate settings for each output (now: " + player.eqDeviceName + ")"
-              : "Separate settings for each output (headphones, speakers…)"
+              : qsTr("Separate settings for each output (headphones, speakers…)")
         checked: player.eqPerDevice
         onToggled: player.setEqPerDevice(checked)
     }
     Text {
         textFormat: Text.PlainText
         visible: !player.eqAvailable
-        text: "The equalizer needs the numpy Python package."
+        text: qsTr("The equalizer needs the numpy Python package.")
         color: Theme.textDim
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSize(12)
@@ -32,12 +32,13 @@ Column {
     Row {
         spacing: 12
         opacity: player.eqEnabled ? 1 : 0.5
-        Text { anchors.verticalCenter: parent.verticalCenter; text: "Preset"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+        Text { anchors.verticalCenter: parent.verticalCenter; text: qsTr("Preset"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
         StyledCombo {
             id: presetBox
-            model: player.eqPresets.concat(["Custom"])
-            selection: model.indexOf(player.eqPreset)
-            onActivated: if (currentText !== "Custom") player.setEqPreset(currentText)
+            // by place in the list, not by the text shown: the names are in your language, the presets' keys aren't
+            model: player.eqPresets.map(p => player.eqPresetLabel(p)).concat([qsTr("Custom")])
+            selection: player.eqPresets.indexOf(player.eqPreset) >= 0 ? player.eqPresets.indexOf(player.eqPreset) : player.eqPresets.length
+            onActivated: function (i) { if (i < player.eqPresets.length) player.setEqPreset(player.eqPresets[i]) }
         }
     }
     Row {
@@ -83,7 +84,7 @@ Column {
     Item { width: 1; height: 10 }
     Text {
         textFormat: Text.PlainText
-        text: "Headphone correction"
+        text: qsTr("Headphone correction")
         color: Theme.text
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSize(15)
@@ -93,7 +94,7 @@ Column {
         textFormat: Text.PlainText
         width: Math.min(560, panel.width)
         wrapMode: Text.Wrap
-        text: "Make your headphones sound neutral with an AutoEQ profile. It's applied under the bands above; the "
+        text: qsTr("Make your headphones sound neutral with an AutoEQ profile. It's applied under the bands above; the ")
               + "volume is lowered a little so the correction can't clip."
         color: Theme.textDim
         font.family: Theme.fontFamily
@@ -138,7 +139,7 @@ Column {
                 font.pixelSize: Theme.fontSize(14)
                 font.weight: Font.DemiBold
             }
-            PillButton { text: "Remove"; height: 30; onClicked: player.clearHeadphone() }
+            PillButton { text: qsTr("Remove"); height: 30; onClicked: player.clearHeadphone() }
         }
     }
     Row {
@@ -148,7 +149,7 @@ Column {
             objectName: "headphoneSearch"
             width: 300
             height: 36
-            placeholderText: "Search your headphones (e.g. HD 600)"
+            placeholderText: qsTr("Search your headphones (e.g. HD 600)")
             placeholderTextColor: Theme.textDim
             color: Theme.text
             font.family: Theme.fontFamily
@@ -166,7 +167,7 @@ Column {
             onAccepted: headphones.find(text)
             Timer { id: hpTimer; interval: 350; onTriggered: headphones.find(hpSearch.text) }
         }
-        PillButton { text: "Import file…"; onClicked: hpFile.open() }
+        PillButton { text: qsTr("Import file…"); onClicked: hpFile.open() }
     }
     Text {
         textFormat: Text.PlainText
@@ -226,8 +227,8 @@ Column {
     }
     FileDialog {
         id: hpFile
-        title: "Import an AutoEQ profile (ParametricEQ.txt or GraphicEQ.txt)"
-        nameFilters: ["EQ profiles (*.txt)", "All files (*)"]
+        title: qsTr("Import an AutoEQ profile (ParametricEQ.txt or GraphicEQ.txt)")
+        nameFilters: [qsTr("EQ profiles (*.txt)"), qsTr("All files (*)")]
         onAccepted: hpStatus.hpError = headphones.importFile(selectedFile.toString())
     }
 }

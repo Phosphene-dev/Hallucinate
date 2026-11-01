@@ -51,66 +51,66 @@ Popup {
     function commands() {
         var w = win
         var c = [
-            { t: "Home", s: "Go to", i: "home", run: () => w.go("home") },
-            { t: "Albums", s: "Go to", i: "album", run: () => w.go("albums") },
-            { t: "Artists", s: "Go to", i: "artist", run: () => w.go("artists") },
-            { t: "Genres", s: "Go to", i: "genre", run: () => w.go("genres") },
-            { t: "Songs", s: "Go to", i: "songs", run: () => w.go("songs") },
-            { f: "folders", t: "Folders", s: "Go to  ·  browse by folder", i: "folder", run: () => w.go("folders") },
-            { f: "liked", t: "Liked Songs", s: "Go to", i: "heart", run: () => w.go("liked") },
-            { f: "stats", t: "Stats", s: "Go to", i: "stats", run: () => w.go("stats") },
-            { f: "history", t: "History", s: "Go to", i: "history", run: () => w.go("history") },
-            { f: "recap", t: "Recap", s: "Go to  ·  your week, month or year", i: "recap", run: () => w.go("recap") },
-            { f: "podcasts", t: "Podcasts", s: "Go to  ·  your shows", i: "podcast", run: () => w.go("podcasts") },
-            { f: "stations", t: "Internet radio", s: "Go to  ·  your stations", i: "station", run: () => w.go("stations") },
-            { f: "visualizer", t: "Visualizer", s: "Go to", i: "wave", run: () => w.go("visualizer") },
-            { t: "Settings", s: "Go to", i: "settings", run: () => w.go("settings") },
-            { f: "health", t: "Library health", s: "Go to", i: "health", run: () => w.go("health") },
-            { t: "Colour wall", s: "Albums", i: "album", run: () => { shell.setUiValue("albumsView", "colour"); w.go("albums") } },
-            { t: "Timeline", s: "Albums", i: "album", run: () => { shell.setUiValue("albumsView", "timeline"); w.go("albums") } },
-            { t: player.playing ? "Pause" : "Play", s: "Playback  ·  Space", i: player.playing ? "pause" : "play", run: () => player.toggle() },
-            { t: "Next track", s: "Playback  ·  N", i: "next", run: () => player.next() },
-            { t: "Previous track", s: "Playback  ·  P", i: "prev", run: () => player.previous() },
-            { t: player.shuffle ? "Shuffle off" : "Shuffle on", s: "Playback  ·  S", i: "shuffle", run: () => player.toggleShuffle() },
-            { t: "Change repeat", s: "Playback  ·  R", i: "repeat", run: () => player.cycleRepeat() },
-            { t: player.radio ? "Radio off" : "Radio on", s: "Keep playing similar songs", i: "radio", run: () => player.setRadio(!player.radio) },
-            { t: "Now playing", s: "View  ·  F", i: "fullscreen", run: () => Nav.toggleNowPlaying() },
-            { t: "Queue", s: "View  ·  Q", i: "queue", run: () => { w.queueOpen = !w.queueOpen; if (w.queueOpen) w.lyricsOpen = false } },
-            { f: "lyrics", t: "Lyrics", s: "View  ·  L", i: "note", run: () => { w.lyricsOpen = !w.lyricsOpen; if (w.lyricsOpen) w.queueOpen = false } },
-            { t: "Mini player", s: "View  ·  Ctrl+M", i: "expand", run: () => shell.toggleMini() },
-            { t: shell.sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar", s: "View", i: "sidebar", run: () => shell.setSidebarCollapsed(!shell.sidebarCollapsed) },
-            { t: "Play a random album", s: "Library", i: "dice", run: () => { var a = library.randomAlbum(""); if (a.album_key) library.playAlbum(a.album_key, 0) } },
-            { t: "Rescan library", s: "Library", i: "search", run: () => library.rescan() },
-            { t: "New playlist", s: "Playlists", i: "plus", run: () => w.newPlaylist() },
-            { t: "New smart playlist", s: "Playlists", i: "smartlist", run: () => Nav.newSmartPlaylist() },
-            { t: "Import playlist file", s: "Playlists  ·  M3U, M3U8, PLS", i: "playlist", run: () => Nav.importPlaylist() },
-            { t: "Back", s: "Go to  ·  Alt+Left", i: "back", run: () => w.goBack() },
-            { t: "Forward", s: "Go to  ·  Alt+Right", i: "next", run: () => w.goForward() },
-            { t: "Find duplicates", s: "Library  ·  songs that look the same", i: "duplicates", run: () => {
+            { t: qsTr("Home"), s: qsTr("Go to"), i: "home", run: () => w.go("home") },
+            { t: qsTr("Albums"), s: qsTr("Go to"), i: "album", run: () => w.go("albums") },
+            { t: qsTr("Artists"), s: qsTr("Go to"), i: "artist", run: () => w.go("artists") },
+            { t: qsTr("Genres"), s: qsTr("Go to"), i: "genre", run: () => w.go("genres") },
+            { t: qsTr("Songs"), s: qsTr("Go to"), i: "songs", run: () => w.go("songs") },
+            { f: "folders", t: qsTr("Folders"), s: qsTr("Go to  ·  browse by folder"), i: "folder", run: () => w.go("folders") },
+            { f: "liked", t: qsTr("Liked Songs"), s: qsTr("Go to"), i: "heart", run: () => w.go("liked") },
+            { f: "stats", t: qsTr("Stats"), s: qsTr("Go to"), i: "stats", run: () => w.go("stats") },
+            { f: "history", t: qsTr("History"), s: qsTr("Go to"), i: "history", run: () => w.go("history") },
+            { f: "recap", t: qsTr("Recap"), s: qsTr("Go to  ·  your week, month or year"), i: "recap", run: () => w.go("recap") },
+            { f: "podcasts", t: qsTr("Podcasts"), s: qsTr("Go to  ·  your shows"), i: "podcast", run: () => w.go("podcasts") },
+            { f: "stations", t: qsTr("Internet radio"), s: qsTr("Go to  ·  your stations"), i: "station", run: () => w.go("stations") },
+            { f: "visualizer", t: qsTr("Visualizer"), s: qsTr("Go to"), i: "wave", run: () => w.go("visualizer") },
+            { t: qsTr("Settings"), s: qsTr("Go to"), i: "settings", run: () => w.go("settings") },
+            { f: "health", t: qsTr("Library health"), s: qsTr("Go to"), i: "health", run: () => w.go("health") },
+            { t: qsTr("Colour wall"), s: qsTr("Albums"), i: "album", run: () => { shell.setUiValue("albumsView", "colour"); w.go("albums") } },
+            { t: qsTr("Timeline"), s: qsTr("Albums"), i: "album", run: () => { shell.setUiValue("albumsView", "timeline"); w.go("albums") } },
+            { t: player.playing ? qsTr("Pause") : qsTr("Play"), s: qsTr("Playback  ·  Space"), i: player.playing ? "pause" : "play", run: () => player.toggle() },
+            { t: qsTr("Next track"), s: qsTr("Playback  ·  N"), i: "next", run: () => player.next() },
+            { t: qsTr("Previous track"), s: qsTr("Playback  ·  P"), i: "prev", run: () => player.previous() },
+            { t: player.shuffle ? qsTr("Shuffle off") : qsTr("Shuffle on"), s: qsTr("Playback  ·  S"), i: "shuffle", run: () => player.toggleShuffle() },
+            { t: qsTr("Change repeat"), s: qsTr("Playback  ·  R"), i: "repeat", run: () => player.cycleRepeat() },
+            { t: player.radio ? qsTr("Radio off") : qsTr("Radio on"), s: qsTr("Keep playing similar songs"), i: "radio", run: () => player.setRadio(!player.radio) },
+            { t: qsTr("Now playing"), s: qsTr("View  ·  F"), i: "fullscreen", run: () => Nav.toggleNowPlaying() },
+            { t: qsTr("Queue"), s: qsTr("View  ·  Q"), i: "queue", run: () => { w.queueOpen = !w.queueOpen; if (w.queueOpen) w.lyricsOpen = false } },
+            { f: "lyrics", t: qsTr("Lyrics"), s: qsTr("View  ·  L"), i: "note", run: () => { w.lyricsOpen = !w.lyricsOpen; if (w.lyricsOpen) w.queueOpen = false } },
+            { t: qsTr("Mini player"), s: qsTr("View  ·  Ctrl+M"), i: "expand", run: () => shell.toggleMini() },
+            { t: shell.sidebarCollapsed ? qsTr("Expand sidebar") : qsTr("Collapse sidebar"), s: qsTr("View"), i: "sidebar", run: () => shell.setSidebarCollapsed(!shell.sidebarCollapsed) },
+            { t: qsTr("Play a random album"), s: qsTr("Library"), i: "dice", run: () => { var a = library.randomAlbum(""); if (a.album_key) library.playAlbum(a.album_key, 0) } },
+            { t: qsTr("Rescan library"), s: qsTr("Library"), i: "search", run: () => library.rescan() },
+            { t: qsTr("New playlist"), s: qsTr("Playlists"), i: "plus", run: () => w.newPlaylist() },
+            { t: qsTr("New smart playlist"), s: qsTr("Playlists"), i: "smartlist", run: () => Nav.newSmartPlaylist() },
+            { t: qsTr("Import playlist file"), s: qsTr("Playlists  ·  M3U, M3U8, PLS"), i: "playlist", run: () => Nav.importPlaylist() },
+            { t: qsTr("Back"), s: qsTr("Go to  ·  Alt+Left"), i: "back", run: () => w.goBack() },
+            { t: qsTr("Forward"), s: qsTr("Go to  ·  Alt+Right"), i: "next", run: () => w.goForward() },
+            { t: qsTr("Find duplicates"), s: qsTr("Library  ·  songs that look the same"), i: "duplicates", run: () => {
                 w.go("songs")
-                var p = w.findItem("pageStack").currentItem
+                var p = w.findItem(qsTr("pageStack")).currentItem
                 if (p && p.duplicatesVisible !== undefined) { p.duplicatesVisible = true; library.findDuplicates() }
             } },
         ]
         if (player.hasTrack) {
-            c.push({ t: "Go to what's playing", s: "Go to  ·  its album, station or show", i: "album", run: () => Nav.goToPlaying() })
+            c.push({ t: qsTr("Go to what's playing"), s: qsTr("Go to  ·  its album, station or show"), i: "album", run: () => Nav.goToPlaying() })
             var cur = player.current
             if (!(cur.kind || "").length && cur.path && shell.features.liked !== false) {
                 var liked = userLib.likesRevision >= 0 && userLib.isLiked(cur.path)
-                c.push({ t: liked ? "Unlike this song" : "Like this song", s: "Playback  ·  " + (cur.title || ""), i: "heart",
+                c.push({ t: liked ? qsTr("Unlike this song") : qsTr("Like this song"), s: "Playback  ·  " + (cur.title || ""), i: "heart",
                          run: () => userLib.toggleLike(cur.path) })
             }
         }
-        var styles = [["liquid", "Liquid"], ["aurora", "Aurora"], ["nebula", "Nebula"], ["halo", "Halo"], ["waves", "Waves"], ["bars", "Bars"]]
-        styles.forEach(st => c.push({ t: "Visualizer: " + st[1], s: "Style", i: "wave", run: () => shell.setVisualizerStyle(st[0]) }))
-        themeManager.availableThemes.forEach(name => c.push({ t: "Theme: " + name, s: "Appearance", i: "settings", run: () => themeManager.selectTheme(name) }))
+        var styles = [["liquid", qsTr("Liquid")], ["aurora", qsTr("Aurora")], ["nebula", qsTr("Nebula")], ["halo", qsTr("Halo")], ["waves", qsTr("Waves")], ["bars", qsTr("Bars")]]
+        styles.forEach(st => c.push({ t: "Visualizer: " + st[1], s: qsTr("Style"), i: "wave", run: () => shell.setVisualizerStyle(st[0]) }))
+        themeManager.availableThemes.forEach(name => c.push({ t: "Theme: " + name, s: qsTr("Appearance"), i: "settings", run: () => themeManager.selectTheme(name) }))
         for (var p = 0; p < userLib.playlists.count; p++) {
             var pl = userLib.playlists.get(p)
-            c.push({ t: pl.name, s: "Playlist", i: "playlist", run: ((id) => () => Nav.openPlaylist(id))(pl.id) })
+            c.push({ t: pl.name, s: qsTr("Playlist"), i: "playlist", run: ((id) => () => Nav.openPlaylist(id))(pl.id) })
         }
         for (p = 0; p < userLib.smartPlaylists.count; p++) {
             var sp = userLib.smartPlaylists.get(p)
-            c.push({ t: sp.name, s: "Smart playlist", i: "smartlist", run: ((id, n) => () => Nav.openSmartPlaylist(id, n))(sp.id, sp.name) })
+            c.push({ t: sp.name, s: qsTr("Smart playlist"), i: "smartlist", run: ((id, n) => () => Nav.openSmartPlaylist(id, n))(sp.id, sp.name) })
         }
         return c.filter(x => !x.f || shell.features[x.f] !== false)
     }
@@ -153,11 +153,11 @@ Popup {
             // genres, from the full list (the library search doesn't look at them)
             library.genreList.map(g => ({ g: g, s: score(g.name, q) })).filter(x => x.s >= 0)
                 .sort((a, b) => b.s - a.s).slice(0, 3).forEach(x => out.push({
-                    t: x.g.name, s: "Genre  ·  " + Theme.num(x.g.tracks) + (x.g.tracks === 1 ? " song" : " songs"), i: "note",
+                    t: x.g.name, s: "Genre  ·  " + Theme.num(x.g.tracks) + (x.g.tracks === 1 ? qsTr(" song") : qsTr(" songs")), i: "note",
                     run: ((n) => () => Nav.openGenre(n))(x.g.name) }))
             library.composerList.map(c => ({ c: c, s: score(c.name, q) })).filter(x => x.s >= 0)
                 .sort((a, b) => b.s - a.s).slice(0, 2).forEach(x => out.push({
-                    t: x.c.name, s: "Composer  ·  " + Theme.num(x.c.tracks) + (x.c.tracks === 1 ? " song" : " songs"), i: "note",
+                    t: x.c.name, s: "Composer  ·  " + Theme.num(x.c.tracks) + (x.c.tracks === 1 ? qsTr(" song") : qsTr(" songs")), i: "note",
                     run: ((n) => () => Nav.openComposer(n))(x.c.name) }))
             var m = library.searchAlbums
             for (var i = 0; i < Math.min(4, m.count); i++) {
@@ -167,7 +167,7 @@ Popup {
             m = library.searchArtists
             for (i = 0; i < Math.min(3, m.count); i++) {
                 var r = m.get(i)
-                out.push({ t: r.name, s: "Artist", art: r.artUrl, round: true, run: ((n) => () => Nav.openArtist(n))(r.name) })
+                out.push({ t: r.name, s: qsTr("Artist"), art: r.artUrl, round: true, run: ((n) => () => Nav.openArtist(n))(r.name) })
             }
             m = library.searchTracks
             for (i = 0; i < Math.min(5, m.count); i++) {
@@ -204,7 +204,7 @@ Popup {
             objectName: "paletteField"
             width: parent.width
             height: 58
-            placeholderText: "Type a command, page, album, artist or song…"
+            placeholderText: qsTr("Type a command, page, album, artist or song…")
             placeholderTextColor: Theme.textDim
             color: Theme.text
             font.family: Theme.fontFamily
@@ -293,7 +293,7 @@ Popup {
                 textFormat: Text.PlainText
                 anchors.centerIn: parent
                 visible: cmdPalette.results.length === 0
-                text: "Nothing matches"
+                text: qsTr("Nothing matches")
                 color: Theme.textDim
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(13)

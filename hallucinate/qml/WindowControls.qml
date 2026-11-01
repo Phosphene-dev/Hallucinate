@@ -52,20 +52,20 @@ Row {
         objectName: "windowMinimize"
         light: controls.light
         visible: shell.titleBarMinimize
-        icon: "winmin"; tip: "Minimize"
+        icon: "winmin"; tip: qsTr("Minimize")
         onClicked: controls.win.showMinimized()
     }
     WinButton {
         objectName: "windowMaximize"
         light: controls.light
         icon: controls.maximized ? "winrestore" : "winmax"
-        tip: controls.maximized ? "Restore" : "Maximize"
+        tip: controls.maximized ? qsTr("Restore") : qsTr("Maximize")
         onClicked: controls.maximized ? controls.win.showNormal() : controls.win.showMaximized()
     }
     WinButton {
         objectName: "windowClose"
         light: controls.light
-        icon: "close"; tip: "Close"
+        icon: "close"; tip: qsTr("Close")
         danger: true
         onClicked: controls.win.close()
     }

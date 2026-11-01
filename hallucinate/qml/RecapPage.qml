@@ -29,7 +29,7 @@ Item {
         var d = new Date(2000, 0, 1, at, 0)
         return Qt.formatTime(d, "h ap").replace(":00", "")
     }
-    function weekdayName(i) { return ["Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays", "Sundays"][i] }
+    function weekdayName(i) { return [qsTr("Mondays"), qsTr("Tuesdays"), qsTr("Wednesdays"), qsTr("Thursdays"), qsTr("Fridays"), qsTr("Saturdays"), qsTr("Sundays")][i] }
     function peakWeekday() {
         var w = rc.weekdays || [], best = -1, at = 0
         for (var i = 0; i < w.length; i++) if (w[i] > best) { best = w[i]; at = i }
@@ -197,7 +197,7 @@ Item {
                     textFormat: Text.PlainText
                     height: 36
                     verticalAlignment: Text.AlignVCenter
-                    text: "Recap"
+                    text: qsTr("Recap")
                     color: Theme.text
                     font.family: Theme.displayFamily
                     font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale
@@ -206,7 +206,7 @@ Item {
                 Row {
                     spacing: 6
                     Repeater {
-                        model: [{ id: "week", t: "Week" }, { id: "month", t: "Month" }, { id: "year", t: "Year" }]
+                        model: [{ id: "week", t: qsTr("Week") }, { id: "month", t: qsTr("Month") }, { id: "year", t: qsTr("Year") }]
                         Chip {
                             required property var modelData
                             objectName: "recapKind_" + modelData.id
@@ -218,7 +218,7 @@ Item {
                 }
                 Row {
                     spacing: 2
-                    IconButton { objectName: "recapPrev"; icon: "prev"; size: 14; tip: "Earlier"; onClicked: userLib.stepRecap(-1) }
+                    IconButton { objectName: "recapPrev"; icon: "prev"; size: 14; tip: qsTr("Earlier"); onClicked: userLib.stepRecap(-1) }
                     Text {
                         textFormat: Text.PlainText
                         anchors.verticalCenter: parent.verticalCenter
@@ -232,7 +232,7 @@ Item {
                     }
                     IconButton {
                         objectName: "recapNext"
-                        icon: "next"; size: 14; tip: "Later"
+                        icon: "next"; size: 14; tip: qsTr("Later")
                         enabled: !!page.rc.hasNext
                         onClicked: userLib.stepRecap(1)
                     }
@@ -279,7 +279,7 @@ Item {
                     }
                     Text {
                         textFormat: Text.PlainText
-                        text: page.empty ? "Nothing played yet" : page.hoursText(page.summary.seconds || 0).u + " of music"
+                        text: page.empty ? qsTr("Nothing played yet") : page.hoursText(page.summary.seconds || 0).u + " of music"
                         color: "white"
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(17)
@@ -302,7 +302,7 @@ Item {
                         Repeater {
                             model: [
                                 [page.summary.plays || 0, "plays"], [page.summary.songs || 0, "songs"],
-                                [page.summary.artists || 0, "artists"], [page.summary.days || 0, "days listening"]
+                                [page.summary.artists || 0, "artists"], [page.summary.days || 0, qsTr("days listening")]
                             ]
                             Column {
                                 required property var modelData
@@ -331,7 +331,7 @@ Item {
                     visible: !page.empty
                     Column {
                         spacing: 10
-                        Text { text: "Top artists"; color: Qt.rgba(1, 1, 1, 0.75); font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold; textFormat: Text.PlainText }
+                        Text { text: qsTr("Top artists"); color: Qt.rgba(1, 1, 1, 0.75); font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold; textFormat: Text.PlainText }
                         Repeater {
                             model: (page.rc.topArtists || []).slice(0, 5)
                             Ranked {
@@ -346,7 +346,7 @@ Item {
                     Column {
                         spacing: 10
                         visible: shareCard.width > 980
-                        Text { text: "Top songs"; color: Qt.rgba(1, 1, 1, 0.75); font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold; textFormat: Text.PlainText }
+                        Text { text: qsTr("Top songs"); color: Qt.rgba(1, 1, 1, 0.75); font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold; textFormat: Text.PlainText }
                         Repeater {
                             model: (page.rc.topSongs || []).slice(0, 5)
                             Ranked {
@@ -362,18 +362,18 @@ Item {
                     anchors { right: parent.right; rightMargin: 22; bottom: parent.bottom; bottomMargin: 16 }
                     spacing: 6
                     Image { anchors.verticalCenter: parent.verticalCenter; source: "../assets/hallucinate.png"; sourceSize: Qt.size(32, 32); width: 16; height: 16; smooth: true }
-                    Text { text: "Hallucinate"; color: Qt.rgba(1, 1, 1, 0.6); font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(11)) * Theme.displayScale; textFormat: Text.PlainText }
+                    Text { text: qsTr("Hallucinate"); color: Qt.rgba(1, 1, 1, 0.6); font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(11)) * Theme.displayScale; textFormat: Text.PlainText }
                 }
             }
 
             Row {
                 spacing: 12
-                PillButton { objectName: "saveRecap"; text: "Save as image"; enabled: !page.empty; onClicked: page.saveImage() }
+                PillButton { objectName: "saveRecap"; text: qsTr("Save as image"); enabled: !page.empty; onClicked: page.saveImage() }
                 Text {
                     textFormat: Text.PlainText
                     anchors.verticalCenter: parent.verticalCenter
                     visible: page.savedTo.length > 0
-                    text: page.savedTo === "-" ? "Couldn't save the image" : "Saved to " + page.savedTo
+                    text: page.savedTo === "-" ? qsTr("Couldn't save the image") : "Saved to " + page.savedTo
                     color: Theme.textDim
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(12)
@@ -381,7 +381,7 @@ Item {
                 PillButton {
                     objectName: "showRecapImage"
                     visible: page.savedTo.length > 1
-                    text: "Show in folder"
+                    text: qsTr("Show in folder")
                     onClicked: library.showInFolder(page.savedTo)
                 }
             }
@@ -394,7 +394,7 @@ Item {
                 Column {
                     width: (col.width - 26) / 2
                     spacing: 12
-                    SectionHeader { title: "Top albums" }
+                    SectionHeader { title: qsTr("Top albums") }
                     Flow {
                         width: parent.width
                         spacing: 14
@@ -417,7 +417,7 @@ Item {
                 Column {
                     width: (col.width - 26) / 2
                     spacing: 4
-                    SectionHeader { title: "Top songs" }
+                    SectionHeader { title: qsTr("Top songs") }
                     Item { width: 1; height: 8 }
                     Repeater {
                         model: page.rc.topSongs || []
@@ -456,14 +456,14 @@ Item {
                     spacing: 40
                     Bars {
                         width: page.kind === "year" ? (col.width - 44 - 80) * 0.4 : (col.width - 44 - 40) * 0.62
-                        title: "Time of day"
+                        title: qsTr("Time of day")
                         note: page.peakHour() ? "Most often around " + page.peakHour() : ""
                         values: page.rc.hours || []
                         labels: (page.rc.hours || []).map((v, i) => i % 6 === 0 ? String(i) : "")
                     }
                     Bars {
                         width: page.kind === "year" ? (col.width - 44 - 80) * 0.22 : (col.width - 44 - 40) * 0.38
-                        title: "Day of the week"
+                        title: qsTr("Day of the week")
                         note: page.peakWeekday() ? "Busiest on " + page.peakWeekday() : ""
                         values: page.rc.weekdays || []
                         labels: ["M", "T", "W", "T", "F", "S", "S"]
@@ -471,7 +471,7 @@ Item {
                     Bars {
                         visible: page.kind === "year"
                         width: (col.width - 44 - 80) * 0.38
-                        title: "Month by month"
+                        title: qsTr("Month by month")
                         note: ""
                         values: (page.rc.months || []).map(m => m.seconds)
                         labels: ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
@@ -486,13 +486,13 @@ Item {
                 visible: !page.empty
                 Repeater {
                     model: [
-                        { t: "New artists", v: Theme.num(page.rc.discoveryCount || 0),
+                        { t: qsTr("New artists"), v: Theme.num(page.rc.discoveryCount || 0),
                           s: (page.rc.discoveries || []).slice(0, 3).map(d => d.name).join(", ") },
-                        { t: "Longest streak", v: page.plural(page.rc.streak || 0, "day", "days"), s: "in a row" },
-                        { t: "Busiest day", v: page.rc.busiestDay ? Qt.formatDate(new Date(page.rc.busiestDay.day + "T12:00:00"), "ddd d MMM") : "—",
+                        { t: qsTr("Longest streak"), v: page.plural(page.rc.streak || 0, "day", "days"), s: qsTr("in a row") },
+                        { t: qsTr("Busiest day"), v: page.rc.busiestDay ? Qt.formatDate(new Date(page.rc.busiestDay.day + "T12:00:00"), "ddd d MMM") : "—",
                           s: page.rc.busiestDay ? page.plural(page.rc.busiestDay.plays, "play", "plays") : "" },
-                        { t: "Top genres", v: (page.rc.genres || []).slice(0, 1).join("") || "—", s: (page.rc.genres || []).slice(1).join(", ") },
-                        { t: "Albums added", v: Theme.num(page.rc.albumsAdded || 0), s: "to your library" }
+                        { t: qsTr("Top genres"), v: (page.rc.genres || []).slice(0, 1).join("") || "—", s: (page.rc.genres || []).slice(1).join(", ") },
+                        { t: qsTr("Albums added"), v: Theme.num(page.rc.albumsAdded || 0), s: qsTr("to your library") }
                     ]
                     GlassPanel {
                         required property var modelData

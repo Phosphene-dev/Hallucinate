@@ -14,7 +14,7 @@ ApplicationWindow {
     visible: true
     // The title bar built into the window (Settings → Desktop) means no system frame around it
     flags: shell.customTitleBar ? (Qt.Window | Qt.FramelessWindowHint) : Qt.Window
-    title: player.hasTrack ? player.current.title + " — " + player.current.artist : "Hallucinate"
+    title: player.hasTrack ? player.current.title + " — " + player.current.artist : qsTr("Hallucinate")
     color: Theme.bg
 
     palette.window: Theme.bg
@@ -360,8 +360,8 @@ ApplicationWindow {
                 var paths = many ? Selection.paths.slice() : [path]
                 userLib.setLikedPaths(paths, false)
                 if (many) Selection.clear()
-                Nav.notifyAction(paths.length === 1 ? "Removed from Liked Songs" : Theme.num(paths.length) + " songs removed from Liked Songs",
-                                 "Undo", function () { userLib.setLikedPaths(paths, true) })
+                Nav.notifyAction(paths.length === 1 ? qsTr("Removed from Liked Songs") : Theme.num(paths.length) + " songs removed from Liked Songs",
+                                 qsTr("Undo"), function () { userLib.setLikedPaths(paths, true) })
                 return
             }
             if (context !== "playlist") return
@@ -376,16 +376,16 @@ ApplicationWindow {
             if (mode === "ask" && held.length) { dupDlg.ask(pid, name, paths, held, what); return }
             var fresh = paths.filter(function (p) { return held.indexOf(p) < 0 })
             if (fresh.length) userLib.addPathsToPlaylist(pid, fresh)
-            var n = function (k) { return Theme.num(k) + (k === 1 ? " song" : " songs") }
+            var n = function (k) { return Theme.num(k) + (k === 1 ? qsTr(" song") : qsTr(" songs")) }
             var label = fresh.length === paths.length && what ? what : n(fresh.length)
             if (!held.length) { toast.show(label + " added to “" + name + "”"); return }
             var msg = !fresh.length ? (paths.length === 1 ? "Already in “" + name + "”" : "All " + n(paths.length) + " are already in “" + name + "”")
                                     : label + " added to “" + name + "” (" + Theme.num(held.length) + " already there)"
-            toast.show(msg, 0, "Add anyway", function () { userLib.addPathsToPlaylist(pid, held); toast.show(n(held.length) + " added again to “" + name + "”") })
+            toast.show(msg, 0, qsTr("Add anyway"), function () { userLib.addPathsToPlaylist(pid, held); toast.show(n(held.length) + " added again to “" + name + "”") })
         }
         function onRemoveFromPlaylistId(pid, name, paths, what) {
             var removed = userLib.removePathsFromPlaylistId(pid, paths)
-            if (removed) toast.show((what || Theme.num(removed) + (removed === 1 ? " song" : " songs")) + " removed from “" + name + "”", 0, "Undo",
+            if (removed) toast.show((what || Theme.num(removed) + (removed === 1 ? qsTr(" song") : qsTr(" songs"))) + " removed from “" + name + "”", 0, qsTr("Undo"),
                                     function () { userLib.restorePlaylistRemoval() })
         }
         function onSelectionMenu() { if (Selection.domain === "music") trackMenu.showMany(Selection.songPaths(), "") }
@@ -397,7 +397,7 @@ ApplicationWindow {
         function onExportPlaylist(kind, name) {
             exportDialog.kind = kind
             exportDialog.selectedFile = StandardPaths.writableLocation(StandardPaths.MusicLocation) + "/"
-                                        + (name || "Playlist").replace(/[\\/:*?"<>|#%]/g, "-") + ".m3u8"
+                                        + (name || qsTr("Playlist")).replace(/[\\/:*?"<>|#%]/g, "-") + ".m3u8"
             exportDialog.open()
         }
         function onNotify(message) { toast.show(message) }
@@ -447,20 +447,20 @@ ApplicationWindow {
     // Playlist files
     FileDialog {
         id: importDialog
-        title: "Import a playlist"
-        nameFilters: ["Playlists (*.m3u *.m3u8 *.pls)", "All files (*)"]
+        title: qsTr("Import a playlist")
+        nameFilters: [qsTr("Playlists (*.m3u *.m3u8 *.pls)"), qsTr("All files (*)")]
         onAccepted: userLib.importPlaylist(selectedFile.toString())
     }
     FileDialog {
         id: exportDialog
         property string kind: "playlist"
-        title: "Export as a playlist file"
+        title: qsTr("Export as a playlist file")
         fileMode: FileDialog.SaveFile
         defaultSuffix: "m3u8"
-        nameFilters: ["M3U8 playlist (*.m3u8)", "M3U playlist (*.m3u)"]
+        nameFilters: [qsTr("M3U8 playlist (*.m3u8)"), qsTr("M3U playlist (*.m3u)")]
         onAccepted: {
             var err = userLib.exportPlaylist(kind, selectedFile.toString())
-            toast.show(err.length ? err : "Playlist saved")
+            toast.show(err.length ? err : qsTr("Playlist saved"))
         }
     }
     Connections {
@@ -472,8 +472,8 @@ ApplicationWindow {
         }
         function onPlaylistImported(result) {
             if (result.error) { toast.show(result.error); return }
-            if (result.id < 0) { toast.show("None of those songs are in your library"); return }
-            toast.show("Imported “" + result.name + "”: " + Theme.num(result.added) + (result.added === 1 ? " song" : " songs")
+            if (result.id < 0) { toast.show(qsTr("None of those songs are in your library")); return }
+            toast.show("Imported “" + result.name + "”: " + Theme.num(result.added) + (result.added === 1 ? qsTr(" song") : qsTr(" songs"))
                        + (result.missing ? ", " + result.missing + " not found in your library" : ""))
             window.openPlaylist(result.id, result.name)
         }
@@ -506,19 +506,19 @@ ApplicationWindow {
         function ask(p, n, all, h, w) { pid = p; name = n; paths = all; held = h; what = w; again.checked = fresh === 0; open() }
         title: held.length === 1 && paths.length === 1 ? "Already in “" + name + "”"
                                                        : Theme.num(held.length) + " of these are already in “" + name + "”"
-        body: fresh === 0 ? (paths.length === 1 ? "Add it again?" : "Add them again?")
-                          : Theme.num(fresh) + (fresh === 1 ? " song is" : " songs are") + " new to it."
-        confirmText: again.checked ? (fresh === 0 ? "Add again" : "Add all " + Theme.num(paths.length)) : "Add the " + Theme.num(fresh) + " new"
+        body: fresh === 0 ? (paths.length === 1 ? qsTr("Add it again?") : qsTr("Add them again?"))
+                          : Theme.num(fresh) + (fresh === 1 ? qsTr(" song is") : qsTr(" songs are")) + " new to it."
+        confirmText: again.checked ? (fresh === 0 ? qsTr("Add again") : "Add all " + Theme.num(paths.length)) : "Add the " + Theme.num(fresh) + " new"
         StyledCheck {
             id: again
             visible: dupDlg.fresh > 0
-            text: "Also add the " + Theme.num(dupDlg.held.length) + (dupDlg.held.length === 1 ? " that's" : " that are") + " already there"
+            text: "Also add the " + Theme.num(dupDlg.held.length) + (dupDlg.held.length === 1 ? qsTr(" that's") : qsTr(" that are")) + " already there"
         }
         onAccepted: {
             var add = again.checked ? paths : paths.filter(function (p) { return held.indexOf(p) < 0 })
             if (!add.length) return
             userLib.addPathsToPlaylist(pid, add)
-            toast.show(Theme.num(add.length) + (add.length === 1 ? " song" : " songs") + " added to “" + name + "”")
+            toast.show(Theme.num(add.length) + (add.length === 1 ? qsTr(" song") : qsTr(" songs")) + " added to “" + name + "”")
         }
     }
     Shortcut {
@@ -575,8 +575,8 @@ ApplicationWindow {
         id: removeFolderDlg
         objectName: "removeFolderDialog"
         property string path: ""
-        title: "Remove this music folder?"
-        confirmText: "Remove"
+        title: qsTr("Remove this music folder?")
+        confirmText: qsTr("Remove")
         body: "“" + path + "” and the songs in it leave the library. The files stay on your disk; add the folder "
               + "again to bring them back (a full rescan). If it's on a drive that's only unplugged, plug it back in instead."
         onAccepted: library.removeFolder(path)
@@ -590,8 +590,8 @@ ApplicationWindow {
     ConfirmDialog {
         id: removeDlg
         objectName: "removeAlbumsDialog"
-        title: "Remove from the library?"
-        confirmText: "Remove"
+        title: qsTr("Remove from the library?")
+        confirmText: qsTr("Remove")
         body: what + ": the music stays on your disk; Hallucinate just stops showing it, and rescans leave it out. "
               + "Settings → Library can bring it back. Plays, likes and playlists are kept."
         property bool songs: false  // keys are song paths rather than album keys
@@ -604,12 +604,12 @@ ApplicationWindow {
     ConfirmDialog {
         id: trashDlg
         objectName: "trashAlbumsDialog"
-        title: "Move to the trash?"
-        confirmText: "Move to trash"
+        title: qsTr("Move to the trash?")
+        confirmText: qsTr("Move to trash")
         destructive: true
         body: what + ": the music files go to your system's trash, where you can restore them from. A folder left with only "
               + "covers or logs goes too; anything else in it stays."
-              + (cue ? " Songs from a CUE sheet share one audio file with the rest of their album, so that whole file goes." : "")
+              + (cue ? qsTr(" Songs from a CUE sheet share one audio file with the rest of their album, so that whole file goes.") : "")
         property bool songs: false
         property bool cue: false  // a CUE sheet's songs share one file: trashing one trashes the whole sheet's audio
         onAccepted: {
@@ -621,11 +621,11 @@ ApplicationWindow {
     Connections {
         target: library
         function onAlbumsRemoved(r) {
-            var n = r.albums > 0 ? Theme.num(r.albums) + (r.albums === 1 ? " album" : " albums")
-                                 : Theme.num(r.songs) + (r.songs === 1 ? " song" : " songs")
-            if (r.kind === "hidden") toast.show(n + " removed from the library", 0, "Undo",
+            var n = r.albums > 0 ? Theme.num(r.albums) + (r.albums === 1 ? qsTr(" album") : qsTr(" albums"))
+                                 : Theme.num(r.songs) + (r.songs === 1 ? qsTr(" song") : qsTr(" songs"))
+            if (r.kind === "hidden") toast.show(n + " removed from the library", 0, qsTr("Undo"),
                                                 function () { library.unhidePaths(r.paths || []) })
-            else if (r.failed && !r.songs) toast.show("Couldn't move the files to the trash")
+            else if (r.failed && !r.songs) toast.show(qsTr("Couldn't move the files to the trash"))
             else toast.show(n + " moved to the trash" + (r.failed ? " (" + Theme.num(r.failed) + " files couldn't be moved)" : ""))
             if (r.songs > 0 && stack.currentItem && r.keys.indexOf(stack.currentItem.albumKey) >= 0) {
                 window.goBack()  // its page is gone, so it can't be gone forward to either
@@ -636,7 +636,7 @@ ApplicationWindow {
 
     Connections {
         target: userLib
-        function onLovesMatched(n) { toast.show(n ? "Liked " + Theme.num(n) + (n === 1 ? " song" : " songs") + " you'd loved on Last.fm" : "No new songs to like from your Last.fm loves") }
+        function onLovesMatched(n) { toast.show(n ? "Liked " + Theme.num(n) + (n === 1 ? qsTr(" song") : qsTr(" songs")) + " you'd loved on Last.fm" : qsTr("No new songs to like from your Last.fm loves")) }
     }
     Connections {
         target: serverCopies
@@ -644,11 +644,11 @@ ApplicationWindow {
     }
     Connections {
         target: stations
-        function onUndoable(text) { toast.show(text, 0, "Undo", function () { stations.undo() }) }
+        function onUndoable(text) { toast.show(text, 0, qsTr("Undo"), function () { stations.undo() }) }
     }
     Connections {
         target: podcasts
-        function onUndoable(text) { toast.show(text, 0, "Undo", function () { podcasts.undo() }) }
+        function onUndoable(text) { toast.show(text, 0, qsTr("Undo"), function () { podcasts.undo() }) }
     }
     // A short message at the bottom of the window
     Rectangle {
@@ -661,7 +661,7 @@ ApplicationWindow {
         // `actionText` and `action` (a function) add a button, such as Undo; the toast then stays a little longer
         function show(text, ms, actionText, action) {
             message = text
-            toast.actionText = action ? (actionText || "Undo") : ""
+            toast.actionText = action ? (actionText || qsTr("Undo")) : ""
             toast.action = action || null
             opacity = 1
             toastTimer.interval = ms || (action ? 8000 : 4500)
@@ -714,8 +714,8 @@ ApplicationWindow {
     Timer {
         interval: 1500
         running: shell.safeMode
-        onTriggered: toast.show("Safe start: Hallucinate closed while starting last time, so the visualizer and moving"
-                                + " effects are off for now. Next start is a normal one.", 20000, "Turn them back on",
+        onTriggered: toast.show(qsTr("Safe start: Hallucinate closed while starting last time, so the visualizer and moving")
+                                + " effects are off for now. Next start is a normal one.", 20000, qsTr("Turn them back on"),
                                 function () { shell.leaveSafeMode() })
     }
     // e.g. a damaged library database that was restored from its backup at start-up
@@ -725,16 +725,16 @@ ApplicationWindow {
         id: crashDlg
         objectName: "crashDialog"
         readonly property bool froze: !shell.lastRunCrashed && shell.crashReport.indexOf("Stopped responding:") === 0
-        title: shell.lastRunCrashed ? "Hallucinate closed unexpectedly"
-               : froze ? "Hallucinate stopped responding" : "Hallucinate ran into an error"
-        confirmText: "Copy report"
-        body: (shell.lastRunCrashed ? "Last time, Hallucinate closed unexpectedly."
-               : froze ? "Last time, Hallucinate's window stopped responding for a while."
-               : "Last time, Hallucinate hit an error it couldn't handle.")
+        title: shell.lastRunCrashed ? qsTr("Hallucinate closed unexpectedly")
+               : froze ? qsTr("Hallucinate stopped responding") : qsTr("Hallucinate ran into an error")
+        confirmText: qsTr("Copy report")
+        body: (shell.lastRunCrashed ? qsTr("Last time, Hallucinate closed unexpectedly.")
+               : froze ? qsTr("Last time, Hallucinate's window stopped responding for a while.")
+               : qsTr("Last time, Hallucinate hit an error it couldn't handle."))
               + " A report of what happened is ready: paste it into a bug report so it can be fixed. It describes your setup"
               + " and the error, without file paths, names or anything from your library."
-        Component.onCompleted: { var b = standardButton(Dialog.Cancel); if (b) b.text = "Not now" }
-        onAccepted: { shell.copyCrashReport(); toast.show("Report copied — paste it into a bug report", 6000) }
+        Component.onCompleted: { var b = standardButton(Dialog.Cancel); if (b) b.text = qsTr("Not now") }
+        onAccepted: { shell.copyCrashReport(); toast.show(qsTr("Report copied — paste it into a bug report"), 6000) }
         onRejected: shell.dismissCrashReport()
     }
     Timer { interval: 900; running: shell.crashReport.length > 0 && !crashDlg.opened; onTriggered: crashDlg.open() }
@@ -779,7 +779,7 @@ ApplicationWindow {
                 }
                 Text {
                     textFormat: Text.PlainText
-                    text: "Everything that changed"
+                    text: qsTr("Everything that changed")
                     color: Theme.accent; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); font.weight: Font.DemiBold
                     LinkArea { onClicked: Qt.openUrlExternally("https://github.com/Phosphene-dev/Hallucinate/releases") }
                 }
@@ -811,7 +811,7 @@ ApplicationWindow {
         anchors.centerIn: parent
         width: 440
         modal: true
-        title: "Close Hallucinate?"
+        title: qsTr("Close Hallucinate?")
         function choose(action) {
             if (rememberClose.checked) shell.setCloseAction(action)
             closeDlg.close()
@@ -824,25 +824,25 @@ ApplicationWindow {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: (shell.canMinimize ? "Quit, minimize, or keep the music going in the background?"
-                                         : "Quit, or keep the music going in the background?")
+                text: (shell.canMinimize ? qsTr("Quit, minimize, or keep the music going in the background?")
+                                         : qsTr("Quit, or keep the music going in the background?"))
                       + (shell.trayAvailable && shell.trayEnabled
-                         ? " In the background it waits in the tray."
-                         : " To bring the window back, open Hallucinate again.")
+                         ? qsTr(" In the background it waits in the tray.")
+                         : qsTr(" To bring the window back, open Hallucinate again."))
                 color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
-            StyledCheck { id: rememberClose; text: "Remember my choice"; checked: false }
+            StyledCheck { id: rememberClose; text: qsTr("Remember my choice"); checked: false }
             Flow {
                 width: parent.width
                 spacing: 8
-                PillButton { objectName: "closeQuit"; text: "Quit"; primary: true; onClicked: closeDlg.choose("quit") }
-                PillButton { objectName: "closeMinimize"; visible: shell.canMinimize; text: "Minimize"; onClicked: closeDlg.choose("minimize") }
+                PillButton { objectName: "closeQuit"; text: qsTr("Quit"); primary: true; onClicked: closeDlg.choose("quit") }
+                PillButton { objectName: "closeMinimize"; visible: shell.canMinimize; text: qsTr("Minimize"); onClicked: closeDlg.choose("minimize") }
                 PillButton {
                     objectName: "closeTray"
-                    text: "Keep playing in the background"
+                    text: qsTr("Keep playing in the background")
                     onClicked: closeDlg.choose("tray")
                 }
-                PillButton { text: "Cancel"; onClicked: closeDlg.close() }
+                PillButton { text: qsTr("Cancel"); onClicked: closeDlg.close() }
             }
         }
         onOpened: rememberClose.checked = false
@@ -853,7 +853,7 @@ ApplicationWindow {
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true
-        title: "New playlist"
+        title: qsTr("New playlist")
         standardButtons: Dialog.Ok | Dialog.Cancel
         property var paths: []  // songs to start it with (Now Playing's "Add to playlist"); none: open it, empty
         onOpened: { createField.text = ""; createField.forceActiveFocus() }
@@ -863,11 +863,11 @@ ApplicationWindow {
             if (!name.length) return
             if (paths.length) {
                 userLib.addPathsToNewPlaylist(name, paths)
-                toast.show((paths.length === 1 ? "Added to “" : Theme.num(paths.length) + " songs added to “") + name + "”")
+                toast.show((paths.length === 1 ? qsTr("Added to “") : Theme.num(paths.length) + " songs added to “") + name + "”")
             } else window.openPlaylist(userLib.createPlaylist(name), name)
         }
         TextField {
-            id: createField; objectName: "createPlaylistName"; implicitWidth: 280; placeholderText: "Playlist name"; selectByMouse: true
+            id: createField; objectName: "createPlaylistName"; implicitWidth: 280; placeholderText: qsTr("Playlist name"); selectByMouse: true
             onAccepted: if (text.trim().length) createDlg.accept()  // no nameless playlists
             onTextChanged: { var b = createDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
             onVisibleChanged: if (visible) { var b = createDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
@@ -883,15 +883,15 @@ ApplicationWindow {
         modal: true
         title: "Update to Hallucinate " + Theme.plain(shell.updates.latestVersion) + "?"
         standardButtons: Dialog.Ok | Dialog.Cancel
-        Component.onCompleted: { var b = standardButton(Dialog.Ok); if (b) b.text = "Update now" }
+        Component.onCompleted: { var b = standardButton(Dialog.Ok); if (b) b.text = qsTr("Update now") }
         onAccepted: shell.updates.installNow()
         Text {
             textFormat: Text.PlainText
             width: updateDlg.availableWidth
             wrapMode: Text.WordWrap
-            text: "Hallucinate downloads the new version from GitHub, checks it against the release's checksum, "
+            text: qsTr("Hallucinate downloads the new version from GitHub, checks it against the release's checksum, ")
                   + "then closes and reopens to finish. Your library, playlists and settings stay as they are."
-                  + (Qt.platform.os === "windows" ? " Windows may ask for permission to install." : "")
+                  + (Qt.platform.os === "windows" ? qsTr(" Windows may ask for permission to install.") : "")
             color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
         }
     }
@@ -961,7 +961,7 @@ ApplicationWindow {
                         anchors { left: parent.left; leftMargin: 18 + topRow.leftButtons; verticalCenter: parent.verticalCenter }
                         icon: "back"
                         visible: window.backRoutes.length > 0 || (stack.currentItem && stack.currentItem.objectName === "search")
-                        tip: "Back (Alt+Left)"
+                        tip: qsTr("Back (Alt+Left)")
                         onClicked: Nav.back()
                     }
                     TextField {
@@ -970,7 +970,7 @@ ApplicationWindow {
                         anchors { left: backBtn.visible ? backBtn.right : parent.left; leftMargin: backBtn.visible ? 8 : 24 + topRow.leftButtons; verticalCenter: parent.verticalCenter }
                         width: Math.min(520, parent.width - 120 - (windowControls.visible ? windowControls.width + 16 : 0))
                         height: 42
-                        placeholderText: "Search   ( / )        Ctrl+K  commands & pages"
+                        placeholderText: qsTr("Search   ( / )        Ctrl+K  commands & pages")
                         placeholderTextColor: Theme.textDim
                         color: Theme.text
                         font.family: Theme.fontFamily
@@ -1117,9 +1117,9 @@ ApplicationWindow {
         Accessible.name: "Hallucinate"
         onClicked: function (mouse) { mouse.button === Qt.BackButton ? Nav.back() : window.goForward() }
     }
-    Shortcut { sequences: ["Ctrl+K", "Ctrl+P"]; enabled: !welcomeView.open; onActivated: commandPalette.opened ? commandPalette.close() : commandPalette.show() }
+    Shortcut { sequences: [qsTr("Ctrl+K"), qsTr("Ctrl+P")]; enabled: !welcomeView.open; onActivated: commandPalette.opened ? commandPalette.close() : commandPalette.show() }
     Shortcut {
-        sequences: ["/", "Ctrl+F"]
+        sequences: ["/", qsTr("Ctrl+F")]
         enabled: !window.typing
         onActivated: {
             // on Settings, its own search: finding a setting, not music
@@ -1141,7 +1141,7 @@ ApplicationWindow {
         Text {
             textFormat: Text.PlainText
             anchors.centerIn: parent
-            text: "Drop to play"
+            text: qsTr("Drop to play")
             color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(21)) * Theme.displayScale; font.weight: Font.DemiBold
         }
     }
@@ -1159,7 +1159,7 @@ ApplicationWindow {
         go(shell.openingPage())
         // an AppImage nothing has added to the app launcher: docks can't show its icon (once; Settings → Desktop)
         if (!welcomeView.open && shell.offerLauncher())
-            toast.show("Add Hallucinate to your app launcher? Docks and taskbars need it for its icon.", 15000,
+            toast.show(qsTr("Add Hallucinate to your app launcher? Docks and taskbars need it for its icon."), 15000,
                        "Add", function () { toast.show(shell.addToLauncher()) })
     }
     WindowEdges {}  // resizing by the edges when the title bar is built in (no system frame)

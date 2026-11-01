@@ -140,6 +140,9 @@ def main(argv=None) -> int:
     diagnostics.install()
     app.setApplicationName("Hallucinate")
     app.setOrganizationName("hallucinate")
+    from .i18n import Translations
+
+    translations = Translations(app)  # before anything makes text people read
     app.setApplicationDisplayName("Hallucinate")
     # the window's app id: docks find its icon through the launcher of that name. An AppImage uses the launcher
     # that starts it (AppImageLauncher's, Gear Lever's or our own: see desktopentry), when there is one.
@@ -345,6 +348,8 @@ def main(argv=None) -> int:
     ctx.setContextProperty("artistBios", artist_bios)
     ctx.setContextProperty("similarArtists", similar_artists)
     ctx.setContextProperty("shell", shell)
+    ctx.setContextProperty("i18n", translations)
+    translations.setEngine(engine)
     ctx.setContextProperty("discord", discord)
     ctx.setContextProperty("themeManager", theme_manager)
     ctx.setContextProperty("stations", stations)

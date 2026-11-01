@@ -89,7 +89,7 @@ Rectangle {
         }
         onPressAndHold: if (!PickDrag.pick) row.menu()
         Accessible.role: Accessible.Button
-        Accessible.name: (row.playing ? "Playing: " : "Play ") + (row.episode.title || "") + ", " + (row.episode.detail || "")
+        Accessible.name: (row.playing ? qsTr("Playing: ") : qsTr("Play ")) + (row.episode.title || "") + ", " + (row.episode.detail || "")
         Accessible.onPressAction: (row.upNextRow ? podcasts.playUpNext(row.episode.id) : podcasts.play(row.episode.id))
     }
     Row {
@@ -100,9 +100,9 @@ Rectangle {
             visible: !row.episode.local && (row.episode.url || "").length > 0
             icon: row.episode.downloading ? "close" : "download"
             size: 16
-            tip: row.episode.downloading ? "Stop downloading" : "Download"
+            tip: row.episode.downloading ? qsTr("Stop downloading") : qsTr("Download")
             onClicked: row.episode.downloading ? podcasts.cancelDownload(row.episode.id) : podcasts.download(row.episode.id)
         }
-        IconButton { icon: "more"; size: 16; tip: "More"; onClicked: row.menu() }
+        IconButton { icon: "more"; size: 16; tip: qsTr("More"); onClicked: row.menu() }
     }
 }

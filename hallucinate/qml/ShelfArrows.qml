@@ -83,7 +83,7 @@ Item {
                 onClicked: arrows.page(modelData)
             }
             Accessible.role: Accessible.Button
-            Accessible.name: (modelData < 0 ? "Earlier " : "More ") + arrows.what
+            Accessible.name: (modelData < 0 ? qsTr("Earlier ") : qsTr("More ")) + arrows.what
             Accessible.onPressAction: arrows.page(modelData)
         }
     }

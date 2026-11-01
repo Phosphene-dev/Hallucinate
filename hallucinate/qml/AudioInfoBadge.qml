@@ -16,9 +16,9 @@ Item {
     readonly property string spokenLabel: {
         var format = formatName.trim().toUpperCase()
         if (bitrate > 0)
-            return (format.length ? format + " audio, " : "Audio, ") +
+            return (format.length ? format + " audio, " : qsTr("Audio, ")) +
                    "approximately " + Math.round(bitrate / 1000) + " kilobits per second"
-        return format.length ? format + " audio, bitrate unavailable" : "Audio bitrate unavailable"
+        return format.length ? format + " audio, bitrate unavailable" : qsTr("Audio bitrate unavailable")
     }
     implicitWidth: labelText.implicitWidth + 14
     implicitHeight: 18

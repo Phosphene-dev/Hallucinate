@@ -39,14 +39,14 @@ Menu {
         userLib.playPaths(p)
     }
 
-    MenuItem { text: "Play"; icon.name: "play"; onTriggered: albumMenu.single ? library.playAlbum(albumMenu.keys[0], 0) : userLib.playPaths(albumMenu.paths()) }
-    MenuItem { objectName: "albumShuffle"; text: "Shuffle"; icon.name: "shuffle"; onTriggered: albumMenu.shuffle() }
-    MenuItem { text: "Play next"; icon.name: "next"; onTriggered: { userLib.playNextPaths(albumMenu.paths()); Nav.notify(albumMenu.what + " will play next") } }
-    MenuItem { text: "Add to queue"; icon.name: "queue"; onTriggered: { userLib.enqueuePaths(albumMenu.paths()); Nav.notify(albumMenu.what + " added to the queue") } }
+    MenuItem { text: qsTr("Play"); icon.name: "play"; onTriggered: albumMenu.single ? library.playAlbum(albumMenu.keys[0], 0) : userLib.playPaths(albumMenu.paths()) }
+    MenuItem { objectName: "albumShuffle"; text: qsTr("Shuffle"); icon.name: "shuffle"; onTriggered: albumMenu.shuffle() }
+    MenuItem { text: qsTr("Play next"); icon.name: "next"; onTriggered: { userLib.playNextPaths(albumMenu.paths()); Nav.notify(albumMenu.what + " will play next") } }
+    MenuItem { text: qsTr("Add to queue"); icon.name: "queue"; onTriggered: { userLib.enqueuePaths(albumMenu.paths()); Nav.notify(albumMenu.what + " added to the queue") } }
     Menu {
         id: plMenu
         objectName: "addToPlaylistMenu"
-        title: "Add to playlist"
+        title: qsTr("Add to playlist")
         icon.name: "playlist"
         // which playlists already hold these songs: ticked, and a click takes them out (issue 101)
         property var held: ({})
@@ -56,7 +56,7 @@ Menu {
             held = userLib.playlistCounts(heldPaths)
             for (var i = 0; i < count; i++) { var it = itemAt(i); if (it && it.have !== undefined) it.checked = it.full }
         }
-        MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: newDlg.open() }
+        MenuItem { text: qsTr("New playlist…"); icon.name: "plus"; onTriggered: newDlg.open() }
         MenuSeparator {}
         Instantiator {
             model: userLib.playlists
@@ -78,19 +78,19 @@ Menu {
         objectName: "albumLikeAll"
         visible: shell.features.liked !== false
         height: visible ? implicitHeight : 0
-        text: albumMenu.allLiked ? "Unlike all songs" : "Like all songs"
+        text: albumMenu.allLiked ? qsTr("Unlike all songs") : qsTr("Like all songs")
         icon.name: "heart"
         onTriggered: {
             var p = albumMenu.paths()
             userLib.setLikedPaths(p, !albumMenu.allLiked)
-            Nav.notify((albumMenu.allLiked ? "Unliked" : "Liked") + " every song on " + albumMenu.what)
+            Nav.notify((albumMenu.allLiked ? qsTr("Unliked") : qsTr("Liked")) + " every song on " + albumMenu.what)
         }
     }
     MenuSeparator {}
     MenuItem {
         visible: albumMenu.single
         height: visible ? implicitHeight : 0
-        text: "Edit album info…"
+        text: qsTr("Edit album info…")
         icon.name: "edit"
         onTriggered: Nav.editAlbum(albumMenu.keys[0])
     }
@@ -113,7 +113,7 @@ Menu {
         objectName: "albumShowInFolder"
         visible: albumMenu.single && albumMenu.firstPath.length > 0 && !albumMenu.onServer
         height: visible ? implicitHeight : 0
-        text: "Show in folder"
+        text: qsTr("Show in folder")
         icon.name: "folder"
         onTriggered: library.showInFolder(albumMenu.firstPath)
     }
@@ -121,32 +121,32 @@ Menu {
         objectName: "albumKeep"
         visible: albumMenu.copies.servers > 0 && albumMenu.copies.kept + albumMenu.copies.waiting < albumMenu.copies.servers
         height: visible ? implicitHeight : 0
-        text: "Keep on this computer"; icon.name: "download"
+        text: qsTr("Keep on this computer"); icon.name: "download"
         onTriggered: serverCopies.keep(albumMenu.paths())
     }
     MenuItem {
         objectName: "albumUnkeep"
         visible: albumMenu.copies.kept + albumMenu.copies.waiting > 0
         height: visible ? implicitHeight : 0
-        text: albumMenu.copies.waiting > 0 && albumMenu.copies.kept === 0 ? "Stop keeping on this computer" : "Remove the copies from this computer"
+        text: albumMenu.copies.waiting > 0 && albumMenu.copies.kept === 0 ? qsTr("Stop keeping on this computer") : qsTr("Remove the copies from this computer")
         icon.name: "remove"
         onTriggered: serverCopies.remove(albumMenu.paths())
     }
     MenuSeparator {}
-    MenuItem { objectName: "albumRemove"; text: "Remove from library…"; icon.name: "remove"; icon.color: Theme.error; onTriggered: Nav.removeAlbums(albumMenu.keys, albumMenu.what) }
-    MenuItem { objectName: "albumTrash"; text: "Move to trash…"; icon.name: "trash"; icon.color: Theme.error; onTriggered: Nav.trashAlbums(albumMenu.keys, albumMenu.what) }
+    MenuItem { objectName: "albumRemove"; text: qsTr("Remove from library…"); icon.name: "remove"; icon.color: Theme.error; onTriggered: Nav.removeAlbums(albumMenu.keys, albumMenu.what) }
+    MenuItem { objectName: "albumTrash"; text: qsTr("Move to trash…"); icon.name: "trash"; icon.color: Theme.error; onTriggered: Nav.trashAlbums(albumMenu.keys, albumMenu.what) }
 
     Dialog {
         id: newDlg
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true
-        title: "New playlist"
+        title: qsTr("New playlist")
         standardButtons: Dialog.Ok | Dialog.Cancel
         onOpened: { nf.text = ""; nf.forceActiveFocus() }
         onAccepted: if (nf.text.trim().length) Nav.openPlaylist(userLib.addPathsToNewPlaylist(nf.text.trim(), albumMenu.paths()))
         TextField {
-            id: nf; implicitWidth: 280; placeholderText: "Playlist name"; selectByMouse: true
+            id: nf; implicitWidth: 280; placeholderText: qsTr("Playlist name"); selectByMouse: true
             onAccepted: if (text.trim().length) newDlg.accept()  // no nameless playlists
             onTextChanged: { var b = newDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
             onVisibleChanged: if (visible) { var b = newDlg.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }

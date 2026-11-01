@@ -14,12 +14,12 @@ Item {
     Component.onCompleted: library.checkHealth()
 
     function fixLabel(kind, id) {
-        if (kind === "folder") return "Remove"
-        if (id === "covers") return "Find cover"
-        if (id === "genre") return "Find genre"
-        if (id === "replaygain") return "Analyse"
-        if (kind === "album") return "Edit album"
-        return "Edit tags"
+        if (kind === "folder") return qsTr("Remove")
+        if (id === "covers") return qsTr("Find cover")
+        if (id === "genre") return qsTr("Find genre")
+        if (id === "replaygain") return qsTr("Analyse")
+        if (kind === "album") return qsTr("Edit album")
+        return qsTr("Edit tags")
     }
     function fix(check, item) {
         if (check.kind === "folder") Nav.removeFolder(item.path)
@@ -64,19 +64,19 @@ Item {
         id: folderMenu
         objectName: "healthFolderMenu"
         property string path: ""
-        MenuItem { text: "Copy path"; icon.name: "folder"; onTriggered: shell.copyText(folderMenu.path) }
+        MenuItem { text: qsTr("Copy path"); icon.name: "folder"; onTriggered: shell.copyText(folderMenu.path) }
         MenuSeparator {}
         MenuItem {
-            text: "Remove from the library"; icon.name: "remove"; icon.color: Theme.error
+            text: qsTr("Remove from the library"); icon.name: "remove"; icon.color: Theme.error
             onTriggered: Nav.removeFolder(folderMenu.path)
         }
     }
     ConfirmDialog {
         id: extraDlg
         objectName: "removeExtraCopiesDialog"
-        title: "Keep only the best copies?"
+        title: qsTr("Keep only the best copies?")
         confirmText: "Remove " + what
-        body: "Of each set of probable duplicates, the best copy stays: lossless first, then the higher bitrate. "
+        body: qsTr("Of each set of probable duplicates, the best copy stays: lossless first, then the higher bitrate. ")
               + "The other " + what + " are taken out of the library; the files stay on your disk, and Settings → "
               + "Library can bring them back. Check the list first if some are on purpose, like a song on both an album "
               + "and a compilation: right-click one to keep or remove it on its own."
@@ -132,7 +132,7 @@ Item {
                     spacing: 6
                     Text {
                         textFormat: Text.PlainText
-                        text: "Library health"
+                        text: qsTr("Library health")
                         color: Theme.text
                         font.family: Theme.displayFamily
                         font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale
@@ -141,9 +141,9 @@ Item {
                     Text {
                         textFormat: Text.PlainText
                         objectName: "healthSummary"
-                        text: page.report.loading && !page.checks.length ? "Checking your library…"
-                            : (page.report.issues || 0) === 0 ? "Nothing to fix. Your library is in great shape."
-                            : Theme.num(page.report.issues) + (page.report.issues === 1 ? " thing" : " things") + " worth a look across "
+                        text: page.report.loading && !page.checks.length ? qsTr("Checking your library…")
+                            : (page.report.issues || 0) === 0 ? qsTr("Nothing to fix. Your library is in great shape.")
+                            : Theme.num(page.report.issues) + (page.report.issues === 1 ? qsTr(" thing") : qsTr(" things")) + " worth a look across "
                               + Theme.num((page.report.albums || 0)) + " albums and " + Theme.num((page.report.tracks || 0)) + " songs"
                         color: Theme.textDim
                         font.family: Theme.fontFamily
@@ -153,26 +153,26 @@ Item {
                         width: parent.width
                         spacing: 10
                         PillButton {
-                            text: page.report.loading ? "Checking…" : "Check again"
+                            text: page.report.loading ? qsTr("Checking…") : qsTr("Check again")
                             enabled: !page.report.loading
                             onClicked: library.checkHealth()
                         }
                         // covers blank or garbled: start them over (a full rescan; your own chosen covers stay)
                         PillButton {
                             objectName: "repairCovers"
-                            text: "Repair covers…"
+                            text: qsTr("Repair covers…")
                             enabled: !library.scanning
                             onClicked: repairDlg.open()
                         }
                     }
                     ConfirmDialog {
                         id: repairDlg
-                        title: "Repair covers?"
-                        body: "Covers that show blank or garbled are made again: every song's picture is read afresh "
+                        title: qsTr("Repair covers?")
+                        body: qsTr("Covers that show blank or garbled are made again: every song's picture is read afresh ")
                               + "(a full rescan, which can take a while with a big library), and any that turn out damaged "
                               + "make way for the folder's cover. Covers you chose yourself stay as they are."
-                        confirmText: "Repair covers"
-                        onAccepted: { library.repairCovers(); Nav.notify("Repairing covers: rescanning your library") }
+                        confirmText: qsTr("Repair covers")
+                        onAccepted: { library.repairCovers(); Nav.notify(qsTr("Repairing covers: rescanning your library")) }
                     }
                 }
             }
@@ -226,7 +226,7 @@ Item {
                                 textFormat: Text.PlainText
                                 id: countText
                                 anchors { right: chevron.left; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                                text: card.modelData.count === 0 ? "All good" : card.modelData.count
+                                text: card.modelData.count === 0 ? qsTr("All good") : card.modelData.count
                                 color: card.modelData.count === 0 ? Theme.accent : Theme.text
                                 font.family: Theme.displayFamily
                                 font.pixelSize: (Theme.fontSize(card.modelData.count === 0 ? 13 : 18)) * Theme.displayScale
@@ -260,7 +260,7 @@ Item {
                                 objectName: "repairDamagedCovers"
                                 primary: true
                                 height: 32
-                                text: "Repair covers…"
+                                text: qsTr("Repair covers…")
                                 enabled: !library.scanning
                                 onClicked: repairDlg.open()
                             }
@@ -273,7 +273,7 @@ Item {
                                 objectName: "findAllCovers"
                                 primary: !metaEditor.coversBusy
                                 height: 32
-                                text: metaEditor.coversBusy ? "Stop" : "Find all online"
+                                text: metaEditor.coversBusy ? qsTr("Stop") : qsTr("Find all online")
                                 enabled: metaEditor.coversBusy || !shell.offlineMode
                                 onClicked: metaEditor.coversBusy ? metaEditor.cancelCovers() : metaEditor.fetchMissingCovers()
                             }
@@ -285,7 +285,7 @@ Item {
                                 text: metaEditor.coversBusy
                                       ? "Looked up " + Theme.num(metaEditor.coversDone) + " of " + Theme.num(metaEditor.coversTotal) + " albums  ·  "
                                         + metaEditor.coversFound + " found" + (metaEditor.coversCurrent ? "  ·  " + metaEditor.coversCurrent : "")
-                                      : "Searches MusicBrainz and the Cover Art Archive, about one album a second."
+                                      : qsTr("Searches MusicBrainz and the Cover Art Archive, about one album a second.")
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily
                                 font.pixelSize: Theme.fontSize(12)
@@ -301,7 +301,7 @@ Item {
                                 objectName: "findAllGenres"
                                 primary: !metaEditor.genresBusy && !metaEditor.genreProposals.length
                                 height: 32
-                                text: metaEditor.genresBusy || metaEditor.genresSaving ? "Stop" : "Find all online"
+                                text: metaEditor.genresBusy || metaEditor.genresSaving ? qsTr("Stop") : qsTr("Find all online")
                                 enabled: metaEditor.genresBusy || metaEditor.genresSaving || !shell.offlineMode
                                 onClicked: metaEditor.genresSaving ? metaEditor.stopSavingGenres()
                                            : metaEditor.genresBusy ? metaEditor.cancelGenres() : metaEditor.findMissingGenres()
@@ -325,7 +325,7 @@ Item {
                                       : metaEditor.genresBusy
                                       ? "Looked up " + Theme.num(metaEditor.genresDone) + " of " + Theme.num(metaEditor.genresTotal) + " albums  ·  "
                                         + metaEditor.genresFound + " found" + (metaEditor.genresCurrent ? "  ·  " + metaEditor.genresCurrent : "")
-                                      : "Asks MusicBrainz, a couple of seconds an album. You check what it finds before anything is saved."
+                                      : qsTr("Asks MusicBrainz, a couple of seconds an album. You check what it finds before anything is saved.")
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily
                                 font.pixelSize: Theme.fontSize(12)
@@ -339,10 +339,10 @@ Item {
                                 objectName: "removeExtraCopies"
                                 primary: true
                                 height: 32
-                                text: "Keep the best copies"
+                                text: qsTr("Keep the best copies")
                                 onClicked: {
                                     var n = card.modelData.extra
-                                    extraDlg.what = Theme.num(n) + (n === 1 ? " copy" : " copies")
+                                    extraDlg.what = Theme.num(n) + (n === 1 ? qsTr(" copy") : qsTr(" copies"))
                                     extraDlg.open()
                                 }
                             }
@@ -366,7 +366,7 @@ Item {
                                 objectName: "analyseAll"
                                 primary: !replayGain.busy
                                 height: 32
-                                text: replayGain.busy ? "Stop" : "Analyse all"
+                                text: replayGain.busy ? qsTr("Stop") : qsTr("Analyse all")
                                 onClicked: replayGain.busy ? replayGain.cancel() : replayGain.analyseMissing()
                             }
                             Text {

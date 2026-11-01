@@ -9,7 +9,7 @@ Menu {
     Menu {
         id: plSub
         objectName: "nowPlayingPlaylistMenu"
-        title: "Add to playlist"
+        title: qsTr("Add to playlist")
         icon.name: "playlist"
         // which playlists already hold these songs: ticked, and a click takes them out (issue 101)
         property var held: ({})
@@ -20,7 +20,7 @@ Menu {
             for (var i = 0; i < count; i++) { var it = itemAt(i); if (it && it.have !== undefined) it.checked = it.full }
         }
         enabled: playback.song
-        MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: Nav.newPlaylistWith([player.current.path]) }
+        MenuItem { text: qsTr("New playlist…"); icon.name: "plus"; onTriggered: Nav.newPlaylistWith([player.current.path]) }
         MenuSeparator {}
         Instantiator {
             model: userLib.playlists
@@ -31,8 +31,8 @@ Menu {
                 readonly property bool full: have > 0 && have >= plSub.heldPaths.length
                 checkable: true
                 text: Theme.plain(name) + (have > 0 && !full ? "  (" + Theme.num(have) + " of " + Theme.num(plSub.heldPaths.length) + ")" : "")
-                onTriggered: full ? Nav.removeFromPlaylistId(id, name, [player.current.path], "“" + (player.current.title || "This song") + "”")
-                                  : Nav.addToPlaylist(id, name, [player.current.path], "“" + (player.current.title || "This song") + "”")
+                onTriggered: full ? Nav.removeFromPlaylistId(id, name, [player.current.path], "“" + (player.current.title || qsTr("This song")) + "”")
+                                  : Nav.addToPlaylist(id, name, [player.current.path], "“" + (player.current.title || qsTr("This song")) + "”")
             }
             onObjectAdded: (i, o) => plSub.addItem(o)
             onObjectRemoved: (i, o) => plSub.removeItem(o)
@@ -40,7 +40,7 @@ Menu {
     }
     MenuItem {
         objectName: "nowPlayingSpectrum"
-        text: "Spectrum analyzer…"
+        text: qsTr("Spectrum analyzer…")
         icon.name: "wave"
         enabled: playback.song && !/^(subsonic|jellyfin):\/\//.test(player.current.path || "")
         onTriggered: Nav.openSpectrum(player.current.path)
@@ -51,7 +51,7 @@ Menu {
         icon.name: "wave"
         readonly property bool episode: player.hasTrack && player.current.kind === "episode"
         // podcasts keep a speed of their own, and go up to 3×
-        title: (episode ? "Podcast speed" : "Playback speed") + (player.speed !== 1 ? " (" + player.speed + "×)" : "")
+        title: (episode ? qsTr("Podcast speed") : qsTr("Playback speed")) + (player.speed !== 1 ? " (" + player.speed + "×)" : "")
         Repeater {
             model: speedMenu.episode ? [0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3] : [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
             MenuItem {
@@ -65,13 +65,13 @@ Menu {
     }
     Menu {
         icon.name: "history"
-        title: "Sleep timer" + (player.sleepRemaining >= 0 ? " (" + Math.ceil(player.sleepRemaining / 60) + " min)" : player.sleepAfterTrack ? " (end of track)" : player.sleepAfterAlbum ? " (end of album)" : "")
-        MenuItem { text: "Off"; onTriggered: player.setSleepMinutes(0) }
+        title: "Sleep timer" + (player.sleepRemaining >= 0 ? " (" + Math.ceil(player.sleepRemaining / 60) + " min)" : player.sleepAfterTrack ? qsTr(" (end of track)") : player.sleepAfterAlbum ? qsTr(" (end of album)") : "")
+        MenuItem { text: qsTr("Off"); onTriggered: player.setSleepMinutes(0) }
         MenuItem {
             objectName: "sleepMore"
             visible: player.sleepRemaining >= 0  // a timer is running: give it longer without starting over
             height: visible ? implicitHeight : 0
-            text: "+15 minutes"
+            text: qsTr("+15 minutes")
             onTriggered: player.addSleepMinutes(15)
         }
         Repeater {
@@ -82,12 +82,12 @@ Menu {
                 onTriggered: player.setSleepMinutes(modelData)
             }
         }
-        MenuItem { text: "End of current track"; onTriggered: player.setSleepAfterTrack(true) }
+        MenuItem { text: qsTr("End of current track"); onTriggered: player.setSleepAfterTrack(true) }
         MenuItem {
             objectName: "sleepAfterAlbum"
             visible: player.hasTrack && !!player.current.album_key
             height: visible ? implicitHeight : 0
-            text: "End of this album"
+            text: qsTr("End of this album")
             onTriggered: player.setSleepAfterAlbum(true)
         }
     }

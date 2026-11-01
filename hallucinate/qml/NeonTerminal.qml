@@ -24,9 +24,9 @@ Rectangle {
 
     // --- the panes ------------------------------------------------------------------------------------------------
     readonly property var paneNames: ({
-        now: "now_playing --verbose", wave: "waveform", spectrum: "spectrum", lyrics: "lyrics --scroll",
-        queue: "queue --next", signal: "signal --path", stats: "stats --today", tags: "tags --raw",
-        similar: "similar", whoami: "whoami", log: "tail -f afterimage.log"
+        now: qsTr("now_playing --verbose"), wave: "waveform", spectrum: "spectrum", lyrics: qsTr("lyrics --scroll"),
+        queue: qsTr("queue --next"), signal: qsTr("signal --path"), stats: qsTr("stats --today"), tags: qsTr("tags --raw"),
+        similar: "similar", whoami: "whoami", log: qsTr("tail -f afterimage.log")
     })
     readonly property var allPanes: ["now", "wave", "spectrum", "lyrics", "queue", "signal", "stats", "tags", "similar", "whoami", "log"]
     readonly property string defaultPanes: "now,wave,spectrum,lyrics,queue"
@@ -76,15 +76,15 @@ Rectangle {
             out.push("  artist   : " + (t.artist || "-"))
             out.push("  album    : " + (t.album || "-") + (t.year ? " (" + t.year + ")" : ""))
             out.push("  signal   : " + np.signal.toLowerCase())
-            out.push("  state    : " + (player.playing ? "playing" : "paused") + (player.shuffle ? " · shuffle" : "")
-                     + (player.repeat === 2 ? " · repeat one" : player.repeat ? " · repeat" : "")
-                     + (player.muted ? " · muted" : " · vol " + Math.round(player.volume * 100) + "%"))
+            out.push("  state    : " + (player.playing ? "playing" : "paused") + (player.shuffle ? qsTr(" · shuffle") : "")
+                     + (player.repeat === 2 ? qsTr(" · repeat one") : player.repeat ? qsTr(" · repeat") : "")
+                     + (player.muted ? qsTr(" · muted") : " · vol " + Math.round(player.volume * 100) + "%"))
             out.push("  " + bar(np.progress, Math.max(10, Math.min(60, cols - 30))) + " " + np.clock(player.position)
                      + " / " + np.clock(player.duration) + "  " + Math.round(np.progress * 100) + "%")
             return out
         case "spectrum":
             var lv = np.levels, blocks = " ▁▂▃▄▅▆▇█"
-            if (!lv.length) return ["  (turn on “React to the music” on the Visualizer page to see the spectrum)"]
+            if (!lv.length) return [qsTr("  (turn on “React to the music” on the Visualizer page to see the spectrum)")]
             for (var r = 3; r >= 0; r--) {
                 var line = "  "
                 for (i = 0; i < 24; i++) {
@@ -95,21 +95,21 @@ Rectangle {
             }
             return out
         case "lyrics":
-            if (lyricsCtl.status === "loading") return ["  looking for lyrics..."]
-            if (lyricsCtl.status !== "found") return ["  (no lyrics for this song)"]
+            if (lyricsCtl.status === "loading") return [qsTr("  looking for lyrics...")]
+            if (lyricsCtl.status !== "found") return [qsTr("  (no lyrics for this song)")]
             if (!lyricsCtl.synced) return String(lyricsCtl.plain || "").split("\n").slice(0, 6).map(function (l) { return "  " + l })
             var at = Math.max(0, lyricsCtl.currentLine), lines = lyricsCtl.lines || []
             for (i = Math.max(0, at - 2); i <= Math.min(lines.length - 1, at + 2); i++)
                 out.push((i === at ? "> " : "  ") + ((lines[i] || {}).text || ""))
             return out.length ? out : ["  ..."]
         case "queue":
-            if (!np.upNext.length) return ["  (nothing after this)"]
+            if (!np.upNext.length) return [qsTr("  (nothing after this)")]
             return np.upNext.map(function (s, k) {
                 return "  " + (k < 9 ? "0" : "") + (k + 1) + "  " + term.pad(s.title, Math.min(34, Math.max(12, term.cols - 28))).slice(0, 40) + "  " + (s.artist || "")
             })
         case "signal":
             var sp = player.signalPath || {}, stages = sp.stages || []
-            if (!stages.length) return ["  (nothing playing)"]
+            if (!stages.length) return [qsTr("  (nothing playing)")]
             stages.forEach(function (s, k) {
                 out.push("  " + (k ? " └─ " : "    ") + term.pad(s.name, 11) + (s.active ? "* " : "  ") + (s.detail || ""))
             })
@@ -135,14 +135,14 @@ Rectangle {
             var ti = tagInfo, keys = Object.keys(ti).filter(function (k) {
                 var v = ti[k]
                 return v !== null && v !== undefined && v !== "" && v !== 0 && typeof v !== "object"
-                    && ["artUrl", "art", "id", "mtime", "size", "aa_tag"].indexOf(k) < 0
+                    && [qsTr("artUrl"), "art", "id", "mtime", "size", "aa_tag"].indexOf(k) < 0
             }).sort()
-            if (!keys.length) return [player.hasTrack ? "  (no tags read for this one)" : "  (nothing playing)"]
+            if (!keys.length) return [player.hasTrack ? qsTr("  (no tags read for this one)") : qsTr("  (nothing playing)")]
             return keys.slice(0, 40).map(function (k) { return "  " + term.pad(k, 16) + ": " + String(ti[k]).slice(0, 200) })
         case "similar":
             var rev = similarRevision, found = t.artist ? similarArtists.similar(t.artist) : ({})
-            if (!t.artist) return ["  (nothing playing)"]
-            if (found.on !== true) return ["  (switch on similar artists in Settings → Online & privacy)"]
+            if (!t.artist) return [qsTr("  (nothing playing)")]
+            if (found.on !== true) return [qsTr("  (switch on similar artists in Settings → Online & privacy)")]
             if (found.busy) return ["  asking last.fm about " + t.artist + "..."]
             var have = (found.have || []).slice(0, 6).map(function (a) { return a.name }), more = (found.discover || []).slice(0, 6).map(function (a) { return a.name })
             if (have.length) out.push("  in your library : " + have.join(", "))
@@ -165,27 +165,27 @@ Rectangle {
     // help: one command per line under a heading, its description in a column beside it, or on its own indented
     // line when the console is too narrow for both (then nothing wraps in the middle of a word or a command)
     readonly property var helpTopics: [
-        ["playback", [["play [search|n]", "play songs matching, a numbered result, or carry on"], ["pause · p", "pause, or carry on"],
-                      ["album <search> · artist <search>", "play the best matching album or artist"],
-                      ["tune [search|n]", "your radio stations, or tune in to one"],
-                      ["next [search] · n", "skip, or play a song next"], ["prev · b", "back a song"],
-                      ["seek <1:30|+10|-10>", "move in the song"], ["vol <n|+n|-n> · v", "volume, 0 to 100"],
-                      ["mute · m", "mute or unmute"], ["shuffle [on|off] · s", "shuffle"],
-                      ["repeat [off|all|one] · r", "repeat"], ["like", "like the playing song"],
-                      ["sleep <min|track|album|off>", "sleep timer"], ["radio [on|off]", "keep similar songs coming"]]],
-        ["queue", [["queue <search|n> · q", "add the best match, or a numbered result"], ["queue rm <n>", "take one out (numbers as up next shows them)"],
-                   ["queue mv <from> <to>", "move one"], ["queue clear", "clear what's next"], ["queue shuffle", "shuffle what's next"]]],
-        ["looking around", [["search <text> · f", "songs, albums and artists, numbered to play or queue"],
-                            ["scan", "look through your music folders again, and watch it go"],
-                            ["history [n]", "what you listened to last"], ["top [week|month|year|all] · t", "your most played"],
-                            ["lyrics · l", "the whole text"], ["eq [off|<preset>]", "the equaliser"],
-                            ["out [<n>|default]", "where the sound goes"],
+        ["playback", [[qsTr("play [search|n]"), qsTr("play songs matching, a numbered result, or carry on")], [qsTr("pause · p"), qsTr("pause, or carry on")],
+                      [qsTr("album <search> · artist <search>"), qsTr("play the best matching album or artist")],
+                      [qsTr("tune [search|n]"), qsTr("your radio stations, or tune in to one")],
+                      [qsTr("next [search] · n"), qsTr("skip, or play a song next")], [qsTr("prev · b"), qsTr("back a song")],
+                      [qsTr("seek <1:30|+10|-10>"), qsTr("move in the song")], [qsTr("vol <n|+n|-n> · v"), qsTr("volume, 0 to 100")],
+                      [qsTr("mute · m"), qsTr("mute or unmute")], [qsTr("shuffle [on|off] · s"), "shuffle"],
+                      [qsTr("repeat [off|all|one] · r"), "repeat"], ["like", qsTr("like the playing song")],
+                      [qsTr("sleep <min|track|album|off>"), qsTr("sleep timer")], [qsTr("radio [on|off]"), qsTr("keep similar songs coming")]]],
+        ["queue", [[qsTr("queue <search|n> · q"), qsTr("add the best match, or a numbered result")], [qsTr("queue rm <n>"), qsTr("take one out (numbers as up next shows them)")],
+                   [qsTr("queue mv <from> <to>"), qsTr("move one")], [qsTr("queue clear"), qsTr("clear what's next")], [qsTr("queue shuffle"), qsTr("shuffle what's next")]]],
+        [qsTr("looking around"), [[qsTr("search <text> · f"), qsTr("songs, albums and artists, numbered to play or queue")],
+                            ["scan", qsTr("look through your music folders again, and watch it go")],
+                            [qsTr("history [n]"), qsTr("what you listened to last")], [qsTr("top [week|month|year|all] · t"), qsTr("your most played")],
+                            [qsTr("lyrics · l"), qsTr("the whole text")], [qsTr("eq [off|<preset>]"), qsTr("the equaliser")],
+                            [qsTr("out [<n>|default]"), qsTr("where the sound goes")],
                             ["<pane>", "print a pane once: " + allPanes.join(", ")]]],
-        ["the terminal", [["pin <pane> / unpin <pane>", "what shows on the left"], ["panes", "which are showing"],
-                          ["phosphor <green|amber|theme>", "the colour"], ["theme <name>", "another theme"],
-                          ["boot · clear · cmds", "start over · empty this · what you typed"],
-                          ["cockpit · classic", "switch Now Playing"], ["exit", "close it"],
-                          ["up / down · Tab", "earlier commands · complete a command"]]]
+        [qsTr("the terminal"), [[qsTr("pin <pane> / unpin <pane>"), qsTr("what shows on the left")], ["panes", qsTr("which are showing")],
+                          [qsTr("phosphor <green|amber|theme>"), qsTr("the colour")], [qsTr("theme <name>"), qsTr("another theme")],
+                          [qsTr("boot · clear · cmds"), qsTr("start over · empty this · what you typed")],
+                          [qsTr("cockpit · classic"), qsTr("switch Now Playing")], ["exit", qsTr("close it")],
+                          [qsTr("up / down · Tab"), qsTr("earlier commands · complete a command")]]]
     ]
     // `text` in lines of at most `width` characters, broken between words
     function wrapWords(text, width) {
@@ -229,13 +229,13 @@ Rectangle {
         var f = (userLib.home || {}).facts || {}, sp = player.signalPath || {}, stages = sp.stages || []
         var output = stages.length ? stages[stages.length - 1].detail || "" : ""
         var lines = ["AFTERIMAGE TERMINAL " + shell.appVersion,
-                     "memory check ................ ok",
+                     qsTr("memory check ................ ok"),
                      "mounting library ............ " + Theme.num(f.tracks || library.trackCount) + " songs",
-                     "audio out ................... " + (output || "default device"),
+                     "audio out ................... " + (output || qsTr("default device")),
                      "signal ...................... " + np.signal.toLowerCase(),
-                     "connecting to the wired ..... ok",
+                     qsTr("connecting to the wired ..... ok"),
                      "",
-                     "type `help` for commands"]
+                     qsTr("type `help` for commands")]
         if (shell.ui.neonBoot === "0" || Theme.reduceMotion) { say(lines.slice(-1), "dim"); return }
         bootLines = lines
         bootTimer.start()
@@ -306,7 +306,7 @@ Rectangle {
         } else if (it.kind === "station") {
             call("play.station", { id: it.id })
         }
-        say((how === "play" ? "playing: " : how === "next" ? "next up: " : "queued: ") + it.label)
+        say((how === "play" ? qsTr("playing: ") : how === "next" ? qsTr("next up: ") : qsTr("queued: ")) + it.label)
     }
     function search(q) {
         var r = call("search", { query: q, limit: 50 })
@@ -340,14 +340,14 @@ Rectangle {
         case "history":
             var rec = call("recent", { limit: Math.max(1, Math.min(50, parseInt(arg) || 10)) })
             if (!rec) return
-            if (!rec.plays.length) { say("nothing listened to yet", "dim"); return }
+            if (!rec.plays.length) { say(qsTr("nothing listened to yet"), "dim"); return }
             say(rec.plays.map(function (p) { return "  " + pad(p.day.slice(5) + " " + p.time, 12) + pad(p.title, 34).slice(0, 40) + "  " + p.artist }))
             return
         case "top":
             var period = ["week", "month", "year", "all"].indexOf(argl) >= 0 ? argl : "month"
             var tp = call("top", { period: period, limit: 5 })
             if (!tp) return
-            var lines = ["  most played, " + (period === "all" ? "all time" : "this " + period)]
+            var lines = ["  most played, " + (period === "all" ? qsTr("all time") : "this " + period)]
             lines.push("  artists : " + (tp.artists.map(function (a) { return a.name + " (" + Theme.num(a.plays) + ")" }).join(", ") || "-"))
             lines.push("  albums  : " + (tp.albums.map(function (a) { return a.album + " (" + Theme.num(a.plays) + ")" }).join(", ") || "-"))
             tp.songs.forEach(function (x, k) { lines.push("  " + (k + 1) + ".  " + pad(x.title, 34).slice(0, 40) + "  " + x.artist + "  ×" + Theme.num(x.plays)) })
@@ -367,17 +367,17 @@ Rectangle {
         case "out":
             var devs = player.outputDevices
             if (!arg) {
-                say(devs.map(function (d, k) { return "  " + k + "  " + d.name + (d.key === player.outputDevice ? "   ← in use" : "") }))
-                say("out <number> to switch; out 0 (or default) follows the system", "dim")
+                say(devs.map(function (d, k) { return "  " + k + "  " + d.name + (d.key === player.outputDevice ? qsTr("   ← in use") : "") }))
+                say(qsTr("out <number> to switch; out 0 (or default) follows the system"), "dim")
                 return
             }
             var pickAt = argl === "default" ? 0 : parseInt(arg)
-            if (isNaN(pickAt) || pickAt < 0 || pickAt >= devs.length) { say("out takes a number from the list (type out)", "bad"); return }
+            if (isNaN(pickAt) || pickAt < 0 || pickAt >= devs.length) { say(qsTr("out takes a number from the list (type out)"), "bad"); return }
             player.setOutputDevice(devs[pickAt].key)
             say("sound to: " + devs[pickAt].name)
             return
         case "lyrics":
-            if (lyricsCtl.status !== "found") { say(lyricsCtl.status === "loading" ? "looking for lyrics..." : "no lyrics for this song", "dim"); return }
+            if (lyricsCtl.status !== "found") { say(lyricsCtl.status === "loading" ? qsTr("looking for lyrics...") : qsTr("no lyrics for this song"), "dim"); return }
             say(lyricsCtl.synced ? lyricsCtl.lines.map(function (l) { return "  " + (l.text || "") }) : String(lyricsCtl.plain).split("\n").map(function (l) { return "  " + l }))
             return
         case "play":
@@ -386,17 +386,17 @@ Rectangle {
             if (it === undefined) return
             if (it) { playPicked(it, "play"); return }
             songs = search(arg)
-            if (songs.length) { call("play.songs", { ids: songs.map(function (s) { return s.id }) }); say("playing " + Theme.num(songs.length) + (songs.length === 1 ? " song" : " songs") + " matching “" + arg + "”") }
+            if (songs.length) { call("play.songs", { ids: songs.map(function (s) { return s.id }) }); say("playing " + Theme.num(songs.length) + (songs.length === 1 ? qsTr(" song") : qsTr(" songs")) + " matching “" + arg + "”") }
             return
         case "search":
-            if (!arg) { say("search <text>", "bad"); return }
+            if (!arg) { say(qsTr("search <text>"), "bad"); return }
             var sr = call("search", { query: arg, limit: 10 })
             if (!sr) return
             if (sr.corrected) say("(did you mean “" + sr.corrected + "”?)", "dim")
             var list = []
             sr.songs.slice(0, 10).forEach(function (s) { list.push({ kind: "song", id: s.id, label: s.title + " · " + (s.artist || "") }) })
             sr.albums.slice(0, 5).forEach(function (a) { list.push({ kind: "album", key: a.key, label: a.title + " · " + a.artist + (a.year ? " (" + a.year + ")" : "") }) })
-            sr.artists.slice(0, 5).forEach(function (a) { list.push({ kind: "artist", name: a.name, label: a.name + " · " + Theme.num(a.songs) + (a.songs === 1 ? " song" : " songs") }) })
+            sr.artists.slice(0, 5).forEach(function (a) { list.push({ kind: "artist", name: a.name, label: a.name + " · " + Theme.num(a.songs) + (a.songs === 1 ? qsTr(" song") : qsTr(" songs")) }) })
             if (!list.length) { say("nothing found for “" + arg + "”", "bad"); return }
             found = list
             var lastKind = ""
@@ -404,7 +404,7 @@ Rectangle {
                 if (x.kind !== lastKind) { say(x.kind === "song" ? "songs" : x.kind === "album" ? "albums" : "artists", "prompt"); lastKind = x.kind }
                 say("  " + pad(String(k + 1), 4) + x.label)
             })
-            say("play <n> · queue <n> · next <n>", "dim")
+            say(qsTr("play <n> · queue <n> · next <n>"), "dim")
             return
         case "album": case "artist":
             if (!arg) { say(word + " <search>", "bad"); return }
@@ -422,16 +422,16 @@ Rectangle {
             var st = call("stations")
             if (!st) return
             var match = st.stations.filter(function (s) { return !argl || s.name.toLowerCase().indexOf(argl) >= 0 })
-            if (!match.length) { say(st.stations.length ? "no station matching “" + arg + "”" : "no radio stations yet: add some in Internet radio", "bad"); return }
+            if (!match.length) { say(st.stations.length ? "no station matching “" + arg + "”" : qsTr("no radio stations yet: add some in Internet radio"), "bad"); return }
             if (argl && match.length === 1) { playPicked({ kind: "station", id: match[0].id, label: match[0].name }, "play"); return }
             found = match.slice(0, 20).map(function (s) { return { kind: "station", id: s.id, label: s.name } })
             found.forEach(function (x, k) { say("  " + pad(String(k + 1), 4) + x.label + "  " + (match[k].detail || "")) })
-            say("tune <n>", "dim")
+            say(qsTr("tune <n>"), "dim")
             return
         case "scan":
             if (library.scanning) { say("already scanning: " + library.status, "dim"); return }
             if (call("library.rescan") === null) return
-            say("scanning your music folders...")
+            say(qsTr("scanning your music folders..."))
             scanWatch.last = ""
             scanWatch.start()
             return
@@ -451,7 +451,7 @@ Rectangle {
             var qa = argl.split(/\s+/)
             if (qa[0] === "rm" || qa[0] === "remove") {  // numbers as up next shows them: 1 is the song after this one
                 var at = parseInt(qa[1])
-                if (isNaN(at) || at < 1) { say("queue rm <number>, as up next shows it", "bad"); return }
+                if (isNaN(at) || at < 1) { say(qsTr("queue rm <number>, as up next shows it"), "bad"); return }
                 var gone = player.queueModel.get(player.currentIndex + at)
                 if (!gone.title) { say("nothing at " + at + " in what's next", "bad"); return }
                 if (call("queue.remove", { index: player.currentIndex + at }) !== null) say("removed: " + gone.title)
@@ -459,12 +459,12 @@ Rectangle {
             }
             if (qa[0] === "mv" || qa[0] === "move") {
                 var from = parseInt(qa[1]), to = parseInt(qa[2])
-                if (isNaN(from) || isNaN(to) || from < 1 || to < 1) { say("queue mv <from> <to>, numbers as up next shows them", "bad"); return }
+                if (isNaN(from) || isNaN(to) || from < 1 || to < 1) { say(qsTr("queue mv <from> <to>, numbers as up next shows them"), "bad"); return }
                 if (call("queue.move", { src: player.currentIndex + from, dst: player.currentIndex + to }) !== null) say("moved " + from + " to " + to)
                 return
             }
-            if (qa[0] === "clear") { call("queue.clear", { upcoming: true }); say("cleared what's next"); return }
-            if (qa[0] === "shuffle") { call("queue.shuffle"); say("shuffled what's next"); return }
+            if (qa[0] === "clear") { call("queue.clear", { upcoming: true }); say(qsTr("cleared what's next")); return }
+            if (qa[0] === "shuffle") { call("queue.shuffle"); say(qsTr("shuffled what's next")); return }
             var qp = pick(arg)
             if (qp === undefined) return
             if (qp) { playPicked(qp, "queue"); return }
@@ -474,15 +474,15 @@ Rectangle {
         case "vol": case "volume":
             if (!arg) { say("volume " + Math.round(player.volume * 100) + "%"); return }
             n = parseFloat(arg)
-            if (isNaN(n)) { say("vol takes a number, like vol 50 or vol +5", "bad"); return }
+            if (isNaN(n)) { say(qsTr("vol takes a number, like vol 50 or vol +5"), "bad"); return }
             var r = /^[+-]/.test(arg) ? call("volume", { change: n / 100 }) : call("volume", { volume: n / 100 })
             if (r) say("volume " + Math.round(r.volume * 100) + "%")
             return
         case "mute": call("mute"); return
         case "seek":
-            if (!player.hasTrack) { say("nothing playing", "bad"); return }
+            if (!player.hasTrack) { say(qsTr("nothing playing"), "bad"); return }
             n = seconds(arg.replace(/^[+-]/, ""))
-            if (isNaN(n)) { say("seek takes a time, like seek 1:30, seek +10 or seek -10", "bad"); return }
+            if (isNaN(n)) { say(qsTr("seek takes a time, like seek 1:30, seek +10 or seek -10"), "bad"); return }
             var to = arg[0] === "+" ? player.position + n * 1000 : arg[0] === "-" ? player.position - n * 1000 : n * 1000
             call("seek", { position: Math.max(0, Math.min(player.duration, to)) })
             return
@@ -496,15 +496,15 @@ Rectangle {
             if (rp) say("repeat " + ["off", "all", "one"][rp.repeat])
             return
         case "like":
-            if (!player.hasTrack || !np.track.path) { say("nothing to like", "bad"); return }
+            if (!player.hasTrack || !np.track.path) { say(qsTr("nothing to like"), "bad"); return }
             userLib.toggleLike(np.track.path)
-            say(userLib.isLiked(np.track.path) ? "liked ♥" : "unliked")
+            say(userLib.isLiked(np.track.path) ? qsTr("liked ♥") : "unliked")
             return
         case "sleep":
             if (argl === "track" || argl === "album") call("sleep", { end: argl })
             else if (argl === "off") call("sleep", { minutes: 0 })
             else if (!isNaN(parseInt(arg))) call("sleep", { minutes: parseInt(arg) })
-            else { say("sleep takes minutes, track, album or off", "bad"); return }
+            else { say(qsTr("sleep takes minutes, track, album or off"), "bad"); return }
             say("sleep timer: " + (argl === "off" ? "off" : arg))
             return
         case "radio":
@@ -522,7 +522,7 @@ Rectangle {
             return
         case "panes": say("showing: " + (panes.join(", ") || "(none)") + "   ·   all: " + allPanes.join(", "), "dim"); return
         case "phosphor":
-            if (["green", "amber", "theme"].indexOf(argl) < 0) { say("phosphor green, amber or theme", "bad"); return }
+            if (["green", "amber", "theme"].indexOf(argl) < 0) { say(qsTr("phosphor green, amber or theme"), "bad"); return }
             shell.setUiValue("neonPhosphor", argl)
             return
         case "theme":
@@ -533,7 +533,7 @@ Rectangle {
             return
         case "cockpit": case "classic": shell.setUiValue("neonNowPlaying", word); return
         case "exit": case "quit": case "logout": np.closeRequested(); return
-        case "sudo": say("nice try. this is a music player.", "dim"); return
+        case "sudo": say(qsTr("nice try. this is a music player."), "dim"); return
         }
         if (allPanes.indexOf(word) >= 0) {
             if (word === "tags") refreshTags()
@@ -602,7 +602,7 @@ Rectangle {
                             return s
                         }
                         readonly property int at: Math.round(np.progress * n)
-                        Text { textFormat: Text.PlainText; text: "  " + (parent.chars ? parent.chars.slice(0, parent.at) : "(the waveform is being worked out)"); color: term.ink; font.family: np.mono; font.pixelSize: term.fs }
+                        Text { textFormat: Text.PlainText; text: "  " + (parent.chars ? parent.chars.slice(0, parent.at) : qsTr("(the waveform is being worked out)")); color: term.ink; font.family: np.mono; font.pixelSize: term.fs }
                         Text { textFormat: Text.PlainText; text: parent.chars.slice(parent.at); color: term.dim; font.family: np.mono; font.pixelSize: term.fs }
                     }
                 }
@@ -614,9 +614,9 @@ Rectangle {
                 spacing: term.fs
                 Repeater {
                     model: [
-                        { t: "[ prev ]", c: "prev" }, { t: player.playing ? "[ pause ]" : "[ play ]", c: "p" },
-                        { t: "[ next ]", c: "next" }, { t: player.shuffle ? "[ shuffle:on ]" : "[ shuffle:off ]", c: "shuffle" },
-                        { t: player.repeat === 2 ? "[ repeat:one ]" : player.repeat ? "[ repeat:all ]" : "[ repeat:off ]", c: "repeat" }
+                        { t: qsTr("[ prev ]"), c: "prev" }, { t: player.playing ? qsTr("[ pause ]") : qsTr("[ play ]"), c: "p" },
+                        { t: qsTr("[ next ]"), c: "next" }, { t: player.shuffle ? qsTr("[ shuffle:on ]") : qsTr("[ shuffle:off ]"), c: "shuffle" },
+                        { t: player.repeat === 2 ? qsTr("[ repeat:one ]") : player.repeat ? qsTr("[ repeat:all ]") : qsTr("[ repeat:off ]"), c: "repeat" }
                     ]
                     Text {
                         required property var modelData
@@ -684,7 +684,7 @@ Rectangle {
                 Text {
                     visible: !input.text && !input.activeFocus
                     textFormat: Text.PlainText
-                    text: "type a command (help)"
+                    text: qsTr("type a command (help)")
                     color: term.dim; font: input.font
                 }
                 Keys.onReturnPressed: { term.run(text); text = "" }

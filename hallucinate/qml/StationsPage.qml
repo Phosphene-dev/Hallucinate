@@ -27,20 +27,20 @@ Item {
         property var song: ({})
         function popupFor(s) { song = s; popup() }
         readonly property string text: (song.artist ? song.artist + " – " : "") + (song.title || "")
-        MenuItem { text: "Find in your library"; icon.name: "search"; onTriggered: Nav.search(logMenu.text.replace(" – ", " ")) }
-        MenuItem { text: "Copy artist and title"; icon.name: "playlist"; onTriggered: { shell.copyText(logMenu.text); Nav.notify("Copied “" + logMenu.text + "”") } }
+        MenuItem { text: qsTr("Find in your library"); icon.name: "search"; onTriggered: Nav.search(logMenu.text.replace(" – ", " ")) }
+        MenuItem { text: qsTr("Copy artist and title"); icon.name: "playlist"; onTriggered: { shell.copyText(logMenu.text); Nav.notify("Copied “" + logMenu.text + "”") } }
         MenuSeparator {}
         MenuItem {
-            text: "Remove from the log"; icon.name: "remove"; icon.color: Theme.error
+            text: qsTr("Remove from the log"); icon.name: "remove"; icon.color: Theme.error
             onTriggered: stations.removeLogEntry(logMenu.song.id)
         }
     }
     ConfirmDialog {
         id: clearLogDlg
         objectName: "clearRadioLogDialog"
-        title: "Clear what you've heard?"
-        body: "Every song in “Heard on the radio” goes. Your stations, and anything already scrobbled, stay."
-        confirmText: "Clear"
+        title: qsTr("Clear what you've heard?")
+        body: qsTr("Every song in “Heard on the radio” goes. Your stations, and anything already scrobbled, stay.")
+        confirmText: qsTr("Clear")
         destructive: true
         onAccepted: stations.clearLog()
     }
@@ -48,24 +48,24 @@ Item {
         id: stationMenu
         objectName: "stationMenu"
         property var station: ({})
-        MenuItem { text: "Play"; icon.name: "play"; onTriggered: stations.play(stationMenu.station.id) }
-        MenuItem { text: "Play next"; icon.name: "next"; onTriggered: stations.playNext(stationMenu.station.id) }
+        MenuItem { text: qsTr("Play"); icon.name: "play"; onTriggered: stations.play(stationMenu.station.id) }
+        MenuItem { text: qsTr("Play next"); icon.name: "next"; onTriggered: stations.playNext(stationMenu.station.id) }
         MenuSeparator {}
         MenuItem {
-            text: "Rename…"; icon.name: "edit"
+            text: qsTr("Rename…"); icon.name: "edit"
             onTriggered: { renameDlg.stationId = stationMenu.station.id; renameField.text = stationMenu.station.name; renameDlg.open() }
         }
-        MenuItem { text: "Copy stream link"; icon.name: "playlist"; onTriggered: { shell.copyText(stationMenu.station.url); Nav.notify("Stream link copied") } }
+        MenuItem { text: qsTr("Copy stream link"); icon.name: "playlist"; onTriggered: { shell.copyText(stationMenu.station.url); Nav.notify(qsTr("Stream link copied")) } }
         MenuItem {
             visible: (stationMenu.station.homepage || "").length > 0
             height: visible ? implicitHeight : 0
-            text: "Open the station's website"; icon.name: "expand"
-            onTriggered: if (!shell.openWebLink(stationMenu.station.homepage)) Nav.notify("That station's website link can't be opened")
+            text: qsTr("Open the station's website"); icon.name: "expand"
+            onTriggered: if (!shell.openWebLink(stationMenu.station.homepage)) Nav.notify(qsTr("That station's website link can't be opened"))
         }
         MenuSeparator {}
         MenuItem {
             objectName: "stationRemove"
-            text: "Remove station"; icon.name: "remove"; icon.color: Theme.error
+            text: qsTr("Remove station"); icon.name: "remove"; icon.color: Theme.error
             onTriggered: stations.remove(stationMenu.station.id)
         }
     }
@@ -77,7 +77,7 @@ Item {
         anchors.centerIn: parent
         width: Math.min(460, (parent ? parent.width : 460) - 40)
         modal: true
-        title: "Add a station"
+        title: qsTr("Add a station")
         standardButtons: Dialog.Ok | Dialog.Cancel
         readonly property bool linkOk: /^https?:\/\/\S+$/i.test(urlField.text.trim())
         function okLater() { var b = standardButton(Dialog.Ok); if (b) b.enabled = linkOk }
@@ -91,7 +91,7 @@ Item {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Paste the station's stream link. A .pls or .m3u link works too."
+                text: qsTr("Paste the station's stream link. A .pls or .m3u link works too.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             TextField {
@@ -106,7 +106,7 @@ Item {
             TextField {
                 id: nameField
                 width: parent.width
-                placeholderText: "Name (optional: the station's own name is used)"
+                placeholderText: qsTr("Name (optional: the station's own name is used)")
                 selectByMouse: true
                 Accessible.name: "Station name"
                 onAccepted: if (addDlg.linkOk) addDlg.accept()
@@ -119,7 +119,7 @@ Item {
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true
-        title: "Rename station"
+        title: qsTr("Rename station")
         standardButtons: Dialog.Ok | Dialog.Cancel
         onOpened: renameField.forceActiveFocus()
         onAccepted: if (renameField.text.trim().length) stations.rename(stationId, renameField.text.trim())
@@ -131,16 +131,16 @@ Item {
     }
     FileDialog {
         id: importDlg
-        title: "Import stations"
-        nameFilters: ["Station lists (*.m3u *.m3u8 *.pls *.xspf)", "All files (*)"]
+        title: qsTr("Import stations")
+        nameFilters: [qsTr("Station lists (*.m3u *.m3u8 *.pls *.xspf)"), qsTr("All files (*)")]
         onAccepted: Nav.notify(stations.importFile(selectedFile.toString()))
     }
     FileDialog {
         id: exportDlg
-        title: "Export your stations"
+        title: qsTr("Export your stations")
         fileMode: FileDialog.SaveFile
         defaultSuffix: "m3u"
-        nameFilters: ["M3U playlist (*.m3u)"]
+        nameFilters: [qsTr("M3U playlist (*.m3u)")]
         onAccepted: Nav.notify(stations.exportFile(selectedFile.toString()))
     }
 
@@ -163,7 +163,7 @@ Item {
         activeFocusOnTab: true
         objectName: "stationRow"
         Accessible.role: Accessible.ListItem
-        Accessible.name: (row.playing ? "Playing: " : "") + row.name + (row.detail ? ", " + row.detail : "")
+        Accessible.name: (row.playing ? qsTr("Playing: ") : "") + row.name + (row.detail ? ", " + row.detail : "")
         Accessible.selected: stationPick.selected
         Accessible.onPressAction: row.activated()
         ListKeys { id: stationKeys; row: row; pick: row.station ? stationPick : null; onMenu: row.menu() }
@@ -230,7 +230,7 @@ Item {
             }
             onPressAndHold: if (!PickDrag.pick) row.menu()
             Accessible.role: Accessible.Button
-            Accessible.name: (row.playing ? "Playing: " : "Play ") + row.name
+            Accessible.name: (row.playing ? qsTr("Playing: ") : qsTr("Play ")) + row.name
             Accessible.onPressAction: row.activated()
         }
         Row {
@@ -264,12 +264,12 @@ Item {
                     spacing: 4
                     Text {
                         textFormat: Text.PlainText
-                        text: "Internet radio"
+                        text: qsTr("Internet radio")
                         color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale; font.weight: Font.Bold
                     }
                     Text {
                         textFormat: Text.PlainText
-                        text: stations.count === 1 ? "1 station" : Theme.num(stations.count) + " stations"
+                        text: stations.count === 1 ? qsTr("1 station") : Theme.num(stations.count) + " stations"
                         color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
                     }
                 }
@@ -277,9 +277,9 @@ Item {
                     id: actions
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 8
-                    PillButton { objectName: "addStation"; primary: true; text: stations.busy ? "Checking…" : "Add by link"; enabled: !stations.busy; onClicked: addDlg.open() }
-                    PillButton { text: "Import"; onClicked: importDlg.open() }
-                    PillButton { text: "Export"; enabled: stations.count > 0; onClicked: exportDlg.open() }
+                    PillButton { objectName: "addStation"; primary: true; text: stations.busy ? qsTr("Checking…") : qsTr("Add by link"); enabled: !stations.busy; onClicked: addDlg.open() }
+                    PillButton { text: qsTr("Import"); onClicked: importDlg.open() }
+                    PillButton { text: qsTr("Export"); enabled: stations.count > 0; onClicked: exportDlg.open() }
                 }
             }
 
@@ -289,7 +289,7 @@ Item {
                 objectName: "stationSearch"
                 width: Math.min(520, parent.width)
                 height: 40
-                placeholderText: "Find stations by name or genre (jazz, BBC, lofi…)"
+                placeholderText: qsTr("Find stations by name or genre (jazz, BBC, lofi…)")
                 color: Theme.text
                 placeholderTextColor: Theme.textDim
                 font.family: Theme.fontFamily
@@ -305,7 +305,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 visible: stations.searching || stations.status.length > 0
-                text: stations.searching ? "Searching…" : stations.status
+                text: stations.searching ? qsTr("Searching…") : stations.status
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Column {
@@ -313,7 +313,7 @@ Item {
                 width: parent.width
                 spacing: 2
                 visible: page.query.length > 0 && stations.results.count > 0
-                SectionHeader { title: "From the directory"; subtitle: "Radio Browser, a free and open list of stations" }
+                SectionHeader { title: qsTr("From the directory"); subtitle: qsTr("Radio Browser, a free and open list of stations") }
                 Repeater {
                     model: stations.results
                     StationRow {
@@ -325,7 +325,7 @@ Item {
                         onMenu: resultMenu.popupFor(model.row, model.saved)
                         trailing: [
                             PillButton {
-                                text: model.saved ? "✓ Saved" : "Save"
+                                text: model.saved ? qsTr("✓ Saved") : qsTr("Save")
                                 enabled: !model.saved
                                 onClicked: stations.addResult(model.row)
                             }
@@ -338,14 +338,14 @@ Item {
                 property int row: -1
                 property bool saved: false
                 function popupFor(r, s) { row = r; saved = s; popup() }
-                MenuItem { text: "Listen"; icon.name: "play"; onTriggered: stations.playResult(resultMenu.row) }
-                MenuItem { text: "Save to your stations"; icon.name: "plus"; enabled: !resultMenu.saved; onTriggered: stations.addResult(resultMenu.row) }
+                MenuItem { text: qsTr("Listen"); icon.name: "play"; onTriggered: stations.playResult(resultMenu.row) }
+                MenuItem { text: qsTr("Save to your stations"); icon.name: "plus"; enabled: !resultMenu.saved; onTriggered: stations.addResult(resultMenu.row) }
             }
 
             SectionHeader {
                 visible: stations.count > 0
-                title: "Your stations"
-                subtitle: "Click to tune in. Next and previous move between them."
+                title: qsTr("Your stations")
+                subtitle: qsTr("Click to tune in. Next and previous move between them.")
             }
             Column {
                 objectName: "savedStations"
@@ -370,7 +370,7 @@ Item {
                             Text {
                                 visible: page.playingId === model.id
                                 textFormat: Text.PlainText
-                                text: player.playing ? "LIVE" : "PAUSED"
+                                text: player.playing ? qsTr("LIVE") : qsTr("PAUSED")
                                 color: Theme.accent; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); font.weight: Font.Bold
                                 font.letterSpacing: 1
                             }
@@ -380,8 +380,8 @@ Item {
             }
             SectionHeader {
                 visible: stations.count > 0
-                title: "Your listening"
-                subtitle: "Time spent on the radio, kept apart from your music's stats"
+                title: qsTr("Your listening")
+                subtitle: qsTr("Time spent on the radio, kept apart from your music's stats")
             }
             ListeningStrip {
                 objectName: "radioListening"
@@ -392,8 +392,8 @@ Item {
             }
             SectionHeader {
                 visible: stations.count > 0
-                title: "Heard on the radio"
-                subtitle: "Songs a station played while you listened for a minute or more, newest first"
+                title: qsTr("Heard on the radio")
+                subtitle: qsTr("Songs a station played while you listened for a minute or more, newest first")
             }
             Row {
                 visible: stations.count > 0
@@ -403,7 +403,7 @@ Item {
                     objectName: "radioLogSearch"
                     width: Math.min(360, col.width - 140)
                     height: 36
-                    placeholderText: "Find a song you heard"
+                    placeholderText: qsTr("Find a song you heard")
                     color: Theme.text
                     placeholderTextColor: Theme.textDim
                     font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
@@ -417,7 +417,7 @@ Item {
                 PillButton {
                     objectName: "clearRadioLog"
                     height: 36
-                    text: "Clear…"
+                    text: qsTr("Clear…")
                     visible: stations.radioLog.length > 0 && logSearch.text.length === 0
                     onClicked: clearLogDlg.open()
                 }
@@ -428,7 +428,7 @@ Item {
                 width: parent.width
                 wrapMode: Text.WordWrap
                 text: logSearch.text.length ? "No song you heard matches “" + logSearch.text + "”"
-                      : "Nothing yet. Songs show up here once a station has said what it's playing and you've listened for a minute."
+                      : qsTr("Nothing yet. Songs show up here once a station has said what it's playing and you've listened for a minute.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Column {
@@ -500,9 +500,9 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 visible: stations.count === 0 && page.query.length === 0
                 icon: "station"
-                title: "No stations yet"
-                hint: "Find one above, or add a station you know by its stream link."
-                actionText: "Add by link"
+                title: qsTr("No stations yet")
+                hint: qsTr("Find one above, or add a station you know by its stream link.")
+                actionText: qsTr("Add by link")
                 onAction: addDlg.open()
             }
         }

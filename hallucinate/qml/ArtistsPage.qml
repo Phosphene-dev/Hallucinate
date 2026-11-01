@@ -33,17 +33,17 @@ Item {
     // Python's models (made in the background): handing the view thousands of composers as a JS list froze it
     readonly property var composerRows: !composers ? null : order === "az" ? library.composersAz : library.composers
     function subtitle(a) {
-        if (composers) return a.works > 0 ? Theme.num(a.works) + (a.works === 1 ? " work" : " works") : Theme.num(a.tracks) + (a.tracks === 1 ? " song" : " songs")
-        if (order === "songs") return Theme.num(a.tracks) + (a.tracks === 1 ? " song" : " songs")
-        if (order === "plays") return (a.plays || 0) + (a.plays === 1 ? " play" : " plays")
-        return Theme.num(a.albums) + (a.albums === 1 ? " album" : " albums")
+        if (composers) return a.works > 0 ? Theme.num(a.works) + (a.works === 1 ? qsTr(" work") : qsTr(" works")) : Theme.num(a.tracks) + (a.tracks === 1 ? qsTr(" song") : qsTr(" songs"))
+        if (order === "songs") return Theme.num(a.tracks) + (a.tracks === 1 ? qsTr(" song") : qsTr(" songs"))
+        if (order === "plays") return (a.plays || 0) + (a.plays === 1 ? qsTr(" play") : qsTr(" plays"))
+        return Theme.num(a.albums) + (a.albums === 1 ? qsTr(" album") : qsTr(" albums"))
     }
 
     Text {
         textFormat: Text.PlainText
         id: title
         x: 28; y: 20
-        text: page.composers ? "Composers" : "Artists"
+        text: page.composers ? qsTr("Composers") : qsTr("Artists")
         color: Theme.text
         font.family: Theme.displayFamily
         font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale
@@ -57,17 +57,17 @@ Item {
             visible: library.composers.count > 0
             anchors.verticalCenter: parent.verticalCenter
             spacing: 6
-            Chip { objectName: "viewArtists"; text: "Artists"; selected: !page.composers; onClicked: page.setView(false) }
-            Chip { objectName: "viewComposers"; text: "Composers"; selected: page.composers; onClicked: page.setView(true) }
+            Chip { objectName: "viewArtists"; text: qsTr("Artists"); selected: !page.composers; onClicked: page.setView(false) }
+            Chip { objectName: "viewComposers"; text: qsTr("Composers"); selected: page.composers; onClicked: page.setView(true) }
         }
         StyledCombo {
             objectName: "artistsOrder"
             width: 190; height: 36
             // composers: A–Z or most songs
-            model: page.composers ? ["A–Z", "Most songs"] : ["A–Z", "Most songs", "Most played", "Recently added"]
+            model: page.composers ? ["A–Z", qsTr("Most songs")] : ["A–Z", qsTr("Most songs"), qsTr("Most played"), qsTr("Recently added")]
             selection: page.composers ? (page.order === "az" ? 0 : 1) : page.orders.indexOf(page.order)
             onActivated: function (i) { page.order = page.orders[i] }
-            Accessible.name: page.composers ? "Order of the composers" : "Order of the artists"
+            Accessible.name: page.composers ? qsTr("Order of the composers") : qsTr("Order of the artists")
         }
     }
     GridView {
@@ -103,10 +103,10 @@ Item {
         anchors.centerIn: parent
         visible: library.ready && library.trackCount === 0
         icon: "folder"
-        title: "No music yet"
-        hint: library.folders.length ? "Hallucinate is looking through your music folders; songs appear as they're found."
-                                     : "Add the folder where you keep your music and it shows up here."
-        actionText: library.folders.length ? "" : "Open Settings"
+        title: qsTr("No music yet")
+        hint: library.folders.length ? qsTr("Hallucinate is looking through your music folders; songs appear as they're found.")
+                                     : qsTr("Add the folder where you keep your music and it shows up here.")
+        actionText: library.folders.length ? "" : qsTr("Open Settings")
         onAction: Nav.openSettings()
     }
 }

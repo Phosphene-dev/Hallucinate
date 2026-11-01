@@ -20,12 +20,12 @@ Item {
     Keys.onEnterPressed: btn.clicked()
     // What a screen reader says when the button has no tooltip; toggles also say whether they're on.
     readonly property var spokenNames: ({
-        play: "Play", pause: "Pause", prev: "Previous track", next: "Next track", shuffle: "Shuffle",
-        repeat: "Repeat", repeat1: "Repeat one song", radio: "Radio", queue: "Queue", heart: "Like",
-        close: "Close", more: "More actions", plus: "Add", minus: "Remove", back: "Back", search: "Search",
-        settings: "Settings", sidebar: "Sidebar", fullscreen: "Full screen", expand: "Mini player",
-        note: "Lyrics", folder: "Open folder", vinyl: "Vinyl", download: "Download", down: "Show more",
-        history: "History", playlist: "Playlist", smartlist: "Smart playlist", duplicates: "Duplicates"
+        play: qsTr("Play"), pause: qsTr("Pause"), prev: qsTr("Previous track"), next: qsTr("Next track"), shuffle: qsTr("Shuffle"),
+        repeat: qsTr("Repeat"), repeat1: qsTr("Repeat one song"), radio: qsTr("Radio"), queue: qsTr("Queue"), heart: qsTr("Like"),
+        close: qsTr("Close"), more: qsTr("More actions"), plus: "Add", minus: qsTr("Remove"), back: qsTr("Back"), search: qsTr("Search"),
+        settings: qsTr("Settings"), sidebar: qsTr("Sidebar"), fullscreen: qsTr("Full screen"), expand: qsTr("Mini player"),
+        note: qsTr("Lyrics"), folder: qsTr("Open folder"), vinyl: qsTr("Vinyl"), download: qsTr("Download"), down: qsTr("Show more"),
+        history: qsTr("History"), playlist: qsTr("Playlist"), smartlist: qsTr("Smart playlist"), duplicates: qsTr("Duplicates")
     })
     readonly property bool toggles: ["shuffle", "repeat", "repeat1", "radio", "queue", "heart", "vinyl"].indexOf(icon) >= 0
     Accessible.role: Accessible.Button

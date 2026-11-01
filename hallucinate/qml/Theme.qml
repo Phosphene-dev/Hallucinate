@@ -68,9 +68,9 @@ QtObject {
     readonly property string fontFamily: themeManager.fontFamily
 
     // Display typeface for headings, numbers and the wordmark (Unbounded, SIL OFL; bundled in assets/fonts).
-    property FontLoader displayBold: FontLoader { source: Qt.resolvedUrl("../assets/fonts/Unbounded-Bold.ttf") }
-    property FontLoader displaySemiBold: FontLoader { source: Qt.resolvedUrl("../assets/fonts/Unbounded-SemiBold.ttf") }
-    property FontLoader pixel: FontLoader { source: Qt.resolvedUrl("../assets/fonts/VT323-Regular.ttf") }
+    property FontLoader displayBold: FontLoader { source: Qt.resolvedUrl(qsTr("../assets/fonts/Unbounded-Bold.ttf")) }
+    property FontLoader displaySemiBold: FontLoader { source: Qt.resolvedUrl(qsTr("../assets/fonts/Unbounded-SemiBold.ttf")) }
+    property FontLoader pixel: FontLoader { source: Qt.resolvedUrl(qsTr("../assets/fonts/VT323-Regular.ttf")) }
     // A neon theme's faces (Chakra Petch and Share Tech Mono, SIL OFL), loaded only once one is chosen
     // (made the first time one is chosen, so other themes never load them)
     property var neonFonts: null
@@ -140,8 +140,8 @@ QtObject {
         var v = shell.ui["neon" + key]
         return v === undefined || v === "" ? neonLoud : v === "1"
     }
-    readonly property bool neonScanlines: neon && !shell.safeMode && neonOption("Scanlines")
-    readonly property bool neonGlitch: neon && !reduceMotion && !shell.safeMode && neonOption("Glitch")
+    readonly property bool neonScanlines: neon && !shell.safeMode && neonOption(qsTr("Scanlines"))
+    readonly property bool neonGlitch: neon && !reduceMotion && !shell.safeMode && neonOption(qsTr("Glitch"))
     readonly property bool neonGreebles: neon && (shell.ui.neonGreebles === undefined || shell.ui.neonGreebles === "" || shell.ui.neonGreebles === "1")
     readonly property real radiusSmall: Math.max(2, radius * 0.6)
     readonly property real radiusLarge: radius * 2
@@ -151,7 +151,7 @@ QtObject {
     function fontSize(pixels) { return pixels * fontScale }
 
     function fmtBytes(bytes) {
-        var units = ["B", "KB", "MB", "GB", "TB"], i = 0, v = bytes
+        var units = ["B", qsTr("KB"), qsTr("MB"), qsTr("GB"), qsTr("TB")], i = 0, v = bytes
         while (v >= 1000 && i < units.length - 1) { v /= 1000; i++ }
         return (v >= 100 || i === 0 ? Math.round(v) : v.toFixed(1)) + " " + units[i]
     }
@@ -164,6 +164,12 @@ QtObject {
     // A count as you read numbers (Settings → Appearance → Numbers): 12,345 · 12.345 · 12 345 · 12345, or as
     // the system's language writes them. `decimals`: places after the point (none unless asked).
     readonly property string numberFormat: shell.ui.numberFormat || "locale"
+    // A translated count ("%n song(s)", filled in by Qt with a plain number) with the number written the way
+    // Settings → Appearance → Numbers says: Theme.counted(qsTr("%n song(s)", "", n), n)
+    function counted(text, n) {
+        var plain = String(n), nice = num(n)
+        return plain === nice ? String(text) : String(text).replace(plain, nice)
+    }
     function num(n, decimals) {
         var v = Number(n)
         if (n === undefined || n === null || n === "" || !isFinite(v)) return n === undefined || n === null ? "" : String(n)
