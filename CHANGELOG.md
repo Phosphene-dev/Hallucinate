@@ -31,6 +31,8 @@ All notable changes to this project are documented here. Format based on
   DOCTYPE is refused, and a device may only point at its own address. The media server runs only while casting,
   listens only on the network that reaches the device, and hands each song out under a long random link that
   only that device can use.
+- Casting only ever connects to addresses on your own network, never the internet, and offline mode stops it
+  like every other connection.
 
 ### Known limits
 - A cast device pauses for a moment between songs (no gapless there yet).

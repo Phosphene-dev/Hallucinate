@@ -501,3 +501,31 @@ def test_the_media_server_can_listen_on_one_address_only(tmp_path):
             socket.create_connection(("127.0.0.2", server.port), timeout=1).close()
     finally:
         server.stop()
+
+
+@pytest.mark.parametrize("host,ok", [
+    ("192.168.1.20", True), ("10.0.0.5", True), ("172.16.3.4", True), ("169.254.10.1", True), ("127.0.0.1", True),
+    ("fe80::1", True), ("8.8.8.8", False), ("1.1.1.1", False), ("224.0.0.251", False), ("0.0.0.0", False),
+    ("chromecast.local", False), ("::ffff:8.8.8.8", False), ("", False),
+])
+def test_casting_only_ever_talks_to_your_own_network(host, ok):
+    from hallucinate.core import net
+
+    assert net.is_local_address(host) is ok
+
+
+def test_offline_mode_stops_casting_connections_too(renderer):
+    from hallucinate.core import net
+
+    net.set_offline(True)
+    try:
+        with pytest.raises(net.OfflineError):
+            net.connect_local("127.0.0.1", 9)
+        with pytest.raises(upnp.UpnpError):
+            upnp.describe(renderer, "127.0.0.1")
+    finally:
+        net.set_offline(False)
+    with pytest.raises(net.NotLocal):
+        net.connect_local("8.8.8.8", 8009)
+    with pytest.raises(upnp.UpnpError):
+        upnp.http_request("http://8.8.8.8/x")  # (refused before any connection is tried)

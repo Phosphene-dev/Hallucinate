@@ -7,7 +7,6 @@ service (set the song's address, play, pause, seek, what's the position) and Ren
 Everything a device sends is checked: answers and files are size-capped, XML with a DOCTYPE or entities is
 refused, and every address a device gives must be on the machine that answered, so a device on the network
 can't send us to fetch something from elsewhere."""
-import http.client
 import ipaddress
 import re
 import select
@@ -116,23 +115,16 @@ def _text(el, name):
 
 
 def http_request(url, method="GET", body=None, headers=None, timeout=TIMEOUT):
-    """(status, body bytes) for one plain-HTTP request; redirects aren't followed and the answer is capped."""
-    parts = urllib.parse.urlsplit(url)
-    conn = http.client.HTTPConnection(parts.hostname, parts.port or 80, timeout=timeout)
+    """(status, body bytes) for one plain-HTTP request to a device on the local network (through the gate in
+    core/net.py: never in offline mode, never off your network); redirects aren't followed and the answer is
+    capped."""
+    from .. import net
+
     try:
-        path = parts.path or "/"
-        if parts.query:
-            path += "?" + parts.query
-        conn.request(method, path, body=body, headers=dict({"User-Agent": USER_AGENT}, **(headers or {})))
-        resp = conn.getresponse()
-        data = resp.read(MAX_XML + 1)
-        if len(data) > MAX_XML:
-            raise UpnpError("answer too large")
-        return resp.status, data
-    except (OSError, http.client.HTTPException) as e:
+        return net.local_http(url, method, body, dict({"User-Agent": USER_AGENT}, **(headers or {})), timeout,
+                              limit=MAX_XML)
+    except (OSError, ValueError) as e:  # (URLErrors are OSErrors; ResponseTooLarge too)
         raise UpnpError(str(e)) from e
-    finally:
-        conn.close()
 
 
 def describe(location, sender, fetch=http_request):

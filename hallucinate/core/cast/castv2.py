@@ -10,7 +10,6 @@ The media itself isn't sent over this connection: the device is given an address
 (hallucinate/castserver.py) and fetches the song from there."""
 import itertools
 import json
-import socket
 import ssl
 import struct
 import threading
@@ -148,7 +147,9 @@ def receiver_status(payload):
 
 # --- a connection ---------------------------------------------------------------------------------------------
 def tls_connect(host, port=PORT, timeout=10.0):
-    raw = socket.create_connection((host, port), timeout=timeout)
+    from .. import net
+
+    raw = net.connect_local(host, port, timeout)  # (through the gate: never in offline mode, never off your network)
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE  # see the module docstring: Cast devices can't be checked by name

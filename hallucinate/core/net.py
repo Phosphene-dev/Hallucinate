@@ -1,6 +1,8 @@
 """The one door to the internet. Every request Hallucinate makes goes through `urlopen` here, so offline mode
 can close it in one place (tests/test_offline.py checks that nothing else calls urllib directly)."""
 import http.client
+import ipaddress
+import socket
 import threading
 import urllib.error
 import urllib.parse
@@ -187,3 +189,57 @@ def urlopen(request, timeout=10, limit=MAX_RESPONSE):
     except http.client.HTTPException as exc:
         raise _as_url_error(exc) from exc
     return _Limited(resp, limit)
+
+
+# --- the local network (casting) -------------------------------------------------------------------------------
+class NotLocal(OSError):
+    """An address that isn't on this computer's own network: casting never connects to the internet."""
+
+
+def is_local_address(host):
+    """Whether `host` is an address on a local network (private, link-local or this computer): never a name, which
+    could resolve anywhere."""
+    try:
+        ip = ipaddress.ip_address(str(host).strip("[]"))
+    except ValueError:
+        return False
+    if getattr(ip, "ipv4_mapped", None) is not None:
+        ip = ip.ipv4_mapped
+    return (ip.is_private or ip.is_link_local or ip.is_loopback) and not ip.is_multicast and not ip.is_unspecified
+
+
+def _local_or_refuse(host):
+    if _offline:
+        raise OfflineError()
+    if not is_local_address(host):
+        raise NotLocal(f"not an address on your network: {host}")
+
+
+def connect_local(host, port, timeout=10.0):
+    """A TCP connection to a device on the local network (a Chromecast). Refused in offline mode, and for any
+    address that isn't local."""
+    _local_or_refuse(host)
+    return socket.create_connection((host, int(port)), timeout=timeout)
+
+
+def local_http(url, method="GET", body=None, headers=None, timeout=5.0, limit=512 * 1024):
+    """(status, body) for one plain-HTTP request to a device on the local network (a DLNA renderer). Redirects
+    aren't followed, the answer is capped at `limit` (raising ResponseTooLarge), offline mode and non-local
+    addresses are refused."""
+    parts = urllib.parse.urlsplit(url)
+    if parts.scheme != "http" or not parts.hostname:
+        raise NotLocal(f"not a plain local link: {url[:100]}")
+    _local_or_refuse(parts.hostname)
+    conn = http.client.HTTPConnection(parts.hostname, parts.port or 80, timeout=timeout)
+    try:
+        path = (parts.path or "/") + ("?" + parts.query if parts.query else "")
+        conn.request(method, path, body=body, headers=headers or {})
+        resp = conn.getresponse()
+        data = resp.read(limit + 1)
+        if len(data) > limit:
+            raise ResponseTooLarge("The device's answer was too large")
+        return resp.status, data
+    except http.client.HTTPException as exc:
+        raise _as_url_error(exc) from exc
+    finally:
+        conn.close()
