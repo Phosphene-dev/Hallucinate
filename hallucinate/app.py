@@ -433,6 +433,7 @@ def main(argv=None) -> int:
     del engine
     web_remote.shutdown()  # (before the player: remotes are told it's going)
     casting.shutdown()  # the device stops too: its songs came from this computer
+    shell.saveWindow()
     discord.shutdown()
     shell.shutdown()
     scrobbler.shutdown()

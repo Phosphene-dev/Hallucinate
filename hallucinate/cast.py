@@ -614,6 +614,7 @@ class Casting(QObject):
             session.close(stop_device=False)
             self._error = fill(translate("Casting", "Couldn't connect to %1: %2"), session.name, error)
             self.changed.emit()
+            self.notice.emit(self._error)
             return
         self._session = session
         session.setParent(self)

@@ -861,6 +861,76 @@
     </message>
 </context>
 <context>
+    <name>CastMenu</name>
+    <message>
+        <source>This computer</source>
+        <translation>Cet ordinateur</translation>
+    </message>
+    <message>
+        <source>Connecting to %1…</source>
+        <translation>Connexion à %1…</translation>
+    </message>
+    <message>
+        <source>Looking for devices on your network…</source>
+        <translation>Recherche d’appareils sur votre réseau…</translation>
+    </message>
+    <message>
+        <source>No devices found</source>
+        <translation>Aucun appareil trouvé</translation>
+    </message>
+    <message>
+        <source>Look again</source>
+        <translation>Chercher à nouveau</translation>
+    </message>
+    <message>
+        <source>Casting settings…</source>
+        <translation>Réglages de diffusion…</translation>
+    </message>
+</context>
+<context>
+    <name>Casting</name>
+    <message>
+        <source>%1 couldn&apos;t fetch the song from this computer. A firewall may be blocking port %2: allow it for your local network, or pick another port in Settings → Casting.</source>
+        <translation>%1 n’a pas pu récupérer le morceau depuis cet ordinateur. Un pare-feu bloque peut-être le port %2 : autorisez-le pour votre réseau local, ou choisissez un autre port dans Paramètres → Diffusion.</translation>
+    </message>
+    <message>
+        <source>%1 didn&apos;t answer: %2</source>
+        <translation>%1 n’a pas répondu : %2</translation>
+    </message>
+    <message>
+        <source>%1 couldn&apos;t play this song.</source>
+        <translation>%1 n’a pas pu lire ce morceau.</translation>
+    </message>
+    <message>
+        <source>Lost the connection to %1</source>
+        <translation>Connexion à %1 perdue</translation>
+    </message>
+    <message>
+        <source>Offline mode is on, so devices on your network can&apos;t be found</source>
+        <translation>Le mode hors ligne est activé : impossible de trouver les appareils de votre réseau</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t start casting: %1</source>
+        <translation>Impossible de lancer la diffusion : %1</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t connect to %1: %2</source>
+        <translation>Impossible de se connecter à %1 : %2</translation>
+    </message>
+    <message>
+        <source>Playing on %1</source>
+        <translation>Lecture sur %1</translation>
+    </message>
+    <message>
+        <source>The music server can&apos;t be reached</source>
+        <translation>Le serveur de musique est injoignable</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t get this song ready for %1.</source>
+        <translation>Impossible de préparer ce morceau pour %1.</translation>
+    </message>
+</context>
+<context>
     <name>CollectionMenu</name>
     <message>
         <source>Every song by %1</source>
@@ -1289,6 +1359,30 @@
     <message>
         <source>Library  ·  songs that look the same</source>
         <translation>Bibliothèque  ·  morceaux qui se ressemblent</translation>
+    </message>
+    <message>
+        <source>Play here instead</source>
+        <translation>Lire ici plutôt</translation>
+    </message>
+    <message>
+        <source>Casting  ·  playing on %1</source>
+        <translation>Diffusion  ·  lecture sur %1</translation>
+    </message>
+    <message>
+        <source>Play on %1</source>
+        <translation>Lire sur %1</translation>
+    </message>
+    <message>
+        <source>Casting</source>
+        <translation>Diffusion</translation>
+    </message>
+    <message>
+        <source>Look for devices to play on</source>
+        <translation>Chercher des appareils où lire</translation>
+    </message>
+    <message>
+        <source>Casting  ·  Chromecast, DLNA/UPnP</source>
+        <translation>Diffusion  ·  Chromecast, DLNA/UPnP</translation>
     </message>
     <message>
         <source>Genre</source>
@@ -4359,6 +4453,10 @@
         <source>Go to what&apos;s playing: %1</source>
         <translation>Aller à ce qui est en lecture&#xa0;: %1</translation>
     </message>
+    <message>
+        <source>Playing on %1</source>
+        <translation>Lecture sur %1</translation>
+    </message>
     <message numerus="yes">
         <source>Back %n second(s)</source>
         <translation>
@@ -4400,6 +4498,14 @@
     <message>
         <source>Chapters</source>
         <translation>Chapitres</translation>
+    </message>
+    <message>
+        <source>Connecting to %1…</source>
+        <translation>Connexion à %1…</translation>
+    </message>
+    <message>
+        <source>Play on another device</source>
+        <translation>Lire sur un autre appareil</translation>
     </message>
     <message>
         <source>Now playing (F)</source>
@@ -4632,6 +4738,14 @@
         <translation>Analyseur de spectre…</translation>
     </message>
     <message>
+        <source>Play on (%1)</source>
+        <translation>Lire sur (%1)</translation>
+    </message>
+    <message>
+        <source>Play on</source>
+        <translation>Lire sur</translation>
+    </message>
+    <message>
         <source>Podcast speed</source>
         <translation>Vitesse des podcasts</translation>
     </message>
@@ -4704,6 +4818,10 @@
     <message>
         <source>The equalizer couldn&apos;t play (%1); playing without it</source>
         <translation>L’égaliseur n’a pas pu fonctionner (%1)&#xa0;; lecture sans lui</translation>
+    </message>
+    <message>
+        <source>Getting ready for %1…</source>
+        <translation>Préparation pour %1…</translation>
     </message>
     <message>
         <source>Queue replaced</source>
@@ -7093,6 +7211,10 @@
         <translation>Fond animé (couleurs de la pochette en cours qui dérivent lentement)</translation>
     </message>
     <message>
+        <source>Casting</source>
+        <translation>Diffusion</translation>
+    </message>
+    <message>
         <source>Only while music plays (it rests while paused, using no power)</source>
         <translation>Seulement pendant la musique (il se repose en pause, sans consommer d’énergie)</translation>
     </message>
@@ -8036,6 +8158,54 @@
     <message>
         <source>Server name</source>
         <translation>Nom du serveur</translation>
+    </message>
+    <message>
+        <source>cast casting chromecast google nest home speaker tv television dlna upnp renderer receiver kodi sonos play on another device network wifi firewall port original bit-perfect processed equalizer sound</source>
+        <translation>diffuser diffusion caster chromecast google nest home enceinte téléviseur télé tv dlna upnp récepteur amplificateur kodi sonos lire sur un autre appareil réseau wifi pare-feu port original bit-perfect traité égaliseur son</translation>
+    </message>
+    <message>
+        <source>Play your music on a Chromecast, a Google or Nest speaker, or a TV, receiver or speaker that takes DLNA/UPnP. Pick one with the cast button beside the volume; your queue, likes and play counts stay here, and Hallucinate&apos;s controls, media keys and phone remote all control the device.</source>
+        <translation>Écoutez votre musique sur un Chromecast, une enceinte Google ou Nest, ou un téléviseur, un ampli ou une enceinte compatible DLNA/UPnP. Choisissez-le avec le bouton de diffusion à côté du volume ; votre file d’attente, vos favoris et vos écoutes restent ici, et les commandes d’Hallucinate, les touches multimédia et la télécommande du téléphone pilotent l’appareil.</translation>
+    </message>
+    <message>
+        <source>Playing on %1</source>
+        <translation>Lecture sur %1</translation>
+    </message>
+    <message>
+        <source>Play here instead</source>
+        <translation>Lire ici plutôt</translation>
+    </message>
+    <message>
+        <source>What to send</source>
+        <translation>Ce qui est envoyé</translation>
+    </message>
+    <message>
+        <source>The original files</source>
+        <translation>Les fichiers d’origine</translation>
+    </message>
+    <message>
+        <source>Hallucinate&apos;s sound</source>
+        <translation>Le son d’Hallucinate</translation>
+    </message>
+    <message>
+        <source>Songs are played through your ReplayGain, equalizer, headphone correction and crossfeed first, then sent as lossless WAV (16-bit, up to 48 kHz). They take a moment to get ready, and the next song is got ready while one plays. Music servers&apos; songs and radio are sent as they are.</source>
+        <translation>Les morceaux passent d’abord par votre ReplayGain, votre égaliseur, la correction casque et le crossfeed, puis sont envoyés en WAV sans perte (16 bits, jusqu’à 48 kHz). Ils demandent un instant de préparation, et le suivant se prépare pendant la lecture. Les morceaux des serveurs de musique et la radio sont envoyés tels quels.</translation>
+    </message>
+    <message>
+        <source>Songs are sent untouched, bit for bit, and the device plays them itself; your equalizer and crossfeed don&apos;t apply. Songs the device can&apos;t play as they are (WavPack, APE, ALAC on a Chromecast, very high sample rates) and CUE sheet songs are converted to WAV for it.</source>
+        <translation>Les morceaux sont envoyés intacts, bit pour bit, et l’appareil les lit lui-même ; votre égaliseur et le crossfeed ne s’appliquent pas. Les morceaux qu’il ne peut pas lire tels quels (WavPack, APE, ALAC sur un Chromecast, fréquences très élevées) et ceux des fiches CUE sont convertis en WAV pour lui.</translation>
+    </message>
+    <message>
+        <source>Port</source>
+        <translation>Port</translation>
+    </message>
+    <message>
+        <source>The device fetches each song from this computer on this port, and only the device you picked can, only while you&apos;re casting. If nothing plays, your firewall may be blocking it: allow the port for your home network. For example, on Fedora, Bazzite and other systems with firewalld:</source>
+        <translation>L’appareil récupère chaque morceau sur cet ordinateur par ce port, et seul l’appareil choisi le peut, uniquement pendant la diffusion. Si rien ne se lit, votre pare-feu le bloque peut-être : autorisez ce port pour votre réseau domestique. Par exemple, sur Fedora, Bazzite et les autres systèmes avec firewalld :</translation>
+    </message>
+    <message>
+        <source>or with ufw (Ubuntu, Mint):</source>
+        <translation>ou avec ufw (Ubuntu, Mint) :</translation>
     </message>
     <message>
         <source>remote phone web browser interface control pair pairing device devices network lan wifi headless tablet</source>

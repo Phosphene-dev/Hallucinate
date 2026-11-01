@@ -290,6 +290,10 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
 
     web_remote = WebRemote(tmp_path / "data", tmp_path / "thumbs", player, library, user_lib)
     context.setContextProperty("webRemote", web_remote)
+    from hallucinate.cast import Casting
+
+    casting = Casting(player)
+    context.setContextProperty("casting", casting)
     qml_dir = Path(__file__).parents[1] / "hallucinate" / "qml"
     engine.addImportPath(str(qml_dir))
     qml_warnings = []
@@ -542,6 +546,7 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     similar.shutdown()
     copies.shutdown()
     web_remote.shutdown()
+    casting.shutdown()
     library.shutdown()
     qapp.setFont(old_font)
 
