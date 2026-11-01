@@ -261,6 +261,7 @@ class MediaServer:
         self._server = None
         self._thread = None
         self.error = ""
+        self.bound = ""  # the address it listens on ("" for all)
 
     @property
     def running(self):
@@ -282,6 +283,7 @@ class MediaServer:
             self.error = str(last)
             return False
         self.port = self._server.server_address[1]
+        self.bound = bind
         self.error = ""
         self._thread = threading.Thread(target=self._server.serve_forever, name="cast-media", daemon=True)
         self._thread.start()

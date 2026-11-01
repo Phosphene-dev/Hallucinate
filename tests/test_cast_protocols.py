@@ -463,3 +463,41 @@ def test_a_server_song_is_relayed_without_its_address(media):
     def broken(rng):
         raise OSError("server down")
     assert get(media, media.share("127.0.0.1", relay=broken, ctype="audio/mpeg"))[0] == 502
+
+
+def test_json_nested_thousands_deep_is_refused_not_a_crash():
+    deep = ("[" * 20000 + "]" * 20000).encode()
+    msg = castv2._varint(6 << 3 | 2) + castv2._varint(len(deep)) + deep
+    assert castv2.decode(msg)[3] is None
+
+
+def test_a_slow_or_flooding_network_cant_hold_the_search_up(monkeypatch):
+    """Description files are read side by side, and the search ends on time whatever answers."""
+    answers = {f"http://192.168.1.{i}:1400/d.xml": f"192.168.1.{i}" for i in range(2, 30)}
+    monkeypatch.setattr(upnp, "search", lambda *a, **k: answers)
+
+    def slow(url, *a, **k):
+        time.sleep(3)
+        return 200, DESCRIPTION.encode()
+
+    started = time.monotonic()
+    assert upnp.discover(fetch=slow, deadline=0.5) == {}
+    assert time.monotonic() - started < 2
+
+
+def test_a_device_error_is_kept_short(renderer):
+    r = upnp.Renderer(upnp.describe(renderer, "127.0.0.1"))
+    FakeRenderer.calls = []
+    with pytest.raises(upnp.UpnpError) as err:
+        r.seek(1)
+    assert len(str(err.value)) < 260
+
+
+def test_the_media_server_can_listen_on_one_address_only(tmp_path):
+    server = mediaserver.MediaServer(port=0)
+    assert server.start("127.0.0.1") and server.bound == "127.0.0.1"
+    try:
+        with pytest.raises(OSError):
+            socket.create_connection(("127.0.0.2", server.port), timeout=1).close()
+    finally:
+        server.stop()

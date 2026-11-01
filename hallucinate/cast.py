@@ -585,7 +585,15 @@ class Casting(QObject):
             return
         if self._session and self._session.device["id"] == device_id:
             return
-        if not self._server.running and not self._server.start():
+        # Listen only where the device is: on the network interface that reaches it (a laptop on another network
+        # at the same time has nothing open there)
+        try:
+            bind = mediaserver.address_towards(device["host"])
+        except OSError:
+            bind = ""
+        if self._server.running and self._server.bound != bind:
+            self._server.stop()
+        if not self._server.running and not self._server.start(bind):
             self._error = fill(translate("Casting", "Couldn't start casting: %1"), self._server.error)
             self.changed.emit()
             return

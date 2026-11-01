@@ -15,6 +15,7 @@ import socket
 import time
 import urllib.parse
 import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor, wait
 from xml.sax.saxutils import escape
 
 GROUP = ("239.255.255.250", 1900)
@@ -24,6 +25,9 @@ RENDERING = "urn:schemas-upnp-org:service:RenderingControl:1"
 CONNECTION = "urn:schemas-upnp-org:service:ConnectionManager:1"
 MAX_ANSWER = 4096
 MAX_XML = 512 * 1024
+MAX_PER_MACHINE = 4  # description files one machine may name (a TV may have a couple; a flood is cut short)
+MAX_FOUND = 32
+DESCRIBE_DEADLINE = 8.0  # all the description files are read at once, and the search waits no longer than this
 TIMEOUT = 5.0
 USER_AGENT = "Hallucinate UPnP/1.0 DLNADOC/1.50"
 
@@ -192,10 +196,10 @@ def search(timeout=2.0, interfaces=("",), target=RENDERER):
             socks.append(s)
         except OSError:
             continue
-    found = {}
+    found, per_machine = {}, {}
     deadline = time.monotonic() + timeout
     try:
-        while socks and len(found) < 64:
+        while socks and len(found) < MAX_FOUND:
             left = deadline - time.monotonic()
             if left <= 0:
                 break
@@ -209,7 +213,10 @@ def search(timeout=2.0, interfaces=("",), target=RENDERER):
                 if not headers or (headers.get("st") and headers["st"] != target):
                     continue
                 location = headers.get("location", "")
-                if same_machine(location, sender):
+                if same_machine(location, sender) and location not in found:
+                    if per_machine.get(sender, 0) >= MAX_PER_MACHINE:
+                        continue
+                    per_machine[sender] = per_machine.get(sender, 0) + 1
                     found[location] = sender
     finally:
         for s in socks:
@@ -217,15 +224,25 @@ def search(timeout=2.0, interfaces=("",), target=RENDERER):
     return found
 
 
-def discover(timeout=2.0, interfaces=("",), fetch=http_request):
-    """Renderers on the network: {id: details} (see describe)."""
+def discover(timeout=2.0, interfaces=("",), fetch=http_request, deadline=DESCRIBE_DEADLINE):
+    """Renderers on the network: {id: details} (see describe). Their description files are read side by side, and
+    one that's slow to answer is left out rather than holding the search up."""
+    answers = search(timeout, interfaces)
     out = {}
-    for location, sender in search(timeout, interfaces).items():
-        try:
-            dev = describe(location, sender, fetch)
-        except UpnpError:
-            continue
-        out[dev["id"]] = dev
+    if not answers:
+        return out
+    pool = ThreadPoolExecutor(max_workers=min(8, len(answers)), thread_name_prefix="upnp-describe")
+    try:
+        jobs = {pool.submit(describe, location, sender, fetch): location for location, sender in answers.items()}
+        done, _late = wait(jobs, timeout=deadline)
+        for job in done:
+            try:
+                dev = job.result()
+            except UpnpError:
+                continue
+            out[dev["id"]] = dev
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
     return out
 
 
@@ -289,7 +306,7 @@ class Renderer:
                         code = (el.text or "").strip()
                     elif _local(el.tag) == "errorDescription":
                         desc = (el.text or "").strip()
-            raise UpnpError(f"{action} failed: {desc or status}", code)
+            raise UpnpError(f"{action} failed: {(desc or str(status))[:200]}", (code or "")[:20] or None)
         out = {}
         if root is not None:
             for el in root.iter():

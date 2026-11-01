@@ -95,7 +95,7 @@ def decode(msg):
     if 6 in fields:
         try:
             payload = json.loads(fields[6].decode("utf-8"))
-        except (UnicodeError, ValueError):
+        except (UnicodeError, ValueError, RecursionError):  # (JSON nested thousands deep, inside the size cap)
             payload = None
     if not isinstance(payload, dict):
         payload = None
