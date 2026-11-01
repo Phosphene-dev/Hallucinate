@@ -426,3 +426,40 @@ def test_a_live_stream(media):
 def test_an_address_is_required(media):
     with pytest.raises(ValueError):
         media.share("not-an-address", data=b"x")
+
+
+class FakeResponse:
+    def __init__(self, status, body, headers):
+        self.status, self._body, self.headers = status, body, headers
+
+    def read(self, n=-1):
+        out, self._body = (self._body, b"") if n < 0 else (self._body[:n], self._body[n:])
+        return out
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+def test_a_server_song_is_relayed_without_its_address(media):
+    asked = []
+
+    def relay(rng):
+        asked.append(rng)
+        if rng:
+            return FakeResponse(206, b"cd", {"Content-Length": "2", "Content-Range": "bytes 2-3/4",
+                                             "Set-Cookie": "secret=1"})
+        return FakeResponse(200, b"abcd", {"Content-Length": "4", "X-Token": "secret"})
+
+    link = media.share("127.0.0.1", relay=relay, ctype="audio/mpeg", name="song.mp3")
+    status, headers, body = get(media, link)
+    assert status == 200 and body == b"abcd" and "X-Token" not in headers
+    status, headers, body = get(media, link, headers={"Range": "bytes=2-3"})
+    assert status == 206 and body == b"cd" and headers["Content-Range"] == "bytes 2-3/4"
+    assert "Set-Cookie" not in headers and asked == ["", "bytes=2-3"]
+
+    def broken(rng):
+        raise OSError("server down")
+    assert get(media, media.share("127.0.0.1", relay=broken, ctype="audio/mpeg"))[0] == 502

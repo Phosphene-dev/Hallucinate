@@ -72,10 +72,14 @@ def parse_range(header, size):
 
 
 class Link:
-    """What one link serves: a file, some bytes, or a live stream (a callable that yields chunks)."""
+    """What one link serves: a file, some bytes, a live stream (a callable that yields chunks), or something
+    relayed from elsewhere (`relay(range_header)` opens it: a server's song, whose own address holds a login
+    the device must never see)."""
 
-    def __init__(self, client, ctype, path=None, data=None, live=None, name="media"):
-        self.client, self.ctype, self.path, self.data, self.live, self.name = client, ctype, path, data, live, name
+    def __init__(self, client, ctype, path=None, data=None, live=None, relay=None, name="media"):
+        self.client, self.ctype, self.name = client, ctype, name
+        self.path, self.data, self.live, self.relay = path, data, live, relay
+        self.fetched = False  # whether the device has asked for it (if not, it may not be able to reach us)
 
 
 class _Server(ThreadingHTTPServer):
@@ -138,8 +142,11 @@ class _Handler(BaseHTTPRequestHandler):
         if link is None or not self.server.owner.allowed(link, self.client_address[0]):
             self._plain(HTTPStatus.NOT_FOUND)  # the same answer either way: nothing to learn by guessing
             return
+        link.fetched = True
         try:
-            if link.live is not None:
+            if link.relay is not None:
+                self._relay(link, head)
+            elif link.live is not None:
                 self._live(link, head)
             elif link.data is not None:
                 self._bytes(link, link.data, head)
@@ -196,6 +203,37 @@ class _Handler(BaseHTTPRequestHandler):
                     break
                 self.wfile.write(chunk)
                 left -= len(chunk)
+
+    def _relay(self, link, head):
+        try:
+            resp = link.relay(self.headers.get("Range") or "")
+        except Exception as e:  # noqa: BLE001 - whatever the far side did, the device just gets a 502
+            logger.info("Couldn't relay a song to a cast device: %s", e)
+            self._plain(HTTPStatus.BAD_GATEWAY)
+            return
+        with resp:
+            status = getattr(resp, "status", 200)
+            if status not in (200, 206):
+                self._plain(HTTPStatus.BAD_GATEWAY)
+                return
+            length = resp.headers.get("Content-Length")
+            self.send_response(status)
+            self._common(link, live=not length)
+            for name in ("Content-Length", "Content-Range", "Accept-Ranges"):
+                value = resp.headers.get(name)
+                if value and re.fullmatch(r"[A-Za-z0-9 */=,-]{1,100}", value):
+                    self.send_header(name, value)
+            if not length:
+                self.send_header("Connection", "close")
+                self.close_connection = True
+            self.end_headers()
+            if head:
+                return
+            while True:
+                chunk = resp.read(CHUNK)
+                if not chunk:
+                    break
+                self.wfile.write(chunk)
 
     def _live(self, link, head):
         # A live stream has no length: sent until it ends, then the connection closes (HTTP/1.0 style, which
@@ -257,9 +295,9 @@ class MediaServer:
         with self._lock:
             self._links.clear()
 
-    def share(self, client, path=None, data=None, live=None, ctype=None, name="media"):
-        """A link to `path` (a file), `data` (bytes) or `live` (a callable returning an iterator of chunks), usable
-        only by the device at address `client`. Returns the link's path ("/m/<token>.<ext>")."""
+    def share(self, client, path=None, data=None, live=None, relay=None, ctype=None, name="media"):
+        """A link to `path` (a file), `data` (bytes), `live` (a callable returning an iterator of chunks) or `relay`
+        (see Link), usable only by the device at address `client`. Returns the link's path ("/m/<token>.<ext>")."""
         ipaddress.ip_address(client)  # (raises for anything but an address)
         if ctype is None:
             ctype = content_type(path or name)
@@ -268,7 +306,7 @@ class MediaServer:
         if not re.fullmatch(r"(\.[A-Za-z0-9]{1,5})?", ext):
             ext = ""
         with self._lock:
-            self._links[token] = Link(client, ctype, path=path, data=data, live=live, name=name)
+            self._links[token] = Link(client, ctype, path=path, data=data, live=live, relay=relay, name=name)
             while len(self._links) > KEEP_LINKS:
                 self._links.popitem(last=False)
         return f"/m/{token}{ext}"

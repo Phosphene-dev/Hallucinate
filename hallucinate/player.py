@@ -350,6 +350,9 @@ class Player(QObject):
 
     def __init__(self, parent=None, session_file=None):
         super().__init__(parent)
+        self._cast = None  # a CastSession while playing on another device (see cast.py)
+        self._cast_media = None
+        self._cast_failures = 0
         self._session_file = Path(session_file) if session_file else None
         self._restore_pos = 0
         self._parked = False  # a station shown but not connected (see _park_station)
@@ -1452,12 +1455,16 @@ class Player(QObject):
     # --- properties --------------------------------------------------------
     @Property(bool, notify=stateChanged)
     def playing(self):
+        if self._cast is not None:
+            return not self._ended and self._cast.playing
         return not self._ended and self._player.playbackState() == QMediaPlayer.PlaybackState.PlayingState
 
     @Property(str, notify=stateChanged)
     def state(self):
         if self._ended:
             return "Stopped"
+        if self._cast is not None:
+            return "Playing" if self._cast.playing else "Paused" if self._cast.state == "PAUSED" else "Stopped"
         return {
             QMediaPlayer.PlaybackState.PlayingState: "Playing",
             QMediaPlayer.PlaybackState.PausedState: "Paused",
@@ -1477,17 +1484,21 @@ class Player(QObject):
 
     @Property(int, notify=positionChanged)
     def position(self):
+        if self._cast is not None:
+            return self._cast.position_ms()
         return self._voice.position()
 
     @Property(int, notify=durationChanged)
     def duration(self):
-        d = self._voice.duration()
+        d = self._cast.duration_ms() if self._cast is not None else self._voice.duration()
         if d <= 0 and self.hasTrack:
             d = int(self._queue[self._index].get("duration", 0) * 1000)
         return max(d, 0)
 
     @Property(float, notify=volumeChanged)
     def volume(self):
+        if self._cast is not None and self._cast.volume is not None:
+            return self._cast.volume  # the device's own volume while casting
         return self._volume
 
     @Property(bool, notify=shuffleChanged)
@@ -1534,6 +1545,133 @@ class Player(QObject):
     def queue(self):
         return list(self._queue)
 
+    # --- casting -----------------------------------------------------------
+    @Property(bool, notify=stateChanged)
+    def casting(self):
+        return self._cast is not None
+
+    def attachCast(self, session, media_for):
+        """Play on another device from here on: the song carries on there from where it is here.
+        `media_for(track, session)` says how a queue entry reaches the device (see Casting.media_for)."""
+        if self._cast is not None:
+            self.detachCast(False)
+        was_playing = self.playing and not self._pausing
+        pos = self.position if self.hasTrack else 0
+        self._end_fade()
+        self._reset_pause_fade()
+        self._handoff_timer.stop()
+        self._transitioning = False
+        for voice in self._voices:  # this computer goes quiet
+            voice.player.pause()
+            voice.finishing = False
+        self._cast, self._cast_media, self._cast_failures = session, media_for, 0
+        session.changed.connect(self._on_cast_changed)
+        session.ended.connect(self._on_cast_ended)
+        session.failed.connect(self._on_cast_failed)
+        if self.hasTrack and not self._parked and not self._ended:
+            self._cast_load(self._index, was_playing, pos)
+        self._clear_visualizer()
+        self.stateChanged.emit()
+        self.volumeChanged.emit()
+        self.positionChanged.emit()
+        self.durationChanged.emit()
+        self.signalPathChanged.emit()
+
+    def detachCast(self, resume_here=True):
+        """Back to this computer, at the place the device had reached (playing on if `resume_here` and it was)."""
+        session = self._cast
+        if session is None:
+            return
+        pos, was_playing = session.position_ms(), session.playing
+        for signal, slot in ((session.changed, self._on_cast_changed), (session.ended, self._on_cast_ended),
+                             (session.failed, self._on_cast_failed)):
+            try:
+                signal.disconnect(slot)
+            except (RuntimeError, TypeError):
+                pass
+        self._cast = self._cast_media = None
+        if self.hasTrack and not self._ended:
+            if self._error == CONNECTING:
+                self._set_error("")
+            self._load(self._index, autoplay=resume_here and was_playing, record=False, start_ms=pos)
+        self.stateChanged.emit()
+        self.volumeChanged.emit()
+        self.positionChanged.emit()
+        self.durationChanged.emit()
+        self.signalPathChanged.emit()
+
+    def _cast_load(self, i, autoplay, start_ms):
+        track = self._queue[i]
+        media = self._cast_media(track, self._cast) if self._cast_media else {"error": "?"}
+        if media.get("error"):
+            self._set_error(media["error"])
+            self._cast.stop()
+            return False
+        self._set_error(CONNECTING if autoplay and is_url(track_file(track)) else "")
+        self._cast.load(media, start_ms, autoplay)
+        return True
+
+    def _cast_play(self):
+        if not self.hasTrack:
+            if self._queue:
+                self._load(0)
+            return
+        if self._ended:
+            nxt = self._compute_next(auto=True)
+            self._ended = False
+            self._load(nxt if nxt is not None else self._index, record=nxt is not None)
+            return
+        if self._cast.state == "IDLE":  # stopped, failed or taken over: send the song again from its place
+            self._load(self._index, record=False, start_ms=self._cast.position_ms())
+            return
+        self._cast.play()
+        self.stateChanged.emit()
+
+    def _on_cast_changed(self):
+        session = self._cast
+        if session is None:
+            return
+        pos, dur = session.position_ms(), session.duration_ms()
+        if session.state == "PLAYING":
+            self._cast_failures = 0
+            if self._error == CONNECTING:
+                self._set_error("")
+        self._count_listening(pos, dur)
+        self.positionChanged.emit()
+        self.stateChanged.emit()
+        self.durationChanged.emit()
+        self.volumeChanged.emit()
+        if self.playing and abs(pos - self._last_saved_pos) > 5000:
+            self._last_saved_pos = pos
+            self.saveSession()
+
+    def _on_cast_ended(self):
+        nxt = self._compute_next(auto=True)
+        if self._sleep_at_end(nxt):
+            self._sleep_after_track = False
+            self._sleep_album = ""
+            self.sleepChanged.emit()
+            if nxt is not None:
+                self._load(nxt, autoplay=False)
+            else:
+                self._ended = True
+                self.stateChanged.emit()
+        elif nxt is not None:
+            self._load(nxt)
+        else:
+            self._ended = True
+            self.stateChanged.emit()
+        self.saveSession()
+
+    def _on_cast_failed(self, message, skippable):
+        self._set_error(message)
+        self._cast_failures += 1
+        nxt = self._compute_next(auto=True)
+        if skippable and self._cast_failures < 3 and nxt is not None and nxt != self._index:
+            self._load(nxt)  # like an unreadable file here: move on (but not through the whole queue)
+        else:
+            self.stateChanged.emit()
+
     # --- transport ---------------------------------------------------------
     def _apply_pending_outputs(self):
         if self._outputs_changed:  # the sound devices changed while nothing played
@@ -1545,6 +1683,9 @@ class Player(QObject):
         self._apply_pending_outputs()
         if self.hasTrack and self._parked:
             self._load(self._index, record=False)  # a stream that was only shown: connect to it now
+            return
+        if self._cast is not None:
+            self._cast_play()
             return
         if self.hasTrack and self._ended:
             nxt = self._compute_next(auto=True)
@@ -1571,6 +1712,14 @@ class Player(QObject):
 
     @Slot()
     def pause(self):
+        if self._cast is not None:
+            if self.hasTrack and track_kind(self.current) == "station":
+                self._cast.stop()  # live radio can't be paused (see below): play connects again
+            else:
+                self._cast.pause()
+            self.stateChanged.emit()
+            self.saveSession()
+            return
         if self.hasTrack and track_kind(self.current) == "station":
             # Live radio can't be paused: hang up, and play connects again (to what's on now). A paused
             # connection only gets dropped by the station and reconnected for nothing.
@@ -1594,6 +1743,12 @@ class Player(QObject):
 
     @Slot()
     def stop(self):
+        if self._cast is not None:
+            self._ended = False
+            self._cast.stop()
+            self.stateChanged.emit()
+            self.saveSession()
+            return
         if self.hasTrack and track_kind(self.current) == "station":
             self._park_station(self._index)
             self.saveSession()
@@ -1634,6 +1789,11 @@ class Player(QObject):
         if self._ended:
             self._ended = False
             self.stateChanged.emit()
+        if self._cast is not None:
+            self._cast.seek(ms)
+            self.seeked.emit(ms)
+            self.positionChanged.emit()
+            return
         if self._voice.tap is not None:
             self._voice.tap.reset()
         self._voice.set_position(ms)
@@ -1641,12 +1801,16 @@ class Player(QObject):
 
     @Slot(int)
     def seekBy(self, delta_ms):
-        self.seek(min(self._voice.position() + delta_ms, max(self.duration - 1, 0)))
+        self.seek(min(self.position + delta_ms, max(self.duration - 1, 0)))
 
     @Slot(float)
     def setVolume(self, v):
         v = float(v)
         v = min(max(v, 0.0), self._max_volume) if math.isfinite(v) else 0.0
+        if self._cast is not None:
+            self._cast.set_volume(min(v, 1.0))  # the device's volume; this computer's stays as it was
+            self.volumeChanged.emit()
+            return
         self._volume = v
         self._apply_volume()
         self._settings.setValue("volume", v)
@@ -1699,14 +1863,15 @@ class Player(QObject):
 
     @Property(bool, notify=volumeChanged)
     def muted(self):
-        return self._volume <= 0
+        return self.volume <= 0
 
     @Slot()
     def toggleMute(self):
         """Mute, remembering the volume; unmuting brings it back (or a sensible level if there's none)."""
-        if self._volume > 0:
-            self._unmuted_volume = self._volume
-            self._settings.setValue("volumeBeforeMute", self._volume)
+        if self.volume > 0:
+            self._unmuted_volume = self.volume
+            if self._cast is None:
+                self._settings.setValue("volumeBeforeMute", self._volume)
             self.setVolume(0.0)
         else:
             self.setVolume(self._unmuted_volume if self._unmuted_volume > 0 else 0.8)
@@ -1742,7 +1907,7 @@ class Player(QObject):
     def _note_skip(self, target):
         """Moving on by hand from a song that is playing and hasn't counted as a play yet is a skip."""
         if (self.hasTrack and target != self._index and self.playing and not self._play_counted
-                and self._voice.position() >= SKIP_MIN_MS and track_kind(self.current) == "music"):
+                and self.position >= SKIP_MIN_MS and track_kind(self.current) == "music"):
             self.skipped.emit(dict(self.current))
 
     @Slot()
@@ -1753,7 +1918,7 @@ class Player(QObject):
             elif self._index > 0:
                 self._load(self._index - 1, record=False)
             return
-        if self._voice.position() > 3000 or not self.hasTrack:
+        if self.position > 3000 or not self.hasTrack:
             self.seek(0)
         elif self._history:
             self._load(self._history.pop(), record=False)
@@ -1991,7 +2156,7 @@ class Player(QObject):
             return
         self._undo.append({
             "label": label, "queue": list(self._queue), "index": self._index, "history": list(self._history),
-            "played": set(self._played), "position": self._voice.position() if self.hasTrack else 0,
+            "played": set(self._played), "position": self.position if self.hasTrack else 0,
             "playing": self.playing, "radio_rules": self._radio_rules,
         })
         del self._undo[:-UNDO_STEPS]
@@ -2171,6 +2336,14 @@ class Player(QObject):
         self._listened = 0
         self._last_pos = 0
         self._play_counted = False
+        if self._cast is not None:
+            self._restore_pos = 0
+            self._cast_load(i, autoplay, start_ms)
+            self.trackChanged.emit()
+            self.stateChanged.emit()
+            self.durationChanged.emit()
+            self.positionChanged.emit()
+            return
 
         sb = self._standby
         cur = self._voice
@@ -2667,7 +2840,7 @@ class Player(QObject):
         is unchanged since the last save (see _session_dirty): a small file of its own, beside the session."""
         if not self._session_file:
             return
-        position = self._voice.position() if self.hasTrack else 0
+        position = self.position if self.hasTrack else 0
         if not self._session_dirty and self._session_token and self._session_file.exists():
             self._write_session_file(self._position_file(), {"token": self._session_token, "position": position})
             return
