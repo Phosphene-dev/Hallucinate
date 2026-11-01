@@ -427,7 +427,6 @@ Item {
                         visible: parent.music && shell.features.liked !== false
                         icon: "heart"; size: 22
                         active: player.hasTrack && userLib.likesRevision >= 0 && userLib.isLiked(player.current.path)
-                        tip: qsTr("Like")
                         onClicked: if (player.hasTrack) userLib.toggleLike(player.current.path)
                     }
                     VolumeButton {  // a click opens the slider above it; scroll to change, middle-click to mute

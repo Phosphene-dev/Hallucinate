@@ -95,6 +95,11 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.10.0" date="2026-11-01">
+      <description>
+        <p>Hallucinate speaks French as well as English: every page, menu and message, with the language picked in Settings or following the system, switched without a restart. The web remote follows the phone's language. A guide explains how to add another language, no programming needed.</p>
+      </description>
+    </release>
     <release version="1.9.0" date="2026-10-31">
       <description>
         <p>Background work (scans, cover and genre lookups, loudness, downloads) shows in one place at the foot of the sidebar, with Stop for each. Settings search shows just the settings that match. A start-up that crashed is followed by a safe one, without the visualizer.</p>

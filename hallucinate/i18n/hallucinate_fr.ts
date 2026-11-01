@@ -2942,6 +2942,30 @@
         <source>Duplicates</source>
         <translation>Doublons</translation>
     </message>
+    <message>
+        <source>Shuffle is on</source>
+        <translation>Aléatoire activé</translation>
+    </message>
+    <message>
+        <source>Shuffle is off</source>
+        <translation>Aléatoire désactivé</translation>
+    </message>
+    <message>
+        <source>Repeating the queue</source>
+        <translation>Répétition de la file d’attente</translation>
+    </message>
+    <message>
+        <source>Repeat is off</source>
+        <translation>Répétition désactivée</translation>
+    </message>
+    <message>
+        <source>Repeating this song</source>
+        <translation>Répétition de ce morceau</translation>
+    </message>
+    <message>
+        <source>Liked (click to unlike)</source>
+        <translation>Aimé (cliquez pour ne plus aimer)</translation>
+    </message>
 </context>
 <context>
     <name>Language</name>
@@ -4481,10 +4505,6 @@
             <numerusform>Avancer de %n seconde</numerusform>
             <numerusform>Avancer de %n secondes</numerusform>
         </translation>
-    </message>
-    <message>
-        <source>Like</source>
-        <translation>Aimer</translation>
     </message>
     <message>
         <source>Close (Esc)</source>
@@ -11143,6 +11163,18 @@
 </context>
 <context>
     <name>WhatsNew</name>
+    <message>
+        <source>Hallucinate speaks French now: pick a language in Settings → Appearance, or let it follow your system.</source>
+        <translation>Hallucinate parle français&#xa0;: choisissez une langue dans Paramètres → Apparence, ou laissez-le suivre votre système.</translation>
+    </message>
+    <message>
+        <source>The web remote follows your phone&apos;s language, and Qt&apos;s own dialogs follow the app&apos;s.</source>
+        <translation>La télécommande web suit la langue de votre téléphone, et les boîtes de dialogue de Qt suivent celle de l’application.</translation>
+    </message>
+    <message>
+        <source>Want it in your language? docs/translating.md shows how, no programming needed.</source>
+        <translation>Vous le voulez dans votre langue&#xa0;? docs/translating.md explique comment, sans programmation.</translation>
+    </message>
     <message>
         <source>Everything working in the background shows at the foot of the sidebar, with Stop for each.</source>
         <translation type="unfinished"></translation>

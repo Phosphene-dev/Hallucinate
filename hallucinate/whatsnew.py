@@ -4,6 +4,11 @@ newest version's lines are ever shown, so translators can leave the older ones."
 from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication
 
 HIGHLIGHTS = {
+    "1.10.0": [
+        QT_TRANSLATE_NOOP("WhatsNew", "Hallucinate speaks French now: pick a language in Settings → Appearance, or let it follow your system."),
+        QT_TRANSLATE_NOOP("WhatsNew", "The web remote follows your phone's language, and Qt's own dialogs follow the app's."),
+        QT_TRANSLATE_NOOP("WhatsNew", "Want it in your language? docs/translating.md shows how, no programming needed."),
+    ],
     "1.9.0": [
         QT_TRANSLATE_NOOP("WhatsNew", "Everything working in the background shows at the foot of the sidebar, with Stop for each."),
         QT_TRANSLATE_NOOP("WhatsNew", "Settings search shows just the settings that match, and the Afterimage terminal can search, tune in and scan."),

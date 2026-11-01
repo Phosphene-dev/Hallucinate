@@ -56,7 +56,15 @@ Item {
         cursorShape: Qt.PointingHandCursor
         onClicked: btn.clicked()
     }
-    ToolTip.visible: ma.containsMouse && tip.length > 0
-    ToolTip.text: tip
-    ToolTip.delay: 600
+    // Pointed at, a button says what it does (#150): its own tip, or its name, and for a toggle whether it's on.
+    // Play, pause, previous and next say nothing: they're plain to see.
+    readonly property string shownTip: tip.length ? tip
+        : icon === "shuffle" ? (active ? qsTr("Shuffle is on") : qsTr("Shuffle is off"))
+        : icon === "repeat" ? (active ? qsTr("Repeating the queue") : qsTr("Repeat is off"))
+        : icon === "repeat1" ? qsTr("Repeating this song")
+        : icon === "heart" ? (active ? qsTr("Liked (click to unlike)") : qsTr("Like"))
+        : ["play", "pause", "prev", "next"].indexOf(icon) >= 0 ? "" : (spokenNames[icon] || "")
+    ToolTip.visible: ma.containsMouse && shownTip.length > 0
+    ToolTip.text: shownTip
+    ToolTip.delay: 500
 }

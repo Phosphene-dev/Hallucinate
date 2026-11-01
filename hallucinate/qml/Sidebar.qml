@@ -195,7 +195,7 @@ Item {
                     TitleDrag { anchors.fill: parent }  // the name moves the window too (title bar built in)
                     Image {
                         id: logo
-                        x: side.collapsed ? (side.railWidth - width) / 2 : 14  // (the rail's final width, not the moving one: no jump)
+                        x: side.collapsed ? (side.railWidth - panel.anchors.leftMargin - width) / 2 : 14  // centred in the collapsed panel (#149); its final width, not the moving one: no jump
                         anchors.verticalCenter: parent.verticalCenter
                         width: 32; height: 32
                         source: "../assets/hallucinate.png"; sourceSize: Qt.size(64, 64); smooth: true
