@@ -100,14 +100,58 @@ def _rate(hz):
     return f"{hz / 1000:.1f}".rstrip("0").rstrip(".") + " kHz" if hz else ""
 
 
+CAST_RATE = 48000  # what Hallucinate's sound and converted songs are sent at, at most (see cast.py)
+
+
+def _describe_cast(track, cast, rg_factor, rg_mode, eq_enabled, eq_preset, crossfeed):
+    """The path when the song plays on a cast device: what's done here, then what's sent and where."""
+    full = describe(track, rg_factor=rg_factor, rg_mode=rg_mode, eq_enabled=eq_enabled, eq_preset=eq_preset,
+                    crossfeed=crossfeed)
+    stages = [full["stages"][0]]  # the source
+    sent = cast.get("sent") or "original"
+    rate = int(track.get("sample_rate") or 0)
+    depth = int(track.get("bit_depth") or 0)
+    if sent == "processed":
+        stages += [st for st in full["stages"] if st["key"] in ("replaygain", "eq", "crossfeed")]
+    if sent in ("processed", "converted"):
+        out_rate = min(rate, CAST_RATE) if rate else CAST_RATE
+        lossy = depth > 16 or rate > CAST_RATE  # 16-bit and 48 kHz at most: a hi-res song loses some on the way
+        stages.append({"key": "convert", "name": translate("SignalPath", "Sent as"),
+                       "detail": "  ·  ".join(["WAV", "16-bit", _rate(out_rate)]), "active": lossy})
+    else:
+        stages.append({"key": "convert", "name": translate("SignalPath", "Sent as"),
+                       "detail": translate("SignalPath", "The original file"), "active": False})
+    stages.append({"key": "output", "name": translate("SignalPath", "Output"),
+                   "detail": fill(translate("SignalPath", "%1 (casting)"), cast.get("device") or "?"), "active": False})
+    changed = [st["name"].lower() for st in stages if st["active"]]
+    untouched = not changed
+    summary = translate("SignalPath", "Untouched") if untouched else fill(translate("SignalPath", "Changed by %1"),
+                                                                         ", ".join(changed))
+    if sent == "original":
+        advice = fill(translate("SignalPath", "Sent untouched to %1, which plays the file itself. Your equalizer and "
+                                "crossfeed don't apply; Settings → Casting → Hallucinate's sound sends them along."),
+                      cast.get("device") or "?")
+    elif sent == "converted":
+        advice = fill(translate("SignalPath", "%1 can't play this file as it is, so it's converted for it."),
+                      cast.get("device") or "?")
+    else:
+        advice = fill(translate("SignalPath", "Played through your sound settings here, then sent to %1."),
+                      cast.get("device") or "?")
+    return {"stages": stages, "untouched": untouched, "summary": summary, "advice": [advice]}
+
+
 def describe(track, *, rg_factor=1.0, rg_mode="off", volume=1.0, speed=1.0, eq_enabled=False, eq_preset="", crossfeed="",
-             crossfade=0, device_name="", device_rate=0, rate_follows=False, rate_source=""):
+             crossfade=0, device_name="", device_rate=0, rate_follows=False, rate_source="", cast=None):
     """Stages from the file to the output, each {"name", "detail", "active"} where active means it changes the
     sound, and whether the path is untouched: nothing between file and device alters the samples (the system
     mixer may still resample when the device runs at another rate, which is reported too). rate_follows: the
-    output switches to the song's rate (see output_follows); rate_source says who switches it ("PipeWire")."""
+    output switches to the song's rate (see output_follows); rate_source says who switches it ("PipeWire").
+    cast: while playing on another device, {"device": its name, "sent": "original" | "processed" | "converted"}
+    (see cast.py): the path then ends there instead."""
     if not track:
         return {"stages": [], "untouched": False, "summary": ""}
+    if cast:
+        return _describe_cast(track, cast, rg_factor, rg_mode, eq_enabled, eq_preset, crossfeed)
     codec = (track.get("codec") or track.get("fmt") or "").upper()
     rate = int(track.get("sample_rate") or 0)
     lossless = codec in LOSSLESS

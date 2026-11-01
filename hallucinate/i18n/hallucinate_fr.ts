@@ -9213,6 +9213,30 @@
         <translation>Modifié par %1</translation>
     </message>
     <message>
+        <source>Sent as</source>
+        <translation>Envoyé en</translation>
+    </message>
+    <message>
+        <source>The original file</source>
+        <translation>Le fichier d’origine</translation>
+    </message>
+    <message>
+        <source>%1 (casting)</source>
+        <translation>%1 (diffusion)</translation>
+    </message>
+    <message>
+        <source>Sent untouched to %1, which plays the file itself. Your equalizer and crossfeed don&apos;t apply; Settings → Casting → Hallucinate&apos;s sound sends them along.</source>
+        <translation>Envoyé intact à %1, qui lit le fichier lui-même. Votre égaliseur et le crossfeed ne s’appliquent pas ; Paramètres → Diffusion → Le son d’Hallucinate les inclut.</translation>
+    </message>
+    <message>
+        <source>%1 can&apos;t play this file as it is, so it&apos;s converted for it.</source>
+        <translation>%1 ne peut pas lire ce fichier tel quel : il est donc converti pour lui.</translation>
+    </message>
+    <message>
+        <source>Played through your sound settings here, then sent to %1.</source>
+        <translation>Passé par vos réglages de son ici, puis envoyé à %1.</translation>
+    </message>
+    <message>
         <source>Your output runs at %1 and this song is %2, so it&apos;s converted on the way. Songs at %1 play untouched; on Linux, PipeWire can switch the output to each song&apos;s rate (its allowed-rates setting). If your output already follows each song, say so in Settings → Playback → Output sample rate.</source>
         <translation>Votre sortie tourne à %1 et ce morceau est à %2, il est donc converti en route. Les morceaux à %1 sont lus intacts&#xa0;; sous Linux, PipeWire peut basculer la sortie à la fréquence de chaque morceau (son réglage de fréquences autorisées). Si votre sortie suit déjà chaque morceau, indiquez-le dans Paramètres → Lecture → Fréquence d’échantillonnage de sortie.</translation>
     </message>

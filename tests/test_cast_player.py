@@ -115,6 +115,9 @@ def test_a_playing_queue_moves_to_a_chromecast_and_back(setup, songs):
     assert dev.fetched[0] == 200 and dev.fetched[2] == open(songs[0]["path"], "rb").read()
     assert all(v.player.playbackState().name != "PlayingState" for v in player._voices)  # this computer is quiet
     assert wait_for(lambda: player.state == "Playing")
+    path = player.signalPath
+    assert path["untouched"] and path["stages"][-1]["detail"] == "Living Room (casting)"
+    assert [st["key"] for st in path["stages"]] == ["source", "convert", "output"]  # nothing done here on the way
 
     player.pause()
     assert player.state == "Paused"
@@ -198,6 +201,8 @@ def test_hallucinates_own_sound(setup, songs):
         assert ctype == "audio/wav" and body[:4] == b"RIFF"
         url, start, autoplay, meta = dev.loads[0]
         assert meta["title"] == "T0" and autoplay
+        keys = [st["key"] for st in player.signalPath["stages"]]
+        assert "eq" in keys and "convert" in keys and not player.signalPath["untouched"]
         assert len(casting._renders) >= 1
         assert wait_for(lambda: len([r for r in casting._renders.values() if "file" in r]) >= 2, timeout=30)  # the next song got ready too
     finally:

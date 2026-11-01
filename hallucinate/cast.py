@@ -735,6 +735,7 @@ class Casting(QObject):
                 return {"error": fill(translate("Casting", "Couldn't get this song ready for %1."), session.name),
                         "skippable": True}
             media = dict(out, start=0.0, end=0.0, file_duration=done["seconds"] or None, ctype="audio/wav",
+                         sent="processed" if processed else "converted",
                          link=self._server.share(host, path=done["file"], ctype="audio/wav"))
             return self._finish_media(track, session, media)
 

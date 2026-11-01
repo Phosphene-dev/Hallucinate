@@ -355,6 +355,7 @@ class Player(QObject):
         self._cast_prepare = None
         self._cast_failures = 0
         self._cast_gen = 0
+        self._cast_sent = "original"  # how the playing song went to the device (for the signal path)
         self._session_file = Path(session_file) if session_file else None
         self._restore_pos = 0
         self._parked = False  # a station shown but not connected (see _park_station)
@@ -1153,6 +1154,7 @@ class Player(QObject):
             device_rate=0 if device.isNull() else device.preferredFormat().sampleRate(),
             rate_follows=follows,
             rate_source="PipeWire" if follows and self._rate_mode == "auto" else "",
+            cast={"device": self._cast.name, "sent": self._cast_sent} if self._cast is not None else None,
         )
 
     @Property(bool, notify=audioSettingsChanged)
@@ -1630,8 +1632,10 @@ class Player(QObject):
             self.stateChanged.emit()
             return False
         self._set_error(CONNECTING if autoplay and media.get("live") else "")
+        self._cast_sent = media.get("sent") or "original"
         session.load(media, start_ms, autoplay)
         self.durationChanged.emit()
+        self.signalPathChanged.emit()
         if self._cast_prepare is not None:  # get the next song ready while this one plays
             nxt = self._compute_next(auto=True)
             if nxt is not None and nxt != self._index:
