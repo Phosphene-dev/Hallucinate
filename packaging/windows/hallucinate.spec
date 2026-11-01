@@ -14,6 +14,8 @@ a = Analysis(
         (str(pkg / "qml"), "hallucinate/qml"),
         (str(pkg / "assets"), "hallucinate/assets"),
         (str(pkg / "themes"), "hallucinate/themes"),
+        (str(pkg / "web"), "hallucinate/web"),
+        (str(pkg / "i18n"), "hallucinate/i18n"),
     ],
     # keyring picks its backend dynamically (Windows Credential Manager).
     # winrt is imported lazily for the Windows media controls.

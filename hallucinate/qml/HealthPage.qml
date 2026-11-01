@@ -275,7 +275,7 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: Math.min(implicitWidth, card.width - 220)
+                                width: Math.max(0, Math.min(implicitWidth, card.width - parent.x - x - 24))  // what the buttons leave (longer in some languages)
                                 elide: Text.ElideRight
                                 text: metaEditor.coversBusy
                                       ? qsTr("Looked up %1 of %2 albums  ·  %3 found").arg(Theme.num(metaEditor.coversDone)).arg(Theme.num(metaEditor.coversTotal))
@@ -312,7 +312,7 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: Math.min(implicitWidth, card.width - 360)
+                                width: Math.max(0, Math.min(implicitWidth, card.width - parent.x - x - 24))  // what the buttons leave (longer in some languages)
                                 elide: Text.ElideRight
                                 text: metaEditor.genresSaving
                                       ? qsTr("Saving genres to your files: %1 of %2 albums. You can carry on meanwhile.").arg(Theme.num(metaEditor.genresSaved)).arg(Theme.num(metaEditor.genresToSave))
@@ -343,7 +343,7 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: Math.min(implicitWidth, card.width - 260)
+                                width: Math.max(0, Math.min(implicitWidth, card.width - parent.x - x - 24))  // what the buttons leave (longer in some languages)
                                 elide: Text.ElideRight
                                 text: Theme.counted(qsTr("Takes the %n extra copies out of the library and keeps the best of each. Right-click a song for more.", "", card.modelData.extra), card.modelData.extra)
                                 color: Theme.textDim
@@ -366,6 +366,8 @@ Item {
                                 textFormat: Text.PlainText
                                 anchors.verticalCenter: parent.verticalCenter
                                 visible: replayGain.busy
+                                width: Math.max(0, Math.min(implicitWidth, card.width - parent.x - x - 24))
+                                elide: Text.ElideRight
                                 text: qsTr("Measured %1 of %2 songs").arg(Theme.num(replayGain.done)).arg(Theme.num(replayGain.total))
                                       + (replayGain.failed ? "  ·  " + qsTr("%1 couldn't be read").arg(Theme.num(replayGain.failed)) : "")
                                 color: Theme.textDim

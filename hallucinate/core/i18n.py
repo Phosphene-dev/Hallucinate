@@ -35,10 +35,15 @@ def translate(context, text, disambiguation=None, n=-1):
 
 
 def fill(text, *values):
-    """Puts values in for %1, %2… (highest first, so %1 doesn't eat the start of %10)."""
-    for i in range(len(values), 0, -1):
-        text = text.replace(f"%{i}", str(values[i - 1]))
-    return text
+    """Puts values in for %1, %2… in one pass (so %1 never eats the start of %10, and a value that itself holds
+    "%2" isn't filled in again)."""
+    import re
+
+    def one(m):
+        i = int(m.group(1))
+        return str(values[i - 1]) if 0 < i <= len(values) else m.group(0)
+
+    return re.sub(r"%(\d+)", one, text)
 
 
 def month_name(month, short=False):

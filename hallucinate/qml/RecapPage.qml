@@ -126,6 +126,8 @@ Item {
         spacing: 10
         Text {
             textFormat: Text.PlainText
+            width: bars.width
+            elide: Text.ElideRight
             text: bars.title
             color: Theme.text
             font.family: Theme.displayFamily
@@ -135,6 +137,8 @@ Item {
         Text {
             textFormat: Text.PlainText
             visible: bars.note.length > 0
+            width: bars.width
+            elide: Text.ElideRight
             text: bars.note
             color: Theme.textDim
             font.family: Theme.fontFamily

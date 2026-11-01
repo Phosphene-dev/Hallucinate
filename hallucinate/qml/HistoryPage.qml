@@ -140,6 +140,8 @@ Item {
                         textFormat: Text.PlainText
                         objectName: "heatmapTrimmed"
                         visible: historyHeatmap.firstWeek > 0
+                        width: parent.width
+                        wrapMode: Text.WordWrap
                         text: Theme.counted(qsTr("The last %n week(s): widen the window for the whole year", "", historyHeatmap.shownWeeks), historyHeatmap.shownWeeks)
                         color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11)
                     }

@@ -157,6 +157,7 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 <details>
 <summary>The full list, for the curious</summary>
 
+- In your language: English and French, chosen in Settings → Appearance → Language (or as the system is set) and switched without a restart. Dates, counts and numbers follow the language; the web remote follows the phone's. [Translate it into yours](docs/translating.md).
 - Scans folders (mutagen tags + embedded/folder cover art) into SQLite with FTS5 instant search; incremental rescans (mtime/size), background scanning, file watching, and removal of moved/deleted paths.
 - Formats: FLAC, MP3, OGG/Vorbis, Opus, WAV, AAC/M4A, ALAC, WMA, APE, WavPack, AIFF and more (anything Qt's FFmpeg backend decodes). WAV/AIFF RIFF/FORM text tags are read; missing tags fall back to the filename and unknown values.
 - Features (Settings): switch off Liked Songs, Folders, Stats, History, Recap, Visualizer, Library health, lyrics or any card on Home; it leaves the sidebar, Ctrl+K, links, buttons and shortcuts. Internet radio and podcasts start switched off. Rearrange the sidebar by dragging its entries, from their right-click menu, or in Settings.
@@ -503,7 +504,8 @@ FLAC, MP3, OGG/Vorbis, Opus, WAV, AAC/M4A, ALAC, WMA, WavPack, AIFF and APE
   bit-perfect output
 
 ## Contributing
-See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). The calls that shape what
+See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). Translations are welcome,
+no programming needed: [docs/translating.md](docs/translating.md). The calls that shape what
 Hallucinate is and isn't are in [decisions.md](decisions.md).
 Report vulnerabilities per [SECURITY.md](SECURITY.md). Changes are tracked in
 [CHANGELOG.md](CHANGELOG.md).

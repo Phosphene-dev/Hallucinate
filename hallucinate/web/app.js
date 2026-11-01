@@ -28,16 +28,14 @@ function tn(s, n) {
   return out.replace(/%n/g, num(n));
 }
 function pluralForm(n) { return I18N.plural === "fr" ? (n >= 2 ? 1 : 0) : (n === 1 ? 0 : 1); }
-function fill(s, ...values) { return s.replace(/%(\d)/g, (m, i) => (values[i - 1] !== undefined ? String(values[i - 1]) : m)); }
+function fill(s, ...values) { return s.replace(/%(\d+)/g, (m, i) => (values[i - 1] !== undefined ? String(values[i - 1]) : m)); }
 function num(n) { return Number(n).toLocaleString(I18N.lang); }
+// the language picked here, or this device's languages in its order: the computer answers with the first it has
 function wantedLang() {
   const chosen = pref("lang", "");
   if (chosen) return chosen;
-  for (const l of navigator.languages || [navigator.language || "en"]) {
-    const code = String(l || "").slice(0, 2).toLowerCase();
-    if (code === "en" || code === "fr") return code;
-  }
-  return "en";
+  const codes = (navigator.languages || [navigator.language || "en"]).map((l) => String(l || "").split("-")[0].toLowerCase());
+  return [...new Set(codes)].filter((c) => /^[a-z]{2,3}$/.test(c)).slice(0, 8).join(",") || "en";
 }
 async function loadWords() {
   const r = await fetch("api/i18n?lang=" + encodeURIComponent(wantedLang()), { credentials: "same-origin" })

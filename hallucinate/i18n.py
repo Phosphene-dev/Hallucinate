@@ -15,7 +15,17 @@ import logging
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from PySide6.QtCore import Property, QCoreApplication, QLocale, QObject, QSettings, QTranslator, Signal, Slot
+from PySide6.QtCore import (
+    Property,
+    QCoreApplication,
+    QLibraryInfo,
+    QLocale,
+    QObject,
+    QSettings,
+    QTranslator,
+    Signal,
+    Slot,
+)
 
 HERE = Path(__file__).resolve().parent / "i18n"
 log = logging.getLogger(__name__)
@@ -105,6 +115,17 @@ class Translations(QObject):
         if not t.isEmpty():
             self._app.installTranslator(t)
             self._translator = t
+        # Qt's own words (a dialog's OK and Cancel, a file dialog's buttons) from the catalogues Qt ships with
+        for qt in getattr(self, "_qt_translators", []):
+            self._app.removeTranslator(qt)
+        self._qt_translators = []
+        if code not in ("en", PSEUDO):
+            folder = QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
+            for name in ("qtbase", "qtdeclarative", "qtmultimedia"):
+                qt = QTranslator(self)
+                if qt.load(f"{name}_{code}", folder):
+                    self._app.installTranslator(qt)
+                    self._qt_translators.append(qt)
         self._current = code
         # dates, and numbers "as your language writes them", in the language picked (the system's own regional
         # format when following the system, so a Canadian French system keeps its own way of writing them)

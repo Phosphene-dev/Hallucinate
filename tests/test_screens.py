@@ -2730,3 +2730,40 @@ def test_recap_numbers_follow_the_numbers_setting(qapp, app_window):
     assert "text: Theme.num(modelData[0])" in src
     assert "Theme.num(page.hoursText(" in src
     assert 'v: Theme.num(page.rc.discoveryCount' in src and 'v: Theme.num(page.rc.albumsAdded' in src
+
+
+@pytest.mark.parametrize("app_window", ["varied"], indirect=True)
+@pytest.mark.parametrize("language", ["fr", "pseudo"])
+def test_every_page_in_another_language(qapp, app_window, language):
+    """French (and the pseudo-language: every word longer and accented) on every page, at a roomy and a narrow
+    width: the words change at once, nothing spills out of its card, and no binding breaks on the way."""
+    from PySide6.QtQuick import QQuickItem
+
+    window, objects, warnings = app_window
+    i18n = objects["i18n"]
+    try:
+        i18n.setLanguage(language)
+        assert i18n.language == language
+        qapp.processEvents()
+        problems = []
+        before = len(warnings)
+        with listening_extras(objects):
+            for width in (1100, 760):
+                window.resize(width, 900)
+                for page in PAGES + ("stations", "podcasts"):
+                    assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection,
+                                                    Q_ARG("QVariant", page))
+                    for _ in range(4):
+                        qapp.processEvents()
+                    problems += [f"{width} {page}: {p}" for p in overflowing(window)]
+        new = [w for w in warnings[before:] if "TypeError" in w or "ReferenceError" in w]
+        assert not new, "\n".join(new[:10])
+        assert not problems, "\n".join(problems[:25])
+        if language == "fr":
+            texts = {item.property("text") for item in window.findChildren(QQuickItem)
+                     if isinstance(item.property("text"), str)}
+            assert "Paramètres" in texts or "Podcasts" in texts
+            assert "Settings" not in texts
+    finally:
+        i18n.setLanguage("en")
+        qapp.processEvents()
