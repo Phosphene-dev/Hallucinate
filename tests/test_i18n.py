@@ -48,6 +48,7 @@ def translations(qapp):
     yield t
     t.setLanguage("en")
     QSettings().setValue("ui/language", "en")
+    t.shutdown()
 
 
 def test_english_plurals_and_french(translations):

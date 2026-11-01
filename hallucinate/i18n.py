@@ -18,6 +18,7 @@ from pathlib import Path
 from PySide6.QtCore import (
     Property,
     QCoreApplication,
+    QEvent,
     QLibraryInfo,
     QLocale,
     QObject,
@@ -66,9 +67,21 @@ class Translations(QObject):
         self._settings = QSettings("hallucinate", "hallucinate")
         self._choice = str(self._settings.value("ui/language", "") or "")
         self._apply()
+        # Installing a translator posts a language change; deliver it now, while nothing is drawn yet, so it
+        # doesn't reach the window later and make the whole interface translate itself again while it's being
+        # built (wasted work at every start, and items torn down mid-creation)
+        QCoreApplication.sendPostedEvents(app, QEvent.Type.LanguageChange)
 
     def setEngine(self, engine):
         self._engine = engine
+
+    def shutdown(self):
+        """Take the translators out of the application (when the window it served goes, in tests)."""
+        for t in [self._translator, *getattr(self, "_qt_translators", [])]:
+            if t is not None:
+                self._app.removeTranslator(t)
+        self._translator, self._qt_translators, self._engine = None, [], None
+        QCoreApplication.sendPostedEvents(self._app, QEvent.Type.LanguageChange)
 
     @Property(str, notify=changed)
     def choice(self):

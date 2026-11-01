@@ -527,6 +527,7 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     window.close()
     del editor, device_picker, picker_text, picker, window, engine
     qapp.processEvents()
+    translations.shutdown()
     scrobbler.shutdown()
     listenbrainz.shutdown()
     player.shutdown()

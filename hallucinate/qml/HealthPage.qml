@@ -201,6 +201,8 @@ Item {
                                 spacing: 2
                                 Text {
                                     textFormat: Text.PlainText
+                                    width: parent.width
+                                    wrapMode: Text.Wrap  // (longer in some languages)
                                     text: card.modelData.title
                                     color: Theme.text
                                     font.family: Theme.fontFamily

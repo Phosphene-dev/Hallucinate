@@ -9,7 +9,6 @@ catalogue too, only for plurals ("%n song(s)" → "1 song" / "2 songs"). The pse
 English source: every string stretched and accented, to spot text that isn't translated or doesn't fit.
 """
 import argparse
-import hashlib
 import html
 import json
 import re
@@ -223,8 +222,37 @@ def lrelease(ts, qm):
                     str(ts), "-qm", str(qm)], check=True)
 
 
-def digest(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest() if Path(path).exists() else ""
+def messages(ts):
+    """What a catalogue says, independent of how a version of lupdate lays the file out: {(context, source,
+    comment, plural): (translation or forms, finished)}."""
+    if not Path(ts).exists():
+        return None
+    out = {}
+    for ctx in ET.parse(ts).getroot().iter("context"):
+        name = ctx.findtext("name")
+        for msg in ctx.iter("message"):
+            tr = msg.find("translation")
+            forms = tuple(f.text or "" for f in tr.findall("numerusform")) if tr is not None else ()
+            text = forms or ((tr.text or "") if tr is not None else "")
+            finished = tr is not None and tr.get("type") not in ("unfinished", "vanished", "obsolete")
+            key = (name, msg.findtext("source") or "", msg.findtext("comment") or "", msg.get("numerus") == "yes")
+            out[key] = (text, finished)
+    return out
+
+
+def qm_says(qm, catalogue):
+    """What a compiled catalogue answers for every message of `catalogue` (counts 1 and 2 for plurals): the .qm a
+    different lrelease writes differs byte for byte but must answer the same."""
+    from PySide6.QtCore import QTranslator
+
+    t = QTranslator()
+    if not Path(qm).exists() or not t.load(str(qm)):
+        return None
+    out = {}
+    for (ctx, src, comment, plural) in catalogue:
+        for n in ((1, 2) if plural else (-1,)):
+            out[(ctx, src, comment, n)] = t.translate(ctx, src, comment or None, n)
+    return out
 
 
 def build(check=False):
@@ -243,7 +271,7 @@ def build(check=False):
             if lang == "en":
                 fill_english(work)
             if check:
-                if digest(work) != digest(ts):
+                if messages(work) != messages(ts):
                     stale.append(ts.name)
             else:
                 shutil.copy(work, ts)
@@ -255,7 +283,8 @@ def build(check=False):
             built = tmp / (ts.stem + ".built.qm")
             lrelease(ts if not check or ts.parent == tmp else ts, built)
             if check:
-                if digest(built) != digest(qm):
+                catalogue = messages(ts) or {}
+                if qm_says(built, catalogue) != qm_says(qm, catalogue):
                     stale.append(qm.name)
             else:
                 shutil.copy(built, qm)
