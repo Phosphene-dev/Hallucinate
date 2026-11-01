@@ -31,6 +31,9 @@ def run(args):
     app = QCoreApplication([sys.argv[0]])
     app.setApplicationName("Hallucinate")
     app.setOrganizationName("hallucinate")
+    from .i18n import Translations
+
+    translations = Translations(app)  # noqa: F841 - kept for the run: the web remote and messages use it
 
     control = ControlServer()
     if not control.listen():

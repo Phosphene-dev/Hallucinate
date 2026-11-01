@@ -8,7 +8,7 @@ import "."
 Window {
     id: win
     objectName: "spectrumWindow"
-    title: spectrograms.title ? "Spectrum analyzer – " + spectrograms.title : "Spectrum analyzer"
+    title: spectrograms.title ? qsTr("Spectrum analyzer – %1").arg(spectrograms.title) : qsTr("Spectrum analyzer")
     width: 1100; height: 620
     minimumWidth: 520; minimumHeight: 340
     color: "#0b0b10"  // the image's own background, so it sits in the window without a seam
@@ -42,7 +42,7 @@ Window {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             textFormat: Text.PlainText
-            text: spectrograms.busy ? "Analysing " + (spectrograms.title || "the song") + "…" : spectrograms.error
+            text: spectrograms.busy ? (spectrograms.title ? qsTr("Analysing %1…").arg(spectrograms.title) : qsTr("Analysing the song…")) : spectrograms.error
             color: "#c9c6d6"
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize(14)
@@ -59,13 +59,13 @@ Window {
             PillButton {
                 objectName: "spectrumSave"
                 primary: true
-                text: "Save image"
+                text: qsTr("Save image")
                 enabled: spectrograms.imageUrl.length > 0 && !spectrograms.busy
-                onClicked: savedNote.text = spectrograms.save() ? "Saved to " + spectrograms.saved : "Couldn't save the image"
+                onClicked: savedNote.text = spectrograms.save() ? qsTr("Saved to %1").arg(spectrograms.saved) : qsTr("Couldn't save the image")
             }
             PillButton {
                 visible: spectrograms.saved.length > 0
-                text: "Show in folder"
+                text: qsTr("Show in folder")
                 onClicked: library.showInFolder(spectrograms.saved)
             }
             Text {
@@ -81,7 +81,7 @@ Window {
         }
         PillButton {
             anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
-            text: "Close"
+            text: qsTr("Close")
             onClicked: win.close()
         }
     }

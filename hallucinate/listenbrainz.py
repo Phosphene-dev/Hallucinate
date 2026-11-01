@@ -13,6 +13,7 @@ from PySide6.QtCore import Property, QObject, QSettings, QTimer, Signal, Slot
 
 from . import __version__, keyringwait
 from .core import net
+from .core.i18n import fill, translate
 from .core.kinds import counts_for_scrobbling, scrobble_fields
 from .scrobbling import REJECTED_KEPT, REPLAY_START_MS, heard_ms, listen_point, listen_threshold
 
@@ -34,7 +35,7 @@ class Rejected(PermissionError):
 def _words(exc):
     """A network or parsing error in plain words (never the request, which holds the API key)."""
     if isinstance(exc, ValueError) and not isinstance(exc, OSError):
-        return "its answer couldn't be read"
+        return translate("ListenBrainz", "its answer couldn't be read")
     return net.describe(exc)
 
 
@@ -52,7 +53,7 @@ def normalize_server(text):
         text = "https://" + text
     parts = urlsplit(text)
     if parts.scheme not in ("http", "https") or not parts.hostname:
-        raise ValueError("Enter the server's address, such as https://maloja.example.com/apis/listenbrainz")
+        raise ValueError(translate("ListenBrainz", "Enter the server's address, such as https://maloja.example.com/apis/listenbrainz"))
     path = parts.path.rstrip("/")
     for tail in ("/1/submit-listens", "/1/validate-token", "/1"):
         if path.endswith(tail):
@@ -84,17 +85,17 @@ def lb_request(base, path, token=None, payload=None, params=None):
             return json.loads(body) if body else {}
     except HTTPError as exc:
         if exc.code in (400, 401, 403):  # rejected for good, retrying won't help
-            raise Rejected(exc.code, f"ListenBrainz rejected the request ({exc.code})") from exc
-        raise RuntimeError(f"Couldn't reach ListenBrainz: {_words(exc)}") from exc
+            raise Rejected(exc.code, fill(translate("ListenBrainz", "ListenBrainz rejected the request (%1)"), exc.code)) from exc
+        raise RuntimeError(fill(translate("ListenBrainz", "Couldn't reach ListenBrainz: %1"), _words(exc))) from exc
     except (URLError, TimeoutError, OSError, ValueError) as exc:
-        raise RuntimeError(f"Couldn't reach ListenBrainz: {_words(exc)}") from exc
+        raise RuntimeError(fill(translate("ListenBrainz", "Couldn't reach ListenBrainz: %1"), _words(exc))) from exc
 
 
 def track_metadata(track):
     track = scrobble_fields(track)
     artist, title = track.get("artist", ""), track.get("title", "")
     if not artist or not title:
-        raise ValueError("ListenBrainz requires a track title and artist.")
+        raise ValueError(translate("ListenBrainz", "ListenBrainz requires a track title and artist."))
     info = {"media_player": "Hallucinate", "submission_client": "Hallucinate"}
     dur = int(float(track.get("duration", 0) or 0))
     if dur > 0:
@@ -162,9 +163,9 @@ def fetch_lastfm_history(user, api_key, progress=None, max_pages=500):
             with net.urlopen(Request(url, headers={"User-Agent": f"Hallucinate/{__version__}"}), timeout=20) as r:
                 data = json.loads(r.read().decode("utf-8"))
         except (HTTPError, URLError, TimeoutError, OSError, ValueError) as exc:
-            raise RuntimeError(f"Couldn't reach Last.fm: {_words(exc)}") from exc
+            raise RuntimeError(fill(translate("ListenBrainz", "Couldn't reach Last.fm: %1"), _words(exc))) from exc
         if "error" in data:
-            raise RuntimeError(f"Last.fm error {data['error']}: {data.get('message', '')}")
+            raise RuntimeError(fill(translate("ListenBrainz", "Last.fm error %1: %2"), data["error"], data.get("message", "")))
         got, pages = parse_lastfm_page(data)
         items += got
         if progress:
@@ -266,7 +267,7 @@ class ListenBrainzScrobbler(QObject):
         got = keyringwait.read(lambda k: keyring.get_password(KEYRING_SERVICE, k), ("token", "user"),
                                late=self._keyring_late.emit)
         if got is None:
-            self._set_status("Waiting for the system keyring to unlock…")
+            self._set_status(translate("ListenBrainz", "Waiting for the system keyring to unlock…"))
             return
         self._apply_keyring(got)
 
@@ -277,9 +278,10 @@ class ListenBrainzScrobbler(QObject):
         self._token = got["values"].get("token", "") or self._token
         self._user = got["values"].get("user", "") or self._user
         self.connectionChanged.emit()
-        self._set_status(f"System keyring unavailable: {self._keyring_error}" if self._keyring_error
-                         else (f"Connected to {server_label(self._server)}" + (f" as {self._user}." if self._user else "."))
-                         if self._token else "Not connected to ListenBrainz.")
+        self._set_status(fill(translate("ListenBrainz", "System keyring unavailable: %1"), self._keyring_error) if self._keyring_error
+                         else (fill(translate("ListenBrainz", "Connected to %1 as %2."), server_label(self._server), self._user) if self._user
+                               else fill(translate("ListenBrainz", "Connected to %1."), server_label(self._server)))
+                         if self._token else translate("ListenBrainz", "Not connected to ListenBrainz."))
 
     def _load_queue(self):
         try:
@@ -293,7 +295,7 @@ class ListenBrainzScrobbler(QObject):
                 and isinstance(item.get("track_metadata"), dict)
             ]
             if len(self._pending) != len(data):
-                self._set_status("Ignored invalid records in the ListenBrainz offline queue.")
+                self._set_status(translate("ListenBrainz", "Ignored invalid records in the ListenBrainz offline queue."))
         except FileNotFoundError:
             pass
         except (OSError, ValueError, TypeError) as exc:
@@ -307,7 +309,7 @@ class ListenBrainzScrobbler(QObject):
             tmp.replace(self._queue_path)
         except OSError as exc:
             logger.warning("Could not persist ListenBrainz queue: %s", exc)
-            self._set_status(f"Could not persist offline listens: {exc}")
+            self._set_status(fill(translate("ListenBrainz", "Could not persist offline listens: %1"), exc))
 
     def _set_status(self, text):
         if text != self._status:
@@ -409,7 +411,7 @@ class ListenBrainzScrobbler(QObject):
         if not token or self._busy:
             return
         if self._keyring_error:
-            self._set_status(f"System keyring is required: {self._keyring_error}")
+            self._set_status(fill(translate("ListenBrainz", "System keyring is required: %1"), self._keyring_error))
             return
         try:
             wanted = normalize_server(server)
@@ -418,17 +420,17 @@ class ListenBrainzScrobbler(QObject):
             return
         self._pending_server = wanted
         self._base = wanted or DEFAULT_URL
-        self._set_status(f"Validating the token with {server_label(wanted)}…")
+        self._set_status(fill(translate("ListenBrainz", "Validating the token with %1…"), server_label(wanted)))
         base = self._base
         self._start("validate", lambda: lb_request(base, "/1/validate-token", token), item=token)
 
     @Slot()
     def disconnectAccount(self):
         if self._busy:
-            self._set_status("Wait for the current ListenBrainz request to finish before disconnecting.")
+            self._set_status(translate("ListenBrainz", "Wait for the current ListenBrainz request to finish before disconnecting."))
             return
         self._forget_token()
-        self._set_status("Disconnected from ListenBrainz. Pending listens are kept.")
+        self._set_status(translate("ListenBrainz", "Disconnected from ListenBrainz. Pending listens are kept."))
 
     def _forget_token(self):
         """Sign out here at once, and take the token out of the keyring in the background."""
@@ -443,7 +445,7 @@ class ListenBrainzScrobbler(QObject):
 
         def then(error):
             if error:
-                self._set_status(f"{self._status} (the token couldn't be removed from the keyring: {error})")
+                self._set_status(fill(translate("ListenBrainz", "%1 (the token couldn't be removed from the keyring: %2)"), self._status, error))
 
         self._store(forget, then)
 
@@ -476,8 +478,8 @@ class ListenBrainzScrobbler(QObject):
             if code in (401, 403):
                 # the token was revoked or changed: asking again won't help
                 self._forget_token()
-                self._set_status("ListenBrainz no longer accepts this token: connect ListenBrainz again. "
-                                 "Pending listens are kept.")
+                self._set_status(translate("ListenBrainz", "ListenBrainz no longer accepts this token: connect ListenBrainz again. "
+                                 "Pending listens are kept."))
                 return
             if code == 400 and action == "submit":
                 if len(item) > 1:
@@ -503,24 +505,24 @@ class ListenBrainzScrobbler(QObject):
         if action == "validate":
             if not result.get("valid"):
                 self._base = self._server or DEFAULT_URL
-                self._set_status(f"{server_label(getattr(self, '_pending_server', ''))} says that token is not valid.")
+                self._set_status(fill(translate("ListenBrainz", "%1 says that token is not valid."), server_label(getattr(self, "_pending_server", ""))))
                 return
             user = result.get("user_name", "")
 
             def then(error):
                 if error:
-                    self._set_status(f"Could not store the token securely: {error}")
+                    self._set_status(fill(translate("ListenBrainz", "Could not store the token securely: %1"), error))
                     return
                 self._token, self._user = item, user
                 self._server = getattr(self, "_pending_server", "")
                 self._base = self._server or DEFAULT_URL
                 self._qsettings.setValue("listenbrainz/server", self._server)
                 self.connectionChanged.emit()
-                self._set_status(f"Connected to {server_label(self._server)} as {self._user}.")
+                self._set_status(fill(translate("ListenBrainz", "Connected to %1 as %2."), server_label(self._server), self._user))
                 self._send_now_playing()
                 self._flush()
 
-            self._set_status("Saving the token…")
+            self._set_status(translate("ListenBrainz", "Saving the token…"))
             self._store(lambda: (keyring.set_password(KEYRING_SERVICE, "token", item),
                                  keyring.set_password(KEYRING_SERVICE, "user", user)), then)
         elif action == "submit":
@@ -530,11 +532,10 @@ class ListenBrainzScrobbler(QObject):
                 self.pendingCountChanged.emit()
             if not self._pending:
                 self._single = False
-            self._set_status("Listen submitted to ListenBrainz." if len(item) == 1
-                             else f"{len(item)} listens submitted to ListenBrainz.")
+            self._set_status(translate("ListenBrainz", "%n listen(s) submitted to ListenBrainz.", None, len(item)))
             self._flush()
         elif action == "now":
-            self._set_status("ListenBrainz now-playing updated.")
+            self._set_status(translate("ListenBrainz", "ListenBrainz now-playing updated."))
             self._flush()
 
     # --- scrobbling ------------------------------------------------------------
@@ -638,7 +639,7 @@ class ListenBrainzScrobbler(QObject):
         def submit():
             result = lb_request(base, "/1/submit-listens", token, payload)
             if result.get("status") != "ok":
-                raise RuntimeError(f"ListenBrainz did not accept the queued listen: {result.get('status', 'invalid response')}")
+                raise RuntimeError(fill(translate("ListenBrainz", "ListenBrainz did not accept the queued listen: %1"), result.get("status") or translate("ListenBrainz", "invalid response")))
             return result
 
         self._start("submit", submit, item=batch)
@@ -648,16 +649,16 @@ class ListenBrainzScrobbler(QObject):
     def importHistory(self, source, user):
         """Import listens from 'listenbrainz' or 'lastfm' into the local play history."""
         if source not in ("listenbrainz", "lastfm"):
-            self._import_status = "Choose ListenBrainz or Last.fm as the import source."
+            self._import_status = translate("ListenBrainz", "Choose ListenBrainz or Last.fm as the import source.")
             self.importChanged.emit()
             return
         user = user.strip() or (self._user if source == "listenbrainz" else "")
         if self._closing or self._importing or not user:
-            self._import_status = "Enter a username to import from."
+            self._import_status = translate("ListenBrainz", "Enter a username to import from.")
             self.importChanged.emit()
             return
         self._importing = True
-        self._import_status = "Fetching listens…"
+        self._import_status = translate("ListenBrainz", "Fetching listens…")
         self.importChanged.emit()
         base, token = self._base, self._token
         ulib = self.userlib
@@ -672,7 +673,7 @@ class ListenBrainzScrobbler(QObject):
                     from .scrobbling import LastFmScrobbler  # noqa: F401
                     key = _lastfm_key()
                     if not key:
-                        raise RuntimeError("Set a Last.fm API key first (Settings → Last.fm).")
+                        raise RuntimeError(translate("ListenBrainz", "Set a Last.fm API key first (Settings → Last.fm)."))
                     items = fetch_lastfm_history(user, key, progress)
                 else:
                     items = fetch_listenbrainz_history(base, user, token, progress)
@@ -695,7 +696,7 @@ class ListenBrainzScrobbler(QObject):
             self._import_status = f"Fetched {result['progress']} listens…"
         else:
             self._importing = False
-            self._import_status = f"Imported {result['added']} new listens ({result['matched']} matched your library)."
+            self._import_status = fill(translate("ListenBrainz", "Imported %n new listen(s) (%1 matched your library).", None, result["added"]), result["matched"])
             self.importFinished.emit(result["added"])
         self.importChanged.emit()
 

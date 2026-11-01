@@ -9,7 +9,7 @@ Dialog {
     property var keys: []
     property string what: ""
     property string body: ""
-    property string confirmText: "OK"
+    property string confirmText: qsTr("OK")
     parent: Overlay.overlay
     anchors.centerIn: parent
     width: parent && parent.width > 0 ? Math.min(440, parent.width - 40) : 440

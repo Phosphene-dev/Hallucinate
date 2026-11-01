@@ -7,8 +7,8 @@ Column {
     id: strip
     property var source
     property string countKey: "songs"        // "songs" (heard on the radio) or "finished" (episodes)
-    property string countOne: "song heard"
-    property string countMany: "songs heard"
+    property string countOne: qsTr("song heard")
+    property string countMany: qsTr("songs heard")
     property int days: 7
     property var info: ({ hours: 0, top: [] })
     property int revision: 0
@@ -28,7 +28,7 @@ Column {
     Row {
         spacing: 6
         Repeater {
-            model: [[7, "This week"], [30, "This month"], [0, "All time"]]
+            model: [[7, qsTr("This week")], [30, qsTr("This month")], [0, qsTr("All time")]]
             Chip {
                 required property var modelData
                 text: modelData[1]
@@ -44,13 +44,13 @@ Column {
             spacing: 2
             Text {
                 textFormat: Text.PlainText
-                text: strip.info.hours < 1 && strip.info.hours > 0 ? "under an hour"
-                      : strip.info.hours === 1 ? "1 hour" : Theme.num(strip.info.hours) + " hours"
+                text: strip.info.hours < 1 && strip.info.hours > 0 ? qsTr("under an hour")
+                      : Theme.counted(qsTr("%n hour(s)", "", strip.info.hours), strip.info.hours)
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(20)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Text {
                 textFormat: Text.PlainText
-                text: "listened"
+                text: qsTr("listened")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
         }
@@ -84,7 +84,7 @@ Column {
                 }
                 Text {
                     textFormat: Text.PlainText
-                    text: modelData.hours < 0.1 ? "a few minutes" : modelData.hours + " h"
+                    text: modelData.hours < 0.1 ? qsTr("a few minutes") : modelData.hours + " h"
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
             }

@@ -14,6 +14,7 @@ import time
 from PySide6.QtCore import Property, QObject, QSettings, QTimer, Signal, Slot
 
 from .core import artfetch, net
+from .core.i18n import fill, translate
 
 logger = logging.getLogger(__name__)
 
@@ -65,10 +66,10 @@ def build_activity(track, position_ms, playing, prefs, cover_url=None, now=None)
     if not track or (not playing and prefs.get("hidePaused", True)):
         return None
     if prefs.get("privacy"):
-        return {"type": 2, "details": "Listening to music", "assets": {"large_image": FALLBACK_ASSET}}
-    title, artist, album = _clip(track.get("title")) or "Unknown", _clip(track.get("artist")), _clip(track.get("album"))
+        return {"type": 2, "details": translate("Discord", "Listening to music"), "assets": {"large_image": FALLBACK_ASSET}}
+    title, artist, album = _clip(track.get("title")) or translate("Discord", "Unknown"), _clip(track.get("artist")), _clip(track.get("album"))
     # Discord requires 2+ characters for these fields
-    act = {"type": 2, "details": title.ljust(2), "state": (artist or "Unknown artist").ljust(2)}
+    act = {"type": 2, "details": title.ljust(2), "state": (artist or translate("Discord", "Unknown artist")).ljust(2)}
     image = FALLBACK_ASSET if prefs.get("hideCover") or not cover_url else cover_url
     assets = {"large_image": image}
     if album and not prefs.get("hideCover"):
@@ -82,7 +83,7 @@ def build_activity(track, position_ms, playing, prefs, cover_url=None, now=None)
         if dur:
             act["timestamps"]["end"] = int(start + dur)
     else:
-        act["state"] = _clip(f"{artist or 'Unknown artist'} · paused").ljust(2)
+        act["state"] = _clip(fill(translate("Discord", "%1 · paused"), artist or translate("Discord", "Unknown artist"))).ljust(2)
     return act
 
 
@@ -312,7 +313,7 @@ class DiscordPresence(QObject):
         if not self._enabled:
             return "Off"
         if not self._app_id:
-            return "Needs a Discord application ID"
+            return translate("Discord", "Needs a Discord application ID")
         return {"connected": "Connected to Discord", "waiting": "Waiting for Discord…"}.get(self._state, "Starting…")
 
     # --- setters ------------------------------------------------------------------------

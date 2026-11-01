@@ -7,9 +7,9 @@ Item {
     id: page
     objectName: "visualizer"
     readonly property var styles: [
-        { id: "liquid", t: "Liquid" }, { id: "aurora", t: "Aurora" }, { id: "nebula", t: "Nebula" },
-        { id: "halo", t: "Halo" }, { id: "waves", t: "Waves" }, { id: "bars", t: "Bars" }
-    ].concat(Theme.neon ? [{ id: "tunnel", t: "Tunnel" }, { id: "wires", t: "Wires" }, { id: "rain", t: "Neon rain" }] : [])  // (a neon theme's own)
+        { id: "liquid", t: qsTr("Liquid") }, { id: "aurora", t: qsTr("Aurora") }, { id: "nebula", t: qsTr("Nebula") },
+        { id: "halo", t: qsTr("Halo") }, { id: "waves", t: qsTr("Waves") }, { id: "bars", t: qsTr("Bars") }
+    ].concat(Theme.neon ? [{ id: "tunnel", t: qsTr("Tunnel") }, { id: "wires", t: qsTr("Wires") }, { id: "rain", t: qsTr("Neon rain") }] : [])  // (a neon theme's own)
 
     Rectangle {
         id: frame
@@ -67,7 +67,7 @@ Item {
             Item { width: 8; height: 1 }
             StyledCheck {
                 enabled: player.visualizerAvailable
-                text: player.visualizerAvailable ? "React to the music" : "NumPy is required to react to the music"
+                text: player.visualizerAvailable ? qsTr("React to the music") : qsTr("NumPy is required to react to the music")
                 checked: player.visualizerEnabled
                 onToggled: player.setVisualizerEnabled(checked)
             }
@@ -86,7 +86,7 @@ Item {
                 spacing: 3
                 Text {
                     textFormat: Text.PlainText
-                    text: player.hasTrack ? player.current.title : "Nothing playing"
+                    text: player.hasTrack ? player.current.title : qsTr("Nothing playing")
                     color: "white"
                     font.family: Theme.displayFamily
                     font.pixelSize: (Theme.fontSize(18)) * Theme.displayScale
@@ -95,7 +95,7 @@ Item {
                 Text {
                     textFormat: Text.PlainText
                     text: player.hasTrack ? player.current.artist
-                        : (player.visualizerEnabled ? "Play something to see it" : "Turn on “React to the music” to see the sound")
+                        : (player.visualizerEnabled ? qsTr("Play something to see it") : qsTr("Turn on “React to the music” to see the sound"))
                     color: Qt.rgba(1, 1, 1, 0.7)
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(13)
@@ -106,7 +106,7 @@ Item {
             textFormat: Text.PlainText
             anchors { right: parent.right; bottom: parent.bottom; margins: 24 }
             visible: !vis.gpu && shell.visualizerStyle !== "bars"
-            text: "Liquid, Aurora and Nebula need hardware graphics"
+            text: qsTr("Liquid, Aurora and Nebula need hardware graphics")
             color: Qt.rgba(1, 1, 1, 0.6)
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize(12)

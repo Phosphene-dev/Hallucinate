@@ -7,6 +7,7 @@ import time
 
 from . import genres as genre_names
 from . import history
+from .i18n import fill, format_date, month_name, translate
 
 KINDS = ("week", "month", "year")
 
@@ -52,13 +53,15 @@ def title(period, now=None):
     """"This week", "Last month", "September 2026", "Week of 5 Oct 2026", "2026"…"""
     kind, first, end = parse(period)
     if period == current(kind, now):
-        return {"week": "This week", "month": "This month", "year": "This year"}[kind]
+        return {"week": translate("Recap", "This week"), "month": translate("Recap", "This month"),
+                "year": translate("Recap", "This year")}[kind]
     if period == step(current(kind, now), -1):
-        return {"week": "Last week", "month": "Last month", "year": "Last year"}[kind]
+        return {"week": translate("Recap", "Last week"), "month": translate("Recap", "Last month"),
+                "year": translate("Recap", "Last year")}[kind]
     if kind == "week":
-        return f"Week of {first.day} {first:%b %Y}"
+        return fill(translate("Recap", "Week of %1"), format_date(first, translate("Recap", "d MMM yyyy", "date format (Qt)")))
     if kind == "month":
-        return f"{first:%B %Y}"
+        return f"{month_name(first.month)} {first.year}"
     return str(first.year)
 
 

@@ -19,7 +19,7 @@ GlassPanel {
             Text {
                 textFormat: Text.PlainText
                 width: parent.width - streak.width
-                text: "Listening"
+                text: qsTr("Listening")
                 color: Theme.text
                 font.family: Theme.displayFamily
                 font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale
@@ -29,8 +29,8 @@ GlassPanel {
             Text {
                 textFormat: Text.PlainText
                 id: streak
-                text: (card.heat.streak || 0) > 1 ? card.heat.streak + "-day streak"
-                    : (card.heat.activeDays || 0) + ((card.heat.activeDays || 0) === 1 ? " active day" : " active days")
+                text: (card.heat.streak || 0) > 1 ? Theme.counted(qsTr("%n-day streak", "", card.heat.streak), card.heat.streak)
+                    : Theme.counted(qsTr("%n active day(s)", "", card.heat.activeDays || 0), card.heat.activeDays || 0)
                 color: Theme.accent
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(13)
@@ -46,7 +46,7 @@ GlassPanel {
         }
         Text {
             textFormat: Text.PlainText
-            text: card.artists.length ? "Top artists this month" : "Play some music and your listening shows up here."
+            text: card.artists.length ? qsTr("Top artists this month") : qsTr("Play some music and your listening shows up here.")
             color: Theme.textDim
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize(12)

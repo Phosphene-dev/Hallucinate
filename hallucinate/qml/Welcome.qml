@@ -81,7 +81,7 @@ FocusScope {
                 }
                 Text {
                     textFormat: Text.PlainText
-                    text: "Hallucinate"
+                    text: qsTr("Hallucinate")
                     color: Theme.text
                     font.family: Theme.displayFamily
                     font.pixelSize: (Theme.fontSize(17)) * Theme.displayScale
@@ -111,10 +111,9 @@ FocusScope {
                 // 1. Your music
                 ColumnLayout {
                     spacing: 14
-                    Heading { text: "Where's your music?" }
+                    Heading { text: qsTr("Where's your music?") }
                     Body {
-                        text: "Choose the folders that hold your music. Hallucinate reads them without changing a "
-                            + "thing, and keeps an eye out for new songs."
+                        text: qsTr("Choose the folders that hold your music. Hallucinate reads them without changing a thing, and keeps an eye out for new songs.")
                     }
                     ListView {
                         WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
@@ -143,7 +142,7 @@ FocusScope {
                             IconButton {
                                 id: rm
                                 anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
-                                icon: "close"; size: 13; tip: "Remove"
+                                icon: "close"; size: 13; tip: qsTr("Remove")
                                 onClicked: library.removeFolder(modelData)
                             }
                         }
@@ -153,7 +152,7 @@ FocusScope {
                         PillButton {
                             objectName: "welcomeChooseFolder"
                             primary: library.folders.length === 0
-                            text: library.folders.length ? "Add another folder…" : "Choose folder…"
+                            text: library.folders.length ? qsTr("Add another folder…") : qsTr("Choose folder…")
                             onClicked: picker.open()
                         }
                         FolderPicker { id: picker }
@@ -164,9 +163,9 @@ FocusScope {
                         Layout.fillWidth: true
                         visible: !library.scanning && library.folders.length > 0
                         text: library.trackCount > 0
-                              ? library.trackCount.toLocaleString(Qt.locale(), "f", 0) + (library.trackCount === 1 ? " song" : " songs") + " found"
-                              : library.missingFolders.length > 0 ? "Can't read " + library.missingFolders.join(", ")
-                              : "No songs found there yet"
+                              ? Theme.counted(qsTr("%n song(s) found", "", library.trackCount), library.trackCount)
+                              : library.missingFolders.length > 0 ? qsTr("Can't read %1").arg(library.missingFolders.join(", "))
+                              : qsTr("No songs found there yet")
                         color: library.trackCount > 0 ? Theme.accent : Theme.textDim
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(13)
@@ -179,8 +178,8 @@ FocusScope {
                 // 2. A look
                 ColumnLayout {
                     spacing: 14
-                    Heading { text: "Pick a look" }
-                    Body { text: "Themes change the whole app as you click. There are more options in Settings." }
+                    Heading { text: qsTr("Pick a look") }
+                    Body { text: qsTr("Themes change the whole app as you click. There are more options in Settings.") }
                     Flickable {
                         WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
                         id: themeScroll
@@ -245,7 +244,7 @@ FocusScope {
                         }
                     }
                     StyledCheck {
-                        text: "Tint the accent with each album's cover"
+                        text: qsTr("Tint the accent with each album's cover")
                         checked: themeManager.albumArtAccent
                         onToggled: themeManager.setAlbumArtAccent(checked)
                     }
@@ -276,57 +275,55 @@ FocusScope {
                         id: choiceCol
                         width: choices.width - 12
                         spacing: 8
-                        Heading { text: "What would you like?" }
+                        Heading { text: qsTr("What would you like?") }
                         Body {
-                            text: "Switch on what you'll use. Nothing here goes online unless you tick it, and it can all be "
-                                + "changed later in Settings → Features and Settings → Internet & sharing."
+                            text: qsTr("Switch on what you'll use. Nothing here goes online unless you tick it, and it can all be changed later in Settings → Features and Settings → Internet & sharing.")
                         }
-                        Group { text: "Features" }
+                        Group { text: qsTr("Features") }
                         Flow {
                             Layout.fillWidth: true
                             spacing: 4
-                            Feature { name: "stations"; text: "Internet radio" }
-                            Feature { name: "podcasts"; text: "Podcasts" }
-                            Feature { name: "servers"; text: "Music servers (Jellyfin, Navidrome, Subsonic)" }
-                            Feature { name: "lyrics"; text: "Lyrics" }
-                            Feature { name: "visualizer"; text: "Visualizer" }
-                            Feature { name: "liked"; text: "Liked Songs" }
-                            Feature { name: "folders"; text: "Folders" }
-                            Feature { name: "stats"; text: "Stats" }
-                            Feature { name: "history"; text: "History" }
-                            Feature { name: "recap"; text: "Recap" }
-                            Feature { name: "health"; text: "Library health" }
+                            Feature { name: "stations"; text: qsTr("Internet radio") }
+                            Feature { name: "podcasts"; text: qsTr("Podcasts") }
+                            Feature { name: "servers"; text: qsTr("Music servers (Jellyfin, Navidrome, Subsonic)") }
+                            Feature { name: "lyrics"; text: qsTr("Lyrics") }
+                            Feature { name: "visualizer"; text: qsTr("Visualizer") }
+                            Feature { name: "liked"; text: qsTr("Liked Songs") }
+                            Feature { name: "folders"; text: qsTr("Folders") }
+                            Feature { name: "stats"; text: qsTr("Stats") }
+                            Feature { name: "history"; text: qsTr("History") }
+                            Feature { name: "recap"; text: qsTr("Recap") }
+                            Feature { name: "health"; text: qsTr("Library health") }
                         }
-                        Group { text: "Going online" }
+                        Group { text: qsTr("Going online") }
                         StyledCheck {
                             objectName: "welcomeLyricsOnline"
                             visible: shell.features.lyrics !== false
-                            text: "Find lyrics online for songs that have none (asks LRCLIB with the song's artist and title)"
+                            text: qsTr("Find lyrics online for songs that have none (asks LRCLIB with the song's artist and title)")
                             checked: lyricsCtl.onlineLookup
                             onToggled: lyricsCtl.setOnlineLookup(checked)
                         }
                         StyledCheck {
                             objectName: "welcomeBios"
-                            text: "Look up an artist's bio when their page opens (asks Wikipedia through MusicBrainz)"
+                            text: qsTr("Look up an artist's bio when their page opens (asks Wikipedia through MusicBrainz)")
                             checked: sources.fetchBios
                             onToggled: sources.setFetchBios(checked)
                         }
                         StyledCheck {
                             objectName: "welcomeUpdates"
                             visible: shell.updates.supported
-                            text: "Tell me when a new version is out (checks GitHub once a day)"
+                            text: qsTr("Tell me when a new version is out (checks GitHub once a day)")
                             checked: shell.updates.enabled
                             onToggled: shell.updates.setEnabled(checked)
                         }
                         StyledCheck {
                             objectName: "welcomeOffline"
-                            text: "Offline mode: never go online at all (overrides everything above, and radio, podcasts, servers and scrobbling)"
+                            text: qsTr("Offline mode: never go online at all (overrides everything above, and radio, podcasts, servers and scrobbling)")
                             checked: shell.offlineMode
                             onToggled: shell.setOfflineMode(checked)
                         }
                         Body {
-                            text: "Covers, tags and genres are only looked up when you ask. Radio, podcasts and music servers "
-                                + "only connect to the stations, feeds and servers you add."
+                            text: qsTr("Covers, tags and genres are only looked up when you ask. Radio, podcasts and music servers only connect to the stations, feeds and servers you add.")
                         }
                     }
                 }
@@ -334,14 +331,13 @@ FocusScope {
                 // 4. Scrobbling
                 ColumnLayout {
                     spacing: 12
-                    Heading { text: "Keep a record of what you play?" }
+                    Heading { text: qsTr("Keep a record of what you play?") }
                     Body {
-                        text: "Hallucinate keeps your listening history on this computer either way. Scrobbling also "
-                            + "sends it to ListenBrainz or Last.fm. It's optional, and you can set it up later in Settings."
+                        text: qsTr("Hallucinate keeps your listening history on this computer either way. Scrobbling also sends it to ListenBrainz or Last.fm. It's optional, and you can set it up later in Settings.")
                     }
                     Text {
                         textFormat: Text.PlainText
-                        text: "ListenBrainz"
+                        text: qsTr("ListenBrainz")
                         color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold
                     }
                     RowLayout {
@@ -352,14 +348,14 @@ FocusScope {
                             id: lbToken
                             objectName: "welcomeLbToken"
                             Layout.fillWidth: true
-                            placeholderText: "Your user token"
+                            placeholderText: qsTr("Your user token")
                             echoMode: TextInput.Password
                             onAccepted: lbConnect.clicked()
                         }
                         PillButton {
                             id: lbConnect
                             primary: true
-                            text: listenbrainz.busy ? "Checking…" : "Connect"
+                            text: listenbrainz.busy ? qsTr("Checking…") : qsTr("Connect")
                             enabled: lbToken.text.length > 0 && !listenbrainz.busy
                             onClicked: {
                                 welcome.triedListenBrainz = true
@@ -367,7 +363,7 @@ FocusScope {
                                 lbToken.text = ""
                             }
                         }
-                        PillButton { text: "Get a token"; onClicked: Qt.openUrlExternally("https://listenbrainz.org/settings/") }
+                        PillButton { text: qsTr("Get a token"); onClicked: Qt.openUrlExternally("https://listenbrainz.org/settings/") }
                     }
                     Body {
                         visible: (listenbrainz.connected || welcome.triedListenBrainz) && listenbrainz.status.length > 0
@@ -377,7 +373,7 @@ FocusScope {
                     Text {
                         textFormat: Text.PlainText
                         Layout.topMargin: 6
-                        text: "Last.fm"
+                        text: qsTr("Last.fm")
                         color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold
                     }
                     RowLayout {
@@ -385,19 +381,19 @@ FocusScope {
                         visible: scrobbler.configured && !scrobbler.connected
                         PillButton {
                             primary: scrobbler.authorizationUrl.length === 0
-                            text: scrobbler.busy ? "Connecting…" : "Connect Last.fm"
+                            text: scrobbler.busy ? qsTr("Connecting…") : qsTr("Connect Last.fm")
                             enabled: !scrobbler.busy
                             onClicked: scrobbler.connectAccount()
                         }
                         PillButton {
                             visible: scrobbler.authorizationUrl.length > 0
-                            text: "Open Last.fm again"
+                            text: qsTr("Open Last.fm again")
                             onClicked: scrobbler.openAuthorizationUrl()
                         }
                         PillButton {
                             visible: scrobbler.authorizationUrl.length > 0
                             primary: true
-                            text: "I've allowed access"
+                            text: qsTr("I've allowed access")
                             enabled: !scrobbler.busy
                             onClicked: scrobbler.completeAuthorization()
                         }
@@ -405,7 +401,7 @@ FocusScope {
                     Body {
                         text: scrobbler.connected ? scrobbler.status
                             : scrobbler.configured ? scrobbler.status
-                            : "Last.fm asks each app user for an API key of their own. Add yours in Settings → Internet & sharing whenever you like."
+                            : qsTr("Last.fm asks each app user for an API key of their own. Add yours in Settings → Internet & sharing whenever you like.")
                         color: scrobbler.connected ? Theme.accent : Theme.textDim
                     }
                     Item { Layout.fillHeight: true }
@@ -419,7 +415,7 @@ FocusScope {
                     id: skipLink
                     textFormat: Text.PlainText
                     objectName: "welcomeSkip"
-                    text: "Skip setup"
+                    text: qsTr("Skip setup")
                     color: skipMouse.containsMouse || activeFocus ? Theme.text : Theme.textDim
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(13)
@@ -431,8 +427,8 @@ FocusScope {
                     Keys.onReturnPressed: welcome.finish()
                     Keys.onEnterPressed: welcome.finish()
                     Accessible.role: Accessible.Button
-                    Accessible.name: "Skip setup"
-                    Accessible.description: "Close the welcome; everything can be set later in Settings"
+                    Accessible.name: qsTr("Skip setup")
+                    Accessible.description: qsTr("Close the welcome; everything can be set later in Settings")
                     Accessible.onPressAction: welcome.finish()
                     Rectangle {
                         anchors { fill: parent; margins: -4 }
@@ -444,14 +440,14 @@ FocusScope {
                 Item { Layout.fillWidth: true }
                 PillButton {
                     visible: welcome.step > 0
-                    text: "Back"
+                    text: qsTr("Back")
                     onClicked: welcome.step--
                 }
                 PillButton {
                     id: nextButton
                     objectName: "welcomeNext"
                     primary: true
-                    text: welcome.step < welcome.steps - 1 ? "Next" : "Start listening"
+                    text: welcome.step < welcome.steps - 1 ? qsTr("Next") : qsTr("Start listening")
                     onClicked: welcome.step < welcome.steps - 1 ? welcome.step++ : welcome.finish()
                 }
             }

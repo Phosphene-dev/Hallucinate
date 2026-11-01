@@ -28,7 +28,7 @@ Item {
         textFormat: Text.PlainText
         id: title
         x: 28; y: 20
-        text: "Songs"
+        text: qsTr("Songs")
         color: Theme.text
         font.family: Theme.displayFamily
         font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale
@@ -37,9 +37,9 @@ Item {
     Text {
         textFormat: Text.PlainText
         anchors { left: title.right; leftMargin: 14; baseline: title.baseline }
-        text: duplicatesVisible ? Theme.num(library.duplicates.count) + " probable duplicates"
-            : library.filtersActive ? Theme.num(library.filteredTracks.count) + (library.filteredTracks.count === 1 ? " song" : " songs") + " shown"
-            : Theme.num(library.trackCount) + (library.trackCount === 1 ? " song" : " songs")
+        text: duplicatesVisible ? Theme.counted(qsTr("%n probable duplicate(s)", "", library.duplicates.count), library.duplicates.count)
+            : library.filtersActive ? Theme.counted(qsTr("%n song(s) shown", "", library.filteredTracks.count), library.filteredTracks.count)
+            : Theme.counted(qsTr("%n song(s)", "", library.trackCount), library.trackCount)
         color: Theme.textDim
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSize(14)
@@ -56,52 +56,52 @@ Item {
             width: 170
             height: 38
             readonly property var keys: ["title", "artist", "album", "genre", "year", "composer", "bpm", "plays", "added"]
-            model: ["Sort by title", "Sort by artist", "Sort by album", "Sort by genre", "Sort by year",
-                    "Sort by composer", "Sort by tempo", "Most played", "Recently added"]
+            model: [qsTr("Sort by title"), qsTr("Sort by artist"), qsTr("Sort by album"), qsTr("Sort by genre"), qsTr("Sort by year"),
+                    qsTr("Sort by composer"), qsTr("Sort by tempo"), qsTr("Most played"), qsTr("Recently added")]
             currentIndex: Math.max(0, keys.indexOf(library.songSort))
             onActivated: function (i) { library.setSongSort(keys[i]); shell.setUiValue("songSort", keys[i]) }
             Component.onCompleted: library.setSongSort(shell.uiValue("songSort", "title"))
-            Accessible.name: "Order of the songs"
+            Accessible.name: qsTr("Order of the songs")
         }
         StyledCombo {
             id: genreFilter
             width: 180
             height: 38
-            model: ["All genres"].concat(library.genres)
+            model: [qsTr("All genres")].concat(library.genres)
             selection: library.activeFilters[0] ? model.indexOf(library.activeFilters[0]) : 0  // the filter in force
-            Accessible.name: "Genre to show"
+            Accessible.name: qsTr("Genre to show")
             onActivated: page.applyFilters()
         }
         StyledCombo {
             id: yearFilter
             width: 128
             height: 38
-            model: ["All years"].concat(library.years.map(function(value) { return String(value) }))
+            model: [qsTr("All years")].concat(library.years.map(function(value) { return String(value) }))
             selection: library.activeFilters[1] ? model.indexOf(String(library.activeFilters[1])) : 0
-            Accessible.name: "Year to show"
+            Accessible.name: qsTr("Year to show")
             onActivated: page.applyFilters()
         }
         StyledCombo {
             id: formatFilter
             width: 130
             height: 38
-            model: ["All formats"].concat(library.formats)
+            model: [qsTr("All formats")].concat(library.formats)
             selection: library.activeFilters[2] ? model.indexOf(library.activeFilters[2]) : 0
-            Accessible.name: "Format to show"
+            Accessible.name: qsTr("Format to show")
             onActivated: page.applyFilters()
         }
         PillButton {
             objectName: "shuffleSongs"
             height: 38
-            text: "Shuffle"
+            text: qsTr("Shuffle")
             visible: !page.duplicatesVisible
             enabled: list.count > 0
-            Accessible.description: "Play the songs shown here in a random order"
+            Accessible.description: qsTr("Play the songs shown here in a random order")
             onClicked: { player.setShuffle(true); page.playShown(Math.floor(Math.random() * list.count)) }
         }
         PillButton {
             height: 38
-            text: "Clear"
+            text: qsTr("Clear")
             visible: library.filtersActive
             onClicked: {
                 genreFilter.currentIndex = 0
@@ -112,7 +112,7 @@ Item {
         }
         PillButton {
             height: 38
-            text: duplicatesVisible ? "Show songs" : library.duplicatesLoading ? "Finding…" : "Find duplicates"
+            text: duplicatesVisible ? qsTr("Show songs") : library.duplicatesLoading ? qsTr("Finding…") : qsTr("Find duplicates")
             enabled: !library.duplicatesLoading
             onClicked: {
                 duplicatesVisible = !duplicatesVisible
@@ -143,11 +143,11 @@ Item {
             rowIndex: index
             width: ListView.view.width - 12
             title: model.title
-            artist: model.artist + (page.duplicatesVisible ? " · " + Theme.num(model.duplicateCount) + " copies" : "")
+            artist: model.artist + (page.duplicatesVisible ? " · " + Theme.counted(qsTr("%n copies", "", model.duplicateCount), model.duplicateCount) : "")
             // what the list is ordered by, beside the album
             album: library.songSort === "genre" && model.genre ? model.album + "  ·  " + shell.genresText(model.genre, false)
                  : library.songSort === "composer" && model.composer ? model.album + "  ·  " + model.composer
-                 : library.songSort === "bpm" && model.bpm ? model.album + "  ·  " + model.bpm + " BPM" + (model.music_key ? "  ·  " + model.music_key : "")
+                 : library.songSort === "bpm" && model.bpm ? model.album + "  ·  " + qsTr("%1 BPM").arg(model.bpm) + (model.music_key ? "  ·  " + model.music_key : "")
                  : model.album
             durText: model.durText
             artUrl: model.artUrl
@@ -161,11 +161,11 @@ Item {
         visible: list.count === 0 && (page.duplicatesVisible || library.filtersActive)
         busy: page.duplicatesVisible && library.duplicatesLoading
         icon: page.duplicatesVisible ? "duplicates" : "search"
-        title: page.duplicatesVisible ? (library.duplicatesLoading ? "Checking for duplicates…" : "No probable duplicates")
-                                      : "No songs match these filters"
-        hint: page.duplicatesVisible ? (library.duplicatesLoading ? "" : "No two songs share a title, artist and length.")
-                                     : "Try another genre, year or format."
-        actionText: !page.duplicatesVisible && library.filtersActive ? "Clear filters" : ""
+        title: page.duplicatesVisible ? (library.duplicatesLoading ? qsTr("Checking for duplicates…") : qsTr("No probable duplicates"))
+                                      : qsTr("No songs match these filters")
+        hint: page.duplicatesVisible ? (library.duplicatesLoading ? "" : qsTr("No two songs share a title, artist and length."))
+                                     : qsTr("Try another genre, year or format.")
+        actionText: !page.duplicatesVisible && library.filtersActive ? qsTr("Clear filters") : ""
         onAction: {
             genreFilter.currentIndex = 0
             yearFilter.currentIndex = 0
@@ -178,10 +178,10 @@ Item {
         anchors.centerIn: parent
         visible: library.ready && library.trackCount === 0
         icon: "folder"
-        title: "No music yet"
-        hint: library.folders.length ? "Hallucinate is looking through your music folders; songs appear as they're found."
-                                     : "Add the folder where you keep your music and it shows up here."
-        actionText: library.folders.length ? "" : "Open Settings"
+        title: qsTr("No music yet")
+        hint: library.folders.length ? qsTr("Hallucinate is looking through your music folders; songs appear as they're found.")
+                                     : qsTr("Add the folder where you keep your music and it shows up here.")
+        actionText: library.folders.length ? "" : qsTr("Open Settings")
         onAction: Nav.openSettings()
     }
 }

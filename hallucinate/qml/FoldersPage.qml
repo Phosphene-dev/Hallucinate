@@ -42,7 +42,7 @@ Item {
                 spacing: 6
                 Text {
                     textFormat: Text.PlainText
-                    text: "Folders"
+                    text: qsTr("Folders")
                     color: page.path.length ? Theme.textDim : Theme.text
                     font.family: Theme.displayFamily
                     font.pixelSize: (Theme.fontSize(page.path.length ? 18 : 25)) * Theme.displayScale
@@ -81,13 +81,13 @@ Item {
             Row {
                 spacing: 10
                 visible: page.path.length > 0
-                PillButton { objectName: "playFolder"; primary: true; text: "Play folder"; onClicked: library.playFolder(page.path, false) }
-                PillButton { text: "Shuffle"; onClicked: library.playFolder(page.path, true) }
-                PillButton { text: "Add to queue"; onClicked: library.enqueueFolder(page.path) }
+                PillButton { objectName: "playFolder"; primary: true; text: qsTr("Play folder"); onClicked: library.playFolder(page.path, false) }
+                PillButton { text: qsTr("Shuffle"); onClicked: library.playFolder(page.path, true) }
+                PillButton { text: qsTr("Add to queue"); onClicked: library.enqueueFolder(page.path) }
                 IconButton {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: (page.listing.parent || "").length > 0 || page.path.length > 0
-                    icon: "back"; size: 16; tip: "Up a folder"
+                    icon: "back"; size: 16; tip: qsTr("Up a folder")
                     onClicked: page.path = page.listing.parent || ""
                 }
             }
@@ -98,10 +98,10 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 visible: page.folders.length === 0 && page.tracks.length === 0
                 icon: "folder"
-                title: library.folders.length ? "Nothing here yet" : "No music folders yet"
-                hint: library.folders.length ? "No music in this folder."
-                                             : "Add the folder where you keep your music to browse it here."
-                actionText: library.folders.length ? "" : "Open Settings"
+                title: library.folders.length ? qsTr("Nothing here yet") : qsTr("No music folders yet")
+                hint: library.folders.length ? qsTr("No music in this folder.")
+                                             : qsTr("Add the folder where you keep your music to browse it here.")
+                actionText: library.folders.length ? "" : qsTr("Open Settings")
                 onAction: Nav.openSettings()
             }
 
@@ -121,7 +121,7 @@ Item {
                         // from the keyboard: Tab to it, Enter opens it, the Menu key its menu
                         activeFocusOnTab: true
                         Accessible.role: Accessible.Button
-                        Accessible.name: "Open " + tile.modelData.name + ", " + Theme.num(tile.modelData.songs) + (tile.modelData.songs === 1 ? " song" : " songs")
+                        Accessible.name: Theme.counted(qsTr("Open %1, %n song(s)", "", tile.modelData.songs), tile.modelData.songs).arg(tile.modelData.name)
                         Accessible.selected: folderPick.selected
                         Accessible.onPressAction: page.path = tile.modelData.path
                         Keys.onShortcutOverride: function (event) { event.accepted = [Qt.Key_Space, Qt.Key_Return, Qt.Key_Enter].indexOf(event.key) >= 0 || ((event.modifiers & Qt.ControlModifier) && (event.key === Qt.Key_A || event.key === Qt.Key_Space)) }
@@ -170,7 +170,7 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 width: parent.width
-                                text: Theme.num(tile.modelData.songs) + (tile.modelData.songs === 1 ? " song" : " songs") + "  ·  " + tile.modelData.durText
+                                text: Theme.counted(qsTr("%n song(s)", "", tile.modelData.songs), tile.modelData.songs) + "  ·  " + tile.modelData.durText
                                 color: Theme.textDim
                                 elide: Text.ElideRight
                                 font.family: Theme.fontFamily
@@ -183,8 +183,7 @@ Item {
                             acceptedButtons: Qt.LeftButton | Qt.RightButton
                             onPressAndHold: if (!PickDrag.pick) Nav.folderMenu(tile.modelData.path, tile.modelData.name)
                             Accessible.role: Accessible.Button
-                            Accessible.name: "Open " + tile.modelData.name + ", " + tile.modelData.songs
-                                             + (tile.modelData.songs === 1 ? " song" : " songs")
+                            Accessible.name: Theme.counted(qsTr("Open %1, %n song(s)", "", tile.modelData.songs), tile.modelData.songs).arg(tile.modelData.name)
                             Accessible.onPressAction: page.path = tile.modelData.path
                             onPressed: function (mouse) { folderPick.press(this, mouse) }
                             onPositionChanged: function (mouse) { folderPick.move(this, mouse) }
@@ -199,7 +198,7 @@ Item {
                             id: playButton
                             anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
                             icon: "play"; size: 14
-                            tip: "Play this folder"
+                            tip: qsTr("Play this folder")
                             opacity: tileHover.hovered ? 1 : 0
                             onClicked: library.playFolder(tile.modelData.path, false)
                         }
@@ -212,7 +211,7 @@ Item {
                 width: col.width
                 spacing: 2
                 visible: page.tracks.length > 0
-                SectionHeader { title: "Songs"; subtitle: Theme.num(page.tracks.length) + (page.tracks.length === 1 ? " song in this folder" : " songs in this folder") }
+                SectionHeader { title: qsTr("Songs"); subtitle: Theme.counted(qsTr("%n song(s) in this folder", "", page.tracks.length), page.tracks.length) }
                 Item { width: 1; height: 6 }
                 Repeater {
                     model: page.tracks

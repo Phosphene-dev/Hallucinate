@@ -15,6 +15,7 @@ from .core import composers as composer_views
 from .core import genre_views
 from .core import rules as smart_rules
 from .core.db import fold
+from .core.i18n import QT_TRANSLATE_NOOP
 
 logger = logging.getLogger(__name__)
 MAX_LIST = 500  # the most rows one answer carries (pages beyond with offset)
@@ -64,23 +65,23 @@ class Api:
     def call(self, name, params=None, allowed=("read", "control")):
         entry = self._methods.get(str(name))
         if entry is None:
-            raise ApiError("No such command")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "No such command"))
         scope, attr = entry
         if scope not in allowed:
-            raise ApiError("Not allowed")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "Not allowed"))
         params = {k: v for k, v in (params if isinstance(params, dict) else {}).items() if isinstance(k, str)}
         fn = getattr(self, attr)
         try:
             inspect.signature(fn).bind(**params)
         except TypeError:
-            raise ApiError("Unexpected parameters") from None
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "Unexpected parameters")) from None
         return fn(**params)
 
     # --- helpers -----------------------------------------------------------------------------------------
     @property
     def _db(self):
         if self.library is None:
-            raise ApiError("The library isn't open yet")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "The library isn't open yet"))
         return self.library._db
 
     def _song(self, t):
@@ -119,7 +120,7 @@ class Api:
 
     def _tracks_by_ids(self, ids):
         if not isinstance(ids, (list, tuple)):
-            raise ApiError("Songs are given as a list of ids")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "Songs are given as a list of ids"))
         ids = [_int(i, -1) for i in ids[:MAX_IDS]]
         ids = [i for i in ids if i > 0]
         if not ids:
@@ -135,9 +136,9 @@ class Api:
         from .library import decorate
 
         if not tracks:
-            raise ApiError("Nothing to play")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "Nothing to play"))
         if self.player is None:
-            raise ApiError("The player isn't ready yet")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "The player isn't ready yet"))
         if shuffle:
             import random
 
@@ -148,7 +149,7 @@ class Api:
 
     def _need_player(self):
         if self.player is None:
-            raise ApiError("The player isn't ready yet")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "The player isn't ready yet"))
         return self.player
 
     # --- state ---------------------------------------------------------------------------------------------
@@ -237,15 +238,15 @@ class Api:
             try:
                 delta = float(change)
             except (TypeError, ValueError):
-                raise ApiError("change must be a number") from None
+                raise ApiError(QT_TRANSLATE_NOOP("Api", "change must be a number")) from None
             p.setVolume(p.volume + delta if math.isfinite(delta) else p.volume)
         elif volume is not None:
             try:
                 v = float(volume)
             except (TypeError, ValueError):
-                raise ApiError("volume must be a number") from None
+                raise ApiError(QT_TRANSLATE_NOOP("Api", "volume must be a number")) from None
             if not math.isfinite(v):
-                raise ApiError("volume must be a number")
+                raise ApiError(QT_TRANSLATE_NOOP("Api", "volume must be a number"))
             p.setVolume(max(0.0, min(1.0, v)))
         return {"volume": round(float(p.volume), 3)}
 
@@ -298,7 +299,7 @@ class Api:
         p = self._need_player()
         i = _int(index, -1)
         if not 0 <= i < p.queueLength:
-            raise ApiError("No such place in the queue")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "No such place in the queue"))
         p.playIndex(i)
         return {"ok": True}
 
@@ -308,7 +309,7 @@ class Api:
         p = self._need_player()
         i = _int(index, -1)
         if not 0 <= i < p.queueLength:
-            raise ApiError("No such place in the queue")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "No such place in the queue"))
         p.removeAt(i)
         return {"ok": True}
 
@@ -318,7 +319,7 @@ class Api:
         p = self._need_player()
         a, b = _int(src, -1), _int(dst, -1)
         if not (0 <= a < p.queueLength and 0 <= b < p.queueLength):
-            raise ApiError("No such place in the queue")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "No such place in the queue"))
         p.moveItem(a, b)
         return {"ok": True}
 
@@ -349,7 +350,7 @@ class Api:
         p = self._need_player()
         tracks = decorate([dict(t) for t in self._tracks_by_ids(ids)])
         if not tracks:
-            raise ApiError("Nothing to add")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "Nothing to add"))
         if next:
             for t in reversed(tracks):
                 p.playNext(t)
@@ -400,13 +401,13 @@ class Api:
     def _path_of(self, song_id):
         rows = self._tracks_by_ids([song_id])
         if not rows:
-            raise ApiError("No such song")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "No such song"))
         return rows[0]["path"]
 
     def m_like(self, id=0, liked=None):  # noqa: A002
         """Like or unlike a song (liked omitted: the other way round)."""
         if self.user_lib is None:
-            raise ApiError("Not ready yet")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "Not ready yet"))
         path = self._path_of(id)
         if liked is None or bool(liked) != self.user_lib.isLiked(path):
             self.user_lib.toggleLike(path)
@@ -416,7 +417,7 @@ class Api:
 
     def m_rate(self, id=0, stars=0):  # noqa: A002
         if self.user_lib is None:
-            raise ApiError("Not ready yet")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "Not ready yet"))
         path = self._path_of(id)
         self.user_lib.setRatingPaths([path], _int(stars, 0, 0, 5))
         return {"ok": True}
@@ -459,7 +460,7 @@ class Api:
         key = _str(key)
         a = self._db.album(key)
         if not a:
-            raise ApiError("No such album")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "No such album"))
         return {**self._album(a), "songs": [self._song(t) for t in self._db.album_tracks(key)]}
 
     m_album._api_scope = "read"
@@ -478,7 +479,7 @@ class Api:
         albums = self._db.artist_albums(name)
         songs = self._db.artist_tracks(name, limit=MAX_LIST)
         if not albums and not songs:
-            raise ApiError("No such artist")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "No such artist"))
         return {"name": albums[0]["album_artist"] if albums else name, "albums": [self._album(a) for a in albums],
                 "songs": [self._song(t) for t in songs]}
 
@@ -512,13 +513,13 @@ class Api:
         if smart:
             row = self._db.smart_playlist(pid)
             if not row:
-                raise ApiError("No such playlist")
+                raise ApiError(QT_TRANSLATE_NOOP("Api", "No such playlist"))
             try:
                 return smart_rules.matching_tracks(self._db, row["rules"])
             except ValueError:
-                raise ApiError("This smart playlist's rules can't be read") from None
+                raise ApiError(QT_TRANSLATE_NOOP("Api", "This smart playlist's rules can't be read")) from None
         if not any(p["id"] == pid for p in self._db.playlists()):
-            raise ApiError("No such playlist")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "No such playlist"))
         return self._db.playlist_tracks(pid)
 
     def m_playlist(self, id=0, smart=False):  # noqa: A002
@@ -531,12 +532,12 @@ class Api:
         """Add songs to a (plain) playlist."""
         pid = _int(id)
         if self.user_lib is None:
-            raise ApiError("Not ready yet")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "Not ready yet"))
         if not any(p["id"] == pid for p in self._db.playlists()):
-            raise ApiError("No such playlist")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "No such playlist"))
         paths = [t["path"] for t in self._tracks_by_ids(ids)]
         if not paths:
-            raise ApiError("Nothing to add")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "Nothing to add"))
         self.user_lib.addPathsToPlaylist(pid, paths)
         return {"added": len(paths)}
 
@@ -552,7 +553,7 @@ class Api:
     def m_library_rescan(self):
         """Look through the music folders again for new, changed and removed files (it watches them anyway)."""
         if self.library is None:
-            raise ApiError("The library isn't open yet")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "The library isn't open yet"))
         self.library.rescan()
         return {"ok": True}
 
@@ -561,7 +562,7 @@ class Api:
     def m_library_info(self):
         """How big the library is, and whether it's busy scanning."""
         if self.library is None:
-            raise ApiError("The library isn't open yet")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "The library isn't open yet"))
         lib = self.library
         return {"songs": int(lib.trackCount), "albums": int(lib.albumCount), "scanning": bool(lib.scanning)}
 
@@ -572,7 +573,7 @@ class Api:
         """The radio or podcasts service, if it's here and switched on."""
         svc = getattr(self, name)
         if svc is None or not getattr(svc, "_enabled", True):
-            raise ApiError("Internet radio is switched off" if name == "stations" else "Podcasts are switched off")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "Internet radio is switched off") if name == "stations" else QT_TRANSLATE_NOOP("Api", "Podcasts are switched off"))
         return svc
 
     def m_features(self):
@@ -598,7 +599,7 @@ class Api:
         """Tune in to one of your stations (the others follow it, so Next changes station)."""
         svc = self._on("stations")
         if not svc._db.station(int(id)):
-            raise ApiError("No such station")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "No such station"))
         svc.play(int(id))
         return {"ok": True}
 
@@ -620,7 +621,7 @@ class Api:
         svc = self._on("podcasts")
         show = svc._db.podcast(int(id))
         if not show:
-            raise ApiError("No such show")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "No such show"))
         episodes = svc._db.episodes(int(id))
         offset, limit = max(0, int(offset)), max(1, min(200, int(limit)))
         rows = [{"id": int(e["id"]), "title": _str(e.get("title"), 300), "published": float(e.get("published") or 0),
@@ -635,7 +636,7 @@ class Api:
         """Play an episode from where you stopped (or put it next / at the end of the queue)."""
         svc = self._on("podcasts")
         if not svc._db.episode(int(id)):
-            raise ApiError("No such episode")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "No such episode"))
         (svc.playNext if next else svc.enqueue if queue else svc.play)(int(id))
         return {"ok": True}
 
@@ -673,7 +674,7 @@ class Api:
         if preset is not None:
             name = _str(preset, 60)
             if name not in [str(n) for n in p.eqPresets]:
-                raise ApiError("No such preset")
+                raise ApiError(QT_TRANSLATE_NOOP("Api", "No such preset"))
             p.setEqPreset(name)
             if enabled is None:
                 p.setEqEnabled(True)  # picking a preset means wanting to hear it
@@ -704,7 +705,7 @@ class Api:
 
         days = {"week": 7, "month": 30, "year": 365, "all": None}
         if period not in days:
-            raise ApiError("period is week, month, year or all")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "period is week, month, year or all"))
         start = None if days[period] is None else time.time() - days[period] * 86400
         st = self._db.listening_stats(period_start=start, limit=_int(limit, 10, 1, 50))
         return {"period": period,

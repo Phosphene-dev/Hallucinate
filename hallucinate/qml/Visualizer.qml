@@ -87,7 +87,7 @@ Item {
             // say why in the log (Copy debug info carries it).
             onStatusChanged: {
                 if (status !== ShaderEffect.Error) return
-                console.warn("The " + vis.style + " visualizer can't run on this graphics driver, showing bars: " + log)
+                console.warn("The " + vis.style + " visualizer can't run on this graphics driver, showing bars: " + log)  // i18n: keep (the log)
                 var u = Object.assign({}, vis.unusable)
                 u[vis.style] = true
                 vis.unusable = u

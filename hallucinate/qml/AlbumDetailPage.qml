@@ -35,24 +35,24 @@ Item {
     readonly property color glow1: coverColors.length > 1 ? coverColors[1] : Theme.art1
     readonly property bool multiDisc: (notes.discs || 0) > 1
 
-    function fmtDate(ts) { return ts > 0 ? Qt.formatDate(new Date(ts * 1000), "d MMM yyyy") : "" }
+    function fmtDate(ts) { return ts > 0 ? Theme.date(new Date(ts * 1000), "short") : "" }
     function formatLine() {
         var parts = []
         if ((notes.formats || []).length) parts.push(notes.formats.join(" / "))
         if ((notes.bitDepths || []).length)
-            parts.push(notes.bitDepths.map(function (b) { return b === 1 ? "DSD" : b + "-bit" }).join(" / "))
+            parts.push(notes.bitDepths.map(function (b) { return b === 1 ? "DSD" : b + "-bit" }).join(" / "))  // i18n: keep
         if ((notes.sampleRates || []).length) {
             var r = notes.sampleRates.map(function (x) { return (x / 1000).toFixed(x % 1000 ? 1 : 0) })
-            parts.push(r.join(" / ") + " kHz")
+            parts.push(r.join(" / ") + " kHz")  // i18n: keep
         }
-        if (!notes.lossless && notes.bitrate > 0) parts.push(Math.round(notes.bitrate / 1000) + " kbps")
+        if (!notes.lossless && notes.bitrate > 0) parts.push(Math.round(notes.bitrate / 1000) + " kbps")  // i18n: keep
         return parts.join("  ·  ")
     }
     function listening() {
-        if (!notes.plays) return "Not played yet"
-        var s = Theme.num(notes.plays) + (notes.plays === 1 ? " play" : " plays")
-        if (notes.firstPlayed) s += "  ·  first " + fmtDate(notes.firstPlayed)
-        if (notes.lastPlayed) s += "  ·  last " + fmtDate(notes.lastPlayed)
+        if (!notes.plays) return qsTr("Not played yet")
+        var s = Theme.counted(qsTr("%n play(s)", "", notes.plays), notes.plays)
+        if (notes.firstPlayed) s += "  ·  " + qsTr("first %1", "the first time an album was played: a date").arg(fmtDate(notes.firstPlayed))
+        if (notes.lastPlayed) s += "  ·  " + qsTr("last %1", "the last time an album was played: a date").arg(fmtDate(notes.lastPlayed))
         return s
     }
 
@@ -143,7 +143,7 @@ Item {
                     spacing: 8
                     Text {
                         textFormat: Text.PlainText
-                        text: "ALBUM"
+                        text: qsTr("ALBUM")
                         color: Theme.accent
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(11)
@@ -153,7 +153,7 @@ Item {
                     Text {
                         textFormat: Text.PlainText
                         width: parent.width
-                        text: page.info.album || ""
+                        text: Theme.shown(page.info.album || "")
                         color: Theme.text
                         font.family: Theme.displayFamily
                         font.pixelSize: (Theme.fontSize(page.info.album && page.info.album.length > 28 ? 26 : 34)) * Theme.displayScale
@@ -166,7 +166,7 @@ Item {
                         spacing: 6
                         Text {
                             textFormat: Text.PlainText
-                            text: page.info.album_artist || ""
+                            text: Theme.shown(page.info.album_artist || "")
                             width: Math.min(implicitWidth, parent.parent.width * 0.6)  // a long artist list elides
                             elide: Text.ElideRight
                             color: Theme.text
@@ -182,8 +182,8 @@ Item {
                         }
                         Text {
                             textFormat: Text.PlainText
-                            text: "·  " + (page.info.year > 0 ? page.info.year + "  ·  " : "") + page.info.n
-                                  + (page.info.n === 1 ? " song" : " songs") + "  ·  " + page.info.durText
+                            text: "·  " + (page.info.year > 0 ? page.info.year + "  ·  " : "")
+                                  + Theme.counted(qsTr("%n song(s)", "", page.info.n), page.info.n) + "  ·  " + page.info.durText
                             color: Theme.textDim
                             font.family: Theme.fontFamily
                             font.pixelSize: Theme.fontSize(14)
@@ -195,22 +195,22 @@ Item {
                         PillButton {
                             objectName: "playAlbum"
                             primary: true
-                            text: "Play"
+                            text: qsTr("Play")
                             onClicked: { player.setShuffle(false); player.playList(page.tracks.toList(), 0) }
                         }
                         PillButton {
-                            text: "Shuffle"
+                            text: qsTr("Shuffle")
                             onClicked: {
                                 player.setShuffle(true)
                                 player.playList(page.tracks.toList(), Math.floor(Math.random() * page.tracks.count))
                             }
                         }
-                        PillButton { text: "Add to queue"; onClicked: player.enqueueAll(page.tracks.toList()) }
-                        PillButton { text: "Edit"; onClicked: Nav.editAlbum(page.albumKey) }
+                        PillButton { text: qsTr("Add to queue"); onClicked: player.enqueueAll(page.tracks.toList()) }
+                        PillButton { text: qsTr("Edit"); onClicked: Nav.editAlbum(page.albumKey) }
                         IconButton {
                             objectName: "albumPageMore"
                             anchors.verticalCenter: parent.verticalCenter
-                            icon: "more"; size: 18; tip: "More: playlists, remove from library…"
+                            icon: "more"; size: 18; tip: qsTr("More: playlists, remove from library…")
                             onClicked: Nav.albumMenu([page.albumKey], page.info.album || "", page.info.album_artist || "")
                         }
                     }
@@ -227,23 +227,23 @@ Item {
                         anchors { left: parent.left; right: parent.right; top: parent.top; margins: 18 }
                         spacing: 32
                         Note {
-                            label: shell.allGenresAlbums && (page.notes.genres || []).length > 1 ? "Genres" : "Genre"
+                            label: shell.allGenresAlbums && (page.notes.genres || []).length > 1 ? qsTr("Genres") : qsTr("Genre")
                             value: links.join(", ")
                             links: (page.notes.genres || []).slice(0, shell.allGenresAlbums ? 8 : 1)
                         }
                         Note {
                             objectName: "albumComposers"
-                            label: (page.notes.composers || []).length > 1 ? "Composers" : "Composer"
+                            label: (page.notes.composers || []).length > 1 ? qsTr("Composers") : qsTr("Composer")
                             value: links.join(", ")
                             links: page.notes.composers || []
                             composers: true
                         }
-                        Note { label: "Format"; value: page.formatLine() + (page.notes.lossless ? "  ·  lossless" : "") }
-                        Note { label: "Discs"; value: page.multiDisc ? String(page.notes.discs) : "" }
-                        Note { label: "Size"; value: page.notes.bytes ? Theme.fmtBytes(page.notes.bytes) : "" }
-                        Note { label: "Added"; value: page.fmtDate(page.notes.added || 0) }
-                        Note { objectName: "albumListening"; label: "Your listening"; value: page.listening() }
-                        Note { label: "Liked"; value: page.notes.liked ? Theme.num(page.notes.liked) + (page.notes.liked === 1 ? " song" : " songs") : "" }
+                        Note { label: qsTr("Format"); value: page.formatLine() + (page.notes.lossless ? "  ·  " + qsTr("lossless") : "") }
+                        Note { label: qsTr("Discs"); value: page.multiDisc ? String(page.notes.discs) : "" }
+                        Note { label: qsTr("Size"); value: page.notes.bytes ? Theme.fmtBytes(page.notes.bytes) : "" }
+                        Note { label: qsTr("Added"); value: page.fmtDate(page.notes.added || 0) }
+                        Note { objectName: "albumListening"; label: qsTr("Your listening"); value: page.listening() }
+                        Note { label: qsTr("Liked"); value: page.notes.liked ? Theme.counted(qsTr("%n song(s)", "", page.notes.liked), page.notes.liked) : "" }
                     }
                 }
             }
@@ -258,7 +258,7 @@ Item {
                     x: 12
                     anchors.bottom: parent.bottom
                     anchors.bottomMargin: 8
-                    text: "Disc " + parent.disc
+                    text: qsTr("Disc %1").arg(parent.disc)
                     color: Theme.text
                     font.family: Theme.displayFamily
                     font.pixelSize: (Theme.fontSize(15)) * Theme.displayScale

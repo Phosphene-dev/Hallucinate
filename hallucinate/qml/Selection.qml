@@ -154,21 +154,25 @@ QtObject {
     }
 
     // How it reads: "3 albums, 12 songs"
-    readonly property var nouns: ({ song: ["song", "songs"], album: ["album", "albums"], artist: ["artist", "artists"],
-                                     genre: ["genre", "genres"], composer: ["composer", "composers"],
-                                     folder: ["folder", "folders"], history: ["play", "plays"],
-                                     playlist: ["playlist", "playlists"], smart: ["smart playlist", "smart playlists"],
-                                     liked: ["Liked Songs", "Liked Songs"], queue: ["song in the queue", "songs in the queue"],
-                                     episode: ["episode", "episodes"], station: ["station", "stations"] })
+    function counted(kind, n) {
+        var t = kind === "song" ? qsTr("%n song(s)", "", n) : kind === "album" ? qsTr("%n album(s)", "", n)
+              : kind === "artist" ? qsTr("%n artist(s)", "", n) : kind === "genre" ? qsTr("%n genre(s)", "", n)
+              : kind === "composer" ? qsTr("%n composer(s)", "", n) : kind === "folder" ? qsTr("%n folder(s)", "", n)
+              : kind === "history" ? qsTr("%n play(s)", "", n) : kind === "playlist" ? qsTr("%n playlist(s)", "", n)
+              : kind === "smart" ? qsTr("%n smart playlist(s)", "", n) : kind === "liked" ? qsTr("Liked Songs")
+              : kind === "queue" ? qsTr("%n song(s) in the queue", "", n) : kind === "episode" ? qsTr("%n episode(s)", "", n)
+              : qsTr("%n station(s)", "", n)
+        return Theme.counted(t, n)
+    }
     function summary(tight) {
         if (!count) return ""
         var order = ["album", "artist", "genre", "composer", "folder", "playlist", "smart", "liked", "song", "history", "queue", "episode", "station"]
         var parts = []
         for (var i = 0; i < order.length; i++) {
             var n = countOf(order[i])
-            if (n) parts.push(n + " " + nouns[order[i]][n === 1 ? 0 : 1])
+            if (n) parts.push(counted(order[i], n))
         }
-        if (tight && parts.length > 1) return Theme.num(count) + " items"
+        if (tight && parts.length > 1) return Theme.counted(qsTr("%n item(s)", "", count), count)
         return parts.join(", ")
     }
 }

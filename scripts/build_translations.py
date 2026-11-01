@@ -1,0 +1,324 @@
+"""Bring the translation catalogues up to date and compile them.
+
+    python scripts/build_translations.py            # extract new strings into every .ts, then compile all .qm
+    python scripts/build_translations.py --check    # exit 1 if a .ts is missing strings or a .qm is stale
+
+Strings come from the interface (qsTr in hallucinate/qml), the Python side (QCoreApplication.translate) and the
+web remote (qsTr in hallucinate/web/app.js), all into one hallucinate_<lang>.ts per language. English has a
+catalogue too, only for plurals ("%n song(s)" → "1 song" / "2 songs"). The pseudo-language is made here from the
+English source: every string stretched and accented, to spot text that isn't translated or doesn't fit.
+"""
+import argparse
+import html
+import json
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import xml.etree.ElementTree as ET
+from html.parser import HTMLParser
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+PKG = ROOT / "hallucinate"
+OUT = PKG / "i18n"
+LANGS = ["en", "fr"]
+PSEUDO = "pseudo"
+
+
+# The web remote's app.js marks its text with t("…") and tn("… %n …", n). lupdate can't read modern JavaScript
+# (async functions), so those strings are copied into a plain file of qsTr calls named web.js: context "web".
+_WEB_T = re.compile(r"""\bt(n?)\(\s*(["'`])((?:\\.|(?!\2).)*)\2""")
+
+
+def web_strings(tmp):
+    text = (PKG / "web" / "app.js").read_text(encoding="utf-8")
+    lines = []
+    for m in _WEB_T.finditer(text):
+        plural, quote, body = m.group(1), m.group(2), m.group(3)
+        if quote == "`":
+            body = body.replace('"', '\\"')
+            quote = '"'
+        tail = ', "", 0' if plural else ""
+        lines.append(f"qsTr({quote}{body}{quote}{tail});")
+    lines += [f"qsTr({json.dumps(text, ensure_ascii=False)});" for text in page_strings()]
+    out = Path(tmp) / "web.js"
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return out
+
+
+class _PageWords(HTMLParser):
+    """The words in index.html the page translates as it loads (app.js translatePage): the text of elements marked
+    data-i18n, the markup of those marked data-i18n-html (as the browser writes it), and aria-label, placeholder
+    and title attributes."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=False)
+        self.found, self._stack = [], []
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        for name in ("aria-label", "placeholder", "title"):
+            if re.search(r"[A-Za-z]{2}", a.get(name) or ""):
+                self.found.append(html.unescape(a[name]))
+        for frame in self._stack:
+            if frame[0] == "html":
+                frame[2].append(self.get_starttag_text())
+        if "data-i18n" in a or "data-i18n-html" in a:
+            self._stack.append(("html" if "data-i18n-html" in a else "text", tag, []))
+        elif self._stack:
+            self._stack.append(("inner", tag, None))
+
+    def handle_endtag(self, tag):
+        if not self._stack:
+            return
+        kind, _tag, parts = self._stack.pop()
+        if kind == "inner":
+            for frame in self._stack:
+                if frame[0] == "html":
+                    frame[2].append(f"</{tag}>")
+            return
+        text = " ".join("".join(parts).split())
+        self.found.append(html.unescape(text) if kind == "text" else text)
+        for frame in self._stack:
+            if frame[0] == "html":
+                frame[2].append(f"</{tag}>")
+
+    def _data(self, data):
+        for frame in self._stack:
+            if frame[2] is not None:
+                frame[2].append(data)
+
+    handle_data = _data
+
+    def handle_entityref(self, name):
+        self._data(f"&{name};")
+
+    def handle_charref(self, name):
+        self._data(f"&#{name};")
+
+
+def page_strings():
+    p = _PageWords()
+    p.feed((PKG / "web" / "index.html").read_text(encoding="utf-8"))
+    seen, out = set(), []
+    for text in p.found:
+        if text and text not in seen and text != "Hallucinate":
+            seen.add(text)
+            out.append(text)
+    return out
+
+
+_TMP = None
+
+
+def sources():
+    files = sorted(PKG.glob("qml/*.qml")) + sorted(PKG.glob("qml/*.js"))
+    files += sorted(p for p in PKG.rglob("*.py") if "__pycache__" not in p.parts)
+    if _TMP is not None:
+        files.append(web_strings(_TMP))
+    return [str(p) for p in files]
+
+
+def tool(name):
+    found = shutil.which(f"pyside6-{name}") or shutil.which(name)
+    if not found:
+        sys.exit(f"pyside6-{name} not found (it comes with PySide6)")
+    return found
+
+
+# lupdate before 6.12 can't read counts in Python (translate(ctx, text, None, n)): it drops some and records the rest
+# as plain strings, which would strip every Python plural out of the catalogues.
+LUPDATE_MIN = (6, 12)
+
+
+def lupdate_version():
+    out = subprocess.run([tool("lupdate"), "-version"], capture_output=True, text=True).stdout
+    m = re.search(r"(\d+)\.(\d+)", out)
+    return (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+
+
+def lupdate_too_old():
+    """Why this lupdate can't build the catalogues, or "" if it can."""
+    v = lupdate_version()
+    if v < LUPDATE_MIN:
+        return (f"lupdate {v[0]}.{v[1]} can't read counts in Python; build the catalogues with PySide6 "
+                f"{LUPDATE_MIN[0]}.{LUPDATE_MIN[1]} or newer (pip install -U PySide6)")
+    return ""
+
+
+def lupdate(ts, extra=()):
+    subprocess.run([tool("lupdate"), "-silent", "-locations", "none", "-no-obsolete", *extra, *sources(),
+                    "-ts", str(ts)], check=True)
+
+
+PSEUDO_MAP = str.maketrans("aceinosuyACEINOSUY", "àçéîñôşüýÀÇÉÎÑÔŞÜÝ")
+
+
+def pseudo_text(s):
+    """Accented and about 40% longer, keeping %1/%n, {…} and markup intact."""
+    out, i = [], 0
+    while i < len(s):
+        if s[i] == "%" and i + 1 < len(s) and (s[i + 1].isdigit() or s[i + 1] in "nL"):
+            j = i + 1
+            while j < len(s) and (s[j].isdigit() or s[j] in "nL"):
+                j += 1
+            out.append(s[i:j])
+            i = j
+        else:
+            out.append(s[i].translate(PSEUDO_MAP))
+            i += 1
+    body = "".join(out)
+    return "[" + body + " " + "~" * max(2, len(s) * 2 // 5) + "]"
+
+
+# English plural forms that "(s)" can't spell: source → (one, many)
+ENGLISH_PLURALS = {
+    "%n copies": ("%n copy", "%n copies"),
+    "Add it again?": ("Add it again?", "Add them again?"),
+    "%n of these are already in “%1”": ("%n of these is already in “%1”", "%n of these are already in “%1”"),
+    "Also add the %n that are already there": ("Also add the %n that's already there", "Also add the %n that are already there"),
+    "%n song(s) new to it.": ("%n song is new to it.", "%n songs are new to it."),
+    "Takes the %n extra copies out of the library and keeps the best of each. Right-click a song for more.":
+        ("Takes the %n extra copy out of the library and keeps the best of each. Right-click a song for more.",
+         "Takes the %n extra copies out of the library and keeps the best of each. Right-click a song for more."),
+    "hours of music": ("hour of music", "hours of music"),
+    "minutes of music": ("minute of music", "minutes of music"),
+}
+
+
+def english_forms(src):
+    if src in ENGLISH_PLURALS:
+        return ENGLISH_PLURALS[src]
+    if "(s)" in src:
+        return src.replace("(s)", ""), src.replace("(s)", "s")
+    return src, src  # "%n-day streak", "The %n most played…": the same either way
+
+
+def fill_english(ts):
+    """Every plural in the English catalogue gets its two forms, unless someone has written them already."""
+    tree = ET.parse(ts)
+    for msg in tree.getroot().iter("message"):
+        if msg.get("numerus") != "yes":
+            continue
+        tr = msg.find("translation")
+        forms = [f.text or "" for f in tr.findall("numerusform")] if tr is not None else []
+        if tr is not None and tr.get("type") != "unfinished" and any(forms):
+            continue
+        if tr is None:
+            tr = ET.SubElement(msg, "translation")
+        for f in list(tr):
+            tr.remove(f)
+        tr.attrib.pop("type", None)
+        for text in english_forms(msg.findtext("source") or ""):
+            ET.SubElement(tr, "numerusform").text = text
+    # written every time, so the file is the same whether or not anything was filled in (--check compares it)
+    tree.write(ts, encoding="utf-8", xml_declaration=True)
+
+
+def make_pseudo(template, target):
+    tree = ET.parse(template)
+    for msg in tree.getroot().iter("message"):
+        src = msg.findtext("source") or ""
+        tr = msg.find("translation")
+        if tr is None:
+            tr = ET.SubElement(msg, "translation")
+        tr.attrib.pop("type", None)
+        if msg.get("numerus") == "yes":
+            for f in list(tr):
+                tr.remove(f)
+            tr.text = None
+            for _ in range(2):
+                ET.SubElement(tr, "numerusform").text = pseudo_text(src)
+        else:
+            tr.text = pseudo_text(src)
+    tree.getroot().set("language", "en")
+    tree.write(target, encoding="utf-8", xml_declaration=True)
+
+
+def lrelease(ts, qm):
+    subprocess.run([tool("lrelease"), "-silent", "-removeidentical" if ts.stem.endswith("_en") else "-nounfinished",
+                    str(ts), "-qm", str(qm)], check=True)
+
+
+def messages(ts):
+    """What a catalogue says, independent of how a version of lupdate lays the file out: {(context, source,
+    comment, plural): (translation or forms, finished)}."""
+    if not Path(ts).exists():
+        return None
+    out = {}
+    for ctx in ET.parse(ts).getroot().iter("context"):
+        name = ctx.findtext("name")
+        for msg in ctx.iter("message"):
+            tr = msg.find("translation")
+            forms = tuple(f.text or "" for f in tr.findall("numerusform")) if tr is not None else ()
+            text = forms or ((tr.text or "") if tr is not None else "")
+            finished = tr is not None and tr.get("type") not in ("unfinished", "vanished", "obsolete")
+            key = (name, msg.findtext("source") or "", msg.findtext("comment") or "", msg.get("numerus") == "yes")
+            out[key] = (text, finished)
+    return out
+
+
+def qm_says(qm, catalogue):
+    """What a compiled catalogue answers for every message of `catalogue` (counts 1 and 2 for plurals): the .qm a
+    different lrelease writes differs byte for byte but must answer the same."""
+    from PySide6.QtCore import QTranslator
+
+    t = QTranslator()
+    if not Path(qm).exists() or not t.load(str(qm)):
+        return None
+    out = {}
+    for (ctx, src, comment, plural) in catalogue:
+        for n in ((1, 2) if plural else (-1,)):
+            out[(ctx, src, comment, n)] = t.translate(ctx, src, comment or None, n)
+    return out
+
+
+def build(check=False):
+    too_old = lupdate_too_old()
+    if too_old:
+        print(too_old)
+        return 2
+    OUT.mkdir(exist_ok=True)
+    stale = []
+    global _TMP
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        _TMP = tmp
+        for lang in LANGS:
+            ts = OUT / f"hallucinate_{lang}.ts"
+            work = tmp / ts.name
+            if ts.exists():
+                shutil.copy(ts, work)
+            lupdate(work, ["-target-language", lang] + (["-pluralonly"] if lang == "en" else []))
+            if lang == "en":
+                fill_english(work)
+            if check:
+                if messages(work) != messages(ts):
+                    stale.append(ts.name)
+            else:
+                shutil.copy(work, ts)
+        template = tmp / "template.ts"
+        lupdate(template)
+        make_pseudo(template, tmp / f"hallucinate_{PSEUDO}.ts")
+        for ts in [OUT / f"hallucinate_{lang}.ts" for lang in LANGS] + [tmp / f"hallucinate_{PSEUDO}.ts"]:
+            qm = OUT / (ts.stem + ".qm")
+            built = tmp / (ts.stem + ".built.qm")
+            lrelease(ts if not check or ts.parent == tmp else ts, built)
+            if check:
+                catalogue = messages(ts) or {}
+                if qm_says(built, catalogue) != qm_says(qm, catalogue):
+                    stale.append(qm.name)
+            else:
+                shutil.copy(built, qm)
+    if stale:
+        print("Out of date (run scripts/build_translations.py): " + ", ".join(stale))
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--check", action="store_true")
+    sys.exit(build(ap.parse_args().check))

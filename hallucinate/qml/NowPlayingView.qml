@@ -41,9 +41,9 @@ Item {
     focus: open
     Behavior on opacity { NumberAnimation { id: melt; duration: Theme.reduceMotion ? 0 : 520; easing.type: Easing.InOutCubic } }
     readonly property var styles: [
-        { id: "liquid", t: "Liquid" }, { id: "aurora", t: "Aurora" }, { id: "nebula", t: "Nebula" },
-        { id: "halo", t: "Halo" }, { id: "waves", t: "Waves" }, { id: "bars", t: "Bars" }
-    ].concat(Theme.neon ? [{ id: "tunnel", t: "Tunnel" }, { id: "wires", t: "Wires" }, { id: "rain", t: "Neon rain" }] : [])  // (a neon theme's own)
+        { id: "liquid", t: qsTr("Liquid") }, { id: "aurora", t: qsTr("Aurora") }, { id: "nebula", t: qsTr("Nebula") },
+        { id: "halo", t: qsTr("Halo") }, { id: "waves", t: qsTr("Waves") }, { id: "bars", t: qsTr("Bars") }
+    ].concat(Theme.neon ? [{ id: "tunnel", t: qsTr("Tunnel") }, { id: "wires", t: qsTr("Wires") }, { id: "rain", t: qsTr("Neon rain") }] : [])  // (a neon theme's own)
 
     function toggle() { open = !open }
     onOpenChanged: { idle = false; if (open) idleTimer.restart() }
@@ -181,7 +181,7 @@ Item {
                         source: player.hasTrack ? player.current.artUrl || "" : ""
                         fallback: player.hasTrack ? (player.current.title || "?").charAt(0) : ""
                         Accessible.role: Accessible.Graphic
-                        Accessible.name: player.hasTrack ? "Cover of " + (player.current.album || player.current.title || "") : "No cover"
+                        Accessible.name: player.hasTrack ? qsTr("Cover of %1").arg(player.current.album || player.current.title || "") : qsTr("No cover")
                         MouseArea {  // right-click the cover for the song's menu
                             anchors.fill: parent
                             enabled: player.hasTrack
@@ -205,7 +205,7 @@ Item {
                 Text {
                     textFormat: Text.PlainText
                     Layout.fillWidth: true
-                    text: player.hasTrack ? player.current.title : "Nothing playing"
+                    text: player.hasTrack ? player.current.title : qsTr("Nothing playing")
                     color: "white"
                     font.family: Theme.displayFamily
                     font.pixelSize: (Theme.fontSize(view.lyricsMode || view.fold >= 1 ? Math.min(24, Math.max(20, view.width / 36))
@@ -228,7 +228,7 @@ Item {
                     textFormat: Text.PlainText
                     Layout.fillWidth: true
                     visible: player.hasTrack
-                    text: player.hasTrack ? player.current.artist : ""
+                    text: player.hasTrack ? Theme.shown(player.current.artist) : ""
                     color: Qt.rgba(1, 1, 1, 0.88)
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(view.lyricsMode ? 16 : 20)
@@ -246,7 +246,7 @@ Item {
                     textFormat: Text.PlainText
                     Layout.fillWidth: true
                     visible: player.hasTrack && (player.current.album || "").length > 0 && !view.lyricsMode && view.fold < 3
-                    text: player.hasTrack ? [player.current.album, player.current.year > 0 ? String(player.current.year) : ""]
+                    text: player.hasTrack ? [Theme.shown(player.current.album), player.current.year > 0 ? String(player.current.year) : ""]
                                             .filter(s => s).join("  ·  ") : ""
                     color: Qt.rgba(1, 1, 1, 0.6)
                     font.family: Theme.fontFamily
@@ -319,7 +319,7 @@ Item {
                             Behavior on opacity { NumberAnimation { duration: 260 } }
                             Accessible.role: Accessible.Button
                             Accessible.name: text
-                            Accessible.description: "Play from this line"
+                            Accessible.description: qsTr("Play from this line")
                             Accessible.onPressAction: player.seek(Math.max(0, modelData.t - lyricsCtl.offset))  // where the line shows, timing nudge and all
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: player.seek(Math.max(0, modelData.t - lyricsCtl.offset)) }
                         }
@@ -349,7 +349,7 @@ Item {
                         textFormat: Text.PlainText
                         anchors.verticalCenter: parent.verticalCenter
                         visible: lyricsCtl.status !== "found"
-                        text: lyricsCtl.status === "loading" ? "Looking for lyrics…" : "No lyrics for this song"
+                        text: lyricsCtl.status === "loading" ? qsTr("Looking for lyrics…") : qsTr("No lyrics for this song")
                         color: Qt.rgba(1, 1, 1, 0.55)
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(16)
@@ -382,7 +382,7 @@ Item {
                     Item { Layout.fillWidth: true }
                     Text {
                         readonly property bool live: player.hasTrack && player.current.kind === "station"
-                        text: live ? "LIVE" : Theme.fmtTime(player.duration)
+                        text: live ? qsTr("LIVE") : Theme.fmtTime(player.duration)
                         color: Qt.rgba(1, 1, 1, live ? 0.9 : 0.65)
                         font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: live ? Font.Bold : Font.Normal
                         textFormat: Text.PlainText
@@ -394,7 +394,7 @@ Item {
                     readonly property bool episode: player.hasTrack && player.current.kind === "episode"
                     readonly property bool music: player.hasTrack && !(player.current.kind || "").length
                     IconButton { anchors.verticalCenter: parent.verticalCenter; visible: !parent.episode; icon: "shuffle"; size: 22; active: player.shuffle; onClicked: player.toggleShuffle() }
-                    IconButton { anchors.verticalCenter: parent.verticalCenter; visible: parent.episode; icon: "skipback:" + podcasts.options.skipBack; size: 24; tip: "Back " + podcasts.options.skipBack + " seconds"; onClicked: player.seekBy(-1000 * podcasts.options.skipBack) }
+                    IconButton { anchors.verticalCenter: parent.verticalCenter; visible: parent.episode; icon: "skipback:" + podcasts.options.skipBack; size: 24; tip: Theme.counted(qsTr("Back %n second(s)", "", podcasts.options.skipBack), podcasts.options.skipBack); onClicked: player.seekBy(-1000 * podcasts.options.skipBack) }
                     IconButton { anchors.verticalCenter: parent.verticalCenter; icon: "prev"; size: 24; onClicked: player.previous() }
                     Rectangle {
                         width: 64; height: 64; radius: Theme.round(32)
@@ -410,10 +410,10 @@ Item {
                         }
                         MouseArea { id: bigPlay; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: player.toggle() }
                         Accessible.role: Accessible.Button
-                        Accessible.name: player.playing ? "Pause" : "Play"
+                        Accessible.name: player.playing ? qsTr("Pause") : qsTr("Play")
                     }
                     IconButton { anchors.verticalCenter: parent.verticalCenter; icon: "next"; size: 24; onClicked: player.next() }
-                    IconButton { anchors.verticalCenter: parent.verticalCenter; visible: parent.episode; icon: "skipfwd:" + podcasts.options.skipForward; size: 24; tip: "Forward " + podcasts.options.skipForward + " seconds"; onClicked: player.seekBy(1000 * podcasts.options.skipForward) }
+                    IconButton { anchors.verticalCenter: parent.verticalCenter; visible: parent.episode; icon: "skipfwd:" + podcasts.options.skipForward; size: 24; tip: Theme.counted(qsTr("Forward %n second(s)", "", podcasts.options.skipForward), podcasts.options.skipForward); onClicked: player.seekBy(1000 * podcasts.options.skipForward) }
                     IconButton {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: !parent.episode
@@ -427,7 +427,6 @@ Item {
                         visible: parent.music && shell.features.liked !== false
                         icon: "heart"; size: 22
                         active: player.hasTrack && userLib.likesRevision >= 0 && userLib.isLiked(player.current.path)
-                        tip: "Like"
                         onClicked: if (player.hasTrack) userLib.toggleLike(player.current.path)
                     }
                     VolumeButton {  // a click opens the slider above it; scroll to change, middle-click to mute
@@ -464,7 +463,7 @@ Item {
             objectName: "closeNowPlaying"
             anchors { left: parent.left; leftMargin: 22; verticalCenter: parent.verticalCenter }
             icon: "down"; size: 22
-            tip: "Close (Esc)"
+            tip: qsTr("Close (Esc)")
             onClicked: view.open = false
         }
         Row {
@@ -472,7 +471,7 @@ Item {
             spacing: 8
             // in a neon theme: which Now Playing
             Repeater {
-                model: Theme.neon && !view.deck ? [{ id: "cockpit", t: "Cockpit" }, { id: "terminal", t: "Terminal" }, { id: "classic", t: "Classic" }] : []
+                model: Theme.neon && !view.deck ? [{ id: "cockpit", t: qsTr("Cockpit") }, { id: "terminal", t: qsTr("Terminal") }, { id: "classic", t: qsTr("Classic") }] : []
                 Chip {
                     required property var modelData
                     objectName: "neonMode_" + modelData.id
@@ -498,7 +497,7 @@ Item {
                 objectName: "deckToggle"
                 anchors.verticalCenter: parent.verticalCenter
                 icon: "deck"; active: view.deck
-                tip: view.deck ? "Leave the Deck" : "The Deck: a 90s hi-fi"
+                tip: view.deck ? qsTr("Leave the Deck") : qsTr("The Deck: a 90s hi-fi")
                 onClicked: view.setDeck(!view.deck)
             }
             IconButton {
@@ -506,7 +505,7 @@ Item {
                 visible: shell.features.lyrics !== false && !view.deck && !view.neonView
                 anchors.verticalCenter: parent.verticalCenter
                 icon: "note"; active: view.lyricsMode
-                tip: view.lyricsMode ? "Hide lyrics" : "Show lyrics (L)"
+                tip: view.lyricsMode ? qsTr("Hide lyrics") : qsTr("Show lyrics (L)")
                 onClicked: view.lyricsMode = !view.lyricsMode
             }
             IconButton {
@@ -514,13 +513,13 @@ Item {
                 visible: !view.deck && !view.neonView
                 anchors.verticalCenter: parent.verticalCenter
                 icon: "vinyl"; active: view.vinyl
-                tip: view.vinyl ? "Show the cover" : "Show the record"
+                tip: view.vinyl ? qsTr("Show the cover") : qsTr("Show the record")
                 onClicked: shell.setNowPlayingVinyl(!view.vinyl)
             }
             IconButton {
                 anchors.verticalCenter: parent.verticalCenter
                 icon: "fullscreen"; active: Window.window && Window.window.visibility === Window.FullScreen
-                tip: "Full screen (F11)"
+                tip: qsTr("Full screen (F11)")
                 onClicked: view.toggleFullScreen()
             }
             WindowControls {
@@ -535,7 +534,7 @@ Item {
         visible: !view.deck && view.neonMode !== "terminal" && !player.visualizerEnabled && player.visualizerAvailable && shell.visualizerStyle !== "bars"
         opacity: view.idle ? 0 : 0.6
         Behavior on opacity { NumberAnimation { duration: 400 } }
-        text: "Turn on “React to the music” on the Visualizer page to make the backdrop move with the sound"
+        text: qsTr("Turn on “React to the music” on the Visualizer page to make the backdrop move with the sound")
         color: "white"
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSize(12)
@@ -555,5 +554,5 @@ Item {
     }
     // swallow clicks and wheel so nothing underneath reacts
     MouseArea { anchors.fill: parent; z: -2; onWheel: wheel => wheel.accepted = true
-                Accessible.role: Accessible.Pane; Accessible.name: "Now Playing" }
+                Accessible.role: Accessible.Pane; Accessible.name: qsTr("Now Playing") }
 }

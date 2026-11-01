@@ -30,7 +30,7 @@ Item {
         id: renameDlg
         anchors.centerIn: parent
         modal: true
-        title: "Rename playlist"
+        title: qsTr("Rename playlist")
         standardButtons: Dialog.Ok | Dialog.Cancel
         onAccepted: if (nameField.text.trim().length) { userLib.renamePlaylist(page.playlistId, nameField.text.trim()); page.playlistName = nameField.text.trim() }
         TextField { id: nameField; implicitWidth: 280; text: page.playlistName; selectByMouse: true; onAccepted: renameDlg.accept() }
@@ -38,9 +38,9 @@ Item {
     ConfirmDialog {
         id: deleteDlg
         objectName: "deletePlaylistDialog"
-        title: "Delete this playlist?"
-        body: "“" + page.playlistName + "” goes away for good. The songs in it stay in your library."
-        confirmText: "Delete playlist"
+        title: qsTr("Delete this playlist?")
+        body: qsTr("“%1” goes away for good. The songs in it stay in your library.").arg(page.playlistName)
+        confirmText: qsTr("Delete playlist")
         destructive: true
         onAccepted: { var id = page.playlistId; userLib.deletePlaylist(id); Nav.goHome(); Nav.routeGone("playlist", id) }
     }
@@ -63,38 +63,38 @@ Item {
         // its songs from a music server, kept on this computer or not (read as it opens)
         property var copies: ({ servers: 0, kept: 0, waiting: 0 })
         onAboutToShow: copies = page.tracksModel ? serverCopies.status(page.tracksModel.toList().map(function (t) { return t.path })) : copies
-        MenuItem { objectName: "exportPlaylist"; text: "Export…"; icon.name: "download"; enabled: list.count > 0; onTriggered: Nav.exportPlaylist(page.liked ? "liked" : "playlist", page.liked ? "Liked Songs" : page.playlistName) }
-        MenuItem { visible: !page.liked; height: visible ? implicitHeight : 0; text: "Rename…"; icon.name: "edit"; onTriggered: { nameField.text = page.playlistName; renameDlg.open() } }
+        MenuItem { objectName: "exportPlaylist"; text: qsTr("Export…"); icon.name: "download"; enabled: list.count > 0; onTriggered: Nav.exportPlaylist(page.liked ? "liked" : "playlist", page.liked ? qsTr("Liked Songs") : page.playlistName) }
+        MenuItem { visible: !page.liked; height: visible ? implicitHeight : 0; text: qsTr("Rename…"); icon.name: "edit"; onTriggered: { nameField.text = page.playlistName; renameDlg.open() } }
         MenuItem {
             objectName: "duplicatePlaylist"
             visible: !page.liked; height: visible ? implicitHeight : 0
-            text: "Make a copy"; icon.name: "plus"
-            onTriggered: Nav.openPlaylist(userLib.duplicatePlaylist(page.playlistId, page.playlistName + " (copy)"))
+            text: qsTr("Make a copy"); icon.name: "plus"
+            onTriggered: Nav.openPlaylist(userLib.duplicatePlaylist(page.playlistId, qsTr("%1 (copy)").arg(page.playlistName)))
         }
         MenuItem {
             objectName: "dedupePlaylist"
             visible: !page.liked; height: visible ? implicitHeight : 0
             enabled: page.summary.twice > 0
-            text: page.summary.twice > 0 ? "Remove " + Theme.num(page.summary.twice) + (page.summary.twice === 1 ? " repeat" : " repeats") : "No songs repeat"
+            text: page.summary.twice > 0 ? Theme.counted(qsTr("Remove %n repeat(s)", "", page.summary.twice), page.summary.twice) : qsTr("No songs repeat")
             icon.name: "duplicates"
-            onTriggered: { var n = userLib.removePlaylistDuplicates(page.playlistId); Nav.notify(Theme.num(n) + (n === 1 ? " repeat" : " repeats") + " taken out; each song is in it once") }
+            onTriggered: { var n = userLib.removePlaylistDuplicates(page.playlistId); Nav.notify(Theme.counted(qsTr("%n repeat(s) taken out; each song is in it once", "", n), n)) }
         }
         MenuItem {
             objectName: "playlistKeep"
             visible: moreMenu.copies.servers > 0 && moreMenu.copies.kept + moreMenu.copies.waiting < moreMenu.copies.servers
             height: visible ? implicitHeight : 0
-            text: "Keep on this computer"; icon.name: "download"
+            text: qsTr("Keep on this computer"); icon.name: "download"
             onTriggered: serverCopies.keep(page.tracksModel.toList().map(function (t) { return t.path }))
         }
         MenuItem {
             objectName: "playlistUnkeep"
             visible: moreMenu.copies.kept + moreMenu.copies.waiting > 0
             height: visible ? implicitHeight : 0
-            text: "Remove the copies from this computer"; icon.name: "remove"
+            text: qsTr("Remove the copies from this computer"); icon.name: "remove"
             onTriggered: serverCopies.remove(page.tracksModel.toList().map(function (t) { return t.path }))
         }
         MenuSeparator { visible: !page.liked; height: visible ? implicitHeight : 0 }
-        MenuItem { objectName: "deletePlaylist"; visible: !page.liked; height: visible ? implicitHeight : 0; text: "Delete playlist…"; icon.name: "trash"; icon.color: Theme.error; onTriggered: deleteDlg.open() }
+        MenuItem { objectName: "deletePlaylist"; visible: !page.liked; height: visible ? implicitHeight : 0; text: qsTr("Delete playlist…"); icon.name: "trash"; icon.color: Theme.error; onTriggered: deleteDlg.open() }
     }
 
     ListView {
@@ -114,10 +114,10 @@ Item {
             Column {
                 anchors { left: parent.left; leftMargin: 8; bottom: parent.bottom; bottomMargin: 12 }
                 spacing: 8
-                Text { text: page.liked ? "COLLECTION" : "PLAYLIST"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold; textFormat: Text.PlainText }
+                Text { text: page.liked ? qsTr("COLLECTION") : qsTr("PLAYLIST"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold; textFormat: Text.PlainText }
                 Text {
                     textFormat: Text.PlainText
-                    text: page.liked ? "Liked Songs" : page.playlistName
+                    text: page.liked ? qsTr("Liked Songs") : page.playlistName
                     width: Math.min(implicitWidth, list.width - 24)
                     elide: Text.ElideRight
                     color: Theme.text
@@ -127,17 +127,17 @@ Item {
                 }
                 Text {
                     objectName: "playlistCount"
-                    text: Theme.num(list.count) + (list.count === 1 ? " song" : " songs") + (page.seconds >= 60 ? "  ·  " + Theme.fmtHours(page.seconds) : "")
+                    text: Theme.counted(qsTr("%n song(s)", "", list.count), list.count) + (page.seconds >= 60 ? "  ·  " + Theme.fmtHours(page.seconds) : "")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText
                 }
                 Row {
                     spacing: 10
-                    PillButton { primary: true; text: "Play"; enabled: list.count > 0; onClicked: page.liked ? userLib.playLiked(0) : userLib.playPlaylist(0, false) }
-                    PillButton { text: "Shuffle"; enabled: list.count > 0; onClicked: page.liked ? (player.setShuffle(true), userLib.playLiked(Math.floor(Math.random() * list.count))) : userLib.playPlaylist(0, true) }
+                    PillButton { primary: true; text: qsTr("Play"); enabled: list.count > 0; onClicked: page.liked ? userLib.playLiked(0) : userLib.playPlaylist(0, false) }
+                    PillButton { text: qsTr("Shuffle"); enabled: list.count > 0; onClicked: page.liked ? (player.setShuffle(true), userLib.playLiked(Math.floor(Math.random() * list.count))) : userLib.playPlaylist(0, true) }
                     IconButton {
                         objectName: "playlistMore"
                         height: 38
-                        icon: "more"; size: 18; tip: "More: export, rename, copy, tidy or delete"
+                        icon: "more"; size: 18; tip: qsTr("More: export, rename, copy, tidy or delete")
                         onClicked: moreMenu.popup()
                     }
                 }
@@ -150,9 +150,9 @@ Item {
                 anchors.centerIn: parent
                 visible: list.count === 0
                 icon: page.liked ? "heart" : "playlist"
-                title: page.liked ? "No liked songs yet" : "This playlist is empty"
-                hint: page.liked ? "Tap the heart on any song and it's kept here."
-                                 : "Use “…” on a song, or select a few and choose Add to playlist."
+                title: page.liked ? qsTr("No liked songs yet") : qsTr("This playlist is empty")
+                hint: page.liked ? qsTr("Tap the heart on any song and it's kept here.")
+                                 : qsTr("Use “…” on a song, or select a few and choose Add to playlist.")
             }
         }
         delegate: TrackRow {

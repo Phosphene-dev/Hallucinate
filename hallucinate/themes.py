@@ -9,6 +9,8 @@ from pathlib import Path
 from PySide6.QtCore import Property, QObject, QSize, QUrl, Signal, Slot
 from PySide6.QtGui import QColor, QFont, QGuiApplication, QImage, QImageReader
 
+from .core.i18n import fill, translate
+
 logger = logging.getLogger(__name__)
 COLOR_KEYS = ("bg", "panel", "surface", "surfaceHi", "border", "text", "textDim", "accent", "error", "onAccent")
 BUILTIN_THEME_DIR = Path(__file__).with_name("themes")
@@ -523,7 +525,7 @@ class ThemeManager(QObject):
         changed, and switch to it. Returns "" or what went wrong."""
         name = (name or "").strip()
         if not name:
-            return "Give the theme a name"
+            return translate("Themes", "Give the theme a name")
         builtin = {p.stem for p in BUILTIN_THEME_DIR.glob("*.json")}
         base = json.loads(json.dumps(self._theme()))
         base["name"] = name
@@ -532,17 +534,17 @@ class ThemeManager(QObject):
                 base["colors"][key] = QColor(str(value)).name()
         _, valid = self._validate(base)
         if not valid:
-            return "Those colours don't make a valid theme"
+            return translate("Themes", "Those colours don't make a valid theme")
         slug = "".join(c if c.isalnum() else "-" for c in name.lower()).strip("-") or "my-theme"
         if slug in builtin or (name in self._themes and self._is_builtin(name)):
-            return f"“{name}” is a built-in theme's name; pick another"
+            return fill(translate("Themes", "“%1” is a built-in theme's name; pick another"), name)
         try:
             self._user_theme_dir.mkdir(parents=True, exist_ok=True)
             from .core.atomic import write_text
 
             write_text(self._user_theme_dir / f"{slug}.json", json.dumps(base, indent=2) + "\n")
         except OSError as exc:
-            return f"Couldn't save the theme: {exc.strerror or exc}"
+            return fill(translate("Themes", "Couldn't save the theme: %1"), exc.strerror or exc)
         self._load_themes()
         self.selectTheme(name)
         return ""

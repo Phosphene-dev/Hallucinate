@@ -38,7 +38,6 @@ Item {
         showingSongs = true
         songList.positionViewAtBeginning()
     }
-    function plural(n, one, many) { return Theme.num(n) + " " + (n === 1 ? one : many) }
 
     // ---- the genres --------------------------------------------------------------------------------------------
     Item {
@@ -51,7 +50,7 @@ Item {
             id: title
             textFormat: Text.PlainText
             x: 28; y: 20
-            text: "Genres"
+            text: qsTr("Genres")
             color: Theme.text
             font.family: Theme.displayFamily
             font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale
@@ -70,15 +69,15 @@ Item {
             anchors { top: title.bottom; topMargin: 12; left: parent.left; leftMargin: 24; right: parent.right; rightMargin: 12 }
             spacing: 6
             Chip { objectName: "genresAz"; text: "A–Z"; selected: page.order === "az"; onClicked: page.order = "az" }
-            Chip { objectName: "genresBySongs"; text: "Most songs"; selected: page.order === "songs"; onClicked: page.order = "songs" }
-            Chip { objectName: "genresByPlays"; text: "Most played"; selected: page.order === "plays"; onClicked: page.order = "plays" }
+            Chip { objectName: "genresBySongs"; text: qsTr("Most songs"); selected: page.order === "songs"; onClicked: page.order = "songs" }
+            Chip { objectName: "genresByPlays"; text: qsTr("Most played"); selected: page.order === "plays"; onClicked: page.order = "plays" }
         }
         TextField {
             id: filterField
             objectName: "genresFilter"
             anchors { top: controls.bottom; topMargin: 10; left: parent.left; leftMargin: 24; right: parent.right; rightMargin: 12 }
             height: 36
-            placeholderText: "Filter genres"
+            placeholderText: qsTr("Filter genres")
             placeholderTextColor: Theme.textDim
             color: Theme.text
             font.family: Theme.fontFamily
@@ -160,8 +159,8 @@ Item {
                     Text {
                         textFormat: Text.PlainText
                         width: parent.width
-                        text: page.plural(entry.tracks, "song", "songs") + "  ·  " + page.plural(entry.albums, "album", "albums")
-                              + (page.order === "plays" ? "  ·  " + page.plural(entry.plays, "play", "plays") : "")
+                        text: Theme.counted(qsTr("%n song(s)", "", entry.tracks), entry.tracks) + "  ·  " + Theme.counted(qsTr("%n album(s)", "", entry.albums), entry.albums)
+                              + (page.order === "plays" ? "  ·  " + Theme.counted(qsTr("%n play(s)", "", entry.plays), entry.plays) : "")
                         elide: Text.ElideRight
                         color: entry.picked ? Theme.selectedText : Theme.textDim
                         font.family: Theme.fontFamily
@@ -183,7 +182,7 @@ Item {
                     }
                 }
                 Accessible.role: Accessible.ListItem
-                Accessible.name: entry.name + ", " + page.plural(entry.tracks, "song", "songs")
+                Accessible.name: entry.name + ", " + Theme.counted(qsTr("%n song(s)", "", entry.tracks), entry.tracks)
                 Accessible.onPressAction: page.pick(entry.name)
             }
         }
@@ -191,8 +190,8 @@ Item {
             anchors.centerIn: genreList
             visible: library.ready && library.genreModel.count === 0
             icon: "genre"
-            title: "No genres yet"
-            hint: "Songs with a genre in their tags show up here, one group for each genre a song names."
+            title: qsTr("No genres yet")
+            hint: qsTr("Songs with a genre in their tags show up here, one group for each genre a song names.")
         }
     }
     CollectionMenu { id: genreMenu; objectName: "genresMenu" }
@@ -214,7 +213,7 @@ Item {
             visible: page.narrow
             x: 16; y: 22
             icon: "back"
-            tip: "All genres"
+            tip: qsTr("All genres")
             onClicked: page.showingSongs = false
         }
         Column {
@@ -237,21 +236,21 @@ Item {
             Flow {
                 width: parent.width
                 spacing: 8
-                PillButton { primary: true; text: "Play"; enabled: songList.count > 0; onClicked: library.playGenreSongsSorted(page.selected, page.songSort, 0) }
-                PillButton { text: "Shuffle"; enabled: songList.count > 0; onClicked: library.playGenre(page.selected, true) }
-                PillButton { objectName: "genresOpenPage"; text: "Albums & artists"; onClicked: Nav.openGenre(page.selected) }
+                PillButton { primary: true; text: qsTr("Play"); enabled: songList.count > 0; onClicked: library.playGenreSongsSorted(page.selected, page.songSort, 0) }
+                PillButton { text: qsTr("Shuffle"); enabled: songList.count > 0; onClicked: library.playGenre(page.selected, true) }
+                PillButton { objectName: "genresOpenPage"; text: qsTr("Albums & artists"); onClicked: Nav.openGenre(page.selected) }
                 StyledCombo {
                     objectName: "genresSongSort"
                     width: 170
-                    model: ["Album by album", "Title", "Artist", "Newest year", "Most played", "Recently added"]
+                    model: [qsTr("Album by album"), qsTr("Title"), qsTr("Artist"), qsTr("Newest year"), qsTr("Most played"), qsTr("Recently added")]
                     selection: Math.max(0, page.sorts.indexOf(page.songSort))
                     onActivated: function (i) { page.songSort = page.sorts[i] }
-                    Accessible.name: "Order of the songs"
+                    Accessible.name: qsTr("Order of the songs")
                 }
             }
             Text {
                 textFormat: Text.PlainText
-                text: page.songs ? page.plural(songList.count, "song", "songs") + " tagged " + page.selected : ""
+                text: page.songs ? Theme.counted(qsTr("%n song(s) tagged %1", "", songList.count), songList.count).arg(page.selected) : ""
                 color: Theme.textDim
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(12)
@@ -294,8 +293,8 @@ Item {
             anchors.centerIn: parent
             visible: page.selected.length === 0 && library.genreModel.count > 0
             icon: "genre"
-            title: "Pick a genre"
-            hint: "Its songs show here: every song whose tags name it, including songs that name several genres."
+            title: qsTr("Pick a genre")
+            hint: qsTr("Its songs show here: every song whose tags name it, including songs that name several genres.")
         }
     }
 }

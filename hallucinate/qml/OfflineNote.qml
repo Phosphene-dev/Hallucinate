@@ -9,7 +9,7 @@ Text {
     textFormat: Text.PlainText
     width: parent ? parent.width : 0
     wrapMode: Text.WordWrap
-    text: "Offline mode is on: " + what + " can't connect, and listens wait to be sent until it's off (Settings → Online & privacy)."
+    text: qsTr("Offline mode is on: %1 can't connect, and listens wait to be sent until it's off (Settings → Online & privacy).").arg(what)
     color: Theme.accent
     font.family: Theme.fontFamily
     font.pixelSize: Theme.fontSize(12)

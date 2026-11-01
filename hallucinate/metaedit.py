@@ -11,6 +11,7 @@ from PySide6.QtCore import Property, QObject, QSettings, Signal, Slot
 from .core import artfetch, health, net, tagedit
 from .core.atomic import write_atomic
 from .core.db import Database
+from .core.i18n import fill, translate
 from .core.scanner import Scanner
 from .core.tags import _image_ext
 from .library import _Reader, decorate
@@ -53,7 +54,7 @@ def _as_jpeg(data):
 
     image = QImage.fromData(data)
     if image.isNull():
-        raise OSError("the picture couldn't be read")
+        raise OSError(translate("MetaEdit", "the picture couldn't be read"))
     if image.hasAlphaChannel():  # JPEG has no transparency: put it on white rather than black
         flat = QImage(image.size(), QImage.Format.Format_RGB32)
         flat.fill(0xFFFFFF)
@@ -67,7 +68,7 @@ def _as_jpeg(data):
     buf = QBuffer(out)
     buf.open(QIODevice.OpenModeFlag.WriteOnly)
     if not image.save(buf, "JPEG", 92):
-        raise OSError("the picture couldn't be saved as JPEG")
+        raise OSError(translate("MetaEdit", "the picture couldn't be saved as JPEG"))
     return bytes(out.data())
 
 
@@ -222,18 +223,18 @@ class MetadataEditor(QObject):
         from .core import musicbrainz, net
 
         if net.is_offline():
-            self.lookupResults.emit([], "Offline mode is on, so MusicBrainz can't be searched")
+            self.lookupResults.emit([], translate("MetaEdit", "Offline mode is on, so MusicBrainz can't be searched"))
             return
         if not (album or "").strip():
-            self.lookupResults.emit([], "The album needs a name to look it up")
+            self.lookupResults.emit([], translate("MetaEdit", "The album needs a name to look it up"))
             return
 
         def work():
             try:
                 found = musicbrainz.search_releases(artist, album)
-                self._mb_done.emit(("results", found, "" if found else "MusicBrainz has no album by that name"))
+                self._mb_done.emit(("results", found, "" if found else translate("MetaEdit", "MusicBrainz has no album by that name")))
             except (OSError, ValueError, KeyError) as exc:
-                self._mb_done.emit(("results", [], f"Couldn't reach MusicBrainz: {net.describe(exc)}"))
+                self._mb_done.emit(("results", [], fill(translate("MetaEdit", "Couldn't reach MusicBrainz: %1"), net.describe(exc))))
 
         threading.Thread(target=work, name="musicbrainz", daemon=True).start()
 
@@ -249,7 +250,7 @@ class MetadataEditor(QObject):
             try:
                 rel = musicbrainz.release(release_id)
             except (OSError, ValueError, KeyError) as exc:
-                self._mb_done.emit(("release", {"error": f"Couldn't fetch that release: {net.describe(exc)}"}, ""))
+                self._mb_done.emit(("release", {"error": fill(translate("MetaEdit", "Couldn't fetch that release: %1"), net.describe(exc))}, ""))
                 return
             pairs = musicbrainz.match_tracks([dict(s) for s in songs], rel["tracks"])
             self._mb_done.emit(("release", {
@@ -309,7 +310,7 @@ class MetadataEditor(QObject):
     # --- cover art -----------------------------------------------------------------------
     def _store_cover(self, db, album_key, data, embed, to_folder=None):
         if not (data[:8] == b"\x89PNG\r\n\x1a\n" or data[:3] == b"\xff\xd8\xff"):
-            raise tagedit.TagWriteError("Not a PNG or JPEG image")
+            raise tagedit.TagWriteError(translate("MetaEdit", "Not a PNG or JPEG image"))
         to_folder = self._covers_to_folder if to_folder is None else to_folder
         name = f"{album_key}-{hashlib.sha1(data, usedforsecurity=False).hexdigest()[:8]}{_image_ext(data)}"
         path = os.path.join(self._art_dir, name)
@@ -339,8 +340,10 @@ class MetadataEditor(QObject):
                 except tagedit.TagWriteError as exc:
                     problems.append(f"{os.path.basename(t['path'])}: {exc}")
             Scanner(db, self._art_dir).refresh_files([t["path"] for t in db.album_tracks(album_key)])
-        msg = "Cover updated" + (" and saved as cover.jpg in the album's folder" if saved_in else "")
-        msg += f" (couldn't save it in: {'; '.join(problems[:2])})" if problems else ""
+        msg = (translate("MetaEdit", "Cover updated and saved as cover.jpg in the album's folder") if saved_in
+               else translate("MetaEdit", "Cover updated"))
+        if problems:
+            msg += " " + fill(translate("MetaEdit", "(couldn't save it in: %1)"), "; ".join(problems[:2]))
         return {"kind": "cover", "ok": True, "message": msg}
 
     @Slot(str, str, bool)
@@ -356,9 +359,9 @@ class MetadataEditor(QObject):
             except artfetch.ServiceError as exc:  # their servers, already worded for people
                 return {"kind": "cover", "ok": False, "message": str(exc)}
             except OSError as exc:
-                return {"kind": "cover", "ok": False, "message": f"Couldn't fetch the cover: {net.describe(exc)}"}
+                return {"kind": "cover", "ok": False, "message": fill(translate("MetaEdit", "Couldn't fetch the cover: %1"), net.describe(exc))}
             if not data:
-                return {"kind": "cover", "ok": False, "message": "No cover found online"}
+                return {"kind": "cover", "ok": False, "message": translate("MetaEdit", "No cover found online")}
             return self._store_cover(db, key, data, emb)
 
         self._run(work, album_key, artist, album, embed)
@@ -471,19 +474,19 @@ class MetadataEditor(QObject):
         """Look up one album's genres; genreFound() reports back. Nothing is written: the editor fills its
         Genre field and you save as usual."""
         if net.is_offline():
-            self.genreFound.emit({"error": "Offline mode is on, so genres can't be looked up"})
+            self.genreFound.emit({"error": translate("MetaEdit", "Offline mode is on, so genres can't be looked up")})
             return
         if not (album or "").strip():
-            self.genreFound.emit({"error": "The song needs an album name to look up its genre"})
+            self.genreFound.emit({"error": translate("MetaEdit", "The song needs an album name to look up its genre")})
             return
         find = self._genre_lookup()
 
         def work():
             try:
                 found = find(artist, album)
-                self._mb_done.emit(("genre", found or {"error": "No genre was found for this album"}, ""))
+                self._mb_done.emit(("genre", found or {"error": translate("MetaEdit", "No genre was found for this album")}, ""))
             except (OSError, ValueError, KeyError) as exc:
-                self._mb_done.emit(("genre", {"error": f"Couldn't look it up: {net.describe(exc)}"}, ""))
+                self._mb_done.emit(("genre", {"error": fill(translate("MetaEdit", "Couldn't look it up: %1"), net.describe(exc))}, ""))
 
         threading.Thread(target=work, name="musicbrainz-genre", daemon=True).start()
 
@@ -602,8 +605,9 @@ class MetadataEditor(QObject):
         if finished:
             g = self._genres
             stopped = g["done"] < g["total"]
-            self.genresFinished.emit(f"Found genres for {g['found']} of {g['done']} albums"
-                                        + (" (stopped early)" if stopped else "") + ". Check them, then save.")
+            self.genresFinished.emit(fill(translate("MetaEdit", "Found genres for %1 of %2 albums (stopped early). Check them, then save.")
+                                          if stopped else translate("MetaEdit", "Found genres for %1 of %2 albums. Check them, then save."),
+                                          g["found"], g["done"]))
 
     @Slot("QVariantList")
     def saveGenres(self, items):

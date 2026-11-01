@@ -18,6 +18,7 @@ from PySide6.QtCore import Property, QObject, QSettings, QTimer, QUrl, Signal, S
 
 from .core import net
 from .core import podcasts as pc
+from .core.i18n import fill, translate
 from .core.kinds import track_kind
 from .core.streams_db import StreamsDB
 from .listentime import ListenClock
@@ -210,7 +211,8 @@ class Podcasts(QObject):
 
     def _show_row(self, p):
         bits = [p["author"]] if p.get("author") else []
-        bits.append(f"{p['unplayed']} new" if p.get("unplayed") else "All played" if p.get("episodes") else "No episodes yet")
+        bits.append(fill(translate("Podcasts", "%1 new"), p["unplayed"]) if p.get("unplayed")
+                    else translate("Podcasts", "All played") if p.get("episodes") else translate("Podcasts", "No episodes yet"))
         return {**p, "artUrl": self._art(p.get("image")), "detail": "  ·  ".join(bits), "latest": p.get("latest") or 0}
 
     def _episode_row(self, e):
@@ -319,7 +321,7 @@ class Podcasts(QObject):
         if e:
             self._db.set_up_next(episode_id, True, first)
             self.reload()
-            self.message.emit(f"“{e['title']}” is {'first in' if first else 'in'} Up next")
+            self.message.emit(fill(translate("Podcasts", "“%1” is first in Up next") if first else translate("Podcasts", "“%1” is in Up next"), e["title"]))
 
     @Slot(int)
     def removeUpNext(self, episode_id):
@@ -335,7 +337,7 @@ class Podcasts(QObject):
         if not items:
             return
         if not (items[0].get("local_path") and os.path.isfile(items[0]["local_path"])) and net.is_offline():
-            self.message.emit("Offline mode is on: download episodes to listen to them offline")
+            self.message.emit(translate("Podcasts", "Offline mode is on: download episodes to listen to them offline"))
             return
         self._player.playList([self._entry(e) for e in items], 0)
 
@@ -459,7 +461,7 @@ class Podcasts(QObject):
                     self._db.set_local_path(e["id"], "")
                     n += 1
         self.reload()
-        self.message.emit(f"Removed {n} download{'s' if n != 1 else ''}" if n else "No downloads to remove")
+        self.message.emit(translate("Podcasts", "Removed %n download(s)", None, n) if n else translate("Podcasts", "No downloads to remove"))
 
     def _enforce_keep(self, podcast_id=None):
         """Apply the keep setting to downloads: once played, the newest few per show, or all of them."""
@@ -488,10 +490,10 @@ class Podcasts(QObject):
             return
         existing = self._db.podcast_by(feed_url=url)
         if existing:
-            self.message.emit(f"You already follow “{existing['title']}”")
+            self.message.emit(fill(translate("Podcasts", "You already follow “%1”"), existing["title"]))
             return
         if net.is_offline():
-            self.message.emit("Offline mode is on, so the feed can't be fetched")
+            self.message.emit(translate("Podcasts", "Offline mode is on, so the feed can't be fetched"))
             return
         self._start_busy()
 
@@ -499,7 +501,7 @@ class Podcasts(QObject):
             try:
                 podcast, episodes, final = pc.fetch_feed(url)
             except Exception as exc:  # noqa: BLE001 - a worker must always report back
-                return ("followed", None, f"Couldn't follow that: {net.describe(exc)}")
+                return ("followed", None, fill(translate("Podcasts", "Couldn't follow that: %1"), net.describe(exc)))
             return ("followed", (podcast, episodes, final), "")
 
         self._pool.submit(lambda: self._done.emit(work()))
@@ -550,7 +552,7 @@ class Podcasts(QObject):
         p = self._db.podcast(podcast_id)
         if not p or (not p.get("folder") and net.is_offline()):
             if not quiet and p:
-                self.message.emit("Offline mode is on, so feeds can't be checked")
+                self.message.emit(translate("Podcasts", "Offline mode is on, so feeds can't be checked"))
             return
         self._start_busy()
 
@@ -599,7 +601,7 @@ class Podcasts(QObject):
         if not e:
             return
         if not (e.get("local_path") and os.path.isfile(e["local_path"])) and net.is_offline():
-            self.message.emit("Offline mode is on: download episodes to listen to them offline")
+            self.message.emit(translate("Podcasts", "Offline mode is on: download episodes to listen to them offline"))
             return
         later = [x for x in reversed(self._db.episodes(e["podcast_id"]))
                  if x["published"] > e["published"] and not x["played"]][:20]
@@ -620,14 +622,14 @@ class Podcasts(QObject):
         e = self._db.episode(episode_id)
         if e:
             self._player.playNext(self._entry(e))
-            self.message.emit(f"“{e['title']}” will play next")
+            self.message.emit(fill(translate("Podcasts", "“%1” will play next"), e["title"]))
 
     @Slot(int)
     def enqueue(self, episode_id):
         e = self._db.episode(episode_id)
         if e:
             self._player.enqueue(self._entry(e))
-            self.message.emit(f"“{e['title']}” added to the queue")
+            self.message.emit(fill(translate("Podcasts", "“%1” added to the queue"), e["title"]))
 
     # --- several episodes at once (the selection bar) ----------------------------------------------------
     @Slot("QVariantList", bool)
@@ -649,7 +651,7 @@ class Podcasts(QObject):
         entries = [self._entry(e) for e in (self._db.episode(int(i)) for i in ids) if e]
         if entries:
             self._player.enqueueAll(entries)
-            self.message.emit(f"{len(entries)} episode{'s' if len(entries) != 1 else ''} added to the queue")
+            self.message.emit(translate("Podcasts", "%n episode(s) added to the queue", None, len(entries)))
 
     @Slot("QVariantList")
     def playNextMany(self, ids):
@@ -657,7 +659,7 @@ class Podcasts(QObject):
         for entry in reversed(entries):  # each goes in right after the current one
             self._player.playNext(entry)
         if entries:
-            self.message.emit(f"{len(entries)} episode{'s' if len(entries) != 1 else ''} will play next")
+            self.message.emit(translate("Podcasts", "%n episode(s) will play next", None, len(entries)))
 
     @Slot("QVariantList")
     def downloadMany(self, ids):
@@ -731,7 +733,7 @@ class Podcasts(QObject):
             with self._lock:
                 self._downloading.pop(episode_id, None)
             if not quiet:
-                self.message.emit("Offline mode is on, so episodes can't download (they will when it's off)")
+                self.message.emit(translate("Podcasts", "Offline mode is on, so episodes can't download (they will when it's off)"))
             return
         target = self._downloads / str(e["podcast_id"]) / f"{e['id']}{pc.extension_for(e['url'], e.get('mime', ''))}"
         self._progress_timer.start()
@@ -790,12 +792,12 @@ class Podcasts(QObject):
         todo = [e for e in self._db.episodes(podcast_id, unplayed_only=True)
                 if e.get("url") and not (e.get("local_path") and os.path.isfile(e["local_path"]))]
         if not todo:
-            self.message.emit("Every unplayed episode is downloaded already")
+            self.message.emit(translate("Podcasts", "Every unplayed episode is downloaded already"))
             return
         if net.is_offline():
             for e in todo:
                 self._db.set_download_queued(e["id"], True)
-            self.message.emit("Offline mode is on: the episodes will download when it's off")
+            self.message.emit(translate("Podcasts", "Offline mode is on: the episodes will download when it's off"))
             return
         for e in todo:
             self.download(e["id"], quiet=True)
@@ -829,7 +831,7 @@ class Podcasts(QObject):
             if self._remove_file(e["local_path"]):
                 self._db.set_local_path(episode_id, "")
             else:
-                self.message.emit("Couldn't remove the download while it's playing")
+                self.message.emit(translate("Podcasts", "Couldn't remove the download while it's playing"))
             self.reload()
 
     def _remove_file(self, path):
@@ -859,7 +861,7 @@ class Podcasts(QObject):
         try:
             feeds = pc.parse_opml(Path(path).read_text(encoding="utf-8", errors="replace"))
         except (OSError, ValueError) as exc:
-            return f"Couldn't read the file: {exc}"
+            return fill(translate("Podcasts", "Couldn't read the file: %1"), exc)
         new = [f for f in feeds if not self._db.podcast_by(feed_url=f["feed_url"])]
         for f in new:
             self._db.add_podcast({"title": f["title"] or f["feed_url"], "feed_url": f["feed_url"]})
@@ -869,8 +871,8 @@ class Podcasts(QObject):
                 if p["feed_url"] in {f["feed_url"] for f in new}:
                     self.refresh(p["id"], quiet=True)
         if not feeds:
-            return "No podcasts in that file"
-        return f"Following {len(new)} new show{'s' if len(new) != 1 else ''}" if new else "You already follow those shows"
+            return translate("Podcasts", "No podcasts in that file")
+        return translate("Podcasts", "Following %n new show(s)", None, len(new)) if new else translate("Podcasts", "You already follow those shows")
 
     @Slot(str, result=str)
     def exportOpml(self, url):
@@ -908,7 +910,7 @@ class Podcasts(QObject):
             self.resultsChanged.emit()
             return
         if net.is_offline():
-            self._status, self._searching = "Offline mode is on, so the directory can't be searched", False
+            self._status, self._searching = translate("Podcasts", "Offline mode is on, so the directory can't be searched"), False
             self.resultsChanged.emit()
             return
         self._searching, self._status = True, ""
@@ -1058,8 +1060,8 @@ class Podcasts(QObject):
             self.reload()
             self._mark_followed()
             self.resultsChanged.emit()
-            self.message.emit(f"You already follow “{existing['title']}”" if existing
-                              else f"Following “{podcast['title']}”")
+            self.message.emit(fill(translate("Podcasts", "You already follow “%1”"), existing["title"]) if existing
+                              else fill(translate("Podcasts", "Following “%1”"), podcast["title"]))
         elif kind == "refreshed":
             self._busy = max(0, self._busy - 1)
             podcast_id, info, episodes, quiet, checked = what
@@ -1070,7 +1072,7 @@ class Podcasts(QObject):
             if episodes is None:
                 self._db.update_podcast(podcast_id, error=value, checked=time.time())
                 if not quiet:
-                    self.message.emit(f"Couldn't check for new episodes: {value}")
+                    self.message.emit(fill(translate("Podcasts", "Couldn't check for new episodes: %1"), value))
                     self.reload()
                 else:
                     self._reload_timer.start()
@@ -1086,19 +1088,21 @@ class Podcasts(QObject):
             if new and self._options["notifyNew"]:
                 show = self._db.podcast(podcast_id) or {}
                 latest = self._db.episode(new[0]) or {}
-                more = f" and {len(new) - 1} more" if len(new) > 1 else ""
-                self.newEpisodes.emit(show.get("title", "A show you follow"), (latest.get("title") or "New episode") + more)
+                title = latest.get("title") or translate("Podcasts", "New episode")
+                if len(new) > 1:
+                    title = fill(translate("Podcasts", "%1 and %n more", None, len(new) - 1), title)
+                self.newEpisodes.emit(show.get("title") or translate("Podcasts", "A show you follow"), title)
             if new:
                 self._download_new(podcast_id, min(len(new), 3))
             if not quiet:
-                self.message.emit(f"{len(new)} new episode{'s' if len(new) != 1 else ''}" if new else "No new episodes")
+                self.message.emit(translate("Podcasts", "%n new episode(s)", None, len(new)) if new else translate("Podcasts", "No new episodes"))
         elif kind == "results":
             self._searching = False
             if value is None:
-                self._results, self._status = [], "Couldn't reach the podcast directory. Check your connection."
+                self._results, self._status = [], translate("Podcasts", "Couldn't reach the podcast directory. Check your connection.")
             else:
                 self._results = value
-                self._status = "" if value else f"No podcasts match “{what}”"
+                self._status = "" if value else fill(translate("Podcasts", "No podcasts match “%1”"), what)
             self._mark_followed()
             self.resultsChanged.emit()
         elif kind == "downloaded":
@@ -1116,7 +1120,7 @@ class Podcasts(QObject):
                         self._enforce_keep(e["podcast_id"])
             elif isinstance(path, Exception):
                 if not isinstance(path, net.OfflineError):
-                    self.message.emit(f"Download failed: {net.describe(path)}")
+                    self.message.emit(fill(translate("Podcasts", "Download failed: %1"), net.describe(path)))
                 if _for_good(path):  # asking again won't help; anything else carries on next time
                     self._db.set_download_queued(episode_id, False)
             self.reload()

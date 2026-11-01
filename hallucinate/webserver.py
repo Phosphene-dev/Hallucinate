@@ -35,6 +35,7 @@ from pathlib import Path
 from PySide6.QtCore import Property, QObject, Qt, QTimer, Signal, Slot
 
 from .api import Api, ApiError
+from .core.i18n import QT_TRANSLATE_NOOP, fill, translate
 
 logger = logging.getLogger(__name__)
 
@@ -349,14 +350,14 @@ class _Handler(BaseHTTPRequestHandler):
             length = -1
         if length < 0 or length > MAX_BODY:
             self.close_connection = True  # the body isn't read, so the connection can't carry on
-            raise ApiError("Request too large")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "Request too large"))
         raw = self.rfile.read(length) if length else b"{}"
         try:
             data = json.loads(raw.decode("utf-8"))
         except (UnicodeDecodeError, ValueError):
-            raise ApiError("Not JSON") from None
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "Not JSON")) from None
         if not isinstance(data, dict):
-            raise ApiError("Not a JSON object")
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "Not a JSON object"))
         return data
 
     # --- requests ------------------------------------------------------------------------------------------
@@ -365,31 +366,39 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):  # noqa: N802
         if not self._host_ok():
-            return self._error(HTTPStatus.MISDIRECTED_REQUEST, "Unknown host name")
+            return self._error(HTTPStatus.MISDIRECTED_REQUEST, QT_TRANSLATE_NOOP("Api", "Unknown host name"))
         path = urllib.parse.urlsplit(self.path).path
         if path in STATIC:  # the app itself (its pairing screen asks for a code)
             name, ctype = STATIC[path]
             try:
                 body = (WEB_DIR / name).read_bytes()
             except OSError:
-                return self._error(HTTPStatus.NOT_FOUND, "Not found")
+                return self._error(HTTPStatus.NOT_FOUND, QT_TRANSLATE_NOOP("Api", "Not found"))
             return self._send(HTTPStatus.OK, body, ctype, cache="no-cache")
+        if path == "/api/i18n":  # the page's words in a language (public text: the pairing screen needs them too)
+            from .i18n import available, web_catalog_json
+
+            # "fr" or the device's languages in its order ("de,fr,en"): the first one there's a catalogue for
+            wanted = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get("lang", [""])[0][:64].split(",")
+            lang = next((code for code in wanted if code in available()), "en")
+            return self._send(HTTPStatus.OK, web_catalog_json(lang).encode("utf-8"), "application/json; charset=utf-8",
+                              cache="no-cache")
         if path == "/api/hello":  # whether this browser is paired yet (nothing else)
             return self._send(HTTPStatus.OK, {"app": "Hallucinate", "paired": self._device() is not None})
         device = self._device()
         if device is None:
-            return self._error(HTTPStatus.UNAUTHORIZED, "Pair this device first")
+            return self._error(HTTPStatus.UNAUTHORIZED, QT_TRANSLATE_NOOP("Api", "Pair this device first"))
         if path == "/api/events":
             return self._events()
         if path.startswith("/art/"):
             return self._art(urllib.parse.unquote(path[5:]), urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query))
-        return self._error(HTTPStatus.NOT_FOUND, "Not found")
+        return self._error(HTTPStatus.NOT_FOUND, QT_TRANSLATE_NOOP("Api", "Not found"))
 
     def do_POST(self):  # noqa: N802
         if not self._host_ok():
-            return self._error(HTTPStatus.MISDIRECTED_REQUEST, "Unknown host name")
+            return self._error(HTTPStatus.MISDIRECTED_REQUEST, QT_TRANSLATE_NOOP("Api", "Unknown host name"))
         if not self._origin_ok() or self.headers.get("X-Hallucinate") != "1":
-            return self._error(HTTPStatus.FORBIDDEN, "Not from this app")
+            return self._error(HTTPStatus.FORBIDDEN, QT_TRANSLATE_NOOP("Api", "Not from this app"))
         path = urllib.parse.urlsplit(self.path).path
         try:
             data = self._read_json()
@@ -399,31 +408,31 @@ class _Handler(BaseHTTPRequestHandler):
             return self._pair(data)
         device = self._device()
         if device is None:
-            return self._error(HTTPStatus.UNAUTHORIZED, "Pair this device first")
+            return self._error(HTTPStatus.UNAUTHORIZED, QT_TRANSLATE_NOOP("Api", "Pair this device first"))
         if path == "/api/forget":  # this device unpairs itself
             self.owner.devices.remove(device["id"])
             self.owner.paired()  # (the app's list of paired devices shows it gone at once: #137)
             return self._send(HTTPStatus.OK, {"ok": True},
                               extra={"Set-Cookie": f"{COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict"})
         if path != "/api/call":
-            return self._error(HTTPStatus.NOT_FOUND, "Not found")
+            return self._error(HTTPStatus.NOT_FOUND, QT_TRANSLATE_NOOP("Api", "Not found"))
         try:
             result = self.owner.run(lambda: self.owner.command(data.get("method"), data.get("params")))
         except ApiError as exc:
             return self._error(HTTPStatus.BAD_REQUEST, str(exc))
         except FutureTimeout:
-            return self._error(HTTPStatus.SERVICE_UNAVAILABLE, "Hallucinate is busy; try again")
+            return self._error(HTTPStatus.SERVICE_UNAVAILABLE, QT_TRANSLATE_NOOP("Api", "Hallucinate is busy; try again"))
         except Exception:  # noqa: BLE001
             logger.exception("A remote command failed")
-            return self._error(HTTPStatus.INTERNAL_SERVER_ERROR, "That didn't work")
+            return self._error(HTTPStatus.INTERNAL_SERVER_ERROR, QT_TRANSLATE_NOOP("Api", "That didn't work"))
         return self._send(HTTPStatus.OK, {"result": result})
 
     def _pair(self, data):
         ip = self.client_address[0]
         if not self.owner.allow_attempt(ip):
-            return self._error(HTTPStatus.TOO_MANY_REQUESTS, "Too many tries; wait a minute")
+            return self._error(HTTPStatus.TOO_MANY_REQUESTS, QT_TRANSLATE_NOOP("Api", "Too many tries; wait a minute"))
         if not self.owner.pairing.redeem(str(data.get("code") or "")):
-            return self._error(HTTPStatus.FORBIDDEN, "That code isn't right, or it has run out")
+            return self._error(HTTPStatus.FORBIDDEN, QT_TRANSLATE_NOOP("Api", "That code isn't right, or it has run out"))
         key = self.owner.devices.add(str(data.get("name") or "")[:60])
         self.owner.paired()
         cookie = f"{COOKIE}={key}; Path=/; Max-Age={400 * 86400}; HttpOnly; SameSite=Strict"
@@ -447,7 +456,7 @@ class _Handler(BaseHTTPRequestHandler):
             path = ""
         image = load_thumbnail(self.owner.thumb_dir, path, px) if path else None
         if image is None or image.isNull():
-            return self._error(HTTPStatus.NOT_FOUND, "No cover")
+            return self._error(HTTPStatus.NOT_FOUND, QT_TRANSLATE_NOOP("Api", "No cover"))
         data = QByteArray()
         buf = QBuffer(data)
         buf.open(QIODevice.OpenModeFlag.WriteOnly)
@@ -458,7 +467,7 @@ class _Handler(BaseHTTPRequestHandler):
     def _events(self):
         """Server-sent events: the state now, then again whenever it changes (and a heartbeat)."""
         if not self.owner.stream_opened():
-            return self._error(HTTPStatus.SERVICE_UNAVAILABLE, "Too many open connections")
+            return self._error(HTTPStatus.SERVICE_UNAVAILABLE, QT_TRANSLATE_NOOP("Api", "Too many open connections"))
         key = self._key()
         try:
             self.send_response(HTTPStatus.OK)
@@ -697,9 +706,9 @@ class WebRemote(QObject):
                 try:
                     self._httpd = _Server(("0.0.0.0", self.port), _Handler, self)  # noqa: S104 - asked for
                 except OSError as exc:
-                    self._error = f"Port {self.port} is in use or can't be opened ({exc.strerror or exc})"
+                    self._error = fill(translate("WebRemote", "Port %1 is in use or can't be opened (%2)"), self.port, exc.strerror or exc)
             else:
-                self._error = f"Port {self.port} is in use or can't be opened"
+                self._error = fill(translate("WebRemote", "Port %1 is in use or can't be opened"), self.port)
             if self._httpd is None:
                 logger.warning("Web remote didn't start: %s", self._error)
                 self.changed.emit()

@@ -15,6 +15,7 @@ import urllib.parse
 import urllib.request
 
 from . import net
+from .i18n import QT_TRANSLATE_NOOP, translate
 
 API_VERSION = "1.16.1"
 CLIENT = "Hallucinate"
@@ -27,19 +28,20 @@ class SubsonicError(OSError):
     """The server answered but said no (a wrong password, say), in words people can read."""
 
     MESSAGES = {
-        10: "the server says something is missing from the request",
-        20: "the server is too old for Hallucinate",
-        30: "the server is newer than Hallucinate understands",
-        40: "the user name or password is wrong",
-        41: "this server needs an API key instead of a password",
-        50: "that user isn't allowed to do this",
-        60: "the server's trial period is over",
-        70: "the server couldn't find it",
+        10: QT_TRANSLATE_NOOP("Servers", "the server says something is missing from the request"),
+        20: QT_TRANSLATE_NOOP("Servers", "the server is too old for Hallucinate"),
+        30: QT_TRANSLATE_NOOP("Servers", "the server is newer than Hallucinate understands"),
+        40: QT_TRANSLATE_NOOP("Servers", "the user name or password is wrong"),
+        41: QT_TRANSLATE_NOOP("Servers", "this server needs an API key instead of a password"),
+        50: QT_TRANSLATE_NOOP("Servers", "that user isn't allowed to do this"),
+        60: QT_TRANSLATE_NOOP("Servers", "the server's trial period is over"),
+        70: QT_TRANSLATE_NOOP("Servers", "the server couldn't find it"),
     }
 
     def __init__(self, code, message=""):
         self.code = code
-        super().__init__(self.MESSAGES.get(code) or (message or "the server refused")[:200])
+        super().__init__(translate("Servers", self.MESSAGES[code]) if code in self.MESSAGES
+                         else (message or translate("Servers", "the server refused"))[:200])
 
 
 def normalise_base(url):
@@ -47,16 +49,16 @@ def normalise_base(url):
     url = (url or "").strip()
     if url and "://" not in url:
         if re.match(r"^[a-z][a-z0-9+.-]*:(?!\d)", url, re.I):  # another kind of link (javascript:, file:)
-            raise ValueError("That isn't a web link: it should start with http:// or https://")
+            raise ValueError(translate("Servers", "That isn't a web link: it should start with http:// or https://"))
         url = "https://" + url  # typed without one: music.example.com, or nas.local:4533
     url = url.rstrip("/")
     if url.lower().endswith("/rest"):
         url = url[:-5]
     if not net.is_web_url(url):
-        raise ValueError("That isn't a web link: it should start with http:// or https://")
+        raise ValueError(translate("Servers", "That isn't a web link: it should start with http:// or https://"))
     parts = urllib.parse.urlsplit(url)
     if parts.username or parts.password or parts.query or parts.fragment:
-        raise ValueError("Type the server's link only; the user name and password go in their own boxes")
+        raise ValueError(translate("Servers", "Type the server's link only; the user name and password go in their own boxes"))
     return url
 
 
@@ -160,10 +162,10 @@ class Server:
         try:
             body = json.loads(raw.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise ValueError("That doesn't look like a Subsonic server") from exc
+            raise ValueError(translate("Servers", "That doesn't look like a Subsonic server")) from exc
         answer = body.get("subsonic-response") if isinstance(body, dict) else None
         if not isinstance(answer, dict):
-            raise ValueError("That doesn't look like a Subsonic server")
+            raise ValueError(translate("Servers", "That doesn't look like a Subsonic server"))
         if answer.get("status") != "ok":
             err = answer.get("error") if isinstance(answer.get("error"), dict) else {}
             raise SubsonicError(_int(err.get("code")), _text(err.get("message")))

@@ -174,15 +174,15 @@ Item {
             Layout.fillWidth: true
             Text {
                 textFormat: Text.PlainText
-                text: "HALLUCINATE"
+                text: qsTr("HALLUCINATE")
                 color: "#e8e2d0"
                 font.family: Theme.displayFamily
                 font.pixelSize: 26 * deck.u
                 font.letterSpacing: 6 * deck.u
             }
-            Legend { text: "  HX-98  DIGITAL AUDIO DECK"; Layout.alignment: Qt.AlignBottom; Layout.bottomMargin: 3 * deck.u }
+            Legend { text: qsTr("  HX-98  DIGITAL AUDIO DECK"); Layout.alignment: Qt.AlignBottom; Layout.bottomMargin: 3 * deck.u }
             Item { Layout.fillWidth: true }
-            Legend { text: "DISPLAY"; Layout.alignment: Qt.AlignVCenter }
+            Legend { text: qsTr("DISPLAY"); Layout.alignment: Qt.AlignVCenter }
             Repeater {
                 model: ["amber", "green", "blue", "red"]
                 Rectangle {
@@ -194,19 +194,19 @@ Item {
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                                 onClicked: { deck.lcd = parent.modelData; deck.save("deckLcd", parent.modelData) } }
                     Accessible.role: Accessible.RadioButton
-                    Accessible.name: modelData + " display"
+                    Accessible.name: qsTr("%1 display").arg(modelData)
                     Accessible.checked: deck.lcd === modelData
                 }
             }
             Item { width: 12 * deck.u; height: 1 }
             Key {
                 objectName: "deckCrt"
-                label: "CRT"; latched: deck.crt
+                label: qsTr("CRT"); latched: deck.crt
                 implicitWidth: 56 * deck.u; implicitHeight: 30 * deck.u
                 onActivated: { deck.crt = !deck.crt; deck.save("deckCrt", deck.crt ? "1" : "0") }
             }
             Item { width: 12 * deck.u; height: 1 }
-            Led { lit: true; tint: "#3dff6a"; label: "POWER" }
+            Led { lit: true; tint: "#3dff6a"; label: qsTr("POWER") }
         }
 
         RowLayout {
@@ -251,7 +251,7 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 width: parent.width
-                                text: deck.track.title || "No tape"
+                                text: deck.track.title || qsTr("No tape")
                                 elide: Text.ElideRight
                                 color: "#1e2a6e"
                                 font.family: deck.dotsFamily
@@ -269,7 +269,7 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 width: parent.width
-                                text: deck.track.album ? "SIDE A · " + deck.track.album : ""
+                                text: deck.track.album ? qsTr("SIDE A · %1").arg(deck.track.album) : ""
                                 elide: Text.ElideRight
                                 color: "#6b6555"
                                 font.family: deck.dotsFamily
@@ -331,7 +331,7 @@ Item {
                     Text {  // the bottom edge of the shell
                         textFormat: Text.PlainText
                         anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 4 }
-                        text: "C-90  ·  TYPE II  ·  HIGH BIAS"
+                        text: qsTr("C-90  ·  TYPE II  ·  HIGH BIAS")
                         color: "#8a8b91"
                         font.family: deck.dotsFamily
                         font.pixelSize: 12 * deck.u
@@ -420,7 +420,7 @@ Item {
                             spacing: 18 * deck.u
                             Column {
                                 spacing: 2
-                                Flag { on: true; text: "TRACK" }
+                                Flag { on: true; text: qsTr("TRACK") }
                                 Lit {
                                     text: player.hasTrack ? String(Math.min(99, player.currentIndex + 1)).padStart(2, "0") : "--"
                                     ghost: "88"; size: 40 * deck.u
@@ -429,7 +429,7 @@ Item {
                             Item { Layout.fillWidth: true }
                             Column {
                                 spacing: 2
-                                Flag { on: true; text: deck.remaining ? "REMAIN" : "TIME"; anchors.right: parent.right }
+                                Flag { on: true; text: deck.remaining ? qsTr("REMAIN") : qsTr("TIME"); anchors.right: parent.right }
                                 Lit {
                                     objectName: "deckTime"
                                     text: (deck.remaining ? "-" : "") + deck.clock(deck.remaining ? player.duration - player.position : player.position)
@@ -438,7 +438,7 @@ Item {
                                     function flip() { deck.remaining = !deck.remaining; deck.save("deckRemaining", deck.remaining ? "1" : "0") }
                                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: parent.flip() }
                                     Accessible.role: Accessible.Button
-                                    Accessible.name: (deck.remaining ? "Time left " : "Time played ") + text + ", click to switch"
+                                    Accessible.name: (deck.remaining ? qsTr("Time left %1, click to switch") : qsTr("Time played %1, click to switch")).arg(text)
                                     Accessible.onPressAction: flip()
                                 }
                             }
@@ -452,7 +452,7 @@ Item {
                             clip: true
                             readonly property string message: player.hasTrack
                                 ? deck.segText([deck.track.artist, deck.track.title, deck.track.album].filter(function (s) { return s }).join(" - "))
-                                : "INSERT TAPE"
+                                : qsTr("INSERT TAPE")
                             readonly property bool scrolls: fits.advanceWidth > width && !Theme.reduceMotion
                             TextMetrics { id: fits; font: line.font; text: marquee.message }
                             Text {  // every segment, unlit
@@ -485,13 +485,13 @@ Item {
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 14 * deck.u
-                            Flag { on: player.playing; text: "PLAY" }
-                            Flag { on: player.hasTrack && !player.playing; text: "PAUSE" }
-                            Flag { on: player.shuffle; text: "SHUF" }
-                            Flag { on: player.repeat === 1; text: "RPT" }
-                            Flag { on: player.repeat === 2; text: "RPT1" }
-                            Flag { on: player.radio; text: "RADIO" }
-                            Flag { on: player.muted; text: "MUTE" }
+                            Flag { on: player.playing; text: qsTr("PLAY") }
+                            Flag { on: player.hasTrack && !player.playing; text: qsTr("PAUSE") }
+                            Flag { on: player.shuffle; text: qsTr("SHUF") }
+                            Flag { on: player.repeat === 1; text: qsTr("RPT") }
+                            Flag { on: player.repeat === 2; text: qsTr("RPT1") }
+                            Flag { on: player.radio; text: qsTr("RADIO") }
+                            Flag { on: player.muted; text: qsTr("MUTE") }
                             Item { Layout.fillWidth: true }
                             Flag {
                                 on: true
@@ -499,7 +499,7 @@ Item {
                                     var bits = []
                                     if (deck.track.codec) bits.push(String(deck.track.codec).toUpperCase())
                                     if (deck.track.sample_rate) bits.push((deck.track.sample_rate / 1000).toFixed(1) + "K")
-                                    if (deck.track.bitrate) bits.push(Math.round(deck.track.bitrate / 1000) + "KBPS")
+                                    if (deck.track.bitrate) bits.push(Math.round(deck.track.bitrate / 1000) + "KBPS")  // i18n: keep (a unit on the display)
                                     return bits.join("  ")
                                 }
                             }
@@ -558,7 +558,7 @@ Item {
                                 textFormat: Text.PlainText
                                 anchors.centerIn: parent
                                 visible: !player.visualizerEnabled
-                                text: player.visualizerAvailable ? "ANALYSER OFF  ·  CLICK TO SWITCH ON" : "NO ANALYSER ON THIS SYSTEM"
+                                text: player.visualizerAvailable ? qsTr("ANALYSER OFF  ·  CLICK TO SWITCH ON") : qsTr("NO ANALYSER ON THIS SYSTEM")
                                 color: deck.ink.on
                                 font.family: deck.dotsFamily
                                 font.pixelSize: 20 * deck.u
@@ -569,7 +569,7 @@ Item {
                                     onClicked: player.setVisualizerEnabled(true)
                                 }
                                 Accessible.role: Accessible.Button
-                                Accessible.name: "Switch on the spectrum analyser"
+                                Accessible.name: qsTr("Switch on the spectrum analyser")
                                 Accessible.onPressAction: player.setVisualizerEnabled(true)
                             }
                         }
@@ -631,7 +631,7 @@ Item {
                         onReleased: if (player.duration > 0) player.seek(Math.round(at * player.duration))
                     }
                     Accessible.role: Accessible.Slider
-                    Accessible.name: "Position in the song"
+                    Accessible.name: qsTr("Position in the song")
                 }
             }
         }
@@ -644,7 +644,7 @@ Item {
 
             // two needle meters: the low and the high half of the spectrum
             Repeater {
-                model: [{ t: "LOW", from: 0, to: 8 }, { t: "HIGH", from: 8, to: 24 }]
+                model: [{ t: qsTr("LOW"), from: 0, to: 8 }, { t: qsTr("HIGH"), from: 8, to: 24 }]
                 Rectangle {
                     id: vu
                     required property var modelData
@@ -682,7 +682,7 @@ Item {
                     Text {
                         textFormat: Text.PlainText
                         anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 8 * deck.u }
-                        text: "VU  " + vu.modelData.t
+                        text: "VU  " + vu.modelData.t  // i18n: keep
                         color: "#2a2a2a"
                         font.family: deck.dotsFamily; font.pixelSize: 16 * deck.u
                     }
@@ -711,10 +711,10 @@ Item {
                 Row {
                     spacing: 8 * deck.u
                     anchors.horizontalCenter: parent.horizontalCenter
-                    Led { lit: player.shuffle; tint: "#ffb000"; label: "SHUFFLE"; width: 74 * deck.u }
-                    Led { lit: player.repeat > 0; tint: "#ffb000"; label: player.repeat === 2 ? "REPEAT 1" : "REPEAT"; width: 74 * deck.u }
-                    Led { lit: player.radio; tint: "#ffb000"; label: "RADIO"; width: 74 * deck.u }
-                    Led { lit: player.playing; tint: "#3dff6a"; label: "PLAY"; width: 74 * deck.u }
+                    Led { lit: player.shuffle; tint: "#ffb000"; label: qsTr("SHUFFLE"); width: 74 * deck.u }
+                    Led { lit: player.repeat > 0; tint: "#ffb000"; label: player.repeat === 2 ? qsTr("REPEAT 1") : qsTr("REPEAT"); width: 74 * deck.u }
+                    Led { lit: player.radio; tint: "#ffb000"; label: qsTr("RADIO"); width: 74 * deck.u }
+                    Led { lit: player.playing; tint: "#3dff6a"; label: qsTr("PLAY"); width: 74 * deck.u }
                 }
                 Row {
                     spacing: 8 * deck.u
@@ -775,9 +775,9 @@ Item {
                         onDoubleClicked: player.toggleMute()
                     }
                     Accessible.role: Accessible.Slider
-                    Accessible.name: "Volume " + Math.round(player.volume * 100) + "%"
+                    Accessible.name: qsTr("Volume %1%").arg(Math.round(player.volume * 100))
                 }
-                Legend { anchors.horizontalCenter: parent.horizontalCenter; text: player.muted ? "MUTED" : "VOLUME" }
+                Legend { anchors.horizontalCenter: parent.horizontalCenter; text: player.muted ? qsTr("MUTED") : qsTr("VOLUME") }
             }
         }
     }

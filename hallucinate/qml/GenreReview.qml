@@ -13,7 +13,7 @@ Dialog {
     width: Math.min(720, (parent ? parent.width : 720) - 40)
     height: Math.min(640, (parent ? parent.height : 640) - 60)
     modal: true
-    title: "Genres found online"
+    title: qsTr("Genres found online")
     standardButtons: Dialog.Save | Dialog.Cancel
     property int kept: 0
     function recount() { var n = 0; for (var i = 0; i < rows.count; i++) if (rows.get(i).keep) n++; kept = n }
@@ -49,7 +49,7 @@ Dialog {
         recount()
         keptChanged()
     }
-    onKeptChanged: { var save = standardButton(Dialog.Save); if (save) { save.text = "Save " + kept; save.enabled = kept > 0 } }
+    onKeptChanged: { var save = standardButton(Dialog.Save); if (save) { save.text = qsTr("Save %1").arg(Theme.num(kept)); save.enabled = kept > 0 } }
     onAccepted: {
         var out = []
         for (var i = 0; i < rows.count; i++) {
@@ -57,7 +57,7 @@ Dialog {
             if (r.keep && r.genre.trim().length) out.push({ album_key: r.albumKey, genre: r.genre.trim() })
         }
         metaEditor.saveGenres(out)
-        Nav.notify(out.length === 1 ? "Saving 1 album's genre" : "Saving genres for " + Theme.num(out.length) + " albums")
+        Nav.notify(out.length === 1 ? qsTr("Saving 1 album's genre") : Theme.counted(qsTr("Saving genres for %n album(s)", "", out.length), out.length))
     }
 
     Column {
@@ -68,17 +68,15 @@ Dialog {
             textFormat: Text.PlainText
             width: parent.width
             wrapMode: Text.WordWrap
-            text: "Ticked albums get their genres written to every song; the first is the main one. Click a genre to add "
-                  + "or remove it, or type your own (separate several with “;”). Genres marked “the artist's” came from "
-                  + "the artist because no source has any for the album, so they start unticked."
+            text: qsTr("Ticked albums get their genres written to every song; the first is the main one. Click a genre to add or remove it, or type your own (separate several with “;”). Genres marked “the artist's” came from the artist because no source has any for the album, so they start unticked.")
             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
         }
         Row {
             spacing: 8
-            PillButton { height: 30; text: "Tick all"; onClicked: { for (var i = 0; i < rows.count; i++) dlg.setKeep(i, true) } }
-            PillButton { height: 30; text: "Untick all"; onClicked: { for (var i = 0; i < rows.count; i++) dlg.setKeep(i, false) } }
+            PillButton { height: 30; text: qsTr("Tick all"); onClicked: { for (var i = 0; i < rows.count; i++) dlg.setKeep(i, true) } }
+            PillButton { height: 30; text: qsTr("Untick all"); onClicked: { for (var i = 0; i < rows.count; i++) dlg.setKeep(i, false) } }
             PillButton {
-                height: 30; text: "Discard these"
+                height: 30; text: qsTr("Discard these")
                 onClicked: { metaEditor.clearGenreProposals(); dlg.close() }
             }
         }
@@ -106,7 +104,7 @@ Dialog {
                 anchors { left: parent.left; top: parent.top; topMargin: 8 }
                 checked: row.model.keep
                 onToggled: dlg.setKeep(row.index, checked)
-                Accessible.name: "Save the genres for " + row.model.album
+                Accessible.name: qsTr("Save the genres for %1").arg(row.model.album)
             }
             Column {
                 id: info
@@ -119,8 +117,8 @@ Dialog {
                 }
                 Text {
                     textFormat: Text.PlainText; width: parent.width; elide: Text.ElideRight
-                    text: [row.model.artist, row.model.songs === 1 ? "1 song" : Theme.num(row.model.songs) + " songs",
-                           row.model.fromArtist ? "the artist's genre" : (row.model.sources ? "from " + row.model.sources : "")]
+                    text: [row.model.artist, Theme.counted(qsTr("%n song(s)", "", row.model.songs), row.model.songs),
+                           row.model.fromArtist ? qsTr("the artist's genre") : (row.model.sources ? qsTr("from %1").arg(row.model.sources) : "")]
                           .filter(function (x) { return x }).join("  ·  ")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11)
                 }
@@ -134,7 +132,7 @@ Dialog {
                 onTextEdited: rows.setProperty(row.index, "genre", text)
                 color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                 background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: genreBox.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
-                Accessible.name: "Genres for " + row.model.album
+                Accessible.name: qsTr("Genres for %1").arg(row.model.album)
             }
             Flow {
                 id: chips
@@ -149,7 +147,7 @@ Dialog {
                         text: modelData
                         selected: dlg.indexIn(row.picked, modelData) >= 0
                         onClicked: dlg.toggle(row.index, modelData)
-                        Accessible.name: (selected ? "Remove " : "Add ") + modelData + " for " + row.model.album
+                        Accessible.name: (selected ? qsTr("Remove %1 for %2") : qsTr("Add %1 for %2")).arg(modelData).arg(row.model.album)
                     }
                 }
             }

@@ -3,6 +3,35 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.10.0] - 2026-11-01
+
+### Added
+- Hallucinate in your language: English and French, picked in Settings → Appearance → Language or following the
+  system, and switched at once without a restart. Everything people read is translated: every page, menu, dialog
+  and message, Library health, smart-playlist summaries, the signal path, the tray menu, What's new and the
+  Afterimage terminal's replies (its commands stay as you type them). Counts use each language's plurals, dates and
+  hours are written its way, and Qt's own dialog buttons follow it too.
+- The web remote speaks the phone's language (the first of its languages Hallucinate has), or one picked in its
+  own Settings; errors from the computer are translated on the phone.
+- Rounded window corners with Hallucinate's own title bar (#151), curving around the panels inside so the edges
+  follow each other. They're square when the window is maximized, full screen or in a theme with square corners,
+  and Settings → Desktop can turn them off.
+- A guide for translators, no programming needed: [docs/translating.md](https://github.com/Phosphene-dev/Hallucinate/blob/main/docs/translating.md). Each language is one
+  file, edited in Qt Linguist or any text editor.
+
+### Changed
+- The player's buttons say what they do when pointed at (#150): shuffle and repeat say whether they're on, the
+  heart whether the song is liked, and the rest their name. Play, pause, previous and next stay quiet.
+- Songs with no artist or album tag show "Unknown Artist" and "Unknown Album" in the language picked.
+
+### Fixed
+- The logo sat off-centre in the collapsed sidebar (#149).
+- The Windows and macOS builds left out the web remote's page, so it couldn't be opened from them.
+- Library health's "Find all online" lines, the recap's chart titles and History's "the last weeks" note could run
+  past their card in a narrow window.
+- Settings search keywords, the terminal's help topics and a few toasts read better ("1 new listen", not
+  "1 new listens").
+
 ## [1.9.0] - 2026-10-31
 
 ### Added

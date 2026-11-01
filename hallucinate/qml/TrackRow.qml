@@ -74,8 +74,8 @@ Rectangle {
     Keys.onEnterPressed: row.activated()
     Accessible.role: Accessible.ListItem
     Accessible.name: title + (artist.length ? ", " + artist : "") +
-                     (Rows.showTrackInfo && audioFormat.length ? ", " + audioFormat + " audio" : "") +
-                     (quality.showExplicit ? ", explicit" : "") + (quality.showHiRes ? ", Hi-Res" : "")
+                     (Rows.showTrackInfo && audioFormat.length ? ", " + qsTr("%1 audio").arg(audioFormat) : "") +
+                     (quality.showExplicit ? qsTr(", explicit") : "") + (quality.showHiRes ? qsTr(", Hi-Res") : "")
     Accessible.onPressAction: row.activated()
     Accessible.selected: row.selected
     Rectangle { anchors.fill: parent; anchors.margins: -2; radius: Theme.radiusSmall; color: "transparent"; border.width: 2; border.color: Theme.accent; visible: row.activeFocus }
@@ -165,7 +165,7 @@ Rectangle {
                 textFormat: Text.PlainText
                 objectName: "trackArtistLink"
                 width: Math.max(24, parent.width - (audioBadge.visible ? audioBadge.width : 0) - parent.spacing)
-                text: row.artist
+                text: Theme.shown(row.artist)
                 color: artistLinkArea.containsMouse ? Theme.text : Theme.textDim
                 font.underline: artistLinkArea.containsMouse
                 font.family: Theme.fontFamily
@@ -199,7 +199,7 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         x: titles.x + titles.width + 16
         width: row.width - x - 190
-        text: row.album
+        text: Theme.shown(row.album)
         color: albumLinkArea.containsMouse ? Theme.text : Theme.textDim
         font.underline: albumLinkArea.containsMouse
         font.family: Theme.fontFamily
@@ -247,9 +247,9 @@ Rectangle {
         icon: "plus"; size: 14
         opacity: row.showButtons ? 1 : 0
         activeFocusOnTab: false
-        tip: "Add to queue"
+        tip: qsTr("Add to queue")
         // says so: with the queue panel closed, nothing else on screen changes
-        onClicked: { row.enqueue(); Nav.notify("“" + row.title + "” added to the queue") }
+        onClicked: { row.enqueue(); Nav.notify(qsTr("“%1” added to the queue").arg(row.title)) }
     }
     Text {
         textFormat: Text.PlainText

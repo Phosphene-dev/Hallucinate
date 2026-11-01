@@ -19,6 +19,9 @@ QT_QPA_PLATFORM=offscreen pytest -q
   at a random point and can crash later tests). Shut down and `deleteLater()` the Qt objects a test
   creates, and monkeypatch classes rather than instances (see `tests/test_shell.py`).
 - Update `README.md` and `CHANGELOG.md` for user-visible changes.
+- Text people read is translated: wrap it (`qsTr`, `translate`, `t()`) and run
+  `python scripts/build_translations.py` afterwards. See [docs/translating.md](docs/translating.md), which is also the
+  guide for translators.
 - Run through relevant parts of [docs/manual-qa.md](docs/manual-qa.md) for playback,
   MPRIS, Last.fm or theme changes.
 - Never commit credentials. Last.fm keys/secrets live in the system keyring or

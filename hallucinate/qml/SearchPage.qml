@@ -33,11 +33,12 @@ Item {
                                      || genreHits.length > 0 || composerHits.length > 0
     // what the search looks through, for the empty page's hint
     function findsWhat() {
-        var kinds = ["songs", "albums", "artists", "genres"]
-        if (library.composerList.length) kinds.push("composers")
-        if (shell.features.stations === true) kinds.push("radio stations")
-        if (shell.features.podcasts === true) kinds.push("podcasts")
-        var s = kinds.slice(0, -1).join(", ") + " and " + kinds[kinds.length - 1]
+        var kinds = [qsTr("songs"), qsTr("albums"), qsTr("artists"), qsTr("genres")]
+        if (library.composerList.length) kinds.push(qsTr("composers"))
+        if (shell.features.stations === true) kinds.push(qsTr("radio stations"))
+        if (shell.features.podcasts === true) kinds.push(qsTr("podcasts"))
+        //: what the search looks through: "songs, albums, artists and genres"
+        var s = qsTr("%1 and %2").arg(kinds.slice(0, -1).join(qsTr(", "))).arg(kinds[kinds.length - 1])
         return s.charAt(0).toUpperCase() + s.slice(1)
     }
 
@@ -63,7 +64,7 @@ Item {
                 width: parent.width
                 wrapMode: Text.Wrap
                 textFormat: Text.PlainText
-                text: "Nothing matches “" + page.query + "”. Showing results for “" + page.corrected + "”."
+                text: qsTr("Nothing matches “%1”. Showing results for “%2”.").arg(page.query).arg(page.corrected)
                 color: Theme.textDim
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(14)
@@ -75,15 +76,15 @@ Item {
                 visible: page.query.length === 0 || (page.tracks.length === 0 && page.albums.length === 0
                                                       && page.artists.length === 0 && !page.anyExtra)
                 icon: "search"
-                title: page.query.length === 0 ? "Search your library" : "No results for “" + page.query + "”"
-                hint: page.query.length === 0 ? page.findsWhat() + ". Ctrl+K also finds pages and commands."
-                                              : "Check the spelling, or try fewer words."
+                title: page.query.length === 0 ? qsTr("Search your library") : qsTr("No results for “%1”").arg(page.query)
+                hint: page.query.length === 0 ? qsTr("%1. Ctrl+K also finds pages and commands.").arg(page.findsWhat())
+                                              : qsTr("Check the spelling, or try fewer words.")
             }
 
             Text {
                 textFormat: Text.PlainText
                 visible: page.artists.length > 0
-                text: "Artists"
+                text: qsTr("Artists")
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Item {
@@ -107,7 +108,7 @@ Item {
                         rowIndex: index
                         selectionSource: page.artists
                         name: modelData.name
-                        subtitle: Theme.num(modelData.albums) + (modelData.albums === 1 ? " album" : " albums")
+                        subtitle: Theme.counted(qsTr("%n album(s)", "", modelData.albums), modelData.albums)
                         artUrl: modelData.artUrl
                     }
                 }
@@ -117,7 +118,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 visible: page.genreHits.length > 0
-                text: "Genres"
+                text: qsTr("Genres")
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Flow {
@@ -131,7 +132,7 @@ Item {
                         required property var modelData
                         text: modelData.name
                         onClicked: Nav.openGenre(modelData.name)
-                        Accessible.name: "Genre: " + modelData.name
+                        Accessible.name: qsTr("Genre: %1").arg(modelData.name)
                         Accessible.onPressAction: Nav.openGenre(modelData.name)
                     }
                 }
@@ -140,7 +141,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 visible: page.composerHits.length > 0
-                text: "Composers"
+                text: qsTr("Composers")
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Flow {
@@ -154,7 +155,7 @@ Item {
                         required property var modelData
                         text: modelData.name
                         onClicked: Nav.openComposer(modelData.name)
-                        Accessible.name: "Composer: " + modelData.name
+                        Accessible.name: qsTr("Composer: %1").arg(modelData.name)
                         Accessible.onPressAction: Nav.openComposer(modelData.name)
                     }
                 }
@@ -163,7 +164,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 visible: page.albums.length > 0
-                text: "Albums"
+                text: qsTr("Albums")
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Item {
@@ -201,14 +202,14 @@ Item {
                 spacing: 14
                 Text {
                     textFormat: Text.PlainText
-                    text: "Songs"
+                    text: qsTr("Songs")
                     color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
                 }
                 Text {  // every song found, in the order shown
                     textFormat: Text.PlainText
                     objectName: "searchPlayAll"
                     anchors.baseline: parent.children[0].baseline
-                    text: "Play all " + Theme.num(page.tracks.length)
+                    text: qsTr("Play all %1").arg(Theme.num(page.tracks.length))
                     color: Theme.accent
                     font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); font.weight: Font.DemiBold
                     LinkArea { name: "Play all songs found"; onClicked: library.playSearchTracks(0) }
@@ -276,7 +277,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 visible: page.stationHits.length > 0
-                text: "Stations"
+                text: qsTr("Stations")
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Repeater {
@@ -290,7 +291,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 visible: page.podcastHits.shows.length > 0
-                text: "Podcasts"
+                text: qsTr("Podcasts")
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             Repeater {
@@ -304,7 +305,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 visible: page.podcastHits.episodes.length > 0
-                text: "Episodes"
+                text: qsTr("Episodes")
                 color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale; font.weight: Font.DemiBold
             }
             EpisodeMenu { id: searchEpisodeMenu }

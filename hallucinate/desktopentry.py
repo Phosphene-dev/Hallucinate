@@ -13,6 +13,8 @@ import os
 import shutil
 from pathlib import Path
 
+from .core.i18n import fill, translate
+
 APP_ID = "hallucinate"
 MARKER = "X-Hallucinate-AppImage=true"
 ICON_SIZES = (("hallucinate.png", "256x256"), ("hallucinate-1024.png", "1024x1024"))
@@ -132,12 +134,12 @@ def install(env=None):
     env = os.environ if env is None else env
     image = appimage(env)
     if not image:
-        return "This isn't running from an AppImage"
+        return translate("Shell", "This isn't running from an AppImage")
     if taken(env):
-        return "Another Hallucinate launcher is already installed"
+        return translate("Shell", "Another Hallucinate launcher is already installed")
     other = launcher_id(env)
     if other and other != APP_ID:
-        return "It's already in your app launcher"
+        return translate("Shell", "It's already in your app launcher")
     data = _data_home(env)
     try:
         for name, size in ICON_SIZES:
@@ -152,7 +154,7 @@ def install(env=None):
         tmp.write_text(entry_text(image), encoding="utf-8")
         os.replace(tmp, path)
     except OSError as exc:
-        return f"Couldn't write the launcher: {exc.strerror or exc}"
+        return fill(translate("Shell", "Couldn't write the launcher: %1"), exc.strerror or exc)
     return ""
 
 

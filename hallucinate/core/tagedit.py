@@ -12,6 +12,7 @@ from mutagen.flac import FLAC, Picture
 from mutagen.mp4 import MP4, MP4Cover
 
 from . import cue
+from .i18n import fill, translate
 
 FIELDS = ("title", "artist", "album_artist", "album", "track_no", "disc_no", "year", "genre",
           "composer", "work", "movement", "bpm", "music_key")
@@ -87,22 +88,22 @@ def _clean(fields):
 
 def _writable(path):
     if "://" in path:
-        raise TagWriteError("This song is on a music server: change its tags there")
+        raise TagWriteError(translate("TagEdit", "This song is on a music server: change its tags there"))
     if cue.is_virtual(path):
-        raise TagWriteError("This song comes from a CUE sheet; edit the .cue file instead")
+        raise TagWriteError(translate("TagEdit", "This song comes from a CUE sheet; edit the .cue file instead"))
     if not os.path.isfile(path):
-        raise TagWriteError("File not found")
+        raise TagWriteError(translate("TagEdit", "File not found"))
     if not os.access(path, os.W_OK):
-        raise TagWriteError("File is read-only")
+        raise TagWriteError(translate("TagEdit", "File is read-only"))
 
 
 def _open(path):
     try:
         f = mutagen.File(path)
     except Exception as exc:  # noqa: BLE001
-        raise TagWriteError(f"Cannot read file: {exc}") from exc
+        raise TagWriteError(fill(translate("TagEdit", "Cannot read file: %1"), exc)) from exc
     if f is None:
-        raise TagWriteError("Unsupported file type")
+        raise TagWriteError(translate("TagEdit", "Unsupported file type"))
     return f
 
 
@@ -212,7 +213,7 @@ def write_tags(path, fields):
     f = _open(path)
     kind = _kind(f)
     if kind is None:
-        raise TagWriteError(f"Tag writing is not supported for {type(f).__name__}")
+        raise TagWriteError(fill(translate("TagEdit", "Tag writing is not supported for %1"), type(f).__name__))
     try:
         if f.tags is None:
             f.add_tags()
@@ -224,7 +225,7 @@ def write_tags(path, fields):
     except TagWriteError:
         raise
     except Exception as exc:  # noqa: BLE001
-        raise TagWriteError(f"Could not write tags: {exc}") from exc
+        raise TagWriteError(fill(translate("TagEdit", "Could not write tags: %1"), exc)) from exc
 
 
 def _values(k, v):
@@ -340,12 +341,12 @@ def embed_cover(path, data):
             fmt = MP4Cover.FORMAT_PNG if mime == "image/png" else MP4Cover.FORMAT_JPEG
             f.tags["covr"] = [MP4Cover(data, imageformat=fmt)]
         else:
-            raise TagWriteError(f"Embedding cover art is not supported for {type(f).__name__}")
+            raise TagWriteError(fill(translate("TagEdit", "Embedding cover art is not supported for %1"), type(f).__name__))
         _save_safely(f, path)
     except TagWriteError:
         raise
     except Exception as exc:  # noqa: BLE001
-        raise TagWriteError(f"Could not embed cover: {exc}") from exc
+        raise TagWriteError(fill(translate("TagEdit", "Could not embed cover: %1"), exc)) from exc
 
 
 # Star ratings in the tags other players read: ID3 POPM (Windows Media Player's steps, which MusicBee, foobar2000
@@ -366,7 +367,7 @@ def write_rating(path, stars):
     f = _open(path)
     kind = _kind(f)
     if kind is None:
-        raise TagWriteError(f"Ratings can't be saved in {type(f).__name__} files")
+        raise TagWriteError(fill(translate("TagEdit", "Ratings can't be saved in %1 files"), type(f).__name__))
     try:
         if f.tags is None:
             if not stars:
@@ -408,4 +409,4 @@ def write_rating(path, stars):
     except TagWriteError:
         raise
     except Exception as exc:  # noqa: BLE001
-        raise TagWriteError(f"Could not save the rating: {exc}") from exc
+        raise TagWriteError(fill(translate("TagEdit", "Could not save the rating: %1"), exc)) from exc

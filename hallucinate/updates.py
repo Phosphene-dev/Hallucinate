@@ -15,6 +15,7 @@ from PySide6.QtCore import Property, QCoreApplication, QObject, QSettings, QTime
 
 from . import __version__, selfupdate
 from .core import net
+from .core.i18n import fill, translate
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +150,7 @@ class UpdateChecker(QObject):
         if self._busy or not self.supported:
             return
         if net.is_offline():
-            self._status = "Offline mode is on"
+            self._status = translate("Updates", "Offline mode is on")
             self.changed.emit()
             return
         self._busy = True
@@ -161,7 +162,7 @@ class UpdateChecker(QObject):
                 return {"ok": True, **self._fetch()}
             except Exception as exc:  # noqa: BLE001
                 logger.info("Update check failed: %s", exc)
-                return {"ok": False, "error": "Couldn't reach GitHub"}
+                return {"ok": False, "error": translate("Updates", "Couldn't reach GitHub")}
 
         self._pool.submit(lambda: self._done.emit(work()))
 
@@ -173,8 +174,8 @@ class UpdateChecker(QObject):
             self._settings.setValue("updates/latest", self._latest)
             self._settings.setValue("updates/url", self._url)
             self._settings.setValue("updates/lastCheck", time.time())
-            self._status = (f"Hallucinate {self._latest} is available" if self.available
-                            else f"You're up to date ({__version__})")
+            self._status = (fill(translate("Updates", "Hallucinate %1 is available"), self._latest) if self.available
+                            else fill(translate("Updates", "You're up to date (%1)"), __version__))
         else:
             self._status = result["error"]
         self.changed.emit()
@@ -185,11 +186,11 @@ class UpdateChecker(QObject):
         if self._installing or self._busy or not self._kind or not self.supported:
             return
         if net.is_offline():
-            self._status = "Offline mode is on"
+            self._status = translate("Updates", "Offline mode is on")
             self.changed.emit()
             return
         self._installing, self._progress, self._cancel = True, 0.0, False
-        self._status = "Downloading the update…"
+        self._status = translate("Updates", "Downloading the update…")
         self.changed.emit()
         kind = self._kind
 
@@ -197,10 +198,10 @@ class UpdateChecker(QObject):
             try:
                 latest = self._fetch()
                 if not is_newer(latest["version"]):
-                    return {"error": f"You're up to date ({__version__})"}
+                    return {"error": fill(translate("Updates", "You're up to date (%1)"), __version__)}
                 asset = selfupdate.pick_asset(latest.get("assets"), latest["version"], kind)
                 if not asset:
-                    return {"error": "This release has no download for this install; opening its page",
+                    return {"error": translate("Updates", "This release has no download for this install; opening its page"),
                             "url": latest["url"]}
                 if kind == "appimage":  # beside the AppImage, so the swap is a rename on one filesystem
                     folder = os.path.dirname(os.environ["APPIMAGE"])
@@ -214,7 +215,7 @@ class UpdateChecker(QObject):
                 return {"error": str(exc)}
             except Exception as exc:  # noqa: BLE001
                 logger.info("Update download failed: %s", exc)
-                return {"error": "Update cancelled" if self._cancel else "Couldn't download the update"}
+                return {"error": translate("Updates", "Update cancelled") if self._cancel else translate("Updates", "Couldn't download the update")}
 
         self._pool.submit(lambda: self._installProgress.emit({"done": work()}))
 
@@ -226,7 +227,7 @@ class UpdateChecker(QObject):
     def _apply_install(self, update):
         if "progress" in update:
             self._progress = float(update["progress"])
-            self._status = f"Downloading the update… {int(self._progress * 100)}%"
+            self._status = fill(translate("Updates", "Downloading the update… %1%"), int(self._progress * 100))
             self.changed.emit()
             return
         result = update["done"]
@@ -240,7 +241,7 @@ class UpdateChecker(QObject):
 
                 QDesktopServices.openUrl(QUrl(result["url"]))
             return
-        self._status = f"Installing Hallucinate {result['version']}…"
+        self._status = fill(translate("Updates", "Installing Hallucinate %1…"), result["version"])
         self.changed.emit()
         try:
             if result.get("sha256"):
@@ -251,7 +252,7 @@ class UpdateChecker(QObject):
                 selfupdate.swap_appimage(result["path"], os.environ["APPIMAGE"], os.getpid())
         except (OSError, ValueError) as exc:
             logger.warning("Couldn't install the update: %s", exc)
-            self._status = "Couldn't install the update"
+            self._status = translate("Updates", "Couldn't install the update")
             self.changed.emit()
             return
         QTimer.singleShot(400, QCoreApplication.quit)

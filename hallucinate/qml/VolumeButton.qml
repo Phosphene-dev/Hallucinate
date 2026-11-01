@@ -17,8 +17,8 @@ Item {
     function nudge(steps) { player.nudgeVolume(steps) }  // one notch of the wheel: the volume step
 
     Accessible.role: Accessible.Button
-    Accessible.name: vb.popupSlider ? "Volume " + Math.round(player.volume * 100) + "%" : (player.muted ? "Unmute" : "Mute")
-    Accessible.description: "Scroll to change the volume; middle-click to mute"
+    Accessible.name: vb.popupSlider ? qsTr("Volume %1%").arg(Math.round(player.volume * 100)) : (player.muted ? qsTr("Unmute") : qsTr("Mute"))
+    Accessible.description: qsTr("Scroll to change the volume; middle-click to mute")
     Accessible.onPressAction: vb.popupSlider ? pop.open() : player.toggleMute()
 
     Rectangle {  // hover and open state, as IconButton has
@@ -59,8 +59,8 @@ Item {
         }
         ToolTip.visible: containsMouse && !pop.opened
         ToolTip.delay: 400
-        ToolTip.text: (player.muted ? "Muted" : "Volume " + Math.round(player.volume * 100) + "%")
-                      + " — scroll to change, middle-click to " + (player.muted ? "unmute" : "mute")
+        ToolTip.text: player.muted ? qsTr("Muted — scroll to change, middle-click to unmute")
+                                   : qsTr("Volume %1% — scroll to change, middle-click to mute").arg(Math.round(player.volume * 100))
     }
 
     Popup {
@@ -84,7 +84,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: player.muted ? "Muted" : Math.round(player.volume * 100) + "%"
+                text: player.muted ? qsTr("Muted") : Math.round(player.volume * 100) + "%"
                 color: Theme.text
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(11)
@@ -104,7 +104,7 @@ Item {
                     player.setVolume(value)
                     if (player.muted && value > 0) player.toggleMute()
                 }
-                Accessible.name: "Volume"
+                Accessible.name: qsTr("Volume")
                 background: Rectangle {
                     x: vslider.leftPadding + vslider.availableWidth / 2 - width / 2
                     y: vslider.topPadding

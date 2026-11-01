@@ -11,8 +11,8 @@ Item {
     readonly property real minCell: 190
     readonly property int cols: Math.max(2, Math.floor((width - 40) / minCell))
     property string view: shell.uiValue("albumsView", "grid")
-    readonly property var views: [{ id: "grid", t: "A–Z" }, { id: "colour", t: "Colour" }, { id: "timeline", t: "Timeline" },
-                                 { id: "genres", t: "Genres" }]
+    readonly property var views: [{ id: "grid", t: "A–Z" }, { id: "colour", t: qsTr("Colour") }, { id: "timeline", t: qsTr("Timeline") },
+                                 { id: "genres", t: qsTr("Genres") }]
     onViewChanged: {
         shell.setUiValue("albumsView", view)
         if (view === "colour") library.loadAlbumWall()
@@ -33,7 +33,7 @@ Item {
             textFormat: Text.PlainText
             id: title
             anchors.verticalCenter: parent.verticalCenter
-            text: "Albums"
+            text: qsTr("Albums")
             color: Theme.text
             font.family: Theme.displayFamily
             font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale
@@ -174,7 +174,7 @@ Item {
                 anchors.centerIn: parent
                 visible: library.wallLoading && wall.count === 0
                 anchors.verticalCenterOffset: 44
-                text: "Reading the colours of your covers…"
+                text: qsTr("Reading the colours of your covers…")
                 color: Theme.textDim
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(13)
@@ -220,7 +220,7 @@ Item {
                     Text {
                         textFormat: Text.PlainText
                         anchors { left: decadeLabel.right; leftMargin: 14; baseline: decadeLabel.baseline }
-                        text: Theme.num(parent.row.count) + (parent.row.count === 1 ? " album" : " albums")
+                        text: Theme.counted(qsTr("%n album(s)", "", parent.row.count), parent.row.count)
                         color: Theme.textDim
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(13)
@@ -341,7 +341,7 @@ Item {
                         anchors { top: yearFlow.bottom; topMargin: 10 }
                         height: 30
                         visible: yearItem.shown < yearItem.albums.length
-                        text: "Show all " + Theme.num(yearItem.albums.length)
+                        text: qsTr("Show all %1").arg(Theme.num(yearItem.albums.length))
                         onClicked: yearItem.expanded = true
                     }
                 }
@@ -353,10 +353,10 @@ Item {
         anchors.centerIn: parent
         visible: library.ready && library.trackCount === 0
         icon: "folder"
-        title: "No music yet"
-        hint: library.folders.length ? "Hallucinate is looking through your music folders; songs appear as they're found."
-                                     : "Add the folder where you keep your music and it shows up here."
-        actionText: library.folders.length ? "" : "Open Settings"
+        title: qsTr("No music yet")
+        hint: library.folders.length ? qsTr("Hallucinate is looking through your music folders; songs appear as they're found.")
+                                     : qsTr("Add the folder where you keep your music and it shows up here.")
+        actionText: library.folders.length ? "" : qsTr("Open Settings")
         onAction: Nav.openSettings()
     }
 
@@ -374,7 +374,7 @@ Item {
                 id: genreOrder
                 x: 28
                 spacing: 6
-                Chip { text: "Most songs"; selected: !genresBox.az; onClicked: genresBox.az = false }
+                Chip { text: qsTr("Most songs"); selected: !genresBox.az; onClicked: genresBox.az = false }
                 Chip { objectName: "genresAz"; text: "A–Z"; selected: genresBox.az; onClicked: genresBox.az = true }
             }
             GridView {
@@ -425,8 +425,8 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 width: parent.width
-                                text: Theme.num(modelData.albums) + (modelData.albums === 1 ? " album" : " albums") + "  ·  "
-                                      + Theme.num(modelData.tracks) + (modelData.tracks === 1 ? " song" : " songs")
+                                text: Theme.counted(qsTr("%n album(s)", "", modelData.albums), modelData.albums) + "  ·  "
+                                      + Theme.counted(qsTr("%n song(s)", "", modelData.tracks), modelData.tracks)
                                 elide: Text.ElideRight
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily
@@ -449,7 +449,7 @@ Item {
                             }
                         }
                         Accessible.role: Accessible.Link
-                        Accessible.name: "Genre: " + modelData.name
+                        Accessible.name: qsTr("Genre: %1").arg(modelData.name)
                         Accessible.onPressAction: Nav.openGenre(modelData.name)
                     }
                 }
@@ -458,8 +458,8 @@ Item {
                 anchors.centerIn: genreGrid
                 visible: genreGrid.count === 0 && library.ready
                 icon: "note"
-                title: "No genres yet"
-                hint: "Songs' genre tags show up here. Library health can find genres online for albums without one."
+                title: qsTr("No genres yet")
+                hint: qsTr("Songs' genre tags show up here. Library health can find genres online for albums without one.")
             }
         }
     }

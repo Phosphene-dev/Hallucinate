@@ -18,6 +18,8 @@ python3 -m PyInstaller \
   --add-data "hallucinate/qml:hallucinate/qml" \
   --add-data "hallucinate/assets:hallucinate/assets" \
   --add-data "hallucinate/themes:hallucinate/themes" \
+  --add-data "hallucinate/web:hallucinate/web" \
+  --add-data "hallucinate/i18n:hallucinate/i18n" \
   --collect-all PySide6.QtQml \
   --collect-all PySide6.QtQuick \
   --collect-all PySide6.QtQuickControls2 \

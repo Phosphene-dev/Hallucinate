@@ -20,13 +20,13 @@
   <!-- Pairing: shown until this browser has a key -->
   <section id="pair" class="pair" hidden>
     <img src="icon-192.png" width="72" height="72" alt="">
-    <h1>Connect to Hallucinate</h1>
-    <p>On the computer, open <b>Settings → Remote &amp; web</b> and choose <b>Pair a device</b>
+    <h1 data-i18n>Connect to Hallucinate</h1>
+    <p data-i18n-html>On the computer, open <b>Settings → Remote &amp; web</b> and choose <b>Pair a device</b>
        (on a server without a screen, run <code>hallucinate --pair</code>). Enter the code it shows.</p>
     <form id="pairForm" autocomplete="off">
       <input id="pairCode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="000000" aria-label="Pairing code" required>
       <input id="pairName" maxlength="60" placeholder="This device's name (e.g. Phone)" aria-label="Device name">
-      <button type="submit" class="primary">Connect</button>
+      <button type="submit" class="primary" data-i18n>Connect</button>
     </form>
     <p id="pairError" class="error" role="alert"></p>
   </section>
@@ -35,18 +35,18 @@
   <div id="app" class="app" hidden>
     <nav class="tabs" aria-label="Sections">
       <div class="brand"><img src="icon-192.png" width="28" height="28" alt=""><span>Hallucinate</span></div>
-      <button data-view="now" class="tab active" aria-label="Now playing"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg><span>Playing</span></button>
-      <button data-view="queue" class="tab" aria-label="Queue"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Queue</span></button>
-      <button data-view="library" class="tab" aria-label="Library"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Library</span></button>
-      <button data-view="search" class="tab" aria-label="Search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Search</span></button>
-      <button data-view="settings" class="tab" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg><span>Settings</span></button>
+      <button data-view="now" class="tab active" aria-label="Now playing"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg><span data-i18n>Playing</span></button>
+      <button data-view="queue" class="tab" aria-label="Queue"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span data-i18n>Queue</span></button>
+      <button data-view="library" class="tab" aria-label="Library"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span data-i18n>Library</span></button>
+      <button data-view="search" class="tab" aria-label="Search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span data-i18n>Search</span></button>
+      <button data-view="settings" class="tab" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg><span data-i18n>Settings</span></button>
     </nav>
 
     <main id="main">
       <section id="view-now" class="view now">
         <div class="now-art"><img id="nowArt" alt=""><div id="nowArtEmpty" class="art-empty">♪</div></div>
         <div class="now-info">
-          <h1 id="nowTitle">Nothing playing</h1>
+          <h1 id="nowTitle" data-i18n>Nothing playing</h1>
           <p id="nowArtist" class="dim"></p>
           <p id="nowAlbum" class="dim small"></p>
         </div>
@@ -78,23 +78,23 @@
       </section>
 
       <section id="view-queue" class="view" hidden>
-        <header class="view-head"><h2>Queue</h2>
-          <div class="actions"><button id="qShuffle">Shuffle</button><button id="qClear">Clear upcoming</button><button id="qUndo">Undo</button></div>
+        <header class="view-head"><h2 data-i18n>Queue</h2>
+          <div class="actions"><button id="qShuffle" data-i18n>Shuffle</button><button id="qClear" data-i18n>Clear upcoming</button><button id="qUndo" data-i18n>Undo</button></div>
         </header>
         <ol id="queueList" class="list"></ol>
       </section>
 
       <section id="view-library" class="view" hidden>
-        <header class="view-head"><h2 id="libTitle">Library</h2>
+        <header class="view-head"><h2 id="libTitle" data-i18n>Library</h2>
           <div class="chips" id="libChips">
-            <button data-lib="albums" class="chip active">Albums</button>
-            <button data-lib="artists" class="chip">Artists</button>
-            <button data-lib="playlists" class="chip">Playlists</button>
-            <button data-lib="genres" class="chip">Genres</button>
-            <button data-lib="liked" class="chip">Liked</button>
-            <button data-lib="recent" class="chip">Recent</button>
-            <button data-lib="stations" class="chip" hidden>Radio</button>
-            <button data-lib="podcasts" class="chip" hidden>Podcasts</button>
+            <button data-lib="albums" class="chip active" data-i18n>Albums</button>
+            <button data-lib="artists" class="chip" data-i18n>Artists</button>
+            <button data-lib="playlists" class="chip" data-i18n>Playlists</button>
+            <button data-lib="genres" class="chip" data-i18n>Genres</button>
+            <button data-lib="liked" class="chip" data-i18n>Liked</button>
+            <button data-lib="recent" class="chip" data-i18n>Recent</button>
+            <button data-lib="stations" class="chip" hidden data-i18n>Radio</button>
+            <button data-lib="podcasts" class="chip" hidden data-i18n>Podcasts</button>
           </div>
         </header>
         <div id="libBody"></div>
@@ -105,7 +105,7 @@
           <button id="detailBack" class="icon" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
           <img id="detailArt" class="detail-art" alt="" hidden>
           <div><p id="detailKind" class="kicker"></p><h2 id="detailTitle"></h2><p id="detailSub" class="dim small"></p>
-            <div class="actions"><button id="detailPlay" class="primary">Play</button><button id="detailShuffle">Shuffle</button></div></div>
+            <div class="actions"><button id="detailPlay" class="primary" data-i18n>Play</button><button id="detailShuffle" data-i18n>Shuffle</button></div></div>
         </header>
         <div id="detailBody"></div>
       </section>
@@ -117,33 +117,37 @@
       </section>
 
       <section id="view-settings" class="view settings" hidden>
-        <header class="view-head"><h2>Settings</h2></header>
+        <header class="view-head"><h2 data-i18n>Settings</h2></header>
         <div class="setting">
-          <div><b>Appearance</b><p class="dim small">Light or dark for this browser, or as the device is set.</p></div>
+          <div><b data-i18n>Language</b><p class="dim small" data-i18n>For this browser. Automatic follows the device's language.</p></div>
+          <div class="chips" id="langChips" role="radiogroup" aria-label="Language"></div>
+        </div>
+        <div class="setting">
+          <div><b data-i18n>Appearance</b><p class="dim small" data-i18n>Light or dark for this browser, or as the device is set.</p></div>
           <div class="chips" id="themeChips" role="radiogroup" aria-label="Appearance">
-            <button data-theme-pick="" class="chip" role="radio">Automatic</button>
-            <button data-theme-pick="dark" class="chip" role="radio">Dark</button>
-            <button data-theme-pick="light" class="chip" role="radio">Light</button>
+            <button data-theme-pick="" class="chip" role="radio" data-i18n>Automatic</button>
+            <button data-theme-pick="dark" class="chip" role="radio" data-i18n>Dark</button>
+            <button data-theme-pick="light" class="chip" role="radio" data-i18n>Light</button>
           </div>
         </div>
         <div class="setting">
-          <div><b>Open on</b><p class="dim small">The page this browser shows first.</p></div>
+          <div><b data-i18n>Open on</b><p class="dim small" data-i18n>The page this browser shows first.</p></div>
           <div class="chips" id="startChips" role="radiogroup" aria-label="Open on">
-            <button data-start-pick="now" class="chip" role="radio">Playing</button>
-            <button data-start-pick="queue" class="chip" role="radio">Queue</button>
-            <button data-start-pick="library" class="chip" role="radio">Library</button>
-            <button data-start-pick="search" class="chip" role="radio">Search</button>
+            <button data-start-pick="now" class="chip" role="radio" data-i18n>Playing</button>
+            <button data-start-pick="queue" class="chip" role="radio" data-i18n>Queue</button>
+            <button data-start-pick="library" class="chip" role="radio" data-i18n>Library</button>
+            <button data-start-pick="search" class="chip" role="radio" data-i18n>Search</button>
           </div>
         </div>
-        <label class="setting"><div><b>Keep the screen on while playing</b><p class="dim small">While this page is open and showing.</p></div>
+        <label class="setting"><div><b data-i18n>Keep the screen on while playing</b><p class="dim small" data-i18n>While this page is open and showing.</p></div>
           <input type="checkbox" id="optAwake"></label>
-        <label class="setting"><div><b>Cover-coloured background</b><p class="dim small">The playing album's colours, softly behind everything.</p></div>
+        <label class="setting"><div><b data-i18n>Cover-coloured background</b><p class="dim small" data-i18n>The playing album's colours, softly behind everything.</p></div>
           <input type="checkbox" id="optBackdrop" checked></label>
-        <label class="setting"><div><b>Spinning record</b><p class="dim small">The cover turns like a record while the music plays.</p></div>
+        <label class="setting"><div><b data-i18n>Spinning record</b><p class="dim small" data-i18n>The cover turns like a record while the music plays.</p></div>
           <input type="checkbox" id="optSpin"></label>
         <div class="setting">
-          <div><b>This device</b><p class="dim small">Disconnect it from Hallucinate. To use it again, pair it with a new code.</p></div>
-          <button id="btnForget">Disconnect this device</button>
+          <div><b data-i18n>This device</b><p class="dim small" data-i18n>Disconnect it from Hallucinate. To use it again, pair it with a new code.</p></div>
+          <button id="btnForget" data-i18n>Disconnect this device</button>
         </div>
       </section>
     </main>
@@ -159,15 +163,15 @@
   <!-- Song actions -->
   <dialog id="songMenu">
     <h3 id="songMenuTitle"></h3>
-    <button data-act="play">Play</button>
-    <button data-act="next">Play next</button>
-    <button data-act="queue">Add to queue</button>
-    <button data-act="like">Like</button>
-    <button data-act="playlist">Add to playlist…</button>
-    <button data-act="album">Go to album</button>
-    <button data-act="artist">Go to artist</button>
-    <button data-act="close" class="dim">Cancel</button>
+    <button data-act="play" data-i18n>Play</button>
+    <button data-act="next" data-i18n>Play next</button>
+    <button data-act="queue" data-i18n>Add to queue</button>
+    <button data-act="like" data-i18n>Like</button>
+    <button data-act="playlist" data-i18n>Add to playlist…</button>
+    <button data-act="album" data-i18n>Go to album</button>
+    <button data-act="artist" data-i18n>Go to artist</button>
+    <button data-act="close" class="dim" data-i18n>Cancel</button>
   </dialog>
-  <dialog id="pickMenu"><h3 id="pickTitle"></h3><div id="pickBody"></div><button id="pickCancel" class="dim">Cancel</button></dialog>
+  <dialog id="pickMenu"><h3 id="pickTitle"></h3><div id="pickBody"></div><button id="pickCancel" class="dim" data-i18n>Cancel</button></dialog>
 </body>
 </html>

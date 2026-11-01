@@ -4,6 +4,7 @@ import urllib.error
 import urllib.request
 
 from . import musicbrainz, net
+from .i18n import fill, translate
 from .lyrics import USER_AGENT
 
 MAX_BYTES = 8_000_000
@@ -45,8 +46,8 @@ def find_releases(artist, album, limit=5, sleep=time.sleep):
             if exc.code < 500:
                 raise
             if attempt == 2:
-                raise ServiceError(f"MusicBrainz is having trouble right now (HTTP {exc.code}); "
-                                   "try again in a minute") from exc
+                raise ServiceError(fill(translate("Covers", "MusicBrainz is having trouble right now (HTTP %1); try again in a minute"),
+                                        exc.code)) from exc
             sleep(1.1)
     releases = data.get("releases") if isinstance(data, dict) else None
     return [(r["id"], (r.get("release-group") or {}).get("id") or "")
@@ -86,8 +87,8 @@ def fetch_cover(artist, album, sleep=time.sleep):
             if _is_image(data):
                 return data
         if server_error is not None:
-            raise ServiceError(f"The Cover Art Archive is having trouble right now (HTTP {server_error.code}); "
-                               "try again in a bit")
+            raise ServiceError(fill(translate("Covers", "The Cover Art Archive is having trouble right now (HTTP %1); try again in a bit"),
+                                    server_error.code))
     except ServiceError:
         raise
     except (urllib.error.URLError, TimeoutError, ValueError) as exc:

@@ -20,12 +20,12 @@ Item {
     Keys.onEnterPressed: btn.clicked()
     // What a screen reader says when the button has no tooltip; toggles also say whether they're on.
     readonly property var spokenNames: ({
-        play: "Play", pause: "Pause", prev: "Previous track", next: "Next track", shuffle: "Shuffle",
-        repeat: "Repeat", repeat1: "Repeat one song", radio: "Radio", queue: "Queue", heart: "Like",
-        close: "Close", more: "More actions", plus: "Add", minus: "Remove", back: "Back", search: "Search",
-        settings: "Settings", sidebar: "Sidebar", fullscreen: "Full screen", expand: "Mini player",
-        note: "Lyrics", folder: "Open folder", vinyl: "Vinyl", download: "Download", down: "Show more",
-        history: "History", playlist: "Playlist", smartlist: "Smart playlist", duplicates: "Duplicates"
+        play: qsTr("Play"), pause: qsTr("Pause"), prev: qsTr("Previous track"), next: qsTr("Next track"), shuffle: qsTr("Shuffle"),
+        repeat: qsTr("Repeat"), repeat1: qsTr("Repeat one song"), radio: qsTr("Radio"), queue: qsTr("Queue"), heart: qsTr("Like"),
+        close: qsTr("Close"), more: qsTr("More actions"), plus: qsTr("Add"), minus: qsTr("Remove"), back: qsTr("Back"), search: qsTr("Search"),
+        settings: qsTr("Settings"), sidebar: qsTr("Sidebar"), fullscreen: qsTr("Full screen"), expand: qsTr("Mini player"),
+        note: qsTr("Lyrics"), folder: qsTr("Open folder"), vinyl: qsTr("Vinyl"), download: qsTr("Download"), down: qsTr("Show more"),
+        history: qsTr("History"), playlist: qsTr("Playlist"), smartlist: qsTr("Smart playlist"), duplicates: qsTr("Duplicates")
     })
     readonly property bool toggles: ["shuffle", "repeat", "repeat1", "radio", "queue", "heart", "vinyl"].indexOf(icon) >= 0
     Accessible.role: Accessible.Button
@@ -56,7 +56,15 @@ Item {
         cursorShape: Qt.PointingHandCursor
         onClicked: btn.clicked()
     }
-    ToolTip.visible: ma.containsMouse && tip.length > 0
-    ToolTip.text: tip
-    ToolTip.delay: 600
+    // Pointed at, a button says what it does (#150): its own tip, or its name, and for a toggle whether it's on.
+    // Play, pause, previous and next say nothing: they're plain to see.
+    readonly property string shownTip: tip.length ? tip
+        : icon === "shuffle" ? (active ? qsTr("Shuffle is on") : qsTr("Shuffle is off"))
+        : icon === "repeat" ? (active ? qsTr("Repeating the queue") : qsTr("Repeat is off"))
+        : icon === "repeat1" ? qsTr("Repeating this song")
+        : icon === "heart" ? (active ? qsTr("Liked (click to unlike)") : qsTr("Like"))
+        : ["play", "pause", "prev", "next"].indexOf(icon) >= 0 ? "" : (spokenNames[icon] || "")
+    ToolTip.visible: ma.containsMouse && shownTip.length > 0
+    ToolTip.text: shownTip
+    ToolTip.delay: 500
 }

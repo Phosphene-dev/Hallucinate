@@ -26,7 +26,6 @@ Item {
     readonly property var albumList: info.albumList || []
     readonly property var artistList: info.artistList || []
     property bool allAlbums: false
-    function plural(n, one, many) { return Theme.num(n) + " " + (n === 1 ? one : many) }
     // Play next, add to the queue or a playlist: every song of the genre
     CollectionMenu {
         id: genreMenu; objectName: "genreMenu"
@@ -118,7 +117,7 @@ Item {
                     spacing: 8
                     Text {
                         textFormat: Text.PlainText
-                        text: "GENRE"
+                        text: qsTr("GENRE")
                         color: Theme.accent
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(11)
@@ -142,9 +141,9 @@ Item {
                         textFormat: Text.PlainText
                         objectName: "genreFacts"
                         width: parent.width
-                        text: [page.plural(page.info.albums || 0, "album", "albums"),
-                               page.plural(page.info.artists || 0, "artist", "artists"),
-                               page.plural(page.info.tracks || 0, "song", "songs"),
+                        text: [Theme.counted(qsTr("%n album(s)", "", page.info.albums || 0), page.info.albums || 0),
+                               Theme.counted(qsTr("%n artist(s)", "", page.info.artists || 0), page.info.artists || 0),
+                               Theme.counted(qsTr("%n song(s)", "", page.info.tracks || 0), page.info.tracks || 0),
                                page.info.seconds ? Theme.fmtHours(page.info.seconds) : ""].filter(s => s).join("  ·  ")
                         color: Theme.textDim
                         wrapMode: Text.Wrap
@@ -156,12 +155,12 @@ Item {
                         spacing: 10
                         topPadding: 10
                         PillButton {
-                            primary: true; text: "Play all"
+                            primary: true; text: qsTr("Play all")
                             enabled: (page.info.tracks || 0) > 0
                             onClicked: library.playGenre(page.genreName, false)
                         }
                         PillButton {
-                            text: "Shuffle"
+                            text: qsTr("Shuffle")
                             enabled: (page.info.tracks || 0) > 0
                             onClicked: { player.setShuffle(true); library.playGenre(page.genreName, true) }
                         }
@@ -169,7 +168,7 @@ Item {
                             objectName: "genrePageMore"
                             height: 38
                             enabled: (page.info.tracks || 0) > 0
-                            icon: "more"; size: 18; tip: "More: play next, add to the queue or a playlist"
+                            icon: "more"; size: 18; tip: qsTr("More: play next, add to the queue or a playlist")
                             onClicked: genreMenu.showGenre(page.genreName)
                         }
                     }
@@ -181,7 +180,7 @@ Item {
                 width: col.width
                 spacing: 10
                 visible: (page.info.related || []).length > 0
-                SectionHeader { title: "Goes with" }
+                SectionHeader { title: qsTr("Goes with") }
                 Flow {
                     objectName: "relatedGenres"
                     width: col.width
@@ -192,7 +191,7 @@ Item {
                             required property var modelData
                             text: modelData.name
                             onClicked: Nav.openGenre(modelData.name)
-                            Accessible.name: "Genre: " + modelData.name
+                            Accessible.name: qsTr("Genre: %1").arg(modelData.name)
                         }
                     }
                 }
@@ -203,7 +202,7 @@ Item {
                 width: col.width
                 spacing: 10
                 visible: page.artistList.length > 0
-                SectionHeader { title: "Artists" }
+                SectionHeader { title: qsTr("Artists") }
                 Flow {
                     width: col.width
                     spacing: 10
@@ -253,12 +252,12 @@ Item {
                 visible: page.albumList.length > 0
                 Row {
                     spacing: 14
-                    SectionHeader { title: "Albums" }
+                    SectionHeader { title: qsTr("Albums") }
                     Text {
                         textFormat: Text.PlainText
                         visible: page.albumList.length > 24
                         anchors.verticalCenter: parent.verticalCenter
-                        text: page.allAlbums ? "Show fewer" : "Show all " + Theme.num(page.albumList.length)
+                        text: page.allAlbums ? qsTr("Show fewer") : qsTr("Show all %1").arg(Theme.num(page.albumList.length))
                         color: Theme.accent
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(13)
@@ -294,9 +293,9 @@ Item {
                 spacing: 4
                 visible: page.tracksModel !== null && page.tracksModel.count > 0
                 SectionHeader {
-                    title: "Songs"
+                    title: qsTr("Songs")
                     subtitle: (page.info.tracks || 0) > (page.tracksModel ? page.tracksModel.count : 0)
-                              ? "The " + Theme.num(page.tracksModel.count) + " most played; Play all plays every one" : ""
+                              ? Theme.counted(qsTr("The %n most played; Play all plays every one", "", page.tracksModel.count), page.tracksModel.count) : ""
                 }
                 Item { width: 1; height: 6 }
             }
@@ -308,7 +307,7 @@ Item {
         anchors.centerIn: parent
         visible: page.info.tracks === 0
         icon: "search"
-        title: "No songs in " + page.genreName
-        hint: "None of your songs carry this genre any more."
+        title: qsTr("No songs in %1").arg(page.genreName)
+        hint: qsTr("None of your songs carry this genre any more.")
     }
 }

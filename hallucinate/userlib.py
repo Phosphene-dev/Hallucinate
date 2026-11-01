@@ -14,6 +14,7 @@ from PySide6.QtCore import Property, QObject, QSettings, QUrl, Signal, Slot
 from .core import history, insights, player_import, playlist_files, recap
 from .core import rules as smart_rules
 from .core.db import fold
+from .core.i18n import fill, translate
 from .library import _Reader, decorate
 from .models import ALBUM_KEYS, ARTIST_KEYS, TRACK_KEYS, DictModel
 
@@ -530,7 +531,7 @@ class UserLibrary(QObject):
     def importPlaylist(self, url):
         """Make a playlist from an M3U/M3U8/PLS file; playlistImported({id, name, added, missing}) reports back."""
         path = QUrl(url).toLocalFile() if url.startswith("file:") else url
-        name = os.path.splitext(os.path.basename(path))[0] or "Imported playlist"
+        name = os.path.splitext(os.path.basename(path))[0] or translate("UserLib", "Imported playlist")
 
         def work(db):
             try:
@@ -544,7 +545,7 @@ class UserLibrary(QObject):
                 result = {"id": -1, "name": name, "added": 0, "missing": 0, "error": str(exc)}
             except Exception:  # noqa: BLE001
                 logger.exception("Playlist import failed")
-                result = {"id": -1, "name": name, "added": 0, "missing": 0, "error": "Couldn't read that playlist"}
+                result = {"id": -1, "name": name, "added": 0, "missing": 0, "error": translate("UserLib", "Couldn't read that playlist")}
             self._imported.emit(result)
 
         self._bulk.submit(work)
@@ -570,10 +571,10 @@ class UserLibrary(QObject):
                 result = player_import.merge(db, read(db))
                 result["error"] = ""
             except (OSError, ValueError, sqlite3.Error) as exc:
-                result = {"error": f"Couldn't read that library: {exc}"}
+                result = {"error": fill(translate("UserLib", "Couldn't read that library: %1"), exc)}
             except Exception:  # noqa: BLE001
                 logger.exception("Importing another player's library failed")
-                result = {"error": "Couldn't import that library"}
+                result = {"error": translate("UserLib", "Couldn't import that library")}
             self._player_imported.emit(result)
 
         self._bulk.submit(work)
@@ -610,7 +611,7 @@ class UserLibrary(QObject):
         Returns an error message, or "" on success."""
         path = QUrl(url).toLocalFile() if url.startswith("file:") else url
         if not path:
-            return "No file chosen"
+            return translate("UserLib", "No file chosen")
         if not os.path.splitext(path)[1]:
             path += ".m3u8"
         if kind == "queue":
@@ -620,14 +621,14 @@ class UserLibrary(QObject):
             tracks = tracks.items() if tracks is not None else []
         tracks = [t for t in tracks if t.get("path")]
         if not tracks:
-            return "There are no songs to export"
+            return translate("UserLib", "There are no songs to export")
         from .core.atomic import write_atomic
 
         text = playlist_files.write_m3u(tracks, path).encode("utf-8")  # built first: a failure leaves no empty file
         try:
             write_atomic(path, lambda fh: fh.write(text))
         except OSError as exc:
-            return f"Couldn't save the playlist: {exc.strerror or exc}"
+            return fill(translate("UserLib", "Couldn't save the playlist: %1"), exc.strerror or exc)
         return ""
 
     # --- smart playlists ---------------------------------------------------------
@@ -643,7 +644,7 @@ class UserLibrary(QObject):
                 n = smart_rules.count_matching(db, row["rules"])
                 summary = smart_rules.describe(row["rules"])
             except ValueError:
-                n, summary = 0, "These rules can no longer be read"
+                n, summary = 0, translate("UserLib", "These rules can no longer be read")
             out.append({**row, "n": n, "summary": summary})
         return out
 
@@ -652,7 +653,7 @@ class UserLibrary(QObject):
         try:
             return smart_rules.describe(rules_json)
         except ValueError as exc:
-            return f"Invalid rules: {exc}"
+            return fill(translate("UserLib", "Invalid rules: %1"), exc)
 
     @Slot(str, result=int)
     def countRules(self, rules_json):
@@ -1071,7 +1072,7 @@ class UserLibrary(QObject):
                 res = db.import_plays(items, source)
             except Exception:  # noqa: BLE001
                 logger.exception("History import failed")
-                done(None, "Could not save imported listening history.")
+                done(None, translate("UserLib", "Could not save imported listening history."))
                 return
             done(res, "")
             self.refresh()

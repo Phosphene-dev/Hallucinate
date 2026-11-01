@@ -6,6 +6,7 @@ is capped (count is the full number)."""
 import os
 
 from . import remote
+from .i18n import QT_TRANSLATE_NOOP, translate
 from .insights import LOSSLESS
 from .remote import SQL_LOCAL
 
@@ -28,7 +29,7 @@ def _albums(db, having, params=()):
 
 def _check(id_, title, detail, kind, items, count=None):
     """`count`: the full number when `items` was read with a LIMIT (and may be short of it)."""
-    return {"id": id_, "title": title, "detail": detail, "kind": kind,
+    return {"id": id_, "title": translate("Health", title), "detail": translate("Health", detail), "kind": kind,
             "count": len(items) if count is None else count, "items": items[:LIMIT]}
 
 
@@ -38,8 +39,8 @@ def missing_covers_all(db):
 
 
 def missing_covers(db):
-    return _check("covers", "Albums without a cover",
-                  "No cover in the files or the folder. Find one online or pick an image.",
+    return _check("covers", QT_TRANSLATE_NOOP("Health", "Albums without a cover"),
+                  QT_TRANSLATE_NOOP("Health", "No cover in the files or the folder. Find one online or pick an image."),
                   "album", _albums(db, "MAX(art) IS NULL OR MAX(art) = ''"))
 
 
@@ -50,9 +51,9 @@ def damaged_covers(db):
 
     rows = _albums(db, "MAX(art) IS NOT NULL AND MAX(art) != ''")
     bad = [r for r in rows if os.path.isfile(r["art"]) and not folder_art_whole(r["art"])]
-    return _check("damagedcovers", "Damaged covers",
-                  "Their picture stops part way, so they show blank or garbled. Repair covers reads every "
-                  "song's picture again, and a damaged one makes way for the folder's cover.",
+    return _check("damagedcovers", QT_TRANSLATE_NOOP("Health", "Damaged covers"),
+                  QT_TRANSLATE_NOOP("Health", "Their picture stops part way, so they show blank or garbled. Repair covers reads every "
+                  "song's picture again, and a damaged one makes way for the folder's cover."),
                   "album", bad)
 
 
@@ -62,14 +63,14 @@ def missing_genre_all(db):
 
 
 def missing_year(db):
-    return _check("year", "Albums without a year",
-                  "They sit at the end of the timeline and can't be found by year.",
+    return _check("year", QT_TRANSLATE_NOOP("Health", "Albums without a year"),
+                  QT_TRANSLATE_NOOP("Health", "They sit at the end of the timeline and can't be found by year."),
                   "album", _albums(db, "MAX(year) <= 0"))
 
 
 def missing_genre(db):
-    return _check("genre", "Albums without a genre",
-                  "Smart playlists and radio use genres to find related music.",
+    return _check("genre", QT_TRANSLATE_NOOP("Health", "Albums without a genre"),
+                  QT_TRANSLATE_NOOP("Health", "Smart playlists and radio use genres to find related music."),
                   "album", _albums(db, "MAX(genre) = ''"))
 
 
@@ -77,13 +78,13 @@ def unknown_artist_or_album(db):
     where = "WHERE artist = ? OR album = ?"
     rows = db._rows(f"SELECT * FROM tracks {where} ORDER BY path LIMIT ?", (UNKNOWN_ARTIST, UNKNOWN_ALBUM, LIMIT))
     count = db.conn.execute(f"SELECT COUNT(*) FROM tracks {where}", (UNKNOWN_ARTIST, UNKNOWN_ALBUM)).fetchone()[0]
-    return _check("untagged", "Songs missing artist or album tags",
-                  "Shown as “Unknown” and grouped together. Edit their tags.", "track", rows, count)
+    return _check("untagged", QT_TRANSLATE_NOOP("Health", "Songs missing artist or album tags"),
+                  QT_TRANSLATE_NOOP("Health", "Shown as “Unknown” and grouped together. Edit their tags."), "track", rows, count)
 
 
 def missing_track_numbers(db):
-    return _check("numbers", "Albums without track numbers",
-                  "Their songs play in title order instead of the album's.",
+    return _check("numbers", QT_TRANSLATE_NOOP("Health", "Albums without track numbers"),
+                  QT_TRANSLATE_NOOP("Health", "Their songs play in title order instead of the album's."),
                   "album", _albums(db, "COUNT(*) > 1 AND MAX(track_no) = 0"))
 
 
@@ -103,15 +104,15 @@ def split_albums(db):
                          "album_artist": " / ".join(sorted({p["album_artist"] for p in parts.values()})),
                          "path": first["path"], "art": first["art"], "parts": len(parts)})
     rows.sort(key=lambda r: r["album"].casefold())
-    return _check("split", "Albums split in two",
-                  "One folder's album shows up more than once, usually because its songs disagree on the album "
-                  "artist. Give them the same album artist.", "album", rows)
+    return _check("split", QT_TRANSLATE_NOOP("Health", "Albums split in two"),
+                  QT_TRANSLATE_NOOP("Health", "One folder's album shows up more than once, usually because its songs disagree on the album "
+                  "artist. Give them the same album artist."), "album", rows)
 
 
 def missing_replaygain(db):
-    return _check("replaygain", "Songs without ReplayGain",
-                  "Without it, loud and quiet records jump in volume. Hallucinate can measure them "
-                  "(your files aren't changed).", "album",
+    return _check("replaygain", QT_TRANSLATE_NOOP("Health", "Songs without ReplayGain"),
+                  QT_TRANSLATE_NOOP("Health", "Without it, loud and quiet records jump in volume. Hallucinate can measure them "
+                  "(your files aren't changed)."), "album",
                   _albums(db, f"SUM(CASE WHEN rg_track IS NULL AND file IS NULL AND {SQL_LOCAL} THEN 1 ELSE 0 END) > 0"))
 
 
@@ -121,14 +122,14 @@ def low_bitrate(db):
               AND UPPER(CASE WHEN codec != '' THEN codec ELSE fmt END) IN ({marks})"""
     rows = db._rows(f"SELECT * FROM tracks {where} ORDER BY bitrate, path LIMIT ?", (LOW_BITRATE, *LOSSY, LIMIT))
     count = db.conn.execute(f"SELECT COUNT(*) FROM tracks {where}", (LOW_BITRATE, *LOSSY)).fetchone()[0]
-    return _check("bitrate", "Low-quality files",
-                  "Lossy files under 128 kbps; worth replacing if you have better copies.", "track", rows, count)
+    return _check("bitrate", QT_TRANSLATE_NOOP("Health", "Low-quality files"),
+                  QT_TRANSLATE_NOOP("Health", "Lossy files under 128 kbps; worth replacing if you have better copies."), "track", rows, count)
 
 
 def duplicates(db):
     rows = db.duplicate_tracks(LIMIT)
-    check = _check("duplicates", "Probable duplicates",
-                   "The same title, artist and length more than once.", "track", rows, db.duplicate_count())
+    check = _check("duplicates", QT_TRANSLATE_NOOP("Health", "Probable duplicates"),
+                   QT_TRANSLATE_NOOP("Health", "The same title, artist and length more than once."), "track", rows, db.duplicate_count())
     check["extra"] = len(extra_copies(db))
     return check
 
@@ -158,8 +159,8 @@ def extra_copies(db):
 
 def missing_folders(db):
     rows = [{"path": f} for f in db.folders() if not os.path.isdir(f)]
-    return _check("folders", "Library folders that can't be found",
-                  "Unplugged drives show up here too. Remove a folder only if it is gone for good.", "folder", rows)
+    return _check("folders", QT_TRANSLATE_NOOP("Health", "Library folders that can't be found"),
+                  QT_TRANSLATE_NOOP("Health", "Unplugged drives show up here too. Remove a folder only if it is gone for good."), "folder", rows)
 
 
 CHECKS = (missing_folders, unknown_artist_or_album, split_albums, missing_covers, damaged_covers, missing_track_numbers,

@@ -39,7 +39,7 @@ Item {
                 spacing: 6
                 Text {
                     textFormat: Text.PlainText
-                    text: "Home"
+                    text: qsTr("Home")
                     color: Theme.text
                     font.family: Theme.displayFamily
                     font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale
@@ -51,8 +51,10 @@ Item {
                     width: parent.width
                     wrapMode: Text.WordWrap
                     visible: library.trackCount > 0
-                    text: [Theme.num(library.albumCount) + " albums", Theme.num(library.trackCount) + " songs", Theme.num(library.artistCount) + " artists",
-                           page.facts.seconds ? Theme.fmtHours(page.facts.seconds) + " of music" : ""].filter(s => s).join("  ·  ")
+                    text: [Theme.counted(qsTr("%n album(s)", "", library.albumCount), library.albumCount),
+                           Theme.counted(qsTr("%n song(s)", "", library.trackCount), library.trackCount),
+                           Theme.counted(qsTr("%n artist(s)", "", library.artistCount), library.artistCount),
+                           page.facts.seconds ? qsTr("%1 of music").arg(Theme.fmtHours(page.facts.seconds)) : ""].filter(s => s).join("  ·  ")
                     color: Theme.textDim
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(14)
@@ -61,7 +63,7 @@ Item {
                     textFormat: Text.PlainText
                     objectName: "homeHealthLink"
                     visible: library.trackCount > 0 && shell.features.health !== false
-                    text: "Library health ›"
+                    text: qsTr("Library health ›")
                     color: healthLinkMouse.containsMouse ? Theme.accentHi : Theme.accent
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(13)
@@ -82,9 +84,9 @@ Item {
                     Text {
                         textFormat: Text.PlainText
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: !library.ready ? "Loading your library…"
-                            : library.scanning ? "Scanning your music…"
-                            : library.hasFolders ? "No music found" : "Welcome! Let's find your music"
+                        text: !library.ready ? qsTr("Loading your library…")
+                            : library.scanning ? qsTr("Scanning your music…")
+                            : library.hasFolders ? qsTr("No music found") : qsTr("Welcome! Let's find your music")
                         color: Theme.text
                         font.family: Theme.displayFamily
                         font.pixelSize: (Theme.fontSize(16)) * Theme.displayScale
@@ -93,10 +95,10 @@ Item {
                     Text {
                         textFormat: Text.PlainText
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: library.scanning ? "Songs appear here as they are found."
-                            : library.missingFolders.length > 0 ? "Folder not found or unreadable: " + library.missingFolders.join(", ")
-                            : library.hasFolders ? "Your folders contain no supported audio files. Add another folder or check Settings."
-                            : "Choose the folder that holds your music to get started."
+                        text: library.scanning ? qsTr("Songs appear here as they are found.")
+                            : library.missingFolders.length > 0 ? qsTr("Folder not found or unreadable: %1").arg(library.missingFolders.join(", "))
+                            : library.hasFolders ? qsTr("Your folders contain no supported audio files. Add another folder or check Settings.")
+                            : qsTr("Choose the folder that holds your music to get started.")
                         color: Theme.textDim
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(14)
@@ -106,7 +108,7 @@ Item {
                         anchors.horizontalCenter: parent.horizontalCenter
                         visible: !library.scanning && library.ready
                         primary: true
-                        text: "Choose music folder"
+                        text: qsTr("Choose music folder")
                         onClicked: picker.open()
                     }
                     FolderPicker { id: picker }
@@ -153,9 +155,9 @@ Item {
                         Text { width: parent.width; elide: Text.ElideRight; text: label; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); textFormat: Text.PlainText }
                     }
                 }
-                Fact { value: page.facts.seconds ? Theme.fmtHours(page.facts.seconds).replace(" ", "\u2009") : "–"; label: "of music" }
-                Fact { value: page.facts.bytes ? Theme.fmtBytes(page.facts.bytes) : "–"; label: "on disk" }
-                Fact { value: page.facts.tracks ? Math.round(page.facts.lossless * 100) + "%" : "–"; label: "lossless" }
+                Fact { value: page.facts.seconds ? Theme.fmtHours(page.facts.seconds).replace(" ", "\u2009") : "–"; label: qsTr("of music") }
+                Fact { value: page.facts.bytes ? Theme.fmtBytes(page.facts.bytes) : "–"; label: qsTr("on disk") }
+                Fact { value: page.facts.tracks ? Math.round(page.facts.lossless * 100) + "%" : "–"; label: qsTr("lossless") }
                 GlassPanel {
                     id: formatsTile
                     objectName: "formatsTile"
@@ -242,20 +244,20 @@ Item {
             AlbumShelf {
                 objectName: "rediscoverShelf"
                 visible: userLib.rediscover.count > 0 && shell.features.homeShelves !== false
-                title: "Rediscover"
-                subtitle: "Albums you haven't played in a while, or ever"
+                title: qsTr("Rediscover")
+                subtitle: qsTr("Albums you haven't played in a while, or ever")
                 model: userLib.rediscover
             }
             AlbumShelf {
                 visible: userLib.onThisDay.count > 0 && shell.features.homeShelves !== false
-                title: "On this day"
-                subtitle: "What you were listening to around this date in past years"
+                title: qsTr("On this day")
+                subtitle: qsTr("What you were listening to around this date in past years")
                 model: userLib.onThisDay
             }
             AlbumShelf {
                 visible: library.recentAlbums.count > 0 && shell.features.homeShelves !== false
-                title: "Recently added"
-                subtitle: "New on your shelves"
+                title: qsTr("Recently added")
+                subtitle: qsTr("New on your shelves")
                 model: library.recentAlbums
             }
         }

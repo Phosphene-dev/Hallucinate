@@ -119,5 +119,5 @@ Item {
         onReleased: player.seek(ratio * seek.duration)
     }
     Accessible.role: Accessible.Slider
-    Accessible.name: "Seek"
+    Accessible.name: qsTr("Seek")
 }

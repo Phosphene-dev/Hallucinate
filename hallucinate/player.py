@@ -21,6 +21,7 @@ from PySide6.QtQml import QQmlComponent, QQmlEngine
 
 from . import eq, fileready, signalpath
 from .core import net, remote
+from .core.i18n import fill, translate
 from .core.kinds import counts_for_scrobbling, is_url, track_kind  # noqa: F401 - re-exported
 from .core.tags import is_readable_audio
 from .models import TRACK_KEYS, DictModel
@@ -816,6 +817,11 @@ class Player(QObject):
     def eqPresets(self):
         return list(eq.PRESETS)
 
+    @Slot(str, result=str)
+    def eqPresetLabel(self, key):
+        """A preset's name in your language (the key itself stays English)."""
+        return QCoreApplication.translate("Equalizer", key)
+
     @Property("QVariantList", constant=True)
     def eqBands(self):
         return [f"{b // 1000}k" if b >= 1000 else str(b) for b in eq.BANDS]
@@ -1073,11 +1079,13 @@ class Player(QObject):
         """[{key, name}] for the Settings picker; key "" follows the system default."""
         devices = QMediaDevices.audioOutputs()
         default = QMediaDevices.defaultAudioOutput()
-        label = f"System default ({default.description()})" if not default.isNull() else "System default"
+        label = (fill(translate("Player", "System default (%1)"), default.description()) if not default.isNull()
+                 else translate("Player", "System default"))
         items = [{"key": "", "name": label}]
         items += [{"key": device_key(d), "name": d.description()} for d in devices]
         if self._output_key and pick_output_device(devices, self._output_key) is None:
-            items.append({"key": self._output_key, "name": f"{self._output_name or 'Saved device'} (not connected)"})
+            items.append({"key": self._output_key, "name": fill(translate("Player", "%1 (not connected)"),
+                                                                self._output_name or translate("Player", "Saved device"))})
         return items
 
     @Property(str, notify=outputDevicesChanged)
@@ -1133,7 +1141,7 @@ class Player(QObject):
             volume=self._volume,
             speed=self._rate(),
             eq_enabled=self._eq_enabled,
-            eq_preset=self._eq_preset + (f" + {self._headphone['name']}" if self._headphone["name"] else ""),
+            eq_preset=self.eqPresetLabel(self._eq_preset) + (f" + {self._headphone['name']}" if self._headphone["name"] else ""),
             crossfeed=self._crossfeed if self._crossfeed in eq.CROSSFEED and eq.available() else "",
             crossfade=self._crossfade,
             device_name="" if device.isNull() else device.description(),
@@ -1177,7 +1185,7 @@ class Player(QObject):
         if self._out_id is not None and self._out_id not in present and self.playing and self._pause_unplug:
             # the device the music was playing on is gone: don't carry on out of the speakers instead
             self.pause()
-            self.notice.emit("Paused: the sound device you were listening on went away")
+            self.notice.emit(translate("Player", "Paused: the sound device you were listening on went away"))
         if not self.playing:
             # Nothing's playing (a monitor going to sleep takes its HDMI sound with it, for one): don't touch
             # the sound system now; play sets the output up first.
@@ -1393,7 +1401,7 @@ class Player(QObject):
         directly meanwhile, rather than through a tap that plays nothing."""
         self._apply_volume()
         if reason:
-            self._set_error(f"The equalizer couldn't play ({reason}); playing without it")
+            self._set_error(fill(translate("Player", "The equalizer couldn't play (%1); playing without it"), reason))
         elif self._error.startswith("The equalizer couldn't play"):
             self._set_error("")
 
@@ -1763,7 +1771,7 @@ class Player(QObject):
         self._radio_rules = radio_rules
         new = list(tracks)
         if [t.get("path") for t in new] != [t.get("path") for t in self._queue]:
-            self._remember_queue("Queue replaced")
+            self._remember_queue(translate("Player", "Queue replaced"))
         self._queue = new  # queue entries are treated as immutable
         self._history.clear()
         self._played.clear()
@@ -1810,7 +1818,7 @@ class Player(QObject):
     def removeAt(self, i):
         if not 0 <= i < len(self._queue):
             return
-        self._remember_queue("Song removed")
+        self._remember_queue(translate("Player", "Song removed"))
         del self._queue[i]
         self._history = [h - (h > i) for h in self._history if h != i]
         self._played = {p - (p > i) for p in self._played if p != i}
@@ -1841,7 +1849,7 @@ class Player(QObject):
         idx = sorted({int(i) for i in indexes if 0 <= int(i) < len(self._queue)}, reverse=True)
         if not idx:
             return
-        self._remember_queue(f"{len(idx)} songs removed" if len(idx) > 1 else "Song removed")
+        self._remember_queue(translate("Player", "%n song(s) removed", None, len(idx)) if len(idx) > 1 else translate("Player", "Song removed"))
         steps = len(self._undo)
         for i in idx:
             self.removeAt(i)
@@ -1854,7 +1862,7 @@ class Player(QObject):
         idx = sorted({int(i) for i in indexes if 0 <= int(i) < len(self._queue) and int(i) != self._index})
         if not idx:
             return
-        self._remember_queue("Songs moved")
+        self._remember_queue(translate("Player", "Songs moved"))
         steps = len(self._undo)
         moving = [self._queue[i] for i in idx]
         for k, entry in enumerate(moving):
@@ -1871,7 +1879,7 @@ class Player(QObject):
         n = len(self._queue)
         if not (0 <= src < n and 0 <= dst < n) or src == dst:
             return
-        self._remember_queue("Song moved")
+        self._remember_queue(translate("Player", "Song moved"))
         item = self._queue.pop(src)
         self._queue.insert(dst, item)
 
@@ -1897,7 +1905,7 @@ class Player(QObject):
     def clearQueue(self):
         if not self._queue:
             return
-        self._remember_queue("Queue cleared")
+        self._remember_queue(translate("Player", "Queue cleared"))
         self._queue.clear()
         self._history.clear()
         self._played.clear()
@@ -1920,7 +1928,7 @@ class Player(QObject):
         gone = set(self._upcoming())
         if not gone:
             return
-        self._remember_queue("Upcoming songs cleared")
+        self._remember_queue(translate("Player", "Upcoming songs cleared"))
         keep = [i for i in range(len(self._queue)) if i not in gone]
         new_index = {old: new for new, old in enumerate(keep)}
         self._queue = [self._queue[i] for i in keep]
@@ -1939,7 +1947,7 @@ class Player(QObject):
         come in a random order anyway)."""
         if self._shuffle or not self.hasTrack or len(self._queue) - self._index - 1 < 2:
             return
-        self._remember_queue("Upcoming songs shuffled")
+        self._remember_queue(translate("Player", "Upcoming songs shuffled"))
         tail = self._queue[self._index + 1:]
         random.shuffle(tail)
         self._queue = self._queue[:self._index + 1] + tail
@@ -2110,7 +2118,7 @@ class Player(QObject):
             for v in self._voices:
                 v.clear()
             self._index = i
-            self._set_error("Offline mode is on, so streams can't play")
+            self._set_error(translate("Player", "Offline mode is on, so streams can't play"))
             self.trackChanged.emit()
             self.stateChanged.emit()
             return
@@ -2125,10 +2133,10 @@ class Player(QObject):
         if not ok:
             self._index = i
             if remote.is_remote(path):
-                self._set_error("Offline mode is on" if net.is_offline() else "The music server can't be reached")
+                self._set_error(translate("Player", "Offline mode is on") if net.is_offline() else translate("Player", "The music server can't be reached"))
             else:
                 exists = isinstance(path, str) and os.path.isfile(path)
-                self._set_error(f"{'Unreadable audio file' if exists else 'File not found'}: {path}")
+                self._set_error(fill(translate("Player", "Unreadable audio file: %1") if exists else translate("Player", "File not found: %1"), path))
             candidates = list(range(i + 1, len(self._queue)))
             if self._shuffle:
                 candidates = [j for j in range(len(self._queue)) if j != i and j not in self._played]
@@ -2256,7 +2264,7 @@ class Player(QObject):
             for v in self._voices:
                 v.clear()
             self._index = i
-            self._set_error(f"The file didn't open (is its disk or network share there?): {path}")
+            self._set_error(fill(translate("Player", "The file didn't open (is its disk or network share there?): %1"), path))
             self.trackChanged.emit()
             self.stateChanged.emit()
             return
@@ -2302,8 +2310,8 @@ class Player(QObject):
             return
         self._index = i
         kind = track_kind(self._queue[i])
-        self._set_error(f"Couldn't find {'the station' if kind == 'station' else 'the server'} ({name}): "
-                        "check your connection")
+        self._set_error(fill(translate("Player", "Couldn't find the station (%1): check your connection") if kind == "station"
+                             else translate("Player", "Couldn't find the server (%1): check your connection"), name))
         self.trackChanged.emit()
         self.stateChanged.emit()
         if kind == "music" and autoplay:  # a server song: move on, as for any song that can't play
@@ -2489,7 +2497,7 @@ class Player(QObject):
                 self._voices[n].finishing = False
             return
         if status == S.EndOfMedia and self.hasTrack and track_kind(self.current) == "station":
-            self._reconnect_stream("The station stopped sending")  # a live stream has no end: it dropped
+            self._reconnect_stream(translate("Player", "The station stopped sending"))  # a live stream has no end: it dropped
             return
         if status in (S.BufferedMedia,) and self.hasTrack and is_url(self.current.get("path")):
             self._stream_retries = 0
@@ -2521,8 +2529,8 @@ class Player(QObject):
             return
         if self.hasTrack and remote.is_remote(self._queue[self._index].get("path")):
             # the backend's words for a server stream can include its link, sign-in and all: say it plainly
-            message = "The music server couldn't play this song"
-        self._set_error(message or "Playback error")
+            message = translate("Player", "The music server couldn't play this song")
+        self._set_error(message or translate("Player", "Playback error"))
         self._error_streak += 1
         if self._error_streak < len(self._queue):
             QTimer.singleShot(300, self._skip_after_error)
@@ -2538,12 +2546,12 @@ class Player(QObject):
             return True  # a reconnect is already on its way
         if self._stream_retries >= STREAM_RETRIES:
             logger.info("Station gave up after %d tries: %s", self._stream_retries, message)
-            self._set_error("The station isn't answering. Try again later, or check its link.")
+            self._set_error(translate("Player", "The station isn't answering. Try again later, or check its link."))
             return True
         self._stream_retries += 1
         delay = 1000 * 2 ** self._stream_retries
         logger.info("Station dropped (%s); reconnecting", message)
-        self._set_error("Lost the station, reconnecting…")
+        self._set_error(translate("Player", "Lost the station, reconnecting…"))
         self._retry_index = self._index
         self._retry_timer.start(delay)
         return True
@@ -2595,7 +2603,7 @@ class Player(QObject):
             self._stream_pos, self._stream_moved = pos, now
         elif (now - self._stream_moved) * 1000 >= STREAM_QUIET_MS:
             self._stream_moved = now  # one reconnect per silence; the retry restarts the count
-            self._reconnect_stream("The station went quiet")
+            self._reconnect_stream(translate("Player", "The station went quiet"))
 
     def _retry_stream(self, index):
         if index == self._index and self.hasTrack and track_kind(self.current) == "station" and not self._parked:

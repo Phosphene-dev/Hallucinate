@@ -57,7 +57,7 @@ Popup {
         spacing: 12
         Text {
             textFormat: Text.PlainText
-            text: "Your own accent colour"
+            text: qsTr("Your own accent colour")
             color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
         }
         // saturation (across) and brightness (up)
@@ -92,7 +92,7 @@ Popup {
                 onPositionChanged: function (m) { if (pressed) at(m) }
             }
             Accessible.role: Accessible.Slider
-            Accessible.name: "Saturation and brightness"
+            Accessible.name: qsTr("Saturation and brightness")
         }
         // hue
         Rectangle {
@@ -118,7 +118,7 @@ Popup {
                 onWheel: function (w) { cp.hue = (cp.hue + (w.angleDelta.y > 0 ? 0.01 : 0.99)) % 1 }
             }
             Accessible.role: Accessible.Slider
-            Accessible.name: "Hue"
+            Accessible.name: qsTr("Hue")
         }
         // red, green, blue and hex
         Row {
@@ -136,7 +136,7 @@ Popup {
                         validator: IntValidator { bottom: 0; top: 255 }
                         selectByMouse: true
                         horizontalAlignment: TextInput.AlignHCenter
-                        Accessible.name: { return { R: "Red", G: "Green", B: "Blue" }[modelData.n] + ", 0 to 255" }
+                        Accessible.name: { return { R: qsTr("Red"), G: qsTr("Green"), B: qsTr("Blue") }[modelData.n] + qsTr(", 0 to 255") }
                         onEditingFinished: {
                             var c = cp.current, v = Math.max(0, Math.min(255, parseInt(text) || 0)) / 255
                             var rgb = { r: c.r, g: c.g, b: c.b }
@@ -148,13 +148,13 @@ Popup {
             }
             Column {
                 spacing: 2
-                Text { textFormat: Text.PlainText; text: "Hex"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11) }
+                Text { textFormat: Text.PlainText; text: qsTr("Hex"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11) }
                 TextField {
                     objectName: "colorHex"
                     width: 92; height: 30
                     text: cp.hex
                     selectByMouse: true
-                    Accessible.name: "Hex code"
+                    Accessible.name: qsTr("Hex code")
                     onEditingFinished: cp.setColor(text.trim().charAt(0) === "#" ? text.trim() : "#" + text.trim())
                 }
             }
@@ -173,7 +173,7 @@ Popup {
                     border.width: 1; border.color: Theme.border
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: cp.setColor(modelData) }
                     Accessible.role: Accessible.Button
-                    Accessible.name: "Recent colour " + modelData
+                    Accessible.name: qsTr("Recent colour %1").arg(modelData)
                     Accessible.onPressAction: cp.setColor(modelData)
                 }
             }
@@ -182,8 +182,8 @@ Popup {
             spacing: 8
             layoutDirection: Qt.RightToLeft
             width: 284
-            PillButton { objectName: "colorUse"; primary: true; text: "Use"; onClicked: cp.use() }
-            PillButton { text: "Cancel"; onClicked: cp.cancel() }
+            PillButton { objectName: "colorUse"; primary: true; text: qsTr("Use"); onClicked: cp.use() }
+            PillButton { text: qsTr("Cancel"); onClicked: cp.cancel() }
         }
     }
 }

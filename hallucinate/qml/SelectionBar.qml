@@ -69,14 +69,14 @@ Rectangle {
     function keysOf(kind) { return Selection.items.filter(function (i) { return i.kind === kind }).map(function (i) { return i.key }) }
     function numbers(kind) { return keysOf(kind).map(function (k) { return parseInt(k) }) }
     function done(message) { Selection.clear(); if (message) Nav.notify(message) }
-    function songs(n) { return Theme.num(n) + (n === 1 ? " song" : " songs") }
+
     // "3 albums", "12 songs": what the toast says was acted on
-    function what() { return Selection.count === 1 && Selection.items[0].title ? "“" + Selection.items[0].title + "”" : Selection.summary(false) }
+    function what() { return Selection.count === 1 && Selection.items[0].title ? qsTr("“%1”").arg(Selection.items[0].title) : Selection.summary(false) }
     function clearWithUndo() {
         if (Selection.count < 2) { Selection.clear(); return }
         var snap = Selection.snapshot(), n = Selection.summary(false)
         Selection.clear()
-        Nav.notifyAction("Cleared the selection (" + n + ")", "Undo", function () { Selection.restore(snap) })
+        Nav.notifyAction(qsTr("Cleared the selection (%1)").arg(n), qsTr("Undo"), function () { Selection.restore(snap) })
     }
 
     Flickable {
@@ -96,7 +96,8 @@ Rectangle {
                 objectName: "selectionCount"
                 anchors.verticalCenter: parent.verticalCenter
                 rightPadding: 6
-                text: Selection.summary(bar.tight) + (bar.level >= 5 ? "" : " selected")
+                //: %1 is what's selected: "3 albums, 12 songs"
+text: bar.level >= 5 ? Selection.summary(bar.tight) : qsTr("%1 selected").arg(Selection.summary(bar.tight))
                 color: Theme.text
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(13)
@@ -105,27 +106,27 @@ Rectangle {
             component Action: PillButton { anchors.verticalCenter: parent.verticalCenter; implicitHeight: 34 }
 
             // ---- music --------------------------------------------------------------------------------------
-            Action { objectName: "selectionPlay"; visible: bar.music; primary: true; text: "Play"; onClicked: { userLib.playPaths(bar.paths()); bar.done("") } }
+            Action { objectName: "selectionPlay"; visible: bar.music; primary: true; text: qsTr("Play"); onClicked: { userLib.playPaths(bar.paths()); bar.done("") } }
             Action {
                 visible: bar.music && !bar.folded
-                text: bar.tight ? "Next" : "Play next"
-                onClicked: { var p = bar.paths(); userLib.playNextPaths(p); bar.done(bar.songs(p.length) + " will play next") }
+                text: bar.tight ? qsTr("Next") : qsTr("Play next")
+                onClicked: { var p = bar.paths(); userLib.playNextPaths(p); bar.done(Theme.counted(qsTr("%n song(s) will play next", "", p.length), p.length)) }
             }
             Action {
                 objectName: "selectionQueue"
                 visible: bar.music && !bar.foldedMore
-                text: bar.tight ? "Queue" : "Add to queue"
-                onClicked: { var p = bar.paths(); userLib.enqueuePaths(p); bar.done(bar.songs(p.length) + " added to the queue") }
+                text: bar.tight ? qsTr("Queue") : qsTr("Add to queue")
+                onClicked: { var p = bar.paths(); userLib.enqueuePaths(p); bar.done(Theme.counted(qsTr("%n song(s) added to the queue", "", p.length), p.length)) }
             }
             Action {
                 id: plButton
                 objectName: "selectionAddToPlaylist"
                 visible: (bar.music && !bar.foldedAll) || bar.domain === "queue"
-                text: bar.tight ? "Playlist…" : "Add to playlist…"
+                text: bar.tight ? qsTr("Playlist…") : qsTr("Add to playlist…")
                 onClicked: plMenu.popup(plButton, 0, -plMenu.implicitHeight - 6)
                 Menu {
                     id: plMenu
-                    MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: newPl.open() }
+                    MenuItem { text: qsTr("New playlist…"); icon.name: "plus"; onTriggered: newPl.open() }
                     MenuSeparator {}
                     Instantiator {
                         model: userLib.playlists
@@ -145,13 +146,13 @@ Rectangle {
                 // (worked out for songs picked one by one; for albums, artists… a click likes them all)
                 readonly property bool all: bar.songsOnly && userLib.likesRevision >= 0 && userLib.allLiked(Selection.paths)
                 active: all
-                tip: all ? "Unlike all" : "Like all"
-                onClicked: { var p = bar.paths(); userLib.setLikedPaths(p, !all); Nav.notify(all ? bar.songs(p.length) + " unliked" : bar.songs(p.length) + " liked") }
+                tip: all ? qsTr("Unlike all") : qsTr("Like all")
+                onClicked: { var p = bar.paths(); userLib.setLikedPaths(p, !all); Nav.notify(all ? Theme.counted(qsTr("%n song(s) unliked", "", p.length), p.length) : Theme.counted(qsTr("%n song(s) liked", "", p.length), p.length)) }
             }
             Action {
                 id: rateButton
                 visible: bar.music && !bar.folded
-                text: bar.tight ? "Rate" : "Rate…"
+                text: bar.tight ? qsTr("Rate") : qsTr("Rate…")
                 onClicked: rateMenu.popup(rateButton, 0, -rateMenu.implicitHeight - 6)
                 Menu {
                     id: rateMenu
@@ -160,17 +161,17 @@ Rectangle {
                         MenuItem {
                             required property int index
                             text: "★★★★★".slice(0, 5 - index) + "☆☆☆☆☆".slice(0, index)
-                            onTriggered: { var p = bar.paths(); userLib.setRatingPaths(p, 5 - index); bar.done(bar.songs(p.length) + " rated " + (5 - index) + "★") }
+                            onTriggered: { var p = bar.paths(); userLib.setRatingPaths(p, 5 - index); bar.done(Theme.counted(qsTr("%n song(s) rated %1★", "", p.length), p.length).arg(5 - index)) }
                         }
                     }
                     MenuSeparator {}
-                    MenuItem { text: "Clear rating"; onTriggered: { userLib.setRatingPaths(bar.paths(), 0); bar.done("") } }
+                    MenuItem { text: qsTr("Clear rating"); onTriggered: { userLib.setRatingPaths(bar.paths(), 0); bar.done("") } }
                 }
             }
             Action {
                 objectName: "selectionEditTags"
                 visible: bar.filesOnly && !bar.onServer && !bar.folded
-                text: bar.tight ? "Tags…" : "Edit tags…"
+                text: bar.tight ? qsTr("Tags…") : qsTr("Edit tags…")
                 enabled: Selection.paths.every(function (p) { return !/\.[A-Za-z0-9]+#\d+$/.test(p) })
                 onClicked: bar.editTags(bar.paths())
             }
@@ -178,7 +179,7 @@ Rectangle {
                 id: moreButton
                 objectName: "selectionMore"
                 visible: bar.music
-                text: bar.tight ? "More" : "More…"
+                text: bar.tight ? qsTr("More") : qsTr("More…")
                 onClicked: moreMenu.popup(moreButton, 0, -moreMenu.implicitHeight - 6)
                 Menu {
                     id: moreMenu
@@ -187,24 +188,24 @@ Rectangle {
                     Item_ {
                         objectName: "selectionMorePlayNext"
                         visible: bar.folded
-                        text: "Play next"
-                        onTriggered: { var p = bar.paths(); userLib.playNextPaths(p); bar.done(bar.songs(p.length) + " will play next") }
+                        text: qsTr("Play next")
+                        onTriggered: { var p = bar.paths(); userLib.playNextPaths(p); bar.done(Theme.counted(qsTr("%n song(s) will play next", "", p.length), p.length)) }
                     }
                     Item_ {
                         visible: bar.foldedMore
-                        text: "Add to queue"
-                        onTriggered: { var p = bar.paths(); userLib.enqueuePaths(p); bar.done(bar.songs(p.length) + " added to the queue") }
+                        text: qsTr("Add to queue")
+                        onTriggered: { var p = bar.paths(); userLib.enqueuePaths(p); bar.done(Theme.counted(qsTr("%n song(s) added to the queue", "", p.length), p.length)) }
                     }
                     Item_ {
                         visible: bar.foldedMore && shell.features.liked !== false
                         readonly property bool all: bar.songsOnly && userLib.likesRevision >= 0 && userLib.allLiked(Selection.paths)
-                        text: all ? "Unlike all" : "Like all"
-                        onTriggered: { var p = bar.paths(); userLib.setLikedPaths(p, !all); Nav.notify(all ? bar.songs(p.length) + " unliked" : bar.songs(p.length) + " liked") }
+                        text: all ? qsTr("Unlike all") : qsTr("Like all")
+                        onTriggered: { var p = bar.paths(); userLib.setLikedPaths(p, !all); Nav.notify(all ? Theme.counted(qsTr("%n song(s) unliked", "", p.length), p.length) : Theme.counted(qsTr("%n song(s) liked", "", p.length), p.length)) }
                     }
                     Menu {
                         id: playlistSub
-                        title: "Add to playlist"
-                        MenuItem { text: "New playlist…"; icon.name: "plus"; onTriggered: newPl.open() }
+                        title: qsTr("Add to playlist")
+                        MenuItem { text: qsTr("New playlist…"); icon.name: "plus"; onTriggered: newPl.open() }
                         MenuSeparator {}
                         Instantiator {
                             model: userLib.playlists
@@ -218,21 +219,21 @@ Rectangle {
                     }
                     Menu {
                         id: rateSub
-                        title: "Rate"
+                        title: qsTr("Rate")
                         Repeater {
                             model: 5
                             MenuItem {
                                 required property int index
                                 text: "★★★★★".slice(0, 5 - index) + "☆☆☆☆☆".slice(0, index)
-                                onTriggered: { var p = bar.paths(); userLib.setRatingPaths(p, 5 - index); bar.done(bar.songs(p.length) + " rated " + (5 - index) + "★") }
+                                onTriggered: { var p = bar.paths(); userLib.setRatingPaths(p, 5 - index); bar.done(Theme.counted(qsTr("%n song(s) rated %1★", "", p.length), p.length).arg(5 - index)) }
                             }
                         }
                         MenuSeparator {}
-                        MenuItem { text: "Clear rating"; onTriggered: { userLib.setRatingPaths(bar.paths(), 0); bar.done("") } }
+                        MenuItem { text: qsTr("Clear rating"); onTriggered: { userLib.setRatingPaths(bar.paths(), 0); bar.done("") } }
                     }
                     Item_ {
                         visible: bar.folded && bar.filesOnly && !bar.onServer
-                        text: "Edit tags…"
+                        text: qsTr("Edit tags…")
                         enabled: Selection.paths.every(function (p) { return !/\.[A-Za-z0-9]+#\d+$/.test(p) })
                         onTriggered: bar.editTags(bar.paths())
                     }
@@ -240,43 +241,43 @@ Rectangle {
                     Item_ {
                         objectName: "selectionRemoveFromPlaylist"
                         visible: bar.inPlaylist
-                        text: "Remove from this playlist"; icon.name: "remove"; icon.color: Theme.error
+                        text: qsTr("Remove from this playlist"); icon.name: "remove"; icon.color: Theme.error
                         onTriggered: bar.removeFromPlaylist(Selection.paths.slice())
                     }
                     Item_ {
                         objectName: "selectionRemoveFromHistory"
                         visible: bar.only(["history"])
-                        text: Selection.count === 1 ? "Remove from history" : "Remove these plays from history"; icon.name: "remove"; icon.color: Theme.error
+                        text: Selection.count === 1 ? qsTr("Remove from history") : qsTr("Remove these plays from history"); icon.name: "remove"; icon.color: Theme.error  // i18n: keep (two sentences)
                         onTriggered: {
                             var ids = bar.numbers("history"), n = ids.length
                             userLib.removeHistoryEntries(ids)
-                            bar.done(n === 1 ? "Removed from your history" : Theme.num(n) + " plays removed from your history")
+                            bar.done(n === 1 ? qsTr("Removed from your history") : Theme.counted(qsTr("%n play(s) removed from your history", "", n), n))
                         }
                     }
                     Item_ {
                         objectName: "selectionDeletePlaylists"
                         visible: bar.playlistsOnly
-                        text: Selection.count === 1 ? "Delete playlist…" : "Delete playlists…"; icon.name: "trash"; icon.color: Theme.error
+                        text: qsTr("Delete playlist(s)…", "", Selection.count); icon.name: "trash"; icon.color: Theme.error
                         onTriggered: deleteDlg.open()
                     }
                     Item_ {
                         objectName: "selectionRemove"
                         visible: bar.filesOnly
-                        text: "Remove from library…"; icon.name: "remove"; icon.color: Theme.error
+                        text: qsTr("Remove from library…"); icon.name: "remove"; icon.color: Theme.error
                         onTriggered: bar.only(["album"]) ? Nav.removeAlbums(bar.keysOf("album"), Selection.summary(false))
                                                          : Nav.removeSongs(bar.paths(), Selection.summary(false))
                     }
                     Item_ {
                         objectName: "selectionTrash"
                         visible: bar.filesOnly && !bar.onServer
-                        text: "Move to trash…"; icon.name: "trash"; icon.color: Theme.error
+                        text: qsTr("Move to trash…"); icon.name: "trash"; icon.color: Theme.error
                         onTriggered: bar.only(["album"]) ? Nav.trashAlbums(bar.keysOf("album"), Selection.summary(false))
                                                          : Nav.trashSongs(bar.paths(), Selection.summary(false))
                     }
                     Item_ {
                         visible: !bar.filesOnly && !bar.playlistsOnly && !bar.inPlaylist && !bar.only(["history"])
                         enabled: false
-                        text: "Removing works on songs and albums"
+                        text: qsTr("Removing works on songs and albums")
                     }
                 }
             }
@@ -285,49 +286,49 @@ Rectangle {
             Action {
                 visible: bar.domain === "queue"
                 primary: true
-                text: bar.tight ? "Next" : "Play next"
-                onClicked: { player.moveIndexesNext(bar.numbers("queue")); bar.done(Selection.summary(false) + " moved up next") }
+                text: bar.tight ? qsTr("Next") : qsTr("Play next")
+                onClicked: { player.moveIndexesNext(bar.numbers("queue")); bar.done(qsTr("%1 moved up next").arg(Selection.summary(false))) }
             }
             Action {
                 objectName: "selectionRemoveFromQueue"
                 visible: bar.domain === "queue"
-                text: bar.tight ? "Remove" : "Remove from queue"
+                text: bar.tight ? qsTr("Remove") : qsTr("Remove from queue")
                 onClicked: {
                     var n = Selection.count
                     player.removeIndexes(bar.numbers("queue"))
                     Selection.clear()
-                    Nav.notifyAction(bar.songs(n) + " removed from the queue", "Undo", function () { player.undoQueue() })
+                    Nav.notifyAction(Theme.counted(qsTr("%n song(s) removed from the queue", "", n), n), qsTr("Undo"), function () { player.undoQueue() })
                 }
             }
 
             // ---- podcast episodes -------------------------------------------------------------------------
-            Action { visible: bar.domain === "episode"; primary: true; text: bar.tight ? "Next" : "Play next"; onClicked: { podcasts.playNextMany(bar.numbers("episode")); bar.done("") } }
-            Action { visible: bar.domain === "episode"; text: bar.tight ? "Queue" : "Add to queue"; onClicked: { podcasts.enqueueMany(bar.numbers("episode")); bar.done("") } }
-            Action { visible: bar.domain === "episode"; text: bar.tight ? "Played" : "Mark played"; onClicked: { podcasts.markPlayedMany(bar.numbers("episode"), true); bar.done("") } }
-            Action { visible: bar.domain === "episode" && !bar.folded; text: bar.tight ? "Unplayed" : "Mark unplayed"; onClicked: { podcasts.markPlayedMany(bar.numbers("episode"), false); bar.done("") } }
-            Action { visible: bar.domain === "episode" && !bar.folded; text: "Download"; onClicked: { podcasts.downloadMany(bar.numbers("episode")); bar.done("Downloading " + Selection.summary(false)) } }
-            Action { visible: bar.domain === "episode" && !bar.folded; text: bar.tight ? "Delete files" : "Remove downloads"; onClicked: { podcasts.removeDownloadMany(bar.numbers("episode")); bar.done("") } }
+            Action { visible: bar.domain === "episode"; primary: true; text: bar.tight ? qsTr("Next") : qsTr("Play next"); onClicked: { podcasts.playNextMany(bar.numbers("episode")); bar.done("") } }
+            Action { visible: bar.domain === "episode"; text: bar.tight ? qsTr("Queue") : qsTr("Add to queue"); onClicked: { podcasts.enqueueMany(bar.numbers("episode")); bar.done("") } }
+            Action { visible: bar.domain === "episode"; text: bar.tight ? qsTr("Played") : qsTr("Mark played"); onClicked: { podcasts.markPlayedMany(bar.numbers("episode"), true); bar.done("") } }
+            Action { visible: bar.domain === "episode" && !bar.folded; text: bar.tight ? qsTr("Unplayed") : qsTr("Mark unplayed"); onClicked: { podcasts.markPlayedMany(bar.numbers("episode"), false); bar.done("") } }
+            Action { visible: bar.domain === "episode" && !bar.folded; text: qsTr("Download"); onClicked: { podcasts.downloadMany(bar.numbers("episode")); bar.done(qsTr("Downloading %1").arg(Selection.summary(false))) } }
+            Action { visible: bar.domain === "episode" && !bar.folded; text: bar.tight ? qsTr("Delete files") : qsTr("Remove downloads"); onClicked: { podcasts.removeDownloadMany(bar.numbers("episode")); bar.done("") } }
             Action {
                 id: episodeMore
                 visible: bar.domain === "episode" && bar.folded
-                text: "More"
+                text: qsTr("More")
                 onClicked: episodeMenu.popup(episodeMore, 0, -episodeMenu.implicitHeight - 6)
                 Menu {
                     id: episodeMenu
-                    MenuItem { text: "Mark unplayed"; onTriggered: { podcasts.markPlayedMany(bar.numbers("episode"), false); bar.done("") } }
-                    MenuItem { text: "Download"; onTriggered: { podcasts.downloadMany(bar.numbers("episode")); bar.done("Downloading " + Selection.summary(false)) } }
-                    MenuItem { text: "Remove downloads"; onTriggered: { podcasts.removeDownloadMany(bar.numbers("episode")); bar.done("") } }
+                    MenuItem { text: qsTr("Mark unplayed"); onTriggered: { podcasts.markPlayedMany(bar.numbers("episode"), false); bar.done("") } }
+                    MenuItem { text: qsTr("Download"); onTriggered: { podcasts.downloadMany(bar.numbers("episode")); bar.done(qsTr("Downloading %1").arg(Selection.summary(false))) } }
+                    MenuItem { text: qsTr("Remove downloads"); onTriggered: { podcasts.removeDownloadMany(bar.numbers("episode")); bar.done("") } }
                 }
             }
 
             // ---- radio stations ---------------------------------------------------------------------------
-            Action { visible: bar.domain === "station"; primary: true; text: bar.tight ? "Next" : "Play next"; onClicked: { stations.playNextMany(bar.numbers("station")); bar.done("") } }
-            Action { objectName: "selectionRemoveStations"; visible: bar.domain === "station"; text: "Remove"; onClicked: { stations.removeMany(bar.numbers("station")); Selection.clear() } }
+            Action { visible: bar.domain === "station"; primary: true; text: bar.tight ? qsTr("Next") : qsTr("Play next"); onClicked: { stations.playNextMany(bar.numbers("station")); bar.done("") } }
+            Action { objectName: "selectionRemoveStations"; visible: bar.domain === "station"; text: qsTr("Remove"); onClicked: { stations.removeMany(bar.numbers("station")); Selection.clear() } }
 
             IconButton {
                 objectName: "selectionClear"
                 anchors.verticalCenter: parent.verticalCenter
-                icon: "close"; size: 14; tip: "Clear selection (Esc)"
+                icon: "close"; size: 14; tip: qsTr("Clear selection (Esc)")
                 onClicked: bar.clearWithUndo()
             }
         }
@@ -366,7 +367,7 @@ Rectangle {
                                                                     scroller.contentX + modelData * scroller.width * 0.7))
             }
             Accessible.role: Accessible.Button
-            Accessible.name: modelData < 0 ? "Earlier actions" : "More actions"
+            Accessible.name: modelData < 0 ? qsTr("Earlier actions") : qsTr("More actions")
         }
     }
 
@@ -375,7 +376,7 @@ Rectangle {
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true
-        title: "New playlist"
+        title: qsTr("New playlist")
         standardButtons: Dialog.Ok | Dialog.Cancel
         onOpened: { plName.text = ""; plName.forceActiveFocus() }
         onAccepted: {
@@ -383,10 +384,10 @@ Rectangle {
             if (!name.length) return
             var p = bar.paths()
             userLib.addPathsToNewPlaylist(name, p)
-            bar.done(bar.songs(p.length) + " added to “" + name + "”")
+            bar.done(Theme.counted(qsTr("%n song(s) added to “%1”", "", p.length), p.length).arg(name))
         }
         TextField {
-            id: plName; implicitWidth: 280; placeholderText: "Playlist name"; selectByMouse: true
+            id: plName; implicitWidth: 280; placeholderText: qsTr("Playlist name"); selectByMouse: true
             onAccepted: if (text.trim().length) newPl.accept()  // no nameless playlists
             onTextChanged: { var b = newPl.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
             onVisibleChanged: if (visible) { var b = newPl.standardButton(Dialog.Ok); if (b) b.enabled = text.trim().length > 0 }
@@ -395,14 +396,14 @@ Rectangle {
     ConfirmDialog {
         id: deleteDlg
         objectName: "deletePlaylistsDialog"
-        title: Selection.count === 1 ? "Delete this playlist?" : "Delete " + Theme.num(Selection.count) + " playlists?"
-        confirmText: "Delete"
+        title: Selection.count === 1 ? qsTr("Delete this playlist?") : Theme.counted(qsTr("Delete %n playlist(s)?", "", Selection.count), Selection.count)
+        confirmText: qsTr("Delete")
         destructive: true
-        body: Selection.summary(false) + " will be deleted. The songs in them stay in your library."
+        body: qsTr("%1 will be deleted. The songs in them stay in your library.").arg(Selection.summary(false))
         onAccepted: {
             bar.numbers("playlist").forEach(function (id) { userLib.deletePlaylist(id) })
             bar.numbers("smart").forEach(function (id) { userLib.deleteSmartPlaylist(id) })
-            bar.done(Selection.summary(false) + " deleted")
+            bar.done(qsTr("%1 deleted").arg(Selection.summary(false)))
         }
     }
 }

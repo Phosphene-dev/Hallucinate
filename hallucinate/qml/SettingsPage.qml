@@ -8,7 +8,7 @@ Item {
     objectName: "settings"
     property string query: ""
     readonly property var sectionIds: ["appearance", "features", "podcasts", "playback", "sound", "library", "servers", "remote", "sharing", "scrobbling", "desktop", "about"]
-    readonly property var sectionTitles: ["Appearance", "Features", "Podcasts", "Playback", "Sound", "Library", "Music servers", "Remote & web", "Online & privacy", "Scrobbling & sharing", "Desktop", "About"]
+    readonly property var sectionTitles: [qsTr("Appearance"), qsTr("Features"), qsTr("Podcasts"), qsTr("Playback"), qsTr("Sound"), qsTr("Library"), qsTr("Music servers"), qsTr("Remote & web"), qsTr("Online & privacy"), qsTr("Scrobbling & sharing"), qsTr("Desktop"), qsTr("About")]
 
     function sectionItem(i) { return [sec_appearance, sec_features, sec_podcasts, sec_playback, sec_sound, sec_library, sec_servers, sec_remote, sec_sharing, sec_scrobbling, sec_desktop, sec_about][i] }
     function jumpToSidebar() {
@@ -63,14 +63,14 @@ Item {
         Row {
             width: parent.width
             spacing: 16
-            Text { id: pageTitle; text: "Settings"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale; font.weight: Font.Bold; textFormat: Text.PlainText }
+            Text { id: pageTitle; text: qsTr("Settings"); color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: (Theme.fontSize(25)) * Theme.displayScale; font.weight: Font.Bold; textFormat: Text.PlainText }
             TextField {
                 id: search
                 objectName: "settingsSearch"
                 anchors.verticalCenter: parent.verticalCenter
                 width: Math.min(340, parent.width - pageTitle.width - 16)
                 height: 36
-                placeholderText: "Search settings   (Ctrl+F)"
+                placeholderText: qsTr("Search settings   (Ctrl+F)")
                 color: Theme.text
                 placeholderTextColor: Theme.textDim
                 font.family: Theme.fontFamily
@@ -93,8 +93,9 @@ Item {
                 Chip {
                     required property string modelData
                     required property int index
-                    visible: (modelData !== "Podcasts" || shell.features.podcasts !== false)
-                             && (modelData !== "Music servers" || shell.features.servers === true)
+                    // (by the section's id: its title is in your language)
+                    visible: (page.sectionIds[index] !== "podcasts" || shell.features.podcasts !== false)
+                             && (page.sectionIds[index] !== "servers" || shell.features.servers === true)
                     text: modelData
                     selected: index === page.currentSection
                     onClicked: page.jumpTo(index)
@@ -104,7 +105,7 @@ Item {
         Text {
             textFormat: Text.PlainText
             visible: page.query.length > 0
-            text: noMatches ? "No settings match “" + page.query + "”" : "Showing settings that match “" + page.query + "”"
+            text: (noMatches ? qsTr("No settings match “%1”") : qsTr("Showing settings that match “%1”")).arg(page.query)
             // (a section hidden because its feature is off doesn't count, even if it matches)
             readonly property bool noMatches: !(sec_appearance.visible || sec_features.visible || sec_podcasts.visible || sec_playback.visible || sec_sound.visible || sec_library.visible || sec_servers.visible || sec_remote.visible || sec_sharing.visible || sec_scrobbling.visible || sec_desktop.visible || sec_about.visible)
             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
@@ -130,16 +131,29 @@ Item {
         SettingsSection {
             id: sec_appearance
             objectName: "settings_appearance"
-            title: "Appearance"
-            keywords: "terminal panes boot phosphor command spinning spin record disc vinyl rotate neon cyberpunk afterimage scanlines glitch hud greebles cockpit terminal title card marquee scroll scrolling long title titles ticker numbers thousands separator comma commas digits shelf shelves row rows sideways wheel tilt arrows theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate"
+            title: qsTr("Appearance")
+            keywords: qsTr("language languages translation français french english terminal panes boot phosphor command spinning spin record disc vinyl rotate neon cyberpunk afterimage scanlines glitch hud greebles cockpit terminal title card marquee scroll scrolling long title titles ticker numbers thousands separator comma commas digits shelf shelves row rows sideways wheel tilt arrows theme colours colors font text size bigger smaller accent album art ambient motion drift paused power battery visualizer background unfocused reduce animation dark light system pride ribbon custom badges bitrate format scroll speed mouse wheel explicit hi-res hires bit depth 24-bit sample rate")
             query: page.query
+            Row {
+                spacing: 12
+                Text { textFormat: Text.PlainText; text: qsTr("Language"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }
+                StyledCombo {
+                    objectName: "language"
+                    width: 260
+                    readonly property var codes: i18n.languages.map(l => l.code)
+                    model: i18n.languages.map(l => l.name)
+                    selection: Math.max(0, codes.indexOf(i18n.choice))
+                    onActivated: function (i) { i18n.setLanguage(codes[i]) }
+                    Accessible.name: qsTr("Language")
+                }
+            }
             Row {
                 spacing: 12
                 visible: !themeManager.followSystem  // following the system, the Light and Dark choices below apply
                 Text {
                     textFormat: Text.PlainText
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Theme"
+                    text: qsTr("Theme")
                     color: Theme.textDim
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(14)
@@ -175,7 +189,7 @@ Item {
             Column {
                 width: parent.width
                 spacing: 8
-                Text { textFormat: Text.PlainText; text: "Accent colour"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+                Text { textFormat: Text.PlainText; text: qsTr("Accent colour"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
                 Flow {
                     objectName: "accentSwatches"
                     width: parent.width
@@ -201,8 +215,8 @@ Item {
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: themeManager.setAccentOverride(modelData)
                                 Accessible.role: Accessible.RadioButton
-                                Accessible.name: modelData === "#f5be9d" ? "Accent Shrimp Boat"  // PPG's paint colour
-                                                 : modelData.length ? "Accent " + modelData : "The theme's own accent"
+                                Accessible.name: modelData === "#f5be9d" ? qsTr("Accent Shrimp Boat")  // PPG's paint colour
+                                                 : modelData.length ? qsTr("Accent %1").arg(modelData) : qsTr("The theme's own accent")
                                 Accessible.checked: chosen
                                 Accessible.onPressAction: themeManager.setAccentOverride(modelData)
                             }
@@ -230,11 +244,11 @@ Item {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: accentPicker.openWith(themeManager.accentOverride)
                             Accessible.role: Accessible.Button
-                            Accessible.name: "Pick your own accent colour"
+                            Accessible.name: qsTr("Pick your own accent colour")
                             Accessible.onPressAction: accentPicker.openWith(themeManager.accentOverride)
                         }
                         ToolTip.visible: ownHover.hovered
-                        ToolTip.text: "Your own colour…"
+                        ToolTip.text: qsTr("Your own colour…")
                         ToolTip.delay: 500
                         HoverHandler { id: ownHover }
                         ColorPicker {
@@ -255,7 +269,7 @@ Item {
                         placeholderText: "#hex"
                         text: themeManager.accentOverride
                         selectByMouse: true
-                        Accessible.name: "Accent colour as a hex code"
+                        Accessible.name: qsTr("Accent colour as a hex code")
                         // typing breaks the binding above: follow the accent again once it changes elsewhere
                         Connections { target: themeManager; function onThemeChanged() { if (!accentHex.activeFocus) accentHex.text = themeManager.accentOverride } }
                         onAccepted: themeManager.setAccentOverride(text)
@@ -263,13 +277,13 @@ Item {
                 }
                 StyledCheck {
                     objectName: "albumArtAccent"
-                    text: "Tint the accent with each album's cover"
+                    text: qsTr("Tint the accent with each album's cover")
                     checked: themeManager.albumArtAccent
                     onToggled: themeManager.setAlbumArtAccent(checked)
                 }
                 StyledCheck {
                     objectName: "followSystemTheme"
-                    text: "Follow the system's light or dark mode"
+                    text: qsTr("Follow the system's light or dark mode")
                     checked: themeManager.followSystem
                     onToggled: themeManager.setFollowSystem(checked)
                 }
@@ -277,24 +291,24 @@ Item {
                     visible: themeManager.followSystem
                     width: parent.width
                     spacing: 10
-                    Text { textFormat: Text.PlainText; text: "Light"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                    Text { textFormat: Text.PlainText; text: qsTr("Light"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
                     StyledCombo {
                         width: 200
                         model: themeManager.availableThemes
                         selection: themeManager.availableThemes.indexOf(themeManager.lightTheme)
                         onActivated: themeManager.setSystemThemes(currentText, themeManager.darkTheme)
-                        Accessible.name: "Theme in light mode"
+                        Accessible.name: qsTr("Theme in light mode")
                     }
-                    Text { textFormat: Text.PlainText; text: "Dark"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                    Text { textFormat: Text.PlainText; text: qsTr("Dark"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
                     StyledCombo {
                         width: 200
                         model: themeManager.availableThemes
                         selection: themeManager.availableThemes.indexOf(themeManager.darkTheme)
                         onActivated: themeManager.setSystemThemes(themeManager.lightTheme, currentText)
-                        Accessible.name: "Theme in dark mode"
+                        Accessible.name: qsTr("Theme in dark mode")
                     }
                 }
-                PillButton { objectName: "makeTheme"; text: "Make my own theme…"; onClicked: themeEditor.open() }
+                PillButton { objectName: "makeTheme"; text: qsTr("Make my own theme…"); onClicked: themeEditor.open() }
             }
             ThemeEditor { id: themeEditor }
             // A neon theme's own options (Afterimage): shown only while one is chosen
@@ -303,75 +317,75 @@ Item {
                 visible: Theme.neon
                 width: parent.width
                 spacing: 8
-                Text { textFormat: Text.PlainText; text: themeManager.currentTheme + " options"; color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(15) * Theme.displayScale; font.weight: Font.DemiBold }
+                Text { textFormat: Text.PlainText; text: qsTr("%1 options").arg(themeManager.currentTheme); color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(15) * Theme.displayScale; font.weight: Font.DemiBold }
                 Flow {
                     width: parent.width
                     spacing: 10
-                    Text { textFormat: Text.PlainText; text: "Now Playing"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                    Text { textFormat: Text.PlainText; text: qsTr("Now Playing"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
                     StyledCombo {
                         objectName: "neonNowPlaying"
                         readonly property var modes: ["cockpit", "terminal", "classic"]
                         width: 320
-                        model: ["Cockpit (gauges and a hologram)", "Terminal (typed out)", "Classic (the usual one)"]
+                        model: [qsTr("Cockpit (gauges and a hologram)"), qsTr("Terminal (typed out)"), qsTr("Classic (the usual one)")]
                         selection: Math.max(0, modes.indexOf(shell.ui.neonNowPlaying || "cockpit"))
                         onActivated: shell.setUiValue("neonNowPlaying", modes[currentIndex])
-                        Accessible.name: "Now Playing in this theme"
+                        Accessible.name: qsTr("Now Playing in this theme")
                     }
-                    Text { textFormat: Text.PlainText; text: "Cockpit colours"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                    Text { textFormat: Text.PlainText; text: qsTr("Cockpit colours"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
                     StyledCombo {
                         objectName: "neonTint"
                         readonly property var modes: ["theme", "cover"]
                         width: 200
-                        model: ["The theme's neon", "The cover's"]
+                        model: [qsTr("The theme's neon"), qsTr("The cover's")]
                         selection: shell.ui.neonTint === "cover" ? 1 : 0
                         onActivated: shell.setUiValue("neonTint", modes[currentIndex])
-                        Accessible.name: "Cockpit colours"
+                        Accessible.name: qsTr("Cockpit colours")
                     }
-                    Text { textFormat: Text.PlainText; text: "Terminal"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                    Text { textFormat: Text.PlainText; text: qsTr("Terminal"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
                     StyledCombo {
                         objectName: "neonPhosphor"
                         readonly property var modes: ["theme", "green", "amber"]
                         width: 200
-                        model: ["The theme's colour", "Green phosphor", "Amber phosphor"]
+                        model: [qsTr("The theme's colour"), qsTr("Green phosphor"), qsTr("Amber phosphor")]
                         selection: Math.max(0, modes.indexOf(shell.ui.neonPhosphor || "theme"))
                         onActivated: shell.setUiValue("neonPhosphor", modes[currentIndex])
-                        Accessible.name: "Terminal colour"
+                        Accessible.name: qsTr("Terminal colour")
                     }
                 }
                 StyledCheck {
                     objectName: "neonScanlines"
-                    text: "Scanlines and a vignette over the window"
+                    text: qsTr("Scanlines and a vignette over the window")
                     checked: Theme.neonOption("Scanlines")
                     onToggled: shell.setUiValue("neonScanlines", checked ? "1" : "0")
                 }
                 StyledCheck {
                     objectName: "neonGlitch"
-                    text: "A glitch when the song changes (and a hologram's flicker)"
+                    text: qsTr("A glitch when the song changes (and a hologram's flicker)")
                     checked: Theme.neonOption("Glitch")
                     enabled: !shell.reduceMotion
                     onToggled: shell.setUiValue("neonGlitch", checked ? "1" : "0")
                 }
                 StyledCheck {
                     objectName: "neonGreebles"
-                    text: "HUD details (corner brackets, ticks, status lights and readouts)"
+                    text: qsTr("HUD details (corner brackets, ticks, status lights and readouts)")
                     checked: Theme.neonGreebles
                     onToggled: shell.setUiValue("neonGreebles", checked ? "1" : "0")
                 }
                 StyledCheck {
                     objectName: "neonBoot"
-                    text: "A start-up sequence when the terminal opens"
+                    text: qsTr("A start-up sequence when the terminal opens")
                     checked: shell.ui.neonBoot !== "0"
                     onToggled: shell.setUiValue("neonBoot", checked ? "1" : "0")
                 }
                 // the terminal's panes, in the order they show (it can pin and unpin them itself too)
-                Text { textFormat: Text.PlainText; text: "Terminal panes"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13) }
+                Text { textFormat: Text.PlainText; text: qsTr("Terminal panes"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13) }
                 Flow {
                     objectName: "neonPanes"
                     width: parent.width
                     spacing: 8
-                    readonly property var names: ({ now: "Now playing", wave: "Waveform", spectrum: "Spectrum", lyrics: "Lyrics",
-                        queue: "Up next", signal: "Signal path", stats: "Today's stats", tags: "Tags", similar: "Similar artists",
-                        whoami: "Your library", log: "Log" })
+                    readonly property var names: ({ now: qsTr("Now playing"), wave: qsTr("Waveform"), spectrum: qsTr("Spectrum"), lyrics: qsTr("Lyrics"),
+                        queue: qsTr("Up next"), signal: qsTr("Signal path"), stats: qsTr("Today's stats"), tags: qsTr("Tags"), similar: qsTr("Similar artists"),
+                        whoami: qsTr("Your library"), log: qsTr("Log") })
                     readonly property var shown: {
                         var v = shell.ui.neonTermPanes  // (blank: the usual ones; "none": every one unpinned)
                         return (v === undefined || v === "" ? "now,wave,spectrum,lyrics,queue" : v === "none" ? "" : v).split(",").filter(function (p) { return p })
@@ -392,25 +406,25 @@ Item {
                 }
                 StyledCheck {
                     objectName: "neonTitleCard"
-                    text: "A title card for each new song in the cockpit"
+                    text: qsTr("A title card for each new song in the cockpit")
                     checked: shell.ui.neonTitleCard !== "0"
                     enabled: !shell.reduceMotion
                     onToggled: shell.setUiValue("neonTitleCard", checked ? "1" : "0")
                 }
                 PillButton {
                     objectName: "neonReset"
-                    text: "Reset these options"
+                    text: qsTr("Reset these options")
                     onClicked: {
                         var keys = ["neonNowPlaying", "neonTint", "neonPhosphor", "neonScanlines", "neonGlitch", "neonGreebles",
                                     "neonTitleCard", "neonBoot", "neonTermPanes", "neonVisStyle"]
                         for (var i = 0; i < keys.length; i++) shell.setUiValue(keys[i], "")
-                        Nav.notify(themeManager.currentTheme + "'s options are back as they came")
+                        Nav.notify(qsTr("%1's options are back as they came").arg(themeManager.currentTheme))
                     }
                 }
             }
             StyledCheck {
                 objectName: "ambientMotion"
-                text: "Animated background (slowly drifting colours from the current cover)"
+                text: qsTr("Animated background (slowly drifting colours from the current cover)")
                 checked: shell.ambientMotion
                 onToggled: shell.setAmbientMotion(checked)
             }
@@ -418,7 +432,7 @@ Item {
                 objectName: "ambientOnlyPlaying"
                 visible: shell.ambientMotion
                 leftPadding: 28
-                text: "Only while music plays (it rests while paused, using no power)"
+                text: qsTr("Only while music plays (it rests while paused, using no power)")
                 checked: shell.ambientOnlyPlaying
                 onToggled: shell.setAmbientOnlyPlaying(checked)
             }
@@ -426,111 +440,111 @@ Item {
                 visible: shell.features.visualizer !== false
                 width: parent.width
                 spacing: 10
-                Text { textFormat: Text.PlainText; text: "Visualizer while the window is in the background"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                Text { textFormat: Text.PlainText; text: qsTr("Visualizer while the window is in the background"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
                 StyledCombo {
                     objectName: "visualizerBackground"
                     readonly property var modes: ["full", "slower", "paused"]
                     width: 220
-                    model: ["Full speed", "Slower (saves power)", "Paused"]
+                    model: [qsTr("Full speed"), qsTr("Slower (saves power)"), qsTr("Paused")]
                     selection: Math.max(0, modes.indexOf(shell.visualizerBackground))
                     onActivated: shell.setVisualizerBackground(modes[currentIndex])
-                    Accessible.name: "Visualizer while the window is in the background"
+                    Accessible.name: qsTr("Visualizer while the window is in the background")
                 }
             }
             Flow {
                 width: parent.width
                 spacing: 10
-                Text { textFormat: Text.PlainText; text: "Covers in the player bar and mini player"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                Text { textFormat: Text.PlainText; text: qsTr("Covers in the player bar and mini player"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
                 StyledCombo {
                     objectName: "spinningArt"
                     width: 260
-                    model: ["Still", "A record, spinning while playing"]
+                    model: [qsTr("Still"), qsTr("A record, spinning while playing")]
                     selection: shell.ui.spinningArt === "1" ? 1 : 0
-                    onActivated: shell.setUiValue("spinningArt", currentIndex === 1 ? "1" : "0")
-                    Accessible.name: "Covers in the player bar and mini player"
+                    onActivated: shell.setUiValue("spinningArt", currentIndex === 1 ? "1" : "0")  // i18n: keep
+                    Accessible.name: qsTr("Covers in the player bar and mini player")
                 }
             }
             StyledCheck {
                 objectName: "reduceMotion"
-                text: "Reduce motion (no page transitions, zooms, spinning record or growing buttons)"
+                text: qsTr("Reduce motion (no page transitions, zooms, spinning record or growing buttons)")
                 checked: shell.reduceMotion
                 onToggled: shell.setReduceMotion(checked)
             }
             SettingsGroup {
                 key: "appearanceMore"
-                title: "More appearance options"
-                summary: "Text size, track badges, theme files"
+                title: qsTr("More appearance options")
+                summary: qsTr("Text size, track badges, theme files")
                 query: page.query
                 Flow {
                     width: parent.width
                     spacing: 12
-                    Text { textFormat: Text.PlainText; text: "Text size"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }
+                    Text { textFormat: Text.PlainText; text: qsTr("Text size"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }
                     StyledCombo {
                         objectName: "textSize"
                         width: 200
                         readonly property var sizes: [0.9, 1.0, 1.1, 1.25, 1.4]
-                        model: ["Smaller", "As the theme has it", "Larger", "Larger still", "Largest"]
+                        model: [qsTr("Smaller"), qsTr("As the theme has it"), qsTr("Larger"), qsTr("Larger still"), qsTr("Largest")]
                         selection: sizes.indexOf(themeManager.textScale)
                         onActivated: function (i) { themeManager.setTextScale(sizes[i]) }
-                        Accessible.name: "Text size"
+                        Accessible.name: qsTr("Text size")
                     }
                 }
                 Row {
                     spacing: 12
-                    Text { textFormat: Text.PlainText; text: "Scroll speed"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }
+                    Text { textFormat: Text.PlainText; text: qsTr("Scroll speed"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }
                     StyledCombo {
                         objectName: "scrollSpeed"
                         width: 200
                         readonly property var speeds: [0.5, 0.75, 1.0, 1.5, 2.0, 3.0]
-                        model: ["Slowest", "Slow", "Normal", "Fast", "Faster", "Fastest"]
+                        model: [qsTr("Slowest"), qsTr("Slow"), qsTr("Normal"), qsTr("Fast"), qsTr("Faster"), qsTr("Fastest")]
                         selection: speeds.indexOf(shell.scrollSpeed) >= 0 ? speeds.indexOf(shell.scrollSpeed) : 2
                         onActivated: function (i) { shell.setScrollSpeed(speeds[i]) }
-                        Accessible.name: "Scroll speed (mouse wheel)"
+                        Accessible.name: qsTr("Scroll speed (mouse wheel)")
                     }
                 }
                 Row {
                     spacing: 12
-                    Text { textFormat: Text.PlainText; text: "Wheel over a row of albums"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }
+                    Text { textFormat: Text.PlainText; text: qsTr("Wheel over a row of albums"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }
                     StyledCombo {
                         objectName: "shelfWheel"
                         width: 260
                         readonly property var modes: ["auto", "row", "page"]
-                        model: ["Moves the row (a page scroll carries on past it)", "Always moves the row, then the page", "Scrolls the page"]
+                        model: [qsTr("Moves the row (a page scroll carries on past it)"), qsTr("Always moves the row, then the page"), qsTr("Scrolls the page")]
                         selection: Math.max(0, modes.indexOf(shell.ui.shelfWheel || "auto"))
                         onActivated: function (i) { shell.setUiValue("shelfWheel", modes[i]) }
-                        Accessible.name: "Mouse wheel over a row of albums"
+                        Accessible.name: qsTr("Mouse wheel over a row of albums")
                     }
                 }
                 Row {
                     spacing: 12
-                    Text { textFormat: Text.PlainText; text: "Long song titles"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }
+                    Text { textFormat: Text.PlainText; text: qsTr("Long song titles"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }
                     StyledCombo {
                         objectName: "marquee"
                         width: 260
                         readonly property var modes: ["playing", "hover", "off"]
-                        model: ["Scroll while playing", "Scroll when pointed at", "Don't scroll (end in …)"]
+                        model: [qsTr("Scroll while playing"), qsTr("Scroll when pointed at"), qsTr("Don't scroll (end in …)")]
                         selection: Math.max(0, modes.indexOf(shell.ui.marquee || "playing"))
                         onActivated: function (i) { shell.setUiValue("marquee", modes[i]) }
-                        Accessible.name: "Long song titles in the player bar and mini player"
+                        Accessible.name: qsTr("Long song titles in the player bar and mini player")
                     }
                 }
                 Row {
                     spacing: 12
-                    Text { textFormat: Text.PlainText; text: "Numbers"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }
+                    Text { textFormat: Text.PlainText; text: qsTr("Numbers"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }
                     StyledCombo {
                         objectName: "numberFormat"
                         width: 260
                         readonly property var formats: ["locale", "comma", "period", "space", "none"]
-                        model: ["As your language writes them (" + Number(12345).toLocaleString(Qt.locale(), "f", 0) + ")",
+                        model: [qsTr("As your language writes them (%1)").arg(Number(12345).toLocaleString(Qt.locale(), "f", 0)),
                                 "12,345", "12.345", "12\u202f345", "12345"]
                         selection: Math.max(0, formats.indexOf(Theme.numberFormat))
                         onActivated: function (i) { shell.setUiValue("numberFormat", formats[i]) }
-                        Accessible.name: "How numbers are written"
+                        Accessible.name: qsTr("How numbers are written")
                     }
                 }
                 StyledCheck {
                     objectName: "shelfArrows"
-                    text: "Show back and forward buttons on rows of albums"
+                    text: qsTr("Show back and forward buttons on rows of albums")
                     checked: shell.ui.shelfArrows !== "false"
                     onToggled: shell.setUiValue("shelfArrows", checked ? "true" : "false")
                 }
@@ -538,37 +552,37 @@ Item {
                     textFormat: Text.PlainText
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    text: "Rows that scroll sideways (Home's shelves, search results) always move with Shift+wheel, a tilting wheel or a touchpad swipe. Scrolling down the page doesn't stop at each row: a row takes the wheel when you start turning it over the row."
+                    text: qsTr("Rows that scroll sideways (Home's shelves, search results) always move with Shift+wheel, a tilting wheel or a touchpad swipe. Scrolling down the page doesn't stop at each row: a row takes the wheel when you start turning it over the row.")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
                 StyledCheck {
-                    text: "Show audio format and average bitrate on tracks"
+                    text: qsTr("Show audio format and average bitrate on tracks")
                     checked: player.showTrackInfo
                     onToggled: player.setShowTrackInfo(checked)
-                    Accessible.name: "Show track audio format and average bitrate"
+                    Accessible.name: qsTr("Show track audio format and average bitrate")
                 }
                 Text {
                     textFormat: Text.PlainText
                     width: parent.width
-                    text: "Shows compact format and approximate average bitrate badges in song rows and the now-playing bar."
+                    text: qsTr("Shows compact format and approximate average bitrate badges in song rows and the now-playing bar.")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                     wrapMode: Text.WordWrap
                 }
                 StyledCheck {
                     objectName: "explicitBadges"
-                    text: "Mark explicit songs with an E"
+                    text: qsTr("Mark explicit songs with an E")
                     checked: Rows.explicitBadges
                     onToggled: shell.setSongBadge("explicitBadges", checked)
                 }
                 StyledCheck {
                     objectName: "cleanBadges"
-                    text: "Mark clean (edited) versions with a C"
+                    text: qsTr("Mark clean (edited) versions with a C")
                     checked: Rows.cleanBadges
                     onToggled: shell.setSongBadge("cleanBadges", checked)
                 }
                 StyledCheck {
                     objectName: "hiResBadges"
-                    text: "Show a Hi-Res badge on 24-bit and higher songs"
+                    text: qsTr("Show a Hi-Res badge on 24-bit and higher songs")
                     checked: Rows.hiResBadges
                     onToggled: shell.setSongBadge("hiResBadges", checked)
                 }
@@ -576,26 +590,26 @@ Item {
                     visible: Rows.hiResBadges
                     leftPadding: 28
                     spacing: 12
-                    Text { anchors.verticalCenter: parent.verticalCenter; text: "Hi-Res badge"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: qsTr("Hi-Res badge"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                     StyledCombo {
                         objectName: "hiResBadgeStyle"
                         width: 230
-                        model: ["\"Hi-Res\"", "A gold M (Master)"]
+                        model: [qsTr("\"Hi-Res\""), qsTr("A gold M (Master)")]
                         selection: Rows.masterBadge ? 1 : 0
                         onActivated: function (i) { shell.setSongBadge("masterBadge", i === 1) }
-                        Accessible.name: "Hi-Res badge style"
+                        Accessible.name: qsTr("Hi-Res badge style")
                     }
                 }
                 StyledCheck {
                     objectName: "bitDepthBadges"
-                    text: "Show every song's bit depth and sample rate"
+                    text: qsTr("Show every song's bit depth and sample rate")
                     checked: Rows.bitDepth
                     onToggled: shell.setSongBadge("bitDepth", checked)
                 }
                 Text {
                     textFormat: Text.PlainText
                     width: parent.width
-                    text: "Explicit comes from the files' tags (iTunes advisory or an EXPLICIT tag); bit depth from lossless files (FLAC, ALAC, WAV, AIFF, WavPack, APE, DSD). Songs added before this version get both at the next scan."
+                    text: qsTr("Explicit comes from the files' tags (iTunes advisory or an EXPLICIT tag); bit depth from lossless files (FLAC, ALAC, WAV, AIFF, WavPack, APE, DSD). Songs added before this version get both at the next scan.")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                     wrapMode: Text.WordWrap
                 }
@@ -603,13 +617,13 @@ Item {
                     textFormat: Text.PlainText
                     width: parent.width
                     wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-                    text: "Custom themes: " + themeManager.userThemeDirectory + "/*.json"
+                    text: qsTr("Custom themes: %1").arg(themeManager.userThemeDirectory + "/*.json")
                     color: Theme.textDim
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(12)
                 }
                 PillButton {
-                    text: "Reload themes"
+                    text: qsTr("Reload themes")
                     onClicked: themeManager.reloadThemes()
                 }
             }
@@ -618,13 +632,13 @@ Item {
         SettingsSection {
             id: sec_features
             objectName: "settings_features"
-            title: "Features"
-            keywords: "hide show turn off sidebar pages order rearrange move arrange home cards internet radio stations podcasts lyrics stats recap history visualizer health folders liked"
+            title: qsTr("Features")
+            keywords: qsTr("hide show turn off sidebar pages order rearrange move arrange home cards internet radio stations podcasts lyrics stats recap history visualizer health folders liked")
             query: page.query
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
-                text: "Turn off what you don't use. It disappears everywhere (the sidebar, Ctrl+K, menus and shortcuts) and nothing is lost: switch it back on and it's all still there."
+                text: qsTr("Turn off what you don't use. It disappears everywhere (the sidebar, Ctrl+K, menus and shortcuts) and nothing is lost: switch it back on and it's all still there.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 wrapMode: Text.WordWrap
             }
@@ -655,34 +669,34 @@ Item {
                 }
             }
             FeatureGroup {
-                heading: "Listening"
-                items: [["stations", "Internet radio"], ["podcasts", "Podcasts"], ["servers", "Music servers"],
-                        ["lyrics", "Lyrics"], ["visualizer", "Visualizer"]]
+                heading: qsTr("Listening")
+                items: [["stations", qsTr("Internet radio")], ["podcasts", qsTr("Podcasts")], ["servers", qsTr("Music servers")],
+                        ["lyrics", qsTr("Lyrics")], ["visualizer", qsTr("Visualizer")]]
             }
             FeatureGroup {
-                heading: "Pages"
-                items: [["liked", "Liked Songs"], ["folders", "Folders"], ["stats", "Stats"], ["history", "History"],
-                        ["recap", "Recap"], ["health", "Library health"]]
+                heading: qsTr("Pages")
+                items: [["liked", qsTr("Liked Songs")], ["folders", qsTr("Folders")], ["stats", qsTr("Stats")], ["history", qsTr("History")],
+                        ["recap", qsTr("Recap")], ["health", qsTr("Library health")]]
             }
             FeatureGroup {
-                heading: "Home"
-                items: [["homeRandom", "Random album"], ["homeListening", "Listening card"],
-                        ["homeFacts", "Library facts"], ["homeShelves", "Album shelves"]]
+                heading: qsTr("Home")
+                items: [["homeRandom", qsTr("Random album")], ["homeListening", qsTr("Listening card")],
+                        ["homeFacts", qsTr("Library facts")], ["homeShelves", qsTr("Album shelves")]]
             }
             SettingsGroup {
                 id: sidebarGroup
                 key: "sidebarOrder"
-                title: "Sidebar order"
-                summary: "Move pages up or down"
+                title: qsTr("Sidebar order")
+                summary: qsTr("Move pages up or down")
                 query: page.query
                 Column {
                     id: sidebarOrderBox
                     objectName: "sidebarOrder"
                     width: parent.width
                     spacing: 6
-                    readonly property var names: ({ home: "Home", albums: "Albums", artists: "Artists", songs: "Songs",
-                        folders: "Folders", liked: "Liked Songs", stats: "Stats", history: "History", recap: "Recap",
-                        visualizer: "Visualizer", stations: "Internet radio", podcasts: "Podcasts" })
+                    readonly property var names: ({ home: qsTr("Home"), albums: qsTr("Albums"), artists: qsTr("Artists"), songs: qsTr("Songs"),
+                        folders: qsTr("Folders"), liked: qsTr("Liked Songs"), stats: qsTr("Stats"), history: qsTr("History"), recap: qsTr("Recap"),
+                        visualizer: qsTr("Visualizer"), stations: qsTr("Internet radio"), podcasts: qsTr("Podcasts") })
                     readonly property var shown: shell.sidebarOrder.filter(function (p) { return shell.features[p] !== false })
                     Row {
                         width: parent.width
@@ -690,16 +704,16 @@ Item {
                         Text {
                             textFormat: Text.PlainText
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "Sidebar order"
+                            text: qsTr("Sidebar order")
                             color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
                         }
-                        PillButton { objectName: "resetSidebarOrder"; height: 30; text: "Reset"; onClicked: shell.resetSidebarOrder() }
+                        PillButton { objectName: "resetSidebarOrder"; height: 30; text: qsTr("Reset"); onClicked: shell.resetSidebarOrder() }
                     }
                     Text {
                         textFormat: Text.PlainText
                         width: parent.width
                         wrapMode: Text.WordWrap
-                        text: "Move pages up or down here, drag them in the sidebar, or right-click one there. With a page focused, Alt+Up and Alt+Down move it too."
+                        text: qsTr("Move pages up or down here, drag them in the sidebar, or right-click one there. With a page focused, Alt+Up and Alt+Down move it too.")
                         color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                     }
                     Repeater {
@@ -725,14 +739,14 @@ Item {
                                     icon: "up"; size: 16
                                     enabled: index > 0
                                     opacity: enabled ? 1 : 0.35
-                                    tip: "Move " + sidebarOrderBox.names[modelData] + " up"
+                                    tip: qsTr("Move %1 up").arg(sidebarOrderBox.names[modelData])
                                     onClicked: shell.moveSidebarPage(modelData, -1)
                                 }
                                 IconButton {
                                     icon: "down"; size: 16
                                     enabled: index < sidebarOrderBox.shown.length - 1
                                     opacity: enabled ? 1 : 0.35
-                                    tip: "Move " + sidebarOrderBox.names[modelData] + " down"
+                                    tip: qsTr("Move %1 down").arg(sidebarOrderBox.names[modelData])
                                     onClicked: shell.moveSidebarPage(modelData, 1)
                                 }
                             }
@@ -745,74 +759,74 @@ Item {
         SettingsSection {
             id: sec_podcasts
             objectName: "settings_podcasts"
-            title: "Podcasts"
-            keywords: "podcast episodes skip back forward seconds feeds check refresh download keep remove storage played speed next"
+            title: qsTr("Podcasts")
+            keywords: qsTr("podcast episodes skip back forward seconds feeds check refresh download keep remove storage played speed next")
             query: page.query
             visible: matches && shell.features.podcasts !== false
             readonly property var o: podcasts.options
-            function secs(list) { return list.map(function (n) { return n + " seconds" }) }
+            function secs(list) { return list.map(function (n) { return Theme.counted(qsTr("%n second(s)", "", n), n) }) }
             OptionCombo {
-                label: "Skip back"
+                label: qsTr("Skip back")
                 values: [5, 10, 15, 30, 45, 60]; labels: sec_podcasts.secs(values)
                 current: sec_podcasts.o.skipBack
                 onPicked: function (v) { podcasts.setOption("skipBack", v) }
             }
             OptionCombo {
-                label: "Skip forward"
+                label: qsTr("Skip forward")
                 values: [10, 15, 30, 45, 60, 90]; labels: sec_podcasts.secs(values)
                 current: sec_podcasts.o.skipForward
                 onPicked: function (v) { podcasts.setOption("skipForward", v) }
             }
             OptionCombo {
-                label: "After an episode"
+                label: qsTr("After an episode")
                 values: ["next", "stop"]
-                labels: ["Play the show's next one", "Stop"]
+                labels: [qsTr("Play the show's next one"), qsTr("Stop")]
                 current: sec_podcasts.o.afterEpisode
                 onPicked: function (v) { podcasts.setOption("afterEpisode", v) }
             }
             StyledCheck {
                 objectName: "notifyNewEpisodes"
-                text: "Tell me when a show I follow has a new episode (a desktop notification)"
+                text: qsTr("Tell me when a show I follow has a new episode (a desktop notification)")
                 checked: sec_podcasts.o.notifyNew === 1
                 onToggled: podcasts.setOption("notifyNew", checked ? 1 : 0)
             }
             SettingsGroup {
                 key: "podcastsMore"
-                title: "When to check, and when an episode counts as played"
+                title: qsTr("When to check, and when an episode counts as played")
                 query: page.query
                 OptionCombo {
-                    label: "Check for new episodes"
+                    label: qsTr("Check for new episodes")
                     values: [1, 2, 4, 8, 12, 24, 0]
-                    labels: ["Every hour", "Every 2 hours", "Every 4 hours", "Every 8 hours", "Twice a day", "Once a day", "Only when I ask"]
+                    labels: [qsTr("Every hour"), qsTr("Every 2 hours"), qsTr("Every 4 hours"), qsTr("Every 8 hours"), qsTr("Twice a day"), qsTr("Once a day"), qsTr("Only when I ask")]
                     current: sec_podcasts.o.refreshHours
                     onPicked: function (v) { podcasts.setOption("refreshHours", v) }
                 }
                 OptionCombo {
-                    label: "Played when this close to the end"
+                    label: qsTr("Played when this close to the end")
                     values: [10, 30, 45, 60, 120, 300]
-                    labels: ["10 seconds", "30 seconds", "45 seconds", "1 minute", "2 minutes", "5 minutes"]
+                    labels: [qsTr("10 seconds"), qsTr("30 seconds"), qsTr("45 seconds"), qsTr("1 minute"), qsTr("2 minutes"), qsTr("5 minutes")]
                     current: sec_podcasts.o.playedWindow
                     onPicked: function (v) { podcasts.setOption("playedWindow", v) }
                 }
             }
-            Text { textFormat: Text.PlainText; text: "Downloads"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold }
+            Text { textFormat: Text.PlainText; text: qsTr("Downloads"); color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold }
             OptionCombo {
-                label: "A show you follow downloads"
+                label: qsTr("A show you follow downloads")
                 values: [0, 1, 2, 3, 5]
-                labels: ["Nothing by itself", "Its newest episode", "Its newest 2", "Its newest 3", "Its newest 5"]
+                labels: [qsTr("Nothing by itself"), qsTr("Its newest episode"), qsTr("Its newest 2"), qsTr("Its newest 3"), qsTr("Its newest 5")]
                 current: sec_podcasts.o.newShowDownloads
                 onPicked: function (v) { podcasts.setOption("newShowDownloads", v) }
             }
             OptionCombo {
-                label: "Keep downloads"
+                label: qsTr("Keep downloads")
                 values: ["played", "latest", "forever"]
-                labels: ["Until they're played", "Only the newest of each show", "Until I remove them"]
+                labels: [qsTr("Until they're played"), qsTr("Only the newest of each show"), qsTr("Until I remove them")]
                 current: sec_podcasts.o.keep
                 onPicked: function (v) { podcasts.setOption("keep", v) }
             }
             OptionCombo {
                 visible: sec_podcasts.o.keep === "latest"
-                label: "Newest to keep per show"
+                label: qsTr("Newest to keep per show")
                 values: [1, 2, 3, 5, 10]; labels: ["1", "2", "3", "5", "10"]
                 current: sec_podcasts.o.keepCount
                 onPicked: function (v) { podcasts.setOption("keepCount", v) }
@@ -822,23 +836,23 @@ Item {
                 Text {
                     textFormat: Text.PlainText
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Downloads take " + Theme.fmtBytes(podcasts.downloadsSize)
+                    text: qsTr("Downloads take %1").arg(Theme.fmtBytes(podcasts.downloadsSize))
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
                 }
-                PillButton { text: "Remove all downloads"; enabled: podcasts.downloadsSize > 0; onClicked: removeDownloadsDlg.open() }
+                PillButton { text: qsTr("Remove all downloads"); enabled: podcasts.downloadsSize > 0; onClicked: removeDownloadsDlg.open() }
             }
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Each show can have its own speed, skip its intro or outro, list oldest first and download its newest episodes: open the show and choose Show settings. Episodes in a folder you added are your own files and are never removed."
+                text: qsTr("Each show can have its own speed, skip its intro or outro, list oldest first and download its newest episodes: open the show and choose Show settings. Episodes in a folder you added are your own files and are never removed.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
             ConfirmDialog {
                 id: removeDownloadsDlg
-                title: "Remove every downloaded episode?"
-                body: "The files go; the episodes stay, and play from the web until downloaded again."
-                confirmText: "Remove downloads"
+                title: qsTr("Remove every downloaded episode?")
+                body: qsTr("The files go; the episodes stay, and play from the web until downloaded again.")
+                confirmText: qsTr("Remove downloads")
                 destructive: true
                 onAccepted: podcasts.removeAllDownloads()
             }
@@ -847,19 +861,19 @@ Item {
         SettingsSection {
             id: sec_playback
             objectName: "settings_playback"
-            title: "Playback"
-            keywords: "unplug unplugged headphones bluetooth disconnect sample rate resample resampling bit perfect signal path pipewire allowed rates 44.1 48 output device audio replaygain loudness preamp measure crossfade gapless album fade pause resume start startup open volume step wheel maximum limit loud speed sleep timer"
+            title: qsTr("Playback")
+            keywords: qsTr("unplug unplugged headphones bluetooth disconnect sample rate resample resampling bit perfect signal path pipewire allowed rates 44.1 48 output device audio replaygain loudness preamp measure crossfade gapless album fade pause resume start startup open volume step wheel maximum limit loud speed sleep timer")
             query: page.query
             StyledCheck {
                 objectName: "pauseOnUnplug"
-                text: "Pause when the headphones (or the device playing) go away"
+                text: qsTr("Pause when the headphones (or the device playing) go away")
                 checked: player.pauseOnUnplug
                 onToggled: player.setPauseOnUnplug(checked)
             }
             Flow {  // wraps in a narrow window
                 width: parent.width
                 spacing: 12
-                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Output device"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: qsTr("Output device"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledCombo {
                     id: deviceCombo
                     objectName: "outputDevice"
@@ -880,45 +894,45 @@ Item {
             Flow {  // wraps in a narrow window
                 width: parent.width
                 spacing: 12
-                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Output sample rate"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: qsTr("Output sample rate"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledCombo {
                     objectName: "outputRateMode"
                     width: Math.min(360, parent.width)
                     readonly property var modes: ["auto", "follows", "fixed"]
-                    model: [player.pipewireRates ? "Find out (PipeWire switches: " + player.pipewireRates + ")" : "Find out (the device's own rate)",
-                            "Follows each song (set up for it)", "Fixed at the device's rate"]
+                    model: [player.pipewireRates ? qsTr("Find out (PipeWire switches: %1)").arg(player.pipewireRates) : qsTr("Find out (the device's own rate)"),
+                            qsTr("Follows each song (set up for it)"), qsTr("Fixed at the device's rate")]
                     selection: Math.max(0, modes.indexOf(player.outputRateMode))
                     onActivated: function (i) { player.setOutputRateMode(modes[i]) }
-                    Accessible.name: "Output sample rate, for the signal path"
+                    Accessible.name: qsTr("Output sample rate, for the signal path")
                 }
             }
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "What the signal path assumes the output runs at. Hallucinate plays each song at its own rate; whether the output converts it is up to your system (PipeWire's allowed rates, a DAC's settings)."
+                text: qsTr("What the signal path assumes the output runs at. Hallucinate plays each song at its own rate; whether the output converts it is up to your system (PipeWire's allowed rates, a DAC's settings).")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
             Flow {  // wraps in a narrow window
                 width: parent.width
                 spacing: 12
-                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "ReplayGain"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: qsTr("ReplayGain"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledCombo {
                     objectName: "rgMode"
-                    model: ["Off", "Track", "Album"]
+                    model: [qsTr("Off"), qsTr("Track"), qsTr("Album")]
                     selection: ["off", "track", "album"].indexOf(player.replayGainMode)
                     onActivated: player.setReplayGainMode(["off", "track", "album"][currentIndex])
                 }
             }
             SettingsGroup {
                 key: "replayGain"
-                title: "ReplayGain details"
-                summary: "Preamp, measuring songs without tags"
+                title: qsTr("ReplayGain details")
+                summary: qsTr("Preamp, measuring songs without tags")
                 query: page.query
                 Flow {
                     width: parent.width
                     spacing: 12
-                    Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Preamp " + player.replayGainPreamp.toFixed(1) + " dB"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                    Text { height: 38; verticalAlignment: Text.AlignVCenter; text: qsTr("Preamp %1 dB").arg(Theme.num(player.replayGainPreamp, 1)); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                     StyledSlider {
                         width: 140
                         from: -15; to: 15; stepSize: 0.5
@@ -928,7 +942,7 @@ Item {
                 }
                 StyledCheck {
                     objectName: "autoReplayGain"
-                    text: "Measure new music by itself after each scan"
+                    text: qsTr("Measure new music by itself after each scan")
                     checked: replayGain.auto
                     onToggled: replayGain.setAuto(checked)
                 }
@@ -937,15 +951,15 @@ Item {
                     spacing: 12
                     PillButton {
                         objectName: "analyseReplayGain"
-                        text: replayGain.busy ? "Stop measuring" : "Measure songs without ReplayGain"
+                        text: replayGain.busy ? qsTr("Stop measuring") : qsTr("Measure songs without ReplayGain")
                         onClicked: replayGain.busy ? replayGain.cancel() : replayGain.analyseMissing()
                     }
                     Text {
                         textFormat: Text.PlainText
                         width: Math.min(implicitWidth, parent.width)
                         wrapMode: Text.WordWrap
-                        text: replayGain.busy ? "Measured " + Theme.num(replayGain.done) + " of " + Theme.num(replayGain.total) + " songs…"
-                            : "Measures loudness (EBU R128) for songs whose files have no ReplayGain tags. Files aren't changed."
+                        text: replayGain.busy ? Theme.counted(qsTr("Measured %1 of %n song(s)…", "", replayGain.total), replayGain.total).arg(Theme.num(replayGain.done))
+                            : qsTr("Measures loudness (EBU R128) for songs whose files have no ReplayGain tags. Files aren't changed.")
                         color: Theme.textDim
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(12)
@@ -955,7 +969,7 @@ Item {
             Flow {
                 width: parent.width
                 spacing: 12
-                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Crossfade " + (player.crossfade > 0 ? player.crossfade + " s" : "off"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: player.crossfade > 0 ? qsTr("Crossfade %1 s").arg(Theme.num(player.crossfade, player.crossfade % 1 ? 1 : 0)) : qsTr("Crossfade off"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledSlider {
                     objectName: "crossfade"
                     width: 200
@@ -967,7 +981,7 @@ Item {
             Flow {
                 width: parent.width
                 spacing: 12
-                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Volume step"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: qsTr("Volume step"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledCombo {
                     objectName: "volumeStep"
                     readonly property var steps: [0.01, 0.02, 0.05, 0.1]
@@ -975,62 +989,62 @@ Item {
                     model: ["1%", "2%", "5%", "10%"]
                     selection: Math.max(0, steps.findIndex(s => Math.abs(s - player.volumeStep) < 0.001))
                     onActivated: player.setVolumeStep(steps[currentIndex])
-                    Accessible.name: "Volume step for the mouse wheel and arrow keys"
+                    Accessible.name: qsTr("Volume step for the mouse wheel and arrow keys")
                 }
-                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Maximum volume " + Math.round(player.maxVolume * 100) + "%"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: qsTr("Maximum volume %1%").arg(Math.round(player.maxVolume * 100)); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledSlider {
                     objectName: "maxVolume"
                     width: 160
                     from: 0.1; to: 1; stepSize: 0.05
                     value: player.maxVolume
                     onMoved: player.setMaxVolume(value)
-                    Accessible.name: "Maximum volume"
+                    Accessible.name: qsTr("Maximum volume")
                 }
             }
             StyledCheck {
                 objectName: "resumeOnStart"
-                text: "Start playing when Hallucinate opens (carry on where it was)"
+                text: qsTr("Start playing when Hallucinate opens (carry on where it was)")
                 checked: player.resumeOnStart
                 onToggled: player.setResumeOnStart(checked)
             }
             StyledCheck {
                 objectName: "crossfadeAlbums"
                 visible: player.crossfade > 0
-                text: "Crossfade between songs of the same album too (off: an album plays gaplessly, as it runs)"
+                text: qsTr("Crossfade between songs of the same album too (off: an album plays gaplessly, as it runs)")
                 checked: player.crossfadeAlbums
                 onToggled: player.setCrossfadeAlbums(checked)
             }
             Flow {
                 width: parent.width
                 spacing: 12
-                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Fade on pause and play"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: qsTr("Fade on pause and play"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledCombo {
                     objectName: "pauseFade"
                     readonly property var lengths: [0, 150, 400, 1000]
                     width: 200
-                    model: ["Off", "Quick", "Gentle", "Slow"]
+                    model: [qsTr("Off"), qsTr("Quick"), qsTr("Gentle"), qsTr("Slow")]
                     selection: Math.max(0, lengths.indexOf(player.pauseFade))
                     onActivated: player.setPauseFade(lengths[currentIndex])
-                    Accessible.name: "Fade on pause and play"
+                    Accessible.name: qsTr("Fade on pause and play")
                 }
             }
-            Text { width: parent.width; wrapMode: Text.WordWrap; text: "Gapless playback is always on; with crossfade off, consecutive tracks play back to back. Playback speed and the sleep timer are in the ⋯ menu of the player bar."; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
+            Text { width: parent.width; wrapMode: Text.WordWrap; text: qsTr("Gapless playback is always on; with crossfade off, consecutive tracks play back to back. Playback speed and the sleep timer are in the ⋯ menu of the player bar."); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); textFormat: Text.PlainText }
         }
         SettingsSection {
             id: sec_sound
             objectName: "settings_sound"
-            title: "Sound"
-            keywords: "equalizer eq bass treble headphones autoeq crossfeed"
+            title: qsTr("Sound")
+            keywords: qsTr("equalizer eq bass treble headphones autoeq crossfeed")
             query: page.query
             EqualizerPanel { width: parent.width }
             Flow {
                 width: parent.width
                 spacing: 12
-                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: "Headphone crossfeed"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: qsTr("Headphone crossfeed"); color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledCombo {
                     objectName: "crossfeed"
                     enabled: player.eqAvailable
-                    model: ["Off", "Light", "Medium", "Strong"]
+                    model: [qsTr("Off"), qsTr("Light"), qsTr("Medium"), qsTr("Strong")]
                     selection: player.crossfeedPresets.indexOf(player.crossfeed)
                     onActivated: player.setCrossfeed(player.crossfeedPresets[currentIndex])
                 }
@@ -1039,8 +1053,7 @@ Item {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Lets each ear hear a little of the other channel, as from speakers. Old stereo recordings with "
-                    + "instruments hard left or right get much easier on the ears over headphones."
+                text: qsTr("Lets each ear hear a little of the other channel, as from speakers. Old stereo recordings with instruments hard left or right get much easier on the ears over headphones.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
 
@@ -1048,26 +1061,28 @@ Item {
         SettingsSection {
             id: sec_library
             objectName: "settings_library"
-            title: "Library"
-            keywords: "genres genre music folders scan rescan start startup watch watching health tags files ratings stars cover art cover.jpg embed import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums backup export your data move computer duplicates already sort order sidebar select selection selecting drag multiple"
+            title: qsTr("Library")
+            keywords: qsTr("genres genre music folders scan rescan start startup watch watching health tags files ratings stars cover art cover.jpg embed import strawberry clementine rhythmbox musicbee itunes foobar playlists hidden removed restore albums backup export your data move computer duplicates already sort order sidebar select selection selecting drag multiple")
             query: page.query
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Folders are scanned in the background" + (library.scanAtStart ? " at every start" : "")
-                      + (library.watching ? " and watched for changes." : ". Rescan picks up what's new.")
+                text: library.scanAtStart ? (library.watching ? qsTr("Folders are scanned in the background at every start and watched for changes.")
+                                                              : qsTr("Folders are scanned in the background at every start. Rescan picks up what's new."))
+                                          : (library.watching ? qsTr("Folders are scanned in the background and watched for changes.")
+                                                              : qsTr("Folders are scanned in the background. Rescan picks up what's new."))
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             StyledCheck {
                 objectName: "scanAtStart"
-                text: "Look for new and changed files when Hallucinate starts"
+                text: qsTr("Look for new and changed files when Hallucinate starts")
                 checked: library.scanAtStart
                 onToggled: library.setScanAtStart(checked)
             }
             StyledCheck {
                 objectName: "watchFolders"
-                text: "Watch the folders and pick up changes as they happen"
+                text: qsTr("Watch the folders and pick up changes as they happen")
                 checked: library.watching
                 onToggled: library.setWatching(checked)
             }
@@ -1087,7 +1102,7 @@ Item {
                         id: rm
                         anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
                         icon: "close"; size: 14
-                        tip: "Remove this folder from the library"
+                        tip: qsTr("Remove this folder from the library")
                         onClicked: Nav.removeFolder(modelData)
                     }
                 }
@@ -1110,12 +1125,12 @@ Item {
                 PillButton {
                     id: add
                     primary: true
-                    text: "Add folder"
+                    text: qsTr("Add folder")
                     onClicked: { library.addFolder(pathField.text); pathField.text = "" }
                 }
-                PillButton { text: "Choose folder…"; onClicked: picker.open() }
-                PillButton { text: "Rescan now"; onClicked: library.rescan() }
-                PillButton { objectName: "openHealth"; visible: shell.features.health !== false; text: "Library health"; onClicked: Nav.openHealth() }
+                PillButton { text: qsTr("Choose folder…"); onClicked: picker.open() }
+                PillButton { text: qsTr("Rescan now"); onClicked: library.rescan() }
+                PillButton { objectName: "openHealth"; visible: shell.features.health !== false; text: qsTr("Library health"); onClicked: Nav.openHealth() }
             }
             FolderPicker { id: picker }
             ScanBar { width: parent.width }
@@ -1130,13 +1145,13 @@ Item {
                 width: parent.width
                 visible: library.missingFolders.length > 0
                 wrapMode: Text.WordWrap
-                text: "Folder not found or unreadable: " + library.missingFolders.join(", ")
+                text: qsTr("Folder not found or unreadable: %1").arg(library.missingFolders.join(", "))
                 color: Theme.error; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Text {
                 textFormat: Text.PlainText
                 visible: library.unreadableFiles > 0 && !library.scanning
-                text: Theme.num(library.unreadableFiles) + " files could not be read and were skipped."
+                text: Theme.counted(qsTr("%n file(s) could not be read and were skipped.", "", library.unreadableFiles), library.unreadableFiles)
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Flow {
@@ -1147,48 +1162,47 @@ Item {
                     textFormat: Text.PlainText
                     objectName: "hiddenCount"
                     height: 32; verticalAlignment: Text.AlignVCenter
-                    text: Theme.num(library.hiddenCount) + (library.hiddenCount === 1 ? " file" : " files")
-                          + " removed from the library (still on disk)"
+                    text: Theme.counted(qsTr("%n file(s) removed from the library (still on disk)", "", library.hiddenCount), library.hiddenCount)
                     color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                 }
                 PillButton {
                     objectName: "restoreHidden"
                     height: 32
-                    text: "Bring them back"
-                    onClicked: { library.restoreHidden(); Nav.notify("Rescanning to bring them back…") }
+                    text: qsTr("Bring them back")
+                    onClicked: { library.restoreHidden(); Nav.notify(qsTr("Rescanning to bring them back…")) }
                 }
             }
             SettingsGroup {
                 key: "playlistsSelecting"
-                title: "Playlists and selecting"
-                summary: "Songs already in a playlist, the sidebar's order, how selecting works"
+                title: qsTr("Playlists and selecting")
+                summary: qsTr("Songs already in a playlist, the sidebar's order, how selecting works")
                 query: page.query
                 OptionCombo {
                     objectName: "playlistDuplicates"
-                    label: "Adding a song a playlist already has"
+                    label: qsTr("Adding a song a playlist already has")
                     values: ["skip", "ask", "add"]
-                    labels: ["Leave it out (Add anyway is in the note)", "Ask each time", "Add it again"]
+                    labels: [qsTr("Leave it out (Add anyway is in the note)"), qsTr("Ask each time"), qsTr("Add it again")]
                     current: shell.ui.playlistDuplicates || "skip"
                     onPicked: function (v) { shell.setUiValue("playlistDuplicates", v) }
                 }
                 OptionCombo {
                     objectName: "playlistSortSetting"
-                    label: "Playlists in the sidebar"
+                    label: qsTr("Playlists in the sidebar")
                     values: ["name", "name-desc", "newest", "oldest", "added", "songs", "custom"]
-                    labels: ["By name, A–Z", "By name, Z–A", "Newest first", "Oldest first", "Recently added to", "Most songs",
-                             "My own order (Move up and down in a playlist's menu)"]
+                    labels: [qsTr("By name, A–Z"), qsTr("By name, Z–A"), qsTr("Newest first"), qsTr("Oldest first"), qsTr("Recently added to"), qsTr("Most songs"),
+                             qsTr("My own order (Move up and down in a playlist's menu)")]
                     current: shell.ui.playlistSort || "name"
                     onPicked: function (v) { shell.setUiValue("playlistSort", v) }
                 }
                 StyledCheck {
                     objectName: "keepSelection"
-                    text: "Keep what's selected while I go to other pages (gather songs from several places)"
+                    text: qsTr("Keep what's selected while I go to other pages (gather songs from several places)")
                     checked: (shell.ui.keepSelection || "true") === "true"
                     onToggled: shell.setUiValue("keepSelection", checked ? "true" : "false")
                 }
                 StyledCheck {
                     objectName: "dragSelect"
-                    text: "Drag across a list with the mouse to select (from a selected item: carry it to a playlist or the queue)"
+                    text: qsTr("Drag across a list with the mouse to select (from a selected item: carry it to a playlist or the queue)")
                     checked: (shell.ui.dragSelect || "true") === "true"
                     onToggled: shell.setUiValue("dragSelect", checked ? "true" : "false")
                 }
@@ -1196,59 +1210,56 @@ Item {
                     textFormat: Text.PlainText
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    text: "Select with Ctrl+click (one more), Shift+click (everything between), Ctrl+A (the whole list) or Shift+arrow keys. "
-                          + "Esc clears it, with Undo."
+                    text: qsTr("Select with Ctrl+click (one more), Shift+click (everything between), Ctrl+A (the whole list) or Shift+arrow keys. Esc clears it, with Undo.")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
             }
             SettingsGroup {
                 key: "libraryFiles"
-                title: "Files and tags"
-                summary: "Ratings and covers in files, how many genres show"
+                title: qsTr("Files and tags")
+                summary: qsTr("Ratings and covers in files, how many genres show")
                 query: page.query
                 StyledCheck {
                     objectName: "ratingsInFiles"
-                    text: "Save star ratings in the songs' own tags too, so other players see them"
+                    text: qsTr("Save star ratings in the songs' own tags too, so other players see them")
                     checked: userLib.ratingsInFiles
                     onToggled: userLib.setRatingsInFiles(checked)
                 }
                 StyledCheck {
                     objectName: "coversToFolder"
-                    text: "Save covers you add as cover.jpg in the album's folder"
+                    text: qsTr("Save covers you add as cover.jpg in the album's folder")
                     checked: metaEditor.coversToFolder
                     onToggled: metaEditor.setCoversToFolder(checked)
                 }
                 StyledCheck {
                     objectName: "embedCovers"
-                    text: "Also embed covers you add in the songs themselves"
+                    text: qsTr("Also embed covers you add in the songs themselves")
                     checked: metaEditor.embedCovers
                     onToggled: metaEditor.setEmbedCovers(checked)
                 }
                 StyledCheck {
                     objectName: "allGenresAlbums"
-                    text: "Show every genre on album and artist pages (not just the main one)"
+                    text: qsTr("Show every genre on album and artist pages (not just the main one)")
                     checked: shell.allGenresAlbums
                     onToggled: shell.setAllGenresAlbums(checked)
                 }
                 StyledCheck {
                     objectName: "allGenresSongs"
-                    text: "Show every genre of the playing song (not just the main one)"
+                    text: qsTr("Show every genre of the playing song (not just the main one)")
                     checked: shell.allGenresSongs
                     onToggled: shell.setAllGenresSongs(checked)
                 }
             }
             SettingsGroup {
                 key: "otherPlayer"
-                title: "From another player"
-                summary: "Strawberry, Clementine, Rhythmbox, MusicBee, iTunes, foobar2000"
+                title: qsTr("From another player")
+                summary: qsTr("Strawberry, Clementine, Rhythmbox, MusicBee, iTunes, foobar2000")
                 query: page.query
                 Text {
                     textFormat: Text.PlainText
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    text: "Bring over play counts, skips, ratings and playlists from Strawberry, Clementine, Rhythmbox, MusicBee "
-                        + "or iTunes. Songs are matched to your library; importing again never counts anything twice, and "
-                        + "ratings you set here are kept."
+                    text: qsTr("Bring over play counts, skips, ratings and playlists from Strawberry, Clementine, Rhythmbox, MusicBee or iTunes. Songs are matched to your library; importing again never counts anything twice, and ratings you set here are kept.")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                 }
                 Flow {
@@ -1259,19 +1270,19 @@ Item {
                         model: userLib.otherPlayerLibraries()
                         PillButton {
                             required property var modelData
-                            text: "Import from " + modelData.name
+                            text: qsTr("Import from %1").arg(modelData.name)
                             enabled: !userLib.playerImportBusy
                             onClicked: userLib.importFromPlayer(modelData.path)
                         }
                     }
                     PillButton {
                         objectName: "importPlayerFile"
-                        text: foundPlayers.count ? "Choose another library file…" : "Choose a library file…"
+                        text: foundPlayers.count ? qsTr("Choose another library file…") : qsTr("Choose a library file…")
                         enabled: !userLib.playerImportBusy
                         onClicked: playerFile.open()
                     }
                     PillButton {
-                        text: userLib.playerImportBusy ? "Importing…" : "foobar2000: play counts from tags"
+                        text: userLib.playerImportBusy ? qsTr("Importing…") : qsTr("foobar2000: play counts from tags")
                         enabled: !userLib.playerImportBusy
                         onClicked: userLib.importTagStatistics()
                     }
@@ -1280,15 +1291,13 @@ Item {
                     textFormat: Text.PlainText
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    text: "MusicBee: turn on Preferences → Library → “make library and playlists accessible to other "
-                        + "applications”, then choose its iTunes Music Library.xml. foobar2000 keeps its statistics to "
-                        + "itself, so write them to the files with foo_playcount first; its playlists come over as M3U files."
+                    text: qsTr("MusicBee: turn on Preferences → Library → “make library and playlists accessible to other applications”, then choose its iTunes Music Library.xml. foobar2000 keeps its statistics to itself, so write them to the files with foo_playcount first; its playlists come over as M3U files.")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
                 FileDialog {
                     id: playerFile
-                    title: "Choose another player's library"
-                    nameFilters: ["Player libraries (*.db *.xml)", "All files (*)"]
+                    title: qsTr("Choose another player's library")
+                    nameFilters: [qsTr("Player libraries (*.db *.xml)"), qsTr("All files (*)")]
                     onAccepted: userLib.importFromPlayer(selectedFile.toString())
                 }
             }
@@ -1298,39 +1307,39 @@ Item {
                 spacing: 10
                 Text {
                     textFormat: Text.PlainText
-                    text: "Your likes, ratings, playlists, history, stations and shows"
+                    text: qsTr("Your likes, ratings, playlists, history, stations and shows")
                     color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                 }
-                PillButton { objectName: "exportBackup"; height: 32; text: "Back up…"; onClicked: backupSaveDlg.open() }
-                PillButton { objectName: "importBackup"; height: 32; text: "Restore…"; onClicked: backupOpenDlg.open() }
+                PillButton { objectName: "exportBackup"; height: 32; text: qsTr("Back up…"); onClicked: backupSaveDlg.open() }
+                PillButton { objectName: "importBackup"; height: 32; text: qsTr("Restore…"); onClicked: backupOpenDlg.open() }
             }
             FileDialog {
                 id: backupSaveDlg
-                title: "Back up your data"
+                title: qsTr("Back up your data")
                 fileMode: FileDialog.SaveFile
                 defaultSuffix: "hallucinate-backup"
-                nameFilters: ["Hallucinate backup (*.hallucinate-backup)"]
+                nameFilters: [qsTr("Hallucinate backup (*.hallucinate-backup)")]
                 onAccepted: Nav.notify(shell.exportBackup(selectedFile.toString()))
             }
             FileDialog {
                 id: backupOpenDlg
-                title: "Restore from a backup"
-                nameFilters: ["Hallucinate backup (*.hallucinate-backup)", "All files (*)"]
+                title: qsTr("Restore from a backup")
+                nameFilters: [qsTr("Hallucinate backup (*.hallucinate-backup)"), qsTr("All files (*)")]
                 onAccepted: Nav.notify(shell.importBackup(selectedFile.toString()))
             }
         }
         SettingsSection {
             id: sec_servers
             objectName: "settings_servers"
-            title: "Music servers"
-            keywords: "server servers subsonic navidrome gonic airsonic ampache jellyfin emby stream remote network nas sync offline copy copies download keep"
+            title: qsTr("Music servers")
+            keywords: qsTr("server servers subsonic navidrome gonic airsonic ampache jellyfin emby stream remote network nas sync offline copy copies download keep")
             query: page.query
             visible: matches && shell.features.servers === true
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Songs on your Jellyfin server, or your Navidrome, Gonic, Airsonic or other Subsonic server, join your library and play like your own files. The sign-in stays in your system keyring (for Jellyfin, only the access token it gives). Songs from a server that can't be reached are skipped."
+                text: qsTr("Songs on your Jellyfin server, or your Navidrome, Gonic, Airsonic or other Subsonic server, join your library and play like your own files. The sign-in stays in your system keyring (for Jellyfin, only the access token it gives). Songs from a server that can't be reached are skipped.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Repeater {
@@ -1356,13 +1365,13 @@ Item {
                             width: parent.width
                             elide: Text.ElideRight
                             readonly property var m: serverRow.modelData
-                            text: (m.status === "syncing" ? "Reading its songs…"
-                                   : m.status === "checking" ? "Checking…"
-                                   : m.status === "down" ? "Can't be reached" + (m.error ? ": " + m.error : "") + " (tried again every few minutes)"
+                            text: (m.status === "syncing" ? qsTr("Reading its songs…")
+                                   : m.status === "checking" ? qsTr("Checking…")
+                                   : m.status === "down" ? (m.error ? qsTr("Can't be reached: %1 (tried again every few minutes)").arg(m.error) : qsTr("Can't be reached (tried again every few minutes)"))
                                    : m.status === "error" ? m.error
-                                   : m.songs.toLocaleString(Qt.locale(), "f", 0) + (m.songs === 1 ? " song" : " songs")
+                                   : Theme.counted(qsTr("%n song(s)", "", m.songs), m.songs)
                                      + (m.error ? "  ·  " + m.error : ""))
-                                  + (m.secure ? "" : "  ·  not a secure link")
+                                  + (m.secure ? "" : qsTr("  ·  not a secure link"))
                             color: m.status === "down" || m.status === "error" ? Theme.error : Theme.textDim
                             font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                         }
@@ -1374,14 +1383,14 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         height: 32
                         primary: true
-                        text: "Sign in again…"
+                        text: qsTr("Sign in again…")
                         onClicked: { signInDlg.serverId = serverRow.modelData.id; signInDlg.what = serverRow.modelData.name; signInDlg.open() }
                     }
                     PillButton {
                         id: syncButton
                         anchors.verticalCenter: parent.verticalCenter
                         height: 32
-                        text: "Sync now"
+                        text: qsTr("Sync now")
                         enabled: !serverRow.modelData.busy
                         onClicked: servers.sync(serverRow.modelData.id)
                     }
@@ -1389,7 +1398,7 @@ Item {
                         id: removeButton
                         anchors.verticalCenter: parent.verticalCenter
                         height: 32
-                        text: "Remove"
+                        text: qsTr("Remove")
                         onClicked: { removeServerDlg.serverId = serverRow.modelData.id; removeServerDlg.what = serverRow.modelData.name; removeServerDlg.open() }
                     }
                 }
@@ -1397,7 +1406,7 @@ Item {
             PillButton {
                 objectName: "addServer"
                 primary: true
-                text: "Add a server…"
+                text: qsTr("Add a server…")
                 onClicked: addServerDlg.open()
             }
             // Songs kept on this computer, to play without the server (right-click an album, playlist or song)
@@ -1407,25 +1416,25 @@ Item {
                 width: parent.width
                 wrapMode: Text.WordWrap
                 text: (serverCopies.count > 0
-                       ? serverCopies.count.toLocaleString(Qt.locale(), "f", 0) + (serverCopies.count === 1 ? " song" : " songs")
-                         + " kept on this computer (" + Theme.fmtBytes(serverCopies.bytes) + "): they play without the server, in offline mode too."
-                       : "To play a server's songs without it (on a train, say), right-click an album, playlist or song and choose Keep on this computer.")
-                      + (serverCopies.waiting > 0 ? "  Downloading " + Theme.num(serverCopies.waiting) + " more"
-                         + (serverCopies.busy ? " (" + Math.round(serverCopies.progress * 100) + "% of the current one)" : shell.offlineMode ? ", once offline mode is off" : "") + "." : "")
+                       ? Theme.counted(qsTr("%n song(s) kept on this computer (%1): they play without the server, in offline mode too.", "", serverCopies.count), serverCopies.count).arg(Theme.fmtBytes(serverCopies.bytes))
+                       : qsTr("To play a server's songs without it (on a train, say), right-click an album, playlist or song and choose Keep on this computer."))
+                      + (serverCopies.waiting <= 0 ? "" : "  " + (serverCopies.busy ? qsTr("Downloading %1 more (%2% of the current one).").arg(Theme.num(serverCopies.waiting)).arg(Math.round(serverCopies.progress * 100))
+                                                                 : shell.offlineMode ? qsTr("Downloading %1 more, once offline mode is off.").arg(Theme.num(serverCopies.waiting))
+                                                                 : qsTr("Downloading %1 more.").arg(Theme.num(serverCopies.waiting))))
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             PillButton {
                 objectName: "removeServerCopies"
                 visible: serverCopies.count > 0 || serverCopies.waiting > 0
-                text: "Remove all copies…"
+                text: qsTr("Remove all copies…")
                 onClicked: removeCopiesDlg.open()
             }
             ConfirmDialog {
                 id: removeCopiesDlg
-                title: "Remove the copies on this computer?"
-                confirmText: "Remove copies"
+                title: qsTr("Remove the copies on this computer?")
+                confirmText: qsTr("Remove copies")
                 destructive: true
-                body: "The songs stay in your library and on the server; they stream again instead of playing from this computer."
+                body: qsTr("The songs stay in your library and on the server; they stream again instead of playing from this computer.")
                 onAccepted: serverCopies.removeAll()
             }
             Dialog {
@@ -1437,7 +1446,7 @@ Item {
                 anchors.centerIn: parent
                 modal: true
                 width: Math.min(420, (parent ? parent.width : 420) - 40)
-                title: "Sign in to " + what + " again"
+                title: qsTr("Sign in to %1 again").arg(what)
                 standardButtons: Dialog.Ok | Dialog.Cancel
                 onAboutToShow: newPassword.text = ""
                 onAccepted: servers.signInAgain(serverId, newPassword.text)
@@ -1448,20 +1457,20 @@ Item {
                         textFormat: Text.PlainText
                         width: parent.width
                         wrapMode: Text.WordWrap
-                        text: "The server turned down the saved sign-in. Enter the password again: your playlists, plays and ratings for its songs stay as they are."
+                        text: qsTr("The server turned down the saved sign-in. Enter the password again: your playlists, plays and ratings for its songs stay as they are.")
                         color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                     }
                     TextField {
                         id: newPassword
                         width: parent.width
                         echoMode: TextInput.Password
-                        placeholderText: "Password"
+                        placeholderText: qsTr("Password")
                         placeholderTextColor: Theme.textDim
                         color: Theme.text
                         font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
                         background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: newPassword.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                         onAccepted: signInDlg.accept()
-                        Accessible.name: "Password"
+                        Accessible.name: qsTr("Password")
                     }
                 }
             }
@@ -1469,10 +1478,10 @@ Item {
                 id: removeServerDlg
                 property string serverId: ""
                 property string what: ""
-                title: "Remove this server?"
-                confirmText: "Remove server"
+                title: qsTr("Remove this server?")
+                confirmText: qsTr("Remove server")
                 destructive: true
-                body: "Its songs leave your library and its password leaves the keyring. Nothing on the server changes."
+                body: qsTr("Its songs leave your library and its password leaves the keyring. Nothing on the server changes.")
                 onAccepted: servers.removeServer(serverId)
             }
             Dialog {
@@ -1482,7 +1491,7 @@ Item {
                 anchors.centerIn: parent
                 width: Math.min(460, (parent ? parent.width : 460) - 40)
                 modal: true
-                title: "Add a music server"
+                title: qsTr("Add a music server")
                 standardButtons: Dialog.Ok | Dialog.Cancel
                 property string kind: "subsonic"
                 readonly property bool ready: serverLink.text.trim().length > 0 && serverUser.text.trim().length > 0
@@ -1502,20 +1511,20 @@ Item {
                         spacing: 6
                         Chip {
                             objectName: "serverKindSubsonic"
-                            text: "Subsonic (Navidrome, Gonic…)"
+                            text: qsTr("Subsonic (Navidrome, Gonic…)")
                             selected: addServerDlg.kind === "subsonic"
                             onClicked: addServerDlg.kind = "subsonic"
                         }
                         Chip {
                             objectName: "serverKindJellyfin"
-                            text: "Jellyfin"
+                            text: qsTr("Jellyfin")
                             selected: addServerDlg.kind === "jellyfin"
                             onClicked: addServerDlg.kind = "jellyfin"
                         }
                     }
                     TextField {
                         id: serverLink; objectName: "serverLink"; width: parent.width; selectByMouse: true
-                        placeholderText: "Server link (https://music.example.com)"; Accessible.name: "Server link"
+                        placeholderText: "Server link (https://music.example.com)"; Accessible.name: qsTr("Server link")
                         onAccepted: if (addServerDlg.ready) addServerDlg.accept()
                     }
                     Text {
@@ -1523,22 +1532,22 @@ Item {
                         textFormat: Text.PlainText
                         width: parent.width
                         wrapMode: Text.WordWrap
-                        text: "This isn't a secure (https) link and isn't on your home network: anyone on the networks in between could see what you play and reuse your sign-in."
+                        text: qsTr("This isn't a secure (https) link and isn't on your home network: anyone on the networks in between could see what you play and reuse your sign-in.")
                         color: Theme.error; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                     }
                     TextField {
                         id: serverUser; objectName: "serverUser"; width: parent.width; selectByMouse: true
-                        placeholderText: "User name"; Accessible.name: "User name"
+                        placeholderText: qsTr("User name"); Accessible.name: qsTr("User name")
                         onAccepted: if (addServerDlg.ready) addServerDlg.accept()
                     }
                     TextField {
                         id: serverPassword; objectName: "serverPassword"; width: parent.width
-                        echoMode: TextInput.Password; placeholderText: "Password"; Accessible.name: "Password"
+                        echoMode: TextInput.Password; placeholderText: qsTr("Password"); Accessible.name: qsTr("Password")
                         onAccepted: if (addServerDlg.ready) addServerDlg.accept()
                     }
                     TextField {
                         id: serverName; width: parent.width; selectByMouse: true
-                        placeholderText: "Name (optional)"; Accessible.name: "Server name"
+                        placeholderText: qsTr("Name (optional)"); Accessible.name: qsTr("Server name")
                         onAccepted: if (addServerDlg.ready) addServerDlg.accept()
                     }
                 }
@@ -1547,26 +1556,26 @@ Item {
         SettingsSection {
             id: sec_remote
             objectName: "settings_remote"
-            title: "Remote & web"
-            keywords: "remote phone web browser interface control pair pairing device devices network lan wifi headless tablet"
+            title: qsTr("Remote & web")
+            keywords: qsTr("remote phone web browser interface control pair pairing device devices network lan wifi headless tablet")
             query: page.query
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Control Hallucinate from your phone, a tablet or a browser: play, pause and skip, the queue, search and your library. Each device pairs once with a code from here, and can be removed any time. A remote can't change your files or settings."
+                text: qsTr("Control Hallucinate from your phone, a tablet or a browser: play, pause and skip, the queue, search and your library. Each device pairs once with a code from here, and can be removed any time. A remote can't change your files or settings.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             StyledCheck {
                 objectName: "remoteOn"
-                text: "Turn on the web interface and remote"
+                text: qsTr("Turn on the web interface and remote")
                 checked: webRemote.on
                 onToggled: webRemote.setOn(checked)
             }
             StyledCheck {
                 objectName: "remoteNetwork"
                 enabled: webRemote.on
-                text: "Let other devices on your network connect (your phone on the same Wi-Fi). Only on networks you trust, like your home's"
+                text: qsTr("Let other devices on your network connect (your phone on the same Wi-Fi). Only on networks you trust, like your home's")
                 checked: webRemote.network
                 onToggled: webRemote.setNetwork(checked)
             }
@@ -1584,7 +1593,7 @@ Item {
                 spacing: 8
                 Text {
                     textFormat: Text.PlainText
-                    text: webRemote.network ? "Open one of these on your phone or another computer:" : "Open this in a browser on this computer:"
+                    text: webRemote.network ? qsTr("Open one of these on your phone or another computer:") : qsTr("Open this in a browser on this computer:")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                 }
                 Repeater {
@@ -1605,11 +1614,11 @@ Item {
                     PillButton {
                         objectName: "pairDevice"
                         primary: true
-                        text: webRemote.code.length ? "New code" : "Pair a device…"
+                        text: webRemote.code.length ? qsTr("New code") : qsTr("Pair a device…")
                         onClicked: webRemote.pairDevice()
                     }
                     PillButton {
-                        text: "Open in browser"
+                        text: qsTr("Open in browser")
                         onClicked: Qt.openUrlExternally(webRemote.links[webRemote.links.length - 1]
                                                         + (webRemote.code.length ? "#pair=" + webRemote.code : ""))
                     }
@@ -1624,7 +1633,7 @@ Item {
                         spacing: 6
                         Text {
                             textFormat: Text.PlainText
-                            text: "Enter this code on the device"
+                            text: qsTr("Enter this code on the device")
                             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                         }
                         Text {
@@ -1636,17 +1645,18 @@ Item {
                         }
                         Text {
                             textFormat: Text.PlainText
-                            text: "Works once, for " + Math.max(0, Math.ceil(webRemote.codeSeconds / 60)) + " more minute" + (webRemote.codeSeconds > 60 ? "s" : "")
+                            readonly property int minutes: Math.max(0, Math.ceil(webRemote.codeSeconds / 60))
+                            text: Theme.counted(qsTr("Works once, for %n more minute(s)", "", minutes), minutes)
                             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                         }
-                        PillButton { height: 30; text: "Cancel"; onClicked: webRemote.cancelCode() }
+                        PillButton { height: 30; text: qsTr("Cancel"); onClicked: webRemote.cancelCode() }
                     }
                 }
             }
             SettingsGroup {
                 key: "remoteDevices"
-                title: "Paired devices"
-                summary: webRemote.pairedDevices.length ? Theme.num(webRemote.pairedDevices.length) + (webRemote.pairedDevices.length === 1 ? " device" : " devices") : "None yet"
+                title: qsTr("Paired devices")
+                summary: webRemote.pairedDevices.length ? Theme.counted(qsTr("%n device(s)", "", webRemote.pairedDevices.length), webRemote.pairedDevices.length) : qsTr("None yet")
                 query: page.query
                 Repeater {
                     model: webRemote.pairedDevices
@@ -1663,23 +1673,24 @@ Item {
                                 width: parent.width
                                 wrapMode: Text.Wrap
                                 textFormat: Text.PlainText
-                                text: "Paired " + new Date(modelData.paired * 1000).toLocaleDateString() + "  ·  last used " + new Date(modelData.seen * 1000).toLocaleString()
+                                text: qsTr("Paired %1  ·  last used %2").arg(Theme.date(new Date(modelData.paired * 1000), "short"))
+                                      .arg(Qt.locale().toString(new Date(modelData.seen * 1000), Locale.ShortFormat))
                                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                             }
                         }
-                        PillButton { id: forgetButton; height: 30; text: "Remove"; anchors.verticalCenter: parent.verticalCenter; onClicked: webRemote.forgetDevice(modelData.id) }
+                        PillButton { id: forgetButton; height: 30; text: qsTr("Remove"); anchors.verticalCenter: parent.verticalCenter; onClicked: webRemote.forgetDevice(modelData.id) }
                     }
                 }
                 PillButton {
                     visible: webRemote.pairedDevices.length > 1
-                    text: "Remove all devices"
+                    text: qsTr("Remove all devices")
                     onClicked: webRemote.forgetAllDevices()
                 }
                 Text {
                     textFormat: Text.PlainText
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    text: "Lost a phone, or not sure who has access? Remove the device here: it can't connect again without a new code. Port: " + webRemote.portNumber + "."
+                    text: qsTr("Lost a phone, or not sure who has access? Remove the device here: it can't connect again without a new code. Port: %1.").arg(webRemote.portNumber)
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
             }
@@ -1687,12 +1698,12 @@ Item {
         SettingsSection {
             id: sec_sharing
             objectName: "settings_sharing"
-            title: "Online & privacy"
-            keywords: "offline mode internet network privacy connection lyrics lrclib genres bios biography wikipedia discogs token musicbrainz last.fm tags similar artists discover"
+            title: qsTr("Online & privacy")
+            keywords: qsTr("offline mode internet network privacy connection lyrics lrclib genres bios biography wikipedia discogs token musicbrainz last.fm tags similar artists discover")
             query: page.query
             StyledCheck {
                 objectName: "offlineMode"
-                text: "Offline mode"
+                text: qsTr("Offline mode")
                 checked: shell.offlineMode
                 onToggled: shell.setOfflineMode(checked)
             }
@@ -1700,68 +1711,68 @@ Item {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "With offline mode on, Hallucinate makes no internet connections at all: no lyrics, cover, genre or bio lookups, internet radio, podcast updates, scrobbling, headphone EQ downloads or update checks. Scrobbles wait and are sent when you turn it off. Discord status talks only to the Discord app on this computer, so it has its own switch under Scrobbling & sharing (it shows no cover art while offline)."
+                text: qsTr("With offline mode on, Hallucinate makes no internet connections at all: no lyrics, cover, genre or bio lookups, internet radio, podcast updates, scrobbling, headphone EQ downloads or update checks. Scrobbles wait and are sent when you turn it off. Discord status talks only to the Discord app on this computer, so it has its own switch under Scrobbling & sharing (it shows no cover art while offline).")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
             StyledCheck {
                 objectName: "lyricsOnline"
                 visible: shell.features.lyrics !== false
-                text: "Find lyrics online for songs that have none (asks LRCLIB with the artist, title and album)"
+                text: qsTr("Find lyrics online for songs that have none (asks LRCLIB with the artist, title and album)")
                 checked: lyricsCtl.onlineLookup
                 onToggled: lyricsCtl.setOnlineLookup(checked)
             }
             StyledCheck {
                 objectName: "fetchBios"
-                text: "Look up an artist's bio when their page opens (sends the artist and one of their albums)"
+                text: qsTr("Look up an artist's bio when their page opens (sends the artist and one of their albums)")
                 checked: sources.fetchBios
                 onToggled: sources.setFetchBios(checked)
             }
             Flow {
                 width: parent.width
                 spacing: 12
-                Text { textFormat: Text.PlainText; text: "Bios come from"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                Text { textFormat: Text.PlainText; text: qsTr("Bios come from"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
                 StyledCombo {
                     objectName: "bioSource"
                     width: 220
-                    readonly property var names: ["", "Wikipedia", "Last.fm", "Discogs"]
-                    model: ["Wikipedia, then Last.fm, then Discogs", "Wikipedia only", "Last.fm only" + (sources.lastfmAvailable ? "" : " (not set up)"),
-                            "Discogs only" + (sources.discogsConnected ? "" : " (not set up)")]
+                    readonly property var names: ["", "Wikipedia", "Last.fm", "Discogs"]  // i18n: keep (the keys)
+                    model: [qsTr("Wikipedia, then Last.fm, then Discogs"), qsTr("Wikipedia only"), sources.lastfmAvailable ? qsTr("Last.fm only") : qsTr("Last.fm only (not set up)"),
+                            sources.discogsConnected ? qsTr("Discogs only") : qsTr("Discogs only (not set up)")]
                     selection: names.indexOf(sources.bioSource)
                     onActivated: function (i) { sources.setBioSource(names[i]) }
-                    Accessible.name: "Where artist bios come from"
+                    Accessible.name: qsTr("Where artist bios come from")
                 }
             }
             StyledCheck {
                 objectName: "fetchSimilar"
-                text: "Show similar artists from Last.fm on an artist's page (sends the artist's name)"
-                      + (sources.lastfmAvailable ? "" : ". Needs the Last.fm API key, under Scrobbling & sharing")
+                text: qsTr("Show similar artists from Last.fm on an artist's page (sends the artist's name)")
+                      + (sources.lastfmAvailable ? "" : qsTr(". Needs the Last.fm API key, under Scrobbling & sharing"))
                 enabled: sources.lastfmAvailable || checked
                 checked: sources.fetchSimilar
                 onToggled: sources.setFetchSimilar(checked)
             }
             SettingsGroup {
                 key: "genreSources"
-                title: "Genre and bio sources"
-                summary: "Discogs, Last.fm tags"
+                title: qsTr("Genre and bio sources")
+                summary: qsTr("Discogs, Last.fm tags")
                 query: page.query
                 Text {
                     textFormat: Text.PlainText
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    text: "Genres are looked up on MusicBrainz, and also on Discogs and Last.fm when they're set up. Only albums without a genre are looked up, and nothing is written until you've checked it. Bios come from Wikipedia (found through MusicBrainz), Last.fm or Discogs; one you write yourself on an artist's page is always shown instead."
+                    text: qsTr("Genres are looked up on MusicBrainz, and also on Discogs and Last.fm when they're set up. Only albums without a genre are looked up, and nothing is written until you've checked it. Bios come from Wikipedia (found through MusicBrainz), Last.fm or Discogs; one you write yourself on an artist's page is always shown instead.")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                 }
                 StyledCheck {
                     objectName: "genresFromLastfm"
-                    text: sources.lastfmAvailable ? "Also use Last.fm's tags for genres (only the tags that are real genres)"
-                                                  : "Also use Last.fm's tags for genres (needs the Last.fm API key below)"
+                    text: sources.lastfmAvailable ? qsTr("Also use Last.fm's tags for genres (only the tags that are real genres)")
+                                                  : qsTr("Also use Last.fm's tags for genres (needs the Last.fm API key below)")
                     enabled: sources.lastfmAvailable
                     checked: sources.genresFromLastfm
                     onToggled: sources.setGenresFromLastfm(checked)
                 }
                 StyledCheck {
                     objectName: "genresFromDiscogs"
-                    text: "Also use Discogs' genres and styles"
+                    text: qsTr("Also use Discogs' genres and styles")
                     enabled: sources.discogsConnected
                     checked: sources.genresFromDiscogs
                     onToggled: sources.setGenresFromDiscogs(checked)
@@ -1771,8 +1782,9 @@ Item {
                     width: parent.width
                     wrapMode: Text.WordWrap
                     text: sources.discogsConnected
-                          ? "Discogs: connected" + (sources.discogsUser ? " as " + sources.discogsUser : "") + ". The token is kept in the system keyring."
-                          : "Discogs needs a personal access token: make one at discogs.com → Settings → Developers, then paste it here. It's kept in the system keyring."
+                          ? (sources.discogsUser ? qsTr("Discogs: connected as %1. The token is kept in the system keyring.").arg(sources.discogsUser)
+                             : qsTr("Discogs: connected. The token is kept in the system keyring."))
+                          : qsTr("Discogs needs a personal access token: make one at discogs.com → Settings → Developers, then paste it here. It's kept in the system keyring.")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                 }
                 Flow {
@@ -1784,17 +1796,17 @@ Item {
                         objectName: "discogsToken"
                         width: Math.min(340, parent.width)
                         echoMode: TextInput.Password
-                        placeholderText: "Discogs personal access token"
+                        placeholderText: qsTr("Discogs personal access token")
                         placeholderTextColor: Theme.textDim
                         color: Theme.text
                         font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                         background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: discogsToken.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                         onAccepted: sources.connectDiscogs(text)
-                        Accessible.name: "Discogs personal access token"
+                        Accessible.name: qsTr("Discogs personal access token")
                     }
                     PillButton {
                         objectName: "connectDiscogs"
-                        text: sources.discogsBusy ? "Checking…" : "Connect Discogs"
+                        text: sources.discogsBusy ? qsTr("Checking…") : qsTr("Connect Discogs")
                         enabled: !sources.discogsBusy && discogsToken.text.trim().length > 0 && !shell.offlineMode
                         onClicked: { sources.connectDiscogs(discogsToken.text); discogsToken.text = "" }
                     }
@@ -1802,7 +1814,7 @@ Item {
                 PillButton {
                     objectName: "forgetDiscogs"
                     visible: sources.discogsConnected
-                    text: "Disconnect Discogs"
+                    text: qsTr("Disconnect Discogs")
                     onClicked: sources.forgetDiscogs()
                 }
                 Text {
@@ -1818,22 +1830,22 @@ Item {
         SettingsSection {
             id: sec_scrobbling
             objectName: "settings_scrobbling"
-            title: "Scrobbling & sharing"
-            keywords: "last.fm lastfm listenbrainz maloja koito multi-scrobbler self-hosted server scrobble scrobbling loves discord rich presence history import account radio stations podcasts episodes queued when half percent threshold point listen end"
+            title: qsTr("Scrobbling & sharing")
+            keywords: qsTr("last.fm lastfm listenbrainz maloja koito multi-scrobbler self-hosted server scrobble scrobbling loves discord rich presence history import account radio stations podcasts episodes queued when half percent threshold point listen end")
             query: page.query
-            Text { text: "Last.fm"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
+            Text { text: qsTr("Last.fm"); color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Sends now-playing updates, and scrobbles after half a song or four minutes, whichever comes first. Last.fm asks each person for an API key of their own; it and your sign-in stay in the system keyring."
+                text: qsTr("Sends now-playing updates, and scrobbles after half a song or four minutes, whichever comes first. Last.fm asks each person for an API key of their own; it and your sign-in stay in the system keyring.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
             SettingsGroup {
                 id: lastfmKeyGroup
                 key: "lastfmKey"
-                title: scrobbler.configured ? "Last.fm API key (saved)" : "Last.fm API key"
-                summary: scrobbler.configured ? "Change it" : "Needed before connecting"
+                title: scrobbler.configured ? qsTr("Last.fm API key (saved)") : qsTr("Last.fm API key")
+                summary: scrobbler.configured ? qsTr("Change it") : qsTr("Needed before connecting")
                 query: page.query
                 Component.onCompleted: if (!scrobbler.configured) open = true
                 Flow {  // wraps in a narrow window
@@ -1842,7 +1854,7 @@ Item {
                     TextField {
                         id: apiKey
                         width: Math.min(250, parent.width); height: 38
-                        placeholderText: scrobbler.configured ? "Saved (type a new one to replace it)" : "Last.fm API key"
+                        placeholderText: scrobbler.configured ? qsTr("Saved (type a new one to replace it)") : qsTr("Last.fm API key")
                         color: Theme.text; placeholderTextColor: Theme.textDim
                         font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
                         background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: apiKey.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
@@ -1850,18 +1862,18 @@ Item {
                     TextField {
                         id: apiSecret
                         width: Math.min(250, parent.width); height: 38
-                        placeholderText: scrobbler.configured ? "Saved" : "Last.fm API secret"
+                        placeholderText: scrobbler.configured ? qsTr("Saved") : qsTr("Last.fm API secret")
                         echoMode: TextInput.Password
                         color: Theme.text; placeholderTextColor: Theme.textDim
                         font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
                         background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: apiSecret.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                     }
                     PillButton {
-                        text: "Get API credentials"
+                        text: qsTr("Get API credentials")
                         onClicked: Qt.openUrlExternally("https://www.last.fm/api/account/create")
                     }
                     PillButton {
-                        text: "Save API credentials"
+                        text: qsTr("Save API credentials")
                         primary: true
                         enabled: apiKey.text.length > 0 && apiSecret.text.length > 0 && !scrobbler.busy
                         onClicked: {
@@ -1877,25 +1889,25 @@ Item {
                 PillButton {
                     visible: !scrobbler.connected
                     primary: true
-                    text: scrobbler.busy ? "Connecting…" : "Connect Last.fm"
+                    text: scrobbler.busy ? qsTr("Connecting…") : qsTr("Connect Last.fm")
                     enabled: scrobbler.configured && !scrobbler.busy  // offline, it says why instead
                     onClicked: scrobbler.connectAccount()
                 }
                 PillButton {
                     visible: scrobbler.authorizationUrl.length > 0 && !scrobbler.connected
-                    text: "Open authorization"
+                    text: qsTr("Open authorization")
                     onClicked: scrobbler.openAuthorizationUrl()
                 }
                 PillButton {
                     visible: scrobbler.authorizationUrl.length > 0 && !scrobbler.connected
                     primary: true
-                    text: "I've authorized"
+                    text: qsTr("I've authorized")
                     enabled: !scrobbler.busy
                     onClicked: scrobbler.completeAuthorization()
                 }
                 PillButton {
                     visible: scrobbler.connected
-                    text: "Disconnect Last.fm"
+                    text: qsTr("Disconnect Last.fm")
                     enabled: !scrobbler.busy
                     onClicked: scrobbler.disconnectAccount()
                 }
@@ -1903,9 +1915,9 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
-                text: scrobbler.status + (scrobbler.pendingCount > 0 ? " · " + Theme.num(scrobbler.pendingCount) + " waiting to be sent" : "")
-                      + (scrobbler.rejectedCount > 0 ? " · " + Theme.num(scrobbler.rejectedCount) + " turned down by Last.fm" : "")
-                      + (scrobbler.lastError ? " · last try: " + scrobbler.lastError : "")
+                text: scrobbler.status + (scrobbler.pendingCount > 0 ? " · " + qsTr("%1 waiting to be sent").arg(Theme.num(scrobbler.pendingCount)) : "")
+                      + (scrobbler.rejectedCount > 0 ? " · " + qsTr("%1 turned down by Last.fm").arg(Theme.num(scrobbler.rejectedCount)) : "")
+                      + (scrobbler.lastError ? " · " + qsTr("last try: %1").arg(scrobbler.lastError) : "")
                 color: scrobbler.connected ? Theme.accent : Theme.textDim
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(13)
@@ -1915,13 +1927,13 @@ Item {
                 objectName: "scrobblerRetryNow"
                 visible: scrobbler.pendingCount > 0 && scrobbler.connected && !shell.offlineMode
                 height: 32
-                text: "Send now"
+                text: qsTr("Send now")
                 onClicked: scrobbler.retryNow()
             }
             StyledCheck {
                 objectName: "lastfmNowPlaying"
                 visible: scrobbler.connected
-                text: "Show \u201cScrobbling now\u201d on Last.fm while a song plays (the scrobble itself waits for the point below)"
+                text: qsTr("Show \u201cScrobbling now\u201d on Last.fm while a song plays (the scrobble itself waits for the point below)")
                 checked: scrobbler.nowPlaying
                 onToggled: scrobbler.setNowPlaying(checked)
             }
@@ -1929,39 +1941,39 @@ Item {
                 visible: scrobbler.connected
                 width: parent.width
                 spacing: 10
-                Text { textFormat: Text.PlainText; text: "Scrobble a song after"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                Text { textFormat: Text.PlainText; text: qsTr("Scrobble a song after"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
                 StyledCombo {
                     objectName: "scrobblePoint"
                     readonly property var points: ["rule", "25", "50", "75", "90", "end"]
                     width: 300
-                    model: ["Half way, or 4 minutes (Last.fm's rule)", "A quarter of the way", "Half way, however long",
-                            "Three quarters of the way", "90% of the way", "At the end"]
+                    model: [qsTr("Half way, or 4 minutes (Last.fm's rule)"), qsTr("A quarter of the way"), qsTr("Half way, however long"),
+                            qsTr("Three quarters of the way"), qsTr("90% of the way"), qsTr("At the end")]
                     selection: Math.max(0, points.indexOf(scrobbler.listenPoint))
                     onActivated: scrobbler.setListenPoint(points[currentIndex])
-                    Accessible.name: "Scrobble a song after"
+                    Accessible.name: qsTr("Scrobble a song after")
                 }
             }
             StyledCheck {
                 objectName: "syncLoves"
                 visible: scrobbler.connected && shell.features.liked !== false
-                text: "Liking a song loves it on Last.fm (and unliking unloves it)"
+                text: qsTr("Liking a song loves it on Last.fm (and unliking unloves it)")
                 checked: scrobbler.syncLoves
                 onToggled: scrobbler.setSyncLoves(checked)
             }
             PillButton {
                 objectName: "importLoves"
                 visible: scrobbler.connected && shell.features.liked !== false
-                text: scrobbler.lovesBusy ? "Fetching your loves…" : "Like the songs I've loved on Last.fm"
+                text: scrobbler.lovesBusy ? qsTr("Fetching your loves…") : qsTr("Like the songs I've loved on Last.fm")
                 enabled: !scrobbler.lovesBusy
                 onClicked: scrobbler.importLoves()
             }
-            OfflineNote { visible: shell.offlineMode && (scrobbler.configured || scrobbler.connected); what: "Last.fm" }
-            Text { text: "ListenBrainz"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
+            OfflineNote { visible: shell.offlineMode && (scrobbler.configured || scrobbler.connected); what: qsTr("Last.fm") }
+            Text { text: qsTr("ListenBrainz"); color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Connect with your ListenBrainz user token to send now-playing updates and listens. The token stays in the system keyring; listens that can't be sent wait and are tried again."
+                text: qsTr("Connect with your ListenBrainz user token to send now-playing updates and listens. The token stays in the system keyring; listens that can't be sent wait and are tried again.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
             // a server of your own that speaks the ListenBrainz API, instead of listenbrainz.org
@@ -1969,7 +1981,7 @@ Item {
                 id: lbOwnServer
                 objectName: "listenbrainzOwnServer"
                 visible: !listenbrainz.connected
-                text: "Use another server that speaks the ListenBrainz API (Maloja, Koito, Multi-Scrobbler…)"
+                text: qsTr("Use another server that speaks the ListenBrainz API (Maloja, Koito, Multi-Scrobbler…)")
                 checked: listenbrainz.server.length > 0
             }
             Column {
@@ -1996,7 +2008,7 @@ Item {
                     readonly property bool plain: /^http:\/\//i.test(lbServer.text.trim())
                         && !/^http:\/\/(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[?::1)/i.test(lbServer.text.trim())
                     text: plain ? "This address isn't encrypted (http://): the token and your listens can be read on the way. Use https:// unless the server is on your own network."
-                                : "The server's ListenBrainz API address and a token from it. Maloja and Koito serve it at /apis/listenbrainz."
+                                : qsTr("The server's ListenBrainz API address and a token from it. Maloja and Koito serve it at /apis/listenbrainz.")
                     color: plain ? Theme.error : Theme.textDim
                     font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
@@ -2008,7 +2020,7 @@ Item {
                     id: lbToken
                     width: Math.min(320, parent.width); height: 38
                     visible: !listenbrainz.connected
-                    placeholderText: "ListenBrainz user token"
+                    placeholderText: qsTr("ListenBrainz user token")
                     echoMode: TextInput.Password
                     color: Theme.text; placeholderTextColor: Theme.textDim
                     font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
@@ -2017,18 +2029,18 @@ Item {
                 PillButton {
                     visible: !listenbrainz.connected
                     primary: true
-                    text: listenbrainz.busy ? "Validating…" : lbOwnServer.checked ? "Connect" : "Connect ListenBrainz"
+                    text: listenbrainz.busy ? qsTr("Validating…") : lbOwnServer.checked ? qsTr("Connect") : qsTr("Connect ListenBrainz")
                     enabled: lbToken.text.length > 0 && !listenbrainz.busy && (!lbOwnServer.checked || lbServer.text.trim().length > 0)
                     onClicked: { listenbrainz.connectToken(lbToken.text, lbOwnServer.checked ? lbServer.text : ""); lbToken.text = "" }
                 }
                 PillButton {
                     visible: !listenbrainz.connected && !lbOwnServer.checked
-                    text: "Get a token"
+                    text: qsTr("Get a token")
                     onClicked: Qt.openUrlExternally("https://listenbrainz.org/settings/")
                 }
                 PillButton {
                     visible: listenbrainz.connected
-                    text: "Disconnect ListenBrainz"
+                    text: qsTr("Disconnect ListenBrainz")
                     enabled: !listenbrainz.busy
                     onClicked: listenbrainz.disconnectAccount()
                 }
@@ -2036,17 +2048,17 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
-                text: listenbrainz.status + (listenbrainz.pendingCount > 0 ? " · " + Theme.num(listenbrainz.pendingCount) + " waiting to be sent" : "")
-                      + (listenbrainz.rejectedCount > 0 ? " · " + Theme.num(listenbrainz.rejectedCount) + " turned down by ListenBrainz" : "")
-                      + (listenbrainz.lastError ? " · last try: " + listenbrainz.lastError : "")
+                text: listenbrainz.status + (listenbrainz.pendingCount > 0 ? " · " + qsTr("%1 waiting to be sent").arg(Theme.num(listenbrainz.pendingCount)) : "")
+                      + (listenbrainz.rejectedCount > 0 ? " · " + qsTr("%1 turned down by ListenBrainz").arg(Theme.num(listenbrainz.rejectedCount)) : "")
+                      + (listenbrainz.lastError ? " · " + qsTr("last try: %1").arg(listenbrainz.lastError) : "")
                 color: listenbrainz.connected ? Theme.accent : Theme.textDim
                 font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); wrapMode: Text.WordWrap
             }
-            OfflineNote { visible: shell.offlineMode; what: "ListenBrainz" }
+            OfflineNote { visible: shell.offlineMode; what: qsTr("ListenBrainz") }
             StyledCheck {
                 objectName: "listenbrainzNowPlaying"
                 visible: listenbrainz.connected
-                text: "Show \u201cPlaying now\u201d on ListenBrainz while a song plays (the listen itself waits for the point below)"
+                text: qsTr("Show \u201cPlaying now\u201d on ListenBrainz while a song plays (the listen itself waits for the point below)")
                 checked: listenbrainz.nowPlaying
                 onToggled: listenbrainz.setNowPlaying(checked)
             }
@@ -2054,43 +2066,43 @@ Item {
                 visible: listenbrainz.connected
                 width: parent.width
                 spacing: 10
-                Text { textFormat: Text.PlainText; text: "Count a listen after"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                Text { textFormat: Text.PlainText; text: qsTr("Count a listen after"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
                 StyledCombo {
                     objectName: "listenPoint"
                     readonly property var points: ["rule", "25", "50", "75", "90", "end"]
                     width: 300
-                    model: ["Half way, or 4 minutes (Last.fm's rule)", "A quarter of the way", "Half way, however long",
-                            "Three quarters of the way", "90% of the way", "At the end"]
+                    model: [qsTr("Half way, or 4 minutes (Last.fm's rule)"), qsTr("A quarter of the way"), qsTr("Half way, however long"),
+                            qsTr("Three quarters of the way"), qsTr("90% of the way"), qsTr("At the end")]
                     selection: Math.max(0, points.indexOf(listenbrainz.listenPoint))
                     onActivated: listenbrainz.setListenPoint(points[currentIndex])
-                    Accessible.name: "Count a listen after"
+                    Accessible.name: qsTr("Count a listen after")
                 }
             }
             PillButton {
                 objectName: "listenbrainzRetryNow"
                 visible: listenbrainz.pendingCount > 0 && listenbrainz.connected && !shell.offlineMode
                 height: 32
-                text: "Send now"
+                text: qsTr("Send now")
                 onClicked: listenbrainz.retryNow()
             }
             StyledCheck {
                 objectName: "scrobbleStations"
                 visible: shell.features.stations !== false && (scrobbler.connected || listenbrainz.connected)
-                text: "Count songs heard on internet radio on Last.fm and ListenBrainz"
+                text: qsTr("Count songs heard on internet radio on Last.fm and ListenBrainz")
                 checked: stations.scrobble
                 onToggled: stations.setScrobble(checked)
             }
             StyledCheck {
                 objectName: "scrobblePodcasts"
                 visible: shell.features.podcasts !== false && (scrobbler.connected || listenbrainz.connected)
-                text: "Count podcast episodes on Last.fm and ListenBrainz (as the show and the episode's title)"
+                text: qsTr("Count podcast episodes on Last.fm and ListenBrainz (as the show and the episode's title)")
                 checked: podcasts.scrobble
                 onToggled: podcasts.setScrobble(checked)
             }
             SettingsGroup {
                 key: "historyImport"
-                title: "Import listening history"
-                summary: "From ListenBrainz or Last.fm"
+                title: qsTr("Import listening history")
+                summary: qsTr("From ListenBrainz or Last.fm")
                 query: page.query
                 Flow {  // wraps in a narrow window
                     width: parent.width
@@ -2098,19 +2110,19 @@ Item {
                     StyledCombo {
                         id: historySource
                         width: 150
-                        model: ["ListenBrainz", "Last.fm"]
+                        model: [qsTr("ListenBrainz"), qsTr("Last.fm")]
                     }
                     TextField {
                         id: historyUser
                         width: Math.min(260, parent.width); height: 38
-                        placeholderText: historySource.currentIndex === 0 && listenbrainz.connected ? "Username (blank = connected account)" : "Username"
+                        placeholderText: historySource.currentIndex === 0 && listenbrainz.connected ? qsTr("Username (blank = connected account)") : qsTr("Username")
                         color: Theme.text; placeholderTextColor: Theme.textDim
                         font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
                         background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: historyUser.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
                     }
                     PillButton {
                         primary: true
-                        text: listenbrainz.importing ? "Importing…" : "Import history"
+                        text: listenbrainz.importing ? qsTr("Importing…") : qsTr("Import history")
                         enabled: !shell.offlineMode && !listenbrainz.importing
                                  && (historyUser.text.length > 0 || (historySource.currentIndex === 0 && listenbrainz.connected))
                                  && (historySource.currentIndex === 0 || scrobbler.configured)  // Last.fm needs your API key
@@ -2125,8 +2137,8 @@ Item {
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); wrapMode: Text.WordWrap
                 }
             }
-            Text { text: "Discord"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
-            StyledCheck { objectName: "discordEnabled"; text: "Show what I'm listening to on my Discord profile"; checked: discord.enabled; onToggled: discord.setEnabled(checked) }
+            Text { text: qsTr("Discord"); color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
+            StyledCheck { objectName: "discordEnabled"; text: qsTr("Show what I'm listening to on my Discord profile"); checked: discord.enabled; onToggled: discord.setEnabled(checked) }
             Column {
                 visible: discord.enabled
                 width: parent.width
@@ -2135,13 +2147,13 @@ Item {
                     textFormat: Text.PlainText
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    text: "Create an application at discord.com/developers, paste its Application ID below and upload your icon as an art asset named “hallucinate”. Status: " + discord.status
+                    text: qsTr("Create an application at discord.com/developers, paste its Application ID below and upload your icon as an art asset named “hallucinate”. Status: %1").arg(discord.status)
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
                 TextField {
                     id: discordAppId
                     width: Math.min(320, parent.width)
-                    placeholderText: "Discord application ID"
+                    placeholderText: qsTr("Discord application ID")
                     selectByMouse: true
                     color: Theme.text
                     placeholderTextColor: Theme.textDim
@@ -2150,36 +2162,44 @@ Item {
                     onEditingFinished: discord.setAppId(text)
                     Component.onCompleted: text = discord.appId
                     Connections { target: discord; function onChanged() { if (!discordAppId.activeFocus) discordAppId.text = discord.appId } }
-                    Accessible.name: "Discord application ID"
+                    Accessible.name: qsTr("Discord application ID")
                 }
-                StyledCheck { text: "Hide when paused"; checked: discord.hidePaused; onToggled: discord.setPref("hidePaused", checked) }
-                StyledCheck { text: "Hide cover art"; checked: discord.hideCover; onToggled: discord.setPref("hideCover", checked) }
-                StyledCheck { text: "Privacy mode (don't share track details)"; checked: discord.privacy; onToggled: discord.setPref("privacy", checked) }
+                StyledCheck { text: qsTr("Hide when paused"); checked: discord.hidePaused; onToggled: discord.setPref("hidePaused", checked) }
+                StyledCheck { text: qsTr("Hide cover art"); checked: discord.hideCover; onToggled: discord.setPref("hideCover", checked) }
+                StyledCheck { text: qsTr("Privacy mode (don't share track details)"); checked: discord.privacy; onToggled: discord.setPref("privacy", checked) }
             }
         }
         SettingsSection {
             id: sec_desktop
             objectName: "settings_desktop"
-            title: "Desktop"
-            keywords: "tray notifications focus close quit minimize exit background mini player title bar window frame decorations frameless maximize buttons left right side start page open on"
+            title: qsTr("Desktop")
+            keywords: qsTr("tray notifications focus close quit minimize exit background mini player title bar window frame decorations frameless maximize buttons left right side start page open on rounded corners round")
             query: page.query
             StyledCheck {
                 visible: shell.trayAvailable
-                text: "Show system tray icon"
+                text: qsTr("Show system tray icon")
                 checked: shell.trayEnabled
                 onToggled: shell.setTrayEnabled(checked)
             }
             StyledCheck {
                 objectName: "customTitleBar"
-                text: "Use Hallucinate's own title bar, built into the window"
+                text: qsTr("Use Hallucinate's own title bar, built into the window")
                 checked: shell.customTitleBar
                 onToggled: shell.setCustomTitleBar(checked)
+            }
+            StyledCheck {
+                objectName: "roundWindow"
+                visible: shell.customTitleBar
+                leftPadding: 28
+                text: qsTr("Round the window's corners, like the panels inside it")
+                checked: shell.ui.roundWindow !== "0"
+                onToggled: shell.setUiValue("roundWindow", checked ? "1" : "0")
             }
             StyledCheck {
                 objectName: "titleBarMinimize"
                 visible: shell.customTitleBar
                 leftPadding: 28
-                text: "Show the minimize button"
+                text: qsTr("Show the minimize button")
                 checked: shell.titleBarMinimize
                 onToggled: shell.setTitleBarMinimize(checked)
             }
@@ -2188,14 +2208,14 @@ Item {
                 width: parent.width
                 spacing: 10
                 leftPadding: 28
-                Text { textFormat: Text.PlainText; text: "Buttons on the"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                Text { textFormat: Text.PlainText; text: qsTr("Buttons on the"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
                 StyledCombo {
                     objectName: "titleBarSide"
                     width: 200
-                    model: ["Right", "Left"]
+                    model: [qsTr("Right"), qsTr("Left")]
                     selection: shell.titleBarSide === "left" ? 1 : 0
-                    onActivated: shell.setTitleBarSide(currentIndex === 1 ? "left" : "right")
-                    Accessible.name: "Title bar buttons side"
+                    onActivated: shell.setTitleBarSide(currentIndex === 1 ? "left" : "right")  // i18n: keep
+                    Accessible.name: qsTr("Title bar buttons side")
                 }
             }
             Text {
@@ -2203,20 +2223,20 @@ Item {
                 width: parent.width
                 wrapMode: Text.WordWrap
                 text: shell.customTitleBar
-                      ? "Drag the top of the window (beside the search) to move it, double-click it to maximize. Turn this off for your system's own title bar."
-                      : "Your system draws the window's title bar."
+                      ? qsTr("Drag the top of the window (beside the search) to move it, double-click it to maximize. Turn this off for your system's own title bar.")
+                      : qsTr("Your system draws the window's title bar.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
             Row {
                 spacing: 12
-                Text { anchors.verticalCenter: parent.verticalCenter; text: "When I close the window"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                Text { anchors.verticalCenter: parent.verticalCenter; text: qsTr("When I close the window"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
                 StyledCombo {
                     objectName: "closeAction"
                     width: 250
                     readonly property var actions: ["ask", "quit"].concat(shell.canMinimize ? ["minimize"] : [])
                                                                   .concat(["tray"])
-                    readonly property var labels: ({ ask: "Ask every time", quit: "Quit", minimize: "Minimize",
-                                                     tray: "Keep playing in the background" })
+                    readonly property var labels: ({ ask: qsTr("Ask every time"), quit: qsTr("Quit"), minimize: qsTr("Minimize"),
+                                                     tray: qsTr("Keep playing in the background") })
                     model: actions.map(a => labels[a])
                     selection: actions.indexOf(shell.closeAction)
                     onActivated: shell.setCloseAction(actions[currentIndex])
@@ -2227,12 +2247,12 @@ Item {
                 visible: !shell.canMinimize
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Your window manager has no minimize, so the choices are quitting or keeping it playing in the background (in the tray when your bar shows tray icons; otherwise open Hallucinate again to bring the window back)."
+                text: qsTr("Your window manager has no minimize, so the choices are quitting or keeping it playing in the background (in the tray when your bar shows tray icons; otherwise open Hallucinate again to bring the window back).")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             StyledCheck {
                 visible: Qt.platform.os === "linux" || shell.trayAvailable
-                text: "Show desktop notifications when tracks change"
+                text: qsTr("Show desktop notifications when tracks change")
                 checked: shell.desktopNotifications
                 onToggled: shell.setDesktopNotifications(checked)
             }
@@ -2240,22 +2260,22 @@ Item {
                 objectName: "notifyAlways"
                 visible: shell.desktopNotifications
                 leftPadding: 28
-                text: "Even while Hallucinate's window is in front (off: only when you're elsewhere)"
+                text: qsTr("Even while Hallucinate's window is in front (off: only when you're elsewhere)")
                 checked: shell.notifyAlways
                 onToggled: shell.setNotifyAlways(checked)
             }
             Flow {
                 width: parent.width
                 spacing: 10
-                Text { textFormat: Text.PlainText; text: "Open on"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                Text { textFormat: Text.PlainText; text: qsTr("Open on"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
                 StyledCombo {
                     objectName: "startPage"
                     readonly property var pages: ["home", "last", "albums", "artists", "genres", "songs", "folders", "liked", "stats", "history"]
                     width: 220
-                    model: ["Home", "The page I left it on", "Albums", "Artists", "Genres", "Songs", "Folders", "Liked Songs", "Stats", "History"]
+                    model: [qsTr("Home"), qsTr("The page I left it on"), qsTr("Albums"), qsTr("Artists"), qsTr("Genres"), qsTr("Songs"), qsTr("Folders"), qsTr("Liked Songs"), qsTr("Stats"), qsTr("History")]
                     selection: Math.max(0, pages.indexOf(shell.startPage))
                     onActivated: shell.setStartPage(pages[currentIndex])
-                    Accessible.name: "Page Hallucinate opens on"
+                    Accessible.name: qsTr("Page Hallucinate opens on")
                 }
             }
             Flow {
@@ -2268,31 +2288,31 @@ Item {
                     wrapMode: Text.WordWrap
                     height: Math.max(38, implicitHeight)
                     verticalAlignment: Text.AlignVCenter
-                    text: shell.appImageLauncher === "other" ? "This AppImage is in your app launcher (added by AppImageLauncher or a similar tool), so docks show its icon."
-                        : shell.appImageLauncher === "ours" ? "This AppImage is in your app launcher, so docks show its icon."
-                        : "This AppImage isn't in your app launcher, so docks and taskbars can't show its icon."
+                    text: shell.appImageLauncher === "other" ? qsTr("This AppImage is in your app launcher (added by AppImageLauncher or a similar tool), so docks show its icon.")
+                        : shell.appImageLauncher === "ours" ? qsTr("This AppImage is in your app launcher, so docks show its icon.")
+                        : qsTr("This AppImage isn't in your app launcher, so docks and taskbars can't show its icon.")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
                 }
                 PillButton {
                     objectName: "addToLauncher"
                     visible: shell.appImageLauncher === "none"
-                    text: "Add to app launcher"
+                    text: qsTr("Add to app launcher")
                     onClicked: Nav.notify(shell.addToLauncher())
                 }
                 PillButton {
                     visible: shell.appImageLauncher === "ours"
-                    text: "Remove from app launcher"
+                    text: qsTr("Remove from app launcher")
                     onClicked: shell.removeFromLauncher()
                 }
             }
-            PillButton { text: "Open mini player"; onClicked: shell.toggleMini() }
+            PillButton { text: qsTr("Open mini player"); onClicked: shell.toggleMini() }
 
         }
         SettingsSection {
             id: sec_about
             objectName: "settings_about"
-            title: "About"
-            keywords: "version debug bug report update check logo"
+            title: qsTr("About")
+            keywords: qsTr("version debug bug report update check logo")
             query: page.query
             Image {
                 width: 260
@@ -2301,13 +2321,13 @@ Item {
                 fillMode: Image.PreserveAspectFit
                 sourceSize: Qt.size(600, 600)
                 smooth: true
-                Accessible.name: "Hallucinate logo"
+                Accessible.name: qsTr("Hallucinate logo")
             }
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Hallucinate " + shell.appVersion + " — a modern music library and player"
+                text: qsTr("Hallucinate %1 — a modern music library and player").arg(shell.appVersion)
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Flow {
@@ -2315,18 +2335,18 @@ Item {
                 spacing: 10
                 PillButton {
                     objectName: "copyDebugInfo"
-                    text: "Copy debug info"
-                    onClicked: { shell.copyDebugInfo(); Nav.notify("Debug info copied — paste it into your bug report") }
+                    text: qsTr("Copy debug info")
+                    onClicked: { shell.copyDebugInfo(); Nav.notify(qsTr("Debug info copied — paste it into your bug report")) }
                 }
                 PillButton {
-                    text: "Report a bug"
+                    text: qsTr("Report a bug")
                     onClicked: Qt.openUrlExternally("https://github.com/Phosphene-dev/Hallucinate/issues/new")
                 }
             }
             Text {
                 textFormat: Text.PlainText
                 visible: !shell.updates.supported
-                text: "Updates come through your software centre or package manager."
+                text: qsTr("Updates come through your software centre or package manager.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Flow {  // wraps in a narrow window instead of running off its edge
@@ -2336,13 +2356,13 @@ Item {
                 StyledCheck {
                     objectName: "updateChecks"
                     width: Math.min(implicitWidth, parent.width)
-                    text: "Tell me when a new version is out (checks GitHub once a day)"
+                    text: qsTr("Tell me when a new version is out (checks GitHub once a day)")
                     checked: shell.updates.enabled
                     onToggled: shell.updates.setEnabled(checked)
                 }
                 PillButton {
                     height: 32
-                    text: shell.updates.busy ? "Checking…" : "Check now"
+                    text: shell.updates.busy ? qsTr("Checking…") : qsTr("Check now")
                     enabled: !shell.updates.busy && !shell.offlineMode
                     onClicked: shell.updates.checkNow()
                 }
@@ -2351,7 +2371,7 @@ Item {
                     height: 32
                     primary: true
                     visible: shell.updates.canInstall && (shell.updates.available || shell.updates.installing)
-                    text: shell.updates.installing ? "Cancel" : "Update now"
+                    text: shell.updates.installing ? qsTr("Cancel") : qsTr("Update now")
                     enabled: shell.updates.installing || !shell.offlineMode
                     onClicked: shell.updates.installing ? shell.updates.cancelInstall() : Nav.installUpdate()
                 }
@@ -2375,8 +2395,7 @@ Item {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: "Debug info lists versions, your system, display and audio setup and the recent log. It leaves out "
-                    + "file paths, your music and account names."
+                text: qsTr("Debug info lists versions, your system, display and audio setup and the recent log. It leaves out file paths, your music and account names.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             }
         }

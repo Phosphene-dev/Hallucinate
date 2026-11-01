@@ -19,9 +19,9 @@ Item {
     ConfirmDialog {
         id: deleteDlg
         objectName: "deleteSmartPlaylistDialog"
-        title: "Delete this smart playlist?"
-        body: "“" + page.playlistName + "” and its rules go away for good. No songs are touched."
-        confirmText: "Delete playlist"
+        title: qsTr("Delete this smart playlist?")
+        body: qsTr("“%1” and its rules go away for good. No songs are touched.").arg(page.playlistName)
+        confirmText: qsTr("Delete playlist")
         destructive: true
         onAccepted: { var id = page.smartId; userLib.deleteSmartPlaylist(id); Nav.goHome(); Nav.routeGone("smart", id) }
     }
@@ -43,7 +43,7 @@ Item {
             Column {
                 anchors { left: parent.left; leftMargin: 8; right: parent.right; bottom: parent.bottom; bottomMargin: 12 }
                 spacing: 8
-                Text { text: "SMART PLAYLIST"; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold; textFormat: Text.PlainText }
+                Text { text: qsTr("SMART PLAYLIST"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12); font.weight: Font.DemiBold; textFormat: Text.PlainText }
                 Text {
                     textFormat: Text.PlainText
                     text: page.playlistName
@@ -59,16 +59,16 @@ Item {
                     width: parent.width
                     elide: Text.ElideRight
                     objectName: "smartCount"
-                    text: Theme.num(list.count) + (list.count === 1 ? " song" : " songs") + " · " + page.info.summary
+                    text: Theme.counted(qsTr("%n song(s)", "", list.count), list.count) + " · " + page.info.summary
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
                 }
                 Row {
                     spacing: 10
-                    PillButton { primary: true; text: "Play"; enabled: list.count > 0; onClicked: userLib.playSmartPlaylist(0, false) }
-                    PillButton { text: "Shuffle"; enabled: list.count > 0; onClicked: userLib.playSmartPlaylist(0, true) }
-                    PillButton { text: "Edit rules"; onClicked: Nav.editSmartPlaylist(page.smartId, page.playlistName) }
-                    PillButton { text: "Export"; enabled: list.count > 0; onClicked: Nav.exportPlaylist("smart", page.playlistName) }
-                    PillButton { objectName: "deleteSmartPlaylist"; text: "Delete"; onClicked: deleteDlg.open() }
+                    PillButton { primary: true; text: qsTr("Play"); enabled: list.count > 0; onClicked: userLib.playSmartPlaylist(0, false) }
+                    PillButton { text: qsTr("Shuffle"); enabled: list.count > 0; onClicked: userLib.playSmartPlaylist(0, true) }
+                    PillButton { text: qsTr("Edit rules"); onClicked: Nav.editSmartPlaylist(page.smartId, page.playlistName) }
+                    PillButton { text: qsTr("Export"); enabled: list.count > 0; onClicked: Nav.exportPlaylist("smart", page.playlistName) }
+                    PillButton { objectName: "deleteSmartPlaylist"; text: qsTr("Delete"); onClicked: deleteDlg.open() }
                 }
             }
         }
@@ -79,9 +79,9 @@ Item {
                 anchors.centerIn: parent
                 visible: list.count === 0
                 icon: "smartlist"
-                title: "Nothing matches yet"
-                hint: "Songs appear here as soon as they match the rules. It updates as you play, like and add music."
-                actionText: "Edit rules"
+                title: qsTr("Nothing matches yet")
+                hint: qsTr("Songs appear here as soon as they match the rules. It updates as you play, like and add music.")
+                actionText: qsTr("Edit rules")
                 onAction: Nav.editSmartPlaylist(page.smartId, page.playlistName)
             }
         }

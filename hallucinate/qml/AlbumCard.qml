@@ -90,7 +90,7 @@ Item {
         Icon { anchors.centerIn: parent; width: 16; height: 16; name: "more"; color: Theme.text }
         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: card.openMenu() }
         Accessible.role: Accessible.Button
-        Accessible.name: "More actions for " + card.title
+        Accessible.name: qsTr("More actions for %1").arg(card.title)
     }
     Rectangle {
         id: playBtn
@@ -114,7 +114,7 @@ Item {
         Text {
             textFormat: Text.PlainText
             width: parent.width
-            text: card.title
+            text: Theme.shown(card.title)
             color: Theme.text
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize(14)
@@ -124,7 +124,7 @@ Item {
         Text {
             textFormat: Text.PlainText
             width: parent.width
-            text: card.subtitle
+            text: Theme.shown(card.subtitle)
             color: Theme.textDim
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize(12)

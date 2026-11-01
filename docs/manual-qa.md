@@ -1,5 +1,21 @@
 # Manual QA checklist
 
+## Release testing for 1.10.0
+
+- [ ] Settings → Appearance → Language: pick Français. Every page, the sidebar, menus, dialogs (OK/Annuler too), toasts
+      and the tray menu change at once, without a restart; pick English, and back. "As the system" follows the desktop's
+      language (start with `LANGUAGE=fr` or a French session).
+- [ ] In French: counts read right (« 1 morceau », « 2 morceaux », « 0 morceau »), dates and hours are French (lundi
+      3 mars, 15 h), Settings → Numbers still applies, and nothing is cut off or spills out of a card in a narrow window.
+- [ ] The Afterimage terminal in French: replies and help are French, the commands typed stay English (`play`,
+      `queue rm 2`, `help`).
+- [ ] The web remote on a phone set to French opens in French, before and after pairing; its Settings → Language picks
+      English or Français and remembers it.
+- [ ] Windows and macOS builds: the web remote opens (it couldn't in 1.9), and French works.
+- [ ] Untagged songs show « Artiste inconnu » / « Album inconnu » in French.
+- [ ] Settings → Desktop → own title bar: the window's corners are rounded around the sidebar panel's (GNOME,
+      KDE, a tiling compositor); maximized and full screen they're square; the switch beneath turns them off.
+
 ## Release testing for 1.9.0
 
 - [ ] Start a library rescan and Library health → Measure loudness at once: the sidebar's foot shows both (a ring

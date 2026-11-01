@@ -8,6 +8,7 @@ from PySide6.QtCore import Property, QObject, QSettings, Signal, Slot
 
 from . import keyringwait
 from .core import net
+from .core.i18n import fill, translate
 
 logger = logging.getLogger(__name__)
 KEYRING_SERVICE = "Hallucinate Discogs"
@@ -138,10 +139,10 @@ class OnlineSources(QObject):
         if not token or self._busy:
             return
         if net.is_offline():
-            self._status = "Offline mode is on, so the token can't be checked"
+            self._status = translate("Sources", "Offline mode is on, so the token can't be checked")
             self.changed.emit()
             return
-        self._busy, self._status = True, "Checking the token…"
+        self._busy, self._status = True, translate("Sources", "Checking the token…")
         self.changed.emit()
 
         def check():
@@ -159,13 +160,13 @@ class OnlineSources(QObject):
     def _on_checked(self, token, user, error):
         self._busy = False
         if error:
-            self._status = ("Discogs didn't accept that token" if "login" in error
-                            else f"Couldn't check the token: {error}")
+            self._status = (translate("Sources", "Discogs didn't accept that token") if "login" in error
+                            else fill(translate("Sources", "Couldn't check the token: %1"), error))
             self.changed.emit()
             return
         self._acted = True
         self._token, self._user = token, user
-        self._status = f"Connected as {user}" if user else "Connected"
+        self._status = fill(translate("Sources", "Connected as %1"), user) if user else translate("Sources", "Connected")
         self.changed.emit()
         self._store(lambda: (keyring.set_password(KEYRING_SERVICE, "token", token),
                              keyring.set_password(KEYRING_SERVICE, "user", user)))
@@ -173,7 +174,7 @@ class OnlineSources(QObject):
     @Slot()
     def forgetDiscogs(self):
         self._acted = True
-        self._token, self._user, self._status = "", "", "Disconnected from Discogs"
+        self._token, self._user, self._status = "", "", translate("Sources", "Disconnected from Discogs")
         self.changed.emit()
 
         def forget():
@@ -193,7 +194,7 @@ class OnlineSources(QObject):
     @Slot(str)
     def _on_stored(self, failed):
         if failed:
-            self._status += f" (the system keyring couldn't be updated: {failed})"
+            self._status += " " + fill(translate("Sources", "(the system keyring couldn't be updated: %1)"), failed)
             self.changed.emit()
 
     # --- for the lookups (any thread) -------------------------------------------------------------------

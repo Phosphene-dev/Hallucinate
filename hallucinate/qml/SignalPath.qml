@@ -34,7 +34,7 @@ Item {
             }
             Text {
                 textFormat: Text.PlainText
-                text: sp.path.untouched ? "Untouched" : "Processed"
+                text: sp.path.untouched ? qsTr("Untouched") : qsTr("Processed")
                 color: sp.path.untouched ? (sp.light ? "white" : Theme.accent) : (sp.light ? Qt.rgba(1, 1, 1, 0.75) : Theme.textDim)
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(10)
@@ -49,10 +49,10 @@ Item {
             onClicked: popup.opened ? popup.close() : popup.open()
         }
         ToolTip.visible: pillMouse.containsMouse && !popup.opened
-        ToolTip.text: Theme.plain(sp.path.summary || "") + " — click for the signal path"
+        ToolTip.text: qsTr("%1 — click for the signal path").arg(Theme.plain(sp.path.summary || ""))
         ToolTip.delay: 500
         Accessible.role: Accessible.Button
-        Accessible.name: "Signal path: " + (sp.path.summary || "")
+        Accessible.name: qsTr("Signal path: %1").arg(sp.path.summary || "")
     }
 
     Popup {
@@ -74,7 +74,7 @@ Item {
             spacing: 0
             Text {
                 textFormat: Text.PlainText
-                text: "Signal path"
+                text: qsTr("Signal path")
                 color: Theme.text
                 font.family: Theme.displayFamily
                 font.pixelSize: (Theme.fontSize(15)) * Theme.displayScale
@@ -85,7 +85,7 @@ Item {
                 textFormat: Text.PlainText
                 width: 294
                 text: sp.path.untouched
-                    ? "Nothing between the file and the output changes the sound."
+                    ? qsTr("Nothing between the file and the output changes the sound.")
                     : (sp.path.summary || "") + "."
                 color: sp.path.untouched ? Theme.accent : Theme.textDim
                 wrapMode: Text.Wrap

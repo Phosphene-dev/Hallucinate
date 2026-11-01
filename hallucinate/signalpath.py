@@ -6,6 +6,7 @@ import os
 import re
 import time
 
+from .core.i18n import fill, translate
 from .core.insights import LOSSLESS
 
 # How the output's rate is found out (Settings → Playback → "Output sample rate"):
@@ -114,58 +115,75 @@ def describe(track, *, rg_factor=1.0, rg_mode="off", volume=1.0, speed=1.0, eq_e
     if rate:
         source.append(_rate(rate))
     if not lossless and track.get("bitrate"):
-        source.append(f"{round(track['bitrate'] / 1000)} kbps")
-    stages = [{"name": "Source", "detail": "  ·  ".join(source) + ("  ·  lossless" if lossless else ""),
-               "active": False}]
+        source.append(fill(translate("SignalPath", "%1 kbps"), round(track["bitrate"] / 1000)))
+    if lossless:
+        source.append(translate("SignalPath", "lossless"))
+    stages = [{"key": "source", "name": translate("SignalPath", "Source"), "detail": "  ·  ".join(source), "active": False}]
 
     rg_db = 20 * math.log10(rg_factor) if rg_factor > 0 else 0.0
     rg_on = rg_mode in ("track", "album") and abs(rg_db) >= 0.05
     if rg_mode in ("track", "album"):
-        measured = " (measured)" if track.get("rg_measured") else ""
-        detail = (f"{rg_mode.capitalize()} gain {rg_db:+.1f} dB{measured}" if rg_on
-                  else f"{rg_mode.capitalize()} gain: none tagged")
+        gain = f"{rg_db:+.1f}"
+        if rg_on and track.get("rg_measured"):
+            detail = fill(translate("SignalPath", "Track gain %1 dB (measured)") if rg_mode == "track"
+                          else translate("SignalPath", "Album gain %1 dB (measured)"), gain)
+        elif rg_on:
+            detail = fill(translate("SignalPath", "Track gain %1 dB") if rg_mode == "track"
+                          else translate("SignalPath", "Album gain %1 dB"), gain)
+        else:
+            detail = (translate("SignalPath", "Track gain: none tagged") if rg_mode == "track"
+                      else translate("SignalPath", "Album gain: none tagged"))
     else:
-        detail = "Off"
-    stages.append({"name": "ReplayGain", "detail": detail, "active": rg_on})
+        detail = translate("SignalPath", "Off")
+    stages.append({"key": "replaygain", "name": translate("SignalPath", "ReplayGain"), "detail": detail, "active": rg_on})
 
     eq_on = bool(eq_enabled)
-    stages.append({"name": "Equalizer", "detail": (eq_preset or "Custom") if eq_on else "Off", "active": eq_on})
+    stages.append({"key": "eq", "name": translate("SignalPath", "Equalizer"),
+                   "detail": (eq_preset or translate("SignalPath", "Custom")) if eq_on else translate("SignalPath", "Off"),
+                   "active": eq_on})
     if crossfeed:
-        stages.append({"name": "Crossfeed", "detail": crossfeed.capitalize() + " (headphones)", "active": True})
+        strength = {"light": translate("SignalPath", "Light"), "medium": translate("SignalPath", "Medium"),
+                    "strong": translate("SignalPath", "Strong")}.get(crossfeed, crossfeed.capitalize())
+        stages.append({"key": "crossfeed", "name": translate("SignalPath", "Crossfeed"),
+                       "detail": fill(translate("SignalPath", "%1 (headphones)"), strength), "active": True})
 
     speed_on = abs(speed - 1.0) > 1e-3
-    stages.append({"name": "Speed", "detail": f"{speed:g}×" if speed_on else "Normal", "active": speed_on})
+    stages.append({"key": "speed", "name": translate("SignalPath", "Speed"),
+                   "detail": f"{speed:g}×" if speed_on else translate("SignalPath", "Normal"), "active": speed_on})
 
     vol_on = volume < 0.999
-    stages.append({"name": "Volume", "detail": f"{round(volume * 100)}%", "active": vol_on})
+    stages.append({"key": "volume", "name": translate("SignalPath", "Volume"), "detail": f"{round(volume * 100)}%", "active": vol_on})
 
     if crossfade:
-        stages.append({"name": "Crossfade", "detail": f"{crossfade} s between tracks", "active": False})
+        stages.append({"key": "crossfade", "name": translate("SignalPath", "Crossfade"),
+                       "detail": fill(translate("SignalPath", "%1 s between tracks"), crossfade), "active": False})
 
     follows = bool(rate_follows and rate)
     resampled = bool(rate and device_rate and rate != device_rate and not follows)
-    out = [device_name or "System default"]
+    out = [device_name or translate("SignalPath", "System default")]
     if follows:
-        out.append(_rate(rate) + (f" (switched by {rate_source})" if rate_source and rate != device_rate else ""))
+        out.append(fill(translate("SignalPath", "%1 (switched by %2)"), _rate(rate), rate_source)
+                   if rate_source and rate != device_rate else _rate(rate))
     elif device_rate:
-        out.append(_rate(device_rate) + (f" (resampled from {_rate(rate)})" if resampled else ""))
-    stages.append({"name": "Output", "detail": "  ·  ".join(out), "active": resampled})
+        out.append(fill(translate("SignalPath", "%1 (resampled from %2)"), _rate(device_rate), _rate(rate))
+                   if resampled else _rate(device_rate))
+    stages.append({"key": "output", "name": translate("SignalPath", "Output"), "detail": "  ·  ".join(out), "active": resampled})
 
-    changed = [s["name"] for s in stages if s["active"]]
+    changed = [translate("SignalPath", "resampling") if s["key"] == "output" else s["name"].lower()
+               for s in stages if s["active"]]
     untouched = not changed
-    summary = "Untouched" if untouched else "Changed by " + ", ".join(n.lower() for n in changed).replace(
-        "output", "resampling")
+    summary = translate("SignalPath", "Untouched") if untouched else fill(translate("SignalPath", "Changed by %1"), ", ".join(changed))
     # Why, in plain words, and what would leave the sound untouched (the two that surprise people most)
     advice = []
     if resampled:
-        advice.append(f"Your output runs at {_rate(device_rate)} and this song is {_rate(rate)}, so it's converted "
-                      f"on the way. Songs at {_rate(device_rate)} play untouched; on Linux, PipeWire can switch "
-                      "the output to each song's rate (its allowed-rates setting). If your output already "
-                      "follows each song, say so in Settings → Playback → Output sample rate.")
+        advice.append(fill(translate("SignalPath", "Your output runs at %1 and this song is %2, so it's converted on the way. "
+                                     "Songs at %1 play untouched; on Linux, PipeWire can switch the output to each song's "
+                                     "rate (its allowed-rates setting). If your output already follows each song, say so in "
+                                     "Settings → Playback → Output sample rate."), _rate(device_rate), _rate(rate)))
     elif follows and rate_source and rate != device_rate:
-        advice.append(f"{rate_source} switches the output to {_rate(rate)} for this song, as long as nothing "
-                      "else is playing at another rate at the same time (then it's converted).")
+        advice.append(fill(translate("SignalPath", "%1 switches the output to %2 for this song, as long as nothing else is "
+                                     "playing at another rate at the same time (then it's converted)."), rate_source, _rate(rate)))
     if vol_on:
-        advice.append(f"Hallucinate's volume is at {round(volume * 100)}%, which scales the samples. Leave it at "
-                      "100% and turn your system or amplifier down instead for an untouched path.")
+        advice.append(fill(translate("SignalPath", "Hallucinate's volume is at %1%, which scales the samples. Leave it at 100% "
+                                     "and turn your system or amplifier down instead for an untouched path."), round(volume * 100)))
     return {"stages": stages, "untouched": untouched, "summary": summary, "advice": advice}

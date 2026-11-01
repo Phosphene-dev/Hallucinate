@@ -20,6 +20,7 @@ from pathlib import Path
 from PySide6.QtCore import Property, QObject, QUrl, Signal, Slot
 
 from .core import net
+from .core.i18n import fill, translate
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,7 @@ def _finite(value, low, high):
     """`value` as a float within [low, high], or ValueError for nan, inf or anything out of range."""
     number = float(value)
     if not math.isfinite(number) or not low <= number <= high:
-        raise ValueError("This EQ file has values out of range")
+        raise ValueError(translate("Headphones", "This EQ file has values out of range"))
     return number
 
 
@@ -88,11 +89,11 @@ def parse(text):
             if len(parts) == 2:
                 points.append([_finite(parts[0], 1.0, 48_000.0), _finite(parts[1], -MAX_GAIN_DB, MAX_GAIN_DB)])
         if len(points) < 2:
-            raise ValueError("This GraphicEQ file has no curve")
+            raise ValueError(translate("Headphones", "This GraphicEQ file has no curve"))
         return sorted(points)
     filters = _FILTER.findall(text)
     if not filters:
-        raise ValueError("Not an AutoEQ / Equalizer APO file (no filters found)")
+        raise ValueError(translate("Headphones", "Not an AutoEQ / Equalizer APO file (no filters found)"))
     freqs = curve_freqs()
     total = [0.0] * len(freqs)
     for kind, fc, gain, q in filters:
@@ -198,14 +199,14 @@ class HeadphoneFinder(QObject):
             self._results = []
             self._set("", False)
             return
-        self._set("Searching AutoEQ…", True)
+        self._set(translate("Headphones", "Searching AutoEQ…"), True)
 
         def work():
             try:
                 return ("results", query, search(self._load_index(), query))
             except Exception as exc:  # noqa: BLE001
                 logger.warning("AutoEQ index unavailable: %s", exc)
-                return ("error", query, "Couldn't reach AutoEQ. Check your connection, or import a file instead.")
+                return ("error", query, translate("Headphones", "Couldn't reach AutoEQ. Check your connection, or import a file instead."))
 
         self._pool.submit(lambda: self._done.emit(work()))
 
@@ -222,7 +223,7 @@ class HeadphoneFinder(QObject):
                 return ("profile", entry, text)
             except Exception as exc:  # noqa: BLE001
                 logger.warning("AutoEQ profile download failed: %s", exc)
-                return ("error", entry, "Couldn't download that profile.")
+                return ("error", entry, translate("Headphones", "Couldn't download that profile."))
 
         self._pool.submit(lambda: self._done.emit(work()))
 
@@ -243,11 +244,11 @@ class HeadphoneFinder(QObject):
         kind, what, value = result
         if kind == "results":
             self._results = value
-            self._set("" if value else f"No headphones match “{what}”", False)
+            self._set("" if value else fill(translate("Headphones", "No headphones match “%1”"), what), False)
         elif kind == "profile":
             try:
                 self._player.setHeadphoneProfile(what["name"], json.dumps(parse(value)))
-                self._set(f"Correcting for {what['name']}", False)
+                self._set(fill(translate("Headphones", "Correcting for %1"), what["name"]), False)
             except (ValueError, ArithmeticError) as exc:
                 self._set(str(exc), False)
         else:

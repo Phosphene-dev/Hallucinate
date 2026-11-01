@@ -7,6 +7,7 @@ from PySide6.QtCore import Property, QObject, QSettings, Signal, Slot
 
 from .core import lyrics as lx
 from .core import net
+from .core.i18n import translate
 from .library import _Reader
 
 logger = logging.getLogger(__name__)
@@ -87,10 +88,10 @@ class LyricsController(QObject):
     def saveTiming(self):
         """Write the lines with the current offset to an .lrc file next to the song (and the lyrics cache)."""
         if not self._lines or not self._path:
-            return "No synced lyrics to save"
+            return translate("Lyrics", "No synced lyrics to save")
         target = lx.sidecar_path(self._path)
         if target is None:
-            return "Lyrics for songs from a CUE sheet can't be saved next to the file"
+            return translate("Lyrics", "Lyrics for songs from a CUE sheet can't be saved next to the file")
         text = lx.format_lrc([(ln["t"], ln["text"]) for ln in self._lines], self._offset)
         from .core.atomic import write_text
 

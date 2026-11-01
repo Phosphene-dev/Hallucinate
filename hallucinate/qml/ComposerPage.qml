@@ -32,7 +32,6 @@ Item {
         out.push(n)
         return out
     }
-    function plural(n, one, many) { return Theme.num(n) + " " + (n === 1 ? one : many) }
     // a movement as it's usually written: "III. Allegro", else the song's own title
     function movementTitle(t) {
         if (!t.movement) return t.title
@@ -92,7 +91,7 @@ Item {
                     spacing: 8
                     Text {
                         textFormat: Text.PlainText
-                        text: "COMPOSER"
+                        text: qsTr("COMPOSER")
                         color: Theme.accent
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSize(11)
@@ -116,9 +115,9 @@ Item {
                         textFormat: Text.PlainText
                         objectName: "composerFacts"
                         width: parent.width
-                        text: [page.works.length ? page.plural(page.works.length, "work", "works") : "",
-                               page.plural(page.info.tracks || 0, "song", "songs"),
-                               page.plural(page.albumList.length, "album", "albums"),
+                        text: [page.works.length ? Theme.counted(qsTr("%n work(s)", "", page.works.length), page.works.length) : "",
+                               Theme.counted(qsTr("%n song(s)", "", page.info.tracks || 0), page.info.tracks || 0),
+                               Theme.counted(qsTr("%n album(s)", "", page.albumList.length), page.albumList.length),
                                page.info.seconds ? Theme.fmtHours(page.info.seconds) : ""].filter(s => s).join("  ·  ")
                         color: Theme.textDim
                         wrapMode: Text.Wrap
@@ -130,12 +129,12 @@ Item {
                         spacing: 10
                         topPadding: 10
                         PillButton {
-                            primary: true; text: "Play all"
+                            primary: true; text: qsTr("Play all")
                             enabled: (page.info.tracks || 0) > 0
                             onClicked: library.playComposer(page.composerName, false)
                         }
                         PillButton {
-                            text: "Shuffle"
+                            text: qsTr("Shuffle")
                             enabled: (page.info.tracks || 0) > 0
                             onClicked: { player.setShuffle(true); library.playComposer(page.composerName, true) }
                         }
@@ -143,7 +142,7 @@ Item {
                             objectName: "composerPageMore"
                             height: 38
                             enabled: (page.info.tracks || 0) > 0
-                            icon: "more"; size: 18; tip: "More: play next, add to the queue or a playlist"
+                            icon: "more"; size: 18; tip: qsTr("More: play next, add to the queue or a playlist")
                             onClicked: composerMenu.showComposer(page.composerName)
                         }
                     }
@@ -155,7 +154,7 @@ Item {
                 width: col.width
                 spacing: 10
                 visible: (page.info.performers || []).length > 0
-                SectionHeader { title: "Performed by" }
+                SectionHeader { title: qsTr("Performed by") }
                 Flow {
                     width: col.width
                     spacing: 8
@@ -165,7 +164,7 @@ Item {
                             required property var modelData
                             text: modelData.name
                             onClicked: Nav.openArtist(modelData.name)
-                            Accessible.name: "Artist: " + modelData.name
+                            Accessible.name: qsTr("Artist: %1").arg(modelData.name)
                         }
                     }
                 }
@@ -177,7 +176,7 @@ Item {
                 width: col.width
                 spacing: 18
                 visible: page.works.length > 0
-                SectionHeader { title: "Works" }
+                SectionHeader { title: qsTr("Works") }
                 Repeater {
                     model: page.works
                     Column {
@@ -202,7 +201,7 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 anchors.baseline: parent.children[0].baseline
-                                text: page.plural(workBlock.modelData.songs.length, "movement", "movements")
+                                text: Theme.counted(qsTr("%n movement(s)", "", workBlock.modelData.songs.length), workBlock.modelData.songs.length)
                                       + (workBlock.modelData.seconds >= 60 ? "  ·  " + Theme.fmtHours(workBlock.modelData.seconds) : "")
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily
@@ -211,7 +210,7 @@ Item {
                             Text {
                                 textFormat: Text.PlainText
                                 anchors.baseline: parent.children[0].baseline
-                                text: "Play"
+                                text: qsTr("Play")
                                 color: Theme.accent
                                 font.family: Theme.fontFamily
                                 font.pixelSize: Theme.fontSize(12.5)
@@ -256,7 +255,7 @@ Item {
                 width: col.width
                 spacing: 4
                 visible: page.others.length > 0
-                SectionHeader { title: page.works.length ? "Other songs" : "Songs" }
+                SectionHeader { title: page.works.length ? qsTr("Other songs") : qsTr("Songs") }
                 Item { width: 1; height: 6 }
                 Repeater {
                     model: page.others
@@ -288,7 +287,7 @@ Item {
                 width: col.width
                 spacing: 14
                 visible: page.albumList.length > 0
-                SectionHeader { title: "Albums" }
+                SectionHeader { title: qsTr("Albums") }
                 Flow {
                     width: col.width
                     spacing: 18
@@ -316,7 +315,7 @@ Item {
         anchors.centerIn: parent
         visible: page.info.tracks === 0
         icon: "note"
-        title: "Nothing by " + page.composerName
-        hint: "None of your songs credit this composer any more."
+        title: qsTr("Nothing by %1").arg(page.composerName)
+        hint: qsTr("None of your songs credit this composer any more.")
     }
 }

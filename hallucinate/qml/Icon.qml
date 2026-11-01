@@ -43,7 +43,7 @@ Canvas {
         case "repeat": case "repeat1":
             line([.15,.5,.15,.3,.78,.3]); tri(w*.74,h*.14,w*.96,h*.3,w*.74,h*.46)
             line([.85,.5,.85,.7,.22,.7]); tri(w*.26,h*.54,w*.04,h*.7,w*.26,h*.86)
-            if (name === "repeat1") { ctx.font = "bold " + Math.round(h*.45) + "px sans-serif"; ctx.textAlign = "center"; ctx.fillText("1", w*.5, h*.62) }
+            if (name === "repeat1") { ctx.font = "bold " + Math.round(h*.45) + "px sans-serif"; ctx.textAlign = "center"; ctx.fillText("1", w*.5, h*.62) }  // i18n: keep
             break
         case "radio":  // broadcast waves around a dot
             ctx.beginPath(); ctx.arc(w*.5, h*.5, w*.09, 0, 2*Math.PI); ctx.fill()
@@ -189,7 +189,7 @@ Canvas {
             ctx.stroke()
             if (back) line([.16,.12,.24,.3,.42,.22])
             else line([.84,.12,.76,.3,.58,.22])
-            ctx.font = "bold " + Math.round(h * .42) + "px sans-serif"
+            ctx.font = "bold " + Math.round(h * .42) + "px sans-serif"  // i18n: keep
             ctx.textAlign = "center"; ctx.textBaseline = "middle"
             ctx.fillText(arg || (back ? "15" : "30"), w*.5, h*.57)
             break

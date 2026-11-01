@@ -99,7 +99,10 @@ def touch_newer(path):
 @pytest.fixture(scope="session")
 def qapp():
     pytest.importorskip("PySide6.QtMultimedia", exc_type=ImportError)
+    from PySide6.QtQuick import QQuickWindow
     from PySide6.QtWidgets import QApplication
+
+    QQuickWindow.setDefaultAlphaBuffer(True)  # as the app does (rounded window corners)
     app = QApplication.instance() or QApplication([])
     yield app
 
@@ -172,6 +175,8 @@ def _isolated_qsettings(tmp_path_factory):
     for scope in (QSettings.Scope.UserScope, QSettings.Scope.SystemScope):
         QSettings.setPath(QSettings.Format.NativeFormat, scope, root)
         QSettings.setPath(QSettings.Format.IniFormat, scope, root)
+    # The interface in English whatever the machine's language: tests read its text
+    QSettings("hallucinate", "hallucinate").setValue("ui/language", "en")
     yield
 
 

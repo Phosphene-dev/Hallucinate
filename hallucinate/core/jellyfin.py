@@ -9,6 +9,7 @@ import urllib.parse
 import urllib.request
 
 from . import net
+from .i18n import translate
 from .subsonic import MAX_SONGS, PAGE, SubsonicError, _gain, _int, _text, is_private_link, normalise_base  # noqa: F401
 
 CLIENT = "Hallucinate"
@@ -93,7 +94,7 @@ class Server:
         token = "".join(c for c in _text(answer.get("AccessToken"), 200) if c.isalnum())  # it goes in a header
         user_id = _text((answer.get("User") or {}).get("Id") if isinstance(answer.get("User"), dict) else "", 64)
         if not token or not user_id:
-            raise ValueError("That doesn't look like a Jellyfin server")
+            raise ValueError(translate("Servers", "That doesn't look like a Jellyfin server"))
         server._token, server.user_id = token, user_id
         return server, token, user_id
 
@@ -116,16 +117,16 @@ class Server:
                 raw = resp.read()
         except urllib.error.HTTPError as exc:
             if exc.code == 401:
-                raise JellyfinAuthError("the user name or password is wrong, or the sign-in was revoked") from exc
+                raise JellyfinAuthError(translate("Servers", "the user name or password is wrong, or the sign-in was revoked")) from exc
             raise
         if not raw.strip():
             return {}
         try:
             answer = json.loads(raw.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise ValueError("That doesn't look like a Jellyfin server") from exc
+            raise ValueError(translate("Servers", "That doesn't look like a Jellyfin server")) from exc
         if not isinstance(answer, dict):
-            raise ValueError("That doesn't look like a Jellyfin server")
+            raise ValueError(translate("Servers", "That doesn't look like a Jellyfin server"))
         return answer
 
     def ping(self):

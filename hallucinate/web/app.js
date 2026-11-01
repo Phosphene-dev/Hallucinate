@@ -13,6 +13,62 @@ let detail = null;         // what the detail view shows: {kind, ...}
 let menuSong = null;       // the song the song menu is for
 let events = null;
 
+// --- words, in the language this browser picked -------------------------------------------------------------
+// The catalogue comes from the computer (api/i18n: the same translations the app uses). t() takes a sentence,
+// tn() one with a count (%n, and "(s)" for English); fill() puts %1, %2… in. With no catalogue, English is used.
+const I18N = { lang: "en", strings: {}, plural: "en", languages: [] };
+function t(s) {
+  const v = I18N.strings[s];
+  return typeof v === "string" && v ? v : s;
+}
+function tn(s, n) {
+  const v = I18N.strings[s];
+  const out = Array.isArray(v) && v.length ? (v[pluralForm(n)] || v[v.length - 1])
+    : s.replace(/\(s\)/g, n === 1 ? "" : "s");
+  return out.replace(/%n/g, num(n));
+}
+function pluralForm(n) { return I18N.plural === "fr" ? (n >= 2 ? 1 : 0) : (n === 1 ? 0 : 1); }
+function fill(s, ...values) { return s.replace(/%(\d+)/g, (m, i) => (values[i - 1] !== undefined ? String(values[i - 1]) : m)); }
+function num(n) { return Number(n).toLocaleString(I18N.lang); }
+// the language picked here, or this device's languages in its order: the computer answers with the first it has
+function wantedLang() {
+  const chosen = pref("lang", "");
+  if (chosen) return chosen;
+  const codes = (navigator.languages || [navigator.language || "en"]).map((l) => String(l || "").split("-")[0].toLowerCase());
+  return [...new Set(codes)].filter((c) => /^[a-z]{2,3}$/.test(c)).slice(0, 8).join(",") || "en";
+}
+async function loadWords() {
+  const r = await fetch("api/i18n?lang=" + encodeURIComponent(wantedLang()), { credentials: "same-origin" })
+    .then((x) => x.json()).catch(() => null);
+  if (r) Object.assign(I18N, { lang: r.lang || "en", strings: r.strings || {}, plural: r.plural || "en", languages: r.languages || [] });
+  document.documentElement.lang = I18N.lang;
+  translatePage();
+  markLang();
+}
+// The page's own words (index.html): each marked element keeps its English in data-src and shows the translation
+function translatePage() {
+  for (const e of document.querySelectorAll("[data-i18n]")) {
+    if (e.dataset.src === undefined) e.dataset.src = e.textContent.trim();
+    e.textContent = t(e.dataset.src);
+  }
+  for (const e of document.querySelectorAll("[data-i18n-html]")) {  // a sentence with <b> or <code> in it
+    if (e.dataset.src === undefined) e.dataset.src = e.innerHTML.trim().replace(/\s+/g, " ");
+    e.innerHTML = safeMarkup(t(e.dataset.src));
+  }
+  for (const attr of ["aria-label", "placeholder", "title"]) {
+    for (const e of document.querySelectorAll(`[${attr}]`)) {
+      const key = "src" + attr.replace(/(^|-)(\w)/g, (m, d, c) => c.toUpperCase());
+      if (e.dataset[key] === undefined) e.dataset[key] = e.getAttribute(attr);
+      if (/[A-Za-z]{2}/.test(e.dataset[key])) e.setAttribute(attr, t(e.dataset[key]));
+    }
+  }
+}
+// only <b> and <code> survive from a translation; everything else is shown as text
+function safeMarkup(s) {
+  const esc = s.replace(/&(?!amp;)/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return esc.replace(/&lt;(\/?)(b|code)&gt;/g, "<$1$2>");
+}
+
 // --- talking to the computer -----------------------------------------------------------------------------
 async function call(method, params = {}) {
   const res = await fetch("api/call", {
@@ -22,7 +78,7 @@ async function call(method, params = {}) {
   });
   if (res.status === 401) { showPairing(); throw new Error("not paired"); }
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) { toast(data.error || "That didn't work"); throw new Error(data.error || res.status); }
+  if (!res.ok) { toast(data.error ? t(data.error) : t("That didn't work")); throw new Error(data.error || res.status); }
   return data.result;
 }
 
@@ -63,15 +119,15 @@ function fmt(seconds) {
 
 let toastTimer = 0;
 function toast(text, actionText, action) {
-  const t = $("toast");
-  t.replaceChildren(el("span", { text }));
+  const box = $("toast");
+  box.replaceChildren(el("span", { text }));
   if (action) {
-    t.append(el("button", { class: "small", text: actionText || "Undo", onclick: () => { t.classList.remove("show"); action(); } }));
+    box.append(el("button", { class: "small", text: actionText || t("Undo"), onclick: () => { box.classList.remove("show"); action(); } }));
   }
-  t.classList.toggle("act", !!action);
-  t.classList.add("show");
+  box.classList.toggle("act", !!action);
+  box.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), action ? 5000 : 2200);
+  toastTimer = setTimeout(() => box.classList.remove("show"), action ? 5000 : 2200);
 }
 
 // --- pairing ---------------------------------------------------------------------------------------------
@@ -94,7 +150,7 @@ $("pairForm").addEventListener("submit", async (e) => {
     body: JSON.stringify({ code: $("pairCode").value.trim(), name: $("pairName").value.trim() || guessName() }),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) { $("pairError").textContent = data.error || "That didn't work"; return; }
+  if (!res.ok) { $("pairError").textContent = data.error ? t(data.error) : t("That didn't work"); return; }
   $("pairCode").value = "";
   start();
 });
@@ -103,10 +159,10 @@ function guessName() {
   const ua = navigator.userAgent;
   if (/iPhone/.test(ua)) return "iPhone";
   if (/iPad/.test(ua)) return "iPad";
-  if (/Android/.test(ua)) return "Android phone";
-  if (/Mac/.test(ua)) return "Mac browser";
-  if (/Windows/.test(ua)) return "Windows browser";
-  return "Browser";
+  if (/Android/.test(ua)) return t("Android phone");
+  if (/Mac/.test(ua)) return t("Mac browser");
+  if (/Windows/.test(ua)) return t("Windows browser");
+  return t("Browser");
 }
 
 // --- live state ------------------------------------------------------------------------------------------
@@ -132,7 +188,7 @@ function render() {
   const s = state;
   if (!s) return;
   const song = s.song;
-  $("nowTitle").replaceChildren(song ? (song.streamTitle || song.title) : "Nothing playing",
+  $("nowTitle").replaceChildren(song ? (song.streamTitle || song.title) : t("Nothing playing"),
     ...(song && !song.streamTitle ? badges(song) : []));
   $("nowArtist").textContent = song ? song.artist : "";
   $("nowAlbum").textContent = song ? [song.album, song.year || ""].filter(Boolean).join(" · ") : "";
@@ -149,7 +205,7 @@ function render() {
   document.body.classList.toggle("playing", !!s.playing);
   $("icoPlay").toggleAttribute("hidden", s.playing);  // (an svg has no .hidden: #124)
   $("icoPause").toggleAttribute("hidden", !s.playing);
-  $("btnPlay").setAttribute("aria-label", s.playing ? "Pause" : "Play");
+  $("btnPlay").setAttribute("aria-label", s.playing ? t("Pause") : t("Play"));
   $("miniIco").setAttribute("d", s.playing ? "M7 5h4v14H7zM13 5h4v14h-4z" : "M8 5l11 7-11 7z");
   $("btnShuffle").classList.toggle("on", s.shuffle);
   $("btnRepeat").classList.toggle("on", s.repeat > 0);
@@ -177,7 +233,7 @@ function tick() {
   $("seek").classList.toggle("live", live);
   if (!dragging) $("seek").value = live ? 1000 : dur ? Math.round((pos / dur) * 1000) : 0;
   $("posText").textContent = fmt(pos);
-  $("durText").textContent = live ? "LIVE" : fmt(dur);
+  $("durText").textContent = live ? t("LIVE") : fmt(dur);
   $("durText").classList.toggle("live", live);
 }
 setInterval(tick, 500);
@@ -190,7 +246,7 @@ $("btnNext").onclick = () => call("next");
 $("btnPrev").onclick = () => call("previous");
 $("btnShuffle").onclick = () => call("shuffle");
 $("btnRepeat").onclick = () => call("repeat");
-$("btnRadio").onclick = () => call("radio").then((r) => toast(r.radio ? "Radio on: similar songs keep coming" : "Radio off"));
+$("btnRadio").onclick = () => call("radio").then((r) => toast(r.radio ? t("Radio on: similar songs keep coming") : t("Radio off")));
 $("btnMute").onclick = () => call("mute");
 $("btnLike").onclick = () => state && state.song && call("like", { id: state.song.id });
 $("seek").addEventListener("input", () => { dragging = true; });
@@ -203,23 +259,24 @@ $("volume").addEventListener("input", () => {
   clearTimeout(volTimer);
   volTimer = setTimeout(() => call("volume", { volume: $("volume").value / 100 }), 80);
 });
-$("btnSleep").onclick = () => pick("Sleep timer", [
-  ["Off", () => call("sleep", { minutes: 0 })],
-  ["15 minutes", () => call("sleep", { minutes: 15 })],
-  ["30 minutes", () => call("sleep", { minutes: 30 })],
-  ["1 hour", () => call("sleep", { minutes: 60 })],
-  ["End of this song", () => call("sleep", { end: "track" })],
-  ["End of this album", () => call("sleep", { end: "album" })],
+$("btnSleep").onclick = () => pick(t("Sleep timer"), [
+  [t("Off"), () => call("sleep", { minutes: 0 })],
+  [tn("%n minute(s)", 15), () => call("sleep", { minutes: 15 })],
+  [tn("%n minute(s)", 30), () => call("sleep", { minutes: 30 })],
+  [tn("%n hour(s)", 1), () => call("sleep", { minutes: 60 })],
+  [t("End of this song"), () => call("sleep", { end: "track" })],
+  [t("End of this album"), () => call("sleep", { end: "album" })],
 ]);
 
 // --- the equaliser's presets ----------------------------------------------------------------------------
 $("btnEq").onclick = async () => {
   const eq = await call("eq");
-  if (!eq.available) { toast("The equaliser isn't available on this computer"); return; }
-  pick("Equaliser", [
-    [(eq.enabled ? "" : "✓ ") + "Off", () => call("eq.set", { enabled: false }).then(() => toast("Equaliser off"))],
-    ...eq.presets.map((name) => [(eq.enabled && eq.preset === name ? "✓ " : "") + name,
-      () => call("eq.set", { preset: name }).then(() => toast("Equaliser: " + name))]),
+  if (!eq.available) { toast(t("The equaliser isn't available on this computer")); return; }
+  // (a preset's name is its key on the computer; the words come from the app's catalogue, context Equalizer)
+  pick(t("Equaliser"), [
+    [(eq.enabled ? "" : "✓ ") + t("Off"), () => call("eq.set", { enabled: false }).then(() => toast(t("Equaliser off")))],
+    ...eq.presets.map((name) => [(eq.enabled && eq.preset === name ? "✓ " : "") + t(name),
+      () => call("eq.set", { preset: name }).then(() => toast(fill(t("Equaliser: %1"), t(name))))]),
   ]);
 };
 
@@ -236,7 +293,7 @@ async function loadLyrics() {
   lyricsLine = -1;
   const panel = $("lyricsPanel");
   if (!key) { lyrics = null; panel.replaceChildren(); return; }
-  panel.replaceChildren(el("p", { class: "dim", text: "Looking for lyrics…" }));
+  panel.replaceChildren(el("p", { class: "dim", text: t("Looking for lyrics…") }));
   try { lyrics = await call("lyrics"); } catch (e) { lyrics = null; }
   if (!lyrics || (lyrics.status === "loading" && !lyrics.synced && !lyrics.plain)) {
     setTimeout(() => { lyricsKey = undefined; loadLyrics(); }, 2500);  // the app is still looking
@@ -247,7 +304,7 @@ async function loadLyrics() {
   } else if (lyrics.plain) {
     panel.replaceChildren(...lyrics.plain.split("\n").map((l) => el("p", { text: l || "\u00a0" })));
   } else {
-    panel.replaceChildren(el("p", { class: "dim", text: "No lyrics for this song" }));
+    panel.replaceChildren(el("p", { class: "dim", text: t("No lyrics for this song") }));
   }
   followLyrics();
 }
@@ -326,6 +383,23 @@ function markStart() {
 for (const c of document.querySelectorAll("[data-start-pick]")) c.onclick = () => { setPref("start", c.dataset.startPick); markStart(); };
 markStart();
 
+// the language: as this device is set (the first of its languages Hallucinate has), or one picked here
+function markLang() {
+  const box = $("langChips");
+  const chosen = pref("lang", "");
+  const options = [["", t("Automatic")], ...I18N.languages.map((l) => [l.code, l.name])];
+  box.replaceChildren(...options.map(([code, name]) => {
+    const on = code === chosen;
+    const chip = el("button", { class: "chip" + (on ? " active" : ""), role: "radio", "aria-checked": on ? "true" : "false", text: name });
+    if (code) chip.setAttribute("lang", code);
+    chip.onclick = () => {
+      setPref("lang", code);
+      loadWords().then(() => { render(); if (currentView !== "now" && currentView !== "settings") show(currentView); });
+    };
+    return chip;
+  }));
+}
+
 // the cover as a record, turning while the music plays (#135)
 $("optSpin").checked = pref("spin", "0") === "1";
 document.body.classList.toggle("spin", $("optSpin").checked);
@@ -361,12 +435,12 @@ $("optAwake").onchange = () => { setPref("awake", $("optAwake").checked ? "1" : 
 document.addEventListener("visibilitychange", syncWakeLock);
 
 $("btnForget").onclick = async () => {
-  if (!confirm("Disconnect this device from Hallucinate? You'll need a new pairing code to use it again.")) return;
+  if (!confirm(t("Disconnect this device from Hallucinate? You'll need a new pairing code to use it again."))) return;
   const res = await fetch("api/forget", {
     method: "POST", credentials: "same-origin",
     headers: { "Content-Type": "application/json", "X-Hallucinate": "1" }, body: "{}",
   }).catch(() => null);
-  if (!res || !res.ok) { toast("Couldn't disconnect: is Hallucinate still running?"); return; }
+  if (!res || !res.ok) { toast(t("Couldn't disconnect: is Hallucinate still running?")); return; }
   showPairing();
 };
 
@@ -378,7 +452,7 @@ function songRow(song, index, onPlay, opts = {}) {
     el("span", { class: "dim small", text: [song.artist, opts.showAlbum === false ? "" : song.album].filter(Boolean).join(" · ") })));
   if (song.duration) row.append(el("span", { class: "time", text: fmt(song.duration) }));
   if (song.id) {
-    row.append(el("button", { class: "icon", "aria-label": "More", onclick: (e) => { e.stopPropagation(); songMenu(song); } },
+    row.append(el("button", { class: "icon", "aria-label": t("More"), onclick: (e) => { e.stopPropagation(); songMenu(song); } },
       svgDots()));
   }
   row.addEventListener("click", () => onPlay(index));
@@ -389,8 +463,8 @@ function songRow(song, index, onPlay, opts = {}) {
 // E for explicit, Hi-Res for 24-bit and up (1 bit is DSD), as the app shows them
 function badges(song) {
   const out = [];
-  if (song && song.explicit) out.push(el("span", { class: "badge explicit", title: "Explicit", text: "E" }));
-  if (song && (song.bitDepth >= 24 || song.bitDepth === 1)) out.push(el("span", { class: "badge hires", text: "Hi-Res" }));
+  if (song && song.explicit) out.push(el("span", { class: "badge explicit", title: t("Explicit"), text: t("E") }));
+  if (song && (song.bitDepth >= 24 || song.bitDepth === 1)) out.push(el("span", { class: "badge hires", text: t("Hi-Res") }));
   return out;
 }
 
@@ -430,7 +504,7 @@ async function loadQueue() {
     const row = songRow(s, i, (idx) => call("queue.jump", { index: idx }), { art: true });
     row.dataset.index = i;
     // a handle to drag the song to another place (or move it with the arrow keys)
-    const grip = el("button", { class: "icon grip", "aria-label": `Move ${s.title} (arrow keys move it)`, text: "≡" });
+    const grip = el("button", { class: "icon grip", "aria-label": fill(t("Move %1 (arrow keys move it)"), s.title), text: "≡" });
     grip.addEventListener("click", (e) => e.stopPropagation());
     grip.addEventListener("keydown", (e) => {
       const to = e.key === "ArrowUp" ? i - 1 : e.key === "ArrowDown" ? i + 1 : -1;
@@ -443,19 +517,19 @@ async function loadQueue() {
     });
     grip.addEventListener("pointerdown", (e) => dragQueueRow(e, row, i));
     row.prepend(grip);
-    const remove = el("button", { class: "icon", "aria-label": "Remove", onclick: (e) => { e.stopPropagation(); removeFromQueue(i, s.title); } });
+    const remove = el("button", { class: "icon", "aria-label": t("Remove"), onclick: (e) => { e.stopPropagation(); removeFromQueue(i, s.title); } });
     remove.textContent = "×";
     row.append(remove);
     swipeToRemove(row, i, s.title);
     return row;
   }));
-  if (!q.songs.length) list.append(el("p", { class: "dim", text: "The queue is empty. Play something from your library." }));
+  if (!q.songs.length) list.append(el("p", { class: "dim", text: t("The queue is empty. Play something from your library.") }));
   markCurrent();
 }
 function removeFromQueue(i, title) {
   call("queue.remove", { index: i }).then(() => {
     loadQueue();
-    toast(`Removed: ${title}`, "Undo", () => call("queue.undo").then(loadQueue));
+    toast(fill(t("Removed: %1"), title), t("Undo"), () => call("queue.undo").then(loadQueue));
   });
 }
 
@@ -541,9 +615,9 @@ function swipeToRemove(row, i, title) {
 function markCurrent() {
   for (const row of $("queueList").children) row.classList.toggle("current", state && Number(row.dataset.index) === state.index);
 }
-$("qShuffle").onclick = () => call("queue.shuffle").then(() => toast("Upcoming songs shuffled"));
-$("qClear").onclick = () => call("queue.clear", { upcoming: true }).then(() => toast("Upcoming songs cleared"));
-$("qUndo").onclick = () => call("queue.undo").then((r) => toast(r.undone ? `Undone: ${r.undone}` : "Nothing to undo"));
+$("qShuffle").onclick = () => call("queue.shuffle").then(() => toast(t("Upcoming songs shuffled")));
+$("qClear").onclick = () => call("queue.clear", { upcoming: true }).then(() => toast(t("Upcoming songs cleared")));
+$("qUndo").onclick = () => call("queue.undo").then((r) => toast(r.undone ? fill(t("Undone: %1"), r.undone) : t("Nothing to undo")));
 
 // library
 for (const c of document.querySelectorAll("#libChips .chip")) {
@@ -551,11 +625,11 @@ for (const c of document.querySelectorAll("#libChips .chip")) {
 }
 async function loadLibrary() {
   const body = $("libBody");
-  body.replaceChildren(el("p", { class: "dim", text: "Loading…" }));
+  body.replaceChildren(el("p", { class: "dim", text: t("Loading…") }));
   if (libKind === "albums") {
     const grid = el("div", { class: "grid" });
     let offset = 0;
-    const more = el("button", { text: "Show more", onclick: () => page() });
+    const more = el("button", { text: t("Show more"), onclick: () => page() });
     async function page() {
       const r = await call("albums", { offset, limit: 120, sort: "artist" });
       offset += r.albums.length;
@@ -568,7 +642,7 @@ async function loadLibrary() {
     const r = await call("artists", { limit: 500 });
     body.replaceChildren(el("ul", { class: "list" }, ...r.artists.map((a) => {
       const row = el("li", { class: "row", tabindex: "0" }, el("div", { class: "text" }, el("span", { text: a.name }),
-        el("span", { class: "dim small", text: `${a.albums} album${a.albums === 1 ? "" : "s"} · ${a.songs} songs` })));
+        el("span", { class: "dim small", text: tn("%n album(s)", a.albums) + " · " + tn("%n song(s)", a.songs) })));
       row.onclick = () => openArtist(a.name);
       return row;
     })));
@@ -577,15 +651,15 @@ async function loadLibrary() {
     body.replaceChildren(el("ul", { class: "list" }, ...r.playlists.map((p) => {
       const row = el("li", { class: "row", tabindex: "0" }, el("div", { class: "text" },
         el("span", { text: (p.folder ? p.folder + " / " : "") + p.name }),
-        el("span", { class: "dim small", text: p.smart ? "Smart playlist" : `${p.songs} songs` })));
+        el("span", { class: "dim small", text: p.smart ? t("Smart playlist") : tn("%n song(s)", p.songs) })));
       row.onclick = () => openPlaylist(p);
       return row;
     })));
-    if (!r.playlists.length) body.append(el("p", { class: "dim", text: "No playlists yet." }));
+    if (!r.playlists.length) body.append(el("p", { class: "dim", text: t("No playlists yet.") }));
   } else if (libKind === "genres") {
     const r = await call("genres");
     body.replaceChildren(el("div", { class: "grid" }, ...r.genres.map((g) =>
-      card(g.name, `${g.songs} songs`, g.albumKey, () => openGenre(g.name)))));
+      card(g.name, tn("%n song(s)", g.songs), g.albumKey, () => openGenre(g.name)))));
   } else if (libKind === "recent") {  // what was listened to last; songs still in the library play again
     const r = await call("recent", { limit: 50 });
     body.replaceChildren(el("ul", { class: "list" }, ...r.plays.map((p) => {
@@ -593,27 +667,27 @@ async function loadLibrary() {
         el("div", { class: "text" }, el("span", { text: p.title }),
           el("span", { class: "dim small", text: [p.artist, p.album].filter(Boolean).join(" · ") })),
         el("span", { class: "time", text: p.time }));
-      if (p.id) row.onclick = () => call("play.songs", { ids: [p.id] }).then(() => toast("Playing " + p.title));
+      if (p.id) row.onclick = () => call("play.songs", { ids: [p.id] }).then(() => toast(fill(t("Playing %1"), p.title)));
       return row;
     })));
-    if (!r.plays.length) body.append(el("p", { class: "dim", text: "Songs you listen to show up here." }));
+    if (!r.plays.length) body.append(el("p", { class: "dim", text: t("Songs you listen to show up here.") }));
   } else if (libKind === "stations") {  // internet radio (#128)
     const r = await call("stations");
     body.replaceChildren(el("div", { class: "grid" }, ...r.stations.map((st) =>
-      card(st.name, st.detail, st.art, () => call("play.station", { id: st.id }).then(() => toast("Tuning in to " + st.name)), "📻"))));
-    if (!r.stations.length) body.append(el("p", { class: "dim", text: "Stations you add in Hallucinate show up here." }));
+      card(st.name, st.detail, st.art, () => call("play.station", { id: st.id }).then(() => toast(fill(t("Tuning in to %1"), st.name))), "📻"))));
+    if (!r.stations.length) body.append(el("p", { class: "dim", text: t("Stations you add in Hallucinate show up here.") }));
   } else if (libKind === "podcasts") {
     const r = await call("podcasts");
     body.replaceChildren(el("div", { class: "grid" }, ...r.podcasts.map((p) =>
-      card(p.title, p.unplayed ? `${p.unplayed} new` : (p.author || `${p.episodes} episodes`), p.art, () => openShow(p.id), "🎙"))));
-    if (!r.podcasts.length) body.append(el("p", { class: "dim", text: "Shows you follow in Hallucinate show up here." }));
+      card(p.title, p.unplayed ? fill(t("%1 new"), num(p.unplayed)) : (p.author || tn("%n episode(s)", p.episodes)), p.art, () => openShow(p.id), "🎙"))));
+    if (!r.podcasts.length) body.append(el("p", { class: "dim", text: t("Shows you follow in Hallucinate show up here.") }));
   } else if (libKind === "liked") {
     const r = await call("liked", { limit: 500 });
     const list = el("ol", { class: "list" }, ...r.songs.map((s, i) => songRow(s, i, (idx) => call("play.liked", { index: idx }))));
     body.replaceChildren(el("div", { class: "actions" },
-      el("button", { class: "primary", text: "Play", onclick: () => call("play.liked") }),
-      el("button", { text: "Shuffle", onclick: () => call("play.liked", { shuffle: true }) })), list);
-    if (!r.songs.length) body.append(el("p", { class: "dim", text: "Songs you like show up here." }));
+      el("button", { class: "primary", text: t("Play"), onclick: () => call("play.liked") }),
+      el("button", { text: t("Shuffle"), onclick: () => call("play.liked", { shuffle: true }) })), list);
+    if (!r.songs.length) body.append(el("p", { class: "dim", text: t("Songs you like show up here.") }));
   }
 }
 
@@ -624,7 +698,7 @@ function openDetail(info, rows) {
   $("detailTitle").textContent = info.title;
   $("detailSub").textContent = info.sub || "";
   $("detailArt").hidden = !info.albumKey;
-  $("detailShuffle").hidden = info.kind === "Podcast";  // (a show plays its newest unplayed episode)
+  $("detailShuffle").hidden = !!info.show;  // (a show plays its newest unplayed episode)
   if (info.albumKey) $("detailArt").src = art(info.albumKey, 256);
   $("detailBody").replaceChildren(...rows);
   show("detail");
@@ -637,49 +711,49 @@ async function openShow(id) {
   const sh = await call("podcast", { id, limit: 100 });
   const firstNew = sh.episodes.find((e) => !e.played) || sh.episodes[0];
   const rows = sh.episodes.map((e) => {
-    const when = e.published ? new Date(e.published * 1000).toLocaleDateString() : "";
-    const left = e.position > 0 && !e.played && e.duration ? `${fmt(e.duration - e.position)} left` : (e.duration ? fmt(e.duration) : "");
+    const when = e.published ? new Date(e.published * 1000).toLocaleDateString(I18N.lang) : "";
+    const left = e.position > 0 && !e.played && e.duration ? fill(t("%1 left"), fmt(e.duration - e.position)) : (e.duration ? fmt(e.duration) : "");
     const row = el("li", { class: "row" + (e.played ? " played" : ""), tabindex: "0" },
       el("div", { class: "text" }, el("span", { text: e.title }),
-        el("span", { class: "dim small", text: [when, left, e.played ? "Played" : ""].filter(Boolean).join(" · ") })),
-      el("button", { class: "small", text: "Next", "aria-label": "Play next: " + e.title,
-        onclick: (ev) => { ev.stopPropagation(); call("play.episode", { id: e.id, next: true }).then(() => toast("Plays next")); } }),
-      el("button", { class: "small", text: "Queue", "aria-label": "Add to the queue: " + e.title,
-        onclick: (ev) => { ev.stopPropagation(); call("play.episode", { id: e.id, queue: true }).then(() => toast("Added to the queue")); } }));
+        el("span", { class: "dim small", text: [when, left, e.played ? t("Played") : ""].filter(Boolean).join(" · ") })),
+      el("button", { class: "small", text: t("Next"), "aria-label": fill(t("Play next: %1"), e.title),
+        onclick: (ev) => { ev.stopPropagation(); call("play.episode", { id: e.id, next: true }).then(() => toast(t("Plays next"))); } }),
+      el("button", { class: "small", text: t("Queue"), "aria-label": fill(t("Add to the queue: %1"), e.title),
+        onclick: (ev) => { ev.stopPropagation(); call("play.episode", { id: e.id, queue: true }).then(() => toast(t("Added to the queue"))); } }));
     row.onclick = () => call("play.episode", { id: e.id });
     row.addEventListener("keydown", (ev) => { if (ev.key === "Enter") row.onclick(); });
     return row;
   });
-  openDetail({ kind: "Podcast", title: sh.title, sub: [sh.author, `${sh.total} episodes`].filter(Boolean).join(" · "),
+  openDetail({ kind: t("Podcast"), show: true, title: sh.title, sub: [sh.author, tn("%n episode(s)", sh.total)].filter(Boolean).join(" · "),
     albumKey: sh.art, play: () => firstNew && call("play.episode", { id: firstNew.id }) }, [el("ol", { class: "list" }, ...rows)]);
 }
 
 async function openAlbum(key) {
   const a = await call("album", { key });
-  openDetail({ kind: "Album", title: a.title, sub: [a.artist, a.year || "", `${a.songs.length} songs`].filter(Boolean).join(" · "),
+  openDetail({ kind: t("Album"), title: a.title, sub: [a.artist, a.year || "", tn("%n song(s)", a.songs.length)].filter(Boolean).join(" · "),
     albumKey: a.key, play: (shuffle) => call("play.album", { key: a.key, shuffle }) },
   [el("ol", { class: "list" }, ...a.songs.map((s, i) => songRow(s, i, (idx) => call("play.album", { key: a.key, index: idx }),
     { number: s.trackNo || i + 1, art: false, showAlbum: false })))]);
 }
 async function openArtist(name) {
   const a = await call("artist", { name });
-  openDetail({ kind: "Artist", title: a.name, sub: `${a.albums.length} albums`, play: (shuffle) => call("play.artist", { name: a.name, shuffle }) },
-    [el("h3", { class: "section-title", text: "Albums" }),
+  openDetail({ kind: t("Artist"), title: a.name, sub: tn("%n album(s)", a.albums.length), play: (shuffle) => call("play.artist", { name: a.name, shuffle }) },
+    [el("h3", { class: "section-title", text: t("Albums") }),
      el("div", { class: "grid" }, ...a.albums.map((al) => card(al.title, String(al.year || ""), al.key, () => openAlbum(al.key)))),
-     el("h3", { class: "section-title", text: "Songs" }),
+     el("h3", { class: "section-title", text: t("Songs") }),
      el("ol", { class: "list" }, ...a.songs.slice(0, 100).map((s, i) => songRow(s, i, () => call("play.songs", { ids: a.songs.map((x) => x.id), index: i }))))]);
 }
 async function openPlaylist(p) {
   const r = await call("playlist", { id: p.id, smart: p.smart });
-  openDetail({ kind: p.smart ? "Smart playlist" : "Playlist", title: p.name, sub: `${r.total} songs`,
+  openDetail({ kind: p.smart ? t("Smart playlist") : t("Playlist"), title: p.name, sub: tn("%n song(s)", r.total),
     play: (shuffle) => call("play.playlist", { id: p.id, smart: p.smart, shuffle }) },
   [el("ol", { class: "list" }, ...r.songs.map((s, i) => songRow(s, i, (idx) => call("play.playlist", { id: p.id, smart: p.smart, index: idx }))))]);
 }
 async function openGenre(name) {
   const g = await call("genre", { name });
-  openDetail({ kind: "Genre", title: g.name, sub: `${g.albums.length} albums`, play: (shuffle) => call("play.genre", { name, shuffle }) },
+  openDetail({ kind: t("Genre"), title: g.name, sub: tn("%n album(s)", g.albums.length), play: (shuffle) => call("play.genre", { name, shuffle }) },
     [el("div", { class: "grid" }, ...g.albums.slice(0, 60).map((al) => card(al.title, al.artist, al.key, () => openAlbum(al.key)))),
-     el("h3", { class: "section-title", text: "Most played" }),
+     el("h3", { class: "section-title", text: t("Most played") }),
      el("ol", { class: "list" }, ...g.songs.slice(0, 100).map((s, i) => songRow(s, i, () => call("play.songs", { ids: g.songs.map((x) => x.id), index: i }))))]);
 }
 
@@ -695,15 +769,15 @@ async function runSearch() {
   $("searchNote").textContent = "";
   if (!q) { body.replaceChildren(); return; }
   const r = await call("search", { query: q });
-  if (r.corrected) $("searchNote").textContent = `Nothing matches “${q}”. Showing results for “${r.corrected}”.`;
+  if (r.corrected) $("searchNote").textContent = fill(t("Nothing matches “%1”. Showing results for “%2”."), q, r.corrected);
   const parts = [];
-  if (r.artists.length) parts.push(el("h3", { class: "section-title", text: "Artists" }),
+  if (r.artists.length) parts.push(el("h3", { class: "section-title", text: t("Artists") }),
     el("ul", { class: "list" }, ...r.artists.map((a) => { const row = el("li", { class: "row" }, el("div", { class: "text" }, el("span", { text: a.name }))); row.onclick = () => openArtist(a.name); return row; })));
-  if (r.albums.length) parts.push(el("h3", { class: "section-title", text: "Albums" }),
+  if (r.albums.length) parts.push(el("h3", { class: "section-title", text: t("Albums") }),
     el("div", { class: "grid" }, ...r.albums.map((a) => card(a.title, a.artist, a.key, () => openAlbum(a.key)))));
-  if (r.songs.length) parts.push(el("h3", { class: "section-title", text: "Songs" }),
+  if (r.songs.length) parts.push(el("h3", { class: "section-title", text: t("Songs") }),
     el("ol", { class: "list" }, ...r.songs.map((s, i) => songRow(s, i, () => call("play.songs", { ids: r.songs.map((x) => x.id), index: i })))));
-  if (!parts.length) parts.push(el("p", { class: "dim", text: "Nothing found." }));
+  if (!parts.length) parts.push(el("p", { class: "dim", text: t("Nothing found.") }));
   body.replaceChildren(...parts);
 }
 
@@ -711,7 +785,7 @@ async function runSearch() {
 function songMenu(song) {
   menuSong = song;
   $("songMenuTitle").textContent = song.title;
-  $("songMenu").querySelector('[data-act="like"]').textContent = song.liked ? "Unlike" : "Like";
+  $("songMenu").querySelector('[data-act="like"]').textContent = song.liked ? t("Unlike") : t("Like");
   $("songMenu").showModal();
 }
 $("songMenu").addEventListener("click", async (e) => {
@@ -721,15 +795,15 @@ $("songMenu").addEventListener("click", async (e) => {
   const s = menuSong;
   if (!s || act === "close") return;
   if (act === "play") call("play.songs", { ids: [s.id] });
-  else if (act === "next") call("queue.add", { ids: [s.id], next: true }).then(() => toast("Plays next"));
-  else if (act === "queue") call("queue.add", { ids: [s.id] }).then(() => toast("Added to the queue"));
-  else if (act === "like") call("like", { id: s.id }).then((r) => { s.liked = r.liked; toast(r.liked ? "Liked" : "Unliked"); });
+  else if (act === "next") call("queue.add", { ids: [s.id], next: true }).then(() => toast(t("Plays next")));
+  else if (act === "queue") call("queue.add", { ids: [s.id] }).then(() => toast(t("Added to the queue")));
+  else if (act === "like") call("like", { id: s.id }).then((r) => { s.liked = r.liked; toast(r.liked ? t("Liked") : t("Unliked")); });
   else if (act === "album") openAlbum(s.albumKey);
   else if (act === "artist") openArtist(s.albumArtist || s.artist);
   else if (act === "playlist") {
     const r = await call("playlists");
-    pick("Add to playlist", r.playlists.filter((p) => !p.smart).map((p) => [p.name,
-      () => call("playlist.add", { id: p.id, ids: [s.id] }).then(() => toast(`Added to ${p.name}`))]));
+    pick(t("Add to playlist"), r.playlists.filter((p) => !p.smart).map((p) => [p.name,
+      () => call("playlist.add", { id: p.id, ids: [s.id] }).then(() => toast(fill(t("Added to %1"), p.name)))]));
   }
 });
 
@@ -737,7 +811,7 @@ function pick(title, options) {
   $("pickTitle").textContent = title;
   $("pickBody").replaceChildren(...options.map(([label, fn]) =>
     el("button", { text: label, onclick: () => { $("pickMenu").close(); fn(); } })));
-  if (!options.length) $("pickBody").append(el("p", { class: "dim", text: "Nothing here yet." }));
+  if (!options.length) $("pickBody").append(el("p", { class: "dim", text: t("Nothing here yet.") }));
   $("pickMenu").showModal();
 }
 $("pickCancel").onclick = () => $("pickMenu").close();
@@ -754,7 +828,7 @@ document.addEventListener("keydown", (e) => {
 // --- start -----------------------------------------------------------------------------------------------
 async function start() {
   const hello = await fetch("api/hello", { credentials: "same-origin" }).then((r) => r.json()).catch(() => null);
-  if (!hello) { document.body.textContent = "Hallucinate isn't answering. Is it still running?"; return; }
+  if (!hello) { document.body.textContent = t("Hallucinate isn't answering. Is it still running?"); return; }
   if (!hello.paired) { showPairing(); return; }
   $("pair").hidden = true;
   $("app").hidden = false;
@@ -773,4 +847,4 @@ $("nowArt").addEventListener("error", () => { $("nowArt").hidden = true; $("nowA
 
 const linked = /pair=(\d{6})/.exec(location.hash);
 if (linked) { $("pairCode").value = linked[1]; history.replaceState(null, "", location.pathname); }
-start();
+loadWords().finally(start);  // the words first (the pairing screen has some too); start either way
