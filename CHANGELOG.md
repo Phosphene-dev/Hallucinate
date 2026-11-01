@@ -13,7 +13,7 @@ All notable changes to this project are documented here. Format based on
   hours are written its way, and Qt's own dialog buttons follow it too.
 - The web remote speaks the phone's language (the first of its languages Hallucinate has), or one picked in its
   own Settings; errors from the computer are translated on the phone.
-- A guide for translators, no programming needed: [docs/translating.md](docs/translating.md). Each language is one
+- A guide for translators, no programming needed: [docs/translating.md](https://github.com/Phosphene-dev/Hallucinate/blob/main/docs/translating.md). Each language is one
   file, edited in Qt Linguist or any text editor.
 
 ### Changed
