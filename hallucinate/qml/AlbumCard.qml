@@ -114,7 +114,7 @@ Item {
         Text {
             textFormat: Text.PlainText
             width: parent.width
-            text: card.title
+            text: Theme.shown(card.title)
             color: Theme.text
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize(14)
@@ -124,7 +124,7 @@ Item {
         Text {
             textFormat: Text.PlainText
             width: parent.width
-            text: card.subtitle
+            text: Theme.shown(card.subtitle)
             color: Theme.textDim
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize(12)

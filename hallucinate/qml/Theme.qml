@@ -161,6 +161,12 @@ QtObject {
         //: a number of hours that can have a decimal ("2.5 hours"); %1 is already written out
         return qsTr("%1 hours").arg(h >= 10 ? num(Math.round(h)) : num(h, 1))
     }
+    // A name as stored, shown in the language chosen: songs with no artist or album tag are kept as "Unknown Artist"
+    // and "Unknown Album" in the library (a fixed key, so they group together), and read in your language here
+    function shown(name) {
+        return name === "Unknown Artist" ? qsTr("Unknown Artist") : name === "Unknown Album" ? qsTr("Unknown Album")  // i18n: keep
+             : name
+    }
     // A playback speed: 1.25×, with the decimal mark of the chosen number style and no trailing zeros
     function speed(v) {
         var t = num(Number(v), 2), m = t.match(/^(.*\d)([.,])(\d+)$/)

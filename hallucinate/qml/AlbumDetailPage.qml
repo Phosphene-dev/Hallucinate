@@ -153,7 +153,7 @@ Item {
                     Text {
                         textFormat: Text.PlainText
                         width: parent.width
-                        text: page.info.album || ""
+                        text: Theme.shown(page.info.album || "")
                         color: Theme.text
                         font.family: Theme.displayFamily
                         font.pixelSize: (Theme.fontSize(page.info.album && page.info.album.length > 28 ? 26 : 34)) * Theme.displayScale
@@ -166,7 +166,7 @@ Item {
                         spacing: 6
                         Text {
                             textFormat: Text.PlainText
-                            text: page.info.album_artist || ""
+                            text: Theme.shown(page.info.album_artist || "")
                             width: Math.min(implicitWidth, parent.parent.width * 0.6)  // a long artist list elides
                             elide: Text.ElideRight
                             color: Theme.text

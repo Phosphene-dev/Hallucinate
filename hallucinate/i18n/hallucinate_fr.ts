@@ -10349,6 +10349,14 @@
         <translation>%1 heures</translation>
     </message>
     <message>
+        <source>Unknown Artist</source>
+        <translation>Artiste inconnu</translation>
+    </message>
+    <message>
+        <source>Unknown Album</source>
+        <translation>Album inconnu</translation>
+    </message>
+    <message>
         <source>%1 min</source>
         <translation>%1 min</translation>
     </message>

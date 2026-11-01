@@ -112,7 +112,7 @@ Item {
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
-                text: player.error.length > 0 ? player.error : (player.hasTrack ? player.current.artist : "")
+                text: player.error.length > 0 ? player.error : (player.hasTrack ? Theme.shown(player.current.artist) : "")
                 color: player.error.length > 0 ? Theme.error : Theme.textDim
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize(12)

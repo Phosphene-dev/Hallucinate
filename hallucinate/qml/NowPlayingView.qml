@@ -228,7 +228,7 @@ Item {
                     textFormat: Text.PlainText
                     Layout.fillWidth: true
                     visible: player.hasTrack
-                    text: player.hasTrack ? player.current.artist : ""
+                    text: player.hasTrack ? Theme.shown(player.current.artist) : ""
                     color: Qt.rgba(1, 1, 1, 0.88)
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(view.lyricsMode ? 16 : 20)
@@ -246,7 +246,7 @@ Item {
                     textFormat: Text.PlainText
                     Layout.fillWidth: true
                     visible: player.hasTrack && (player.current.album || "").length > 0 && !view.lyricsMode && view.fold < 3
-                    text: player.hasTrack ? [player.current.album, player.current.year > 0 ? String(player.current.year) : ""]
+                    text: player.hasTrack ? [Theme.shown(player.current.album), player.current.year > 0 ? String(player.current.year) : ""]
                                             .filter(s => s).join("  ·  ") : ""
                     color: Qt.rgba(1, 1, 1, 0.6)
                     font.family: Theme.fontFamily

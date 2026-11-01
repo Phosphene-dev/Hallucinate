@@ -67,7 +67,7 @@ Item {
             textFormat: Text.PlainText
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
-            text: card.name
+            text: Theme.shown(card.name)
             color: Theme.text
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize(14)

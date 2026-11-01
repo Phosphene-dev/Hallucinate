@@ -165,7 +165,7 @@ Rectangle {
                 textFormat: Text.PlainText
                 objectName: "trackArtistLink"
                 width: Math.max(24, parent.width - (audioBadge.visible ? audioBadge.width : 0) - parent.spacing)
-                text: row.artist
+                text: Theme.shown(row.artist)
                 color: artistLinkArea.containsMouse ? Theme.text : Theme.textDim
                 font.underline: artistLinkArea.containsMouse
                 font.family: Theme.fontFamily
@@ -199,7 +199,7 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         x: titles.x + titles.width + 16
         width: row.width - x - 190
-        text: row.album
+        text: Theme.shown(row.album)
         color: albumLinkArea.containsMouse ? Theme.text : Theme.textDim
         font.underline: albumLinkArea.containsMouse
         font.family: Theme.fontFamily

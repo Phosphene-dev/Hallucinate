@@ -46,7 +46,7 @@ Window {
         Text {
             textFormat: Text.PlainText
             Layout.fillWidth: true
-            text: player.hasTrack ? player.current.artist : ""
+            text: player.hasTrack ? Theme.shown(player.current.artist) : ""
             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
             elide: Text.ElideRight
         }
