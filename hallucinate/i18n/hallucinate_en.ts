@@ -1312,4 +1312,42 @@
         </translation>
     </message>
 </context>
+<context>
+    <name>web</name>
+    <message numerus="yes">
+        <source>%n minute(s)</source>
+        <translation>
+            <numerusform>%n minute</numerusform>
+            <numerusform>%n minutes</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n hour(s)</source>
+        <translation>
+            <numerusform>%n hour</numerusform>
+            <numerusform>%n hours</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n album(s)</source>
+        <translation>
+            <numerusform>%n album</numerusform>
+            <numerusform>%n albums</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n song(s)</source>
+        <translation>
+            <numerusform>%n song</numerusform>
+            <numerusform>%n songs</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n episode(s)</source>
+        <translation>
+            <numerusform>%n episode</numerusform>
+            <numerusform>%n episodes</numerusform>
+        </translation>
+    </message>
+</context>
 </TS>

@@ -10,12 +10,15 @@ English source: every string stretched and accented, to spot text that isn't tra
 """
 import argparse
 import hashlib
+import html
+import json
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
 import xml.etree.ElementTree as ET
+from html.parser import HTMLParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -40,8 +43,71 @@ def web_strings(tmp):
             quote = '"'
         tail = ', "", 0' if plural else ""
         lines.append(f"qsTr({quote}{body}{quote}{tail});")
+    lines += [f"qsTr({json.dumps(text, ensure_ascii=False)});" for text in page_strings()]
     out = Path(tmp) / "web.js"
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return out
+
+
+class _PageWords(HTMLParser):
+    """The words in index.html the page translates as it loads (app.js translatePage): the text of elements marked
+    data-i18n, the markup of those marked data-i18n-html (as the browser writes it), and aria-label, placeholder
+    and title attributes."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=False)
+        self.found, self._stack = [], []
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        for name in ("aria-label", "placeholder", "title"):
+            if re.search(r"[A-Za-z]{2}", a.get(name) or ""):
+                self.found.append(html.unescape(a[name]))
+        for frame in self._stack:
+            if frame[0] == "html":
+                frame[2].append(self.get_starttag_text())
+        if "data-i18n" in a or "data-i18n-html" in a:
+            self._stack.append(("html" if "data-i18n-html" in a else "text", tag, []))
+        elif self._stack:
+            self._stack.append(("inner", tag, None))
+
+    def handle_endtag(self, tag):
+        if not self._stack:
+            return
+        kind, _tag, parts = self._stack.pop()
+        if kind == "inner":
+            for frame in self._stack:
+                if frame[0] == "html":
+                    frame[2].append(f"</{tag}>")
+            return
+        text = " ".join("".join(parts).split())
+        self.found.append(html.unescape(text) if kind == "text" else text)
+        for frame in self._stack:
+            if frame[0] == "html":
+                frame[2].append(f"</{tag}>")
+
+    def _data(self, data):
+        for frame in self._stack:
+            if frame[2] is not None:
+                frame[2].append(data)
+
+    handle_data = _data
+
+    def handle_entityref(self, name):
+        self._data(f"&{name};")
+
+    def handle_charref(self, name):
+        self._data(f"&#{name};")
+
+
+def page_strings():
+    p = _PageWords()
+    p.feed((PKG / "web" / "index.html").read_text(encoding="utf-8"))
+    seen, out = set(), []
+    for text in p.found:
+        if text and text not in seen and text != "Hallucinate":
+            seen.add(text)
+            out.append(text)
     return out
 
 

@@ -11845,4 +11845,550 @@
         <translation type="unfinished"></translation>
     </message>
 </context>
+<context>
+    <name>web</name>
+    <message>
+        <source>That didn&apos;t work</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Android phone</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mac browser</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Windows browser</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Browser</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Nothing playing</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pause</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>LIVE</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Radio on: similar songs keep coming</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Radio off</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Sleep timer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n minute(s)</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n hour(s)</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>End of this song</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>End of this album</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The equaliser isn&apos;t available on this computer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Equaliser</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Equaliser off</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Equaliser: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Looking for lyrics…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No lyrics for this song</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Automatic</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Disconnect this device from Hallucinate? You&apos;ll need a new pairing code to use it again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t disconnect: is Hallucinate still running?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>More</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Explicit</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>E</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Hi-Res</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Move %1 (arrow keys move it)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The queue is empty. Play something from your library.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Removed: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Upcoming songs shuffled</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Upcoming songs cleared</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Undone: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Nothing to undo</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Loading…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show more</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n album(s)</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n song(s)</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Smart playlist</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No playlists yet.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Playing %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Songs you listen to show up here.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Tuning in to %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stations you add in Hallucinate show up here.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 new</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n episode(s)</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Shows you follow in Hallucinate show up here.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Shuffle</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Songs you like show up here.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 left</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Played</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Next</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Play next: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Plays next</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Queue</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Add to the queue: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Added to the queue</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Podcast</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Album</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Artist</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Albums</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Songs</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Playlist</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Genre</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Most played</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Nothing matches “%1”. Showing results for “%2”.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Artists</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Nothing found.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unlike</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Like</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Liked</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unliked</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Add to playlist</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Added to %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Nothing here yet.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Hallucinate isn&apos;t answering. Is it still running?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Connect to Hallucinate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>On the computer, open &lt;b&gt;Settings → Remote &amp;amp; web&lt;/b&gt; and choose &lt;b&gt;Pair a device&lt;/b&gt; (on a server without a screen, run &lt;code&gt;hallucinate --pair&lt;/code&gt;). Enter the code it shows.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pairing code</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Device name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This device&apos;s name (e.g. Phone)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Connect</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Sections</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Now playing</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Playing</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Library</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Position</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Previous</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Repeat</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mute</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Volume</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Radio mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Lyrics</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Clear upcoming</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Playlists</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Genres</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Recent</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Radio</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Podcasts</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Songs, albums, artists…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>For this browser. Automatic follows the device&apos;s language.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Light or dark for this browser, or as the device is set.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Dark</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Light</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Open on</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The page this browser shows first.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Keep the screen on while playing</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>While this page is open and showing.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cover-coloured background</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The playing album&apos;s colours, softly behind everything.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Spinning record</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The cover turns like a record while the music plays.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This device</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Disconnect it from Hallucinate. To use it again, pair it with a new code.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Disconnect this device</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Play or pause</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Play next</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Add to queue</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Add to playlist…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Go to album</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Go to artist</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
 </TS>

@@ -113,10 +113,14 @@ class Translations(QObject):
         QLocale.setDefault(self._system_locale if not self._choice or code == PSEUDO else QLocale(code))
 
 
+import functools  # noqa: E402
+
+
+@functools.lru_cache(maxsize=8)  # the catalogues don't change while it runs
 def web_catalog(code):
     """The web remote's strings in `code`, as {English: translated}: read from the same .ts the app uses, the
-    "web" context (its app.js), and "Api" (the errors the control API answers with, in English on the wire). Empty
-    for English or an unknown language."""
+    "web" context (its app.js and page), "Api" (the errors the control API answers with, in English on the wire) and
+    "Equalizer" (the presets' names). Empty for English or an unknown language."""
     if code in ("", "en"):
         return {}
     path = HERE / f"hallucinate_{code}.ts"
@@ -126,7 +130,7 @@ def web_catalog(code):
         return {}
     out = {}
     for ctx in root.iter("context"):
-        if ctx.findtext("name") not in ("app", "web", "Api"):
+        if ctx.findtext("name") not in ("web", "Api", "Equalizer"):
             continue
         for msg in ctx.iter("message"):
             src = msg.findtext("source") or ""
@@ -139,8 +143,12 @@ def web_catalog(code):
 
 
 def web_catalog_json(code):
-    return json.dumps({"lang": code or "en", "strings": web_catalog(code),
-                       "plural": plural_rule(code)}, ensure_ascii=False)
+    """What the web remote loads (api/i18n): its words in `code` (English when that isn't one of ours), and the
+    languages it can offer, by their own names."""
+    ours = available()
+    code = code if code in ours else "en"
+    return json.dumps({"lang": code, "strings": web_catalog(code), "plural": plural_rule(code),
+                       "languages": [{"code": c, "name": n} for c, n in LANGUAGES if c in ours]}, ensure_ascii=False)
 
 
 def plural_rule(code):

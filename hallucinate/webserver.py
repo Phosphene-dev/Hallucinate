@@ -375,6 +375,12 @@ class _Handler(BaseHTTPRequestHandler):
             except OSError:
                 return self._error(HTTPStatus.NOT_FOUND, QT_TRANSLATE_NOOP("Api", "Not found"))
             return self._send(HTTPStatus.OK, body, ctype, cache="no-cache")
+        if path == "/api/i18n":  # the page's words in a language (public text: the pairing screen needs them too)
+            from .i18n import web_catalog_json
+
+            lang = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get("lang", [""])[0][:8]
+            return self._send(HTTPStatus.OK, web_catalog_json(lang).encode("utf-8"), "application/json; charset=utf-8",
+                              cache="no-cache")
         if path == "/api/hello":  # whether this browser is paired yet (nothing else)
             return self._send(HTTPStatus.OK, {"app": "Hallucinate", "paired": self._device() is not None})
         device = self._device()
