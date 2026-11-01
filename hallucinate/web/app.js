@@ -216,6 +216,9 @@ function render() {
   $("btnLike").hidden = !(song && song.id);
   if (document.activeElement !== $("volume")) $("volume").value = Math.round(s.volume * 100);
   $("nowError").textContent = s.error || "";
+  $("btnCast").classList.toggle("on", !!s.castingOn);
+  $("castOn").hidden = !s.castingOn;
+  $("castOn").textContent = s.castingOn ? fill(t("Playing on %1"), s.castingOn) : "";
   $("mini").hidden = !song || currentView === "now";
   $("miniTitle").textContent = song ? (song.streamTitle || song.title) : "";
   $("miniArtist").textContent = song ? song.artist : "";
@@ -267,6 +270,25 @@ $("btnSleep").onclick = () => pick(t("Sleep timer"), [
   [t("End of this song"), () => call("sleep", { end: "track" })],
   [t("End of this album"), () => call("sleep", { end: "album" })],
 ]);
+
+// --- where the music plays: this computer, or a Chromecast or DLNA device it found -------------------------
+async function castPicker(searched) {
+  const c = await call("cast.devices");
+  if (!c.devices.length && !searched) {
+    // nothing found yet: look (a few seconds), then show what answered
+    call("cast.search");
+    toast(t("Looking for devices on your network…"));
+    setTimeout(() => castPicker(true), 3500);
+    return;
+  }
+  pick(t("Play on"), [
+    [(c.device ? "" : "✓ ") + t("The computer"), () => call("cast.stop")],
+    ...c.devices.map((d) => [(d.active ? "✓ " : "") + d.name + (d.model && d.model !== d.name ? " · " + d.model : ""),
+      () => call("cast.to", { id: d.id }).then(() => toast(fill(t("Connecting to %1…"), d.name)))]),
+    [t("Look again"), () => { call("cast.search"); toast(t("Looking for devices on your network…")); setTimeout(() => castPicker(true), 3500); }],
+  ]);
+}
+$("btnCast").onclick = () => castPicker(false).catch(() => {});  // (call() has already said what went wrong)
 
 // --- the equaliser's presets ----------------------------------------------------------------------------
 $("btnEq").onclick = async () => {
@@ -836,6 +858,7 @@ async function start() {
   call("features").then((f) => {
     document.querySelector('[data-lib="stations"]').hidden = !f.stations;
     document.querySelector('[data-lib="podcasts"]').hidden = !f.podcasts;
+    $("btnCast").hidden = !f.casting;
   }).catch(() => {});
   show(pref("start", "now"));
 }

@@ -53,6 +53,8 @@ class Api:
         self.stations = None  # internet radio and podcasts, where the app has them (set by the app; #128)
         self.podcasts = None
         self.lyrics = None  # the lyrics of what's playing (set by the app)
+        self.casting = None  # playing on a Chromecast or DLNA device (set by the app)
+        self.casting_on = lambda: True  # whether its feature switch is on (set by the app)
         self._methods = {}
         for name in dir(type(self)):  # (names, not bound methods: those would tie the Api to itself)
             if name.startswith("m_"):
@@ -181,6 +183,7 @@ class Api:
             "index": int(p.currentIndex), "queueLength": int(p.queueLength), "upcoming": int(p.upcomingCount),
             "sleepRemaining": int(p.sleepRemaining), "sleepAfterTrack": bool(p.sleepAfterTrack),
             "sleepAfterAlbum": bool(p.sleepAfterAlbum), "error": p.error or "",
+            "castingOn": self.casting.deviceName if self.casting is not None and self.casting.active else "",
         }
 
     m_state._api_scope = "read"
@@ -568,6 +571,44 @@ class Api:
 
     m_library_info._api_scope = "read"
 
+    # --- casting: where the music plays ------------------------------------------------------------------
+    def _casting(self):
+        if self.casting is None or not self.casting_on():
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "Casting is switched off"))
+        return self.casting
+
+    def m_cast_devices(self):
+        """The devices found on the network (the last search), and which one is playing, if any."""
+        c = self._casting()
+        return {"devices": [{k: d[k] for k in ("id", "name", "model", "kind", "active")} for d in c.devices],
+                "searching": bool(c.searching), "device": c.deviceName if c.active else "",
+                "connecting": c.connecting}
+
+    m_cast_devices._api_scope = "read"
+
+    def m_cast_search(self):
+        """Look for devices again (a few seconds; cast.devices shows them as they come)."""
+        self._casting().refresh()
+        return {"ok": True}
+
+    m_cast_search._api_scope = "control"
+
+    def m_cast_to(self, id):  # noqa: A002 - the name remotes send
+        c = self._casting()
+        if not any(d["id"] == _str(id, 200) for d in c.devices):
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "Not found"))
+        c.castTo(_str(id, 200))
+        return {"ok": True}
+
+    m_cast_to._api_scope = "control"
+
+    def m_cast_stop(self):
+        """Play on this computer again."""
+        self._casting().stopCasting()
+        return {"ok": True}
+
+    m_cast_stop._api_scope = "control"
+
     # --- internet radio and podcasts (#128) ---------------------------------------------------------------
     def _on(self, name):
         """The radio or podcasts service, if it's here and switched on."""
@@ -579,7 +620,8 @@ class Api:
     def m_features(self):
         """What this Hallucinate has besides the library, for the remote's pages."""
         return {"stations": self.stations is not None and getattr(self.stations, "_enabled", True),
-                "podcasts": self.podcasts is not None and getattr(self.podcasts, "_enabled", True)}
+                "podcasts": self.podcasts is not None and getattr(self.podcasts, "_enabled", True),
+                "casting": self.casting is not None and bool(self.casting_on())}
 
     m_features._api_scope = "read"
 

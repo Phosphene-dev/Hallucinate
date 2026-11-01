@@ -436,6 +436,10 @@
         <translation>Les règles de cette playlist intelligente sont illisibles</translation>
     </message>
     <message>
+        <source>Casting is switched off</source>
+        <translation>La diffusion est désactivée</translation>
+    </message>
+    <message>
         <source>Internet radio is switched off</source>
         <translation>La radio internet est désactivée</translation>
     </message>
@@ -12098,6 +12102,10 @@
         <translation>Lire</translation>
     </message>
     <message>
+        <source>Playing on %1</source>
+        <translation>Lecture sur %1</translation>
+    </message>
+    <message>
         <source>LIVE</source>
         <translation>EN DIRECT</translation>
     </message>
@@ -12138,6 +12146,26 @@
     <message>
         <source>End of this album</source>
         <translation>Fin de cet album</translation>
+    </message>
+    <message>
+        <source>Looking for devices on your network…</source>
+        <translation>Recherche d’appareils sur votre réseau…</translation>
+    </message>
+    <message>
+        <source>Play on</source>
+        <translation>Lire sur</translation>
+    </message>
+    <message>
+        <source>The computer</source>
+        <translation>L’ordinateur</translation>
+    </message>
+    <message>
+        <source>Connecting to %1…</source>
+        <translation>Connexion à %1…</translation>
+    </message>
+    <message>
+        <source>Look again</source>
+        <translation>Chercher à nouveau</translation>
     </message>
     <message>
         <source>The equaliser isn&apos;t available on this computer</source>
@@ -12475,6 +12503,10 @@
     <message>
         <source>Lyrics</source>
         <translation>Paroles</translation>
+    </message>
+    <message>
+        <source>Play on another device</source>
+        <translation>Lire sur un autre appareil</translation>
     </message>
     <message>
         <source>Clear upcoming</source>

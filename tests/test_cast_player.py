@@ -332,3 +332,29 @@ def test_playing_on_a_dlna_renderer(setup, songs):
     dev.state = "STOPPED"  # stopped early, with the TV's remote: hold there rather than skip
     assert wait_for(lambda: player.state == "Paused", timeout=10), (player.state, player._cast.state, player.currentIndex, dev.state, dev.calls[-6:], player.error)
     assert player.currentIndex == 1
+
+
+def test_the_phone_remote_can_choose_where_it_plays(setup, songs):
+    from hallucinate.api import Api, ApiError
+
+    player, casting, dev = setup()
+    api = Api(player)
+    api.casting = casting
+    player.playList(songs, 0)
+    assert api.call("features")["casting"] is True
+    api.call("cast.search")
+    assert wait_for(lambda: api.call("cast.devices")["devices"])
+    listed = api.call("cast.devices")["devices"]
+    assert listed == [{"id": "cc1", "name": "Living Room", "model": "Chromecast", "kind": "chromecast", "active": False}]
+    with pytest.raises(ApiError):
+        api.call("cast.to", {"id": "nope"})
+    api.call("cast.to", {"id": "cc1"})
+    assert wait_for(lambda: api.call("state")["castingOn"] == "Living Room")
+    api.call("cast.stop")
+    assert api.call("state")["castingOn"] == "" and not player.casting
+    api.casting_on = lambda: False  # switched off in Settings → Features
+    assert api.call("features")["casting"] is False
+    with pytest.raises(ApiError):
+        api.call("cast.devices")
+    with pytest.raises(ApiError):
+        api.call("cast.stop", allowed=("read",))  # (a read-only key can't change where it plays)

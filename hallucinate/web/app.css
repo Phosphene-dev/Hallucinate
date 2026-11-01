@@ -46,6 +46,8 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
       stroke-linejoin: round; }
 .dim { color: var(--dim); }
 .small { font-size: 13px; }
+.accent { color: var(--accent); font-weight: 600; }
+#castOn { text-align: center; margin: 4px 0 0; }
 .error { color: var(--error); min-height: 1em; }
 .kicker { text-transform: uppercase; letter-spacing: .12em; font-size: 11px; font-weight: 700; color: var(--accent);
           margin: 0 0 4px; }

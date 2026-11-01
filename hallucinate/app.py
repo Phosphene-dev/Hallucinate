@@ -276,6 +276,8 @@ def main(argv=None) -> int:
     from .cast import Casting
 
     casting = Casting(player)  # playing on a Chromecast or a DLNA/UPnP device
+    web_remote.api.casting = casting  # the phone remote can choose where the music plays (while the feature's on)
+    web_remote.api.casting_on = lambda: shell.features.get("casting", True)
     shell.settingsChanged.connect(servers.recheck)  # offline mode switched off: try servers again
 
     offline = [net.is_offline()]
