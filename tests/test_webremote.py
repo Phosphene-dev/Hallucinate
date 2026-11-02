@@ -347,11 +347,11 @@ def test_radio_and_podcasts_in_the_remote(tmp_path):
                                playNext=lambda i: played.append(("next", i)), enqueue=lambda i: played.append(("queue", i)),
                                _image_file=lambda url: None)
     api = Api()
-    assert api.call("features") == {"stations": False, "podcasts": False}
+    assert api.call("features") == {"stations": False, "podcasts": False, "casting": False}
     with pytest.raises(ApiError):
         api.call("stations")
     api.stations, api.podcasts = stations, podcasts
-    assert api.call("features") == {"stations": True, "podcasts": True}
+    assert api.call("features") == {"stations": True, "podcasts": True, "casting": False}
     st = api.call("stations")["stations"][0]
     assert st["name"] == "Night Radio" and "url" not in st and st["art"] == "~station/3"
     api.call("play.station", {"id": 3})

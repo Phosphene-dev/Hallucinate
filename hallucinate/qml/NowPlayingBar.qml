@@ -142,6 +142,33 @@ Item {
                 clip: true
                 spacing: 6
                 visible: player.hasTrack
+                Item {  // playing on another device: which one, first, where it can't be missed (and a click picks another)
+                    id: castingOn
+                    objectName: "castingOn"
+                    visible: casting.active
+                    width: castingRow.implicitWidth
+                    height: castingRow.implicitHeight
+                    anchors.verticalCenter: parent.verticalCenter
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Playing on %1").arg(casting.deviceName)
+                    Accessible.onPressAction: castMenu.popup(castingOn, 0, -castMenu.implicitHeight - 6)
+                    Row {
+                        id: castingRow
+                        spacing: 4
+                        Icon { name: "cast"; width: 12; height: 12; color: Theme.accent; anchors.verticalCenter: parent.verticalCenter }
+                        Text {
+                            textFormat: Text.PlainText
+                            text: casting.deviceName
+                            color: Theme.accent; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11); font.weight: Font.DemiBold
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: castMenu.popup(castingOn, 0, -castMenu.implicitHeight - 6)
+                    }
+                }
                 AudioInfoBadge {
                     id: infoBadge
                     visible: player.showTrackInfo && player.hasTrack
@@ -243,6 +270,8 @@ Item {
         }
     }
 
+    CastMenu { id: castMenu }
+
     // Volume + queue
     Row {
         id: rightControls
@@ -280,6 +309,18 @@ Item {
                     onObjectRemoved: (i, o) => chaptersMenu.removeItem(o)
                 }
             }
+        }
+        IconButton {
+            id: castButton
+            objectName: "castButton"
+            // in a narrower bar it's in the ⋯ menu instead (and the device's name beside the song opens it)
+            visible: shell.features.casting !== false && !bar.narrow
+            icon: "cast"
+            active: casting.active || casting.connecting.length > 0
+            tip: casting.active ? qsTr("Playing on %1").arg(casting.deviceName)
+               : casting.connecting.length > 0 ? qsTr("Connecting to %1…").arg(casting.connecting)
+               : qsTr("Play on another device")
+            onClicked: castMenu.popup(castButton, 0, -castMenu.implicitHeight - 6)
         }
         IconButton { objectName: "openNowPlaying"; icon: "fullscreen"; tip: qsTr("Now playing (F)"); onClicked: Nav.toggleNowPlaying() }
         IconButton { icon: "expand"; tip: qsTr("Mini player (Ctrl+M)"); visible: !bar.compact; onClicked: shell.toggleMini() }

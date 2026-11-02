@@ -19,7 +19,7 @@ CLOSE_ACTIONS = ("ask", "quit", "minimize", "tray")
 FEATURES = {
     "liked": True, "folders": True, "stats": True, "history": True, "recap": True, "visualizer": True,
     "health": True, "lyrics": True, "stations": False, "podcasts": False, "servers": False,
-    "homeRandom": True, "homeListening": True, "homeFacts": True, "homeShelves": True,
+    "homeRandom": True, "homeListening": True, "homeFacts": True, "homeShelves": True, "casting": True,
 }
 # The sidebar's pages in their usual order; people can rearrange them (Settings → Appearance or right-click).
 SIDEBAR_PAGES = ("home", "albums", "artists", "genres", "songs", "folders", "liked", "stats", "history", "recap", "visualizer",
@@ -234,6 +234,79 @@ class DesktopShell(QObject):
 
     def setWindow(self, window):
         self._window = window
+        self._restore_window(window)
+
+    # --- the window's size and place (#153) -----------------------------------------------------
+    # Kept as the window is resized or moved (a moment after it settles), not only on quit, so a crash or a
+    # shutdown that never says goodbye keeps them too. Maximized and full screen are remembered as such, with the
+    # size underneath kept for when it's restored. Wayland doesn't let apps place their windows or say where they
+    # are, so there it's the size and maximized only; the desktop chooses the place.
+    DEFAULT_SIZE = (1280, 800)
+    MIN_SIZE = (900, 600)
+
+    def _screens_room(self):
+        from PySide6.QtGui import QGuiApplication
+
+        screen = QGuiApplication.primaryScreen()
+        return screen.availableGeometry() if screen is not None else None
+
+    @Property("QVariantMap", constant=True)
+    def windowSize(self):
+        """The size the window opens at: as it was left, never bigger than the screen it opens on."""
+        try:
+            w = int(self._settings.value("window/width", self.DEFAULT_SIZE[0]))
+            h = int(self._settings.value("window/height", self.DEFAULT_SIZE[1]))
+        except (TypeError, ValueError):
+            w, h = self.DEFAULT_SIZE
+        room = self._screens_room()
+        if room is not None and room.width() > 0 and room.height() > 0:
+            w, h = min(w, room.width()), min(h, room.height())
+        return {"width": max(self.MIN_SIZE[0], w), "height": max(self.MIN_SIZE[1], h)}
+
+    def _restore_window(self, window):
+        from PySide6.QtGui import QGuiApplication, QWindow
+
+        if not isinstance(window, QWindow):
+            return  # (tests' stand-ins)
+        if not QGuiApplication.platformName().startswith("wayland"):
+            try:
+                x, y = int(self._settings.value("window/x")), int(self._settings.value("window/y"))
+            except (TypeError, ValueError):
+                x = y = None
+            # only somewhere a screen still is (a second monitor may have been unplugged since)
+            if x is not None and any(sc.availableGeometry().contains(x + 40, y + 20)
+                                     for sc in QGuiApplication.screens()):
+                window.setPosition(x, y)
+        if str(self._settings.value("window/maximized", "false")).lower() == "true":
+            window.setVisibility(QWindow.Visibility.Maximized)
+        self._save_timer = QTimer(self, singleShot=True, interval=600, timeout=self._save_window)
+        for signal in (window.widthChanged, window.heightChanged, window.xChanged, window.yChanged,
+                       window.visibilityChanged):
+            signal.connect(self._save_timer.start)
+
+    def _save_window(self):
+        from PySide6.QtGui import QGuiApplication, QWindow
+
+        window = self._window
+        if window is None:
+            return
+        vis = window.visibility()
+        if vis in (QWindow.Visibility.Hidden, QWindow.Visibility.Minimized, QWindow.Visibility.FullScreen):
+            return  # (full screen and minimized aren't how it should open; nor is hidden in the tray)
+        maximized = vis == QWindow.Visibility.Maximized
+        self._settings.setValue("window/maximized", maximized)
+        if not maximized:
+            self._settings.setValue("window/width", window.width())
+            self._settings.setValue("window/height", window.height())
+            if not QGuiApplication.platformName().startswith("wayland"):
+                self._settings.setValue("window/x", window.x())
+                self._settings.setValue("window/y", window.y())
+
+    def saveWindow(self):
+        """Right away (on quitting), rather than waiting for the timer."""
+        if getattr(self, "_save_timer", None) is not None and self._save_timer.isActive():
+            self._save_timer.stop()
+            self._save_window()
 
     # --- properties ---------------------------------------------------------------------
     @Property(bool, constant=True)

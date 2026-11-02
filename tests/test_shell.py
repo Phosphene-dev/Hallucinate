@@ -343,3 +343,35 @@ def test_start_page(make_shell):
     assert shell.openingPage() == "home"
     shell.setStartPage("bogus")
     assert shell.startPage == "last"
+
+
+def test_the_window_opens_as_it_was_left(make_shell, qapp):
+    """#153: the window's size (and maximized) come back next time; the place too, where the desktop allows it."""
+    from conftest import wait_for
+    from PySide6.QtGui import QWindow
+
+    shell, _fake, _player = make_shell()
+    room = qapp.primaryScreen().availableGeometry()
+
+    def fitted(w, h):  # never bigger than the screen, never smaller than the window can be
+        return {"width": max(900, min(w, room.width())), "height": max(600, min(h, room.height()))}
+    assert shell.windowSize == fitted(1280, 800)  # the first time: the usual size
+    win = QWindow()
+    try:
+        win.resize(1000, 700)
+        win.show()
+        shell.setWindow(win)
+        win.resize(1111, 777)
+        assert wait_for(lambda: shell._settings.value("window/width") in (1111, "1111"), timeout=5)
+        assert int(shell._settings.value("window/height")) == 777
+        assert shell.windowSize == fitted(1111, 777)
+        win.showMaximized()
+        assert wait_for(lambda: str(shell._settings.value("window/maximized")).lower() == "true", timeout=5)
+        assert int(shell._settings.value("window/width")) == 1111  # the size underneath is kept for later
+        shell._settings.setValue("window/width", 99999)  # a bigger screen than this one, or a broken value
+        assert shell.windowSize == fitted(99999, 777)
+        shell._settings.setValue("window/width", "junk")
+        assert shell.windowSize == fitted(1280, 800)
+    finally:
+        shell.setWindow(_fake)
+        win.close()

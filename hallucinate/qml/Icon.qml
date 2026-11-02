@@ -52,6 +52,18 @@ Canvas {
                 ctx.beginPath(); ctx.arc(w*.5, h*.5, w*(.12 + .17*r), Math.PI*3/4, Math.PI*5/4); ctx.stroke()
             }
             break
+        case "cast":  // a screen with waves rising from its corner (playing on another device)
+            line([.1,.4,.1,.2,.9,.2,.9,.8,.62,.8])
+            ctx.beginPath(); ctx.moveTo(w*.1, h*.84); ctx.arc(w*.1, h*.84, w*.12, -Math.PI/2, 0); ctx.closePath(); ctx.fill()
+            for (var cr = 1; cr <= 2; cr++) { ctx.beginPath(); ctx.arc(w*.1, h*.84, w*(.12 + .17*cr), -Math.PI/2, 0); ctx.stroke() }
+            break
+        case "computer": line([.1,.16,.9,.16,.9,.66,.1,.66,.1,.16]); line([.5,.66,.5,.82]); line([.3,.84,.7,.84]); break
+        case "speaker":
+            line([.28,.08,.72,.08,.72,.92,.28,.92,.28,.08])
+            ctx.beginPath(); ctx.arc(w*.5, h*.62, w*.15, 0, 2*Math.PI); ctx.stroke()
+            ctx.beginPath(); ctx.arc(w*.5, h*.26, w*.05, 0, 2*Math.PI); ctx.fill()
+            break
+        case "tv": line([.08,.2,.92,.2,.92,.76,.08,.76,.08,.2]); line([.34,.88,.66,.88]); line([.36,.06,.5,.2,.64,.06]); break
         case "expand": line([.15,.55,.15,.15,.55,.15]); line([.85,.45,.85,.85,.45,.85]); line([.15,.15,.45,.45]); line([.85,.85,.55,.55]); break
         case "queue": line([.1,.25,.9,.25]); line([.1,.5,.9,.5]); line([.1,.75,.55,.75]); break
         case "volume":

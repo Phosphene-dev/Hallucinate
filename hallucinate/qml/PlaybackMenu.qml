@@ -46,6 +46,15 @@ Menu {
         onTriggered: Nav.openSpectrum(player.current.path)
     }
     MenuSeparator {}
+    Instantiator {  // Play on another device (also the cast button, where the bar has room for it)
+        model: shell.features.casting !== false ? 1 : 0
+        delegate: CastMenu {
+            title: casting.active ? qsTr("Play on (%1)").arg(Theme.plain(casting.deviceName)) : qsTr("Play on")
+            icon.name: "cast"
+        }
+        onObjectAdded: (i, o) => playback.insertMenu(3, o)
+        onObjectRemoved: (i, o) => playback.removeMenu(o)
+    }
     Menu {
         id: speedMenu
         icon.name: "wave"

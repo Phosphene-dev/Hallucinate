@@ -7,10 +7,11 @@ Item {
     id: page
     objectName: "settings"
     property string query: ""
-    readonly property var sectionIds: ["appearance", "features", "podcasts", "playback", "sound", "library", "servers", "remote", "sharing", "scrobbling", "desktop", "about"]
-    readonly property var sectionTitles: [qsTr("Appearance"), qsTr("Features"), qsTr("Podcasts"), qsTr("Playback"), qsTr("Sound"), qsTr("Library"), qsTr("Music servers"), qsTr("Remote & web"), qsTr("Online & privacy"), qsTr("Scrobbling & sharing"), qsTr("Desktop"), qsTr("About")]
+    readonly property var sectionIds: ["appearance", "features", "podcasts", "playback", "sound", "library", "servers", "casting", "remote", "sharing", "scrobbling", "desktop", "about"]
+    readonly property var sectionTitles: [qsTr("Appearance"), qsTr("Features"), qsTr("Podcasts"), qsTr("Playback"), qsTr("Sound"), qsTr("Library"), qsTr("Music servers"), qsTr("Casting"), qsTr("Remote & web"), qsTr("Online & privacy"), qsTr("Scrobbling & sharing"), qsTr("Desktop"), qsTr("About")]
 
-    function sectionItem(i) { return [sec_appearance, sec_features, sec_podcasts, sec_playback, sec_sound, sec_library, sec_servers, sec_remote, sec_sharing, sec_scrobbling, sec_desktop, sec_about][i] }
+    function sectionItem(i) { return [sec_appearance, sec_features, sec_podcasts, sec_playback, sec_sound, sec_library, sec_servers, sec_casting, sec_remote, sec_sharing, sec_scrobbling, sec_desktop, sec_about][i] }
+    function jumpToId(id) { var i = sectionIds.indexOf(id); if (i >= 0 && sectionItem(i).visible) jumpTo(i) }
     function jumpToSidebar() {
         jumpTo(1)
         sidebarGroup.open = true
@@ -96,6 +97,7 @@ Item {
                     // (by the section's id: its title is in your language)
                     visible: (page.sectionIds[index] !== "podcasts" || shell.features.podcasts !== false)
                              && (page.sectionIds[index] !== "servers" || shell.features.servers === true)
+                             && (page.sectionIds[index] !== "casting" || shell.features.casting !== false)
                     text: modelData
                     selected: index === page.currentSection
                     onClicked: page.jumpTo(index)
@@ -107,7 +109,7 @@ Item {
             visible: page.query.length > 0
             text: (noMatches ? qsTr("No settings match “%1”") : qsTr("Showing settings that match “%1”")).arg(page.query)
             // (a section hidden because its feature is off doesn't count, even if it matches)
-            readonly property bool noMatches: !(sec_appearance.visible || sec_features.visible || sec_podcasts.visible || sec_playback.visible || sec_sound.visible || sec_library.visible || sec_servers.visible || sec_remote.visible || sec_sharing.visible || sec_scrobbling.visible || sec_desktop.visible || sec_about.visible)
+            readonly property bool noMatches: !(sec_appearance.visible || sec_features.visible || sec_podcasts.visible || sec_playback.visible || sec_sound.visible || sec_library.visible || sec_servers.visible || sec_casting.visible || sec_remote.visible || sec_sharing.visible || sec_scrobbling.visible || sec_desktop.visible || sec_about.visible)
             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
         }
     }
@@ -671,7 +673,7 @@ Item {
             FeatureGroup {
                 heading: qsTr("Listening")
                 items: [["stations", qsTr("Internet radio")], ["podcasts", qsTr("Podcasts")], ["servers", qsTr("Music servers")],
-                        ["lyrics", qsTr("Lyrics")], ["visualizer", qsTr("Visualizer")]]
+                        ["lyrics", qsTr("Lyrics")], ["visualizer", qsTr("Visualizer")], ["casting", qsTr("Casting")]]
             }
             FeatureGroup {
                 heading: qsTr("Pages")
@@ -1551,6 +1553,98 @@ Item {
                         onAccepted: if (addServerDlg.ready) addServerDlg.accept()
                     }
                 }
+            }
+        }
+        SettingsSection {
+            id: sec_casting
+            objectName: "settings_casting"
+            title: qsTr("Casting")
+            keywords: qsTr("cast casting chromecast google nest home speaker tv television dlna upnp renderer receiver kodi sonos play on another device network wifi firewall port original bit-perfect processed equalizer sound")
+            query: page.query
+            visible: matches && shell.features.casting !== false
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: qsTr("Play your music on a Chromecast, a Google or Nest speaker, or a TV, receiver or speaker that takes DLNA/UPnP. Pick one with the cast button beside the volume; your queue, likes and play counts stay here, and Hallucinate's controls, media keys and phone remote all control the device.")
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            Row {
+                visible: casting.active
+                spacing: 12
+                Icon { name: "cast"; width: 18; height: 18; color: Theme.accent; anchors.verticalCenter: parent.verticalCenter }
+                Text {
+                    textFormat: Text.PlainText
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Playing on %1").arg(casting.deviceName)
+                    color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
+                }
+                PillButton { text: qsTr("Play here instead"); onClicked: casting.stopCasting() }
+            }
+            OptionCombo {
+                objectName: "castSending"
+                label: qsTr("What to send")
+                values: ["original", "processed"]
+                labels: [qsTr("The original files"), qsTr("Hallucinate's sound")]
+                current: casting.sending
+                onPicked: function (v) { casting.setSending(v) }
+            }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: casting.sending === "processed"
+                      ? qsTr("Songs are played through your ReplayGain, equalizer, headphone correction and crossfeed first, then sent as lossless WAV (16-bit, up to 48 kHz). They take a moment to get ready, and the next song is got ready while one plays. Music servers' songs and radio are sent as they are.")
+                      : qsTr("Songs are sent untouched, bit for bit, and the device plays them itself; your equalizer and crossfeed don't apply. Songs the device can't play as they are (WavPack, APE, ALAC on a Chromecast, very high sample rates) and CUE sheet songs are converted to WAV for it.")
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            Row {
+                spacing: 12
+                Text { textFormat: Text.PlainText; text: qsTr("Port"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 36; verticalAlignment: Text.AlignVCenter }
+                TextField {
+                    id: castPort
+                    objectName: "castPort"
+                    Accessible.name: qsTr("Port")
+                    width: 90; height: 36
+                    text: String(casting.port)
+                    validator: IntValidator { bottom: 1024; top: 65535 }
+                    inputMethodHints: Qt.ImhDigitsOnly
+                    color: Theme.text
+                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
+                    selectByMouse: true
+                    onEditingFinished: if (acceptableInput) casting.setPort(parseInt(text)); else text = String(casting.port)
+                    background: Rectangle { radius: Theme.round(8); color: Theme.surface; border.color: castPort.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
+                }
+            }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: qsTr("The device fetches each song from this computer on this port, and only the device you picked can, only while you're casting. If nothing plays, your firewall may be blocking it: allow the port for your home network. For example, on Fedora, Bazzite and other systems with firewalld:")
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            TextEdit {
+                width: parent.width
+                readOnly: true; selectByMouse: true
+                wrapMode: TextEdit.WrapAnywhere
+                textFormat: TextEdit.PlainText
+                text: "sudo firewall-cmd --permanent --add-port=" + casting.port + "/tcp && sudo firewall-cmd --reload"  // i18n: keep
+                color: Theme.text; font.family: Theme.monoFamily; font.pixelSize: Theme.fontSize(12)
+            }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: qsTr("or with ufw (Ubuntu, Mint):")
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            TextEdit {
+                width: parent.width
+                readOnly: true; selectByMouse: true
+                wrapMode: TextEdit.WrapAnywhere
+                textFormat: TextEdit.PlainText
+                text: "sudo ufw allow " + casting.port + "/tcp"  // i18n: keep
+                color: Theme.text; font.family: Theme.monoFamily; font.pixelSize: Theme.fontSize(12)
             }
         }
         SettingsSection {

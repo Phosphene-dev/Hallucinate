@@ -272,6 +272,12 @@ def main(argv=None) -> int:
     web_remote.api.lyrics = lyrics  # the playing song's lyrics in the remote
     control.setApi(web_remote.api)
     control.setWebRemote(web_remote)
+
+    from .cast import Casting
+
+    casting = Casting(player)  # playing on a Chromecast or a DLNA/UPnP device
+    web_remote.api.casting = casting  # the phone remote can choose where the music plays (while the feature's on)
+    web_remote.api.casting_on = lambda: shell.features.get("casting", True)
     shell.settingsChanged.connect(servers.recheck)  # offline mode switched off: try servers again
 
     offline = [net.is_offline()]
@@ -362,6 +368,7 @@ def main(argv=None) -> int:
     ctx.setContextProperty("servers", servers)
     ctx.setContextProperty("serverCopies", server_copies)
     ctx.setContextProperty("webRemote", web_remote)
+    ctx.setContextProperty("casting", casting)
     ctx.setContextProperty("podcasts", podcasts)
     ctx.setContextProperty("spectrograms", spectrograms)
     engine.addImportPath(str(HERE / "qml"))
@@ -427,6 +434,8 @@ def main(argv=None) -> int:
     control.close()
     del engine
     web_remote.shutdown()  # (before the player: remotes are told it's going)
+    casting.shutdown()  # the device stops too: its songs came from this computer
+    shell.saveWindow()
     discord.shutdown()
     shell.shutdown()
     scrobbler.shutdown()

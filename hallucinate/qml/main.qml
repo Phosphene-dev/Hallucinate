@@ -8,8 +8,9 @@ import "."
 
 ApplicationWindow {
     id: window
-    width: 1280
-    height: 800
+    // as it was left (#153); maximized and the place on screen are put back once it's shown (shell.setWindow)
+    width: shell.windowSize.width
+    height: shell.windowSize.height
     minimumWidth: 900
     minimumHeight: 600
     visible: true
@@ -53,6 +54,10 @@ ApplicationWindow {
     }
     Connections {  // playback paused because the headphones went away
         target: player
+        function onNotice(text) { toast.show(text) }
+    }
+    Connections {  // casting: connected, lost, couldn't connect
+        target: casting
         function onNotice(text) { toast.show(text) }
     }
     Connections {  // music servers say how adding and syncing went
@@ -333,6 +338,10 @@ ApplicationWindow {
             else if (c.album_key) window.openAlbum(c.album_key)
         }
         function onOpenSettings() { window.go("settings") }
+        function onOpenSettingsAt(section) {
+            window.go("settings")
+            Qt.callLater(function () { var p = stack.currentItem; if (p && p.jumpToId) p.jumpToId(section) })
+        }
         function onOpenLiked() { window.go("liked") }
         function onGoHome() { window.go("home") }
         function onOpenHistory(day) {

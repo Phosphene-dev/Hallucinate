@@ -436,6 +436,10 @@
         <translation>Les règles de cette playlist intelligente sont illisibles</translation>
     </message>
     <message>
+        <source>Casting is switched off</source>
+        <translation>La diffusion est désactivée</translation>
+    </message>
+    <message>
         <source>Internet radio is switched off</source>
         <translation>La radio internet est désactivée</translation>
     </message>
@@ -858,6 +862,76 @@
     <message>
         <source>That backup is from a newer Hallucinate; update to restore it</source>
         <translation>Cette sauvegarde vient d’une version plus récente d’Hallucinate&#xa0;; mettez à jour pour la restaurer</translation>
+    </message>
+</context>
+<context>
+    <name>CastMenu</name>
+    <message>
+        <source>This computer</source>
+        <translation>Cet ordinateur</translation>
+    </message>
+    <message>
+        <source>Connecting to %1…</source>
+        <translation>Connexion à %1…</translation>
+    </message>
+    <message>
+        <source>Looking for devices on your network…</source>
+        <translation>Recherche d’appareils sur votre réseau…</translation>
+    </message>
+    <message>
+        <source>No devices found</source>
+        <translation>Aucun appareil trouvé</translation>
+    </message>
+    <message>
+        <source>Look again</source>
+        <translation>Chercher à nouveau</translation>
+    </message>
+    <message>
+        <source>Casting settings…</source>
+        <translation>Réglages de diffusion…</translation>
+    </message>
+</context>
+<context>
+    <name>Casting</name>
+    <message>
+        <source>%1 couldn&apos;t fetch the song from this computer. A firewall may be blocking port %2: allow it for your local network, or pick another port in Settings → Casting.</source>
+        <translation>%1 n’a pas pu récupérer le morceau depuis cet ordinateur. Un pare-feu bloque peut-être le port %2 : autorisez-le pour votre réseau local, ou choisissez un autre port dans Paramètres → Diffusion.</translation>
+    </message>
+    <message>
+        <source>%1 didn&apos;t answer: %2</source>
+        <translation>%1 n’a pas répondu : %2</translation>
+    </message>
+    <message>
+        <source>%1 couldn&apos;t play this song.</source>
+        <translation>%1 n’a pas pu lire ce morceau.</translation>
+    </message>
+    <message>
+        <source>Lost the connection to %1</source>
+        <translation>Connexion à %1 perdue</translation>
+    </message>
+    <message>
+        <source>Offline mode is on, so devices on your network can&apos;t be found</source>
+        <translation>Le mode hors ligne est activé : impossible de trouver les appareils de votre réseau</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t start casting: %1</source>
+        <translation>Impossible de lancer la diffusion : %1</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t connect to %1: %2</source>
+        <translation>Impossible de se connecter à %1 : %2</translation>
+    </message>
+    <message>
+        <source>Playing on %1</source>
+        <translation>Lecture sur %1</translation>
+    </message>
+    <message>
+        <source>The music server can&apos;t be reached</source>
+        <translation>Le serveur de musique est injoignable</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t get this song ready for %1.</source>
+        <translation>Impossible de préparer ce morceau pour %1.</translation>
     </message>
 </context>
 <context>
@@ -1289,6 +1363,30 @@
     <message>
         <source>Library  ·  songs that look the same</source>
         <translation>Bibliothèque  ·  morceaux qui se ressemblent</translation>
+    </message>
+    <message>
+        <source>Play here instead</source>
+        <translation>Lire ici plutôt</translation>
+    </message>
+    <message>
+        <source>Casting  ·  playing on %1</source>
+        <translation>Diffusion  ·  lecture sur %1</translation>
+    </message>
+    <message>
+        <source>Play on %1</source>
+        <translation>Lire sur %1</translation>
+    </message>
+    <message>
+        <source>Casting</source>
+        <translation>Diffusion</translation>
+    </message>
+    <message>
+        <source>Look for devices to play on</source>
+        <translation>Chercher des appareils où lire</translation>
+    </message>
+    <message>
+        <source>Casting  ·  Chromecast, DLNA/UPnP</source>
+        <translation>Diffusion  ·  Chromecast, DLNA/UPnP</translation>
     </message>
     <message>
         <source>Genre</source>
@@ -4359,6 +4457,10 @@
         <source>Go to what&apos;s playing: %1</source>
         <translation>Aller à ce qui est en lecture&#xa0;: %1</translation>
     </message>
+    <message>
+        <source>Playing on %1</source>
+        <translation>Lecture sur %1</translation>
+    </message>
     <message numerus="yes">
         <source>Back %n second(s)</source>
         <translation>
@@ -4400,6 +4502,14 @@
     <message>
         <source>Chapters</source>
         <translation>Chapitres</translation>
+    </message>
+    <message>
+        <source>Connecting to %1…</source>
+        <translation>Connexion à %1…</translation>
+    </message>
+    <message>
+        <source>Play on another device</source>
+        <translation>Lire sur un autre appareil</translation>
     </message>
     <message>
         <source>Now playing (F)</source>
@@ -4632,6 +4742,14 @@
         <translation>Analyseur de spectre…</translation>
     </message>
     <message>
+        <source>Play on (%1)</source>
+        <translation>Lire sur (%1)</translation>
+    </message>
+    <message>
+        <source>Play on</source>
+        <translation>Lire sur</translation>
+    </message>
+    <message>
         <source>Podcast speed</source>
         <translation>Vitesse des podcasts</translation>
     </message>
@@ -4704,6 +4822,10 @@
     <message>
         <source>The equalizer couldn&apos;t play (%1); playing without it</source>
         <translation>L’égaliseur n’a pas pu fonctionner (%1)&#xa0;; lecture sans lui</translation>
+    </message>
+    <message>
+        <source>Getting ready for %1…</source>
+        <translation>Préparation pour %1…</translation>
     </message>
     <message>
         <source>Queue replaced</source>
@@ -7093,6 +7215,10 @@
         <translation>Fond animé (couleurs de la pochette en cours qui dérivent lentement)</translation>
     </message>
     <message>
+        <source>Casting</source>
+        <translation>Diffusion</translation>
+    </message>
+    <message>
         <source>Only while music plays (it rests while paused, using no power)</source>
         <translation>Seulement pendant la musique (il se repose en pause, sans consommer d’énergie)</translation>
     </message>
@@ -8036,6 +8162,54 @@
     <message>
         <source>Server name</source>
         <translation>Nom du serveur</translation>
+    </message>
+    <message>
+        <source>cast casting chromecast google nest home speaker tv television dlna upnp renderer receiver kodi sonos play on another device network wifi firewall port original bit-perfect processed equalizer sound</source>
+        <translation>diffuser diffusion caster chromecast google nest home enceinte téléviseur télé tv dlna upnp récepteur amplificateur kodi sonos lire sur un autre appareil réseau wifi pare-feu port original bit-perfect traité égaliseur son</translation>
+    </message>
+    <message>
+        <source>Play your music on a Chromecast, a Google or Nest speaker, or a TV, receiver or speaker that takes DLNA/UPnP. Pick one with the cast button beside the volume; your queue, likes and play counts stay here, and Hallucinate&apos;s controls, media keys and phone remote all control the device.</source>
+        <translation>Écoutez votre musique sur un Chromecast, une enceinte Google ou Nest, ou un téléviseur, un ampli ou une enceinte compatible DLNA/UPnP. Choisissez-le avec le bouton de diffusion à côté du volume ; votre file d’attente, vos favoris et vos écoutes restent ici, et les commandes d’Hallucinate, les touches multimédia et la télécommande du téléphone pilotent l’appareil.</translation>
+    </message>
+    <message>
+        <source>Playing on %1</source>
+        <translation>Lecture sur %1</translation>
+    </message>
+    <message>
+        <source>Play here instead</source>
+        <translation>Lire ici plutôt</translation>
+    </message>
+    <message>
+        <source>What to send</source>
+        <translation>Ce qui est envoyé</translation>
+    </message>
+    <message>
+        <source>The original files</source>
+        <translation>Les fichiers d’origine</translation>
+    </message>
+    <message>
+        <source>Hallucinate&apos;s sound</source>
+        <translation>Le son d’Hallucinate</translation>
+    </message>
+    <message>
+        <source>Songs are played through your ReplayGain, equalizer, headphone correction and crossfeed first, then sent as lossless WAV (16-bit, up to 48 kHz). They take a moment to get ready, and the next song is got ready while one plays. Music servers&apos; songs and radio are sent as they are.</source>
+        <translation>Les morceaux passent d’abord par votre ReplayGain, votre égaliseur, la correction casque et le crossfeed, puis sont envoyés en WAV sans perte (16 bits, jusqu’à 48 kHz). Ils demandent un instant de préparation, et le suivant se prépare pendant la lecture. Les morceaux des serveurs de musique et la radio sont envoyés tels quels.</translation>
+    </message>
+    <message>
+        <source>Songs are sent untouched, bit for bit, and the device plays them itself; your equalizer and crossfeed don&apos;t apply. Songs the device can&apos;t play as they are (WavPack, APE, ALAC on a Chromecast, very high sample rates) and CUE sheet songs are converted to WAV for it.</source>
+        <translation>Les morceaux sont envoyés intacts, bit pour bit, et l’appareil les lit lui-même ; votre égaliseur et le crossfeed ne s’appliquent pas. Les morceaux qu’il ne peut pas lire tels quels (WavPack, APE, ALAC sur un Chromecast, fréquences très élevées) et ceux des fiches CUE sont convertis en WAV pour lui.</translation>
+    </message>
+    <message>
+        <source>Port</source>
+        <translation>Port</translation>
+    </message>
+    <message>
+        <source>The device fetches each song from this computer on this port, and only the device you picked can, only while you&apos;re casting. If nothing plays, your firewall may be blocking it: allow the port for your home network. For example, on Fedora, Bazzite and other systems with firewalld:</source>
+        <translation>L’appareil récupère chaque morceau sur cet ordinateur par ce port, et seul l’appareil choisi le peut, uniquement pendant la diffusion. Si rien ne se lit, votre pare-feu le bloque peut-être : autorisez ce port pour votre réseau domestique. Par exemple, sur Fedora, Bazzite et les autres systèmes avec firewalld :</translation>
+    </message>
+    <message>
+        <source>or with ufw (Ubuntu, Mint):</source>
+        <translation>ou avec ufw (Ubuntu, Mint) :</translation>
     </message>
     <message>
         <source>remote phone web browser interface control pair pairing device devices network lan wifi headless tablet</source>
@@ -9037,6 +9211,30 @@
     <message>
         <source>Changed by %1</source>
         <translation>Modifié par %1</translation>
+    </message>
+    <message>
+        <source>Sent as</source>
+        <translation>Envoyé en</translation>
+    </message>
+    <message>
+        <source>The original file</source>
+        <translation>Le fichier d’origine</translation>
+    </message>
+    <message>
+        <source>%1 (casting)</source>
+        <translation>%1 (diffusion)</translation>
+    </message>
+    <message>
+        <source>Sent untouched to %1, which plays the file itself. Your equalizer and crossfeed don&apos;t apply; Settings → Casting → Hallucinate&apos;s sound sends them along.</source>
+        <translation>Envoyé intact à %1, qui lit le fichier lui-même. Votre égaliseur et le crossfeed ne s’appliquent pas ; Paramètres → Diffusion → Le son d’Hallucinate les inclut.</translation>
+    </message>
+    <message>
+        <source>%1 can&apos;t play this file as it is, so it&apos;s converted for it.</source>
+        <translation>%1 ne peut pas lire ce fichier tel quel : il est donc converti pour lui.</translation>
+    </message>
+    <message>
+        <source>Played through your sound settings here, then sent to %1.</source>
+        <translation>Passé par vos réglages de son ici, puis envoyé à %1.</translation>
     </message>
     <message>
         <source>Your output runs at %1 and this song is %2, so it&apos;s converted on the way. Songs at %1 play untouched; on Linux, PipeWire can switch the output to each song&apos;s rate (its allowed-rates setting). If your output already follows each song, say so in Settings → Playback → Output sample rate.</source>
@@ -11168,6 +11366,18 @@
 <context>
     <name>WhatsNew</name>
     <message>
+        <source>Play on a Chromecast, a Google or Nest speaker, or a DLNA/UPnP TV or speaker: the cast button beside the volume.</source>
+        <translation>Écoutez sur un Chromecast, une enceinte Google ou Nest, ou un téléviseur ou une enceinte DLNA/UPnP : le bouton de diffusion à côté du volume.</translation>
+    </message>
+    <message>
+        <source>Send the original files, untouched, or Hallucinate&apos;s sound with your equalizer and ReplayGain (Settings → Casting).</source>
+        <translation>Envoyez les fichiers d’origine, intacts, ou le son d’Hallucinate avec votre égaliseur et le ReplayGain (Paramètres → Diffusion).</translation>
+    </message>
+    <message>
+        <source>The window opens at the size you left it, maximized if it was.</source>
+        <translation>La fenêtre s’ouvre à la taille où vous l’avez laissée, agrandie si elle l’était.</translation>
+    </message>
+    <message>
         <source>Hallucinate speaks French now: pick a language in Settings → Appearance, or let it follow your system.</source>
         <translation>Hallucinate parle français&#xa0;: choisissez une langue dans Paramètres → Apparence, ou laissez-le suivre votre système.</translation>
     </message>
@@ -11928,6 +12138,10 @@
         <translation>Lire</translation>
     </message>
     <message>
+        <source>Playing on %1</source>
+        <translation>Lecture sur %1</translation>
+    </message>
+    <message>
         <source>LIVE</source>
         <translation>EN DIRECT</translation>
     </message>
@@ -11968,6 +12182,26 @@
     <message>
         <source>End of this album</source>
         <translation>Fin de cet album</translation>
+    </message>
+    <message>
+        <source>Looking for devices on your network…</source>
+        <translation>Recherche d’appareils sur votre réseau…</translation>
+    </message>
+    <message>
+        <source>Play on</source>
+        <translation>Lire sur</translation>
+    </message>
+    <message>
+        <source>The computer</source>
+        <translation>L’ordinateur</translation>
+    </message>
+    <message>
+        <source>Connecting to %1…</source>
+        <translation>Connexion à %1…</translation>
+    </message>
+    <message>
+        <source>Look again</source>
+        <translation>Chercher à nouveau</translation>
     </message>
     <message>
         <source>The equaliser isn&apos;t available on this computer</source>
@@ -12305,6 +12539,10 @@
     <message>
         <source>Lyrics</source>
         <translation>Paroles</translation>
+    </message>
+    <message>
+        <source>Play on another device</source>
+        <translation>Lire sur un autre appareil</translation>
     </message>
     <message>
         <source>Clear upcoming</source>
