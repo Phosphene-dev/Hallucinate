@@ -1,5 +1,17 @@
 # Manual QA checklist
 
+## Release testing for the next version
+
+- [ ] Discover with a library you've listened to for a while: daily mixes appear (titles make sense for your
+      music, mostly songs you know plus a few you don't), the same all day, different tomorrow; play, shuffle,
+      queue and "Save as a playlist" from a mix's menu.
+- [ ] Each shelf's ⋯ → Hide this shelf: it goes (Undo brings it back), Settings → Discover shows it off; turning
+      it on there brings it back. Features → Discover off: the page leaves the sidebar, Ctrl+K and the tray.
+- [ ] Right-click an album, song or artist in Discover → Not interested: it goes (Undo), Settings → Discover lists
+      it, Let back in returns it. Not interested is not offered anywhere outside Discover.
+- [ ] Home: Rediscover and On this day are gone unless turned on in Features → Home.
+- [ ] A new library (no listening yet): Discover says there's nothing to suggest yet, calmly.
+
 ## Release testing for 1.13.0
 
 - [ ] Headphone correction: choose a headphone with a ParametricEQ profile; the Equalizer lists its filters; switch

@@ -60,6 +60,10 @@ ApplicationWindow {
         target: casting
         function onNotice(text) { toast.show(text) }
     }
+    Connections {  // Discover: "Not interested", with Undo
+        target: discover
+        function onUndoable(text) { toast.show(text, 0, qsTr("Undo"), function () { discover.undo() }) }
+    }
     Connections {  // handoff: paired, handed over, carrying on from another computer
         target: handoff
         function onNotice(text) { toast.show(text) }
@@ -79,6 +83,7 @@ ApplicationWindow {
         case "history": return historyPage
         case "health": return healthPage
         case "recap": return recapPage
+        case "discover": return discoverPage
         case "folders": return foldersPage
         case "visualizer": return visualizerPage
         case "settings": return settingsPage
@@ -311,6 +316,7 @@ ApplicationWindow {
     Component { id: historyPage; HistoryPage {} }
     Component { id: healthPage; HealthPage {} }
     Component { id: recapPage; RecapPage {} }
+    Component { id: discoverPage; DiscoverPage {} }
     Component { id: foldersPage; FoldersPage {} }
     Component { id: visualizerPage; VisualizerPage {} }
     Component { id: settingsPage; SettingsPage {} }

@@ -211,6 +211,16 @@
     </message>
 </context>
 <context>
+    <name>Discover</name>
+    <message numerus="yes">
+        <source>%n year(s) ago</source>
+        <translation>
+            <numerusform>%n year ago</numerusform>
+            <numerusform>%n years ago</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>FoldersPage</name>
     <message numerus="yes">
         <source>Open %1, %n song(s)</source>
@@ -1000,6 +1010,13 @@
         <translation>
             <numerusform>%n song</numerusform>
             <numerusform>%n songs</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n mix(es)</source>
+        <translation>
+            <numerusform>%n mix(es)</numerusform>
+            <numerusform>%n mix(es)</numerusform>
         </translation>
     </message>
     <message numerus="yes">

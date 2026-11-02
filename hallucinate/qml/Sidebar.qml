@@ -130,7 +130,8 @@ Item {
     Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
     readonly property var allPages: [
-        { id: "home", t: qsTr("Home"), i: "home" }, { id: "albums", t: qsTr("Albums"), i: "album" },
+        { id: "home", t: qsTr("Home"), i: "home" }, { id: "discover", t: qsTr("Discover"), i: "discover" },
+        { id: "albums", t: qsTr("Albums"), i: "album" },
         { id: "artists", t: qsTr("Artists"), i: "artist" }, { id: "genres", t: qsTr("Genres"), i: "genre" },
         { id: "songs", t: qsTr("Songs"), i: "songs" },
         { id: "folders", t: qsTr("Folders"), i: "folder" },

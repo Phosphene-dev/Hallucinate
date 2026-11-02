@@ -242,6 +242,10 @@ def main(argv=None) -> int:
 
     discord = DiscordPresence(player)
     shell = DesktopShell(app, player, app.windowIcon())
+    from .discover import Discover
+
+    discover = Discover(paths.db_path(), player, user_lib, shell)
+    library.reloaded.connect(discover.libraryChanged)
     shell.setReportSources(library=library, theme_manager=theme_manager)
     shell.setStartupNotice(db_notice)
     shell.setCrashReport(last_crash, last_crashed)
@@ -356,6 +360,7 @@ def main(argv=None) -> int:
     ctx.setContextProperty("library", library)
     ctx.setContextProperty("player", player)
     ctx.setContextProperty("userLib", user_lib)
+    ctx.setContextProperty("discover", discover)
     ctx.setContextProperty("metaEditor", meta_editor)
     ctx.setContextProperty("replayGain", replay_gain)
     ctx.setContextProperty("headphones", headphones)
@@ -466,6 +471,7 @@ def main(argv=None) -> int:
     artist_bios.shutdown()
     similar_artists.shutdown()
     user_lib.shutdown()
+    discover.shutdown()
     library.shutdown()
     dbguard.mark_clean(paths.db_path())  # every connection is closed now
     dbguard.mark_clean(paths.data_dir() / "streams.db")

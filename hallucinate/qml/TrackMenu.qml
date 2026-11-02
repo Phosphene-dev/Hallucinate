@@ -83,6 +83,12 @@ Menu {
         }
     }
     MenuSeparator { visible: songMenu.single && !songMenu.stream; height: visible ? implicitHeight : 0 }
+    MenuItem {  // (only on Discover's shelves: that song isn't suggested there again)
+        objectName: "trackNotInterested"
+        visible: songMenu.single && songMenu.context === "discover"; height: visible ? implicitHeight : 0
+        text: qsTr("Not interested"); icon.name: "close"
+        onTriggered: discover.notInterested("song", songMenu.path, songMenu.trackTitle)
+    }
     MenuItem {
         objectName: "trackCopyLink"
         visible: songMenu.stream && songMenu.single && /^https?:\/\//.test(songMenu.path)

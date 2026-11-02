@@ -5,7 +5,19 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Added
+- Discover: a page of music from your own library to find again, worked out on this computer from what you play
+  (nothing is sent anywhere). Daily mixes (made fresh each day around the genres and eras you listen to, with a few
+  songs you haven't played yet), forgotten favourites (albums, songs and artists you played a lot but not
+  lately), deep cuts (songs you've never played by the artists you play most), albums added long ago and never
+  played, and what you listened to on this day in other years. Each shelf can be hidden from its own menu or in
+  Settings → Discover (a hidden shelf isn't even worked out), the whole page can be turned off in Features,
+  anything can be marked Not interested (and let back in from Settings), and mixes can be saved as playlists.
+  Settings: how long until something counts as forgotten, how many mixes, how long, and how many unheard songs.
+
 ### Changed
+- Home's Rediscover and On this day shelves are off unless you turn them on (Settings → Features → Home):
+  Discover has fuller ones.
 - Casting with Hallucinate's sound: the song you're waiting for (the first, or one you skip to) goes as WAV, ready
   almost at once; songs got ready in the background go as 24-bit FLAC as before.
 - Liked Songs and big playlists open without a pause (their length was added up in the page itself: 0.8 s for

@@ -26,7 +26,8 @@ Item {
         index: card.rowIndex
     }
     readonly property bool selected: pick.selected
-    function openMenu() { Nav.albumMenu([albumKey], title, artist) }
+    property bool fromDiscover: false  // (its menu offers "Not interested")
+    function openMenu() { Nav.discoverMenu = fromDiscover; Nav.albumMenu([albumKey], title, artist) }
     property real cardWidth: 170
     width: cardWidth
     height: cardWidth + (note.length ? 80 : 62)

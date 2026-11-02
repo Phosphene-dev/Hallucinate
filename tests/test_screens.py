@@ -12,7 +12,7 @@ from PySide6.QtQuickControls2 import QQuickStyle
 from hallucinate.app import QML_STYLE
 from hallucinate.core.db import Database
 
-PAGES = ("home", "albums", "artists", "songs", "folders", "liked", "stats", "history", "recap", "health",
+PAGES = ("home", "discover", "albums", "artists", "songs", "folders", "liked", "stats", "history", "recap", "health",
          "visualizer", "settings")
 BLOCK = 24
 
@@ -158,6 +158,9 @@ def app_window(qapp, tmp_path, monkeypatch, request):
     from hallucinate.handoff import Handoff
 
     objects["handoff"] = Handoff(player, library, objects["webRemote"])
+    from hallucinate.discover import Discover
+
+    objects["discover"] = Discover(db_path, player, user_lib, objects["shell"])
     from hallucinate.i18n import Translations
 
     objects["i18n"] = Translations(qapp)

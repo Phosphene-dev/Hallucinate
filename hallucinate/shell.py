@@ -20,9 +20,14 @@ FEATURES = {
     "liked": True, "folders": True, "stats": True, "history": True, "recap": True, "visualizer": True,
     "health": True, "lyrics": True, "stations": False, "podcasts": False, "servers": False,
     "homeRandom": True, "homeListening": True, "homeFacts": True, "homeShelves": True, "casting": True,
+    # Home's Rediscover and On this day: Discover has fuller ones, so these are off unless chosen
+    "homeRediscover": False, "homeOnThisDay": False,
+    # Discover: the page, and each of its shelves on its own
+    "discover": True, "discoverMixes": True, "discoverForgotten": True, "discoverForgottenSongs": True,
+    "discoverForgottenArtists": True, "discoverDeepCuts": True, "discoverNeverPlayed": True, "discoverOnThisDay": True,
 }
 # The sidebar's pages in their usual order; people can rearrange them (Settings → Appearance or right-click).
-SIDEBAR_PAGES = ("home", "albums", "artists", "genres", "songs", "folders", "liked", "stats", "history", "recap", "visualizer",
+SIDEBAR_PAGES = ("home", "discover", "albums", "artists", "genres", "songs", "folders", "liked", "stats", "history", "recap", "visualizer",
                  "stations", "podcasts")
 
 
@@ -174,7 +179,8 @@ class DesktopShell(QObject):
         self.settingsChanged.emit()  # Settings shows the tray switch now
 
     # (title case, as tray menus are: KDE, GNOME's AppIndicator)
-    PAGE_TITLES = {"home": QT_TRANSLATE_NOOP("Tray", "Home"), "albums": QT_TRANSLATE_NOOP("Tray", "Albums"),
+    PAGE_TITLES = {"home": QT_TRANSLATE_NOOP("Tray", "Home"), "discover": QT_TRANSLATE_NOOP("Tray", "Discover"),
+                   "albums": QT_TRANSLATE_NOOP("Tray", "Albums"),
                    "artists": QT_TRANSLATE_NOOP("Tray", "Artists"), "genres": QT_TRANSLATE_NOOP("Tray", "Genres"),
                    "songs": QT_TRANSLATE_NOOP("Tray", "Songs"), "folders": QT_TRANSLATE_NOOP("Tray", "Folders"),
                    "liked": QT_TRANSLATE_NOOP("Tray", "Liked Songs"), "stats": QT_TRANSLATE_NOOP("Tray", "Stats"),

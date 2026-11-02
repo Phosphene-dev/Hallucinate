@@ -61,6 +61,7 @@ Popup {
             { f: "stats", t: qsTr("Stats"), s: qsTr("Go to"), i: "stats", run: () => w.go("stats") },
             { f: "history", t: qsTr("History"), s: qsTr("Go to"), i: "history", run: () => w.go("history") },
             { f: "recap", t: qsTr("Recap"), s: qsTr("Go to  ·  your week, month or year"), i: "recap", run: () => w.go("recap") },
+            { f: "discover", t: qsTr("Discover"), s: qsTr("Go to  ·  daily mixes and music to find again"), i: "discover", run: () => w.go("discover") },
             { f: "podcasts", t: qsTr("Podcasts"), s: qsTr("Go to  ·  your shows"), i: "podcast", run: () => w.go("podcasts") },
             { f: "stations", t: qsTr("Internet radio"), s: qsTr("Go to  ·  your stations"), i: "station", run: () => w.go("stations") },
             { f: "visualizer", t: qsTr("Visualizer"), s: qsTr("Go to"), i: "wave", run: () => w.go("visualizer") },

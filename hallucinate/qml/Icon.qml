@@ -137,6 +137,9 @@ Canvas {
             line([.1,.24,.62,.24]); line([.1,.46,.62,.46]); line([.1,.68,.42,.68]); tri(w*.6,h*.56,w*.6,h*.88,w*.9,h*.72); break
         case "sidebar":
             ctx.strokeRect(w*.12, h*.18, w*.76, h*.64); line([.38,.18,.38,.82]); break
+        case "discover":  // a compass: finding your way to music again
+            ctx.beginPath(); ctx.arc(w*.5, h*.5, w*.38, 0, Math.PI*2); ctx.stroke()
+            tri(w*.5,h*.5,w*.66,h*.34,w*.56,h*.56); line([.5,.5,.34,.66,.44,.44,.5,.5]); break
         case "recap":  // a calendar with a small bar chart: a period summed up
             ctx.strokeRect(w*.14, h*.2, w*.72, h*.66); line([.14,.38,.86,.38]); line([.34,.12,.34,.26]); line([.66,.12,.66,.26])
             ctx.fillRect(w*.28, h*.6, w*.1, h*.16); ctx.fillRect(w*.45, h*.5, w*.1, h*.26); ctx.fillRect(w*.62, h*.56, w*.1, h*.2); break

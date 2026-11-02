@@ -102,3 +102,71 @@ def test_an_empty_library_has_nothing_to_show(tmp_path):
     assert discover.daily_mixes(db, NOW) == [] and discover.on_this_day(db, NOW) == []
     assert all(v == [] for v in discover.forgotten(db, NOW).values())
     db.close()
+
+
+class FakeShell:
+    """The feature switches, as DesktopShell keeps them."""
+
+    def __init__(self):
+        self.features = {}
+
+    def featureOn(self, name):  # noqa: N802
+        return self.features.get(name, True)
+
+    def setFeature(self, name, on):  # noqa: N802
+        self.features[name] = bool(on)
+
+
+def test_the_page_reads_only_what_is_switched_on(qapp, db, tmp_path):
+    from conftest import wait_for
+
+    from hallucinate.discover import Discover
+
+    db.conn.execute("UPDATE plays SET last = last - ?", (2 * 365 * DAY,))  # (so "lately" here is long ago now)
+    db.conn.execute("UPDATE play_log SET ts = ts - ?", (2 * 365 * DAY,))
+    db.commit()
+    shell = FakeShell()
+    d = Discover(tmp_path / "lib.db", None, None, shell)
+    try:
+        d.refresh()
+        assert not d.loading  # (nothing is read until the page has been opened)
+        d.open()
+        assert wait_for(lambda: not d.loading and d.forgottenAlbums.count > 0, timeout=10)
+        assert d.mixes and not d.empty
+        d.setShelf("discoverForgotten", False)
+        assert wait_for(lambda: not d.loading and d.forgottenAlbums.count == 0, timeout=10)
+        assert d.mixes  # (only that shelf)
+        d.setShelf("discoverForgotten", True)
+        assert wait_for(lambda: not d.loading and d.forgottenAlbums.count > 0, timeout=10)
+        key = d.forgottenAlbums.get(0)["album_key"]
+        said = []
+        d.undoable.connect(said.append)
+        d.notInterested("album", key, "One by Aurora")
+        assert said and "One by Aurora" in said[0]
+        assert wait_for(lambda: [x["key"] for x in d.dismissed] == [key], timeout=10)
+        assert wait_for(lambda: key not in [d.forgottenAlbums.get(i)["album_key"] for i in range(d.forgottenAlbums.count)], timeout=10)
+        d.undo()
+        assert wait_for(lambda: d.dismissed == [], timeout=10)
+    finally:
+        d.shutdown()
+
+
+def test_a_mix_saved_as_a_playlist(qapp, db, tmp_path):
+    from conftest import wait_for
+
+    from hallucinate.discover import Discover
+    from hallucinate.userlib import UserLibrary
+
+    user_lib = UserLibrary(tmp_path / "lib.db", None)
+    d = Discover(tmp_path / "lib.db", None, user_lib, None)
+    try:
+        d.open()
+        assert wait_for(lambda: d.mixes, timeout=10)
+        pid = d.saveMix(0)
+        assert pid >= 0
+        user_lib.refresh()
+        assert wait_for(lambda: any(user_lib.playlists.get(i)["n"] == d.mixes[0]["count"]
+                                    for i in range(user_lib.playlists.count)), timeout=10)
+    finally:
+        d.shutdown()
+        user_lib.shutdown()

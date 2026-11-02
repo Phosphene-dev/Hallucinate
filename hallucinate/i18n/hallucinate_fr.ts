@@ -216,6 +216,14 @@
         </translation>
     </message>
     <message>
+        <source>Not interested</source>
+        <translation>Pas intéressé</translation>
+    </message>
+    <message>
+        <source>%1 by %2</source>
+        <translation>%1 de %2</translation>
+    </message>
+    <message>
         <source>%1 will play next</source>
         <translation>%1 sera lu ensuite</translation>
     </message>
@@ -973,6 +981,10 @@
         <translation>Tout ce qui est dans «&#xa0;%1&#xa0;»</translation>
     </message>
     <message>
+        <source>Not interested</source>
+        <translation>Pas intéressé</translation>
+    </message>
+    <message>
         <source>Play</source>
         <translation>Lire</translation>
     </message>
@@ -1187,6 +1199,14 @@
     <message>
         <source>Go to  ·  your week, month or year</source>
         <translation>Aller à  ·  votre semaine, mois ou année</translation>
+    </message>
+    <message>
+        <source>Discover</source>
+        <translation>Découvrir</translation>
+    </message>
+    <message>
+        <source>Go to  ·  daily mixes and music to find again</source>
+        <translation>Aller à  ·  mix du jour et musique à redécouvrir</translation>
     </message>
     <message>
         <source>Podcasts</source>
@@ -1797,6 +1817,223 @@
     <message>
         <source>Needs a Discord application ID</source>
         <translation>Il faut un identifiant d’application Discord</translation>
+    </message>
+</context>
+<context>
+    <name>Discover</name>
+    <message>
+        <source>Played %1 times, last in %2</source>
+        <translation>Écouté %1 fois, la dernière en %2</translation>
+    </message>
+    <message>
+        <source>Last played %1</source>
+        <translation>Écouté pour la dernière fois en %1</translation>
+    </message>
+    <message>
+        <source>Loved, never played here</source>
+        <translation>Aimé, jamais écouté ici</translation>
+    </message>
+    <message>
+        <source>Never played, by %1</source>
+        <translation>Jamais écouté, de %1</translation>
+    </message>
+    <message>
+        <source>Added %1, never played</source>
+        <translation>Ajouté en %1, jamais écouté</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n year(s) ago</source>
+        <translation>
+            <numerusform>il y a %n an</numerusform>
+            <numerusform>il y a %n ans</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Around this day in %1</source>
+        <translation>Vers ce jour en %1</translation>
+    </message>
+    <message>
+        <source>the &apos;%1s</source>
+        <translation>années %1</translation>
+    </message>
+    <message>
+        <source>%1 from %2</source>
+        <translation>%1 des %2</translation>
+    </message>
+    <message>
+        <source>%1 mix</source>
+        <translation>Mix %1</translation>
+    </message>
+    <message>
+        <source>Music from %1</source>
+        <translation>Musique des %1</translation>
+    </message>
+    <message>
+        <source>%1 and more</source>
+        <translation>%1 et plus</translation>
+    </message>
+    <message>
+        <source>%1 (%2)</source>
+        <translation>%1 (%2)</translation>
+    </message>
+    <message>
+        <source>“%1” won&apos;t be suggested again</source>
+        <translation>« %1 » ne sera plus suggéré</translation>
+    </message>
+</context>
+<context>
+    <name>DiscoverPage</name>
+    <message>
+        <source>“%1” hidden. Settings → Discover brings it back</source>
+        <translation>« %1 » masqué. Paramètres → Découvrir le fait revenir</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Annuler</translation>
+    </message>
+    <message>
+        <source>Discover</source>
+        <translation>Découvrir</translation>
+    </message>
+    <message>
+        <source>Music in your own library to find again. Worked out on this computer from what you play; nothing is sent anywhere.</source>
+        <translation>De la musique de votre bibliothèque à redécouvrir. Calculé sur cet ordinateur à partir de ce que vous écoutez ; rien n’est envoyé nulle part.</translation>
+    </message>
+    <message>
+        <source>Discover settings</source>
+        <translation>Paramètres de Découvrir</translation>
+    </message>
+    <message>
+        <source>Nothing to suggest yet</source>
+        <translation>Rien à suggérer pour l’instant</translation>
+    </message>
+    <message>
+        <source>Play some music and come back: suggestions come from what you listen to. Hidden shelves can be brought back in Settings → Discover.</source>
+        <translation>Écoutez de la musique et revenez : les suggestions viennent de ce que vous écoutez. Les rayons masqués reviennent dans Paramètres → Découvrir.</translation>
+    </message>
+    <message>
+        <source>Daily mixes</source>
+        <translation>Mix du jour</translation>
+    </message>
+    <message>
+        <source>Made fresh each day from what you play, with a few songs you haven&apos;t yet</source>
+        <translation>Refaits chaque jour à partir de ce que vous écoutez, avec quelques morceaux pas encore écoutés</translation>
+    </message>
+    <message>
+        <source>Forgotten favourites</source>
+        <translation>Favoris oubliés</translation>
+    </message>
+    <message>
+        <source>Albums you played a lot, but not for a while</source>
+        <translation>Des albums très écoutés, mais pas depuis un moment</translation>
+    </message>
+    <message>
+        <source>Songs you used to love</source>
+        <translation>Des morceaux que vous adoriez</translation>
+    </message>
+    <message>
+        <source>Played often, liked or rated highly, then left behind</source>
+        <translation>Souvent écoutés, aimés ou bien notés, puis délaissés</translation>
+    </message>
+    <message>
+        <source>Artists to return to</source>
+        <translation>Des artistes à retrouver</translation>
+    </message>
+    <message>
+        <source>Ones you played often, not lately</source>
+        <translation>Souvent écoutés, mais pas récemment</translation>
+    </message>
+    <message>
+        <source>Deep cuts</source>
+        <translation>Pépites cachées</translation>
+    </message>
+    <message>
+        <source>Songs you&apos;ve never played by the artists you play most</source>
+        <translation>Des morceaux jamais écoutés de vos artistes les plus écoutés</translation>
+    </message>
+    <message>
+        <source>Never played</source>
+        <translation>Jamais écoutés</translation>
+    </message>
+    <message>
+        <source>Albums you added a while ago and haven&apos;t listened to yet</source>
+        <translation>Des albums ajoutés il y a un moment et pas encore écoutés</translation>
+    </message>
+    <message>
+        <source>On this day</source>
+        <translation>Ce jour-là</translation>
+    </message>
+    <message>
+        <source>What you listened to around today&apos;s date in other years</source>
+        <translation>Ce que vous écoutiez vers cette date les autres années</translation>
+    </message>
+    <message>
+        <source>%1  ·  %2</source>
+        <translation>%1  ·  %2</translation>
+    </message>
+    <message>
+        <source>Play those songs</source>
+        <translation>Écouter ces morceaux</translation>
+    </message>
+    <message>
+        <source>Options for this shelf</source>
+        <translation>Options de ce rayon</translation>
+    </message>
+    <message>
+        <source>Hide this shelf</source>
+        <translation>Masquer ce rayon</translation>
+    </message>
+    <message>
+        <source>Discover settings…</source>
+        <translation>Paramètres de Découvrir…</translation>
+    </message>
+    <message>
+        <source>Play all</source>
+        <translation>Tout lire</translation>
+    </message>
+    <message>
+        <source>Show fewer</source>
+        <translation>En montrer moins</translation>
+    </message>
+    <message>
+        <source>Show all %1</source>
+        <translation>Les montrer tous (%1)</translation>
+    </message>
+    <message>
+        <source>%1 songs  ·  %2 min</source>
+        <translation>%1 morceaux  ·  %2 min</translation>
+    </message>
+    <message>
+        <source>More for this mix</source>
+        <translation>Plus pour ce mix</translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation>Lire</translation>
+    </message>
+    <message>
+        <source>Shuffle</source>
+        <translation>Lecture aléatoire</translation>
+    </message>
+    <message>
+        <source>Add to queue</source>
+        <translation>Ajouter à la file d’attente</translation>
+    </message>
+    <message>
+        <source>“%1” added to the queue</source>
+        <translation>« %1 » ajouté à la file d’attente</translation>
+    </message>
+    <message>
+        <source>Save as a playlist</source>
+        <translation>Enregistrer comme playlist</translation>
+    </message>
+    <message>
+        <source>Saved as a playlist: it stays as it is when the mix changes</source>
+        <translation>Enregistré comme playlist : elle reste telle quelle quand le mix change</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Ouvrir</translation>
     </message>
 </context>
 <context>
@@ -7864,6 +8101,129 @@
         <translation>Album</translation>
     </message>
     <message>
+        <source>Discover</source>
+        <translation>Découvrir</translation>
+    </message>
+    <message>
+        <source>Rediscover shelf</source>
+        <translation>Rayon À redécouvrir</translation>
+    </message>
+    <message>
+        <source>On this day shelf</source>
+        <translation>Rayon Ce jour-là</translation>
+    </message>
+    <message>
+        <source>discover suggestions recommendations daily mixes forgotten favourites deep cuts never played on this day not interested hidden shelves rediscover</source>
+        <translation>découvrir suggestions recommandations mix du jour favoris oubliés pépites jamais écoutés ce jour-là pas intéressé rayons masqués redécouvrir discover suggestions recommendations daily mixes forgotten favourites deep cuts never played on this day not interested hidden shelves rediscover</translation>
+    </message>
+    <message>
+        <source>Discover suggests music from your own library, worked out on this computer from what you play. Choose which shelves it shows; a shelf that&apos;s off isn&apos;t even worked out. The whole page can be turned off in Features.</source>
+        <translation>Découvrir suggère de la musique de votre bibliothèque, calculée sur cet ordinateur à partir de ce que vous écoutez. Choisissez les rayons affichés ; un rayon désactivé n’est même pas calculé. La page entière peut être désactivée dans Fonctionnalités.</translation>
+    </message>
+    <message>
+        <source>Daily mixes</source>
+        <translation>Mix du jour</translation>
+    </message>
+    <message>
+        <source>Forgotten favourites</source>
+        <translation>Favoris oubliés</translation>
+    </message>
+    <message>
+        <source>Songs you used to love</source>
+        <translation>Des morceaux que vous adoriez</translation>
+    </message>
+    <message>
+        <source>Artists to return to</source>
+        <translation>Des artistes à retrouver</translation>
+    </message>
+    <message>
+        <source>Deep cuts</source>
+        <translation>Pépites cachées</translation>
+    </message>
+    <message>
+        <source>Never played</source>
+        <translation>Jamais écoutés</translation>
+    </message>
+    <message>
+        <source>On this day</source>
+        <translation>Ce jour-là</translation>
+    </message>
+    <message>
+        <source>Forgotten after</source>
+        <translation>Oublié après</translation>
+    </message>
+    <message>
+        <source>A month without playing</source>
+        <translation>Un mois sans écoute</translation>
+    </message>
+    <message>
+        <source>3 months without playing</source>
+        <translation>3 mois sans écoute</translation>
+    </message>
+    <message>
+        <source>6 months without playing</source>
+        <translation>6 mois sans écoute</translation>
+    </message>
+    <message>
+        <source>A year without playing</source>
+        <translation>Un an sans écoute</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n mix(es)</source>
+        <translation>
+            <numerusform>%n mix</numerusform>
+            <numerusform>%n mix</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Songs in each mix</source>
+        <translation>Morceaux par mix</translation>
+    </message>
+    <message>
+        <source>Songs you haven&apos;t played</source>
+        <translation>Morceaux pas encore écoutés</translation>
+    </message>
+    <message>
+        <source>None: only songs I know</source>
+        <translation>Aucun : seulement ceux que je connais</translation>
+    </message>
+    <message>
+        <source>Some (about a quarter)</source>
+        <translation>Quelques-uns (environ un quart)</translation>
+    </message>
+    <message>
+        <source>More (about half)</source>
+        <translation>Davantage (environ la moitié)</translation>
+    </message>
+    <message>
+        <source>Not interested</source>
+        <translation>Pas intéressé</translation>
+    </message>
+    <message>
+        <source>Left out of Discover (right-click something there and choose Not interested to add to this).</source>
+        <translation>Exclus de Découvrir (faites un clic droit sur un élément là-bas et choisissez Pas intéressé pour l’ajouter ici).</translation>
+    </message>
+    <message>
+        <source>Nothing yet: right-click an album, song or artist in Discover and choose Not interested, and it&apos;s left out from then on.</source>
+        <translation>Rien pour l’instant : faites un clic droit sur un album, un morceau ou un artiste dans Découvrir et choisissez Pas intéressé ; il est exclu dès lors.</translation>
+    </message>
+    <message>
+        <source>Song</source>
+        <translation>Morceau</translation>
+    </message>
+    <message>
+        <source>Artist</source>
+        <translation>Artiste</translation>
+    </message>
+    <message>
+        <source>Let back in</source>
+        <translation>Réintégrer</translation>
+    </message>
+    <message>
+        <source>Let them all back in</source>
+        <translation>Tout réintégrer</translation>
+    </message>
+    <message>
         <source>ReplayGain details</source>
         <translation>Détails du ReplayGain</translation>
     </message>
@@ -9031,6 +9391,10 @@
     <message>
         <source>Home</source>
         <translation>Accueil</translation>
+    </message>
+    <message>
+        <source>Discover</source>
+        <translation>Découvrir</translation>
     </message>
     <message>
         <source>Albums</source>
@@ -10923,6 +11287,10 @@
         <translation>Note</translation>
     </message>
     <message>
+        <source>Not interested</source>
+        <translation>Pas intéressé</translation>
+    </message>
+    <message>
         <source>Copy stream link</source>
         <translation>Copier le lien du flux</translation>
     </message>
@@ -11067,6 +11435,10 @@
     <message>
         <source>Home</source>
         <translation>Accueil</translation>
+    </message>
+    <message>
+        <source>Discover</source>
+        <translation>Découvrir</translation>
     </message>
     <message>
         <source>Albums</source>
@@ -11463,6 +11835,10 @@
     <message>
         <source>Recap</source>
         <translation>Bilan</translation>
+    </message>
+    <message>
+        <source>Discover</source>
+        <translation>Découvrir</translation>
     </message>
     <message>
         <source>Library health</source>

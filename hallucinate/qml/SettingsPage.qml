@@ -1,16 +1,17 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
+import QtQuick.Layouts
 import "."
 
 Item {
     id: page
     objectName: "settings"
     property string query: ""
-    readonly property var sectionIds: ["appearance", "features", "podcasts", "playback", "sound", "library", "servers", "casting", "remote", "sharing", "scrobbling", "desktop", "about"]
-    readonly property var sectionTitles: [qsTr("Appearance"), qsTr("Features"), qsTr("Podcasts"), qsTr("Playback"), qsTr("Sound"), qsTr("Library"), qsTr("Music servers"), qsTr("Casting"), qsTr("Remote & web"), qsTr("Online & privacy"), qsTr("Scrobbling & sharing"), qsTr("Desktop"), qsTr("About")]
+    readonly property var sectionIds: ["appearance", "features", "discover", "podcasts", "playback", "sound", "library", "servers", "casting", "remote", "sharing", "scrobbling", "desktop", "about"]
+    readonly property var sectionTitles: [qsTr("Appearance"), qsTr("Features"), qsTr("Discover"), qsTr("Podcasts"), qsTr("Playback"), qsTr("Sound"), qsTr("Library"), qsTr("Music servers"), qsTr("Casting"), qsTr("Remote & web"), qsTr("Online & privacy"), qsTr("Scrobbling & sharing"), qsTr("Desktop"), qsTr("About")]
 
-    function sectionItem(i) { return [sec_appearance, sec_features, sec_podcasts, sec_playback, sec_sound, sec_library, sec_servers, sec_casting, sec_remote, sec_sharing, sec_scrobbling, sec_desktop, sec_about][i] }
+    function sectionItem(i) { return [sec_appearance, sec_features, sec_discover, sec_podcasts, sec_playback, sec_sound, sec_library, sec_servers, sec_casting, sec_remote, sec_sharing, sec_scrobbling, sec_desktop, sec_about][i] }
     function jumpToId(id) { var i = sectionIds.indexOf(id); if (i >= 0 && sectionItem(i).visible) jumpTo(i) }
     function jumpToSidebar() {
         jumpTo(1)
@@ -96,6 +97,7 @@ Item {
                     required property int index
                     // (by the section's id: its title is in your language)
                     visible: (page.sectionIds[index] !== "podcasts" || shell.features.podcasts !== false)
+                             && (page.sectionIds[index] !== "discover" || shell.features.discover !== false)
                              && (page.sectionIds[index] !== "servers" || shell.features.servers === true)
                              && (page.sectionIds[index] !== "casting" || shell.features.casting !== false)
                     text: modelData
@@ -677,13 +679,14 @@ Item {
             }
             FeatureGroup {
                 heading: qsTr("Pages")
-                items: [["liked", qsTr("Liked Songs")], ["folders", qsTr("Folders")], ["stats", qsTr("Stats")], ["history", qsTr("History")],
+                items: [["discover", qsTr("Discover")], ["liked", qsTr("Liked Songs")], ["folders", qsTr("Folders")], ["stats", qsTr("Stats")], ["history", qsTr("History")],
                         ["recap", qsTr("Recap")], ["health", qsTr("Library health")]]
             }
             FeatureGroup {
                 heading: qsTr("Home")
                 items: [["homeRandom", qsTr("Random album")], ["homeListening", qsTr("Listening card")],
-                        ["homeFacts", qsTr("Library facts")], ["homeShelves", qsTr("Album shelves")]]
+                        ["homeFacts", qsTr("Library facts")], ["homeShelves", qsTr("Album shelves")],
+                        ["homeRediscover", qsTr("Rediscover shelf")], ["homeOnThisDay", qsTr("On this day shelf")]]
             }
             SettingsGroup {
                 id: sidebarGroup
@@ -696,7 +699,7 @@ Item {
                     objectName: "sidebarOrder"
                     width: parent.width
                     spacing: 6
-                    readonly property var names: ({ home: qsTr("Home"), albums: qsTr("Albums"), artists: qsTr("Artists"), songs: qsTr("Songs"),
+                    readonly property var names: ({ home: qsTr("Home"), discover: qsTr("Discover"), albums: qsTr("Albums"), artists: qsTr("Artists"), songs: qsTr("Songs"),
                         folders: qsTr("Folders"), liked: qsTr("Liked Songs"), stats: qsTr("Stats"), history: qsTr("History"), recap: qsTr("Recap"),
                         visualizer: qsTr("Visualizer"), stations: qsTr("Internet radio"), podcasts: qsTr("Podcasts") })
                     readonly property var shown: shell.sidebarOrder.filter(function (p) { return shell.features[p] !== false })
@@ -754,6 +757,124 @@ Item {
                             }
                         }
                     }
+                }
+            }
+        }
+
+        SettingsSection {
+            id: sec_discover
+            objectName: "settings_discover"
+            title: qsTr("Discover")
+            keywords: qsTr("discover suggestions recommendations daily mixes forgotten favourites deep cuts never played on this day not interested hidden shelves rediscover")
+            query: page.query
+            visible: matches && shell.features.discover !== false
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: qsTr("Discover suggests music from your own library, worked out on this computer from what you play. Choose which shelves it shows; a shelf that's off isn't even worked out. The whole page can be turned off in Features.")
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+            }
+            Flow {
+                width: parent.width
+                spacing: 4
+                Repeater {
+                    model: [["discoverMixes", qsTr("Daily mixes")], ["discoverForgotten", qsTr("Forgotten favourites")],
+                            ["discoverForgottenSongs", qsTr("Songs you used to love")], ["discoverForgottenArtists", qsTr("Artists to return to")],
+                            ["discoverDeepCuts", qsTr("Deep cuts")], ["discoverNeverPlayed", qsTr("Never played")],
+                            ["discoverOnThisDay", qsTr("On this day")]]
+                    StyledCheck {
+                        required property var modelData
+                        objectName: "feature_" + modelData[0]
+                        width: Math.max(240, implicitWidth + 12)
+                        text: modelData[1]
+                        checked: shell.features[modelData[0]] !== false
+                        onToggled: discover.setShelf(modelData[0], checked)
+                    }
+                }
+            }
+            component DiscoverChoice: Row {
+                property alias label: choiceLabel.text
+                property alias model: choiceCombo.model
+                property alias selection: choiceCombo.selection
+                property alias combo: choiceCombo
+                signal chosen(int i)
+                spacing: 12
+                Text { id: choiceLabel; textFormat: Text.PlainText; width: 220; height: 38; verticalAlignment: Text.AlignVCenter; wrapMode: Text.WordWrap; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+                StyledCombo { id: choiceCombo; width: 240; onActivated: function (i) { parent.chosen(i) }; Accessible.name: choiceLabel.text }
+            }
+            DiscoverChoice {
+                objectName: "forgottenDays"
+                label: qsTr("Forgotten after")
+                readonly property var days: [30, 90, 180, 365]
+                model: [qsTr("A month without playing"), qsTr("3 months without playing"), qsTr("6 months without playing"), qsTr("A year without playing")]
+                selection: Math.max(0, days.indexOf(discover.forgottenDays))
+                onChosen: function (i) { discover.setForgottenDays(days[i]) }
+            }
+            DiscoverChoice {
+                objectName: "mixCount"
+                label: qsTr("Daily mixes")
+                visible: shell.features.discoverMixes !== false
+                model: [1, 2, 3, 4, 5, 6].map(function (n) { return Theme.counted(qsTr("%n mix(es)", "", n), n) })
+                selection: Math.max(0, discover.mixCount - 1)
+                onChosen: function (i) { discover.setMixCount(i + 1) }
+            }
+            DiscoverChoice {
+                objectName: "mixSize"
+                label: qsTr("Songs in each mix")
+                visible: shell.features.discoverMixes !== false
+                readonly property var sizes: [25, 40, 60, 100]
+                model: sizes.map(function (n) { return Theme.counted(qsTr("%n song(s)", "", n), n) })
+                selection: Math.max(0, sizes.indexOf(discover.mixSize))
+                onChosen: function (i) { discover.setMixSize(sizes[i]) }
+            }
+            DiscoverChoice {
+                objectName: "mixFresh"
+                label: qsTr("Songs you haven't played")
+                visible: shell.features.discoverMixes !== false
+                readonly property var choices: ["none", "some", "more"]
+                model: [qsTr("None: only songs I know"), qsTr("Some (about a quarter)"), qsTr("More (about half)")]
+                selection: Math.max(0, choices.indexOf(discover.fresh))
+                onChosen: function (i) { discover.setFresh(choices[i]) }
+            }
+            Column {
+                width: parent.width
+                spacing: 6
+                Text {
+                    textFormat: Text.PlainText
+                    text: qsTr("Not interested")
+                    color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: discover.dismissed.length
+                          ? qsTr("Left out of Discover (right-click something there and choose Not interested to add to this).")
+                          : qsTr("Nothing yet: right-click an album, song or artist in Discover and choose Not interested, and it's left out from then on.")
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                }
+                Repeater {
+                    model: discover.dismissed.slice(0, 50)
+                    RowLayout {
+                        required property var modelData
+                        width: parent.width
+                        Text {
+                            textFormat: Text.PlainText
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                            text: ({ album: qsTr("Album"), song: qsTr("Song"), artist: qsTr("Artist") })[modelData.kind] + "  ·  " + (modelData.label || modelData.key)
+                            color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                        }
+                        PillButton { height: 28; text: qsTr("Let back in"); onClicked: discover.letBackIn(modelData.kind, modelData.key) }
+                    }
+                }
+                PillButton {
+                    objectName: "letAllBackIn"
+                    visible: discover.dismissed.length > 1
+                    height: 30
+                    text: qsTr("Let them all back in")
+                    onClicked: discover.letAllBackIn()
                 }
             }
         }
