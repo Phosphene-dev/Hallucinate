@@ -8,8 +8,10 @@ playback is switched off and when Hallucinate quits. While it's asked for, other
 that rate too (PipeWire converts them, as it would anyway).
 
 It's done with PipeWire's own `pw-metadata` tool, on a thread (it answers in milliseconds, but a stuck sound
-server must never hold the window). Without PipeWire or the tool (another sound system, the Flatpak, Windows,
-macOS) nothing is asked and the signal path says the output may resample."""
+server must never hold the window). On macOS the output device's own rate is switched instead (coreaudio.py);
+on Windows the output is taken in exclusive mode at the song's format (wasapi.py), so nothing is asked here.
+Without any of these (another Linux sound system, the Flatpak) nothing is asked and the signal path says the
+output may resample."""
 import logging
 import os
 import shutil
@@ -34,11 +36,29 @@ def tool():
     return shutil.which(TOOL) or ""
 
 
+def system():
+    """What switches the output's rate here: "pipewire", "coreaudio", "wasapi" (exclusive mode, see wasapi.py)
+    or "" (nothing: the system may resample)."""
+    if sys.platform == "darwin":
+        from . import coreaudio
+
+        return "coreaudio" if coreaudio.available() else ""
+    if sys.platform.startswith("win"):
+        return "wasapi"
+    return "pipewire" if tool() else ""
+
+
 class RateRequest:
-    """Asks PipeWire for the rate a song needs (and gives it back). Remembers what it asked, so asking for the same
-    rate again does nothing, and only ever puts back a rate it set itself."""
+    """Asks the system for the rate a song needs (and gives it back): PipeWire on Linux, the output device itself
+    on macOS. Remembers what it asked, so asking for the same rate again does nothing, and only ever puts back a
+    rate it set itself."""
 
     def __init__(self, run=None, which=tool):
+        if run is None and sys.platform == "darwin":
+            from .coreaudio import DeviceRate
+
+            device = DeviceRate()
+            run, which = device, (lambda: "coreaudio" if device.available() else "")
         self._run = run or self._call
         self._which = which
         self._lock = threading.Lock()

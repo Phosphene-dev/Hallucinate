@@ -16,8 +16,15 @@
       the device plays the new next one; a renderer without gapless support still moves on (after a second or two).
 - [ ] Casting with Hallucinate's sound: the device plays the FLAC stream (Chromecast, a DLNA TV that lists FLAC);
       a DLNA device that doesn't list it gets WAV and plays it.
-- [ ] Bit-perfect elsewhere (Flatpak, Windows, PulseAudio): it still plays; the signal path says the output may
-      convert the rate.
+- [ ] Bit-perfect on Windows with a USB DAC: Settings → Sound shows "Take the output by itself (exclusive mode)";
+      play a 44.1 kHz then a 96 kHz 24-bit song: the DAC's display (or its control panel) follows, the signal
+      path says Bit-perfect, and a YouTube video in a browser is silent meanwhile; pause for 10 s: the browser's
+      sound comes back; play again: Hallucinate takes the DAC again. With exclusive mode disallowed in the
+      device's Properties → Advanced, music still plays and the signal path says why it isn't bit-perfect.
+- [ ] Bit-perfect on macOS: Audio MIDI Setup shows the output's format following each song (44.1 → 96 kHz);
+      switching bit-perfect off, or quitting, puts back the rate it had.
+- [ ] Bit-perfect elsewhere (Flatpak, PulseAudio): it still plays; the signal path says the output may convert
+      the rate.
 
 ## Release testing for 1.12.0
 

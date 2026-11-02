@@ -3,6 +3,7 @@ import logging
 import math
 import os
 import random
+import sys
 import time
 import weakref
 from concurrent.futures import ThreadPoolExecutor
@@ -475,6 +476,7 @@ class Player(QObject):
 
         self._bit_perfect = str(self._settings.value("audio/bitPerfect", "false")).lower() == "true"
         self._rate_request = RateRequest()
+        self._exclusive = str(self._settings.value("audio/exclusive", "true")).lower() == "true"
         try:
             self._dsd_rate = int(self._settings.value("audio/dsdRate", dsd.DEFAULT_RATE))
         except (TypeError, ValueError):
@@ -1023,15 +1025,10 @@ class Player(QObject):
         if louder:  # (it would jump to full level mid-song: paused, so the system's volume can be set first)
             self.pause()
             self.notice.emit(translate("Player", "Paused: bit-perfect playback plays at full level. Set your system's volume, then play"))
-        for voice in self._voices:  # the taps are made again, passing through or processing
-            if voice.tap is not None:
-                voice.player.setAudioBufferOutput(None)
-                voice.tap.close()
-                voice.tap.deleteLater()
-                voice.tap = None
-                voice.tap_visual_connected = False
+        self._remake_taps()
         if not on:
             self._rate_request.release()
+            self._release_exclusive()
         self._reset_pause_fade()
         self._sync_taps()
         self._apply_speed()
@@ -1040,9 +1037,57 @@ class Player(QObject):
         self.volumeChanged.emit()
         self.signalPathChanged.emit()
 
+    def _remake_taps(self):
+        """The taps are made again (passing through or processing, exclusive or shared) by _sync_taps."""
+        for voice in self._voices:
+            if voice.tap is not None:
+                voice.player.setAudioBufferOutput(None)
+                voice.tap.close()
+                voice.tap.deleteLater()
+                voice.tap = None
+                voice.tap_visual_connected = False
+
+    @staticmethod
+    def _release_exclusive():
+        if sys.platform == "win32":
+            from . import wasapi
+
+            wasapi.release()
+
+    def _tap_exclusive(self):
+        return self._bit_perfect and self._exclusive and sys.platform == "win32"
+
+    @Property(str, constant=True)
+    def bitPerfectSystem(self):
+        """What keeps each song's rate here: "pipewire", "coreaudio", "wasapi" (exclusive mode) or ""."""
+        from .bitperfect import system
+
+        return system()
+
+    @Property(bool, notify=audioSettingsChanged)
+    def exclusiveMode(self):
+        """Bit-perfect on Windows: the output is taken by itself (exclusive mode) while there's music to play."""
+        return self._exclusive
+
+    @Slot(bool)
+    def setExclusiveMode(self, on):
+        on = bool(on)
+        if on == self._exclusive:
+            return
+        self._exclusive = on
+        self._settings.setValue("audio/exclusive", "true" if on else "false")
+        if self._bit_perfect:
+            self._remake_taps()
+            if not on:
+                self._release_exclusive()
+            self._sync_taps()
+        self.audioSettingsChanged.emit()
+        self.signalPathChanged.emit()
+
     def _on_tap_opened(self, rate):
         if self._bit_perfect:
-            self._rate_request.ask(rate)  # PipeWire runs at the song's own rate: nothing resampled on the way
+            if sys.platform != "win32":  # (Windows: exclusive mode opens the output at the song's rate itself)
+                self._rate_request.ask(rate)  # PipeWire, or the Mac's output, runs at the song's own rate
             self.signalPathChanged.emit()
 
     @Property(str, notify=eqChanged)
@@ -1302,6 +1347,14 @@ class Player(QObject):
         follows = signalpath.output_follows(rate, self._rate_mode) if track else False
         bp = self._bit_perfect
         forced = bp and rate and self._rate_request.rate == rate and not self._rate_request.error
+        tap = self._voices[self._cur].tap if self._voices else None
+        issue = ""
+        if bp and sys.platform == "win32" and tap is not None:
+            if tap.exclusive_open and tap._fmt and tap._fmt[0] == rate:
+                forced = True  # the output is the song's own, at its rate (exclusive mode)
+            elif tap.exclusive and tap.exclusive_error:
+                issue = fill(translate("Player", "Exclusive mode couldn't be had (%1), so the song goes through "
+                                                 "Windows' mixer, which converts it to its own rate."), tap.exclusive_error)
         if forced:
             follows = True
         return signalpath.describe(
@@ -1319,6 +1372,7 @@ class Player(QObject):
             rate_follows=follows,
             rate_source=("Hallucinate" if forced else "PipeWire" if follows and self._rate_mode == "auto" else ""),
             bit_perfect=bp,
+            bit_perfect_issue=issue,
             dsd_rate=dsd_rate,
             cast={"device": self._cast.name, "sent": self._cast_sent} if self._cast is not None else None,
         )
@@ -1381,6 +1435,7 @@ class Player(QObject):
         for n, voice in enumerate(self._voices):
             if self._tap_on() and voice.tap is None:
                 tap = eq.EqTap(eq.EqProcessor(), self, passthrough=self._bit_perfect)
+                tap.exclusive = self._tap_exclusive()
                 tap.failedChanged.connect(self._on_tap_failed)
                 tap.opened.connect(self._on_tap_opened)
                 self._configure_processor(tap.processor)
@@ -3123,6 +3178,7 @@ class Player(QObject):
 
     def shutdown(self):
         self._rate_request.release()  # PipeWire chooses its rate again once Hallucinate has gone
+        self._release_exclusive()
         self._host_wait += 1
         self._reap_timer.stop()
         self._fade_timer.stop()

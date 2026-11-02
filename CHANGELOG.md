@@ -8,9 +8,11 @@ All notable changes to this project are documented here. Format based on
 ### Added
 - Bit-perfect playback (Settings → Sound): every song goes to the sound output exactly as it's stored, in its own
   sample format, with the equalizer, crossfeed, ReplayGain, crossfade, fades, speed and Hallucinate's volume set
-  aside while it's on (their settings are kept). On Linux with PipeWire, Hallucinate asks PipeWire to run at each
-  song's own rate (`clock.force-rate`, given back when it's switched off or Hallucinate quits), so nothing is
-  resampled; the signal path says Bit-perfect when it is, and what's converting it when it isn't.
+  aside while it's on (their settings are kept). Each song's own rate is kept too: on Linux, PipeWire is asked to
+  run at it (`clock.force-rate`, given back when it's switched off or Hallucinate quits); on macOS the output
+  device is switched to it (and its own rate put back afterwards); on Windows the output is taken in exclusive
+  mode at the song's own format (other apps are silent meanwhile; it's given back a few seconds after pausing, and
+  it can be switched off). The signal path says Bit-perfect when it is, and what's converting it when it isn't.
 - DSD playback done properly: .dsf and .dff files (SACD rips) are converted to PCM as they play, with the
   ultrasonic noise DSD carries filtered out (flat to 30 kHz, at least 120 dB down by 44.1 kHz) and nothing else
   changed. Choose 88.2, 176.4 or 352.8 kHz in Settings → Sound; the equalizer, bit-perfect playback, ReplayGain

@@ -142,7 +142,7 @@ def _describe_cast(track, cast, rg_factor, rg_mode, eq_enabled, eq_preset, cross
 
 def describe(track, *, rg_factor=1.0, rg_mode="off", volume=1.0, speed=1.0, eq_enabled=False, eq_preset="", crossfeed="",
              crossfade=0, device_name="", device_rate=0, rate_follows=False, rate_source="", cast=None,
-             bit_perfect=False, dsd_rate=0):
+             bit_perfect=False, dsd_rate=0, bit_perfect_issue=""):
     """Stages from the file to the output, each {"name", "detail", "active"} where active means it changes the
     sound, and whether the path is untouched: nothing between file and device alters the samples (the system
     mixer may still resample when the device runs at another rate, which is reported too). rate_follows: the
@@ -257,4 +257,6 @@ def describe(track, *, rg_factor=1.0, rg_mode="off", volume=1.0, speed=1.0, eq_e
             advice.insert(0, translate("SignalPath", "Bit-perfect playback is on, but the output couldn't be switched to "
                                        "this song's rate, so it's converted on the way. On Linux with PipeWire, "
                                        "install its tools (pw-metadata) and Hallucinate asks for each song's rate."))
+    if bit_perfect_issue:
+        advice.insert(0, bit_perfect_issue)
     return {"stages": stages, "untouched": untouched, "summary": summary, "advice": advice}

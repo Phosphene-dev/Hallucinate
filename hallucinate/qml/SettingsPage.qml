@@ -1036,7 +1036,7 @@ Item {
             id: sec_sound
             objectName: "settings_sound"
             title: qsTr("Sound")
-            keywords: qsTr("equalizer eq bass treble headphones autoeq crossfeed bit-perfect bitperfect exclusive untouched resample sample rate pipewire audiophile dsd dsf dff sacd")
+            keywords: qsTr("equalizer eq bass treble headphones autoeq crossfeed bit-perfect bitperfect exclusive untouched resample sample rate pipewire audiophile dsd dsf dff sacd wasapi exclusive mode core audio")
             query: page.query
             StyledCheck {
                 objectName: "bitPerfect"
@@ -1052,10 +1052,24 @@ Item {
                 text: (player.bitPerfect
                        ? qsTr("Every song goes to your sound output exactly as it's stored, at its own bit depth. The equalizer, crossfeed, ReplayGain, crossfade, fades and speed are set aside, and Hallucinate's volume stays at 100%: use your system's or your amplifier's volume.")
                        : qsTr("Send every song to your sound output exactly as it's stored: the equalizer, crossfeed, ReplayGain, crossfade, fades, speed and Hallucinate's volume step aside while it's on (your settings for them are kept)."))
-                      + " " + (player.bitPerfectRates
+                      + " " + (player.bitPerfectSystem === "wasapi"
+                       ? (player.exclusiveMode
+                          ? qsTr("Hallucinate takes the output by itself (exclusive mode) while there's music to play, at each song's own rate and format: other apps are silent meanwhile, and get it back a few seconds after you pause.")
+                          : qsTr("Without exclusive mode, Windows' mixer converts every song to the rate set in Sound settings."))
+                       : player.bitPerfectSystem === "coreaudio" && player.bitPerfectRates
+                       ? qsTr("Your Mac's output is switched to each song's own rate, so nothing is resampled on the way (its own rate is put back afterwards).")
+                       : player.bitPerfectRates
                        ? qsTr("PipeWire is asked to run at each song's own rate, so nothing is resampled on the way.")
                        : qsTr("To keep each song's own rate too, Linux with PipeWire and its tools (pw-metadata) is needed; elsewhere the system may resample it. The signal path shows what happens."))
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            StyledCheck {
+                objectName: "exclusiveMode"
+                visible: player.bitPerfectSystem === "wasapi"
+                enabled: player.bitPerfect
+                text: qsTr("Take the output by itself (exclusive mode)")
+                checked: player.exclusiveMode
+                onToggled: player.setExclusiveMode(checked)
             }
             Flow {
                 width: parent.width

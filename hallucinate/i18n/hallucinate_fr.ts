@@ -4914,6 +4914,10 @@
         <translation>Appareil enregistré</translation>
     </message>
     <message>
+        <source>Exclusive mode couldn&apos;t be had (%1), so the song goes through Windows&apos; mixer, which converts it to its own rate.</source>
+        <translation>Le mode exclusif n’a pas pu être obtenu (%1) : le morceau passe donc par le mélangeur de Windows, qui le convertit à sa propre fréquence.</translation>
+    </message>
+    <message>
         <source>Paused: the sound device you were listening on went away</source>
         <translation>En pause&#xa0;: l’appareil audio que vous utilisiez a disparu</translation>
     </message>
@@ -7943,10 +7947,6 @@
         <translation>La lecture sans blanc est toujours active&#xa0;; avec le fondu enchaîné désactivé, les morceaux s’enchaînent directement. La vitesse de lecture et la minuterie sont dans le menu ⋯ de la barre de lecture.</translation>
     </message>
     <message>
-        <source>equalizer eq bass treble headphones autoeq crossfeed bit-perfect bitperfect exclusive untouched resample sample rate pipewire audiophile dsd dsf dff sacd</source>
-        <translation>égaliseur eq graves aigus casque autoeq crossfeed bit-perfect bitperfect exclusif intact rééchantillonnage fréquence d’échantillonnage pipewire audiophile dsd dsf dff sacd equalizer bass treble headphones untouched resample sample rate</translation>
-    </message>
-    <message>
         <source>DSD songs play as</source>
         <translation>Les morceaux DSD sont lus en</translation>
     </message>
@@ -8440,6 +8440,10 @@
         <translation>Wikipédia, puis Last.fm, puis Discogs</translation>
     </message>
     <message>
+        <source>equalizer eq bass treble headphones autoeq crossfeed bit-perfect bitperfect exclusive untouched resample sample rate pipewire audiophile dsd dsf dff sacd wasapi exclusive mode core audio</source>
+        <translation>égaliseur eq graves aigus casque autoeq crossfeed bit-perfect bitperfect exclusif intact rééchantillonnage fréquence d’échantillonnage pipewire audiophile dsd dsf dff sacd wasapi mode exclusif core audio equalizer bass treble headphones untouched resample sample rate exclusive mode</translation>
+    </message>
+    <message>
         <source>Bit-perfect playback</source>
         <translation>Lecture bit-perfect</translation>
     </message>
@@ -8452,12 +8456,28 @@
         <translation>Envoyer chaque morceau vers votre sortie audio exactement tel qu’il est stocké : l’égaliseur, le crossfeed, ReplayGain, le fondu enchaîné, les fondus, la vitesse et le volume de Hallucinate s’effacent tant que c’est activé (vos réglages sont conservés).</translation>
     </message>
     <message>
+        <source>Hallucinate takes the output by itself (exclusive mode) while there&apos;s music to play, at each song&apos;s own rate and format: other apps are silent meanwhile, and get it back a few seconds after you pause.</source>
+        <translation>Hallucinate prend la sortie pour lui seul (mode exclusif) tant qu’il y a de la musique à jouer, à la fréquence et au format propres à chaque morceau : les autres applications sont muettes pendant ce temps et la récupèrent quelques secondes après une pause.</translation>
+    </message>
+    <message>
+        <source>Without exclusive mode, Windows&apos; mixer converts every song to the rate set in Sound settings.</source>
+        <translation>Sans le mode exclusif, le mélangeur de Windows convertit chaque morceau à la fréquence réglée dans les paramètres Son.</translation>
+    </message>
+    <message>
+        <source>Your Mac&apos;s output is switched to each song&apos;s own rate, so nothing is resampled on the way (its own rate is put back afterwards).</source>
+        <translation>La sortie de votre Mac passe à la fréquence propre de chaque morceau, si bien que rien n’est rééchantillonné en chemin (sa fréquence d’origine est rétablie ensuite).</translation>
+    </message>
+    <message>
         <source>PipeWire is asked to run at each song&apos;s own rate, so nothing is resampled on the way.</source>
         <translation>PipeWire est invité à fonctionner à la fréquence propre de chaque morceau, si bien que rien n’est rééchantillonné en chemin.</translation>
     </message>
     <message>
         <source>To keep each song&apos;s own rate too, Linux with PipeWire and its tools (pw-metadata) is needed; elsewhere the system may resample it. The signal path shows what happens.</source>
         <translation>Pour conserver aussi la fréquence propre de chaque morceau, il faut Linux avec PipeWire et ses outils (pw-metadata) ; ailleurs, le système peut la rééchantillonner. Le chemin du signal montre ce qui se passe.</translation>
+    </message>
+    <message>
+        <source>Take the output by itself (exclusive mode)</source>
+        <translation>Prendre la sortie pour lui seul (mode exclusif)</translation>
     </message>
     <message>
         <source>remote phone web browser interface control pair pairing device devices network lan wifi headless tablet handoff hand over another computer</source>

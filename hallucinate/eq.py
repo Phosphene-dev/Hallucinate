@@ -297,6 +297,10 @@ _FORMATS = {
 }
 
 
+class _Later(Exception):
+    """The output can't be opened just yet (exclusive mode, still playing the song before): keep the sound."""
+
+
 class EqTap(QObject):
     """Per-voice tap: receives decoded buffers, filters them and plays them on its own QAudioSink.
 
@@ -321,6 +325,10 @@ class EqTap(QObject):
         self.dsd_rate = 0
         self._dsd = None
         self._no_float = False  # the output refused 32-bit float
+        # bit-perfect on Windows: the output taken in exclusive mode (wasapi.py), at the song's own format
+        self.exclusive = False
+        self.exclusive_open = False
+        self.exclusive_error = ""
         self.volume = 1.0
         self.failed = False
         self.device = None  # QAudioDevice; None plays on the system default
@@ -332,6 +340,8 @@ class EqTap(QObject):
         self._timer = QTimer(self)
         self._timer.setInterval(10)
         self._timer.timeout.connect(self._drain)
+        self._retry = QTimer(self, singleShot=True, interval=30, timeout=self._retry_open)
+        self._want = None
 
     def _open(self, rate, channels, sample_format=None):
         fmt = QAudioFormat()
@@ -341,6 +351,8 @@ class EqTap(QObject):
         device = self.device
         if device is None or device.isNull():
             device = QMediaDevices.defaultAudioOutput()
+        if self.exclusive and self.passthrough and self._open_exclusive(rate, channels, fmt):
+            return
         if device.isNull() or not device.isFormatSupported(fmt):
             raise RuntimeError("no usable audio output device")
         self._close()
@@ -355,7 +367,39 @@ class EqTap(QObject):
         self._timer.start()
         self.opened.emit(rate)
 
+    def _open_exclusive(self, rate, channels, fmt):
+        """The output in exclusive mode (Windows; see wasapi.py). False when it can't be had: the shared output
+        is used instead, and `exclusive_error` says why."""
+        from . import wasapi
+
+        kept = bytes(self._pending)  # (sound held while the output was busy: it's still to play)
+        self._close()
+        self._pending += kept
+        try:
+            sink = wasapi.open_writer(wasapi.device_id(self.device), rate, channels,
+                                      wasapi.sample_kind(fmt.sampleFormat()))
+        except wasapi.Busy:
+            raise _Later() from None  # (the song before, at another rate, is still playing out)
+        except RuntimeError as e:
+            self.exclusive_error = str(e)
+            self.exclusive_open = False
+            return False
+        self.exclusive_error, self.exclusive_open = "", True
+        self._sink = sink
+        sink.setVolume(self.volume)
+        self._io = sink.start()
+        self._fmt = (rate, channels, fmt.sampleFormat())
+        self.processor.configure(rate, channels)
+        if self._suspended:
+            sink.suspend()
+        else:
+            sink.resume()
+        self._timer.start()
+        self.opened.emit(rate)
+        return True
+
     def _close(self):
+        self.exclusive_open = False
         self._timer.stop()
         if self._sink is not None:
             self._sink.stop()
@@ -377,7 +421,15 @@ class EqTap(QObject):
             if self.passthrough:
                 want = (fmt.sampleRate(), fmt.channelCount(), fmt.sampleFormat())
                 if self._fmt != want or self._sink is None:
-                    self._open(*want)
+                    if self._want != want:
+                        self._pending.clear()  # (sound held for another format that never got to play)
+                    self._want = want
+                    try:
+                        self._open(*want)
+                    except _Later:
+                        self._pending += bytes(buf.constData())[:buf.byteCount()]  # kept until it can play
+                        self._retry.start()
+                        return
                 self._pending += bytes(buf.constData())[:buf.byteCount()]  # exactly as decoded
                 self._drain()
                 return
@@ -392,6 +444,19 @@ class EqTap(QObject):
             self._give_up(exc)
             return
         self._pending += out.tobytes()
+        self._drain()
+
+    def _retry_open(self):
+        if self._want is None or self._sink is not None or self.failed:
+            return
+        try:
+            self._open(*self._want)
+        except _Later:
+            self._retry.start()
+            return
+        except Exception as exc:  # noqa: BLE001
+            self._give_up(exc)
+            return
         self._drain()
 
     def _give_up(self, exc):
@@ -445,6 +510,9 @@ class EqTap(QObject):
                 self._dsd.reset()
 
     def _drain(self):
+        if self.exclusive_open and self._sink is not None and self._sink.error:
+            self._give_up(RuntimeError(self._sink.error))  # (the output went away, or was taken by another app)
+            return
         if self._io is None or not self._pending:
             return
         free = self._sink.bytesFree()
