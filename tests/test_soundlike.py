@@ -299,10 +299,10 @@ def test_radio_by_sound(qapp, db, tmp_path, settings):
     s = SoundsLike(tmp_path / "lib.db", None, None, FakeShell(), FakeAnalyser(), FakeAnalyser(), battery=lambda: False, autostart=False)
     try:
         s.setRadioPicks("sound")
-        got = Library._radio_by_sound(db, s, "sound", ["/m/Loud/Loud 0.flac"], set(), 6)
+        got = Library._radio_by_sound(db, s, "sound", ["/m/Loud/Loud 0.flac"], set(), 6, s.radio_options(6))
         # (two songs an artist at most, as radio always has: four by sound, the rest the usual way)
         assert len(got) == 6 and all("/Loud/" in t["path"] or "/Roar/" in t["path"] for t in got[:4])
-        both = Library._radio_by_sound(db, s, "both", ["/m/Loud/Loud 0.flac"], set(), 6)
+        both = Library._radio_by_sound(db, s, "both", ["/m/Loud/Loud 0.flac"], set(), 6, s.radio_options(3))
         assert len(both) <= 6 and both[0]["path"] in {t["path"] for t in got}
         shell = FakeShell()
         shell.features["soundsLike"] = False

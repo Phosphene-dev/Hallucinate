@@ -339,18 +339,18 @@ class SoundsLike(QObject):
         self._recount_soon()
 
     # --- Sounds like this -------------------------------------------------------------------------------
-    def _options(self):
-        return {"size": self.size, "order": self.order, "tempo": self.tempo, "keys": self.keys,
-                "same_artist": self.sameArtist, "per_artist": self.perArtist}
+    def options(self, **override):
+        return dict({"size": self.size, "order": self.order, "tempo": self.tempo, "keys": self.keys,
+                "same_artist": self.sameArtist, "per_artist": self.perArtist}, **override)
 
-    def pick(self, db, seeds, exclude=(), **options):
+    def pick(self, db, seeds, exclude, opts):
         """Paths that sound like `seeds` (on a worker, with its own connection), leaving out what Discover was
-        told you're not interested in."""
+        told you're not interested in. `opts` come from options(), read on the window's thread (settings aren't
+        to be read from a worker)."""
         self.index.load(db)
         left_out = dcore.dismissed(db)
         songs = {d["key"] for d in left_out if d["kind"] == "song"}
         artists = {d["key"] for d in left_out if d["kind"] == "artist"}
-        opts = dict(self._options(), **options)
         return self.index.pick(seeds, opts["size"], opts["order"], opts["tempo"], opts["keys"], opts["same_artist"],
                                opts["per_artist"], set(exclude) | songs, artists)
 
@@ -375,6 +375,7 @@ class SoundsLike(QObject):
         if "://" in path:
             self.message.emit(translate("SoundsLike", "Only songs on this computer can be matched by how they sound."))
             return
+        opts = self.options()
         queued = []
         if action == "queue" and self._player is not None:
             queued = [t.get("path", "") for t in getattr(self._player, "_queue", [])]
@@ -397,7 +398,7 @@ class SoundsLike(QObject):
                             "offset": float(row["cue_start"] or 0.0), "duration": float(row["duration"] or 0.0),
                             "mtime": row["mtime"]}))
                     return
-                self._picked.emit((action, path, title, self.pick(db, [path], queued), ""))
+                self._picked.emit((action, path, title, self.pick(db, [path], queued, opts), ""))
             except Exception:  # noqa: BLE001
                 logger.exception("Sounds like this couldn't pick songs")
                 self._picked.emit((action, path, title, None, "failed"))
@@ -466,10 +467,14 @@ class SoundsLike(QObject):
         """How radio mode picks: "together" (what's played together, tags), "sound" or "both"."""
         return self.radioPicks if self.enabled else "together"
 
-    def radio_pick(self, db, seeds, exclude, limit):
+    def radio_options(self, limit):
+        """What radio's picks by sound go by (read here, on the window's thread)."""
+        return self.options(size=limit, order="alike", per_artist=2)
+
+    def radio_pick(self, db, seeds, exclude, opts):
         """Paths for radio mode that sound like the last few songs (on the library's worker)."""
         try:
-            return self.pick(db, seeds, exclude, size=limit, order="alike", per_artist=2)
+            return self.pick(db, seeds, exclude, opts)
         except Exception:  # noqa: BLE001
             logger.exception("Radio couldn't pick by sound")
             return []

@@ -903,7 +903,6 @@ Item {
                 OptionCombo {
                     objectName: "soundsLikeWhen"
                     label: qsTr("Listen to my music")
-                    comboWidth: 280
                     values: ["idle", "always", "ask"]
                     labels: [qsTr("While nothing is playing"), qsTr("Any time (it goes after everything else)"), qsTr("Only when I ask")]
                     current: soundsLike.when
@@ -912,7 +911,6 @@ Item {
                 OptionCombo {
                     objectName: "soundsLikeOrder"
                     label: qsTr("Play them as")
-                    comboWidth: 280
                     values: ["flow", "alike"]
                     labels: [qsTr("A smooth flow, each into the next"), qsTr("The most alike first")]
                     current: soundsLike.order
@@ -921,7 +919,6 @@ Item {
                 OptionCombo {
                     objectName: "soundsLikeSize"
                     label: qsTr("Songs each time")
-                    comboWidth: 280
                     values: [25, 50, 100]
                     labels: values.map(function (n) { return Theme.counted(qsTr("%n song(s)", "", n), n) })
                     current: soundsLike.size
@@ -930,7 +927,6 @@ Item {
                 OptionCombo {
                     objectName: "soundsLikeRadio"
                     label: qsTr("Radio mode picks songs")
-                    comboWidth: 280
                     values: ["together", "sound", "both"]
                     labels: [qsTr("By what you play together, and tags"), qsTr("By how they sound"), qsTr("Both ways, taking turns")]
                     current: soundsLike.radioPicks
@@ -961,7 +957,6 @@ Item {
                     OptionCombo {
                         objectName: "soundsLikePerArtist"
                         label: qsTr("Songs by any one artist")
-                        comboWidth: 280
                         values: [1, 2, 3, 5, 0]
                         labels: [qsTr("At most 1"), qsTr("At most 2"), qsTr("At most 3"), qsTr("At most 5"), qsTr("No limit")]
                         current: soundsLike.perArtist

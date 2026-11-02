@@ -557,11 +557,12 @@ class Library(QObject):
         smart playlist, its rules decide, so it's picked by what's played together and tags then."""
         sounds = getattr(self, "_sounds", None)
         mode = sounds.radio_mode() if sounds is not None and not rules else "together"
+        opts = sounds.radio_options((limit + 1) // 2 if mode == "both" else limit) if mode != "together" else None
 
         def work(db):
             try:
                 if mode != "together":
-                    tracks = self._radio_by_sound(db, sounds, mode, seeds, exclude, limit)
+                    tracks = self._radio_by_sound(db, sounds, mode, seeds, exclude, limit, opts)
                 else:
                     tracks = decorate(radio_tracks(db, seeds, exclude, limit, rules=rules))
             except Exception:  # noqa: BLE001
@@ -572,11 +573,10 @@ class Library(QObject):
         self._quick.submit(work)
 
     @staticmethod
-    def _radio_by_sound(db, sounds, mode, seeds, exclude, limit):
+    def _radio_by_sound(db, sounds, mode, seeds, exclude, limit, opts):
         """Radio's picks by sound ("sound"), or half by sound and half the usual way, taking turns ("both").
         Songs not measured yet (or too few measured) fall back on the usual way."""
-        want = limit if mode == "sound" else (limit + 1) // 2
-        paths = sounds.radio_pick(db, seeds, exclude, want)
+        paths = sounds.radio_pick(db, seeds, exclude, opts)
         rows = {r["path"]: r for r in db._rows(
             f"SELECT * FROM tracks WHERE path IN ({','.join('?' * len(paths))})", paths)} if paths else {}
         by_sound = [rows[p] for p in paths if p in rows]
