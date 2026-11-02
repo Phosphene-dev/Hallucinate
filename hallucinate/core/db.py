@@ -87,6 +87,9 @@ CREATE TABLE IF NOT EXISTS chosen_art(album_key TEXT PRIMARY KEY, art TEXT NOT N
 CREATE TABLE IF NOT EXISTS artist_bios(s_aa TEXT PRIMARY KEY, own TEXT NOT NULL DEFAULT '',
   text TEXT NOT NULL DEFAULT '', source TEXT NOT NULL DEFAULT '', url TEXT NOT NULL DEFAULT '',
   fetched REAL NOT NULL DEFAULT 0, picked TEXT NOT NULL DEFAULT '');
+-- Discover's "Not interested": an album (album_key), song (path) or artist (folded name) left out of its shelves
+CREATE TABLE IF NOT EXISTS discover_dismissed(kind TEXT NOT NULL, key TEXT NOT NULL, label TEXT NOT NULL DEFAULT '',
+  at REAL NOT NULL, PRIMARY KEY(kind, key));
 """
 
 FTS = (
