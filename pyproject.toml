@@ -42,7 +42,7 @@ hallucinate = "hallucinate.app:main"
 musicplayer = "hallucinate.app:main"
 
 [tool.setuptools]
-packages = ["hallucinate", "hallucinate.core", "musicplayer"]
+packages = ["hallucinate", "hallucinate.core", "hallucinate.core.cast", "musicplayer"]
 
 [tool.setuptools.package-data]
 hallucinate = ["qml/*", "qml/shaders/*", "qml/HallucinateStyle/*", "assets/*", "assets/fonts/*", "themes/*.json", "web/*", "i18n/*.qm", "i18n/*.ts"]

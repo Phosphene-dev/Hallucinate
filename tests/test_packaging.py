@@ -78,3 +78,16 @@ def test_decode_check_fails_on_a_file_that_does_not_play(tmp_path):
     r = subprocess.run([sys.executable, "-m", "hallucinate", "--decode-check", str(bad)],
                        capture_output=True, text=True, timeout=120, env=env, cwd=ROOT)
     assert r.returncode == 1 and "FAIL" in r.stdout
+
+
+def test_every_package_is_listed_for_installing():
+    """pyproject lists the packages by hand: one left out installs without it, and the installed app fails to start
+    (the source tree, where the tests run, has it either way)."""
+    from pathlib import Path
+
+    tomllib = pytest.importorskip("tomllib")  # (Python 3.11+)
+    root = Path(__file__).resolve().parents[1]
+    listed = set(tomllib.loads((root / "pyproject.toml").read_text())["tool"]["setuptools"]["packages"])
+    found = {".".join(p.parent.relative_to(root).parts) for p in (root / "hallucinate").rglob("__init__.py")
+             if "__pycache__" not in p.parts}
+    assert found <= listed, sorted(found - listed)
