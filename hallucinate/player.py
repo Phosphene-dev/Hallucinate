@@ -384,6 +384,10 @@ class Player(QObject):
         self._cast_failures = 0
         self._cast_gen = 0
         self._cast_sent = "original"  # how the playing song went to the device (for the signal path)
+        self._cast_queued = None  # (index, queue entry, media) handed to the device to go straight on into
+        self._cast_next_gen = 0
+        self._cast_adopting = False
+        self._cast_next_pending = None  # (index, generation) of a next song being got ready to hand over
         self._session_file = Path(session_file) if session_file else None
         self._restore_pos = 0
         self._parked = False  # a station shown but not connected (see _park_station)
@@ -1742,6 +1746,7 @@ class Player(QObject):
         session.changed.connect(self._on_cast_changed)
         session.ended.connect(self._on_cast_ended)
         session.failed.connect(self._on_cast_failed)
+        session.advanced.connect(self._on_cast_advanced)
         if self.hasTrack and not self._parked and not self._ended:
             self._cast_load(self._index, was_playing, pos)
         self._clear_visualizer()
@@ -1758,13 +1763,14 @@ class Player(QObject):
             return
         pos, was_playing = session.position_ms(), session.playing
         for signal, slot in ((session.changed, self._on_cast_changed), (session.ended, self._on_cast_ended),
-                             (session.failed, self._on_cast_failed)):
+                             (session.failed, self._on_cast_failed), (session.advanced, self._on_cast_advanced)):
             try:
                 signal.disconnect(slot)
             except (RuntimeError, TypeError):
                 pass
-        self._cast = self._cast_media = self._cast_prepare = None
+        self._cast = self._cast_media = self._cast_prepare = self._cast_queued = None
         self._cast_gen += 1  # a song still being got ready for the device isn't wanted any more
+        self._cast_next_gen += 1
         if self.hasTrack and not self._ended:
             if self._error == CONNECTING:
                 self._set_error("")
@@ -1778,6 +1784,8 @@ class Player(QObject):
     def _cast_load(self, i, autoplay, start_ms):
         track = self._queue[i]
         session = self._cast
+        self._cast_queued = None  # (a load replaces whatever the device had queued)
+        self._cast_next_gen += 1
         self._cast_gen += 1
         gen = self._cast_gen
 
@@ -1805,11 +1813,82 @@ class Player(QObject):
         session.load(media, start_ms, autoplay)
         self.durationChanged.emit()
         self.signalPathChanged.emit()
-        if self._cast_prepare is not None:  # get the next song ready while this one plays
+        if self._cast_prepare is not None and not session.gapless:  # get the next song ready while this one plays
             nxt = self._compute_next(auto=True)
             if nxt is not None and nxt != self._index:
                 self._cast_prepare(self._queue[nxt], session)
+        self._cast_queue_next()
         return True
+
+    # --- gapless on the device: it's handed the next song, and goes straight on into it by itself ------------
+    def _cast_next_wanted(self):
+        """The queue entry the device should go on into after this one, or None (one that can't be handed over
+        ahead: a station, the same song again, the end of the queue, the sleep timer stopping after this one)."""
+        if not self.hasTrack or self._ended or self._sleep_after_track or self._sleep_album:
+            return None
+        cur = self._queue[self._index]
+        if track_kind(cur) == "station":
+            return None
+        nxt = self._compute_next(auto=True)
+        if nxt is None or nxt == self._index or track_kind(self._queue[nxt]) == "station":
+            return None
+        return nxt
+
+    def _cast_queue_next(self):
+        """Hands the device the next song (getting it ready first if it must be), or takes back one that isn't
+        next any more (the queue was changed, shuffle or repeat switched)."""
+        session = self._cast
+        if session is None or not session.gapless or self._cast_media is None:
+            return
+        nxt = self._cast_next_wanted()
+        queued = self._cast_queued
+        if queued is not None and session.queued is not queued[2]:
+            queued = self._cast_queued = None  # the device didn't take it this time: try again
+        if queued is not None and nxt == queued[0] and nxt is not None and self._queue[nxt] is queued[1]:
+            return  # already there
+        if queued is None and self._cast_next_pending == (nxt, self._cast_next_gen):
+            return  # being got ready
+        self._cast_next_gen += 1
+        gen = self._cast_next_gen
+        if queued is not None:
+            self._cast_queued = None
+            session.queue_next(None)
+        if nxt is None:
+            return
+        track = self._queue[nxt]
+
+        def hand(media):
+            if gen != self._cast_next_gen or self._cast is not session:
+                return
+            self._cast_next_pending = None
+            if media.get("error") or media.get("live") or media.get("start") or media.get("end"):
+                return  # it'll be loaded the usual way when its turn comes (and say what's wrong then)
+            self._cast_queued = (nxt, track, media)
+            session.queue_next(media)
+        self._cast_next_pending = (nxt, gen)
+        media = self._cast_media(track, session, hand)
+        if not media.get("pending"):
+            hand(media)
+
+    def _on_cast_advanced(self):
+        """The device went straight on into the song it was handed: that's the playing song now."""
+        queued, self._cast_queued = self._cast_queued, None
+        session = self._cast
+        if session is None or queued is None:
+            return
+        i, track, media = queued
+        if not (0 <= i < len(self._queue)) or self._queue[i] is not track:
+            i = next((j for j, t in enumerate(self._queue) if t is track), None)
+            if i is None:  # (gone from the queue meanwhile: the device plays on with what it has; follow the queue)
+                self._on_cast_ended()
+                return
+        self._cast_adopting = True
+        try:
+            self._load(i)
+        finally:
+            self._cast_adopting = False
+        self._cast_sent = media.get("sent") or "original"
+        self.signalPathChanged.emit()
 
     def cast_sound(self, track):
         """How this computer would sound a song (for a cast device sent Hallucinate's sound): ReplayGain, the
@@ -1846,6 +1925,8 @@ class Player(QObject):
             if self._error == CONNECTING:
                 self._set_error("")
         self._count_listening(pos, dur)
+        if session.gapless and session.state in ("PLAYING", "PAUSED", "BUFFERING"):
+            self._cast_queue_next()  # (still the right one after changes to the queue?)
         self.positionChanged.emit()
         self.stateChanged.emit()
         self.durationChanged.emit()
@@ -2555,7 +2636,11 @@ class Player(QObject):
         self._play_counted = False
         if self._cast is not None:
             self._restore_pos = 0
-            self._cast_load(i, autoplay, start_ms)
+            if self._cast_adopting:  # the device is already playing it (it went on into it by itself)
+                self._cast_next_gen += 1
+                self._cast_queue_next()
+            else:
+                self._cast_load(i, autoplay, start_ms)
             self.trackChanged.emit()
             self.stateChanged.emit()
             self.durationChanged.emit()

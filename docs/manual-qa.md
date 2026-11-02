@@ -11,6 +11,11 @@
 - [ ] DSD: play a .dsf and a .dff album (DSD64, and DSD128 if you have one) at each of the three rates in Settings →
       Sound: clean sound, gapless between tracks, seeking works; the signal path shows DSD64 → the chosen rate;
       with bit-perfect on, PipeWire follows the chosen rate (not 352.8 kHz).
+- [ ] Gapless casting: play a gapless album (a live album, or a classical one) on a Chromecast and on a DLNA
+      renderer: no gap or pause between songs, and the app follows each new song; reorder the queue mid-song and
+      the device plays the new next one; a renderer without gapless support still moves on (after a second or two).
+- [ ] Casting with Hallucinate's sound: the device plays the FLAC stream (Chromecast, a DLNA TV that lists FLAC);
+      a DLNA device that doesn't list it gets WAV and plays it.
 - [ ] Bit-perfect elsewhere (Flatpak, Windows, PulseAudio): it still plays; the signal path says the output may
       convert the rate.
 

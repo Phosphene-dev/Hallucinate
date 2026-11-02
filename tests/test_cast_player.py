@@ -26,18 +26,58 @@ def songs(tmp_path_factory):
 
 
 class Device(FakeChromecast):
-    """The fake Chromecast, plus: remembers the volume, can finish the song, and counts loads."""
+    """The fake Chromecast, plus: remembers the volume, can finish the song, counts loads, and keeps a queue
+    (QUEUE_INSERT/QUEUE_REMOVE) it can go straight on through (go_on)."""
 
     def __init__(self, fetch=True):
         self.loads = []
         self.volume = 0.5
         self.fetch = fetch
+        self.items = []  # [(item id, address)]
+        self.current = ""
+        self.inserted = []
+        self._ids = 0
         super().__init__()
+
+    def _item(self, url):
+        self._ids += 1
+        return (self._ids, url)
+
+    def media_status(self, rid=0, idle_reason=None):
+        st = {"mediaSessionId": 1, "playerState": self.state["player"], "currentTime": self.state["time"],
+              "media": {"duration": 200.0, "contentId": self.current},
+              "items": [{"itemId": i, "media": {"contentId": u}} for i, u in self.items]}
+        if idle_reason:
+            st["idleReason"] = idle_reason
+        self.send(castv2.NS_MEDIA, {"type": "MEDIA_STATUS", "requestId": rid, "status": [st]}, src="web-5")
+
+    def go_on(self):
+        """The song ends and the next in its queue starts, as a real device does it: no load from the sender."""
+        urls = [u for _i, u in self.items]
+        nxt = urls.index(self.current) + 1 if self.current in urls else len(urls)
+        if nxt >= len(urls):
+            self.finish()
+            return False
+        self.current, self.state["time"], self.state["player"] = urls[nxt], 0.0, "PLAYING"
+        self.media_status()
+        return True
 
     def handle(self, ns, dst, p):
         kind, rid = p.get("type"), p.get("requestId", 0)
+        if ns == castv2.NS_MEDIA and kind == "QUEUE_INSERT":
+            for item in p["items"]:
+                self.items.append(self._item(item["media"]["contentId"]))
+                self.inserted.append(item["media"]["contentId"])
+            self.media_status(rid)
+            return
+        if ns == castv2.NS_MEDIA and kind == "QUEUE_REMOVE":
+            self.items = [(i, u) for i, u in self.items if i not in p["itemIds"]]
+            self.media_status(rid)
+            return
         if ns == castv2.NS_MEDIA and kind == "LOAD":
             self.loads.append((p["media"]["contentId"], p["currentTime"], p["autoplay"], p["media"]["metadata"]))
+            self.current = p["media"]["contentId"]
+            self.items = [self._item(self.current)]
             if not self.fetch:
                 return  # a device that can't reach us: never fetches, never starts
         if ns == castv2.NS_RECEIVER and kind == "SET_VOLUME":
@@ -234,7 +274,9 @@ def test_a_cue_song_is_cut_out_for_the_device(setup, songs):
 class Renderer:
     """A stateful fake DLNA renderer: fetches what it's given, plays, pauses, seeks and can finish."""
 
-    def __init__(self, sink="audio/flac,audio/mpeg"):
+    def __init__(self, sink="audio/flac,audio/mpeg", gapless=True):
+        self.gapless = gapless  # takes SetNextAVTransportURI
+        self.next_uri = ""
         self.calls = []
         self.state, self.pos, self.uri, self.volume = "NO_MEDIA_PRESENT", 0.0, "", 40
         self.fetched = []
@@ -259,6 +301,15 @@ class Renderer:
                 action = self.headers["SOAPACTION"].strip('"').split("#")[1]
                 outer.calls.append(action)
                 args = dict(re.findall(r"<(\w+)>([^<]*)</\1>", body))
+                if action == "SetNextAVTransportURI" and not outer.gapless:
+                    fault = ('<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><s:Fault>'
+                             '<detail><UPnPError><errorCode>401</errorCode></UPnPError></detail>'
+                             '</s:Fault></s:Body></s:Envelope>').encode()
+                    self.send_response(500)
+                    self.send_header("Content-Length", str(len(fault)))
+                    self.end_headers()
+                    self.wfile.write(fault)
+                    return
                 out = outer.act(action, args)
                 resp = ('<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body>'
                         f'<u:{action}Response xmlns:u="x">{out}</u:{action}Response></s:Body></s:Envelope>').encode()
@@ -275,6 +326,9 @@ class Renderer:
         import html
         if action == "SetAVTransportURI":
             self.uri, self.state, self.pos = html.unescape(args["CurrentURI"]), "STOPPED", 0.0
+            self.next_uri = ""
+        elif action == "SetNextAVTransportURI":
+            self.next_uri = html.unescape(args["NextURI"])
         elif action == "Play":
             parts = self.uri.split("/", 3)
             host, port = parts[2].rsplit(":", 1)
@@ -298,10 +352,20 @@ class Renderer:
         elif action == "GetTransportInfo":
             return f"<CurrentTransportState>{self.state}</CurrentTransportState>"
         elif action == "GetPositionInfo":
-            return f"<RelTime>0:00:{self.pos:06.3f}</RelTime><TrackDuration>0:00:03</TrackDuration>"
+            return (f"<RelTime>0:00:{self.pos:06.3f}</RelTime><TrackDuration>0:00:03</TrackDuration>"
+                    f"<TrackURI>{html.escape(self.uri)}</TrackURI>")
         elif action == "GetProtocolInfo":
             return "<Sink>" + ",".join(f"http-get:*:{t}:*" for t in self.sink.split(",")) + "</Sink>"
         return ""
+
+    def go_on(self):
+        """The song ends and, given a next one, the TV goes straight into it (fetching it) by itself."""
+        if not self.next_uri:
+            self.state = "STOPPED"
+            return False
+        self.uri, self.next_uri, self.pos = self.next_uri, "", 0.0
+        self.act("Play", {})
+        return True
 
     def close(self):
         self.server.shutdown()
@@ -380,3 +444,73 @@ def test_converted_songs_go_as_flac_only_where_the_device_says_it_plays_it(setup
     assert wait_for(lambda: dev.got, timeout=30)
     ctype, head = dev.got[0]
     assert ctype == f"audio/{kind}" and head == (b"fLaC" if kind == "flac" else b"RIFF")
+
+
+# --- gapless on the device ----------------------------------------------------------------------------------
+def test_a_chromecast_goes_straight_on_through_the_queue(setup, songs):
+    player, casting, dev = setup()
+    player.playList(songs, 0)
+    connect(casting)
+    assert wait_for(lambda: len(dev.loads) == 1 and dev.inserted, timeout=15)  # the next song handed over too
+    assert dev.inserted[0].split("/")[-1] != dev.loads[0][0].split("/")[-1]
+    assert dev.go_on()  # the device goes into it by itself
+    assert wait_for(lambda: player.currentIndex == 1, timeout=10)
+    assert len(dev.loads) == 1 and player.current["title"] == "T1"  # followed, not loaded again
+    assert wait_for(lambda: len(dev.inserted) == 2, timeout=10)  # and the one after that handed over
+    assert dev.go_on()
+    assert wait_for(lambda: player.currentIndex == 2, timeout=10)
+    assert len(dev.loads) == 1
+    assert not dev.go_on()  # the end of the queue: it finishes
+    assert wait_for(lambda: not player.playing, timeout=10)
+
+
+def test_the_handed_over_song_follows_changes_to_the_queue(setup, songs):
+    player, casting, dev = setup()
+    player.playList(songs, 0)
+    connect(casting)
+    assert wait_for(lambda: len(dev.inserted) == 1, timeout=15)
+    first = dev.inserted[0]
+    player.moveItem(2, 1)  # the third song is next now
+    assert wait_for(lambda: len(dev.inserted) == 2, timeout=10)
+    assert first not in [u for _i, u in dev.items]  # the old one taken back
+    assert dev.go_on()
+    assert wait_for(lambda: player.currentIndex == 1 and player.current["title"] == "T2", timeout=10)
+    assert len(dev.loads) == 1
+
+
+def test_nothing_is_handed_over_when_the_sleep_timer_stops_after_this_song(setup, songs):
+    player, casting, dev = setup()
+    player.playList(songs, 0)
+    connect(casting)
+    assert wait_for(lambda: dev.inserted, timeout=15)
+    player.setSleepAfterTrack(True)
+    assert wait_for(lambda: not [u for _i, u in dev.items if u != dev.current], timeout=10)  # taken back
+    player.setSleepAfterTrack(False)
+
+
+def test_a_dlna_renderer_goes_straight_on_too(setup, songs):
+    player, casting, dev = setup("upnp")
+    player.playList(songs, 0)
+    connect(casting)
+    assert wait_for(lambda: dev.state == "PLAYING" and dev.next_uri, timeout=15)
+    assert dev.go_on()
+    assert wait_for(lambda: player.currentIndex == 1, timeout=10)
+    assert dev.calls.count("SetAVTransportURI") == 1  # followed, not loaded again
+    assert wait_for(lambda: dev.next_uri, timeout=10)  # the one after handed over
+
+
+def test_a_renderer_without_it_moves_on_as_before(setup, songs):
+    import time
+
+    player, casting, dev = setup("upnp", gapless=False)
+    player.playList(songs, 0)
+    connect(casting)
+    assert wait_for(lambda: dev.state == "PLAYING" and "SetNextAVTransportURI" in dev.calls, timeout=15)
+    assert wait_for(lambda: not player._cast.gapless)
+    dev.pos = 2.9
+    assert wait_for(lambda: player._cast._last_pos >= 2.8)
+    dev.state = "STOPPED"
+    started = time.monotonic()
+    assert wait_for(lambda: player.currentIndex == 1, timeout=10)
+    assert time.monotonic() - started < 3  # (no waiting for a next song it was never going to play)
+    assert wait_for(lambda: dev.calls.count("SetAVTransportURI") == 2)

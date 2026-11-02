@@ -10,6 +10,7 @@ The protocols and the media server are in core/cast; this side runs their blocki
 per session (so commands reach a device in the order they were given) and brings results to the window's
 thread through queued signals."""
 import hashlib
+import html
 import logging
 import os
 import shutil
@@ -38,7 +39,9 @@ CHROMECAST_TYPES = {"audio/mpeg", "audio/flac", "audio/mp4", "audio/aac", "audio
 CHROMECAST_MAX_RATE = 96000
 UPNP_ASSUMED = {"audio/mpeg", "audio/flac", "audio/wav"}  # when a device won't say what it plays
 UNPLAYABLE_CODECS = {"alac", "ape", "wavpack", "dsd", "dsf", "dff", "wma", "mpc", "tta", "tak"}
-RENDER_MAX_RATE = 48000  # what every Chromecast and TV takes as WAV
+RENDER_MAX_RATE = 48000
+FINISH_GRACE_MS = 4000
+QUEUE_WAIT_S = 3.0  # how long handing over the next song waits for the device to have the playing one  # a song that ended with the next handed over: how long to wait for the device to go on  # what every Chromecast and TV takes as WAV
 KEEP_RENDERS = 4  # prepared songs kept while casting (the playing one, the next, a couple just played)
 
 FIREWALL_HINT = QT_TRANSLATE_NOOP(
@@ -55,10 +58,16 @@ class CastSession(QObject):
 
     Signals arrive on the window's thread. `ended` is a song that finished by itself; `failed(message, skippable)`
     a song the device couldn't play (skippable: worth trying the next one; not when every song would fail the
-    same way); `lost(message)` the device going away (the session is over)."""
+    same way); `lost(message)` the device going away (the session is over); `advanced` the device going straight
+    on into the song handed to it with queue_next (gapless), by itself.
 
+    `gapless`: whether the device can be handed the next song ahead of time (it may turn out it can't: then it's
+    False from then on, and songs move on as they always did, one load at a time)."""
+
+    gapless = False
     changed = Signal()
     ended = Signal()
+    advanced = Signal()
     failed = Signal(str, bool)
     lost = Signal(str)
     _report = Signal(object)  # from worker threads: a callable to run here
@@ -81,6 +90,10 @@ class CastSession(QObject):
         self._window = (0.0, 0.0)  # a CUE song's place in its file (start, end; 0 = to the end)
         self.closed = False
         self._poll = QTimer(self, interval=POLL_MS, timeout=self._tick)
+        self._next = None  # the media handed to the device to go on into (queue_next)
+        # a song "finished" while the next one was handed over: wait a moment for the device to say it went on
+        self._finish_wait = QTimer(self, singleShot=True, interval=FINISH_GRACE_MS, timeout=self._finished_for_good)
+        self._finish_gen = -1
 
     # --- running things -------------------------------------------------------------------------------------
     def _run_here(self, fn):
@@ -141,6 +154,8 @@ class CastSession(QObject):
     def load(self, media, start_ms=0, autoplay=True):
         """Plays `media` (see Casting.media_for) from `start_ms` into the song."""
         self._gen += 1
+        self._next = None  # (a load replaces what the device had queued)
+        self._finish_wait.stop()
         self._window = (media.get("start", 0.0), media.get("end", 0.0))
         self._link = media["link"]
         self._loaded_at = time.monotonic()
@@ -148,6 +163,52 @@ class CastSession(QObject):
         self._set("LOADING" if autoplay else "PAUSED", self._window[0] + _seconds(start_ms))
         self._do_load(media, self._window[0] + _seconds(start_ms), autoplay, self._gen)
         self._poll.start()
+
+    def queue_next(self, media):
+        """Hands the device the song to go straight on into when this one ends (None takes it back). A whole
+        file (no start or end of its own), as media_for gives it."""
+        if not self.gapless or self.closed or media is self._next:
+            return
+        old, self._next = self._next, media
+        self._submit(lambda: self._do_queue_next(media, old), error="")
+
+    @property
+    def queued(self):
+        """The media handed to the device to go on into (None: nothing, or it didn't take)."""
+        return self._next
+
+    def _not_queued(self, media):
+        """Handing `media` over didn't work this time (the device wasn't ready): it's tried again later."""
+        if self._next is media:
+            self._next = None
+
+    def _no_gapless(self):
+        """The device turned out not to take a next song: songs move on one load at a time."""
+        self.gapless = False
+        self._next = None
+
+    def _advance(self, gen):
+        """The device went on into the song it was handed (on the window's thread)."""
+        if gen != self._gen or self._next is None or self.closed:
+            return
+        media, self._next = self._next, None
+        self._finish_wait.stop()
+        self._gen += 1
+        self._window = (0.0, 0.0)
+        self._link = media["link"]
+        self._loaded_at = time.monotonic()
+        self.duration = media.get("file_duration") or 0.0
+        self._adopt(self._gen)
+        self.state, self._pos, self._at = "PLAYING", 0.0, time.monotonic()
+        self.advanced.emit()  # (before `changed`: the player takes the song on first, then hears how it's doing)
+        self.changed.emit()
+
+    def _finished_for_good(self):
+        if self._finish_gen == self._gen and not self.closed:
+            self._next = None
+            self._gen += 1
+            self._set("IDLE")
+            self.ended.emit()
 
     def preparing(self, start_ms=0, autoplay=True):
         """The next song is being got ready (see Casting.media_for): show it as starting, send nothing yet."""
@@ -229,6 +290,11 @@ class CastSession(QObject):
                 self._set("IDLE")
                 self.failed.emit(*self._not_started())
                 return
+            if finished and self._next is not None:
+                if not self._finish_wait.isActive():  # it may be going on into the next song by itself
+                    self._finish_gen = self._gen
+                    self._finish_wait.start()
+                return
             if finished:
                 self._gen += 1
                 self._set("IDLE")
@@ -258,6 +324,12 @@ class CastSession(QObject):
 
     def _do_load(self, media, position, autoplay, gen):
         raise NotImplementedError
+
+    def _do_queue_next(self, media, old):
+        pass
+
+    def _adopt(self, gen):
+        """The device went on into the next song by itself: its reports belong to load `gen` now."""
 
     def _do_play(self):
         raise NotImplementedError
@@ -300,6 +372,7 @@ class CastSession(QObject):
 
 class ChromecastSession(CastSession):
     kind = "chromecast"
+    gapless = True  # the next song goes in the device's own queue (QUEUE_INSERT)
 
     def __init__(self, device, server, parent=None, connect=castv2.tls_connect):
         super().__init__(device, server, parent)
@@ -308,6 +381,8 @@ class ChromecastSession(CastSession):
                                          on_closed=self._gone, connect=connect)
         self._media_gen = 0
         self._seen_session = None
+        self._items = {}  # the device's queue, {item id: address}
+        self._next_url = ""
 
     def connect_device(self):
         """Connects and opens the device's player (blocking: call from a worker)."""
@@ -326,6 +401,12 @@ class ChromecastSession(CastSession):
         gen = self._media_gen
         if st["session"] is not None:
             self._seen_session = st["session"]
+        if st.get("items") is not None:
+            self._items = st["items"]
+        if self._next_url and st.get("content") == self._next_url:
+            self._next_url = ""  # it went on into the song it was handed
+            self._later(lambda: self._advance(gen))
+            return
         state = st["state"]
         if state == "IDLE":
             reason = st["idle_reason"]
@@ -342,6 +423,32 @@ class ChromecastSession(CastSession):
                               image=media.get("image", ""), duration=media.get("file_duration"),
                               position=position, live=media.get("live", False), autoplay=autoplay)
         self._submit(job)
+
+    def _do_queue_next(self, media, old):
+        if old is not None:  # taken back: out of the device's queue (once it has said it's there)
+            waited = 0.0
+            while not any(url == old["url"] for url in self._items.values()) and waited < 2.0 and not self.closed:
+                time.sleep(0.05)
+                waited += 0.05
+            self._client.queue_remove([i for i, url in self._items.items() if url == old["url"]])
+        self._next_url = ""
+        if media is None:
+            return
+        waited = 0.0
+        while self._client._media_session is None and waited < QUEUE_WAIT_S and not self.closed:
+            time.sleep(0.05)  # (on the worker: the device is still answering the load)
+            waited += 0.05
+        if self._client._media_session is None:
+            self._later(lambda: self._not_queued(media))
+        elif self._client.queue_next(media["url"], media["ctype"], title=media.get("title", ""),
+                                   artist=media.get("artist", ""), album=media.get("album", ""),
+                                   image=media.get("image", ""), duration=media.get("file_duration")):
+            self._next_url = media["url"]
+        else:
+            self._later(lambda: self._not_queued(media))
+
+    def _adopt(self, gen):
+        self._media_gen = gen
 
     def _do_play(self):
         self._client.play()
@@ -383,6 +490,7 @@ class ChromecastSession(CastSession):
 
 class UpnpSession(CastSession):
     kind = "upnp"
+    gapless = True  # SetNextAVTransportURI, where the device has it (many do; it says when it doesn't)
 
     def __init__(self, device, server, parent=None, request=upnp.http_request):
         super().__init__(device, server, parent)
@@ -392,6 +500,7 @@ class UpnpSession(CastSession):
         self._last_pos = 0.0
         self._last_seen = time.monotonic()
         self._we_stopped = False
+        self._next_url = ""
 
     def connect_device(self):
         self._formats = self._renderer.formats()
@@ -403,6 +512,7 @@ class UpnpSession(CastSession):
             self._last_pos = 0.0
             self._last_seen = time.monotonic()
             self._we_stopped = True  # (load stops what was playing first)
+            self._next_url = ""
             self._renderer.load(media["url"], media["ctype"], title=media.get("title", ""),
                                 artist=media.get("artist", ""), album=media.get("album", ""),
                                 image=media.get("image", ""), duration=media.get("file_duration"))
@@ -415,6 +525,19 @@ class UpnpSession(CastSession):
                 except upnp.UpnpError:
                     pass  # some devices only seek once playing; the next poll shows where it is
         self._submit(job)
+
+    def _do_queue_next(self, media, old):
+        self._next_url = ""
+        if media is None:
+            if old is not None:
+                self._renderer.set_next("", "")  # (taken back; a device that won't simply plays it: we follow)
+            return
+        if self._renderer.set_next(media["url"], media["ctype"], title=media.get("title", ""),
+                                   artist=media.get("artist", ""), album=media.get("album", ""),
+                                   image=media.get("image", ""), duration=media.get("file_duration")):
+            self._next_url = media["url"]
+        else:
+            self._later(self._no_gapless)
 
     def _do_play(self):
         self._renderer.play()
@@ -436,6 +559,12 @@ class UpnpSession(CastSession):
         def job():
             st = self._renderer.status()
             state, pos, dur = st["state"], st["position"], st["duration"]
+            if self._next_url and html.unescape(st.get("uri") or "") == self._next_url:
+                self._next_url = ""  # it went on into the song it was handed
+                self._was_playing = state == "PLAYING"
+                self._last_pos, self._last_seen = 0.0, time.monotonic()
+                self._later(lambda: self._advance(gen))
+                return
             if state == "PLAYING":
                 self._was_playing = True
                 if pos is not None:

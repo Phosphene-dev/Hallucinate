@@ -96,7 +96,12 @@ def test_cast_messages_round_trip():
 def test_statuses_are_checked():
     assert castv2.media_status({"status": [{"mediaSessionId": True, "playerState": "EXPLODE",
                                             "currentTime": -5, "media": {"duration": "long"}}]}) == {
-        "session": None, "state": "", "idle_reason": "", "position": None, "duration": None}
+        "session": None, "state": "", "idle_reason": "", "position": None, "duration": None, "content": "",
+        "items": None}
+    st = castv2.media_status({"status": [{"playerState": "PLAYING", "media": {"contentId": "http://a/1"},
+                                          "items": [{"itemId": 3, "media": {"contentId": "http://a/2"}},
+                                                    {"itemId": True}, "junk"]}]})
+    assert st["content"] == "http://a/1" and st["items"] == {3: "http://a/2"}
     assert castv2.media_status({"status": "nope"}) is None
     assert castv2.receiver_status({"status": {"volume": {"level": 7}}})["volume"] is None
 

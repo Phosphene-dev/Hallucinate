@@ -15,6 +15,10 @@ All notable changes to this project are documented here. Format based on
   ultrasonic noise DSD carries filtered out (flat to 30 kHz, at least 120 dB down by 44.1 kHz) and nothing else
   changed. Choose 88.2, 176.4 or 352.8 kHz in Settings → Sound; the equalizer, bit-perfect playback, ReplayGain
   measuring, waveforms and casting all work from the converted sound, and the signal path shows the conversion.
+- Gapless playback on cast devices: Chromecasts, and DLNA/UPnP renderers that support it, are handed the next
+  song while one plays and go straight into it by themselves, so albums play without a gap or a pause between
+  songs. It follows changes to the queue, shuffle and repeat, and the sleep timer; a renderer that can't do it
+  moves on one song at a time as before.
 
 ### Changed
 - Headphone correction applies an AutoEQ parametric profile exactly: its own filters (peaks and shelves), with
@@ -22,6 +26,9 @@ All notable changes to this project are documented here. Format based on
   The Equalizer lists them, and each can be switched off to hear what it does. The volume is lowered by just what
   the correction needs, so it can't clip. GraphicEQ profiles stay curves; profiles chosen before carry on as they
   were until chosen again.
+- Casting with Hallucinate's sound (and songs a device can't play as they are) sends 24-bit FLAC to devices that
+  play FLAC: lossless as the WAV it replaces, at a fraction of the size, and nothing cut down to 16 bits. Devices
+  that don't say they play FLAC still get WAV.
 
 ### Fixed
 - .dff files were recorded as "DFF" rather than DSD (their bit depth and lossless badge were missing).
