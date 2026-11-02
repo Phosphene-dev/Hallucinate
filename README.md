@@ -19,7 +19,7 @@
 <h3 align="center">
   <a href="https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-windows-x64-setup.exe">⬇ Windows</a> &nbsp;·&nbsp;
   <a href="https://github.com/Phosphene-dev/Hallucinate/releases/latest/download/Hallucinate-x86_64.AppImage">⬇ Linux (AppImage)</a> &nbsp;·&nbsp;
-  <a href="https://github.com/Phosphene-dev/Hallucinate/releases/download/v1.11.0/Hallucinate-macos-arm64.zip">⬇ macOS (Apple silicon)</a>
+  <a href="https://github.com/Phosphene-dev/Hallucinate/releases/download/v1.12.0/Hallucinate-macos-arm64.zip">⬇ macOS (Apple silicon)</a>
 </h3>
 <p align="center">
   <a href="https://phosphene-dev.github.io/Hallucinate/"><b>Website</b></a> · Flatpak, Arch (AUR) and pip: see <a href="#install">Install</a> · <a href="https://github.com/Phosphene-dev/Hallucinate/releases">all releases</a> · <a href="CHANGELOG.md">what's new</a>
@@ -169,6 +169,8 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - Album pages with liner notes (genre, format and sample rate, discs, size, date added, your plays with first and last listen, liked songs) and tracks split by disc. The Albums page also has a colour wall (covers ordered by measured colour, cached) and a timeline by decade and year.
 - Now Playing (F): full-window view with the visualizer as backdrop, a large cover or a spinning record in its sleeve, a large waveform seek bar, and controls that fade when the pointer rests.
 - Visualizers drawn with GPU shaders and tinted by the cover: Liquid, Aurora, Nebula, Halo and Waves (bars without hardware graphics), driven by the spectrum, smoothed band energies and a beat detector.
+- Hand what's playing over to another computer running Hallucinate: it carries on from the same place, playing the songs it has from its own library and streaming the rest. Computers pair once with a code.
+- The phone remote can play the music itself (Play on → This phone), through the phone's speaker or headphones, with its lock screen controls; the computer keeps the queue and play counts.
 - Casting to Chromecasts, Google/Nest speakers and DLNA/UPnP renderers (TVs, receivers, speakers, Kodi), found on your network: the original files untouched, or Hallucinate's sound (ReplayGain, equalizer, headphone correction, crossfeed) as lossless WAV. Formats a device can't play and CUE sheet songs are converted for it; music server songs are relayed so the device never sees your sign-in. Your queue, play counts and scrobbling stay here; the app, media keys, Ctrl+K and the phone remote control the device. Settings → Casting has the port and firewall help.
 - Signal path readout: source format, ReplayGain, equalizer, speed, volume, crossfade and output device with its rate, marking which stages change the sound and when the system resamples.
 - Library health: missing folders, untagged songs, split albums, missing covers, track numbers, years and genres, probable duplicates and low-bitrate files, each with a fix.
@@ -276,7 +278,7 @@ directories. To build it yourself, and how the repository is published:
 
 ### macOS
 Major releases include a self-contained `.app` zip for Apple silicon (point releases bring the AppImage,
-Flatpak and Windows builds only). Download the [macOS zip](https://github.com/Phosphene-dev/Hallucinate/releases/download/v1.11.0/Hallucinate-macos-arm64.zip),
+Flatpak and Windows builds only). Download the [macOS zip](https://github.com/Phosphene-dev/Hallucinate/releases/download/v1.12.0/Hallucinate-macos-arm64.zip),
 unzip it, and move `Hallucinate.app` to Applications. The build isn't signed or
 notarized by Apple, so the first launch is blocked ("Apple could not verify…"). Open it once anyway in
 **System Settings → Privacy & Security → Open Anyway**, or from a terminal:

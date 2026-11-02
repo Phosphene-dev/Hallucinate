@@ -1,5 +1,20 @@
 # Manual QA checklist
 
+## Release testing for 1.12.0
+
+- [ ] The phone as the player (Android Chrome, and an iPhone): Play on → This phone plays the song there, from where
+      it was; the computer goes quiet. Pause, seek, next and volume from the computer and from the phone's remote
+      work; a song ending moves to the next; the lock screen shows the song and its buttons work.
+- [ ] With the phone's screen locked for a few songs: does it carry on to the next song? (iPhones may hold the page;
+      note what happens.)
+- [ ] This computer (on the phone or the desktop menu) brings the music back at the phone's place; closing the
+      remote's page on the phone does too.
+- [ ] Handoff, with two computers (Remote & web on, network allowed, on both): each shows the other under Hand
+      over to another computer; pair with the code; hand over a playing album: it carries on there from the same
+      place and this one pauses. A song only this computer has plays there too, streamed from here.
+- [ ] Handoff with a typed address (on a network that blocks broadcasts), a wrong code (says so), Forget in
+      Settings → Remote & web (needs pairing again), and with the firewall on (firewalld: the remote's port).
+
 ## Release testing for 1.11.0
 
 Casting needs real devices: as many of these as you have.

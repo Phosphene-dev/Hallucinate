@@ -1968,8 +1968,9 @@ class Player(QObject):
 
     # --- queue -------------------------------------------------------------
     @Slot("QVariantList", int)
-    def playList(self, tracks, index=0, radio_rules=None):
-        """Replace the queue with `tracks` and start playing at `index`.
+    def playList(self, tracks, index=0, radio_rules=None, start_ms=0, autoplay=True):
+        """Replace the queue with `tracks` and start playing at `index` (`start_ms` into it; paused unless
+        `autoplay`, as a queue handed over from another computer that was paused there).
 
         `radio_rules` (a smart playlist rule set) keeps radio picks within the playlist's rules."""
         self._radio_rules = radio_rules
@@ -1982,7 +1983,7 @@ class Player(QObject):
         self._standby.clear()
         self._sync_queue()
         if self._queue:
-            self._load(min(max(index, 0), len(self._queue) - 1), record=False)
+            self._load(min(max(index, 0), len(self._queue) - 1), record=False, start_ms=start_ms, autoplay=autoplay)
         else:
             self._reset_empty()
 

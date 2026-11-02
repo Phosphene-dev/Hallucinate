@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.12.0" date="2026-11-02">
+      <description>
+        <p>Your phone can play the music itself: in the phone remote, Play on, then This phone, with its lock screen controls; the computer keeps the queue and play counts.</p>
+        <p>Hand what's playing over to another computer running Hallucinate: it carries on from the same place, playing the songs it has from its own library and streaming the rest. Computers pair once with a code.</p>
+      </description>
+    </release>
     <release version="1.11.0" date="2026-11-01">
       <description>
         <p>Casting: play your music on a Chromecast, a Google or Nest speaker, or a TV, receiver or speaker that takes DLNA/UPnP, found on your network. Your queue, play counts and scrobbling stay here, and Hallucinate's controls, media keys and the phone remote control the device. Send the original files untouched, or Hallucinate's sound with your equalizer and ReplayGain.</p>

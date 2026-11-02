@@ -284,6 +284,14 @@ class CastSession(QObject):
         """Whether the device plays this file type (and this track's codec and rate) as it is."""
         raise NotImplementedError
 
+    def share(self, **what):
+        """A link to something for this device only (see mediaserver.Links.share)."""
+        return self._server.share(self.device["host"], **what)
+
+    def url(self, link):
+        """The address the device fetches `link` from."""
+        return self._server.url(self.device["host"], link)
+
 
 class ChromecastSession(CastSession):
     kind = "chromecast"
@@ -450,6 +458,88 @@ class UpnpSession(CastSession):
         return ctype in (self._formats or UPNP_ASSUMED)
 
 
+PHONE_FORMATS = {"audio/mpeg", "audio/flac", "audio/mp4", "audio/aac", "audio/ogg", "audio/wav", "audio/webm"}
+
+
+class PhoneSession(CastSession):
+    """The phone remote playing the music itself, through the phone's speaker or headphones.
+
+    Nothing to connect to: the phone's page already has its live updates open. What it should do goes out in the
+    remote's state ("phone": see `command`), and the page reports back what it's doing (Casting.phone_report).
+    Songs come from the web remote's own server, under links only that paired device can use."""
+
+    kind = "phone"
+
+    def __init__(self, device_id, name, session_id, formats, links, notify, parent=None):
+        super().__init__({"id": "phone:" + device_id, "name": name, "model": "", "kind": "phone", "host": "",
+                          "device_id": device_id}, None, parent)
+        self.device_id, self.session_id = device_id, session_id
+        self._links, self._notify = links, notify
+        self._formats = {f for f in formats if f in PHONE_FORMATS} or {"audio/mpeg"}
+        self._seeks = 0
+        self.command = {"session": session_id, "gen": 0, "src": "", "start": 0.0, "playing": False,
+                        "seek": {"n": 0, "to": 0.0}, "volume": None, "title": "", "artist": "", "album": "",
+                        "image": "", "live": False}
+        self.volume = 1.0
+
+    def connect_device(self):
+        pass
+
+    def share(self, **what):
+        return self._links.share(self.device_id, **what)
+
+    def url(self, link):
+        return link  # (on the remote's own server: the page asks for it as it is)
+
+    def plays(self, ctype, track):
+        codec = (track.get("codec") or "").lower()
+        return ctype in self._formats and codec not in UNPLAYABLE_CODECS
+
+    def _send(self, **changes):
+        self.command = dict(self.command, **changes)
+        self._later(self._notify)
+
+    def _do_load(self, media, position, autoplay, gen):
+        self._send(gen=gen, src=media["url"], start=float(position), playing=bool(autoplay),
+                   title=media.get("title", ""), artist=media.get("artist", ""), album=media.get("album", ""),
+                   image=media.get("image", ""), live=bool(media.get("live")))
+
+    def _do_play(self):
+        self._send(playing=True)
+
+    def _do_pause(self):
+        self._send(playing=False)
+
+    def _do_seek(self, seconds):
+        self._seeks += 1
+        self._send(seek={"n": self._seeks, "to": float(seconds)})
+
+    def _do_volume(self, level):
+        self._send(volume=float(level))
+
+    def _do_stop(self):
+        self._send(playing=False, src="")
+
+    def _do_close(self, stop_device):
+        self._send(src="", playing=False, stopped=True)
+
+    def close(self, stop_device=True):
+        super().close(stop_device)
+        self._notify = lambda: None  # (it reaches back into Casting: let go, so neither keeps the other alive)
+
+    def report(self, gen, state, position, duration):
+        """What the phone says it's doing (on the window's thread)."""
+        if state == "ended":
+            self._status(gen, "IDLE", finished=True)
+        elif state == "error":
+            self._status(gen, "IDLE", error=True)
+        elif state in ("playing", "paused", "buffering"):
+            self._status(gen, state.upper(), position, duration)
+
+    def _not_started(self):
+        return fill(translate("Casting", "%1 couldn't play this song."), self.name), True
+
+
 class Casting(QObject):
     """Finding devices, connecting and handing the player a session. Settings live under "cast/"."""
 
@@ -479,6 +569,8 @@ class Casting(QObject):
         self._connected.connect(self._on_connected, Qt.ConnectionType.QueuedConnection)
         self.session_factories = {"chromecast": ChromecastSession, "upnp": UpnpSession}  # (tests swap these)
         self.discover = _discover
+        self.phone_links = mediaserver.Links()  # songs for a phone playing them, served by the web remote
+        self.notify_remote = lambda: None  # tells the web remote its state changed (set by the app)
         self._analyser = None  # the decoding helper that prepares songs (made when first needed)
         self._render_dir = None
         self._renders = {}  # key -> {"file", "seconds"} (done) or {"waiting": [callbacks]} (in progress)
@@ -515,7 +607,7 @@ class Casting(QObject):
     # --- devices --------------------------------------------------------------------------------------------
     @Property("QVariantList", notify=devicesChanged)
     def devices(self):
-        return [{"id": d["id"], "name": d["name"], "model": d.get("model", ""), "kind": d["kind"],
+        return [{"id": d["id"], "name": d["name"], "model": d.get("model", ""), "kind": d.get("kind", ""),
                  "active": bool(self._session and self._session.device["id"] == d["id"])} for d in self._devices]
 
     @Property(bool, notify=devicesChanged)
@@ -545,7 +637,7 @@ class Casting(QObject):
 
     def _on_found(self, found):
         self._searching = False
-        current = self._session.device if self._session else None
+        current = self._session.device if self._session and self._session.kind != "phone" else None
         if current and all(d["id"] != current["id"] for d in found):
             found = [current] + list(found)  # still connected, even if it didn't answer this time
         self._devices = sorted(found, key=lambda d: d["name"].casefold())
@@ -624,6 +716,9 @@ class Casting(QObject):
             self.changed.emit()
             self.notice.emit(self._error)
             return
+        self._on_connected_session(session)
+
+    def _on_connected_session(self, session):
         self._session = session
         session.setParent(self)
         session.lost.connect(self._on_lost)
@@ -649,6 +744,7 @@ class Casting(QObject):
             self._player.detachCast(resume_here)
         session.close(stop_device=True)
         self._server.stop()
+        self.phone_links.clear()
         self._clear_renders()
         self.changed.emit()
         self.devicesChanged.emit()
@@ -671,6 +767,33 @@ class Casting(QObject):
             self._error = message
             self.changed.emit()
 
+    # --- the phone remote as the player ---------------------------------------------------------------------
+    def phone_start(self, device_id, name, session_id, formats):
+        """A paired phone asked to play the music itself (the web remote calls this on the window's thread)."""
+        if self._session is not None:
+            self.stopCasting(resume_here=False)
+        self._connecting = ""
+        session = PhoneSession(device_id, name, session_id, formats, self.phone_links,
+                               lambda: self.notify_remote())
+        self._on_connected_session(session)
+        return {"ok": True}
+
+    def phone_report(self, device_id, session_id, gen, state, position, duration):
+        session = self._session
+        if not isinstance(session, PhoneSession) or session.device_id != device_id or session.session_id != session_id:
+            return {"ok": False}  # (a phone that was taken over: it stops on the next state it hears)
+        session.report(gen, state, position, duration)
+        return {"ok": True}
+
+    def phone_stop(self, device_id):
+        if isinstance(self._session, PhoneSession) and self._session.device_id == device_id:
+            self.stopCasting()
+        return {"ok": True}
+
+    def phone_command(self):
+        """What the phone playing the music should be doing, for the remote's state (None when no phone is)."""
+        return dict(self._session.command) if isinstance(self._session, PhoneSession) else None
+
     # --- what's sent ----------------------------------------------------------------------------------------
     def media_for(self, track, session, ready=None):
         """How a queue entry reaches the device: {"link", "url", "ctype", "title", …}; {"error": why} when it
@@ -679,7 +802,6 @@ class Casting(QObject):
         from .player import track_file, track_window
 
         path = track_file(track)
-        host = session.device["host"]
         title, artist = track.get("title") or "", track.get("artist") or ""
         if track_kind(track) == "station":
             title, artist = track.get("station") or title, ""
@@ -703,22 +825,21 @@ class Casting(QObject):
                 import urllib.request
                 req = urllib.request.Request(url, headers={"Range": rng} if rng else {})
                 return net.urlopen(req, timeout=15, limit=RELAY_LIMIT)
-            out.update(link=self._server.share(host, relay=relay, ctype=ctype, name="song" + os.path.splitext(
+            out.update(link=session.share(relay=relay, ctype=ctype, name="song" + os.path.splitext(
                 url.split("?", 1)[0])[1][:6]), ctype=ctype, live=live)
         else:
             ctype = mediaserver.content_type(path)
             processed = self.sending == "processed" and self._player is not None
             if processed or start or end or not session.plays(ctype, track):
                 return self._prepare(track, path, session, out, processed, ready)
-            out.update(link=self._server.share(host, path=path, ctype=ctype), ctype=ctype)
+            out.update(link=session.share(path=path, ctype=ctype), ctype=ctype)
         return self._finish_media(track, session, out)
 
     def _finish_media(self, track, session, out):
-        host = session.device["host"]
-        out["url"] = self._server.url(host, out["link"])
+        out["url"] = session.url(out["link"])
         image = self._cover(track)
         if image:
-            out["image"] = self._server.url(host, self._server.share(host, data=image, ctype="image/jpeg",
+            out["image"] = session.url(session.share(data=image, ctype="image/jpeg",
                                                                       name="cover.jpg"))
         return out
 
@@ -736,7 +857,6 @@ class Casting(QObject):
         """Renders the song (on the decoding helper) and hands `ready` the media once it's written."""
         options = self._render_options(track, processed)
         key = hashlib.sha256(repr((path, sorted(options.items(), key=str))).encode()).hexdigest()[:32]
-        host = session.device["host"]
 
         def deliver(done):
             if done is None:
@@ -744,7 +864,7 @@ class Casting(QObject):
                         "skippable": True}
             media = dict(out, start=0.0, end=0.0, file_duration=done["seconds"] or None, ctype="audio/wav",
                          sent="processed" if processed else "converted",
-                         link=self._server.share(host, path=done["file"], ctype="audio/wav"))
+                         link=session.share(path=done["file"], ctype="audio/wav"))
             return self._finish_media(track, session, media)
 
         entry = self._renders.get(key)

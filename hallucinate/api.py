@@ -184,6 +184,7 @@ class Api:
             "sleepRemaining": int(p.sleepRemaining), "sleepAfterTrack": bool(p.sleepAfterTrack),
             "sleepAfterAlbum": bool(p.sleepAfterAlbum), "error": p.error or "",
             "castingOn": self.casting.deviceName if self.casting is not None and self.casting.active else "",
+            "phone": self.casting.phone_command() if self.casting is not None else None,
         }
 
     m_state._api_scope = "read"

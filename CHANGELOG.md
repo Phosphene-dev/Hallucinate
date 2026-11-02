@@ -3,6 +3,29 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.12.0] - 2026-11-02
+
+### Added
+- The phone as the player: in the phone remote, Play on → This phone plays the music on the phone itself, through
+  its speaker or headphones. The queue, play counts and scrobbling stay on the computer, whose controls (and the
+  remote's) drive the phone; the phone's lock screen and headphone buttons work too. Songs come from the computer
+  under links only that paired phone can use, and formats its browser can't play are converted for it. The cast
+  menu on the computer shows the phone while it plays; This computer brings the music back.
+- Handoff between computers: hand what's playing over to another computer running Hallucinate (the cast button →
+  Hand over to another computer). It carries on there from the same place, with the same queue, shuffle and
+  repeat, playing each song from its own library when it has it (matched by artist, title, album and length) and
+  the rest from this computer, which then pauses. Computers pair once with the code the other shows in
+  Settings → Remote & web, and find each other on the network while that's on; an address can be typed too.
+
+### Security
+- Handoff: the pairing key is kept in the system keyring. A computer that's handed a queue streams only from the
+  computer that sent it, under a link only its address can use, which expires. Computers answer searches only
+  while Remote & web takes connections from the network, and only with their name and port.
+
+### Fixed
+- The web remote, listening on IPv6 for the network, saw IPv4 devices as `::ffff:` addresses; per-address checks
+  now treat the two forms as one.
+
 ## [1.11.0] - 2026-11-01
 
 ### Added

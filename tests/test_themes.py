@@ -294,6 +294,10 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
 
     casting = Casting(player)
     context.setContextProperty("casting", casting)
+    from hallucinate.handoff import Handoff
+
+    handoff = Handoff(player, None, web_remote)
+    context.setContextProperty("handoff", handoff)
     qml_dir = Path(__file__).parents[1] / "hallucinate" / "qml"
     engine.addImportPath(str(qml_dir))
     qml_warnings = []
@@ -547,6 +551,7 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     copies.shutdown()
     web_remote.shutdown()
     casting.shutdown()
+    handoff.shutdown()
     library.shutdown()
     qapp.setFont(old_font)
 

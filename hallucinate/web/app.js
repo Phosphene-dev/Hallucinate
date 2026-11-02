@@ -169,7 +169,7 @@ function guessName() {
 function connect() {
   if (events) events.close();
   events = new EventSource("api/events");
-  events.addEventListener("state", (e) => { state = JSON.parse(e.data); stateAt = Date.now(); render(); syncWakeLock(); });
+  events.addEventListener("state", (e) => { state = JSON.parse(e.data); stateAt = Date.now(); render(); syncWakeLock(); phoneFollow(); });
   events.addEventListener("queue", () => { if (currentView === "queue") loadQueue(); });
   events.onerror = async () => {
     const hello = await fetch("api/hello", { credentials: "same-origin" }).then((r) => r.json()).catch(() => null);
@@ -218,7 +218,7 @@ function render() {
   $("nowError").textContent = s.error || "";
   $("btnCast").classList.toggle("on", !!s.castingOn);
   $("castOn").hidden = !s.castingOn;
-  $("castOn").textContent = s.castingOn ? fill(t("Playing on %1"), s.castingOn) : "";
+  $("castOn").textContent = phoneOn() ? t("Playing on this phone") : s.castingOn ? fill(t("Playing on %1"), s.castingOn) : "";
   $("mini").hidden = !song || currentView === "now";
   $("miniTitle").textContent = song ? (song.streamTitle || song.title) : "";
   $("miniArtist").textContent = song ? song.artist : "";
@@ -271,18 +271,95 @@ $("btnSleep").onclick = () => pick(t("Sleep timer"), [
   [t("End of this album"), () => call("sleep", { end: "album" })],
 ]);
 
+// --- this phone as the player ------------------------------------------------------------------------------
+// The computer says what to play in its state ("phone"); this page plays it and says how it's going. The songs
+// come from the computer under links only this paired phone can use.
+const phone = { audio: null, session: "", gen: -1, seekN: 0, lastReport: 0 };
+const PHONE_TYPES = ["audio/mpeg", "audio/flac", "audio/mp4", "audio/aac", "audio/ogg", "audio/wav", "audio/webm"];
+function phoneOn() { return !!phone.session; }
+function phoneReport(st) {
+  if (!phoneOn()) return;
+  const a = phone.audio;
+  call("phone.report", { session: phone.session, gen: phone.gen, state: st,
+    position: isFinite(a.currentTime) ? a.currentTime : 0, duration: isFinite(a.duration) ? a.duration : 0 }).catch(() => {});
+  phone.lastReport = Date.now();
+}
+function phoneAudio() {
+  if (phone.audio) return phone.audio;
+  const a = phone.audio = new Audio();
+  a.preload = "auto";
+  a.addEventListener("playing", () => phoneReport("playing"));
+  a.addEventListener("pause", () => { if (!a.ended) phoneReport("paused"); });
+  a.addEventListener("waiting", () => phoneReport("buffering"));
+  a.addEventListener("ended", () => phoneReport("ended"));
+  a.addEventListener("error", () => { if (a.getAttribute("src")) phoneReport("error"); });
+  a.addEventListener("seeked", () => phoneReport(a.paused ? "paused" : "playing"));
+  a.addEventListener("timeupdate", () => { if (Date.now() - phone.lastReport > 1000) phoneReport(a.paused ? "paused" : "playing"); });
+  return a;
+}
+function phoneStart() {
+  const a = phoneAudio();
+  // the tap lets this page play sound from now on: a moment of silence, then the computer's song
+  a.src = "silence.wav";
+  a.play().catch(() => {});
+  phone.session = Math.random().toString(36).slice(2) + Date.now().toString(36);
+  phone.gen = -1;
+  const formats = PHONE_TYPES.filter((type) => a.canPlayType(type) !== "");
+  call("phone.start", { session: phone.session, formats }).then(() => toast(t("Playing on this phone"))).catch(() => { phone.session = ""; });
+}
+function phoneStop(tellComputer) {
+  if (phone.audio) { phone.audio.pause(); phone.audio.removeAttribute("src"); phone.audio.load(); }
+  if (tellComputer && phoneOn()) call("phone.stop", {}).catch(() => {});
+  phone.session = "";
+  phone.gen = -1;
+  if ("mediaSession" in navigator) navigator.mediaSession.metadata = null;
+}
+function phoneFollow() {
+  if (!phoneOn() || !state) return;
+  const cmd = state.phone;
+  if (!cmd || cmd.session !== phone.session || cmd.stopped) { phoneStop(false); return; }  // played elsewhere now
+  const a = phoneAudio();
+  if (cmd.gen !== phone.gen) {  // another song (or the same one, sent again)
+    phone.gen = cmd.gen;
+    phone.seekN = cmd.seek ? cmd.seek.n : 0;
+    if (!cmd.src) { a.pause(); return; }
+    a.src = cmd.src;
+    const start = cmd.start || 0;
+    if (start > 0.5) a.addEventListener("loadedmetadata", () => { a.currentTime = start; }, { once: true });
+    if (cmd.playing) a.play().catch(() => phoneReport("paused"));
+    if ("mediaSession" in navigator && window.MediaMetadata) {
+      navigator.mediaSession.metadata = new MediaMetadata({ title: cmd.title || "", artist: cmd.artist || "",
+        album: cmd.album || "", artwork: state.song && state.song.albumKey ? [{ src: art(state.song.albumKey, 512), sizes: "512x512" }] : [] });
+    }
+    return;
+  }
+  if (cmd.seek && cmd.seek.n !== phone.seekN) { phone.seekN = cmd.seek.n; a.currentTime = cmd.seek.to; }
+  if (cmd.volume !== null && cmd.volume !== undefined && Math.abs(a.volume - cmd.volume) > 0.001) a.volume = cmd.volume;
+  if (cmd.playing && a.paused && a.getAttribute("src")) a.play().catch(() => phoneReport("paused"));
+  else if (!cmd.playing && !a.paused) a.pause();
+}
+if ("mediaSession" in navigator) {  // the lock screen's and headphones' buttons, while this phone plays
+  const ms = navigator.mediaSession;
+  const when = (fn) => () => { if (phoneOn()) fn(); };
+  ms.setActionHandler("play", when(() => call("toggle")));
+  ms.setActionHandler("pause", when(() => call("toggle")));
+  ms.setActionHandler("nexttrack", when(() => call("next")));
+  ms.setActionHandler("previoustrack", when(() => call("previous")));
+  try { ms.setActionHandler("seekto", (d) => { if (phoneOn() && state && state.duration) call("seek", { position: Math.round(d.seekTime * 1000) }); }); } catch (e) { /* not on this browser */ }
+}
+window.addEventListener("pagehide", () => {  // the page closing: the computer carries on with the music itself
+  if (!phoneOn()) return;
+  fetch("api/call", { method: "POST", credentials: "same-origin", keepalive: true,
+    headers: { "Content-Type": "application/json", "X-Hallucinate": "1" }, body: JSON.stringify({ method: "phone.stop", params: {} }) });
+});
+
 // --- where the music plays: this computer, or a Chromecast or DLNA device it found -------------------------
 async function castPicker(searched) {
   const c = await call("cast.devices");
-  if (!c.devices.length && !searched) {
-    // nothing found yet: look (a few seconds), then show what answered
-    call("cast.search");
-    toast(t("Looking for devices on your network…"));
-    setTimeout(() => castPicker(true), 3500);
-    return;
-  }
+  if (!c.devices.length && !searched && !c.searching) call("cast.search").catch(() => {});  // (shown by Look again)
   pick(t("Play on"), [
-    [(c.device ? "" : "✓ ") + t("The computer"), () => call("cast.stop")],
+    [(c.device ? "" : "✓ ") + t("The computer"), () => { phoneStop(false); call("cast.stop"); }],
+    ...(window.Audio ? [[(phoneOn() ? "✓ " : "") + t("This phone"), () => { if (!phoneOn()) phoneStart(); }]] : []),
     ...c.devices.map((d) => [(d.active ? "✓ " : "") + d.name + (d.model && d.model !== d.name ? " · " + d.model : ""),
       () => call("cast.to", { id: d.id }).then(() => toast(fill(t("Connecting to %1…"), d.name)))]),
     [t("Look again"), () => { call("cast.search"); toast(t("Looking for devices on your network…")); setTimeout(() => castPicker(true), 3500); }],

@@ -4,6 +4,11 @@ newest version's lines are ever shown, so translators can leave the older ones."
 from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication
 
 HIGHLIGHTS = {
+    "1.12.0": [
+        QT_TRANSLATE_NOOP("WhatsNew", "Your phone can play the music itself: in the phone remote, Play on → This phone."),
+        QT_TRANSLATE_NOOP("WhatsNew", "Hand what's playing over to another computer running Hallucinate, and it carries on from the same place."),
+        QT_TRANSLATE_NOOP("WhatsNew", "Both are in the cast button beside the volume; computers pair once with a code."),
+    ],
     "1.11.0": [
         QT_TRANSLATE_NOOP("WhatsNew", "Play on a Chromecast, a Google or Nest speaker, or a DLNA/UPnP TV or speaker: the cast button beside the volume."),
         QT_TRANSLATE_NOOP("WhatsNew", "Send the original files, untouched, or Hallucinate's sound with your equalizer and ReplayGain (Settings → Casting)."),

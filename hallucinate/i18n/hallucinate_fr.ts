@@ -883,6 +883,26 @@
         <translation>Aucun appareil trouvé</translation>
     </message>
     <message>
+        <source>Hand over to another computer</source>
+        <translation>Passer à un autre ordinateur</translation>
+    </message>
+    <message>
+        <source>not found just now</source>
+        <translation>introuvable pour l’instant</translation>
+    </message>
+    <message>
+        <source>Pair with %1…</source>
+        <translation>Associer %1…</translation>
+    </message>
+    <message>
+        <source>Looking for other computers…</source>
+        <translation>Recherche d’autres ordinateurs…</translation>
+    </message>
+    <message>
+        <source>Pair with another computer…</source>
+        <translation>Associer un autre ordinateur…</translation>
+    </message>
+    <message>
         <source>Look again</source>
         <translation>Chercher à nouveau</translation>
     </message>
@@ -2326,6 +2346,60 @@
     <message>
         <source>Its songs show here: every song whose tags name it, including songs that name several genres.</source>
         <translation>Ses morceaux apparaissent ici&#xa0;: chaque morceau dont les tags le nomment, y compris ceux qui en nomment plusieurs.</translation>
+    </message>
+</context>
+<context>
+    <name>Handoff</name>
+    <message>
+        <source>The other computer didn&apos;t give a key</source>
+        <translation>L’autre ordinateur n’a pas donné de clé</translation>
+    </message>
+    <message>
+        <source>Type the other computer&apos;s address on your network (like 192.168.1.20)</source>
+        <translation>Saisissez l’adresse de l’autre ordinateur sur votre réseau (comme 192.168.1.20)</translation>
+    </message>
+    <message>
+        <source>there&apos;s no safe system keyring to keep the pairing in</source>
+        <translation>aucun trousseau système sûr pour conserver l’association</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t pair with %1: %2</source>
+        <translation>Impossible d’associer %1 : %2</translation>
+    </message>
+    <message>
+        <source>Paired with %1</source>
+        <translation>Associé à %1</translation>
+    </message>
+    <message>
+        <source>Nothing is playing to hand over</source>
+        <translation>Rien n’est en lecture à transmettre</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t hand over to %1: %2</source>
+        <translation>Impossible de passer la lecture à %1 : %2</translation>
+    </message>
+    <message>
+        <source>The pairing was lost: pair again</source>
+        <translation>L’association a été perdue : associez à nouveau</translation>
+    </message>
+    <message>
+        <source>Now playing on %1</source>
+        <translation>Lecture maintenant sur %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n song(s) it doesn&apos;t have play from here</source>
+        <translation>
+            <numerusform>%n morceau qu’il n’a pas est lu depuis ici</numerusform>
+            <numerusform>%n morceaux qu’il n’a pas sont lus depuis ici</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>None of these songs can play here</source>
+        <translation>Aucun de ces morceaux ne peut être lu ici</translation>
+    </message>
+    <message>
+        <source>Carrying on from %1</source>
+        <translation>Reprise depuis %1</translation>
     </message>
 </context>
 <context>
@@ -8212,10 +8286,6 @@
         <translation>ou avec ufw (Ubuntu, Mint) :</translation>
     </message>
     <message>
-        <source>remote phone web browser interface control pair pairing device devices network lan wifi headless tablet</source>
-        <translation>télécommande téléphone web navigateur interface contrôle associer association appareil appareils réseau lan wifi sans écran tablette remote phone browser control pair pairing device devices network headless tablet</translation>
-    </message>
-    <message>
         <source>Control Hallucinate from your phone, a tablet or a browser: play, pause and skip, the queue, search and your library. Each device pairs once with a code from here, and can be removed any time. A remote can&apos;t change your files or settings.</source>
         <translation>Contrôlez Hallucinate depuis votre téléphone, une tablette ou un navigateur&#xa0;: lecture, pause et morceau suivant, la file d’attente, la recherche et votre bibliothèque. Chaque appareil s’associe une fois avec un code donné ici, et peut être retiré à tout moment. Une télécommande ne peut pas modifier vos fichiers ni vos réglages.</translation>
     </message>
@@ -8320,6 +8390,18 @@
     <message>
         <source>Wikipedia, then Last.fm, then Discogs</source>
         <translation>Wikipédia, puis Last.fm, puis Discogs</translation>
+    </message>
+    <message>
+        <source>remote phone web browser interface control pair pairing device devices network lan wifi headless tablet handoff hand over another computer</source>
+        <translation>télécommande téléphone web navigateur interface contrôle associer association appareil appareils réseau lan wifi sans écran tablette passer transmettre autre ordinateur remote phone browser control pair pairing device devices network headless tablet handoff hand over computer</translation>
+    </message>
+    <message>
+        <source>Other computers running Hallucinate: hand what&apos;s playing over to one from the cast button beside the volume (Hand over to another computer). It carries on there, playing songs from its own library where it has them and the rest from this computer. Pair a computer from that menu with the code it shows here.</source>
+        <translation>Autres ordinateurs avec Hallucinate : passez-leur la lecture depuis le bouton de diffusion à côté du volume (Passer à un autre ordinateur). Elle continue là-bas, avec les morceaux de sa propre bibliothèque quand il les a et les autres depuis cet ordinateur. Associez un ordinateur depuis ce menu avec le code qu’il affiche ici.</translation>
+    </message>
+    <message>
+        <source>Forget</source>
+        <translation>Oublier</translation>
     </message>
     <message>
         <source>Wikipedia only</source>
@@ -11366,6 +11448,18 @@
 <context>
     <name>WhatsNew</name>
     <message>
+        <source>Your phone can play the music itself: in the phone remote, Play on → This phone.</source>
+        <translation>Votre téléphone peut lire la musique lui-même : dans la télécommande du téléphone, Lire sur → Ce téléphone.</translation>
+    </message>
+    <message>
+        <source>Hand what&apos;s playing over to another computer running Hallucinate, and it carries on from the same place.</source>
+        <translation>Passez la lecture à un autre ordinateur avec Hallucinate : elle continue au même endroit.</translation>
+    </message>
+    <message>
+        <source>Both are in the cast button beside the volume; computers pair once with a code.</source>
+        <translation>Les deux sont dans le bouton de diffusion à côté du volume ; les ordinateurs s’associent une fois avec un code.</translation>
+    </message>
+    <message>
         <source>Play on a Chromecast, a Google or Nest speaker, or a DLNA/UPnP TV or speaker: the cast button beside the volume.</source>
         <translation>Écoutez sur un Chromecast, une enceinte Google ou Nest, ou un téléviseur ou une enceinte DLNA/UPnP : le bouton de diffusion à côté du volume.</translation>
     </message>
@@ -11910,6 +12004,38 @@
         </translation>
     </message>
     <message>
+        <source>Pair with %1</source>
+        <translation>Associer %1</translation>
+    </message>
+    <message>
+        <source>Pair with another computer</source>
+        <translation>Associer un autre ordinateur</translation>
+    </message>
+    <message>
+        <source>Pair</source>
+        <translation>Associer</translation>
+    </message>
+    <message>
+        <source>On the other computer, open Settings → Remote &amp; web, let other devices on your network connect, and choose Pair a device. Type the code it shows here.</source>
+        <translation>Sur l’autre ordinateur, ouvrez Paramètres → Télécommande et web, autorisez les autres appareils de votre réseau à se connecter, puis choisissez Associer un appareil. Saisissez ici le code qu’il affiche.</translation>
+    </message>
+    <message>
+        <source>Its address on your network, like 192.168.1.20:8483</source>
+        <translation>Son adresse sur votre réseau, comme 192.168.1.20:8483</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Adresse</translation>
+    </message>
+    <message>
+        <source>Code</source>
+        <translation>Code</translation>
+    </message>
+    <message>
+        <source>Type the other computer&apos;s address on your network (like 192.168.1.20)</source>
+        <translation>Saisissez l’adresse de l’autre ordinateur sur votre réseau (comme 192.168.1.20)</translation>
+    </message>
+    <message>
         <source>“%1” and the songs in it leave the library. The files stay on your disk; add the folder again to bring them back (a full rescan). If it&apos;s on a drive that&apos;s only unplugged, plug it back in instead.</source>
         <translation>«&#xa0;%1&#xa0;» et ses morceaux quittent la bibliothèque. Les fichiers restent sur votre disque&#xa0;; ajoutez de nouveau le dossier pour les ramener (une analyse complète). S’il est sur un disque simplement débranché, rebranchez-le plutôt.</translation>
     </message>
@@ -12192,8 +12318,16 @@
         <translation>Lire sur</translation>
     </message>
     <message>
+        <source>Playing on this phone</source>
+        <translation>Lecture sur ce téléphone</translation>
+    </message>
+    <message>
         <source>The computer</source>
         <translation>L’ordinateur</translation>
+    </message>
+    <message>
+        <source>This phone</source>
+        <translation>Ce téléphone</translation>
     </message>
     <message>
         <source>Connecting to %1…</source>
