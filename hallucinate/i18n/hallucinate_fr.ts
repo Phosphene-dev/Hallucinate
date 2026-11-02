@@ -4894,6 +4894,10 @@
 <context>
     <name>Player</name>
     <message>
+        <source>Paused: bit-perfect playback plays at full level. Set your system&apos;s volume, then play</source>
+        <translation>En pause : la lecture bit-perfect joue à plein niveau. Réglez le volume de votre système, puis lancez la lecture</translation>
+    </message>
+    <message>
         <source>System default (%1)</source>
         <translation>Par défaut du système (%1)</translation>
     </message>
@@ -4920,6 +4924,10 @@
     <message>
         <source>Getting ready for %1…</source>
         <translation>Préparation pour %1…</translation>
+    </message>
+    <message>
+        <source>Bit-perfect playback is on: use your system&apos;s or your amplifier&apos;s volume</source>
+        <translation>La lecture bit-perfect est activée : utilisez le volume de votre système ou de votre amplificateur</translation>
     </message>
     <message>
         <source>Queue replaced</source>
@@ -7935,10 +7943,6 @@
         <translation>La lecture sans blanc est toujours active&#xa0;; avec le fondu enchaîné désactivé, les morceaux s’enchaînent directement. La vitesse de lecture et la minuterie sont dans le menu ⋯ de la barre de lecture.</translation>
     </message>
     <message>
-        <source>equalizer eq bass treble headphones autoeq crossfeed</source>
-        <translation>égaliseur eq basses aigus casque autoeq crossfeed equalizer bass treble headphones</translation>
-    </message>
-    <message>
         <source>Headphone crossfeed</source>
         <translation>Crossfeed pour casque</translation>
     </message>
@@ -8410,6 +8414,30 @@
     <message>
         <source>Wikipedia, then Last.fm, then Discogs</source>
         <translation>Wikipédia, puis Last.fm, puis Discogs</translation>
+    </message>
+    <message>
+        <source>equalizer eq bass treble headphones autoeq crossfeed bit-perfect bitperfect exclusive untouched resample sample rate pipewire audiophile</source>
+        <translation>égaliseur eq graves aigus casque autoeq crossfeed bit-perfect bitperfect exclusif intact rééchantillonnage fréquence d’échantillonnage pipewire audiophile equalizer bass treble headphones untouched resample sample rate</translation>
+    </message>
+    <message>
+        <source>Bit-perfect playback</source>
+        <translation>Lecture bit-perfect</translation>
+    </message>
+    <message>
+        <source>Every song goes to your sound output exactly as it&apos;s stored, at its own bit depth. The equalizer, crossfeed, ReplayGain, crossfade, fades and speed are set aside, and Hallucinate&apos;s volume stays at 100%: use your system&apos;s or your amplifier&apos;s volume.</source>
+        <translation>Chaque morceau part vers votre sortie audio exactement tel qu’il est stocké, dans sa propre résolution. L’égaliseur, le crossfeed, ReplayGain, le fondu enchaîné, les fondus et la vitesse sont mis de côté, et le volume de Hallucinate reste à 100 % : utilisez le volume de votre système ou de votre amplificateur.</translation>
+    </message>
+    <message>
+        <source>Send every song to your sound output exactly as it&apos;s stored: the equalizer, crossfeed, ReplayGain, crossfade, fades, speed and Hallucinate&apos;s volume step aside while it&apos;s on (your settings for them are kept).</source>
+        <translation>Envoyer chaque morceau vers votre sortie audio exactement tel qu’il est stocké : l’égaliseur, le crossfeed, ReplayGain, le fondu enchaîné, les fondus, la vitesse et le volume de Hallucinate s’effacent tant que c’est activé (vos réglages sont conservés).</translation>
+    </message>
+    <message>
+        <source>PipeWire is asked to run at each song&apos;s own rate, so nothing is resampled on the way.</source>
+        <translation>PipeWire est invité à fonctionner à la fréquence propre de chaque morceau, si bien que rien n’est rééchantillonné en chemin.</translation>
+    </message>
+    <message>
+        <source>To keep each song&apos;s own rate too, Linux with PipeWire and its tools (pw-metadata) is needed; elsewhere the system may resample it. The signal path shows what happens.</source>
+        <translation>Pour conserver aussi la fréquence propre de chaque morceau, il faut Linux avec PipeWire et ses outils (pw-metadata) ; ailleurs, le système peut la rééchantillonner. Le chemin du signal montre ce qui se passe.</translation>
     </message>
     <message>
         <source>remote phone web browser interface control pair pairing device devices network lan wifi headless tablet handoff hand over another computer</source>
@@ -9301,6 +9329,18 @@
     <message>
         <source>%1 (resampled from %2)</source>
         <translation>%1 (rééchantillonné depuis %2)</translation>
+    </message>
+    <message>
+        <source>Bit-perfect</source>
+        <translation>Bit-perfect</translation>
+    </message>
+    <message>
+        <source>Bit-perfect playback is on: the song reaches the sound output exactly as it&apos;s stored, at its own rate and bit depth. Use your system&apos;s or your amplifier&apos;s volume.</source>
+        <translation>La lecture bit-perfect est activée : le morceau atteint la sortie audio exactement tel qu’il est stocké, à sa propre fréquence et dans sa propre résolution. Utilisez le volume de votre système ou de votre amplificateur.</translation>
+    </message>
+    <message>
+        <source>Bit-perfect playback is on, but the output couldn&apos;t be switched to this song&apos;s rate, so it&apos;s converted on the way. On Linux with PipeWire, install its tools (pw-metadata) and Hallucinate asks for each song&apos;s rate.</source>
+        <translation>La lecture bit-perfect est activée, mais la sortie n’a pas pu passer à la fréquence de ce morceau : il est donc converti en chemin. Sous Linux avec PipeWire, installez ses outils (pw-metadata) et Hallucinate demandera la fréquence de chaque morceau.</translation>
     </message>
     <message>
         <source>Output</source>

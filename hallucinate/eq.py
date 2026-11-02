@@ -305,12 +305,16 @@ class EqTap(QObject):
     keeping its own output muted for a tap that plays nothing."""
 
     failedChanged = Signal(str)  # why it gave up; "" when it's trying again
+    opened = Signal(int)  # the sample rate its sound output was opened at
 
-    def __init__(self, processor, parent=None):
+    def __init__(self, processor, parent=None, passthrough=False):
         super().__init__(parent)
         self.output = QAudioBufferOutput(self)
         self.output.audioBufferReceived.connect(self._on_buffer)
         self.processor = processor
+        # bit-perfect: the decoded samples go out exactly as they came, in their own format (24-bit stays 24-bit,
+        # nothing filtered); the sound output is opened at the song's own rate, format and channels
+        self.passthrough = passthrough
         self.volume = 1.0
         self.failed = False
         self.device = None  # QAudioDevice; None plays on the system default
@@ -323,11 +327,11 @@ class EqTap(QObject):
         self._timer.setInterval(10)
         self._timer.timeout.connect(self._drain)
 
-    def _open(self, rate, channels):
+    def _open(self, rate, channels, sample_format=None):
         fmt = QAudioFormat()
         fmt.setSampleRate(rate)
         fmt.setChannelCount(channels)
-        fmt.setSampleFormat(QAudioFormat.SampleFormat.Int16)
+        fmt.setSampleFormat(sample_format if sample_format is not None else QAudioFormat.SampleFormat.Int16)
         device = self.device
         if device is None or device.isNull():
             device = QMediaDevices.defaultAudioOutput()
@@ -335,14 +339,15 @@ class EqTap(QObject):
             raise RuntimeError("no usable audio output device")
         self._close()
         self._sink = QAudioSink(device, fmt, self)
-        self._sink.setBufferSize(rate * channels * 2 // 4)  # ~250 ms
+        self._sink.setBufferSize(rate * channels * fmt.bytesPerSample() // 4)  # ~250 ms
         self._sink.setVolume(self.volume)
         self._io = self._sink.start()
-        self._fmt = (rate, channels)
+        self._fmt = (rate, channels, fmt.sampleFormat())
         self.processor.configure(rate, channels)
         if self._suspended:
             self._sink.suspend()
         self._timer.start()
+        self.opened.emit(rate)
 
     def _close(self):
         self._timer.stop()
@@ -360,7 +365,14 @@ class EqTap(QObject):
         if spec is None:
             return
         try:
-            if self._fmt != (fmt.sampleRate(), fmt.channelCount()) or self._sink is None:
+            if self.passthrough:
+                want = (fmt.sampleRate(), fmt.channelCount(), fmt.sampleFormat())
+                if self._fmt != want or self._sink is None:
+                    self._open(*want)
+                self._pending += bytes(buf.constData())[:buf.byteCount()]  # exactly as decoded
+                self._drain()
+                return
+            if self._fmt != (fmt.sampleRate(), fmt.channelCount(), QAudioFormat.SampleFormat.Int16) or self._sink is None:
                 self._open(fmt.sampleRate(), fmt.channelCount())
             raw = np.frombuffer(buf.constData(), dtype=spec[0], count=buf.sampleCount())
             data = spec[1](raw).reshape(-1, fmt.channelCount())

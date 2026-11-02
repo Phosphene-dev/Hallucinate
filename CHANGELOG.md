@@ -5,6 +5,13 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Added
+- Bit-perfect playback (Settings → Sound): every song goes to the sound output exactly as it's stored, in its own
+  sample format, with the equalizer, crossfeed, ReplayGain, crossfade, fades, speed and Hallucinate's volume set
+  aside while it's on (their settings are kept). On Linux with PipeWire, Hallucinate asks PipeWire to run at each
+  song's own rate (`clock.force-rate`, given back when it's switched off or Hallucinate quits), so nothing is
+  resampled; the signal path says Bit-perfect when it is, and what's converting it when it isn't.
+
 ### Changed
 - Headphone correction applies an AutoEQ parametric profile exactly: its own filters (peaks and shelves), with
   their true magnitude and phase as Equalizer APO applies them, instead of a smoothed curve approximating them.

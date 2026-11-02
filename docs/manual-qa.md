@@ -1,5 +1,16 @@
 # Manual QA checklist
 
+## Release testing for the next version
+
+- [ ] Headphone correction: choose a headphone with a ParametricEQ profile; the Equalizer lists its filters; switch
+      one off and on (heard, and the drawn curve follows); no clipping on loud masters.
+- [ ] Bit-perfect playback on Linux with PipeWire: switch it on in Settings → Sound; play a 44.1 kHz and then a
+      96 kHz song: `pw-metadata -n settings 0` shows clock.force-rate following them and the signal path says
+      Bit-perfect; the volume slider stays at 100% (moving it says to use the system's volume). Switch it off (and
+      separately, quit while it's on): clock.force-rate goes back to 0 and the EQ, ReplayGain and volume return.
+- [ ] Bit-perfect elsewhere (Flatpak, Windows, PulseAudio): it still plays; the signal path says the output may
+      convert the rate.
+
 ## Release testing for 1.12.0
 
 - [ ] The phone as the player (Android Chrome, and an iPhone): Play on → This phone plays the song there, from where

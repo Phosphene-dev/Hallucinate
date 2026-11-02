@@ -141,7 +141,8 @@ def _describe_cast(track, cast, rg_factor, rg_mode, eq_enabled, eq_preset, cross
 
 
 def describe(track, *, rg_factor=1.0, rg_mode="off", volume=1.0, speed=1.0, eq_enabled=False, eq_preset="", crossfeed="",
-             crossfade=0, device_name="", device_rate=0, rate_follows=False, rate_source="", cast=None):
+             crossfade=0, device_name="", device_rate=0, rate_follows=False, rate_source="", cast=None,
+             bit_perfect=False):
     """Stages from the file to the output, each {"name", "detail", "active"} where active means it changes the
     sound, and whether the path is untouched: nothing between file and device alters the samples (the system
     mixer may still resample when the device runs at another rate, which is reported too). rate_follows: the
@@ -230,4 +231,14 @@ def describe(track, *, rg_factor=1.0, rg_mode="off", volume=1.0, speed=1.0, eq_e
     if vol_on:
         advice.append(fill(translate("SignalPath", "Hallucinate's volume is at %1%, which scales the samples. Leave it at 100% "
                                      "and turn your system or amplifier down instead for an untouched path."), round(volume * 100)))
+    if bit_perfect:
+        summary = translate("SignalPath", "Bit-perfect") if untouched else summary
+        if untouched:
+            advice.insert(0, translate("SignalPath", "Bit-perfect playback is on: the song reaches the sound output exactly "
+                                       "as it's stored, at its own rate and bit depth. Use your system's or your "
+                                       "amplifier's volume."))
+        elif resampled:
+            advice.insert(0, translate("SignalPath", "Bit-perfect playback is on, but the output couldn't be switched to "
+                                       "this song's rate, so it's converted on the way. On Linux with PipeWire, "
+                                       "install its tools (pw-metadata) and Hallucinate asks for each song's rate."))
     return {"stages": stages, "untouched": untouched, "summary": summary, "advice": advice}

@@ -1036,9 +1036,28 @@ Item {
             id: sec_sound
             objectName: "settings_sound"
             title: qsTr("Sound")
-            keywords: qsTr("equalizer eq bass treble headphones autoeq crossfeed")
+            keywords: qsTr("equalizer eq bass treble headphones autoeq crossfeed bit-perfect bitperfect exclusive untouched resample sample rate pipewire audiophile")
             query: page.query
-            EqualizerPanel { width: parent.width }
+            StyledCheck {
+                objectName: "bitPerfect"
+                enabled: player.eqAvailable
+                text: qsTr("Bit-perfect playback")
+                checked: player.bitPerfect
+                onToggled: player.setBitPerfect(checked)
+            }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: (player.bitPerfect
+                       ? qsTr("Every song goes to your sound output exactly as it's stored, at its own bit depth. The equalizer, crossfeed, ReplayGain, crossfade, fades and speed are set aside, and Hallucinate's volume stays at 100%: use your system's or your amplifier's volume.")
+                       : qsTr("Send every song to your sound output exactly as it's stored: the equalizer, crossfeed, ReplayGain, crossfade, fades, speed and Hallucinate's volume step aside while it's on (your settings for them are kept)."))
+                      + " " + (player.bitPerfectRates
+                       ? qsTr("PipeWire is asked to run at each song's own rate, so nothing is resampled on the way.")
+                       : qsTr("To keep each song's own rate too, Linux with PipeWire and its tools (pw-metadata) is needed; elsewhere the system may resample it. The signal path shows what happens."))
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            EqualizerPanel { width: parent.width; opacity: player.bitPerfect ? 0.5 : 1 }
             Flow {
                 width: parent.width
                 spacing: 12
