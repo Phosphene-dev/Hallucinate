@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.13.0" date="2026-11-02">
+      <description>
+        <p>Bit-perfect playback: every song reaches the sound output exactly as it's stored, at its own rate (PipeWire on Linux, the output's own rate on macOS, exclusive mode on Windows).</p>
+        <p>DSD files (.dsf, .dff) play as high-resolution PCM, AutoEQ parametric headphone profiles are applied exactly, and cast devices play gapless and get Hallucinate's sound as 24-bit FLAC.</p>
+      </description>
+    </release>
     <release version="1.12.0" date="2026-11-02">
       <description>
         <p>Your phone can play the music itself: in the phone remote, Play on, then This phone, with its lock screen controls; the computer keeps the queue and play counts.</p>

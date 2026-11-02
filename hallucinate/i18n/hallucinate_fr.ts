@@ -11568,6 +11568,18 @@
 <context>
     <name>WhatsNew</name>
     <message>
+        <source>Bit-perfect playback (Settings → Sound): every song reaches your sound output untouched, at its own rate.</source>
+        <translation>Lecture bit-perfect (Paramètres → Son) : chaque morceau atteint votre sortie audio intact, à sa propre fréquence.</translation>
+    </message>
+    <message>
+        <source>DSD files play, AutoEQ headphone profiles are applied exactly, and casting is gapless.</source>
+        <translation>Les fichiers DSD sont lus, les profils de casque AutoEQ sont appliqués exactement et la diffusion se fait sans blanc entre les morceaux.</translation>
+    </message>
+    <message>
+        <source>Hallucinate&apos;s sound goes to cast devices as 24-bit FLAC where they play it.</source>
+        <translation>Le son de Hallucinate part vers les appareils de diffusion en FLAC 24 bits quand ils le lisent.</translation>
+    </message>
+    <message>
         <source>Your phone can play the music itself: in the phone remote, Play on → This phone.</source>
         <translation>Votre téléphone peut lire la musique lui-même : dans la télécommande du téléphone, Lire sur → Ce téléphone.</translation>
     </message>

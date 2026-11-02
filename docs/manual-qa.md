@@ -1,6 +1,6 @@
 # Manual QA checklist
 
-## Release testing for the next version
+## Release testing for 1.13.0
 
 - [ ] Headphone correction: choose a headphone with a ParametricEQ profile; the Equalizer lists its filters; switch
       one off and on (heard, and the drawn curve follows); no clipping on loud masters.

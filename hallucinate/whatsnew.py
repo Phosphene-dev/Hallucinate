@@ -4,6 +4,11 @@ newest version's lines are ever shown, so translators can leave the older ones."
 from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication
 
 HIGHLIGHTS = {
+    "1.13.0": [
+        QT_TRANSLATE_NOOP("WhatsNew", "Bit-perfect playback (Settings → Sound): every song reaches your sound output untouched, at its own rate."),
+        QT_TRANSLATE_NOOP("WhatsNew", "DSD files play, AutoEQ headphone profiles are applied exactly, and casting is gapless."),
+        QT_TRANSLATE_NOOP("WhatsNew", "Hallucinate's sound goes to cast devices as 24-bit FLAC where they play it."),
+    ],
     "1.12.0": [
         QT_TRANSLATE_NOOP("WhatsNew", "Your phone can play the music itself: in the phone remote, Play on → This phone."),
         QT_TRANSLATE_NOOP("WhatsNew", "Hand what's playing over to another computer running Hallucinate, and it carries on from the same place."),

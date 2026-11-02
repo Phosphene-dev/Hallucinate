@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [1.13.0] - 2026-11-02
 
 ### Added
 - Bit-perfect playback (Settings → Sound): every song goes to the sound output exactly as it's stored, in its own
