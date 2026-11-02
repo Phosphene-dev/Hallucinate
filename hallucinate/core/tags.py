@@ -433,6 +433,7 @@ def audio_codec(f, ext: str) -> str:
         "mpc": "MPC",
         "dsf": "DSD",
         "dff": "DSD",
+        "dsdiff": "DSD",  # (mutagen's module for .dff files)
     }.get(module, ext.lstrip(".").upper())
 
 

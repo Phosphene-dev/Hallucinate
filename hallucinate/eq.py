@@ -315,6 +315,12 @@ class EqTap(QObject):
         # bit-perfect: the decoded samples go out exactly as they came, in their own format (24-bit stays 24-bit,
         # nothing filtered); the sound output is opened at the song's own rate, format and channels
         self.passthrough = passthrough
+        # DSD (see dsd.py): what FFmpeg decodes it to is low-passed and brought down to `dsd_rate` (the rate chosen
+        # in Settings) before anything else; set by the player for the song its voice holds
+        self.dsd = False
+        self.dsd_rate = 0
+        self._dsd = None
+        self._no_float = False  # the output refused 32-bit float
         self.volume = 1.0
         self.failed = False
         self.device = None  # QAudioDevice; None plays on the system default
@@ -365,6 +371,9 @@ class EqTap(QObject):
         if spec is None:
             return
         try:
+            if self.dsd:
+                self._on_dsd(buf, fmt, spec)
+                return
             if self.passthrough:
                 want = (fmt.sampleRate(), fmt.channelCount(), fmt.sampleFormat())
                 if self._fmt != want or self._sink is None:
@@ -380,14 +389,60 @@ class EqTap(QObject):
                 data = self.processor.process(data)
             out = (np.clip(data, -1.0, 1.0) * 32767).astype("<i2")
         except Exception as exc:  # noqa: BLE001
-            logger.warning("Equalizer disabled: %s", exc)
-            self.failed = True
-            self._close()
-            self._fmt = None  # opened afresh when it tries again
-            self.failedChanged.emit(str(exc) or type(exc).__name__)
+            self._give_up(exc)
             return
         self._pending += out.tobytes()
         self._drain()
+
+    def _give_up(self, exc):
+        logger.warning("Equalizer disabled: %s", exc)
+        self.failed = True
+        self._close()
+        self._fmt = None  # opened afresh when it tries again
+        self.failedChanged.emit(str(exc) or type(exc).__name__)
+
+    def _on_dsd(self, buf, fmt, spec):
+        """A DSD song: converted to PCM at the chosen rate (dsd.py), then processed as any song would be (or,
+        bit-perfect, sent on as it comes out of the conversion). Played as 32-bit float where the output takes it,
+        so the conversion's resolution isn't cut to 16 bits."""
+        from . import dsd
+
+        rate, channels = fmt.sampleRate(), fmt.channelCount()
+        out_rate = dsd.output_rate(rate, self.dsd_rate)
+        conv = self._dsd
+        if conv is None or (conv.in_rate, conv.channels, conv.out_rate) != (rate, channels, out_rate):
+            conv = self._dsd = dsd.Converter(rate, channels, out_rate)
+        try:
+            raw = np.frombuffer(buf.constData(), dtype=spec[0], count=buf.sampleCount())
+            data = conv.process(spec[1](raw).reshape(-1, channels))
+            float_fmt = (out_rate, channels, QAudioFormat.SampleFormat.Float)
+            int16_fmt = (out_rate, channels, QAudioFormat.SampleFormat.Int16)
+            if self._sink is None or (self._fmt != float_fmt and not (self._fmt == int16_fmt and self._no_float)):
+                try:
+                    self._open(*float_fmt)
+                    self._no_float = False
+                except RuntimeError:
+                    self._open(*int16_fmt)  # (an output that only takes 16-bit)
+                    self._no_float = True
+            if not self.passthrough and not self.processor.flat:
+                data = self.processor.process(data)
+            if self._fmt[2] == QAudioFormat.SampleFormat.Float:
+                out = (data if self.passthrough else np.clip(data, -1.0, 1.0)).astype("<f4")
+            else:
+                out = (np.clip(data, -1.0, 1.0) * 32767).astype("<i2")
+        except Exception as exc:  # noqa: BLE001
+            self._give_up(exc)
+            return
+        self._pending += out.tobytes()
+        self._drain()
+
+    def setDsd(self, on, rate):
+        """The song this tap plays is DSD (or not), converted to `rate` (dsd.RATES)."""
+        on, rate = bool(on), int(rate or 0)
+        if (on, rate) != (self.dsd, self.dsd_rate):
+            self.dsd, self.dsd_rate = on, rate
+            if self._dsd is not None:
+                self._dsd.reset()
 
     def _drain(self):
         if self._io is None or not self._pending:
@@ -428,6 +483,8 @@ class EqTap(QObject):
             self.failed = False
             self.failedChanged.emit("")
         self.processor.reset()
+        if self._dsd is not None:
+            self._dsd.reset()
         if self._sink is not None:
             self._sink.reset()
             self._io = self._sink.start()

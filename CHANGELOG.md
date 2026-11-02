@@ -11,6 +11,10 @@ All notable changes to this project are documented here. Format based on
   aside while it's on (their settings are kept). On Linux with PipeWire, Hallucinate asks PipeWire to run at each
   song's own rate (`clock.force-rate`, given back when it's switched off or Hallucinate quits), so nothing is
   resampled; the signal path says Bit-perfect when it is, and what's converting it when it isn't.
+- DSD playback done properly: .dsf and .dff files (SACD rips) are converted to PCM as they play, with the
+  ultrasonic noise DSD carries filtered out (flat to 30 kHz, at least 120 dB down by 44.1 kHz) and nothing else
+  changed. Choose 88.2, 176.4 or 352.8 kHz in Settings → Sound; the equalizer, bit-perfect playback, ReplayGain
+  measuring, waveforms and casting all work from the converted sound, and the signal path shows the conversion.
 
 ### Changed
 - Headphone correction applies an AutoEQ parametric profile exactly: its own filters (peaks and shelves), with
@@ -18,6 +22,9 @@ All notable changes to this project are documented here. Format based on
   The Equalizer lists them, and each can be switched off to hear what it does. The volume is lowered by just what
   the correction needs, so it can't clip. GraphicEQ profiles stay curves; profiles chosen before carry on as they
   were until chosen again.
+
+### Fixed
+- .dff files were recorded as "DFF" rather than DSD (their bit depth and lossless badge were missing).
 
 ## [1.12.0] - 2026-11-02
 

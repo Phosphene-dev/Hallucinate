@@ -89,7 +89,7 @@ def serve():
     from PySide6.QtCore import QCoreApplication, QUrl
     from PySide6.QtMultimedia import QAudioDecoder
 
-    from . import loudness
+    from . import dsd, loudness
     from .replaygain import channel_samples
     from .spectrogram import Accumulator
     from .waveform import blocks_from_samples, mono_samples, peaks_from_blocks
@@ -131,7 +131,8 @@ def serve():
         job = state["job"] = queue.pop(0)
         state["buffers"] = 0
         state.update(ms=[], peak=[], rate=0, meter=loudness.Meter() if job.get("kind") == "loudness" else None,
-                     spectrum=Accumulator() if job.get("kind") == "spectrogram" else None, render=None)
+                     spectrum=Accumulator() if job.get("kind") == "spectrogram" else None, render=None,
+                     dsd=job.get("kind") != "spectrogram" and dsd.is_dsd({"path": job.get("path")}), converter=None)
         decoder = state["decoder"] = QAudioDecoder()
         if job.get("kind") == "render":
             try:
@@ -159,6 +160,30 @@ def serve():
             return
         state["buffers"] += 1
         rate = buf.format().sampleRate()
+        if state["dsd"]:  # measured, drawn and rendered as it's heard: converted from DSD (the spectrogram shows all)
+            samples = channel_samples(buf)
+            if samples is None:
+                return
+            conv = state["converter"]
+            out_rate = dsd.output_rate(rate, dsd.DEFAULT_RATE)
+            if conv is None or (conv.in_rate, conv.channels) != (rate, samples.shape[1]):
+                conv = state["converter"] = dsd.Converter(rate, samples.shape[1], out_rate)
+            samples, rate = conv.process(samples), conv.out_rate
+            if not samples.size:
+                return
+            if state["render"] is not None:
+                if not state["render"].add(samples, rate):
+                    state["render_done"] = True
+                    decoder.blockSignals(True)
+                    QTimer.singleShot(0, on_finished)
+            elif state["meter"] is not None:
+                state["meter"].add(samples, rate)
+            else:
+                state["rate"] = state["rate"] or rate
+                ms, peak = blocks_from_samples(np.abs(samples).max(axis=1))
+                state["ms"].append(ms)
+                state["peak"].append(peak)
+            return
         if state["render"] is not None:
             samples = channel_samples(buf)
             if samples is not None and samples.size and not state["render"].add(samples, rate):

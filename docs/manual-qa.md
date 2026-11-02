@@ -8,6 +8,9 @@
       96 kHz song: `pw-metadata -n settings 0` shows clock.force-rate following them and the signal path says
       Bit-perfect; the volume slider stays at 100% (moving it says to use the system's volume). Switch it off (and
       separately, quit while it's on): clock.force-rate goes back to 0 and the EQ, ReplayGain and volume return.
+- [ ] DSD: play a .dsf and a .dff album (DSD64, and DSD128 if you have one) at each of the three rates in Settings →
+      Sound: clean sound, gapless between tracks, seeking works; the signal path shows DSD64 → the chosen rate;
+      with bit-perfect on, PipeWire follows the chosen rate (not 352.8 kHz).
 - [ ] Bit-perfect elsewhere (Flatpak, Windows, PulseAudio): it still plays; the signal path says the output may
       convert the rate.
 

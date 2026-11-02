@@ -19,7 +19,7 @@ from PySide6.QtMultimedia import (
 )
 from PySide6.QtQml import QQmlComponent, QQmlEngine
 
-from . import eq, fileready, signalpath
+from . import dsd, eq, fileready, signalpath
 from .core import net, remote
 from .core.i18n import fill, translate
 from .core.kinds import counts_for_scrobbling, is_url, track_kind  # noqa: F401 - re-exported
@@ -247,6 +247,7 @@ class _Voice:
         self.play_on_load = False
         self.fade = 1.0  # crossfade multiplier
         self.tap = None  # equalizer tap, present while the equalizer is on
+        self.dsd = False  # holds a DSD song (converted to PCM in the tap: see dsd.py)
         self.tap_visual_connected = False
         self.finishing = False  # still playing its last moments after the next track took over
         self.finish_by = 0.0
@@ -288,6 +289,7 @@ class _Voice:
         self.seek_on_load = -1
         self.play_on_load = False
         self.fade = 1.0
+        self.dsd = False
         if self.tap is not None:
             self.tap.reset()
 
@@ -296,6 +298,7 @@ class _Voice:
         self._set_aside_if_loading()  # still opening a stream: don't wait for it, use a new player
         self.index, self.path = index, track_file(track)
         self.start, self.end = track_window(track)
+        self.dsd = dsd.is_dsd(track) and not is_url(self.path)
         resume = int(track.get("resume_ms") or 0)  # a podcast episode picks up where it was left
         if track_kind(track) == "music":
             track.pop("resume_ms", None)  # a song's (a parked stream's) is used once
@@ -468,6 +471,12 @@ class Player(QObject):
 
         self._bit_perfect = str(self._settings.value("audio/bitPerfect", "false")).lower() == "true"
         self._rate_request = RateRequest()
+        try:
+            self._dsd_rate = int(self._settings.value("audio/dsdRate", dsd.DEFAULT_RATE))
+        except (TypeError, ValueError):
+            self._dsd_rate = 0
+        if self._dsd_rate not in dsd.RATES:
+            self._dsd_rate = dsd.DEFAULT_RATE
         self._crossfeed = str(self._settings.value("audio/crossfeed", "off"))
         self._rate_mode = str(self._settings.value("audio/outputRate", "auto"))
         if self._rate_mode not in signalpath.RATE_MODES:
@@ -741,7 +750,7 @@ class Player(QObject):
         self._connect_voice(n)
         self._apply_speed()
         self._apply_output_device()
-        if self._dsp_on():
+        if self._tap_on():
             self._sync_taps()
         elif self._visualizer_enabled:
             self._sync_audio_buffer_outputs()
@@ -946,7 +955,44 @@ class Player(QObject):
     def _tap_on(self):
         """Whether the sound goes out through our own output (the taps): to process it, or, bit-perfect, to open
         the output in the song's own format and pass it through untouched."""
-        return self._dsp_on() or (self._bit_perfect and eq.available())
+        return eq.available() and (self._dsp_on() or self._bit_perfect or any(v.dsd for v in self._voices))
+
+    # --- DSD ------------------------------------------------------------------------------------------------------
+    @Property(int, notify=audioSettingsChanged)
+    def dsdRate(self):
+        """The PCM rate DSD songs are converted to (Settings → Sound; see dsd.py)."""
+        return self._dsd_rate
+
+    @Property("QVariantList", constant=True)
+    def dsdRates(self):
+        return list(dsd.RATES)
+
+    @Slot(int)
+    def setDsdRate(self, rate):
+        rate = int(rate)
+        if rate not in dsd.RATES or rate == self._dsd_rate:
+            return
+        self._dsd_rate = rate
+        self._settings.setValue("audio/dsdRate", rate)
+        self._sync_dsd()
+        self.audioSettingsChanged.emit()
+        self.signalPathChanged.emit()
+
+    def _sync_dsd(self):
+        """After a voice took a song: the taps come on for a DSD song (and go once none is left), and each one
+        knows whether its song needs converting."""
+        if self._tap_on() != any(v.tap is not None for v in self._voices):
+            self._sync_taps()
+        for v in self._voices:
+            if v.tap is not None:
+                v.tap.setDsd(v.dsd, self._dsd_rate)
+
+    def _dsd_out_rate(self, track):
+        """The PCM rate a DSD song plays at (0: not DSD, or it can't be converted here)."""
+        if not dsd.is_dsd(track) or not eq.available():
+            return 0
+        decoded = int(track.get("sample_rate") or 0) // 8  # (what FFmpeg makes of it: an eighth of its bit rate)
+        return dsd.output_rate(decoded, self._dsd_rate) if decoded else self._dsd_rate
 
     # --- bit-perfect --------------------------------------------------------------------------------------------
     @Property(bool, notify=audioSettingsChanged)
@@ -1247,7 +1293,8 @@ class Player(QObject):
         """The current track's way from file to speakers (see signalpath.describe)."""
         track = self._queue[self._index] if self.hasTrack else None
         device = self._output_audio_device()
-        rate = int((track or {}).get("sample_rate") or 0)
+        dsd_rate = self._dsd_out_rate(track) if track else 0
+        rate = dsd_rate or int((track or {}).get("sample_rate") or 0)
         follows = signalpath.output_follows(rate, self._rate_mode) if track else False
         bp = self._bit_perfect
         forced = bp and rate and self._rate_request.rate == rate and not self._rate_request.error
@@ -1268,6 +1315,7 @@ class Player(QObject):
             rate_follows=follows,
             rate_source=("Hallucinate" if forced else "PipeWire" if follows and self._rate_mode == "auto" else ""),
             bit_perfect=bp,
+            dsd_rate=dsd_rate,
             cast={"device": self._cast.name, "sent": self._cast_sent} if self._cast is not None else None,
         )
 
@@ -1333,6 +1381,7 @@ class Player(QObject):
                 tap.opened.connect(self._on_tap_opened)
                 self._configure_processor(tap.processor)
                 tap.setDevice(self._output_audio_device())
+                tap.setDsd(voice.dsd, self._dsd_rate)
                 voice.tap = tap
                 tap.setRunning(voice.player.playbackState() == QMediaPlayer.PlaybackState.PlayingState)
             elif not self._tap_on() and voice.tap is not None:
@@ -2554,6 +2603,7 @@ class Player(QObject):
             self._player.play()
         else:
             self._voice.load(i, track)
+            self._sync_dsd()
             self._player.setPlaybackRate(self._rate())
             if autoplay and self._voice.seek_on_load >= 0:
                 self._voice.play_on_load = True  # start where the song starts, not at the top of the file
@@ -2683,6 +2733,7 @@ class Player(QObject):
             return  # ready by the time it's due, or loaded the careful way then
         sb.player.pause()
         sb.load(nxt, track)
+        self._sync_dsd()
         sb.player.pause()  # prepare the decoder without taking the audio device
         self._apply_volume()
 

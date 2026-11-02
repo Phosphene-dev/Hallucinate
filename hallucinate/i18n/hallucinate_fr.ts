@@ -7943,6 +7943,30 @@
         <translation>La lecture sans blanc est toujours active&#xa0;; avec le fondu enchaîné désactivé, les morceaux s’enchaînent directement. La vitesse de lecture et la minuterie sont dans le menu ⋯ de la barre de lecture.</translation>
     </message>
     <message>
+        <source>equalizer eq bass treble headphones autoeq crossfeed bit-perfect bitperfect exclusive untouched resample sample rate pipewire audiophile dsd dsf dff sacd</source>
+        <translation>égaliseur eq graves aigus casque autoeq crossfeed bit-perfect bitperfect exclusif intact rééchantillonnage fréquence d’échantillonnage pipewire audiophile dsd dsf dff sacd equalizer bass treble headphones untouched resample sample rate</translation>
+    </message>
+    <message>
+        <source>DSD songs play as</source>
+        <translation>Les morceaux DSD sont lus en</translation>
+    </message>
+    <message>
+        <source>88.2 kHz PCM (recommended)</source>
+        <translation>PCM 88,2 kHz (recommandé)</translation>
+    </message>
+    <message>
+        <source>176.4 kHz PCM</source>
+        <translation>PCM 176,4 kHz</translation>
+    </message>
+    <message>
+        <source>352.8 kHz PCM</source>
+        <translation>PCM 352,8 kHz</translation>
+    </message>
+    <message>
+        <source>DSD files (.dsf, .dff) are converted to PCM as they play, with the ultrasonic noise DSD carries filtered out; the music itself is left as it is. All three keep everything up to 30 kHz: a higher rate only matters if your DAC sounds better at it.</source>
+        <translation>Les fichiers DSD (.dsf, .dff) sont convertis en PCM pendant la lecture, en filtrant le bruit ultrasonique que porte le DSD ; la musique elle-même reste telle quelle. Les trois conservent tout jusqu’à 30 kHz : une fréquence plus haute ne compte que si votre DAC sonne mieux ainsi.</translation>
+    </message>
+    <message>
         <source>Headphone crossfeed</source>
         <translation>Crossfeed pour casque</translation>
     </message>
@@ -8414,10 +8438,6 @@
     <message>
         <source>Wikipedia, then Last.fm, then Discogs</source>
         <translation>Wikipédia, puis Last.fm, puis Discogs</translation>
-    </message>
-    <message>
-        <source>equalizer eq bass treble headphones autoeq crossfeed bit-perfect bitperfect exclusive untouched resample sample rate pipewire audiophile</source>
-        <translation>égaliseur eq graves aigus casque autoeq crossfeed bit-perfect bitperfect exclusif intact rééchantillonnage fréquence d’échantillonnage pipewire audiophile equalizer bass treble headphones untouched resample sample rate</translation>
     </message>
     <message>
         <source>Bit-perfect playback</source>
@@ -9239,6 +9259,14 @@
         <translation>Source</translation>
     </message>
     <message>
+        <source>DSD to PCM</source>
+        <translation>DSD vers PCM</translation>
+    </message>
+    <message>
+        <source>%1, noise above 30 kHz filtered out</source>
+        <translation>%1, bruit au-dessus de 30 kHz filtré</translation>
+    </message>
+    <message>
         <source>Track gain %1 dB (measured)</source>
         <translation>Gain du morceau %1 dB (mesuré)</translation>
     </message>
@@ -9329,6 +9357,18 @@
     <message>
         <source>%1 (resampled from %2)</source>
         <translation>%1 (rééchantillonné depuis %2)</translation>
+    </message>
+    <message>
+        <source>DSD is converted to %1 PCM here, with the ultrasonic noise it carries filtered out, so any output can play it. The rate is chosen in Settings → Sound.</source>
+        <translation>Le DSD est converti ici en PCM %1, en filtrant le bruit ultrasonique qu’il porte, pour que toute sortie puisse le lire. La fréquence se choisit dans Paramètres → Son.</translation>
+    </message>
+    <message>
+        <source>Bit-perfect after DSD conversion</source>
+        <translation>Bit-perfect après conversion DSD</translation>
+    </message>
+    <message>
+        <source>Bit-perfect playback is on: once converted from DSD, the song reaches the sound output untouched, at the conversion&apos;s own rate.</source>
+        <translation>La lecture bit-perfect est activée : une fois converti depuis le DSD, le morceau atteint la sortie audio intact, à la fréquence de la conversion.</translation>
     </message>
     <message>
         <source>Bit-perfect</source>

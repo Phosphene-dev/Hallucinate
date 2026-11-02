@@ -272,6 +272,12 @@ class Database:
                      if album_folder(os.path.dirname(r[0])) != os.path.dirname(r[0])]
             self.conn.executemany("UPDATE tracks SET mtime=0 WHERE path=?", stale)
             self.conn.execute("PRAGMA user_version = 1")
+        if version < 2:
+            # .dff files were stored as "DFF" (mutagen names their module dsdiff): they're DSD, 1 bit deep
+            self.conn.execute("UPDATE tracks SET codec='DSD' WHERE codec='DFF'")
+            if "bit_depth" in cols:
+                self.conn.execute("UPDATE tracks SET bit_depth=1 WHERE codec='DSD' AND bit_depth=0")
+            self.conn.execute("PRAGMA user_version = 2")
         if "bit_depth" not in cols:
             for c in QUALITY_COLS:
                 self.conn.execute(f"ALTER TABLE tracks ADD COLUMN {c} INTEGER NOT NULL DEFAULT 0")
