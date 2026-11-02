@@ -25,6 +25,8 @@ FEATURES = {
     # Discover: the page, and each of its shelves on its own
     "discover": True, "discoverMixes": True, "discoverForgotten": True, "discoverForgottenSongs": True,
     "discoverForgottenArtists": True, "discoverDeepCuts": True, "discoverNeverPlayed": True, "discoverOnThisDay": True,
+    # "Sounds like this": measuring how songs sound, and the song menus' Sounds like this
+    "soundsLike": True,
 }
 # The sidebar's pages in their usual order; people can rearrange them (Settings → Appearance or right-click).
 SIDEBAR_PAGES = ("home", "discover", "albums", "artists", "genres", "songs", "folders", "liked", "stats", "history", "recap", "visualizer",

@@ -14,6 +14,14 @@ All notable changes to this project are documented here. Format based on
   Settings → Discover (a hidden shelf isn't even worked out), the whole page can be turned off in Features,
   anything can be marked Not interested (and let back in from Settings), and mixes can be saved as playlists.
   Settings: how long until something counts as forgotten, how many mixes, how long, and how many unheard songs.
+- Sounds like this: right-click a song for songs in your library that sound like it (tempo, key, energy and
+  timbre), to play, add to the queue or save as a playlist; radio mode can pick by sound too, or both ways. To
+  know how songs sound, Hallucinate listens to about a minute of each one on this computer, at low priority and
+  by default only while nothing is playing and not on battery (or any time, or only when asked), liked and most
+  played songs first; nothing leaves your computer. Settings → Discover: play them as a smooth flow or most alike
+  first, how many, keep the tempo close, keep to keys that mix well, the song's own artist or not, how many by
+  one artist, pause, and forget what it heard. It shows with Stop in the background list, and can be switched off
+  entirely in Features.
 
 ### Changed
 - Home's Rediscover and On this day shelves are off unless you turn them on (Settings → Features → Home):

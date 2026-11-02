@@ -161,6 +161,9 @@ def app_window(qapp, tmp_path, monkeypatch, request):
     from hallucinate.discover import Discover
 
     objects["discover"] = Discover(db_path, player, user_lib, objects["shell"])
+    from hallucinate.likethis import SoundsLike
+
+    objects["soundsLike"] = SoundsLike(db_path, player, user_lib, objects["shell"], battery=lambda: False, autostart=False)
     from hallucinate.i18n import Translations
 
     objects["i18n"] = Translations(qapp)
@@ -2810,3 +2813,38 @@ def test_the_window_has_rounded_corners_with_its_own_title_bar(qapp, app_window)
         shell.setCustomTitleBar(False)
         shell.setUiValue("roundWindow", "1")
     assert radius_before == 0  # (the tests run with the system's frame)
+
+
+def test_sounds_like_this_in_a_song_s_menu_and_settings(qapp, app_window):
+    """Discover's Sounds like this: in a song's menu while it's switched on (not for a stream), gone when it's off;
+    its settings in Settings → Discover."""
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    menu = window.findChild(QObject, "trackMenu")
+    path = objects["library"].allTracks()[0]["path"]
+
+    def items(p):  # (how many entries the menu has for `p`; the submenu is one of them when it's there)
+        QMetaObject.invokeMethod(menu, "show", Q_ARG("QVariant", p), Q_ARG("QVariant", "T"),
+                                 Q_ARG("QVariant", "songs"), Q_ARG("QVariant", 0))
+        qapp.processEvents()
+        n = menu.property("count"), menu.property("canLike")
+        QMetaObject.invokeMethod(menu, "close")
+        qapp.processEvents()
+        return n
+
+    on, can = items(path)
+    assert can is True
+    assert items("http://radio.example/stream")[1] is False
+    shell.setFeature("soundsLike", False)
+    try:
+        off, can = items(path)
+        assert can is False and off == on - 1
+    finally:
+        shell.setFeature("soundsLike", True)
+    assert items(path) == (on, True)
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "settings"))
+    qapp.processEvents()
+    box = window.findChild(QObject, "soundsLikeSettings")
+    assert box is not None and box.property("visible")
+    assert window.findChild(QObject, "soundsLikeWhen") is not None
+    assert not [w for w in warnings if "soundsLike" in w or "TrackMenu" in w], warnings[:3]

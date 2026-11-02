@@ -9,7 +9,8 @@ making progress for STALL_S, or dies, it's ended and the next song gets a fresh 
 IDLE_MS with nothing to do.
 
 The protocol is one JSON object per line. Asked: {"id", "path", "kind": "waveform" | "loudness" | "spectrogram" |
-"render", "envelope": bool, "options": {…}} ("render" writes the song as heard here to a WAV file for a cast
+"render" | "features", "envelope": bool, "options": {…}} ("features" measures how a song sounds, from "start"
+seconds in: core/soundlike.py; with "low": true the helper lowers its own priority first; "render" writes the song as heard here to a WAV file for a cast
 device: see core/cast/render.py and render_options). Answered: {"id", "beat": buffers decoded so far} while working, then {"id", "result"}
 (None when the file couldn't be decoded; {"silent": true} for loudness of a silent song)."""
 import base64
@@ -90,6 +91,7 @@ def serve():
     from PySide6.QtMultimedia import QAudioDecoder
 
     from . import dsd, loudness
+    from .core import soundlike
     from .replaygain import channel_samples
     from .spectrogram import Accumulator
     from .waveform import blocks_from_samples, mono_samples, peaks_from_blocks
@@ -130,8 +132,12 @@ def serve():
             return
         job = state["job"] = queue.pop(0)
         state["buffers"] = 0
+        if job.get("low") and not state.get("low"):
+            state["low"] = True
+            _lower_priority()
         state.update(ms=[], peak=[], rate=0, meter=loudness.Meter() if job.get("kind") == "loudness" else None,
                      spectrum=Accumulator() if job.get("kind") == "spectrogram" else None, render=None,
+                     features=soundlike.Collector(_number(job.get("start"))) if job.get("kind") == "features" else None,
                      dsd=job.get("kind") != "spectrogram" and dsd.is_dsd({"path": job.get("path")}), converter=None)
         decoder = state["decoder"] = QAudioDecoder()
         if job.get("kind") == "render":
@@ -176,6 +182,9 @@ def serve():
                     state["render_done"] = True
                     decoder.blockSignals(True)
                     QTimer.singleShot(0, on_finished)
+            elif state["features"] is not None:
+                if not state["features"].add(samples, rate):
+                    enough()
             elif state["meter"] is not None:
                 state["meter"].add(samples, rate)
             else:
@@ -190,6 +199,11 @@ def serve():
                 state["render_done"] = True
                 decoder.blockSignals(True)  # past the song's end (a CUE song): no need to decode the rest
                 QTimer.singleShot(0, on_finished)
+            return
+        if state["features"] is not None:
+            samples = channel_samples(buf)
+            if samples is not None and samples.size and not state["features"].add(samples, rate):
+                enough()  # (a minute or so is all it needs: the rest isn't decoded)
             return
         if state["meter"] is not None:
             samples = channel_samples(buf)
@@ -209,11 +223,19 @@ def serve():
             state["ms"].append(ms)
             state["peak"].append(peak)
 
+    def enough():
+        state["decoder"].blockSignals(True)
+        QTimer.singleShot(0, on_finished)
+
     def on_finished():
         job = state["job"]
         if job is None:
             return
-        if state["render"] is not None:
+        if state["features"] is not None:
+            got = state["features"].result()
+            result = {"empty": True} if got is None else {
+                "vec": _pack(got["vec"]), "bpm": got["bpm"], "key": got["key"], "keyStrength": got["keyStrength"]}
+        elif state["render"] is not None:
             result = state["render"].finish()
             if not result["frames"]:
                 result = None
@@ -258,6 +280,28 @@ def serve():
     timer.start(BEAT_MS)
     threading.Thread(target=reader, name="analysis-input", daemon=True).start()
     return app.exec()
+
+
+def _number(value):
+    try:
+        return max(0.0, float(value or 0.0))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _lower_priority():
+    """Measuring in the background goes after everything else on the computer."""
+    try:
+        if os.name == "nt":
+            import ctypes
+
+            kernel32 = ctypes.windll.kernel32
+            kernel32.GetCurrentProcess.restype = ctypes.c_void_p
+            kernel32.SetPriorityClass(ctypes.c_void_p(kernel32.GetCurrentProcess()), 0x4000)  # below normal
+        else:
+            os.nice(10)
+    except (OSError, AttributeError):
+        pass
 
 
 def render_options(gain=1.0, start=0.0, end=0.0, rate=0, channels=2, eq_on=False, gains=None, curve=None,
@@ -459,6 +503,10 @@ def _decode_result(kind, result):
         if kind == "spectrogram":
             cols = _unpack(result["columns"], np.uint8).reshape(int(result["count"]), int(result["rows"]))
             return {**result, "columns": cols}
+        if kind == "features":
+            if result.get("empty"):
+                return {"empty": True}
+            return {**result, "vec": _unpack(result["vec"])}
         if kind == "loudness":
             if result.get("silent"):
                 return {"silent": True}

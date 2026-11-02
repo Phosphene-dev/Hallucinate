@@ -90,6 +90,9 @@ CREATE TABLE IF NOT EXISTS artist_bios(s_aa TEXT PRIMARY KEY, own TEXT NOT NULL 
 -- Discover's "Not interested": an album (album_key), song (path) or artist (folded name) left out of its shelves
 CREATE TABLE IF NOT EXISTS discover_dismissed(kind TEXT NOT NULL, key TEXT NOT NULL, label TEXT NOT NULL DEFAULT '',
   at REAL NOT NULL, PRIMARY KEY(kind, key));
+-- how a song sounds (core/soundlike.py): measured from the file at mtime; vec NULL when it couldn't be measured
+CREATE TABLE IF NOT EXISTS sound_features(path TEXT PRIMARY KEY, mtime REAL NOT NULL, version INTEGER NOT NULL,
+  bpm REAL NOT NULL DEFAULT 0, music_key INTEGER NOT NULL DEFAULT -1, vec BLOB);
 """
 
 FTS = (

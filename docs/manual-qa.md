@@ -11,6 +11,17 @@
       it, Let back in returns it. Not interested is not offered anywhere outside Discover.
 - [ ] Home: Rediscover and On this day are gone unless turned on in Features → Home.
 - [ ] A new library (no listening yet): Discover says there's nothing to suggest yet, calmly.
+- [ ] Sounds like this: with nothing playing, the background list shows "Listening to your music: x of y" after
+      a short while; play something and it stops within a moment, stop playing and it carries on ~15 s later.
+      The computer stays responsive (it runs at low priority). On a laptop on battery it waits (Settings can allow it).
+- [ ] Right-click a song → Sounds like this → Play it and songs like it: the song plays first, then songs that
+      really do sound alike (try a quiet acoustic song and a loud electronic one). Add to the queue and Save as a
+      playlist work; a song not listened to yet is listened to first ("Listening to the song first…").
+- [ ] Settings → Discover → Sounds like this: each choice changes the next pick (flow vs most alike, how many,
+      tempo, keys, own artist, per artist); Pause/Resume/Listen now; Forget what it has heard asks first, then
+      starts again. Features → Sounds like this off: the menu entry goes and nothing is measured.
+- [ ] Radio mode with "Radio mode picks songs: By how they sound" and "Both ways": the songs that follow make sense.
+- [ ] Windows: the helper runs below normal priority (Task Manager → Details) while listening in the background.
 
 ## Release testing for 1.13.0
 

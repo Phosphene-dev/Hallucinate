@@ -246,6 +246,11 @@ def main(argv=None) -> int:
 
     discover = Discover(paths.db_path(), player, user_lib, shell)
     library.reloaded.connect(discover.libraryChanged)
+    from .likethis import SoundsLike
+
+    sounds_like = SoundsLike(paths.db_path(), player, user_lib, shell)
+    library.scanFinished.connect(lambda _stats: sounds_like.libraryChanged())
+    library.setSoundsLike(sounds_like)
     shell.setReportSources(library=library, theme_manager=theme_manager)
     shell.setStartupNotice(db_notice)
     shell.setCrashReport(last_crash, last_crashed)
@@ -361,6 +366,7 @@ def main(argv=None) -> int:
     ctx.setContextProperty("player", player)
     ctx.setContextProperty("userLib", user_lib)
     ctx.setContextProperty("discover", discover)
+    ctx.setContextProperty("soundsLike", sounds_like)
     ctx.setContextProperty("metaEditor", meta_editor)
     ctx.setContextProperty("replayGain", replay_gain)
     ctx.setContextProperty("headphones", headphones)
@@ -472,6 +478,7 @@ def main(argv=None) -> int:
     similar_artists.shutdown()
     user_lib.shutdown()
     discover.shutdown()
+    sounds_like.shutdown()
     library.shutdown()
     dbguard.mark_clean(paths.db_path())  # every connection is closed now
     dbguard.mark_clean(paths.data_dir() / "streams.db")

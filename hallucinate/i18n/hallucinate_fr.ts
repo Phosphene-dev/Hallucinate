@@ -36,6 +36,21 @@
         </translation>
     </message>
     <message numerus="yes">
+        <source>Listening to your music: %1 of %n song(s)</source>
+        <translation>
+            <numerusform>Écoute de votre musique : %1 sur %n morceau</numerusform>
+            <numerusform>Écoute de votre musique : %1 sur %n morceaux</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Paused. Resume it any time in Settings → Discover.</source>
+        <translation>En pause. Reprenez quand vous voulez dans Paramètres → Découvrir.</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Annuler</translation>
+    </message>
+    <message numerus="yes">
         <source>Downloading %n episode(s)</source>
         <translation>
             <numerusform>Téléchargement de %n épisode</numerusform>
@@ -8113,10 +8128,6 @@
         <translation>Rayon Ce jour-là</translation>
     </message>
     <message>
-        <source>discover suggestions recommendations daily mixes forgotten favourites deep cuts never played on this day not interested hidden shelves rediscover</source>
-        <translation>découvrir suggestions recommandations mix du jour favoris oubliés pépites jamais écoutés ce jour-là pas intéressé rayons masqués redécouvrir discover suggestions recommendations daily mixes forgotten favourites deep cuts never played on this day not interested hidden shelves rediscover</translation>
-    </message>
-    <message>
         <source>Discover suggests music from your own library, worked out on this computer from what you play. Choose which shelves it shows; a shelf that&apos;s off isn&apos;t even worked out. The whole page can be turned off in Features.</source>
         <translation>Découvrir suggère de la musique de votre bibliothèque, calculée sur cet ordinateur à partir de ce que vous écoutez. Choisissez les rayons affichés ; un rayon désactivé n’est même pas calculé. La page entière peut être désactivée dans Fonctionnalités.</translation>
     </message>
@@ -8198,10 +8209,6 @@
     <message>
         <source>Not interested</source>
         <translation>Pas intéressé</translation>
-    </message>
-    <message>
-        <source>Left out of Discover (right-click something there and choose Not interested to add to this).</source>
-        <translation>Exclus de Découvrir (faites un clic droit sur un élément là-bas et choisissez Pas intéressé pour l’ajouter ici).</translation>
     </message>
     <message>
         <source>Nothing yet: right-click an album, song or artist in Discover and choose Not interested, and it&apos;s left out from then on.</source>
@@ -8798,6 +8805,176 @@
     <message>
         <source>Wikipedia, then Last.fm, then Discogs</source>
         <translation>Wikipédia, puis Last.fm, puis Discogs</translation>
+    </message>
+    <message>
+        <source>Sounds like this</source>
+        <translation>Dans le même son</translation>
+    </message>
+    <message>
+        <source>discover suggestions recommendations daily mixes forgotten favourites deep cuts never played on this day not interested hidden shelves rediscover sounds like this similar songs tempo bpm key energy timbre measure listen analyse radio flow</source>
+        <translation>découvrir suggestions recommandations mix du jour favoris oubliés pépites jamais écouté ce jour-là pas intéressé masqué étagères redécouvrir dans le même son morceaux similaires tempo bpm tonalité énergie timbre mesurer écouter analyser radio enchaînement</translation>
+    </message>
+    <message>
+        <source>Right-click a song and choose Sounds like this for songs in your library that sound like it: their tempo, key, energy and timbre. To know, Hallucinate first listens to about a minute of each song on this computer, quietly in the background, the songs you like and play most first. Nothing leaves this computer. Turn it off in Features.</source>
+        <translation>Faites un clic droit sur un morceau et choisissez Dans le même son pour trouver dans votre bibliothèque les morceaux qui lui ressemblent : tempo, tonalité, énergie et timbre. Pour le savoir, Hallucinate écoute d’abord environ une minute de chaque morceau de cet ordinateur, discrètement en arrière-plan, en commençant par ceux que vous aimez et écoutez le plus. Rien ne quitte cet ordinateur. Désactivez-le dans Fonctionnalités.</translation>
+    </message>
+    <message>
+        <source>Paused.</source>
+        <translation>En pause.</translation>
+    </message>
+    <message>
+        <source>Waiting until nothing is playing.</source>
+        <translation>En attente que plus rien ne joue.</translation>
+    </message>
+    <message>
+        <source>Waiting until this computer is plugged in.</source>
+        <translation>En attente que cet ordinateur soit branché.</translation>
+    </message>
+    <message>
+        <source>Waiting until you ask.</source>
+        <translation>En attente de votre demande.</translation>
+    </message>
+    <message>
+        <source>Counting your songs…</source>
+        <translation>Comptage de vos morceaux…</translation>
+    </message>
+    <message>
+        <source>No songs on this computer to listen to yet.</source>
+        <translation>Aucun morceau à écouter sur cet ordinateur pour l’instant.</translation>
+    </message>
+    <message numerus="yes">
+        <source>Listened to all %n song(s).</source>
+        <translation>
+            <numerusform>Le morceau a été écouté.</numerusform>
+            <numerusform>Les %n morceaux ont tous été écoutés.</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Listened to %1 of %n song(s).</source>
+        <translation>
+            <numerusform>%1 morceau écouté sur %n.</numerusform>
+            <numerusform>%1 morceaux écoutés sur %n.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Listening now.</source>
+        <translation>Écoute en cours.</translation>
+    </message>
+    <message>
+        <source>Listen now</source>
+        <translation>Écouter maintenant</translation>
+    </message>
+    <message>
+        <source>Pause</source>
+        <translation>Pause</translation>
+    </message>
+    <message>
+        <source>Resume</source>
+        <translation>Reprendre</translation>
+    </message>
+    <message>
+        <source>Listen to my music</source>
+        <translation>Écouter ma musique</translation>
+    </message>
+    <message>
+        <source>While nothing is playing</source>
+        <translation>Quand rien ne joue</translation>
+    </message>
+    <message>
+        <source>Any time (it goes after everything else)</source>
+        <translation>À tout moment (après tout le reste)</translation>
+    </message>
+    <message>
+        <source>Play them as</source>
+        <translation>Les jouer</translation>
+    </message>
+    <message>
+        <source>A smooth flow, each into the next</source>
+        <translation>En enchaînement fluide, l’un dans l’autre</translation>
+    </message>
+    <message>
+        <source>The most alike first</source>
+        <translation>Les plus ressemblants d’abord</translation>
+    </message>
+    <message>
+        <source>Songs each time</source>
+        <translation>Morceaux à chaque fois</translation>
+    </message>
+    <message>
+        <source>Radio mode picks songs</source>
+        <translation>Le mode radio choisit les morceaux</translation>
+    </message>
+    <message>
+        <source>By what you play together, and tags</source>
+        <translation>Selon ce que vous écoutez ensemble, et les tags</translation>
+    </message>
+    <message>
+        <source>By how they sound</source>
+        <translation>Selon leur son</translation>
+    </message>
+    <message>
+        <source>Both ways, taking turns</source>
+        <translation>Des deux façons, en alternance</translation>
+    </message>
+    <message>
+        <source>Tempo, keys, artists and listening</source>
+        <translation>Tempo, tonalités, artistes et écoute</translation>
+    </message>
+    <message>
+        <source>Keep the tempo close (half and double time count as close)</source>
+        <translation>Garder un tempo proche (la moitié et le double comptent comme proches)</translation>
+    </message>
+    <message>
+        <source>Keep to keys that mix well (the Camelot wheel)</source>
+        <translation>S’en tenir aux tonalités qui s’enchaînent bien (la roue Camelot)</translation>
+    </message>
+    <message>
+        <source>Include the song&apos;s own artist</source>
+        <translation>Inclure l’artiste du morceau</translation>
+    </message>
+    <message>
+        <source>Songs by any one artist</source>
+        <translation>Morceaux par artiste</translation>
+    </message>
+    <message>
+        <source>At most 1</source>
+        <translation>1 au plus</translation>
+    </message>
+    <message>
+        <source>At most 2</source>
+        <translation>2 au plus</translation>
+    </message>
+    <message>
+        <source>At most 3</source>
+        <translation>3 au plus</translation>
+    </message>
+    <message>
+        <source>At most 5</source>
+        <translation>5 au plus</translation>
+    </message>
+    <message>
+        <source>No limit</source>
+        <translation>Sans limite</translation>
+    </message>
+    <message>
+        <source>Don&apos;t listen while this computer is on battery</source>
+        <translation>Ne pas écouter quand cet ordinateur est sur batterie</translation>
+    </message>
+    <message>
+        <source>Forget what it has heard</source>
+        <translation>Oublier ce qui a été écouté</translation>
+    </message>
+    <message>
+        <source>Forget what it has heard?</source>
+        <translation>Oublier ce qui a été écouté ?</translation>
+    </message>
+    <message>
+        <source>Every song&apos;s measurements are thrown away and Sounds like this starts again from nothing, listening to your music as set above. Your songs and files aren&apos;t touched.</source>
+        <translation>Les mesures de chaque morceau sont effacées et Dans le même son repart de zéro, en écoutant votre musique comme réglé ci-dessus. Vos morceaux et fichiers ne sont pas modifiés.</translation>
+    </message>
+    <message>
+        <source>Left out of Discover and Sounds like this (right-click something in Discover and choose Not interested to add to this).</source>
+        <translation>Exclus de Découvrir et de Dans le même son (faites un clic droit sur un élément de Découvrir et choisissez Pas intéressé pour l’ajouter ici).</translation>
     </message>
     <message>
         <source>equalizer eq bass treble headphones autoeq crossfeed bit-perfect bitperfect exclusive untouched resample sample rate pipewire audiophile dsd dsf dff sacd wasapi exclusive mode core audio</source>
@@ -10347,6 +10524,72 @@
     </message>
 </context>
 <context>
+    <name>SoundsLike</name>
+    <message>
+        <source>Only songs on this computer can be matched by how they sound.</source>
+        <translation>Seuls les morceaux de cet ordinateur peuvent être comparés par leur son.</translation>
+    </message>
+    <message>
+        <source>Listening to the song first…</source>
+        <translation>Écoute du morceau d’abord…</translation>
+    </message>
+    <message>
+        <source>That song isn&apos;t in the library any more.</source>
+        <translation>Ce morceau n’est plus dans la bibliothèque.</translation>
+    </message>
+    <message>
+        <source>Hallucinate couldn&apos;t listen to that song (it may be silent, too short or damaged).</source>
+        <translation>Hallucinate n’a pas pu écouter ce morceau (il est peut-être silencieux, trop court ou endommagé).</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t find songs that sound like that.</source>
+        <translation>Impossible de trouver des morceaux qui sonnent ainsi.</translation>
+    </message>
+    <message>
+        <source>No songs that sound like that yet: Hallucinate hasn&apos;t listened to enough of your music.</source>
+        <translation>Pas encore de morceaux au son proche : Hallucinate n’a pas assez écouté votre musique.</translation>
+    </message>
+    <message>
+        <source>No other songs sound like that with these settings.</source>
+        <translation>Aucun autre morceau ne sonne ainsi avec ces réglages.</translation>
+    </message>
+    <message>
+        <source>%1 added to the queue</source>
+        <translation>%1 ajoutés à la file d’attente</translation>
+    </message>
+    <message>
+        <source>Sounds like %1 (%2)</source>
+        <translation>Dans le son de %1 (%2)</translation>
+    </message>
+    <message>
+        <source>this</source>
+        <translation>ce morceau</translation>
+    </message>
+    <message>
+        <source>Saved as “%1”</source>
+        <translation>Enregistré sous « %1 »</translation>
+    </message>
+    <message>
+        <source>Picked from the %1 songs listened to so far: they&apos;ll get closer as Hallucinate listens to more of your music.</source>
+        <translation>Choisis parmi les %1 morceaux écoutés jusqu’ici : ils seront plus proches à mesure qu’Hallucinate écoute votre musique.</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n song(s)</source>
+        <translation>
+            <numerusform>%n morceau</numerusform>
+            <numerusform>%n morceaux</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>%1 minor</source>
+        <translation>%1 mineur</translation>
+    </message>
+    <message>
+        <source>%1 major</source>
+        <translation>%1 majeur</translation>
+    </message>
+</context>
+<context>
     <name>Sources</name>
     <message>
         <source>Offline mode is on, so the token can&apos;t be checked</source>
@@ -11337,6 +11580,22 @@
     <message>
         <source>(%1 of %2)</source>
         <translation>(%1 sur %2)</translation>
+    </message>
+    <message>
+        <source>Sounds like this</source>
+        <translation>Dans le même son</translation>
+    </message>
+    <message>
+        <source>Play it and songs like it</source>
+        <translation>Le jouer avec des morceaux semblables</translation>
+    </message>
+    <message>
+        <source>Add songs like it to the queue</source>
+        <translation>Ajouter des morceaux semblables à la file</translation>
+    </message>
+    <message>
+        <source>Save them as a playlist</source>
+        <translation>Les enregistrer comme liste de lecture</translation>
     </message>
     <message>
         <source>Go to album</source>

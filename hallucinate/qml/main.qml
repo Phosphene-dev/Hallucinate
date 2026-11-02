@@ -64,6 +64,10 @@ ApplicationWindow {
         target: discover
         function onUndoable(text) { toast.show(text, 0, qsTr("Undo"), function () { discover.undo() }) }
     }
+    Connections {  // Sounds like this: what it's doing, and when it couldn't
+        target: typeof soundsLike !== "undefined" ? soundsLike : null
+        function onMessage(text) { toast.show(text) }
+    }
     Connections {  // handoff: paired, handed over, carrying on from another computer
         target: handoff
         function onNotice(text) { toast.show(text) }
