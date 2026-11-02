@@ -11448,6 +11448,18 @@
 <context>
     <name>WhatsNew</name>
     <message>
+        <source>Your phone can play the music itself: in the phone remote, Play on → This phone.</source>
+        <translation>Votre téléphone peut lire la musique lui-même : dans la télécommande du téléphone, Lire sur → Ce téléphone.</translation>
+    </message>
+    <message>
+        <source>Hand what&apos;s playing over to another computer running Hallucinate, and it carries on from the same place.</source>
+        <translation>Passez la lecture à un autre ordinateur avec Hallucinate : elle continue au même endroit.</translation>
+    </message>
+    <message>
+        <source>Both are in the cast button beside the volume; computers pair once with a code.</source>
+        <translation>Les deux sont dans le bouton de diffusion à côté du volume ; les ordinateurs s’associent une fois avec un code.</translation>
+    </message>
+    <message>
         <source>Play on a Chromecast, a Google or Nest speaker, or a DLNA/UPnP TV or speaker: the cast button beside the volume.</source>
         <translation>Écoutez sur un Chromecast, une enceinte Google ou Nest, ou un téléviseur ou une enceinte DLNA/UPnP : le bouton de diffusion à côté du volume.</translation>
     </message>

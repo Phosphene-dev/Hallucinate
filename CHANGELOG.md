@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [1.12.0] - 2026-11-02
 
 ### Added
 - The phone as the player: in the phone remote, Play on → This phone plays the music on the phone itself, through

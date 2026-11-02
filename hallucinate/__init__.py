@@ -1,4 +1,4 @@
-__version__ = "1.11.0"
+__version__ = "1.12.0"
 
 from . import audiobackend as _audiobackend  # noqa: E402
 

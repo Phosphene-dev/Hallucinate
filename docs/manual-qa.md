@@ -1,6 +1,6 @@
 # Manual QA checklist
 
-## Release testing for the next version
+## Release testing for 1.12.0
 
 - [ ] The phone as the player (Android Chrome, and an iPhone): Play on → This phone plays the song there, from where
       it was; the computer goes quiet. Pause, seek, next and volume from the computer and from the phone's remote
