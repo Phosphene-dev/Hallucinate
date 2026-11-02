@@ -388,7 +388,8 @@ def test_a_link_works_for_its_device_only(media, tmp_path):
     status, headers, body = get(media, link)
     assert status == 200 and body == song.read_bytes() and headers["Content-Type"] == "audio/mpeg"
     assert headers["Accept-Ranges"] == "bytes"
-    assert get(media, link, source="127.0.0.2")[0] == 404  # another machine
+    with pytest.raises((http.client.HTTPException, ConnectionError, OSError)):
+        get(media, link, source="127.0.0.2")  # another machine: nothing shared with it, so not even answered
     assert get(media, "/m/" + "A" * 32)[0] == 404  # a guess
     assert get(media, "/etc/passwd")[0] == 404
     assert get(media, link, method="POST")[0] == 405
@@ -534,3 +535,35 @@ def test_offline_mode_stops_casting_connections_too(renderer):
         net.connect_local("8.8.8.8", 8009)
     with pytest.raises(upnp.UpnpError):
         upnp.http_request("http://8.8.8.8/x")  # (refused before any connection is tried)
+
+
+def test_the_song_playing_keeps_its_link(media, tmp_path):
+    """However many links are shared after it (the next song handed over again and again as the queue is
+    edited, each with its cover), the playing song's and the next one's stay: the device may come back."""
+    from hallucinate.core.cast import mediaserver
+
+    song = tmp_path / "a.flac"
+    song.write_bytes(b"x" * 100)
+    playing = media.share("127.0.0.1", path=str(song))
+    nxt = media.share("127.0.0.1", path=str(song))
+    media.pin([playing, nxt])
+    for _ in range(mediaserver.KEEP_LINKS * 3):
+        media.share("127.0.0.1", data=b"cover", ctype="image/jpeg", name="cover.jpg")
+    assert get(media, playing)[0] == 200 and get(media, nxt)[0] == 200
+    media.pin([nxt])
+    for _ in range(mediaserver.KEEP_LINKS + 1):
+        media.share("127.0.0.1", data=b"cover", ctype="image/jpeg", name="cover.jpg")
+    assert get(media, playing)[0] == 404 and get(media, nxt)[0] == 200  # (no longer in use: let go)
+
+
+def test_xml_in_utf16_is_refused_too():
+    """A DOCTYPE spelt in UTF-16 (a zero byte between letters) would slip past the check: it's refused outright."""
+    from hallucinate.core.cast import upnp
+    from hallucinate.core.podcasts import _xml
+
+    bomb = '<?xml version="1.0" encoding="UTF-16"?><!DOCTYPE x [<!ENTITY a "aaaa">]><x>&a;</x>'.encode("utf-16")
+    with pytest.raises(upnp.UpnpError):
+        upnp.safe_xml(bomb)
+    with pytest.raises(ValueError):
+        _xml(bomb, "not a feed")
+    assert upnp.safe_xml(b"<root><a>1</a></root>").find("a").text == "1"

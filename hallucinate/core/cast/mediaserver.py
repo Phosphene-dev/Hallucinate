@@ -93,6 +93,9 @@ class _Server(ThreadingHTTPServer):
         super().__init__(address, _Handler)
 
     def process_request(self, request, client_address):
+        if not self.owner.knows(client_address[0]):  # (nothing is shared with it: it has nothing to fetch)
+            self.shutdown_request(request)
+            return
         if not self._slots.acquire(blocking=False):
             self.shutdown_request(request)
             return
@@ -235,7 +238,7 @@ class _Handler(ServesLinks, BaseHTTPRequestHandler):
     server_version = "Hallucinate"
     sys_version = ""
     protocol_version = "HTTP/1.1"
-    timeout = 60
+    timeout = 20  # (a device that stops reading is let go; it asks again with a Range when it carries on)
 
     def log_message(self, fmt, *args):  # nothing: requests would carry what you play
         pass
@@ -266,6 +269,7 @@ class Links:
     def __init__(self):
         self._links = collections.OrderedDict()
         self._lock = threading.Lock()
+        self._pinned = set()  # tokens kept whatever else is shared (the song playing and the next one)
 
     def share(self, client, path=None, data=None, live=None, relay=None, ctype=None, name="media"):
         """A link to `path` (a file), `data` (bytes), `live` (a callable returning an iterator of chunks) or `relay`
@@ -278,9 +282,41 @@ class Links:
             ext = ""
         with self._lock:
             self._links[token] = Link(client, ctype, path=path, data=data, live=live, relay=relay, name=name)
-            while len(self._links) > KEEP_LINKS:
-                self._links.popitem(last=False)
+            for old in list(self._links):  # the oldest go first, but never the songs in use
+                if len(self._links) <= KEEP_LINKS + len(self._pinned & self._links.keys()):
+                    break
+                if old not in self._pinned and old != token:
+                    del self._links[old]
         return f"/m/{token}{ext}"
+
+    @staticmethod
+    def _token(link_path):
+        return str(link_path or "").rsplit("/", 1)[-1].split(".", 1)[0]
+
+    def pin(self, link_paths):
+        """Keeps these links (the playing song's, the next one's) however many others are shared after them:
+        a device may come back for a song it's playing at any time (a seek, a pause that dropped the
+        connection), and it gets a 404 if the link has gone."""
+        with self._lock:
+            self._pinned = {self._token(p) for p in link_paths if p}
+
+    def knows(self, address):
+        """Whether any link is shared with this address (only those devices may hold a connection open)."""
+        import ipaddress as _ip
+
+        try:
+            ip = _ip.ip_address(address)
+        except ValueError:
+            return False
+        with self._lock:
+            clients = [link.client for link in self._links.values()]
+        for client in clients:
+            try:
+                if _ip.ip_address(client) == ip:
+                    return True
+            except ValueError:
+                continue
+        return False
 
     def find(self, token):
         with self._lock:
@@ -299,6 +335,7 @@ class Links:
     def clear(self):
         with self._lock:
             self._links.clear()
+            self._pinned = set()
 
 
 class MediaServer:
@@ -364,3 +401,9 @@ class MediaServer:
 
     def forget(self, link_path):
         self._links.forget(link_path)
+
+    def pin(self, link_paths):
+        self._links.pin(link_paths)
+
+    def knows(self, address):
+        return self._links.knows(address)

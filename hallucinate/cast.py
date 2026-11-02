@@ -158,6 +158,7 @@ class CastSession(QObject):
         self._finish_wait.stop()
         self._window = (media.get("start", 0.0), media.get("end", 0.0))
         self._link = media["link"]
+        self._pin()
         self._loaded_at = time.monotonic()
         self.duration = media.get("file_duration") or 0.0
         self._set("LOADING" if autoplay else "PAUSED", self._window[0] + _seconds(start_ms))
@@ -170,7 +171,14 @@ class CastSession(QObject):
         if not self.gapless or self.closed or media is self._next:
             return
         old, self._next = self._next, media
+        self._pin()
         self._submit(lambda: self._do_queue_next(media, old), error="")
+
+    def _pin(self):
+        """The links the device may come back for (the song playing and the next one) are kept."""
+        pin = getattr(self._server, "pin", None)
+        if pin is not None:
+            pin([self._link, (self._next or {}).get("link", "")])
 
     @property
     def queued(self):
@@ -196,6 +204,7 @@ class CastSession(QObject):
         self._gen += 1
         self._window = (0.0, 0.0)
         self._link = media["link"]
+        self._pin()
         self._loaded_at = time.monotonic()
         self.duration = media.get("file_duration") or 0.0
         self._adopt(self._gen)
@@ -938,10 +947,14 @@ class Casting(QObject):
         return dict(self._session.command) if isinstance(self._session, PhoneSession) else None
 
     # --- what's sent ----------------------------------------------------------------------------------------
-    def media_for(self, track, session, ready=None):
+    def media_for(self, track, session, ready=None, urgent=None):
         """How a queue entry reaches the device: {"link", "url", "ctype", "title", …}; {"error": why} when it
         can't be played there; or {"pending": True} while it's being got ready (a song in Hallucinate's sound,
-        a format the device doesn't play, a CUE sheet song), and `ready(media)` is called with the answer."""
+        a format the device doesn't play, a CUE sheet song), and `ready(media)` is called with the answer.
+
+        `urgent` (by default: when `ready` is given, someone is waiting): a song to get ready goes as WAV,
+        written at once, rather than FLAC, which takes a few seconds for a whole song; songs got ready ahead
+        (not urgent) go as FLAC."""
         from .player import track_file, track_window
 
         path = track_file(track)
@@ -974,7 +987,8 @@ class Casting(QObject):
             ctype = mediaserver.content_type(path)
             processed = self.sending == "processed" and self._player is not None
             if processed or start or end or not session.plays(ctype, track):
-                return self._prepare(track, path, session, out, processed, ready)
+                return self._prepare(track, path, session, out, processed, ready,
+                                     urgent=ready is not None if urgent is None else urgent)
             out.update(link=session.share(path=path, ctype=ctype), ctype=ctype)
         return self._finish_media(track, session, out)
 
@@ -996,12 +1010,18 @@ class Casting(QObject):
         sound = self._player.cast_sound(track) if processed else {}
         return render_options(start=start / 1000, end=end / 1000, rate=rate, kind=kind, **sound)
 
-    def _prepare(self, track, path, session, out, processed, ready):
+    def _prepare(self, track, path, session, out, processed, ready, urgent=False):
         """Renders the song (on the decoding helper) and hands `ready` the media once it's written."""
+        def key_for(kind):
+            options = self._render_options(track, processed, kind)
+            return hashlib.sha256(repr((path, sorted(options.items(), key=str))).encode()).hexdigest()[:32], options
+
         kind = "flac" if session.takes_flac() else "wav"
+        key, options = key_for(kind)
+        if kind == "flac" and urgent and key not in self._renders:
+            kind = "wav"  # (waited on, and no FLAC of it made or being made: WAV is ready almost at once)
+            key, options = key_for(kind)
         ctype = "audio/" + kind
-        options = self._render_options(track, processed, kind)
-        key = hashlib.sha256(repr((path, sorted(options.items(), key=str))).encode()).hexdigest()[:32]
 
         def deliver(done):
             if done is None:

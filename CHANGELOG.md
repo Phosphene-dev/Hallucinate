@@ -3,6 +3,26 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Changed
+- Casting with Hallucinate's sound: the song you're waiting for (the first, or one you skip to) goes as WAV, ready
+  almost at once; songs got ready in the background go as 24-bit FLAC as before.
+- Liked Songs and big playlists open without a pause (their length was added up in the page itself: 0.8 s for
+  2,000 songs, now a few milliseconds).
+
+### Fixed
+- Casting: after a few changes to the queue mid-song, the playing song's link could be dropped, so the device
+  couldn't seek in it or pick it up again after a pause.
+- Casting: a next song that couldn't be got ready (a damaged file) was tried again every second while it stayed
+  next.
+
+### Security
+- The casting server only lets devices something is being cast to hold a connection, and lets idle ones go
+  sooner, so nothing else on the network can tie it up.
+- XML from devices and podcast feeds in UTF-16 is refused (a DOCTYPE written that way slipped past the check that
+  stops entity-expansion attacks; the parser's own limits still applied).
+
 ## [1.13.0] - 2026-11-02
 
 ### Added
