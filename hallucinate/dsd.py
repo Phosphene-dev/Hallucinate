@@ -15,6 +15,7 @@ DEFAULT_RATE = 88200
 PASS_HZ = 30000.0  # flat up to here: above any music, below where DSD's noise climbs
 STOP_HZ = 44100.0
 ATTENUATION_DB = 120.0
+MIN_RATE = 176400  # what FFmpeg makes of DSD is at least this (DSD64 at 352.8 kHz); lower has been resampled already
 
 
 def is_dsd(track):
@@ -57,7 +58,7 @@ class Converter:
     filter with the input around it), so it costs little even for DSD256."""
 
     def __init__(self, in_rate, channels, out_rate):
-        if out_rate <= 0 or in_rate % out_rate:
+        if in_rate < MIN_RATE or out_rate <= 0 or in_rate % out_rate:  # (already brought down: nothing to do)
             raise ValueError(f"can't convert {in_rate} Hz to {out_rate} Hz")
         self.in_rate, self.channels, self.out_rate = in_rate, channels, out_rate
         self.factor = in_rate // out_rate

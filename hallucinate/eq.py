@@ -371,7 +371,7 @@ class EqTap(QObject):
         if spec is None:
             return
         try:
-            if self.dsd:
+            if self.dsd and fmt.sampleRate() >= 176400:  # (DSD as FFmpeg decodes it: see dsd.py)
                 self._on_dsd(buf, fmt, spec)
                 return
             if self.passthrough:

@@ -174,7 +174,7 @@ def test_a_format_the_device_cant_play_is_converted(setup, songs, tmp_path):
     assert wait_for(lambda: dev.loads, timeout=30)
     assert wait_for(lambda: dev.fetched)
     status, ctype, body = dev.fetched
-    assert status == 200 and ctype == "audio/wav" and body[:4] == b"RIFF"  # converted, so it plays there
+    assert status == 200 and ctype == "audio/flac" and body[:4] == b"fLaC"  # converted, so it plays there
     assert player.currentIndex == 0 and player.error == ""
 
 
@@ -198,7 +198,7 @@ def test_hallucinates_own_sound(setup, songs):
         connect(casting)
         assert wait_for(lambda: dev.fetched, timeout=30)
         status, ctype, body = dev.fetched
-        assert ctype == "audio/wav" and body[:4] == b"RIFF"
+        assert ctype == "audio/flac" and body[:4] == b"fLaC"  # (24-bit FLAC: every Cast device plays it)
         url, start, autoplay, meta = dev.loads[0]
         assert meta["title"] == "T0" and autoplay
         keys = [st["key"] for st in player.signalPath["stages"]]
@@ -222,9 +222,11 @@ def test_a_cue_song_is_cut_out_for_the_device(setup, songs):
     connect(casting)
     assert wait_for(lambda: dev.fetched, timeout=30)
     import io
-    import wave
-    with wave.open(io.BytesIO(dev.fetched[2])) as w:
-        assert abs(w.getnframes() / w.getframerate() - 1.5) < 0.05  # just that song, not the whole album
+
+    from mutagen.flac import FLAC
+    info = FLAC(io.BytesIO(dev.fetched[2])).info
+    assert abs(info.length - 1.5) < 0.05  # just that song, not the whole album
+    assert info.bits_per_sample == 24
     assert dev.loads[0][3]["title"] == "Middle"
 
 
@@ -232,10 +234,12 @@ def test_a_cue_song_is_cut_out_for_the_device(setup, songs):
 class Renderer:
     """A stateful fake DLNA renderer: fetches what it's given, plays, pauses, seeks and can finish."""
 
-    def __init__(self):
+    def __init__(self, sink="audio/flac,audio/mpeg"):
         self.calls = []
         self.state, self.pos, self.uri, self.volume = "NO_MEDIA_PRESENT", 0.0, "", 40
         self.fetched = []
+        self.got = []  # (content type, the first bytes) of what it fetched
+        self.sink = sink
         outer = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -276,7 +280,9 @@ class Renderer:
             host, port = parts[2].rsplit(":", 1)
             c = http.client.HTTPConnection(host, int(port), timeout=5)
             c.request("GET", "/" + parts[3])
-            self.fetched.append(c.getresponse().status)
+            r = c.getresponse()
+            self.fetched.append(r.status)
+            self.got.append((r.getheader("Content-Type"), r.read(4)))
             c.close()
             self.state = "PLAYING"
         elif action == "Pause":
@@ -294,7 +300,7 @@ class Renderer:
         elif action == "GetPositionInfo":
             return f"<RelTime>0:00:{self.pos:06.3f}</RelTime><TrackDuration>0:00:03</TrackDuration>"
         elif action == "GetProtocolInfo":
-            return "<Sink>http-get:*:audio/flac:*,http-get:*:audio/mpeg:*</Sink>"
+            return "<Sink>" + ",".join(f"http-get:*:{t}:*" for t in self.sink.split(",")) + "</Sink>"
         return ""
 
     def close(self):
@@ -363,3 +369,14 @@ def test_the_phone_remote_can_choose_where_it_plays(setup, songs):
         api.call("cast.devices")
     with pytest.raises(ApiError):
         api.call("cast.stop", allowed=("read",))  # (a read-only key can't change where it plays)
+
+
+@pytest.mark.parametrize("sink,kind", [("audio/flac,audio/mpeg", "flac"), ("audio/mpeg,audio/wav", "wav"), ("", "wav")])
+def test_converted_songs_go_as_flac_only_where_the_device_says_it_plays_it(setup, tmp_path, sink, kind):
+    player, casting, dev = setup("upnp", sink=sink)
+    wv = encode(tmp_path / "x.wv", "wv", seconds=2.0)
+    player.playList([track(wv, 9, dur=2.0, codec="WavPack")], 0)
+    connect(casting)
+    assert wait_for(lambda: dev.got, timeout=30)
+    ctype, head = dev.got[0]
+    assert ctype == f"audio/{kind}" and head == (b"fLaC" if kind == "flac" else b"RIFF")

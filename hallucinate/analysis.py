@@ -160,7 +160,7 @@ def serve():
             return
         state["buffers"] += 1
         rate = buf.format().sampleRate()
-        if state["dsd"]:  # measured, drawn and rendered as it's heard: converted from DSD (the spectrogram shows all)
+        if state["dsd"] and rate >= dsd.MIN_RATE:  # measured, drawn and rendered as it's heard: converted from DSD (the spectrogram shows all)
             samples = channel_samples(buf)
             if samples is None:
                 return
@@ -261,9 +261,11 @@ def serve():
 
 
 def render_options(gain=1.0, start=0.0, end=0.0, rate=0, channels=2, eq_on=False, gains=None, curve=None,
-                   crossfeed="", filters=None):
-    """The options of a "render" job (what this computer's sound is set to, for one song)."""
-    return {"gain": float(gain), "start": float(start), "end": float(end), "rate": int(rate or 0),
+                   crossfeed="", filters=None, kind="wav"):
+    """The options of a "render" job (what this computer's sound is set to, for one song; written as "flac" or
+    "wav")."""
+    return {"kind": "flac" if kind == "flac" else "wav",
+            "gain": float(gain), "start": float(start), "end": float(end), "rate": int(rate or 0),
             "channels": int(channels or 2), "eq": {"on": bool(eq_on), "gains": list(gains or [0.0] * 10),
                                                    "curve": curve, "crossfeed": crossfeed or "",
                                                    "filters": list(filters or [])[:64]}}
@@ -289,7 +291,8 @@ def _start_render(job):
         processor.set_crossfeed(e.get("crossfeed") or "")
         delay = 0 if processor.eq_flat else eq.TAPS // 2
     renderer = Renderer(out, processor=processor, delay=delay, gain=float(opts.get("gain", 1.0)),
-                        start=float(opts.get("start", 0.0)), end=float(opts.get("end", 0.0)))
+                        start=float(opts.get("start", 0.0)), end=float(opts.get("end", 0.0)),
+                        kind=opts.get("kind") or "wav")
     fmt = None
     rate = int(opts.get("rate") or 0)
     if rate:

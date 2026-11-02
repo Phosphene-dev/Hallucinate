@@ -284,6 +284,11 @@ class CastSession(QObject):
         """Whether the device plays this file type (and this track's codec and rate) as it is."""
         raise NotImplementedError
 
+    def takes_flac(self):
+        """Whether Hallucinate's sound (and converted songs) can be sent as FLAC rather than WAV: only where the
+        device says it plays FLAC (a device that won't say gets WAV, which every one plays)."""
+        return False
+
     def share(self, **what):
         """A link to something for this device only (see mediaserver.Links.share)."""
         return self._server.share(self.device["host"], **what)
@@ -364,6 +369,9 @@ class ChromecastSession(CastSession):
         # the client holds this session's methods as callbacks: let go of them, or the two keep each other alive
         client = self._client
         client.on_media = client.on_receiver = client.on_closed = None
+
+    def takes_flac(self):
+        return True  # (every Cast device plays FLAC)
 
     def plays(self, ctype, track):
         codec = (track.get("codec") or "").lower()
@@ -457,6 +465,9 @@ class UpnpSession(CastSession):
             return False
         return ctype in (self._formats or UPNP_ASSUMED)
 
+    def takes_flac(self):
+        return "audio/flac" in self._formats  # (said by the device itself, not assumed)
+
 
 PHONE_FORMATS = {"audio/mpeg", "audio/flac", "audio/mp4", "audio/aac", "audio/ogg", "audio/wav", "audio/webm"}
 
@@ -494,6 +505,9 @@ class PhoneSession(CastSession):
     def plays(self, ctype, track):
         codec = (track.get("codec") or "").lower()
         return ctype in self._formats and codec not in UNPLAYABLE_CODECS
+
+    def takes_flac(self):
+        return "audio/flac" in self._formats  # (what the phone's browser said it plays)
 
     def _send(self, **changes):
         self.command = dict(self.command, **changes)
@@ -843,7 +857,7 @@ class Casting(QObject):
                                                                       name="cover.jpg"))
         return out
 
-    def _render_options(self, track, processed):
+    def _render_options(self, track, processed, kind="wav"):
         from .analysis import render_options
         from .player import track_window
 
@@ -851,20 +865,22 @@ class Casting(QObject):
         rate = track.get("sample_rate") or 0
         rate = min(int(rate) if isinstance(rate, (int, float)) and rate > 0 else 44100, RENDER_MAX_RATE)
         sound = self._player.cast_sound(track) if processed else {}
-        return render_options(start=start / 1000, end=end / 1000, rate=rate, **sound)
+        return render_options(start=start / 1000, end=end / 1000, rate=rate, kind=kind, **sound)
 
     def _prepare(self, track, path, session, out, processed, ready):
         """Renders the song (on the decoding helper) and hands `ready` the media once it's written."""
-        options = self._render_options(track, processed)
+        kind = "flac" if session.takes_flac() else "wav"
+        ctype = "audio/" + kind
+        options = self._render_options(track, processed, kind)
         key = hashlib.sha256(repr((path, sorted(options.items(), key=str))).encode()).hexdigest()[:32]
 
         def deliver(done):
             if done is None:
                 return {"error": fill(translate("Casting", "Couldn't get this song ready for %1."), session.name),
                         "skippable": True}
-            media = dict(out, start=0.0, end=0.0, file_duration=done["seconds"] or None, ctype="audio/wav",
+            media = dict(out, start=0.0, end=0.0, file_duration=done["seconds"] or None, ctype=ctype,
                          sent="processed" if processed else "converted",
-                         link=session.share(path=done["file"], ctype="audio/wav"))
+                         link=session.share(path=done["file"], ctype=ctype))
             return self._finish_media(track, session, media)
 
         entry = self._renders.get(key)
@@ -876,7 +892,7 @@ class Casting(QObject):
                 waiting.append(lambda done: ready(deliver(done)))
             return {"pending": True}
         self._renders[key] = {"waiting": [lambda done: ready(deliver(done))] if ready is not None else []}
-        target = self._render_path(key)
+        target = self._render_path(key, kind)
 
         def rendered(result):
             entry = self._renders.pop(key, None)
@@ -905,13 +921,13 @@ class Casting(QObject):
             self._analyser = Analyser(self)
         return self._analyser
 
-    def _render_path(self, key):
+    def _render_path(self, key, kind="wav"):
         if self._render_dir is None:
             from .core import paths
 
             self._render_dir = paths.cache_dir() / "cast"
             self._render_dir.mkdir(parents=True, exist_ok=True)
-        return str(self._render_dir / f"{key}.wav")
+        return str(self._render_dir / f"{key}.{kind}")
 
     def _trim_renders(self):
         done = [(k, v) for k, v in self._renders.items() if "file" in v]

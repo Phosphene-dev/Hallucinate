@@ -1,5 +1,6 @@
 """Hallucinate's own sound for a cast device: a song decoded, put through ReplayGain, the equalizer and
-crossfeed as it would be here, and written as a WAV file the device fetches like any other.
+crossfeed as it would be here, and written as a file the device fetches like any other: 24-bit FLAC where the
+device plays FLAC (lossless, about half the size, nothing cut to 16 bits), otherwise WAV.
 
 The decoding happens in the helper process (analysis.py, kind "render"); this is the part that turns decoded
 blocks into the file, so it's plain numpy and tested on its own. A WAV file is lossless and every Chromecast and
@@ -30,9 +31,13 @@ class Renderer:
     end, so the file lines up with the song); `gain` a linear ReplayGain factor; `start`/`end` the song's window
     in seconds (end 0: to the end of the file)."""
 
-    def __init__(self, out, processor=None, delay=0, gain=1.0, start=0.0, end=0.0, seed=0):
+    def __init__(self, out, processor=None, delay=0, gain=1.0, start=0.0, end=0.0, seed=0, kind="wav"):
+        self.kind = "flac" if kind == "flac" else "wav"
+        self._path = out
+        self._flac = None
         self._out = open(out, "wb")
-        self._out.write(b"\0" * HEADER)  # the real header goes in at the end, once the length is known
+        if self.kind == "wav":
+            self._out.write(b"\0" * HEADER)  # the real header goes in at the end, once the length is known
         self.processor = processor
         self.gain = float(gain)
         self.start, self.end = float(start), float(end)
@@ -47,6 +52,10 @@ class Renderer:
 
     def _begin(self, rate, channels):
         self.rate, self.channels = rate, channels
+        if self.kind == "flac":
+            from .flac import Writer
+
+            self._flac = Writer(self._out, rate, channels, 24)
         if self.processor is not None and not self.processor.flat:
             self.processor.configure(rate, channels)
         else:
@@ -86,6 +95,10 @@ class Renderer:
             self._skip -= drop
         if not block.shape[0]:
             return
+        if self._flac is not None:  # 24 bits: far below anything audible, so no dither needed
+            self._flac.add(np.clip(np.round(block.astype(np.float64) * 8388607.0), -8388608, 8388607))
+            self.frames += block.shape[0]
+            return
         # 16-bit with triangular dither: the quiet end stays smooth rather than gritty
         noise = (self._rng.random(block.shape, dtype=np.float32) - self._rng.random(block.shape, dtype=np.float32))
         pcm = np.clip(np.round(block * 32767.0 + noise), -32768, 32767).astype("<i2")
@@ -102,6 +115,11 @@ class Renderer:
             self._write(np.zeros((self._delay, self.channels), np.float32))
             self.gain = gain
         self.done = True
+        if self.kind == "flac":
+            if self._flac is None:
+                self._begin(self.rate or 44100, self.channels or 2)
+            self._flac.finish()
+            return self.result()
         self._out.seek(0)
         self._out.write(wav_header(self.rate or 44100, self.channels or 2, self.frames))
         self._out.close()

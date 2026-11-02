@@ -206,3 +206,26 @@ def test_after_a_24_bit_song_the_output_is_opened_afresh(qapp):
         tap.deleteLater()
     if failed:
         pytest.skip("no sound output here")
+
+
+@needs_ffmpeg
+def test_a_dsd_song_cast_as_hallucinates_sound(qapp, tmp_path):
+    """Rendered for a cast device, the decoder brings DSD down to the device's rate itself (its own filter takes
+    the noise out): it's left as it comes, not filtered for a rate it no longer has."""
+    from hallucinate.analysis import Analyser, render_options
+
+    song = str(make_dsf(tmp_path / "s.dsf", seconds=2.0, amp=0.5))
+    out = tmp_path / "out.flac"
+    got = []
+    analyser = Analyser()
+    try:
+        analyser.submit(song, "render", got.append,
+                        extra={"out": str(out), "options": render_options(rate=44100, kind="flac")})
+        assert wait_for(lambda: got, timeout=60)
+    finally:
+        analyser.shutdown()
+    assert got[0] and got[0]["rate"] == 44100 and abs(got[0]["seconds"] - 2.0) < 0.05
+    y = decoded(out)
+    assert abs(np.sqrt(2) * y[11025:, 0].std() - 0.5) < 0.02  # the music at its own level
+    with pytest.raises(ValueError):
+        dsd.Converter(44100, 2, 44100)
