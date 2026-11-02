@@ -3,6 +3,15 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+- The phone as the player: in the phone remote, Play on → This phone plays the music on the phone itself, through
+  its speaker or headphones. The queue, play counts and scrobbling stay on the computer, whose controls (and the
+  remote's) drive the phone; the phone's lock screen and headphone buttons work too. Songs come from the computer
+  under links only that paired phone can use, and formats its browser can't play are converted for it. The cast
+  menu on the computer shows the phone while it plays; This computer brings the music back.
+
 ## [1.11.0] - 2026-11-01
 
 ### Added

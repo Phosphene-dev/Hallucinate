@@ -35,6 +35,7 @@ from pathlib import Path
 from PySide6.QtCore import Property, QObject, Qt, QTimer, Signal, Slot
 
 from .api import Api, ApiError
+from .core.cast.mediaserver import ServesLinks
 from .core.i18n import QT_TRANSLATE_NOOP, fill, translate
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,7 @@ STATIC = {
     "/sw.js": ("sw.js", "text/javascript; charset=utf-8"),
     "/icon-192.png": ("icon-192.png", "image/png"),
     "/icon-512.png": ("icon-512.png", "image/png"),
+    "/silence.wav": ("silence.wav", "audio/wav"),  # a tenth of a second, played on a tap to let the page play sound
 }
 DEFAULT_PORT = 8483
 CODE_LIFETIME_S = 300
@@ -268,7 +270,7 @@ class _Server(ThreadingHTTPServer):
         super().server_bind()
 
 
-class _Handler(BaseHTTPRequestHandler):
+class _Handler(ServesLinks, BaseHTTPRequestHandler):
     server_version = "Hallucinate"
     sys_version = ""
     protocol_version = "HTTP/1.1"
@@ -390,6 +392,15 @@ class _Handler(BaseHTTPRequestHandler):
             return self._error(HTTPStatus.UNAUTHORIZED, QT_TRANSLATE_NOOP("Api", "Pair this device first"))
         if path == "/api/events":
             return self._events()
+        if path.startswith("/m/"):  # a song for this phone to play (see cast.PhoneSession): its own links only
+            links = self.owner.phone_links
+            link = links.find_path(path) if links is not None else None
+            if link is None or link.client != device["id"]:
+                return self._error(HTTPStatus.NOT_FOUND, QT_TRANSLATE_NOOP("Api", "Not found"))
+            try:
+                return self.serve_link(link, self.command == "HEAD")
+            finally:
+                self.close_connection = True
         if path.startswith("/art/"):
             return self._art(urllib.parse.unquote(path[5:]), urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query))
         return self._error(HTTPStatus.NOT_FOUND, QT_TRANSLATE_NOOP("Api", "Not found"))
@@ -416,8 +427,12 @@ class _Handler(BaseHTTPRequestHandler):
                               extra={"Set-Cookie": f"{COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict"})
         if path != "/api/call":
             return self._error(HTTPStatus.NOT_FOUND, QT_TRANSLATE_NOOP("Api", "Not found"))
+        method = data.get("method")
         try:
-            result = self.owner.run(lambda: self.owner.command(data.get("method"), data.get("params")))
+            if isinstance(method, str) and method.startswith("phone."):  # the phone as the player: needs to know which
+                result = self.owner.run(lambda: self.owner.phone_command(method, data.get("params"), device))
+            else:
+                result = self.owner.run(lambda: self.owner.command(method, data.get("params")))
         except ApiError as exc:
             return self._error(HTTPStatus.BAD_REQUEST, str(exc))
         except FutureTimeout:
@@ -744,6 +759,37 @@ class WebRemote(QObject):
         result = self.api.call(method, params)
         self._soon()
         return result
+
+    def phone_command(self, method, params, device):
+        """phone.start / phone.report / phone.stop from a paired device (on the window's thread)."""
+        casting = self.api.casting
+        if casting is None or not self.api.casting_on():
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "Casting is switched off"))
+        p = params if isinstance(params, dict) else {}
+        session = str(p.get("session") or "")[:64]
+        if method == "phone.start":
+            formats = [str(f)[:40] for f in (p.get("formats") or [])[:20] if isinstance(f, str)]
+            if not session:
+                raise ApiError(QT_TRANSLATE_NOOP("Api", "Unexpected parameters"))
+            result = casting.phone_start(device["id"], device["name"], session, formats)
+        elif method == "phone.report":
+            def num(v):
+                return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and v == v and 0 <= v < 1e7 else None
+            gen = p.get("gen")
+            state = p.get("state") if p.get("state") in ("playing", "paused", "buffering", "ended", "error") else ""
+            result = casting.phone_report(device["id"], session, gen if isinstance(gen, int) else -1, state,
+                                          num(p.get("position")), num(p.get("duration")))
+        elif method == "phone.stop":
+            result = casting.phone_stop(device["id"])
+        else:
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "No such command"))
+        self._soon()
+        return result
+
+    @property
+    def phone_links(self):
+        casting = self.api.casting
+        return casting.phone_links if casting is not None else None
 
     @Slot(str, "QVariantMap", result="QVariantMap")
     def runCommand(self, method, params):

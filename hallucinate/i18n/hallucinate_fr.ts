@@ -12192,8 +12192,16 @@
         <translation>Lire sur</translation>
     </message>
     <message>
+        <source>Playing on this phone</source>
+        <translation>Lecture sur ce téléphone</translation>
+    </message>
+    <message>
         <source>The computer</source>
         <translation>L’ordinateur</translation>
+    </message>
+    <message>
+        <source>This phone</source>
+        <translation>Ce téléphone</translation>
     </message>
     <message>
         <source>Connecting to %1…</source>

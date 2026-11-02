@@ -109,14 +109,9 @@ class _Server(ThreadingHTTPServer):
             self._slots.release()
 
 
-class _Handler(BaseHTTPRequestHandler):
-    server_version = "Hallucinate"
-    sys_version = ""
-    protocol_version = "HTTP/1.1"
-    timeout = 60
-
-    def log_message(self, fmt, *args):  # nothing: requests would carry what you play
-        pass
+class ServesLinks:
+    """Answering a request for one Link (a file with byte ranges, bytes, a live stream or a relay). Shared by this
+    server and the web remote's, which serves songs to a phone playing them (see webserver.py)."""
 
     def _plain(self, status):
         self.send_response(status)
@@ -125,23 +120,8 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.close_connection = True
 
-    def do_GET(self):  # noqa: N802
-        self._serve(head=False)
-
-    def do_HEAD(self):  # noqa: N802
-        self._serve(head=True)
-
-    def _other(self):
-        self._plain(HTTPStatus.METHOD_NOT_ALLOWED)
-
-    do_POST = do_PUT = do_DELETE = do_PATCH = do_OPTIONS = _other  # noqa: N815
-
-    def _serve(self, head):
-        m = re.fullmatch(r"/m/([A-Za-z0-9_-]{16,64})(?:\.[A-Za-z0-9]{1,5})?", urllib.parse.urlsplit(self.path).path)
-        link = self.server.owner.find(m.group(1)) if m else None
-        if link is None or not self.server.owner.allowed(link, self.client_address[0]):
-            self._plain(HTTPStatus.NOT_FOUND)  # the same answer either way: nothing to learn by guessing
-            return
+    def serve_link(self, link, head):
+        """Answers with what `link` holds (the caller has checked who's asking)."""
         link.fetched = True
         try:
             if link.relay is not None:
@@ -251,13 +231,82 @@ class _Handler(BaseHTTPRequestHandler):
                 self.wfile.write(chunk)
 
 
+class _Handler(ServesLinks, BaseHTTPRequestHandler):
+    server_version = "Hallucinate"
+    sys_version = ""
+    protocol_version = "HTTP/1.1"
+    timeout = 60
+
+    def log_message(self, fmt, *args):  # nothing: requests would carry what you play
+        pass
+
+    def do_GET(self):  # noqa: N802
+        self._serve(head=False)
+
+    def do_HEAD(self):  # noqa: N802
+        self._serve(head=True)
+
+    def _other(self):
+        self._plain(HTTPStatus.METHOD_NOT_ALLOWED)
+
+    do_POST = do_PUT = do_DELETE = do_PATCH = do_OPTIONS = _other  # noqa: N815
+
+    def _serve(self, head):
+        link = self.server.owner._links.find_path(urllib.parse.urlsplit(self.path).path)
+        if link is None or not self.server.owner.allowed(link, self.client_address[0]):
+            self._plain(HTTPStatus.NOT_FOUND)  # the same answer either way: nothing to learn by guessing
+            return
+        self.serve_link(link, head)
+
+
+class Links:
+    """The links handed out: each to one client (an address, or for the phone remote a paired device's id), the
+    newest KEEP_LINKS kept. Thread-safe."""
+
+    def __init__(self):
+        self._links = collections.OrderedDict()
+        self._lock = threading.Lock()
+
+    def share(self, client, path=None, data=None, live=None, relay=None, ctype=None, name="media"):
+        """A link to `path` (a file), `data` (bytes), `live` (a callable returning an iterator of chunks) or `relay`
+        (see Link), usable only by `client`. Returns the link's path ("/m/<token>.<ext>")."""
+        if ctype is None:
+            ctype = content_type(path or name)
+        token = secrets.token_urlsafe(24)
+        ext = os.path.splitext(str(path or name))[1][:6] if (path or "." in name) else ""
+        if not re.fullmatch(r"(\.[A-Za-z0-9]{1,5})?", ext):
+            ext = ""
+        with self._lock:
+            self._links[token] = Link(client, ctype, path=path, data=data, live=live, relay=relay, name=name)
+            while len(self._links) > KEEP_LINKS:
+                self._links.popitem(last=False)
+        return f"/m/{token}{ext}"
+
+    def find(self, token):
+        with self._lock:
+            return self._links.get(token)
+
+    def find_path(self, path):
+        """The link a request path ("/m/<token>.<ext>") names, or None."""
+        m = re.fullmatch(r"/m/([A-Za-z0-9_-]{16,64})(?:\.[A-Za-z0-9]{1,5})?", path or "")
+        return self.find(m.group(1)) if m else None
+
+    def forget(self, link_path):
+        token = link_path.rsplit("/", 1)[-1].split(".", 1)[0]
+        with self._lock:
+            self._links.pop(token, None)
+
+    def clear(self):
+        with self._lock:
+            self._links.clear()
+
+
 class MediaServer:
     """Serves what's being cast. start() before sharing; stop() when casting ends. Thread-safe."""
 
     def __init__(self, port=DEFAULT_PORT):
         self.port = port
-        self._links = collections.OrderedDict()
-        self._lock = threading.Lock()
+        self._links = Links()
         self._server = None
         self._thread = None
         self.error = ""
@@ -294,31 +343,18 @@ class MediaServer:
         if server is not None:
             server.shutdown()
             server.server_close()
-        with self._lock:
-            self._links.clear()
+        self._links.clear()
 
-    def share(self, client, path=None, data=None, live=None, relay=None, ctype=None, name="media"):
-        """A link to `path` (a file), `data` (bytes), `live` (a callable returning an iterator of chunks) or `relay`
-        (see Link), usable only by the device at address `client`. Returns the link's path ("/m/<token>.<ext>")."""
+    def share(self, client, **what):
+        """A link usable only by the device at address `client` (see Links.share)."""
         ipaddress.ip_address(client)  # (raises for anything but an address)
-        if ctype is None:
-            ctype = content_type(path or name)
-        token = secrets.token_urlsafe(24)
-        ext = os.path.splitext(str(path or name))[1][:6] if (path or "." in name) else ""
-        if not re.fullmatch(r"(\.[A-Za-z0-9]{1,5})?", ext):
-            ext = ""
-        with self._lock:
-            self._links[token] = Link(client, ctype, path=path, data=data, live=live, relay=relay, name=name)
-            while len(self._links) > KEEP_LINKS:
-                self._links.popitem(last=False)
-        return f"/m/{token}{ext}"
+        return self._links.share(client, **what)
 
     def url(self, client, link_path):
         return f"http://{address_towards(client)}:{self.port}{link_path}"
 
     def find(self, token):
-        with self._lock:
-            return self._links.get(token)
+        return self._links.find(token)
 
     def allowed(self, link, address):
         try:
@@ -327,7 +363,4 @@ class MediaServer:
             return False
 
     def forget(self, link_path):
-        token = link_path.rsplit("/", 1)[-1].split(".", 1)[0]
-        with self._lock:
-            self._links.pop(token, None)
-
+        self._links.forget(link_path)

@@ -19,6 +19,16 @@ Menu {
         onTriggered: { casting.cancelConnecting(); casting.stopCasting(); checked = Qt.binding(() => !casting.active && casting.connecting.length === 0) }
     }
     MenuSeparator {}
+    MenuItem {  // a phone playing the music itself (picked on the phone, in its remote)
+        objectName: "castPhone"
+        visible: casting.deviceKind === "phone"
+        height: visible ? implicitHeight : 0
+        text: Theme.plain(casting.deviceName)
+        icon.name: "phone"
+        checkable: true
+        checked: true
+        onTriggered: checked = true  // (it's chosen on the phone; This computer brings the music back)
+    }
     MenuItem {
         visible: casting.connecting.length > 0
         height: visible ? implicitHeight : 0
@@ -36,7 +46,7 @@ Menu {
             checked: modelData.active
             onTriggered: { if (!modelData.active) casting.castTo(modelData.id); checked = Qt.binding(() => modelData.active) }
         }
-        onObjectAdded: (i, o) => castMenu.insertItem(2 + i, o)
+        onObjectAdded: (i, o) => castMenu.insertItem(3 + i, o)
         onObjectRemoved: (i, o) => castMenu.removeItem(o)
     }
     MenuItem {
