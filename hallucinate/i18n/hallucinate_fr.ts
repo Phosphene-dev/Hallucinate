@@ -1979,6 +1979,26 @@
         <translation>Supprimer</translation>
     </message>
     <message>
+        <source>%1 filters, applied exactly (the profile suggests a preamp of %2 dB; the volume is lowered by just what the correction needs instead).</source>
+        <translation>%1 filtres, appliqués exactement (le profil suggère un préampli de %2 dB ; le volume est plutôt abaissé de ce dont la correction a besoin, sans plus).</translation>
+    </message>
+    <message>
+        <source>Low shelf</source>
+        <translation>Plateau grave</translation>
+    </message>
+    <message>
+        <source>High shelf</source>
+        <translation>Plateau aigu</translation>
+    </message>
+    <message>
+        <source>Peak</source>
+        <translation>Cloche</translation>
+    </message>
+    <message>
+        <source>%1 at %2 Hz, %3 dB, Q %4</source>
+        <translation>%1 à %2 Hz, %3 dB, Q %4</translation>
+    </message>
+    <message>
         <source>Search your headphones (e.g. HD 600)</source>
         <translation>Cherchez votre casque (par ex. HD 600)</translation>
     </message>

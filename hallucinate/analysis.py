@@ -236,11 +236,12 @@ def serve():
 
 
 def render_options(gain=1.0, start=0.0, end=0.0, rate=0, channels=2, eq_on=False, gains=None, curve=None,
-                   crossfeed=""):
+                   crossfeed="", filters=None):
     """The options of a "render" job (what this computer's sound is set to, for one song)."""
     return {"gain": float(gain), "start": float(start), "end": float(end), "rate": int(rate or 0),
             "channels": int(channels or 2), "eq": {"on": bool(eq_on), "gains": list(gains or [0.0] * 10),
-                                                   "curve": curve, "crossfeed": crossfeed or ""}}
+                                                   "curve": curve, "crossfeed": crossfeed or "",
+                                                   "filters": list(filters or [])[:64]}}
 
 
 def _start_render(job):
@@ -259,6 +260,7 @@ def _start_render(job):
         processor.eq_on = bool(e.get("on"))
         processor.set_gains([float(g) for g in (e.get("gains") or [0.0] * 10)][:10])
         processor.set_curve(e.get("curve") or None)
+        processor.set_filters([f for f in (e.get("filters") or []) if isinstance(f, dict)] or None)
         processor.set_crossfeed(e.get("crossfeed") or "")
         delay = 0 if processor.eq_flat else eq.TAPS // 2
     renderer = Renderer(out, processor=processor, delay=delay, gain=float(opts.get("gain", 1.0)),

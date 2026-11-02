@@ -3,6 +3,15 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Changed
+- Headphone correction applies an AutoEQ parametric profile exactly: its own filters (peaks and shelves), with
+  their true magnitude and phase as Equalizer APO applies them, instead of a smoothed curve approximating them.
+  The Equalizer lists them, and each can be switched off to hear what it does. The volume is lowered by just what
+  the correction needs, so it can't clip. GraphicEQ profiles stay curves; profiles chosen before carry on as they
+  were until chosen again.
+
 ## [1.12.0] - 2026-11-02
 
 ### Added

@@ -2,8 +2,9 @@
 
 AutoEQ publishes, for thousands of headphones, the EQ that brings them to a neutral target. Its files come in
 two forms, both supported: "ParametricEQ.txt" (Equalizer APO filters: peaking and shelving biquads plus a
-preamp) and "GraphicEQ.txt" (a frequency/gain curve). Either becomes a smooth gain curve that the equalizer
-adds under the 10-band settings.
+preamp) and "GraphicEQ.txt" (a frequency/gain curve). A parametric profile's filters are applied exactly, as
+the filters they are (magnitude and phase, see eq.design_fir), and can be switched off one by one; a graphic one
+is a smooth gain curve. Either sits under the 10-band settings.
 
 The search downloads AutoEQ's index once (cached for a month) and each chosen profile when picked; nothing is
 sent but the requests for those files."""
@@ -104,6 +105,26 @@ def parse(text):
             total[i] += db
     total = [max(-60.0, min(60.0, g)) for g in total]
     return [[round(f, 2), round(g, 3)] for f, g in zip(freqs, total)]
+
+
+_PREAMP = re.compile(r"Preamp:\s*(-?[\d.]+)\s*dB", re.I)
+MAX_FILTERS = 64
+
+
+def profile(text):
+    """A profile from a ParametricEQ.txt or GraphicEQ.txt: {"curve": [[freq, dB], …] (its shape, for showing and
+    for GraphicEQ), "filters": [{"type", "fc", "gain", "q", "on"}] (a parametric one's own filters, applied
+    exactly; [] for GraphicEQ), "preamp": dB}. ValueError as parse."""
+    curve = parse(text)
+    filters = []
+    if not re.search(r"GraphicEQ:", text):
+        for kind, fc, gain, q in _FILTER.findall(text)[:MAX_FILTERS]:
+            filters.append({"type": {"LS": "LSC", "HS": "HSC"}.get(kind.upper(), kind.upper()),
+                            "fc": _finite(fc, 1.0, 24_000.0), "gain": _finite(gain, -MAX_GAIN_DB, MAX_GAIN_DB),
+                            "q": _finite(q or 0.71, 0.05, 30.0), "on": True})
+    pre = _PREAMP.search(text)
+    preamp = _finite(pre.group(1), -60.0, 20.0) if pre else 0.0
+    return {"curve": curve, "filters": filters, "preamp": preamp}
 
 
 _ENTRY = re.compile(r"^- \[(.+?)\]\(\./(.+?)\) by (.+?)(?: on (.+))?$")
@@ -234,7 +255,7 @@ class HeadphoneFinder(QObject):
         try:
             text = Path(path).read_text(encoding="utf-8", errors="replace")
             name = re.sub(r"\s*(ParametricEQ|GraphicEQ|FixedBandEQ)$", "", Path(path).stem).strip() or "Imported"
-            self._player.setHeadphoneProfile(name, json.dumps(parse(text)))
+            self._player.setHeadphoneProfile(name, json.dumps(profile(text)))
         except (OSError, ValueError, ArithmeticError) as exc:
             return str(exc)
         return ""
@@ -247,7 +268,7 @@ class HeadphoneFinder(QObject):
             self._set("" if value else fill(translate("Headphones", "No headphones match “%1”"), what), False)
         elif kind == "profile":
             try:
-                self._player.setHeadphoneProfile(what["name"], json.dumps(parse(value)))
+                self._player.setHeadphoneProfile(what["name"], json.dumps(profile(value)))
                 self._set(fill(translate("Headphones", "Correcting for %1"), what["name"]), False)
             except (ValueError, ArithmeticError) as exc:
                 self._set(str(exc), False)

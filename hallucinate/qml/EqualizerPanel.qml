@@ -141,6 +141,34 @@ Column {
             PillButton { text: qsTr("Remove"); height: 30; onClicked: player.clearHeadphone() }
         }
     }
+    // A parametric profile's own filters, applied exactly as its makers measured them: each can be switched off
+    // to hear what it does (the curve above follows)
+    Column {
+        objectName: "headphoneFilters"
+        visible: player.headphoneName.length > 0 && player.headphoneFilters.length > 0
+        width: Math.min(560, panel.width)
+        spacing: 2
+        Text {
+            textFormat: Text.PlainText
+            width: parent.width
+            wrapMode: Text.Wrap
+            text: qsTr("%1 filters, applied exactly (the profile suggests a preamp of %2 dB; the volume is lowered by just what the correction needs instead).")
+                  .arg(Theme.num(player.headphoneFilters.length)).arg(player.headphonePreamp.toFixed(1))
+            color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+        }
+        Repeater {
+            model: player.headphoneFilters
+            StyledCheck {
+                required property var modelData
+                required property int index
+                readonly property string kind: modelData.type === "LSC" ? qsTr("Low shelf") : modelData.type === "HSC" ? qsTr("High shelf") : qsTr("Peak")
+                text: qsTr("%1 at %2 Hz, %3 dB, Q %4").arg(kind).arg(Theme.num(Math.round(modelData.fc)))
+                      .arg((modelData.gain > 0 ? "+" : "") + modelData.gain.toFixed(1)).arg(modelData.q.toFixed(2))
+                checked: modelData.on
+                onToggled: player.setHeadphoneFilter(index, checked)
+            }
+        }
+    }
     Row {
         spacing: 10
         TextField {

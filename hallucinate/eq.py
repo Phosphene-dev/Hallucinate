@@ -45,10 +45,64 @@ def available():
     return np is not None
 
 
-def design_fir(gains_db, rate, taps=TAPS, curve=None):
-    """Linear-phase FIR whose magnitude interpolates the band gains (log-frequency).
+FILTER_TAIL = 8192  # samples of a parametric filter's response kept (its ringing in the deep bass dies out sooner)
 
-    `curve` is an optional extra correction, [[freq, dB], ...] (a headphone profile), added under the bands.
+
+def biquad(kind, fc, gain, q, rate):
+    """(b, a) of an Equalizer APO / RBJ cookbook filter: "PK" peaking, "LSC" low shelf, "HSC" high shelf."""
+    a_ = 10 ** (gain / 40)
+    w0 = 2 * np.pi * min(fc, rate * 0.499) / rate
+    alpha = np.sin(w0) / (2 * q)
+    cos = np.cos(w0)
+    if kind == "PK":
+        b = (1 + alpha * a_, -2 * cos, 1 - alpha * a_)
+        a = (1 + alpha / a_, -2 * cos, 1 - alpha / a_)
+    elif kind == "LSC":
+        s = 2 * np.sqrt(a_) * alpha
+        b = (a_ * ((a_ + 1) - (a_ - 1) * cos + s), 2 * a_ * ((a_ - 1) - (a_ + 1) * cos),
+             a_ * ((a_ + 1) - (a_ - 1) * cos - s))
+        a = ((a_ + 1) + (a_ - 1) * cos + s, -2 * ((a_ - 1) + (a_ + 1) * cos), (a_ + 1) + (a_ - 1) * cos - s)
+    elif kind == "HSC":
+        s = 2 * np.sqrt(a_) * alpha
+        b = (a_ * ((a_ + 1) + (a_ - 1) * cos + s), -2 * a_ * ((a_ - 1) + (a_ + 1) * cos),
+             a_ * ((a_ + 1) + (a_ - 1) * cos - s))
+        a = ((a_ + 1) - (a_ - 1) * cos + s, 2 * ((a_ - 1) - (a_ + 1) * cos), (a_ + 1) - (a_ - 1) * cos - s)
+    else:
+        return (1.0, 0.0, 0.0), (1.0, 0.0, 0.0)
+    return tuple(x / a[0] for x in b), tuple(x / a[0] for x in a)
+
+
+def parametric_response(filters, rate, n):
+    """The exact complex response, at the n-point FFT's frequencies, of a chain of parametric filters (the ones
+    switched on): what an IIR filter bank like Equalizer APO does, magnitude and phase."""
+    w = 2 * np.pi * np.fft.rfftfreq(n, 1.0 / rate) / rate
+    z1, z2 = np.exp(-1j * w), np.exp(-2j * w)
+    h = np.ones_like(w, dtype=complex)
+    for f in filters or []:
+        if not f.get("on", True):
+            continue
+        b, a = biquad(f["type"], f["fc"], f["gain"], f["q"], rate)
+        h *= (b[0] + b[1] * z1 + b[2] * z2) / (a[0] + a[1] * z1 + a[2] * z2)
+    return h
+
+
+def filters_curve(filters, points=160, rate=48000):
+    """The filters' response as [[freq, dB], …], log-spaced 20 Hz – 20 kHz (for drawing)."""
+    n = 1 << 15
+    freqs = 20 * (1000 ** (np.arange(points) / (points - 1)))
+    grid = np.fft.rfftfreq(n, 1.0 / rate)
+    mag = 20 * np.log10(np.maximum(np.abs(parametric_response(filters, rate, n)), 1e-9))
+    return [[round(float(f), 2), round(float(g), 3)] for f, g in zip(freqs, np.interp(freqs, grid, mag))]
+
+
+def design_fir(gains_db, rate, taps=TAPS, curve=None, filters=None):
+    """The equalizer's FIR: the band gains as a linear-phase filter (log-frequency interpolation), with a headphone
+    correction under them.
+
+    `curve` is a correction as [[freq, dB], ...] (a GraphicEQ profile), added to the bands' magnitude. `filters`
+    is a parametric profile's filters ({"type", "fc", "gain", "q", "on"}): their exact response, phase and all,
+    is applied as the causal filters they are, convolved onto the bands' filter, so the correction is the one
+    its makers measured rather than an approximation of it.
     The whole response is lowered by its largest boost, so a boosted band (or the correction) can't push a
     loud recording past full scale and clip: boosting the bass turns everything else down instead."""
     n = 16384
@@ -61,11 +115,24 @@ def design_fir(gains_db, rate, taps=TAPS, curve=None):
         pts = np.array(curve, dtype=float)
         mag_db = mag_db + np.interp(logf, np.log10(pts[:, 0]), pts[:, 1])
     audible = (freqs >= 20) & (freqs <= 20000)
-    mag_db -= max(0.0, float(mag_db[audible].max()))
+    active = [f for f in (filters or []) if f.get("on", True)]
+    if active:
+        # headroom from the combined response (the bands and the filters together)
+        both = mag_db + 20 * np.log10(np.maximum(np.abs(parametric_response(active, rate, n)), 1e-9))
+        mag_db -= max(0.0, float(both[audible].max()))
+    else:
+        mag_db -= max(0.0, float(mag_db[audible].max()))
     mag = 10 ** (mag_db / 20)
     impulse = np.fft.fftshift(np.fft.irfft(mag, n))
     mid = n // 2
     h = impulse[mid - taps // 2: mid + taps // 2 + 1] * np.hanning(taps)
+    if active:
+        # the filters' own impulse response (causal, as an IIR filter's is), its far tail faded out
+        big = 1 << 17
+        tail = np.fft.irfft(parametric_response(active, rate, big), big)[:FILTER_TAIL]
+        fade = FILTER_TAIL // 8
+        tail[-fade:] *= np.hanning(2 * fade)[fade:]
+        h = np.convolve(h, tail)
     return h.astype(np.float32)
 
 
@@ -136,6 +203,7 @@ class EqProcessor:
         self.eq_on = True
         self.crossfeed = None  # a Crossfeed, or None
         self.curve = None
+        self.filters = None
         self.rate = 44100
         self.channels = 2
         self._h = None
@@ -144,7 +212,8 @@ class EqProcessor:
 
     @property
     def eq_flat(self):
-        return not self.eq_on or (not self.curve and not any(abs(g) > 0.01 for g in self.gains))
+        return not self.eq_on or (not self.curve and not any(f.get("on", True) for f in self.filters or [])
+                                   and not any(abs(g) > 0.01 for g in self.gains))
 
     @property
     def flat(self):
@@ -176,6 +245,11 @@ class EqProcessor:
         self.curve = curve or None
         self._h = None
 
+    def set_filters(self, filters):
+        """A parametric headphone profile's filters (see design_fir), or None."""
+        self.filters = [dict(f) for f in filters] if filters else None
+        self._h = None
+
     def reset(self):
         self._tail = None
         if self.crossfeed is not None:
@@ -183,7 +257,7 @@ class EqProcessor:
 
     def _kernel(self, nfft):
         if self._h is None:
-            self._h = design_fir(self.gains, self.rate, curve=self.curve)
+            self._h = design_fir(self.gains, self.rate, curve=self.curve, filters=self.filters)
             self._cache = {}
         spec = self._cache.get(nfft)
         if spec is None:
@@ -200,12 +274,15 @@ class EqProcessor:
         frames = samples.shape[0]
         if frames == 0:
             return samples
-        overlap = TAPS - 1
-        if self._tail is None or self._tail.shape[1] != samples.shape[1]:
+        if self._h is None:
+            self._kernel(1 << int(np.ceil(np.log2(TAPS))))  # (designs it: its length sets the overlap)
+        taps = len(self._h)
+        overlap = taps - 1
+        if self._tail is None or self._tail.shape[0] != overlap or self._tail.shape[1] != samples.shape[1]:
             self._tail = np.zeros((overlap, samples.shape[1]), dtype=np.float32)
         x = np.concatenate([self._tail, samples], axis=0)
         self._tail = x[-overlap:].copy()
-        nfft = 1 << int(np.ceil(np.log2(x.shape[0] + TAPS)))
+        nfft = 1 << int(np.ceil(np.log2(x.shape[0] + taps)))
         spec = self._kernel(nfft)
         y = np.fft.irfft(np.fft.rfft(x, nfft, axis=0) * spec[:, None], nfft, axis=0)
         # Output is delayed by the filter's group delay (TAPS // 2 samples), a constant ~46 ms.

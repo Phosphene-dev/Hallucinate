@@ -187,6 +187,31 @@ def _playable(path):
     return isinstance(path, str) and os.path.isfile(path) and is_readable_audio(path)
 
 
+def _clean_headphone(name, data):
+    """A headphone profile, checked (from a file, a download or saved settings): {"name", "curve", "filters",
+    "preamp"}, or None if it isn't one. `data` is a profile dict (see headphones.profile) or, as older versions
+    kept it, just the curve."""
+    if not isinstance(name, str) or not name.strip():
+        return None
+    try:
+        if isinstance(data, dict):
+            raw_curve, raw_filters, preamp = data.get("curve"), data.get("filters") or [], data.get("preamp", 0.0)
+        else:
+            raw_curve, raw_filters, preamp = data, [], 0.0
+        curve = [[float(f), float(g)] for f, g in raw_curve]
+        filters = [{"type": str(f["type"]), "fc": float(f["fc"]), "gain": float(f["gain"]), "q": float(f["q"]),
+                    "on": bool(f.get("on", True))} for f in raw_filters[:64]]
+        preamp = float(preamp or 0.0)
+    except (TypeError, ValueError, KeyError, AttributeError):
+        return None
+    numbers = [x for f, g in curve for x in (f, g)] + [x for f in filters for x in (f["fc"], f["gain"], f["q"])]
+    if (len(curve) < 2 or not all(math.isfinite(x) for x in numbers + [preamp])
+            or any(f["type"] not in ("PK", "LSC", "HSC") or not 1 <= f["fc"] <= 24000 or not 0.05 <= f["q"] <= 30
+                   or abs(f["gain"]) > 30 for f in filters)):
+        return None  # nan, inf or a 0 Hz / 0 Q filter would make the sound garbage
+    return {"name": name.strip()[:200], "curve": curve, "filters": filters, "preamp": preamp}
+
+
 def track_file(track):
     """The audio file a queue entry plays: its own path, or for a CUE sheet song the album's file."""
     return track.get("file") or track.get("path", "")
@@ -446,8 +471,9 @@ class Player(QObject):
             self._crossfeed = "off"
         try:
             stored = json.loads(str(self._settings.value("eq/headphone", "{}")))
-            if stored.get("name") and stored.get("curve"):
-                self._headphone = {"name": str(stored["name"]), "curve": stored["curve"]}
+            hp = _clean_headphone(stored.get("name", ""), stored) if isinstance(stored, dict) else None
+            if hp is not None:
+                self._headphone = hp
         except (TypeError, ValueError):
             pass
         if eq.available():
@@ -877,7 +903,8 @@ class Player(QObject):
             self._eq_gains = [min(max(float(g), -eq.MAX_GAIN_DB), eq.MAX_GAIN_DB) for g in gains]
         self._eq_enabled = bool(stored.get("enabled")) and eq.available()
         hp = stored.get("headphone")
-        self._headphone = hp if isinstance(hp, dict) and "name" in hp else {"name": "", "curve": None}
+        hp = _clean_headphone(hp.get("name", ""), hp) if isinstance(hp, dict) else None
+        self._headphone = hp or {"name": "", "curve": None}
         cf = stored.get("crossfeed", "off")
         self._crossfeed = cf if cf in eq.CROSSFEED else "off"
         self._sync_taps()
@@ -901,7 +928,8 @@ class Player(QObject):
     def _configure_processor(self, processor):
         processor.eq_on = self._eq_enabled
         processor.set_gains(self._eq_gains)
-        processor.set_curve(self._headphone["curve"])
+        processor.set_curve(None if self._headphone.get("filters") else self._headphone["curve"])
+        processor.set_filters(self._headphone.get("filters"))
         processor.set_crossfeed(self._crossfeed)
 
     def _dsp_on(self):
@@ -934,18 +962,40 @@ class Player(QObject):
 
     @Property("QVariantList", notify=eqChanged)
     def headphoneCurve(self):
+        """The correction's shape, [[freq, dB], …], with filters switched off left out (for drawing)."""
+        filters = self._headphone.get("filters") or []
+        if filters and eq.available() and not all(f.get("on", True) for f in filters):
+            return eq.filters_curve(filters)
         return list(self._headphone["curve"] or [])
 
+    @Property("QVariantList", notify=eqChanged)
+    def headphoneFilters(self):
+        """A parametric profile's own filters ({"type", "fc", "gain", "q", "on"}), or [] (GraphicEQ, none)."""
+        return [dict(f) for f in self._headphone.get("filters") or []]
+
+    @Property(float, notify=eqChanged)
+    def headphonePreamp(self):
+        return float(self._headphone.get("preamp") or 0.0)
+
+    @Slot(int, bool)
+    def setHeadphoneFilter(self, index, on):
+        """Switch one of the profile's filters off (or back on): to hear what it does, or leave it out."""
+        filters = self._headphone.get("filters") or []
+        if 0 <= index < len(filters) and filters[index].get("on", True) != bool(on):
+            filters[index]["on"] = bool(on)
+            self._save_eq()
+
     @Slot(str, str)
-    def setHeadphoneProfile(self, name, curve_json):
-        """Correct for a headphone: `curve_json` is [[freq, dB], ...] (see headphones.parse). Turns the EQ on."""
+    def setHeadphoneProfile(self, name, profile_json):
+        """Correct for a headphone. `profile_json` is a profile (see headphones.profile: its curve, filters and
+        preamp) or, as older versions kept it, just the curve [[freq, dB], …]. Turns the EQ on."""
         try:
-            curve = [[float(f), float(g)] for f, g in json.loads(curve_json)]
-        except (TypeError, ValueError):
+            hp = _clean_headphone(name, json.loads(profile_json))
+        except ValueError:
             return
-        if len(curve) < 2 or not name.strip() or not all(math.isfinite(f) and math.isfinite(g) for f, g in curve):
-            return  # nan or inf would make the filter (and the sound) garbage
-        self._headphone = {"name": name.strip(), "curve": curve}
+        if hp is None:
+            return
+        self._headphone = hp
         if not self._eq_enabled and eq.available():
             self._eq_enabled = True
             self._sync_taps()
@@ -1647,7 +1697,8 @@ class Player(QObject):
         equalizer, the headphone correction and crossfeed."""
         return {"gain": replaygain_factor(track, self._rg_mode, self._rg_preamp),
                 "eq_on": bool(self._eq_enabled and eq.available()), "gains": list(self._eq_gains),
-                "curve": self._headphone["curve"], "crossfeed": self._crossfeed if self._crossfeed in eq.CROSSFEED
+                "curve": None if self._headphone.get("filters") else self._headphone["curve"],
+                "filters": self._headphone.get("filters") or [], "crossfeed": self._crossfeed if self._crossfeed in eq.CROSSFEED
                 else ""}
 
     def _cast_play(self):
