@@ -314,6 +314,16 @@
     </message>
 </context>
 <context>
+    <name>Handoff</name>
+    <message numerus="yes">
+        <source>%n song(s) it doesn't have play from here</source>
+        <translation>
+            <numerusform>%n song it doesn't have play from here</numerusform>
+            <numerusform>%n songs it doesn't have play from here</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>HealthPage</name>
     <message numerus="yes">
         <source>%n thing(s) worth a look across %1 albums and %2 songs</source>

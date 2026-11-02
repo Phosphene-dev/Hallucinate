@@ -425,7 +425,7 @@ class Handoff(QObject):
         missing = int(result.get("missing") or 0)
         message = fill(translate("Handoff", "Now playing on %1"), peer["name"])
         if missing:
-            message += "  ·  " + fill(translate("Handoff", "%1 songs it doesn't have play from here"), missing)
+            message += "  ·  " + translate("Handoff", "%n song(s) it doesn't have play from here", None, missing)
         self.notice.emit(message)
 
     def stream_link(self, token):

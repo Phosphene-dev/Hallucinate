@@ -9,6 +9,7 @@ QtObject {
     signal openPodcast(int id)
     signal goToPlaying()  // the playing song's album, the station's page or the episode's show
     signal openSettings()
+    signal pairComputer(string host, int port, string name)  // pair with another computer running Hallucinate
     signal openSettingsAt(string section)  // Settings, scrolled to one section (its id: "casting")
     signal openLiked()
     signal goHome()

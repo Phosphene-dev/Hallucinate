@@ -1651,7 +1651,7 @@ Item {
             id: sec_remote
             objectName: "settings_remote"
             title: qsTr("Remote & web")
-            keywords: qsTr("remote phone web browser interface control pair pairing device devices network lan wifi headless tablet")
+            keywords: qsTr("remote phone web browser interface control pair pairing device devices network lan wifi headless tablet handoff hand over another computer")
             query: page.query
             Text {
                 textFormat: Text.PlainText
@@ -1786,6 +1786,29 @@ Item {
                     wrapMode: Text.WordWrap
                     text: qsTr("Lost a phone, or not sure who has access? Remove the device here: it can't connect again without a new code. Port: %1.").arg(webRemote.portNumber)
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                }
+            }
+            // Other computers running Hallucinate this one can hand what's playing over to (the cast menu)
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: qsTr("Other computers running Hallucinate: hand what's playing over to one from the cast button beside the volume (Hand over to another computer). It carries on there, playing songs from its own library where it has them and the rest from this computer. Pair a computer from that menu with the code it shows here.")
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            Repeater {
+                model: handoff.computers.filter(c => c.paired)
+                Row {
+                    required property var modelData
+                    spacing: 12
+                    Icon { name: "computer"; width: 16; height: 16; color: Theme.textDim; anchors.verticalCenter: parent.verticalCenter }
+                    Text {
+                        textFormat: Text.PlainText
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: modelData.name + "  ·  " + modelData.host
+                        color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                    }
+                    PillButton { text: qsTr("Forget"); onClicked: handoff.forget(modelData.id) }
                 }
             }
         }

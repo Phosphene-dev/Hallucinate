@@ -598,6 +598,54 @@ ApplicationWindow {
         onActivated: searchField.text = ""
     }
 
+    // Pairing with another computer running Hallucinate, for handing over what's playing: its address (filled in
+    // when it was found on the network) and the code it shows in Settings → Remote & web → Pair a device
+    ConfirmDialog {
+        id: pairComputerDlg
+        objectName: "pairComputerDialog"
+        property string name: ""
+        title: name.length ? qsTr("Pair with %1").arg(name) : qsTr("Pair with another computer")
+        confirmText: qsTr("Pair")
+        body: qsTr("On the other computer, open Settings → Remote & web, let other devices on your network connect, and choose Pair a device. Type the code it shows here.")
+        TextField {
+            id: pairHost
+            objectName: "pairHost"
+            width: parent.width
+            visible: !pairComputerDlg.name.length
+            placeholderText: qsTr("Its address on your network, like 192.168.1.20:8483")
+            Accessible.name: qsTr("Address")
+            color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
+        }
+        TextField {
+            id: pairCode
+            objectName: "pairCode"
+            width: parent.width
+            placeholderText: qsTr("Code")
+            Accessible.name: qsTr("Code")
+            inputMethodHints: Qt.ImhDigitsOnly
+            color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
+        }
+        property string host: ""
+        property int port: 8483
+        onAccepted: {
+            var h = host, p = port
+            if (!name.length) {  // typed: "address" or "address:port"
+                var m = pairHost.text.trim().match(/^\[?([0-9a-fA-F.:]+?)\]?(?::(\d{1,5}))?$/)
+                if (!m) { toast.show(qsTr("Type the other computer's address on your network (like 192.168.1.20)")); return }
+                h = m[1]; p = m[2] ? parseInt(m[2]) : 8483
+            }
+            handoff.pair(h, p, pairCode.text.trim(), name)
+            pairCode.text = ""
+        }
+    }
+    Connections {
+        target: Nav
+        function onPairComputer(host, port, name) {
+            pairComputerDlg.host = host; pairComputerDlg.port = port; pairComputerDlg.name = name
+            pairHost.text = ""; pairCode.text = ""
+            pairComputerDlg.open(); pairCode.forceActiveFocus()
+        }
+    }
     ConfirmDialog {
         id: removeFolderDlg
         objectName: "removeFolderDialog"
