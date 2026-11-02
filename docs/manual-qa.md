@@ -1,5 +1,31 @@
 # Manual QA checklist
 
+## Release testing for 1.13.0
+
+- [ ] Headphone correction: choose a headphone with a ParametricEQ profile; the Equalizer lists its filters; switch
+      one off and on (heard, and the drawn curve follows); no clipping on loud masters.
+- [ ] Bit-perfect playback on Linux with PipeWire: switch it on in Settings → Sound; play a 44.1 kHz and then a
+      96 kHz song: `pw-metadata -n settings 0` shows clock.force-rate following them and the signal path says
+      Bit-perfect; the volume slider stays at 100% (moving it says to use the system's volume). Switch it off (and
+      separately, quit while it's on): clock.force-rate goes back to 0 and the EQ, ReplayGain and volume return.
+- [ ] DSD: play a .dsf and a .dff album (DSD64, and DSD128 if you have one) at each of the three rates in Settings →
+      Sound: clean sound, gapless between tracks, seeking works; the signal path shows DSD64 → the chosen rate;
+      with bit-perfect on, PipeWire follows the chosen rate (not 352.8 kHz).
+- [ ] Gapless casting: play a gapless album (a live album, or a classical one) on a Chromecast and on a DLNA
+      renderer: no gap or pause between songs, and the app follows each new song; reorder the queue mid-song and
+      the device plays the new next one; a renderer without gapless support still moves on (after a second or two).
+- [ ] Casting with Hallucinate's sound: the device plays the FLAC stream (Chromecast, a DLNA TV that lists FLAC);
+      a DLNA device that doesn't list it gets WAV and plays it.
+- [ ] Bit-perfect on Windows with a USB DAC: Settings → Sound shows "Take the output by itself (exclusive mode)";
+      play a 44.1 kHz then a 96 kHz 24-bit song: the DAC's display (or its control panel) follows, the signal
+      path says Bit-perfect, and a YouTube video in a browser is silent meanwhile; pause for 10 s: the browser's
+      sound comes back; play again: Hallucinate takes the DAC again. With exclusive mode disallowed in the
+      device's Properties → Advanced, music still plays and the signal path says why it isn't bit-perfect.
+- [ ] Bit-perfect on macOS: Audio MIDI Setup shows the output's format following each song (44.1 → 96 kHz);
+      switching bit-perfect off, or quitting, puts back the rate it had.
+- [ ] Bit-perfect elsewhere (Flatpak, PulseAudio): it still plays; the signal path says the output may convert
+      the rate.
+
 ## Release testing for 1.12.0
 
 - [ ] The phone as the player (Android Chrome, and an iPhone): Play on → This phone plays the song there, from where

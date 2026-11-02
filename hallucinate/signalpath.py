@@ -141,13 +141,14 @@ def _describe_cast(track, cast, rg_factor, rg_mode, eq_enabled, eq_preset, cross
 
 
 def describe(track, *, rg_factor=1.0, rg_mode="off", volume=1.0, speed=1.0, eq_enabled=False, eq_preset="", crossfeed="",
-             crossfade=0, device_name="", device_rate=0, rate_follows=False, rate_source="", cast=None):
+             crossfade=0, device_name="", device_rate=0, rate_follows=False, rate_source="", cast=None,
+             bit_perfect=False, dsd_rate=0, bit_perfect_issue=""):
     """Stages from the file to the output, each {"name", "detail", "active"} where active means it changes the
     sound, and whether the path is untouched: nothing between file and device alters the samples (the system
     mixer may still resample when the device runs at another rate, which is reported too). rate_follows: the
     output switches to the song's rate (see output_follows); rate_source says who switches it ("PipeWire").
     cast: while playing on another device, {"device": its name, "sent": "original" | "processed" | "converted"}
-    (see cast.py): the path then ends there instead."""
+    (see cast.py): the path then ends there instead. dsd_rate: a DSD song converted to PCM at this rate (dsd.py)."""
     if not track:
         return {"stages": [], "untouched": False, "summary": ""}
     if cast:
@@ -156,13 +157,21 @@ def describe(track, *, rg_factor=1.0, rg_mode="off", volume=1.0, speed=1.0, eq_e
     rate = int(track.get("sample_rate") or 0)
     lossless = codec in LOSSLESS
     source = [codec] if codec else []
-    if rate:
+    if codec == "DSD" and rate >= 1000000:  # (DSD64 at 2.82 MHz, rather than "2822.4 kHz")
+        source = [f"DSD{round(rate / (44100 if rate % 44100 == 0 else 48000))}",
+                  f"{rate / 1e6:.2f}".rstrip("0").rstrip(".") + " MHz"]
+    elif rate:
         source.append(_rate(rate))
     if not lossless and track.get("bitrate"):
         source.append(fill(translate("SignalPath", "%1 kbps"), round(track["bitrate"] / 1000)))
     if lossless:
         source.append(translate("SignalPath", "lossless"))
     stages = [{"key": "source", "name": translate("SignalPath", "Source"), "detail": "  ·  ".join(source), "active": False}]
+    if dsd_rate:
+        stages.append({"key": "dsd", "name": translate("SignalPath", "DSD to PCM"),
+                       "detail": fill(translate("SignalPath", "%1, noise above 30 kHz filtered out"), _rate(dsd_rate)),
+                       "active": True})
+        rate = dsd_rate  # (from here on it's PCM at this rate)
 
     rg_db = 20 * math.log10(rg_factor) if rg_factor > 0 else 0.0
     rg_on = rg_mode in ("track", "album") and abs(rg_db) >= 0.05
@@ -213,8 +222,8 @@ def describe(track, *, rg_factor=1.0, rg_mode="off", volume=1.0, speed=1.0, eq_e
                    if resampled else _rate(device_rate))
     stages.append({"key": "output", "name": translate("SignalPath", "Output"), "detail": "  ·  ".join(out), "active": resampled})
 
-    changed = [translate("SignalPath", "resampling") if s["key"] == "output" else s["name"].lower()
-               for s in stages if s["active"]]
+    changed = [translate("SignalPath", "resampling") if s["key"] == "output" else s["name"] if s["key"] == "dsd"
+               else s["name"].lower() for s in stages if s["active"]]
     untouched = not changed
     summary = translate("SignalPath", "Untouched") if untouched else fill(translate("SignalPath", "Changed by %1"), ", ".join(changed))
     # Why, in plain words, and what would leave the sound untouched (the two that surprise people most)
@@ -230,4 +239,24 @@ def describe(track, *, rg_factor=1.0, rg_mode="off", volume=1.0, speed=1.0, eq_e
     if vol_on:
         advice.append(fill(translate("SignalPath", "Hallucinate's volume is at %1%, which scales the samples. Leave it at 100% "
                                      "and turn your system or amplifier down instead for an untouched path."), round(volume * 100)))
+    if dsd_rate:
+        advice.append(fill(translate("SignalPath", "DSD is converted to %1 PCM here, with the ultrasonic noise it carries "
+                                     "filtered out, so any output can play it. The rate is chosen in Settings → Sound."),
+                           _rate(dsd_rate)))
+    if bit_perfect and dsd_rate and [s["key"] for s in stages if s["active"]] == ["dsd"]:
+        summary = translate("SignalPath", "Bit-perfect after DSD conversion")
+        advice.insert(0, translate("SignalPath", "Bit-perfect playback is on: once converted from DSD, the song reaches "
+                                   "the sound output untouched, at the conversion's own rate."))
+    elif bit_perfect:
+        summary = translate("SignalPath", "Bit-perfect") if untouched else summary
+        if untouched:
+            advice.insert(0, translate("SignalPath", "Bit-perfect playback is on: the song reaches the sound output exactly "
+                                       "as it's stored, at its own rate and bit depth. Use your system's or your "
+                                       "amplifier's volume."))
+        elif resampled:
+            advice.insert(0, translate("SignalPath", "Bit-perfect playback is on, but the output couldn't be switched to "
+                                       "this song's rate, so it's converted on the way. On Linux with PipeWire, "
+                                       "install its tools (pw-metadata) and Hallucinate asks for each song's rate."))
+    if bit_perfect_issue:
+        advice.insert(0, bit_perfect_issue)
     return {"stages": stages, "untouched": untouched, "summary": summary, "advice": advice}

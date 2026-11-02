@@ -6,7 +6,7 @@ import time
 
 from .i18n import fill, month_name, translate
 
-LOSSLESS = {"FLAC", "ALAC", "WAV", "AIFF", "WAVPACK", "APE", "TTA", "DSF", "DFF"}
+LOSSLESS = {"FLAC", "ALAC", "WAV", "AIFF", "WAVPACK", "APE", "TTA", "DSD", "DSF", "DFF"}
 DAY = 86_400
 _ALBUM_COLS = """t.album_key AS album_key, MIN(t.album) AS album, MIN(t.album_artist) AS album_artist,
                  MAX(t.year) AS year, COUNT(*) AS n, SUM(t.duration) AS duration, MAX(t.art) AS art"""

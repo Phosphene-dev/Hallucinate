@@ -3,6 +3,38 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.13.0] - 2026-11-02
+
+### Added
+- Bit-perfect playback (Settings → Sound): every song goes to the sound output exactly as it's stored, in its own
+  sample format, with the equalizer, crossfeed, ReplayGain, crossfade, fades, speed and Hallucinate's volume set
+  aside while it's on (their settings are kept). Each song's own rate is kept too: on Linux, PipeWire is asked to
+  run at it (`clock.force-rate`, given back when it's switched off or Hallucinate quits); on macOS the output
+  device is switched to it (and its own rate put back afterwards); on Windows the output is taken in exclusive
+  mode at the song's own format (other apps are silent meanwhile; it's given back a few seconds after pausing, and
+  it can be switched off). The signal path says Bit-perfect when it is, and what's converting it when it isn't.
+- DSD playback done properly: .dsf and .dff files (SACD rips) are converted to PCM as they play, with the
+  ultrasonic noise DSD carries filtered out (flat to 30 kHz, at least 120 dB down by 44.1 kHz) and nothing else
+  changed. Choose 88.2, 176.4 or 352.8 kHz in Settings → Sound; the equalizer, bit-perfect playback, ReplayGain
+  measuring, waveforms and casting all work from the converted sound, and the signal path shows the conversion.
+- Gapless playback on cast devices: Chromecasts, and DLNA/UPnP renderers that support it, are handed the next
+  song while one plays and go straight into it by themselves, so albums play without a gap or a pause between
+  songs. It follows changes to the queue, shuffle and repeat, and the sleep timer; a renderer that can't do it
+  moves on one song at a time as before.
+
+### Changed
+- Headphone correction applies an AutoEQ parametric profile exactly: its own filters (peaks and shelves), with
+  their true magnitude and phase as Equalizer APO applies them, instead of a smoothed curve approximating them.
+  The Equalizer lists them, and each can be switched off to hear what it does. The volume is lowered by just what
+  the correction needs, so it can't clip. GraphicEQ profiles stay curves; profiles chosen before carry on as they
+  were until chosen again.
+- Casting with Hallucinate's sound (and songs a device can't play as they are) sends 24-bit FLAC to devices that
+  play FLAC: lossless as the WAV it replaces, at a fraction of the size, and nothing cut down to 16 bits. Devices
+  that don't say they play FLAC still get WAV.
+
+### Fixed
+- .dff files were recorded as "DFF" rather than DSD (their bit depth and lossless badge were missing).
+
 ## [1.12.0] - 2026-11-02
 
 ### Added

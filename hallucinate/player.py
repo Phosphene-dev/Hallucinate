@@ -3,6 +3,7 @@ import logging
 import math
 import os
 import random
+import sys
 import time
 import weakref
 from concurrent.futures import ThreadPoolExecutor
@@ -19,7 +20,7 @@ from PySide6.QtMultimedia import (
 )
 from PySide6.QtQml import QQmlComponent, QQmlEngine
 
-from . import eq, fileready, signalpath
+from . import dsd, eq, fileready, signalpath
 from .core import net, remote
 from .core.i18n import fill, translate
 from .core.kinds import counts_for_scrobbling, is_url, track_kind  # noqa: F401 - re-exported
@@ -187,6 +188,31 @@ def _playable(path):
     return isinstance(path, str) and os.path.isfile(path) and is_readable_audio(path)
 
 
+def _clean_headphone(name, data):
+    """A headphone profile, checked (from a file, a download or saved settings): {"name", "curve", "filters",
+    "preamp"}, or None if it isn't one. `data` is a profile dict (see headphones.profile) or, as older versions
+    kept it, just the curve."""
+    if not isinstance(name, str) or not name.strip():
+        return None
+    try:
+        if isinstance(data, dict):
+            raw_curve, raw_filters, preamp = data.get("curve"), data.get("filters") or [], data.get("preamp", 0.0)
+        else:
+            raw_curve, raw_filters, preamp = data, [], 0.0
+        curve = [[float(f), float(g)] for f, g in raw_curve]
+        filters = [{"type": str(f["type"]), "fc": float(f["fc"]), "gain": float(f["gain"]), "q": float(f["q"]),
+                    "on": bool(f.get("on", True))} for f in raw_filters[:64]]
+        preamp = float(preamp or 0.0)
+    except (TypeError, ValueError, KeyError, AttributeError):
+        return None
+    numbers = [x for f, g in curve for x in (f, g)] + [x for f in filters for x in (f["fc"], f["gain"], f["q"])]
+    if (len(curve) < 2 or not all(math.isfinite(x) for x in numbers + [preamp])
+            or any(f["type"] not in ("PK", "LSC", "HSC") or not 1 <= f["fc"] <= 24000 or not 0.05 <= f["q"] <= 30
+                   or abs(f["gain"]) > 30 for f in filters)):
+        return None  # nan, inf or a 0 Hz / 0 Q filter would make the sound garbage
+    return {"name": name.strip()[:200], "curve": curve, "filters": filters, "preamp": preamp}
+
+
 def track_file(track):
     """The audio file a queue entry plays: its own path, or for a CUE sheet song the album's file."""
     return track.get("file") or track.get("path", "")
@@ -222,6 +248,7 @@ class _Voice:
         self.play_on_load = False
         self.fade = 1.0  # crossfade multiplier
         self.tap = None  # equalizer tap, present while the equalizer is on
+        self.dsd = False  # holds a DSD song (converted to PCM in the tap: see dsd.py)
         self.tap_visual_connected = False
         self.finishing = False  # still playing its last moments after the next track took over
         self.finish_by = 0.0
@@ -263,6 +290,7 @@ class _Voice:
         self.seek_on_load = -1
         self.play_on_load = False
         self.fade = 1.0
+        self.dsd = False
         if self.tap is not None:
             self.tap.reset()
 
@@ -271,6 +299,7 @@ class _Voice:
         self._set_aside_if_loading()  # still opening a stream: don't wait for it, use a new player
         self.index, self.path = index, track_file(track)
         self.start, self.end = track_window(track)
+        self.dsd = dsd.is_dsd(track) and not is_url(self.path)
         resume = int(track.get("resume_ms") or 0)  # a podcast episode picks up where it was left
         if track_kind(track) == "music":
             track.pop("resume_ms", None)  # a song's (a parked stream's) is used once
@@ -356,6 +385,10 @@ class Player(QObject):
         self._cast_failures = 0
         self._cast_gen = 0
         self._cast_sent = "original"  # how the playing song went to the device (for the signal path)
+        self._cast_queued = None  # (index, queue entry, media) handed to the device to go straight on into
+        self._cast_next_gen = 0
+        self._cast_adopting = False
+        self._cast_next_pending = None  # (index, generation) of a next song being got ready to hand over
         self._session_file = Path(session_file) if session_file else None
         self._restore_pos = 0
         self._parked = False  # a station shown but not connected (see _park_station)
@@ -438,6 +471,18 @@ class Player(QObject):
         self._eq_gains = [0.0] * len(eq.BANDS)
         self._eq_preset = "Flat"
         self._headphone = {"name": "", "curve": None}
+        # bit-perfect: the decoded song goes to the sound output untouched (see bitperfect.py and _sync_taps)
+        from .bitperfect import RateRequest
+
+        self._bit_perfect = str(self._settings.value("audio/bitPerfect", "false")).lower() == "true"
+        self._rate_request = RateRequest()
+        self._exclusive = str(self._settings.value("audio/exclusive", "true")).lower() == "true"
+        try:
+            self._dsd_rate = int(self._settings.value("audio/dsdRate", dsd.DEFAULT_RATE))
+        except (TypeError, ValueError):
+            self._dsd_rate = 0
+        if self._dsd_rate not in dsd.RATES:
+            self._dsd_rate = dsd.DEFAULT_RATE
         self._crossfeed = str(self._settings.value("audio/crossfeed", "off"))
         self._rate_mode = str(self._settings.value("audio/outputRate", "auto"))
         if self._rate_mode not in signalpath.RATE_MODES:
@@ -446,8 +491,9 @@ class Player(QObject):
             self._crossfeed = "off"
         try:
             stored = json.loads(str(self._settings.value("eq/headphone", "{}")))
-            if stored.get("name") and stored.get("curve"):
-                self._headphone = {"name": str(stored["name"]), "curve": stored["curve"]}
+            hp = _clean_headphone(stored.get("name", ""), stored) if isinstance(stored, dict) else None
+            if hp is not None:
+                self._headphone = hp
         except (TypeError, ValueError):
             pass
         if eq.available():
@@ -660,6 +706,8 @@ class Player(QObject):
         return self.hasTrack and track_kind(self.current) == "episode"
 
     def _rate(self):
+        if self._bit_perfect:
+            return 1.0  # a change of speed is a change of every sample
         if self._episode_now():
             return float(self.current.get("speed") or 0) or self._podcast_speed  # a show can keep its own
         return self._speed
@@ -708,7 +756,7 @@ class Player(QObject):
         self._connect_voice(n)
         self._apply_speed()
         self._apply_output_device()
-        if self._dsp_on():
+        if self._tap_on():
             self._sync_taps()
         elif self._visualizer_enabled:
             self._sync_audio_buffer_outputs()
@@ -877,7 +925,8 @@ class Player(QObject):
             self._eq_gains = [min(max(float(g), -eq.MAX_GAIN_DB), eq.MAX_GAIN_DB) for g in gains]
         self._eq_enabled = bool(stored.get("enabled")) and eq.available()
         hp = stored.get("headphone")
-        self._headphone = hp if isinstance(hp, dict) and "name" in hp else {"name": "", "curve": None}
+        hp = _clean_headphone(hp.get("name", ""), hp) if isinstance(hp, dict) else None
+        self._headphone = hp or {"name": "", "curve": None}
         cf = stored.get("crossfeed", "off")
         self._crossfeed = cf if cf in eq.CROSSFEED else "off"
         self._sync_taps()
@@ -901,12 +950,145 @@ class Player(QObject):
     def _configure_processor(self, processor):
         processor.eq_on = self._eq_enabled
         processor.set_gains(self._eq_gains)
-        processor.set_curve(self._headphone["curve"])
+        processor.set_curve(None if self._headphone.get("filters") else self._headphone["curve"])
+        processor.set_filters(self._headphone.get("filters"))
         processor.set_crossfeed(self._crossfeed)
 
     def _dsp_on(self):
         """Whether the audio runs through our own processing (equalizer and/or crossfeed)."""
-        return eq.available() and (self._eq_enabled or self._crossfeed in eq.CROSSFEED)
+        return eq.available() and not self._bit_perfect and (self._eq_enabled or self._crossfeed in eq.CROSSFEED)
+
+    def _tap_on(self):
+        """Whether the sound goes out through our own output (the taps): to process it, or, bit-perfect, to open
+        the output in the song's own format and pass it through untouched."""
+        return eq.available() and (self._dsp_on() or self._bit_perfect or any(v.dsd for v in self._voices))
+
+    # --- DSD ------------------------------------------------------------------------------------------------------
+    @Property(int, notify=audioSettingsChanged)
+    def dsdRate(self):
+        """The PCM rate DSD songs are converted to (Settings → Sound; see dsd.py)."""
+        return self._dsd_rate
+
+    @Property("QVariantList", constant=True)
+    def dsdRates(self):
+        return list(dsd.RATES)
+
+    @Slot(int)
+    def setDsdRate(self, rate):
+        rate = int(rate)
+        if rate not in dsd.RATES or rate == self._dsd_rate:
+            return
+        self._dsd_rate = rate
+        self._settings.setValue("audio/dsdRate", rate)
+        self._sync_dsd()
+        self.audioSettingsChanged.emit()
+        self.signalPathChanged.emit()
+
+    def _sync_dsd(self):
+        """After a voice took a song: the taps come on for a DSD song (and go once none is left), and each one
+        knows whether its song needs converting."""
+        if self._tap_on() != any(v.tap is not None for v in self._voices):
+            self._sync_taps()
+        for v in self._voices:
+            if v.tap is not None:
+                v.tap.setDsd(v.dsd, self._dsd_rate)
+
+    def _dsd_out_rate(self, track):
+        """The PCM rate a DSD song plays at (0: not DSD, or it can't be converted here)."""
+        if not dsd.is_dsd(track) or not eq.available():
+            return 0
+        decoded = int(track.get("sample_rate") or 0) // 8  # (what FFmpeg makes of it: an eighth of its bit rate)
+        return dsd.output_rate(decoded, self._dsd_rate) if decoded else self._dsd_rate
+
+    # --- bit-perfect --------------------------------------------------------------------------------------------
+    @Property(bool, notify=audioSettingsChanged)
+    def bitPerfect(self):
+        """Bit-perfect playback (Settings → Sound): every song goes to the sound output exactly as decoded, at its
+        own rate and bit depth. The equalizer, crossfeed, ReplayGain, crossfade, fades, speed and Hallucinate's
+        volume step aside (the system's or the amplifier's volume is the one to use), and on Linux PipeWire is
+        asked to run at each song's rate."""
+        return self._bit_perfect
+
+    @Property(bool, constant=True)
+    def bitPerfectRates(self):
+        """Whether this system can be asked to follow each song's rate (PipeWire with its tools)."""
+        return self._rate_request.available
+
+    @Slot(bool)
+    def setBitPerfect(self, on):
+        on = bool(on)
+        if on == self._bit_perfect:
+            return
+        louder = on and self._cast is None and self.playing and (self._volume ** 2 * replaygain_factor(self.current, self._rg_mode, self._rg_preamp) < 0.95)
+        self._bit_perfect = on
+        self._settings.setValue("audio/bitPerfect", on)
+        if louder:  # (it would jump to full level mid-song: paused, so the system's volume can be set first)
+            self.pause()
+            self.notice.emit(translate("Player", "Paused: bit-perfect playback plays at full level. Set your system's volume, then play"))
+        self._remake_taps()
+        if not on:
+            self._rate_request.release()
+            self._release_exclusive()
+        self._reset_pause_fade()
+        self._sync_taps()
+        self._apply_speed()
+        self.audioSettingsChanged.emit()
+        self.eqChanged.emit()
+        self.volumeChanged.emit()
+        self.signalPathChanged.emit()
+
+    def _remake_taps(self):
+        """The taps are made again (passing through or processing, exclusive or shared) by _sync_taps."""
+        for voice in self._voices:
+            if voice.tap is not None:
+                voice.player.setAudioBufferOutput(None)
+                voice.tap.close()
+                voice.tap.deleteLater()
+                voice.tap = None
+                voice.tap_visual_connected = False
+
+    @staticmethod
+    def _release_exclusive():
+        if sys.platform == "win32":
+            from . import wasapi
+
+            wasapi.release()
+
+    def _tap_exclusive(self):
+        return self._bit_perfect and self._exclusive and sys.platform == "win32"
+
+    @Property(str, constant=True)
+    def bitPerfectSystem(self):
+        """What keeps each song's rate here: "pipewire", "coreaudio", "wasapi" (exclusive mode) or ""."""
+        from .bitperfect import system
+
+        return system()
+
+    @Property(bool, notify=audioSettingsChanged)
+    def exclusiveMode(self):
+        """Bit-perfect on Windows: the output is taken by itself (exclusive mode) while there's music to play."""
+        return self._exclusive
+
+    @Slot(bool)
+    def setExclusiveMode(self, on):
+        on = bool(on)
+        if on == self._exclusive:
+            return
+        self._exclusive = on
+        self._settings.setValue("audio/exclusive", "true" if on else "false")
+        if self._bit_perfect:
+            self._remake_taps()
+            if not on:
+                self._release_exclusive()
+            self._sync_taps()
+        self.audioSettingsChanged.emit()
+        self.signalPathChanged.emit()
+
+    def _on_tap_opened(self, rate):
+        if self._bit_perfect:
+            if sys.platform != "win32":  # (Windows: exclusive mode opens the output at the song's rate itself)
+                self._rate_request.ask(rate)  # PipeWire, or the Mac's output, runs at the song's own rate
+            self.signalPathChanged.emit()
 
     @Property(str, notify=eqChanged)
     def crossfeed(self):
@@ -934,18 +1116,40 @@ class Player(QObject):
 
     @Property("QVariantList", notify=eqChanged)
     def headphoneCurve(self):
+        """The correction's shape, [[freq, dB], …], with filters switched off left out (for drawing)."""
+        filters = self._headphone.get("filters") or []
+        if filters and eq.available() and not all(f.get("on", True) for f in filters):
+            return eq.filters_curve(filters)
         return list(self._headphone["curve"] or [])
 
+    @Property("QVariantList", notify=eqChanged)
+    def headphoneFilters(self):
+        """A parametric profile's own filters ({"type", "fc", "gain", "q", "on"}), or [] (GraphicEQ, none)."""
+        return [dict(f) for f in self._headphone.get("filters") or []]
+
+    @Property(float, notify=eqChanged)
+    def headphonePreamp(self):
+        return float(self._headphone.get("preamp") or 0.0)
+
+    @Slot(int, bool)
+    def setHeadphoneFilter(self, index, on):
+        """Switch one of the profile's filters off (or back on): to hear what it does, or leave it out."""
+        filters = self._headphone.get("filters") or []
+        if 0 <= index < len(filters) and filters[index].get("on", True) != bool(on):
+            filters[index]["on"] = bool(on)
+            self._save_eq()
+
     @Slot(str, str)
-    def setHeadphoneProfile(self, name, curve_json):
-        """Correct for a headphone: `curve_json` is [[freq, dB], ...] (see headphones.parse). Turns the EQ on."""
+    def setHeadphoneProfile(self, name, profile_json):
+        """Correct for a headphone. `profile_json` is a profile (see headphones.profile: its curve, filters and
+        preamp) or, as older versions kept it, just the curve [[freq, dB], …]. Turns the EQ on."""
         try:
-            curve = [[float(f), float(g)] for f, g in json.loads(curve_json)]
-        except (TypeError, ValueError):
+            hp = _clean_headphone(name, json.loads(profile_json))
+        except ValueError:
             return
-        if len(curve) < 2 or not name.strip() or not all(math.isfinite(f) and math.isfinite(g) for f, g in curve):
-            return  # nan or inf would make the filter (and the sound) garbage
-        self._headphone = {"name": name.strip(), "curve": curve}
+        if hp is None:
+            return
+        self._headphone = hp
         if not self._eq_enabled and eq.available():
             self._eq_enabled = True
             self._sync_taps()
@@ -1138,22 +1342,38 @@ class Player(QObject):
         """The current track's way from file to speakers (see signalpath.describe)."""
         track = self._queue[self._index] if self.hasTrack else None
         device = self._output_audio_device()
-        rate = int((track or {}).get("sample_rate") or 0)
+        dsd_rate = self._dsd_out_rate(track) if track else 0
+        rate = dsd_rate or int((track or {}).get("sample_rate") or 0)
         follows = signalpath.output_follows(rate, self._rate_mode) if track else False
+        bp = self._bit_perfect
+        forced = bp and rate and self._rate_request.rate == rate and not self._rate_request.error
+        tap = self._voices[self._cur].tap if self._voices else None
+        issue = ""
+        if bp and sys.platform == "win32" and tap is not None:
+            if tap.exclusive_open and tap._fmt and tap._fmt[0] == rate:
+                forced = True  # the output is the song's own, at its rate (exclusive mode)
+            elif tap.exclusive and tap.exclusive_error:
+                issue = fill(translate("Player", "Exclusive mode couldn't be had (%1), so the song goes through "
+                                                 "Windows' mixer, which converts it to its own rate."), tap.exclusive_error)
+        if forced:
+            follows = True
         return signalpath.describe(
             track,
-            rg_factor=replaygain_factor(track, self._rg_mode, self._rg_preamp),
-            rg_mode=self._rg_mode,
-            volume=self._volume,
+            rg_factor=1.0 if bp else replaygain_factor(track, self._rg_mode, self._rg_preamp),
+            rg_mode="off" if bp else self._rg_mode,
+            volume=1.0 if bp else self._volume,
             speed=self._rate(),
-            eq_enabled=self._eq_enabled,
+            eq_enabled=self._eq_enabled and not bp,
             eq_preset=self.eqPresetLabel(self._eq_preset) + (f" + {self._headphone['name']}" if self._headphone["name"] else ""),
-            crossfeed=self._crossfeed if self._crossfeed in eq.CROSSFEED and eq.available() else "",
-            crossfade=self._crossfade,
+            crossfeed=self._crossfeed if self._crossfeed in eq.CROSSFEED and eq.available() and not bp else "",
+            crossfade=0 if bp else self._crossfade,
             device_name="" if device.isNull() else device.description(),
             device_rate=0 if device.isNull() else device.preferredFormat().sampleRate(),
             rate_follows=follows,
-            rate_source="PipeWire" if follows and self._rate_mode == "auto" else "",
+            rate_source=("Hallucinate" if forced else "PipeWire" if follows and self._rate_mode == "auto" else ""),
+            bit_perfect=bp,
+            bit_perfect_issue=issue,
+            dsd_rate=dsd_rate,
             cast={"device": self._cast.name, "sent": self._cast_sent} if self._cast is not None else None,
         )
 
@@ -1213,14 +1433,17 @@ class Player(QObject):
 
     def _sync_taps(self):
         for n, voice in enumerate(self._voices):
-            if self._dsp_on() and voice.tap is None:
-                tap = eq.EqTap(eq.EqProcessor(), self)
+            if self._tap_on() and voice.tap is None:
+                tap = eq.EqTap(eq.EqProcessor(), self, passthrough=self._bit_perfect)
+                tap.exclusive = self._tap_exclusive()
                 tap.failedChanged.connect(self._on_tap_failed)
+                tap.opened.connect(self._on_tap_opened)
                 self._configure_processor(tap.processor)
                 tap.setDevice(self._output_audio_device())
+                tap.setDsd(voice.dsd, self._dsd_rate)
                 voice.tap = tap
                 tap.setRunning(voice.player.playbackState() == QMediaPlayer.PlaybackState.PlayingState)
-            elif not self._dsp_on() and voice.tap is not None:
+            elif not self._tap_on() and voice.tap is not None:
                 voice.player.setAudioBufferOutput(None)
                 tap = voice.tap
                 tap.close()
@@ -1394,8 +1617,11 @@ class Player(QObject):
 
     def _apply_volume(self):
         for voice in self._voices:
-            gain = replaygain_factor(self._voice_track(voice), self._rg_mode, self._rg_preamp)
-            level = min(1.0, self._volume ** 2 * gain * voice.fade * self._sleep_gain * self._pause_gain)
+            if self._bit_perfect:
+                level = self._sleep_gain  # (only the sleep timer's fade at its very end: it was asked for)
+            else:
+                gain = replaygain_factor(self._voice_track(voice), self._rg_mode, self._rg_preamp)
+                level = min(1.0, self._volume ** 2 * gain * voice.fade * self._sleep_gain * self._pause_gain)
             if voice.tap is not None and not voice.tap.failed:
                 voice.audio.setVolume(0.0)  # still paces the decoder; the tap's sink plays the sound
                 voice.tap.setVolume(level)
@@ -1501,6 +1727,8 @@ class Player(QObject):
 
     @Property(float, notify=volumeChanged)
     def volume(self):
+        if self._bit_perfect and self._cast is None:
+            return 1.0  # (Hallucinate's volume steps aside: the samples go out untouched)
         if self._cast is not None and self._cast.volume is not None:
             return self._cast.volume  # the device's own volume while casting
         return self._volume
@@ -1573,6 +1801,7 @@ class Player(QObject):
         session.changed.connect(self._on_cast_changed)
         session.ended.connect(self._on_cast_ended)
         session.failed.connect(self._on_cast_failed)
+        session.advanced.connect(self._on_cast_advanced)
         if self.hasTrack and not self._parked and not self._ended:
             self._cast_load(self._index, was_playing, pos)
         self._clear_visualizer()
@@ -1589,13 +1818,14 @@ class Player(QObject):
             return
         pos, was_playing = session.position_ms(), session.playing
         for signal, slot in ((session.changed, self._on_cast_changed), (session.ended, self._on_cast_ended),
-                             (session.failed, self._on_cast_failed)):
+                             (session.failed, self._on_cast_failed), (session.advanced, self._on_cast_advanced)):
             try:
                 signal.disconnect(slot)
             except (RuntimeError, TypeError):
                 pass
-        self._cast = self._cast_media = self._cast_prepare = None
+        self._cast = self._cast_media = self._cast_prepare = self._cast_queued = None
         self._cast_gen += 1  # a song still being got ready for the device isn't wanted any more
+        self._cast_next_gen += 1
         if self.hasTrack and not self._ended:
             if self._error == CONNECTING:
                 self._set_error("")
@@ -1609,6 +1839,8 @@ class Player(QObject):
     def _cast_load(self, i, autoplay, start_ms):
         track = self._queue[i]
         session = self._cast
+        self._cast_queued = None  # (a load replaces whatever the device had queued)
+        self._cast_next_gen += 1
         self._cast_gen += 1
         gen = self._cast_gen
 
@@ -1636,18 +1868,90 @@ class Player(QObject):
         session.load(media, start_ms, autoplay)
         self.durationChanged.emit()
         self.signalPathChanged.emit()
-        if self._cast_prepare is not None:  # get the next song ready while this one plays
+        if self._cast_prepare is not None and not session.gapless:  # get the next song ready while this one plays
             nxt = self._compute_next(auto=True)
             if nxt is not None and nxt != self._index:
                 self._cast_prepare(self._queue[nxt], session)
+        self._cast_queue_next()
         return True
+
+    # --- gapless on the device: it's handed the next song, and goes straight on into it by itself ------------
+    def _cast_next_wanted(self):
+        """The queue entry the device should go on into after this one, or None (one that can't be handed over
+        ahead: a station, the same song again, the end of the queue, the sleep timer stopping after this one)."""
+        if not self.hasTrack or self._ended or self._sleep_after_track or self._sleep_album:
+            return None
+        cur = self._queue[self._index]
+        if track_kind(cur) == "station":
+            return None
+        nxt = self._compute_next(auto=True)
+        if nxt is None or nxt == self._index or track_kind(self._queue[nxt]) == "station":
+            return None
+        return nxt
+
+    def _cast_queue_next(self):
+        """Hands the device the next song (getting it ready first if it must be), or takes back one that isn't
+        next any more (the queue was changed, shuffle or repeat switched)."""
+        session = self._cast
+        if session is None or not session.gapless or self._cast_media is None:
+            return
+        nxt = self._cast_next_wanted()
+        queued = self._cast_queued
+        if queued is not None and session.queued is not queued[2]:
+            queued = self._cast_queued = None  # the device didn't take it this time: try again
+        if queued is not None and nxt == queued[0] and nxt is not None and self._queue[nxt] is queued[1]:
+            return  # already there
+        if queued is None and self._cast_next_pending == (nxt, self._cast_next_gen):
+            return  # being got ready
+        self._cast_next_gen += 1
+        gen = self._cast_next_gen
+        if queued is not None:
+            self._cast_queued = None
+            session.queue_next(None)
+        if nxt is None:
+            return
+        track = self._queue[nxt]
+
+        def hand(media):
+            if gen != self._cast_next_gen or self._cast is not session:
+                return
+            self._cast_next_pending = None
+            if media.get("error") or media.get("live") or media.get("start") or media.get("end"):
+                return  # it'll be loaded the usual way when its turn comes (and say what's wrong then)
+            self._cast_queued = (nxt, track, media)
+            session.queue_next(media)
+        self._cast_next_pending = (nxt, gen)
+        media = self._cast_media(track, session, hand)
+        if not media.get("pending"):
+            hand(media)
+
+    def _on_cast_advanced(self):
+        """The device went straight on into the song it was handed: that's the playing song now."""
+        queued, self._cast_queued = self._cast_queued, None
+        session = self._cast
+        if session is None or queued is None:
+            return
+        i, track, media = queued
+        if not (0 <= i < len(self._queue)) or self._queue[i] is not track:
+            i = next((j for j, t in enumerate(self._queue) if t is track), None)
+            if i is None:  # (gone from the queue meanwhile: the device plays on with what it has; follow the queue)
+                self._on_cast_ended()
+                return
+        self._cast_adopting = True
+        try:
+            self._load(i)
+        finally:
+            self._cast_adopting = False
+        self._cast_sent = media.get("sent") or "original"
+        self.signalPathChanged.emit()
 
     def cast_sound(self, track):
         """How this computer would sound a song (for a cast device sent Hallucinate's sound): ReplayGain, the
         equalizer, the headphone correction and crossfeed."""
         return {"gain": replaygain_factor(track, self._rg_mode, self._rg_preamp),
                 "eq_on": bool(self._eq_enabled and eq.available()), "gains": list(self._eq_gains),
-                "curve": self._headphone["curve"], "crossfeed": self._crossfeed if self._crossfeed in eq.CROSSFEED
+                "curve": None if self._headphone.get("filters") else self._headphone["curve"],
+                "filters": self._headphone.get("filters") or [], "crossfeed": self._crossfeed if self._crossfeed in eq.CROSSFEED
                 else ""}
 
     def _cast_play(self):
@@ -1676,6 +1980,8 @@ class Player(QObject):
             if self._error == CONNECTING:
                 self._set_error("")
         self._count_listening(pos, dur)
+        if session.gapless and session.state in ("PLAYING", "PAUSED", "BUFFERING"):
+            self._cast_queue_next()  # (still the right one after changes to the queue?)
         self.positionChanged.emit()
         self.stateChanged.emit()
         self.durationChanged.emit()
@@ -1739,7 +2045,7 @@ class Player(QObject):
             if self._pausing:  # play pressed while fading out: come back up from where it is
                 self._pause_goal = 1.0
                 return
-            fade_in = self._pause_fade > 0 and not self.playing and not self._ended
+            fade_in = self._pause_fade > 0 and not self._bit_perfect and not self.playing and not self._ended
             self._ended = False
             if fade_in:
                 self._pause_gain, self._pause_goal = 0.0, 1.0
@@ -1765,7 +2071,7 @@ class Player(QObject):
             self._park_station(self._index)
             self.saveSession()
             return
-        if self._pause_fade > 0 and self.playing and not self._fading:
+        if self._pause_fade > 0 and not self._bit_perfect and self.playing and not self._fading:
             self._pause_goal = 0.0  # fade out first; the tick pauses at the bottom
             self._pause_timer.start()
             return
@@ -1846,6 +2152,13 @@ class Player(QObject):
     def setVolume(self, v):
         v = float(v)
         v = min(max(v, 0.0), self._max_volume) if math.isfinite(v) else 0.0
+        if self._bit_perfect and self._cast is None:
+            now = time.monotonic()
+            if now - getattr(self, "_bp_volume_said", 0) > 10:
+                self._bp_volume_said = now
+                self.notice.emit(translate("Player", "Bit-perfect playback is on: use your system's or your amplifier's volume"))
+            self.volumeChanged.emit()  # (the slider goes back to 100%)
+            return
         if self._cast is not None:
             self._cast.set_volume(min(v, 1.0))  # the device's volume; this computer's stays as it was
             self.volumeChanged.emit()
@@ -2378,7 +2691,11 @@ class Player(QObject):
         self._play_counted = False
         if self._cast is not None:
             self._restore_pos = 0
-            self._cast_load(i, autoplay, start_ms)
+            if self._cast_adopting:  # the device is already playing it (it went on into it by itself)
+                self._cast_next_gen += 1
+                self._cast_queue_next()
+            else:
+                self._cast_load(i, autoplay, start_ms)
             self.trackChanged.emit()
             self.stateChanged.emit()
             self.durationChanged.emit()
@@ -2426,6 +2743,7 @@ class Player(QObject):
             self._player.play()
         else:
             self._voice.load(i, track)
+            self._sync_dsd()
             self._player.setPlaybackRate(self._rate())
             if autoplay and self._voice.seek_on_load >= 0:
                 self._voice.play_on_load = True  # start where the song starts, not at the top of the file
@@ -2555,6 +2873,7 @@ class Player(QObject):
             return  # ready by the time it's due, or loaded the careful way then
         sb.player.pause()
         sb.load(nxt, track)
+        self._sync_dsd()
         sb.player.pause()  # prepare the decoder without taking the audio device
         self._apply_volume()
 
@@ -2580,7 +2899,7 @@ class Player(QObject):
             self.saveSession()
 
     def _try_crossfade(self, pos, dur):
-        xf = self._crossfade * 1000
+        xf = 0 if self._bit_perfect else self._crossfade * 1000
         if (not xf or self._fading or self._transitioning or not self.playing or self._repeat == REPEAT_ONE
                 or self._sleep_after_track):
             return False
@@ -2858,6 +3177,8 @@ class Player(QObject):
             self.errorChanged.emit()
 
     def shutdown(self):
+        self._rate_request.release()  # PipeWire chooses its rate again once Hallucinate has gone
+        self._release_exclusive()
         self._host_wait += 1
         self._reap_timer.stop()
         self._fade_timer.stop()

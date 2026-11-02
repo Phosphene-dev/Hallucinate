@@ -67,8 +67,23 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e ".[test]"
-      # Media controls against the real Windows API, plus an offscreen launch with them enabled.
-      - run: pytest -vv tests/test_smtc.py tests/test_app_smoke.py
+      # Media controls against the real Windows API, plus an offscreen launch with them enabled; and exclusive-mode
+      # output (bit-perfect playback) through WASAPI itself.
+      - run: pytest -vv tests/test_smtc.py tests/test_app_smoke.py tests/test_native_audio.py
+
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[test]"
+      # Bit-perfect playback's rate switching, through Core Audio itself.
+      - run: pytest -vv tests/test_native_audio.py
 
   flatpak:
     # each processor the Flatpak is built for: x86_64, and aarch64 (Linux phones, ARM laptops: #130)

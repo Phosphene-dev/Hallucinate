@@ -45,10 +45,64 @@ def available():
     return np is not None
 
 
-def design_fir(gains_db, rate, taps=TAPS, curve=None):
-    """Linear-phase FIR whose magnitude interpolates the band gains (log-frequency).
+FILTER_TAIL = 8192  # samples of a parametric filter's response kept (its ringing in the deep bass dies out sooner)
 
-    `curve` is an optional extra correction, [[freq, dB], ...] (a headphone profile), added under the bands.
+
+def biquad(kind, fc, gain, q, rate):
+    """(b, a) of an Equalizer APO / RBJ cookbook filter: "PK" peaking, "LSC" low shelf, "HSC" high shelf."""
+    a_ = 10 ** (gain / 40)
+    w0 = 2 * np.pi * min(fc, rate * 0.499) / rate
+    alpha = np.sin(w0) / (2 * q)
+    cos = np.cos(w0)
+    if kind == "PK":
+        b = (1 + alpha * a_, -2 * cos, 1 - alpha * a_)
+        a = (1 + alpha / a_, -2 * cos, 1 - alpha / a_)
+    elif kind == "LSC":
+        s = 2 * np.sqrt(a_) * alpha
+        b = (a_ * ((a_ + 1) - (a_ - 1) * cos + s), 2 * a_ * ((a_ - 1) - (a_ + 1) * cos),
+             a_ * ((a_ + 1) - (a_ - 1) * cos - s))
+        a = ((a_ + 1) + (a_ - 1) * cos + s, -2 * ((a_ - 1) + (a_ + 1) * cos), (a_ + 1) + (a_ - 1) * cos - s)
+    elif kind == "HSC":
+        s = 2 * np.sqrt(a_) * alpha
+        b = (a_ * ((a_ + 1) + (a_ - 1) * cos + s), -2 * a_ * ((a_ - 1) + (a_ + 1) * cos),
+             a_ * ((a_ + 1) + (a_ - 1) * cos - s))
+        a = ((a_ + 1) - (a_ - 1) * cos + s, 2 * ((a_ - 1) - (a_ + 1) * cos), (a_ + 1) - (a_ - 1) * cos - s)
+    else:
+        return (1.0, 0.0, 0.0), (1.0, 0.0, 0.0)
+    return tuple(x / a[0] for x in b), tuple(x / a[0] for x in a)
+
+
+def parametric_response(filters, rate, n):
+    """The exact complex response, at the n-point FFT's frequencies, of a chain of parametric filters (the ones
+    switched on): what an IIR filter bank like Equalizer APO does, magnitude and phase."""
+    w = 2 * np.pi * np.fft.rfftfreq(n, 1.0 / rate) / rate
+    z1, z2 = np.exp(-1j * w), np.exp(-2j * w)
+    h = np.ones_like(w, dtype=complex)
+    for f in filters or []:
+        if not f.get("on", True):
+            continue
+        b, a = biquad(f["type"], f["fc"], f["gain"], f["q"], rate)
+        h *= (b[0] + b[1] * z1 + b[2] * z2) / (a[0] + a[1] * z1 + a[2] * z2)
+    return h
+
+
+def filters_curve(filters, points=160, rate=48000):
+    """The filters' response as [[freq, dB], …], log-spaced 20 Hz – 20 kHz (for drawing)."""
+    n = 1 << 15
+    freqs = 20 * (1000 ** (np.arange(points) / (points - 1)))
+    grid = np.fft.rfftfreq(n, 1.0 / rate)
+    mag = 20 * np.log10(np.maximum(np.abs(parametric_response(filters, rate, n)), 1e-9))
+    return [[round(float(f), 2), round(float(g), 3)] for f, g in zip(freqs, np.interp(freqs, grid, mag))]
+
+
+def design_fir(gains_db, rate, taps=TAPS, curve=None, filters=None):
+    """The equalizer's FIR: the band gains as a linear-phase filter (log-frequency interpolation), with a headphone
+    correction under them.
+
+    `curve` is a correction as [[freq, dB], ...] (a GraphicEQ profile), added to the bands' magnitude. `filters`
+    is a parametric profile's filters ({"type", "fc", "gain", "q", "on"}): their exact response, phase and all,
+    is applied as the causal filters they are, convolved onto the bands' filter, so the correction is the one
+    its makers measured rather than an approximation of it.
     The whole response is lowered by its largest boost, so a boosted band (or the correction) can't push a
     loud recording past full scale and clip: boosting the bass turns everything else down instead."""
     n = 16384
@@ -61,11 +115,24 @@ def design_fir(gains_db, rate, taps=TAPS, curve=None):
         pts = np.array(curve, dtype=float)
         mag_db = mag_db + np.interp(logf, np.log10(pts[:, 0]), pts[:, 1])
     audible = (freqs >= 20) & (freqs <= 20000)
-    mag_db -= max(0.0, float(mag_db[audible].max()))
+    active = [f for f in (filters or []) if f.get("on", True)]
+    if active:
+        # headroom from the combined response (the bands and the filters together)
+        both = mag_db + 20 * np.log10(np.maximum(np.abs(parametric_response(active, rate, n)), 1e-9))
+        mag_db -= max(0.0, float(both[audible].max()))
+    else:
+        mag_db -= max(0.0, float(mag_db[audible].max()))
     mag = 10 ** (mag_db / 20)
     impulse = np.fft.fftshift(np.fft.irfft(mag, n))
     mid = n // 2
     h = impulse[mid - taps // 2: mid + taps // 2 + 1] * np.hanning(taps)
+    if active:
+        # the filters' own impulse response (causal, as an IIR filter's is), its far tail faded out
+        big = 1 << 17
+        tail = np.fft.irfft(parametric_response(active, rate, big), big)[:FILTER_TAIL]
+        fade = FILTER_TAIL // 8
+        tail[-fade:] *= np.hanning(2 * fade)[fade:]
+        h = np.convolve(h, tail)
     return h.astype(np.float32)
 
 
@@ -136,6 +203,7 @@ class EqProcessor:
         self.eq_on = True
         self.crossfeed = None  # a Crossfeed, or None
         self.curve = None
+        self.filters = None
         self.rate = 44100
         self.channels = 2
         self._h = None
@@ -144,7 +212,8 @@ class EqProcessor:
 
     @property
     def eq_flat(self):
-        return not self.eq_on or (not self.curve and not any(abs(g) > 0.01 for g in self.gains))
+        return not self.eq_on or (not self.curve and not any(f.get("on", True) for f in self.filters or [])
+                                   and not any(abs(g) > 0.01 for g in self.gains))
 
     @property
     def flat(self):
@@ -176,6 +245,11 @@ class EqProcessor:
         self.curve = curve or None
         self._h = None
 
+    def set_filters(self, filters):
+        """A parametric headphone profile's filters (see design_fir), or None."""
+        self.filters = [dict(f) for f in filters] if filters else None
+        self._h = None
+
     def reset(self):
         self._tail = None
         if self.crossfeed is not None:
@@ -183,7 +257,7 @@ class EqProcessor:
 
     def _kernel(self, nfft):
         if self._h is None:
-            self._h = design_fir(self.gains, self.rate, curve=self.curve)
+            self._h = design_fir(self.gains, self.rate, curve=self.curve, filters=self.filters)
             self._cache = {}
         spec = self._cache.get(nfft)
         if spec is None:
@@ -200,12 +274,15 @@ class EqProcessor:
         frames = samples.shape[0]
         if frames == 0:
             return samples
-        overlap = TAPS - 1
-        if self._tail is None or self._tail.shape[1] != samples.shape[1]:
+        if self._h is None:
+            self._kernel(1 << int(np.ceil(np.log2(TAPS))))  # (designs it: its length sets the overlap)
+        taps = len(self._h)
+        overlap = taps - 1
+        if self._tail is None or self._tail.shape[0] != overlap or self._tail.shape[1] != samples.shape[1]:
             self._tail = np.zeros((overlap, samples.shape[1]), dtype=np.float32)
         x = np.concatenate([self._tail, samples], axis=0)
         self._tail = x[-overlap:].copy()
-        nfft = 1 << int(np.ceil(np.log2(x.shape[0] + TAPS)))
+        nfft = 1 << int(np.ceil(np.log2(x.shape[0] + taps)))
         spec = self._kernel(nfft)
         y = np.fft.irfft(np.fft.rfft(x, nfft, axis=0) * spec[:, None], nfft, axis=0)
         # Output is delayed by the filter's group delay (TAPS // 2 samples), a constant ~46 ms.
@@ -220,6 +297,10 @@ _FORMATS = {
 }
 
 
+class _Later(Exception):
+    """The output can't be opened just yet (exclusive mode, still playing the song before): keep the sound."""
+
+
 class EqTap(QObject):
     """Per-voice tap: receives decoded buffers, filters them and plays them on its own QAudioSink.
 
@@ -228,12 +309,26 @@ class EqTap(QObject):
     keeping its own output muted for a tap that plays nothing."""
 
     failedChanged = Signal(str)  # why it gave up; "" when it's trying again
+    opened = Signal(int)  # the sample rate its sound output was opened at
 
-    def __init__(self, processor, parent=None):
+    def __init__(self, processor, parent=None, passthrough=False):
         super().__init__(parent)
         self.output = QAudioBufferOutput(self)
         self.output.audioBufferReceived.connect(self._on_buffer)
         self.processor = processor
+        # bit-perfect: the decoded samples go out exactly as they came, in their own format (24-bit stays 24-bit,
+        # nothing filtered); the sound output is opened at the song's own rate, format and channels
+        self.passthrough = passthrough
+        # DSD (see dsd.py): what FFmpeg decodes it to is low-passed and brought down to `dsd_rate` (the rate chosen
+        # in Settings) before anything else; set by the player for the song its voice holds
+        self.dsd = False
+        self.dsd_rate = 0
+        self._dsd = None
+        self._no_float = False  # the output refused 32-bit float
+        # bit-perfect on Windows: the output taken in exclusive mode (wasapi.py), at the song's own format
+        self.exclusive = False
+        self.exclusive_open = False
+        self.exclusive_error = ""
         self.volume = 1.0
         self.failed = False
         self.device = None  # QAudioDevice; None plays on the system default
@@ -245,29 +340,66 @@ class EqTap(QObject):
         self._timer = QTimer(self)
         self._timer.setInterval(10)
         self._timer.timeout.connect(self._drain)
+        self._retry = QTimer(self, singleShot=True, interval=30, timeout=self._retry_open)
+        self._want = None
 
-    def _open(self, rate, channels):
+    def _open(self, rate, channels, sample_format=None):
         fmt = QAudioFormat()
         fmt.setSampleRate(rate)
         fmt.setChannelCount(channels)
-        fmt.setSampleFormat(QAudioFormat.SampleFormat.Int16)
+        fmt.setSampleFormat(sample_format if sample_format is not None else QAudioFormat.SampleFormat.Int16)
         device = self.device
         if device is None or device.isNull():
             device = QMediaDevices.defaultAudioOutput()
+        if self.exclusive and self.passthrough and self._open_exclusive(rate, channels, fmt):
+            return
         if device.isNull() or not device.isFormatSupported(fmt):
             raise RuntimeError("no usable audio output device")
         self._close()
         self._sink = QAudioSink(device, fmt, self)
-        self._sink.setBufferSize(rate * channels * 2 // 4)  # ~250 ms
+        self._sink.setBufferSize(rate * channels * fmt.bytesPerSample() // 4)  # ~250 ms
         self._sink.setVolume(self.volume)
         self._io = self._sink.start()
-        self._fmt = (rate, channels)
+        self._fmt = (rate, channels, fmt.sampleFormat())
         self.processor.configure(rate, channels)
         if self._suspended:
             self._sink.suspend()
         self._timer.start()
+        self.opened.emit(rate)
+
+    def _open_exclusive(self, rate, channels, fmt):
+        """The output in exclusive mode (Windows; see wasapi.py). False when it can't be had: the shared output
+        is used instead, and `exclusive_error` says why."""
+        from . import wasapi
+
+        kept = bytes(self._pending)  # (sound held while the output was busy: it's still to play)
+        self._close()
+        self._pending += kept
+        try:
+            sink = wasapi.open_writer(wasapi.device_id(self.device), rate, channels,
+                                      wasapi.sample_kind(fmt.sampleFormat()))
+        except wasapi.Busy:
+            raise _Later() from None  # (the song before, at another rate, is still playing out)
+        except RuntimeError as e:
+            self.exclusive_error = str(e)
+            self.exclusive_open = False
+            return False
+        self.exclusive_error, self.exclusive_open = "", True
+        self._sink = sink
+        sink.setVolume(self.volume)
+        self._io = sink.start()
+        self._fmt = (rate, channels, fmt.sampleFormat())
+        self.processor.configure(rate, channels)
+        if self._suspended:
+            sink.suspend()
+        else:
+            sink.resume()
+        self._timer.start()
+        self.opened.emit(rate)
+        return True
 
     def _close(self):
+        self.exclusive_open = False
         self._timer.stop()
         if self._sink is not None:
             self._sink.stop()
@@ -283,7 +415,25 @@ class EqTap(QObject):
         if spec is None:
             return
         try:
-            if self._fmt != (fmt.sampleRate(), fmt.channelCount()) or self._sink is None:
+            if self.dsd and fmt.sampleRate() >= 176400:  # (DSD as FFmpeg decodes it: see dsd.py)
+                self._on_dsd(buf, fmt, spec)
+                return
+            if self.passthrough:
+                want = (fmt.sampleRate(), fmt.channelCount(), fmt.sampleFormat())
+                if self._fmt != want or self._sink is None:
+                    if self._want != want:
+                        self._pending.clear()  # (sound held for another format that never got to play)
+                    self._want = want
+                    try:
+                        self._open(*want)
+                    except _Later:
+                        self._pending += bytes(buf.constData())[:buf.byteCount()]  # kept until it can play
+                        self._retry.start()
+                        return
+                self._pending += bytes(buf.constData())[:buf.byteCount()]  # exactly as decoded
+                self._drain()
+                return
+            if self._fmt != (fmt.sampleRate(), fmt.channelCount(), QAudioFormat.SampleFormat.Int16) or self._sink is None:
                 self._open(fmt.sampleRate(), fmt.channelCount())
             raw = np.frombuffer(buf.constData(), dtype=spec[0], count=buf.sampleCount())
             data = spec[1](raw).reshape(-1, fmt.channelCount())
@@ -291,16 +441,78 @@ class EqTap(QObject):
                 data = self.processor.process(data)
             out = (np.clip(data, -1.0, 1.0) * 32767).astype("<i2")
         except Exception as exc:  # noqa: BLE001
-            logger.warning("Equalizer disabled: %s", exc)
-            self.failed = True
-            self._close()
-            self._fmt = None  # opened afresh when it tries again
-            self.failedChanged.emit(str(exc) or type(exc).__name__)
+            self._give_up(exc)
             return
         self._pending += out.tobytes()
         self._drain()
 
+    def _retry_open(self):
+        if self._want is None or self._sink is not None or self.failed:
+            return
+        try:
+            self._open(*self._want)
+        except _Later:
+            self._retry.start()
+            return
+        except Exception as exc:  # noqa: BLE001
+            self._give_up(exc)
+            return
+        self._drain()
+
+    def _give_up(self, exc):
+        logger.warning("Equalizer disabled: %s", exc)
+        self.failed = True
+        self._close()
+        self._fmt = None  # opened afresh when it tries again
+        self.failedChanged.emit(str(exc) or type(exc).__name__)
+
+    def _on_dsd(self, buf, fmt, spec):
+        """A DSD song: converted to PCM at the chosen rate (dsd.py), then processed as any song would be (or,
+        bit-perfect, sent on as it comes out of the conversion). Played as 32-bit float where the output takes it,
+        so the conversion's resolution isn't cut to 16 bits."""
+        from . import dsd
+
+        rate, channels = fmt.sampleRate(), fmt.channelCount()
+        out_rate = dsd.output_rate(rate, self.dsd_rate)
+        conv = self._dsd
+        if conv is None or (conv.in_rate, conv.channels, conv.out_rate) != (rate, channels, out_rate):
+            conv = self._dsd = dsd.Converter(rate, channels, out_rate)
+        try:
+            raw = np.frombuffer(buf.constData(), dtype=spec[0], count=buf.sampleCount())
+            data = conv.process(spec[1](raw).reshape(-1, channels))
+            float_fmt = (out_rate, channels, QAudioFormat.SampleFormat.Float)
+            int16_fmt = (out_rate, channels, QAudioFormat.SampleFormat.Int16)
+            if self._sink is None or (self._fmt != float_fmt and not (self._fmt == int16_fmt and self._no_float)):
+                try:
+                    self._open(*float_fmt)
+                    self._no_float = False
+                except RuntimeError:
+                    self._open(*int16_fmt)  # (an output that only takes 16-bit)
+                    self._no_float = True
+            if not self.passthrough and not self.processor.flat:
+                data = self.processor.process(data)
+            if self._fmt[2] == QAudioFormat.SampleFormat.Float:
+                out = (data if self.passthrough else np.clip(data, -1.0, 1.0)).astype("<f4")
+            else:
+                out = (np.clip(data, -1.0, 1.0) * 32767).astype("<i2")
+        except Exception as exc:  # noqa: BLE001
+            self._give_up(exc)
+            return
+        self._pending += out.tobytes()
+        self._drain()
+
+    def setDsd(self, on, rate):
+        """The song this tap plays is DSD (or not), converted to `rate` (dsd.RATES)."""
+        on, rate = bool(on), int(rate or 0)
+        if (on, rate) != (self.dsd, self.dsd_rate):
+            self.dsd, self.dsd_rate = on, rate
+            if self._dsd is not None:
+                self._dsd.reset()
+
     def _drain(self):
+        if self.exclusive_open and self._sink is not None and self._sink.error:
+            self._give_up(RuntimeError(self._sink.error))  # (the output went away, or was taken by another app)
+            return
         if self._io is None or not self._pending:
             return
         free = self._sink.bytesFree()
@@ -339,6 +551,8 @@ class EqTap(QObject):
             self.failed = False
             self.failedChanged.emit("")
         self.processor.reset()
+        if self._dsd is not None:
+            self._dsd.reset()
         if self._sink is not None:
             self._sink.reset()
             self._io = self._sink.start()

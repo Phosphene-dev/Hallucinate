@@ -1036,9 +1036,61 @@ Item {
             id: sec_sound
             objectName: "settings_sound"
             title: qsTr("Sound")
-            keywords: qsTr("equalizer eq bass treble headphones autoeq crossfeed")
+            keywords: qsTr("equalizer eq bass treble headphones autoeq crossfeed bit-perfect bitperfect exclusive untouched resample sample rate pipewire audiophile dsd dsf dff sacd wasapi exclusive mode core audio")
             query: page.query
-            EqualizerPanel { width: parent.width }
+            StyledCheck {
+                objectName: "bitPerfect"
+                enabled: player.eqAvailable
+                text: qsTr("Bit-perfect playback")
+                checked: player.bitPerfect
+                onToggled: player.setBitPerfect(checked)
+            }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: (player.bitPerfect
+                       ? qsTr("Every song goes to your sound output exactly as it's stored, at its own bit depth. The equalizer, crossfeed, ReplayGain, crossfade, fades and speed are set aside, and Hallucinate's volume stays at 100%: use your system's or your amplifier's volume.")
+                       : qsTr("Send every song to your sound output exactly as it's stored: the equalizer, crossfeed, ReplayGain, crossfade, fades, speed and Hallucinate's volume step aside while it's on (your settings for them are kept)."))
+                      + " " + (player.bitPerfectSystem === "wasapi"
+                       ? (player.exclusiveMode
+                          ? qsTr("Hallucinate takes the output by itself (exclusive mode) while there's music to play, at each song's own rate and format: other apps are silent meanwhile, and get it back a few seconds after you pause.")
+                          : qsTr("Without exclusive mode, Windows' mixer converts every song to the rate set in Sound settings."))
+                       : player.bitPerfectSystem === "coreaudio" && player.bitPerfectRates
+                       ? qsTr("Your Mac's output is switched to each song's own rate, so nothing is resampled on the way (its own rate is put back afterwards).")
+                       : player.bitPerfectRates
+                       ? qsTr("PipeWire is asked to run at each song's own rate, so nothing is resampled on the way.")
+                       : qsTr("To keep each song's own rate too, Linux with PipeWire and its tools (pw-metadata) is needed; elsewhere the system may resample it. The signal path shows what happens."))
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            StyledCheck {
+                objectName: "exclusiveMode"
+                visible: player.bitPerfectSystem === "wasapi"
+                enabled: player.bitPerfect
+                text: qsTr("Take the output by itself (exclusive mode)")
+                checked: player.exclusiveMode
+                onToggled: player.setExclusiveMode(checked)
+            }
+            Flow {
+                width: parent.width
+                spacing: 12
+                Text { height: 38; verticalAlignment: Text.AlignVCenter; text: qsTr("DSD songs play as"); color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); textFormat: Text.PlainText }
+                StyledCombo {
+                    objectName: "dsdRate"
+                    enabled: player.eqAvailable
+                    model: [qsTr("88.2 kHz PCM (recommended)"), qsTr("176.4 kHz PCM"), qsTr("352.8 kHz PCM")]
+                    selection: player.dsdRates.indexOf(player.dsdRate)
+                    onActivated: player.setDsdRate(player.dsdRates[currentIndex])
+                }
+            }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: qsTr("DSD files (.dsf, .dff) are converted to PCM as they play, with the ultrasonic noise DSD carries filtered out; the music itself is left as it is. All three keep everything up to 30 kHz: a higher rate only matters if your DAC sounds better at it.")
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            EqualizerPanel { width: parent.width; opacity: player.bitPerfect ? 0.5 : 1 }
             Flow {
                 width: parent.width
                 spacing: 12

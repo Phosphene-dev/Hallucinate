@@ -1979,6 +1979,26 @@
         <translation>Supprimer</translation>
     </message>
     <message>
+        <source>%1 filters, applied exactly (the profile suggests a preamp of %2 dB; the volume is lowered by just what the correction needs instead).</source>
+        <translation>%1 filtres, appliqués exactement (le profil suggère un préampli de %2 dB ; le volume est plutôt abaissé de ce dont la correction a besoin, sans plus).</translation>
+    </message>
+    <message>
+        <source>Low shelf</source>
+        <translation>Plateau grave</translation>
+    </message>
+    <message>
+        <source>High shelf</source>
+        <translation>Plateau aigu</translation>
+    </message>
+    <message>
+        <source>Peak</source>
+        <translation>Cloche</translation>
+    </message>
+    <message>
+        <source>%1 at %2 Hz, %3 dB, Q %4</source>
+        <translation>%1 à %2 Hz, %3 dB, Q %4</translation>
+    </message>
+    <message>
         <source>Search your headphones (e.g. HD 600)</source>
         <translation>Cherchez votre casque (par ex. HD 600)</translation>
     </message>
@@ -4874,6 +4894,10 @@
 <context>
     <name>Player</name>
     <message>
+        <source>Paused: bit-perfect playback plays at full level. Set your system&apos;s volume, then play</source>
+        <translation>En pause : la lecture bit-perfect joue à plein niveau. Réglez le volume de votre système, puis lancez la lecture</translation>
+    </message>
+    <message>
         <source>System default (%1)</source>
         <translation>Par défaut du système (%1)</translation>
     </message>
@@ -4890,6 +4914,10 @@
         <translation>Appareil enregistré</translation>
     </message>
     <message>
+        <source>Exclusive mode couldn&apos;t be had (%1), so the song goes through Windows&apos; mixer, which converts it to its own rate.</source>
+        <translation>Le mode exclusif n’a pas pu être obtenu (%1) : le morceau passe donc par le mélangeur de Windows, qui le convertit à sa propre fréquence.</translation>
+    </message>
+    <message>
         <source>Paused: the sound device you were listening on went away</source>
         <translation>En pause&#xa0;: l’appareil audio que vous utilisiez a disparu</translation>
     </message>
@@ -4900,6 +4928,10 @@
     <message>
         <source>Getting ready for %1…</source>
         <translation>Préparation pour %1…</translation>
+    </message>
+    <message>
+        <source>Bit-perfect playback is on: use your system&apos;s or your amplifier&apos;s volume</source>
+        <translation>La lecture bit-perfect est activée : utilisez le volume de votre système ou de votre amplificateur</translation>
     </message>
     <message>
         <source>Queue replaced</source>
@@ -7915,8 +7947,24 @@
         <translation>La lecture sans blanc est toujours active&#xa0;; avec le fondu enchaîné désactivé, les morceaux s’enchaînent directement. La vitesse de lecture et la minuterie sont dans le menu ⋯ de la barre de lecture.</translation>
     </message>
     <message>
-        <source>equalizer eq bass treble headphones autoeq crossfeed</source>
-        <translation>égaliseur eq basses aigus casque autoeq crossfeed equalizer bass treble headphones</translation>
+        <source>DSD songs play as</source>
+        <translation>Les morceaux DSD sont lus en</translation>
+    </message>
+    <message>
+        <source>88.2 kHz PCM (recommended)</source>
+        <translation>PCM 88,2 kHz (recommandé)</translation>
+    </message>
+    <message>
+        <source>176.4 kHz PCM</source>
+        <translation>PCM 176,4 kHz</translation>
+    </message>
+    <message>
+        <source>352.8 kHz PCM</source>
+        <translation>PCM 352,8 kHz</translation>
+    </message>
+    <message>
+        <source>DSD files (.dsf, .dff) are converted to PCM as they play, with the ultrasonic noise DSD carries filtered out; the music itself is left as it is. All three keep everything up to 30 kHz: a higher rate only matters if your DAC sounds better at it.</source>
+        <translation>Les fichiers DSD (.dsf, .dff) sont convertis en PCM pendant la lecture, en filtrant le bruit ultrasonique que porte le DSD ; la musique elle-même reste telle quelle. Les trois conservent tout jusqu’à 30 kHz : une fréquence plus haute ne compte que si votre DAC sonne mieux ainsi.</translation>
     </message>
     <message>
         <source>Headphone crossfeed</source>
@@ -8390,6 +8438,46 @@
     <message>
         <source>Wikipedia, then Last.fm, then Discogs</source>
         <translation>Wikipédia, puis Last.fm, puis Discogs</translation>
+    </message>
+    <message>
+        <source>equalizer eq bass treble headphones autoeq crossfeed bit-perfect bitperfect exclusive untouched resample sample rate pipewire audiophile dsd dsf dff sacd wasapi exclusive mode core audio</source>
+        <translation>égaliseur eq graves aigus casque autoeq crossfeed bit-perfect bitperfect exclusif intact rééchantillonnage fréquence d’échantillonnage pipewire audiophile dsd dsf dff sacd wasapi mode exclusif core audio equalizer bass treble headphones untouched resample sample rate exclusive mode</translation>
+    </message>
+    <message>
+        <source>Bit-perfect playback</source>
+        <translation>Lecture bit-perfect</translation>
+    </message>
+    <message>
+        <source>Every song goes to your sound output exactly as it&apos;s stored, at its own bit depth. The equalizer, crossfeed, ReplayGain, crossfade, fades and speed are set aside, and Hallucinate&apos;s volume stays at 100%: use your system&apos;s or your amplifier&apos;s volume.</source>
+        <translation>Chaque morceau part vers votre sortie audio exactement tel qu’il est stocké, dans sa propre résolution. L’égaliseur, le crossfeed, ReplayGain, le fondu enchaîné, les fondus et la vitesse sont mis de côté, et le volume de Hallucinate reste à 100 % : utilisez le volume de votre système ou de votre amplificateur.</translation>
+    </message>
+    <message>
+        <source>Send every song to your sound output exactly as it&apos;s stored: the equalizer, crossfeed, ReplayGain, crossfade, fades, speed and Hallucinate&apos;s volume step aside while it&apos;s on (your settings for them are kept).</source>
+        <translation>Envoyer chaque morceau vers votre sortie audio exactement tel qu’il est stocké : l’égaliseur, le crossfeed, ReplayGain, le fondu enchaîné, les fondus, la vitesse et le volume de Hallucinate s’effacent tant que c’est activé (vos réglages sont conservés).</translation>
+    </message>
+    <message>
+        <source>Hallucinate takes the output by itself (exclusive mode) while there&apos;s music to play, at each song&apos;s own rate and format: other apps are silent meanwhile, and get it back a few seconds after you pause.</source>
+        <translation>Hallucinate prend la sortie pour lui seul (mode exclusif) tant qu’il y a de la musique à jouer, à la fréquence et au format propres à chaque morceau : les autres applications sont muettes pendant ce temps et la récupèrent quelques secondes après une pause.</translation>
+    </message>
+    <message>
+        <source>Without exclusive mode, Windows&apos; mixer converts every song to the rate set in Sound settings.</source>
+        <translation>Sans le mode exclusif, le mélangeur de Windows convertit chaque morceau à la fréquence réglée dans les paramètres Son.</translation>
+    </message>
+    <message>
+        <source>Your Mac&apos;s output is switched to each song&apos;s own rate, so nothing is resampled on the way (its own rate is put back afterwards).</source>
+        <translation>La sortie de votre Mac passe à la fréquence propre de chaque morceau, si bien que rien n’est rééchantillonné en chemin (sa fréquence d’origine est rétablie ensuite).</translation>
+    </message>
+    <message>
+        <source>PipeWire is asked to run at each song&apos;s own rate, so nothing is resampled on the way.</source>
+        <translation>PipeWire est invité à fonctionner à la fréquence propre de chaque morceau, si bien que rien n’est rééchantillonné en chemin.</translation>
+    </message>
+    <message>
+        <source>To keep each song&apos;s own rate too, Linux with PipeWire and its tools (pw-metadata) is needed; elsewhere the system may resample it. The signal path shows what happens.</source>
+        <translation>Pour conserver aussi la fréquence propre de chaque morceau, il faut Linux avec PipeWire et ses outils (pw-metadata) ; ailleurs, le système peut la rééchantillonner. Le chemin du signal montre ce qui se passe.</translation>
+    </message>
+    <message>
+        <source>Take the output by itself (exclusive mode)</source>
+        <translation>Prendre la sortie pour lui seul (mode exclusif)</translation>
     </message>
     <message>
         <source>remote phone web browser interface control pair pairing device devices network lan wifi headless tablet handoff hand over another computer</source>
@@ -9191,6 +9279,14 @@
         <translation>Source</translation>
     </message>
     <message>
+        <source>DSD to PCM</source>
+        <translation>DSD vers PCM</translation>
+    </message>
+    <message>
+        <source>%1, noise above 30 kHz filtered out</source>
+        <translation>%1, bruit au-dessus de 30 kHz filtré</translation>
+    </message>
+    <message>
         <source>Track gain %1 dB (measured)</source>
         <translation>Gain du morceau %1 dB (mesuré)</translation>
     </message>
@@ -9281,6 +9377,30 @@
     <message>
         <source>%1 (resampled from %2)</source>
         <translation>%1 (rééchantillonné depuis %2)</translation>
+    </message>
+    <message>
+        <source>DSD is converted to %1 PCM here, with the ultrasonic noise it carries filtered out, so any output can play it. The rate is chosen in Settings → Sound.</source>
+        <translation>Le DSD est converti ici en PCM %1, en filtrant le bruit ultrasonique qu’il porte, pour que toute sortie puisse le lire. La fréquence se choisit dans Paramètres → Son.</translation>
+    </message>
+    <message>
+        <source>Bit-perfect after DSD conversion</source>
+        <translation>Bit-perfect après conversion DSD</translation>
+    </message>
+    <message>
+        <source>Bit-perfect playback is on: once converted from DSD, the song reaches the sound output untouched, at the conversion&apos;s own rate.</source>
+        <translation>La lecture bit-perfect est activée : une fois converti depuis le DSD, le morceau atteint la sortie audio intact, à la fréquence de la conversion.</translation>
+    </message>
+    <message>
+        <source>Bit-perfect</source>
+        <translation>Bit-perfect</translation>
+    </message>
+    <message>
+        <source>Bit-perfect playback is on: the song reaches the sound output exactly as it&apos;s stored, at its own rate and bit depth. Use your system&apos;s or your amplifier&apos;s volume.</source>
+        <translation>La lecture bit-perfect est activée : le morceau atteint la sortie audio exactement tel qu’il est stocké, à sa propre fréquence et dans sa propre résolution. Utilisez le volume de votre système ou de votre amplificateur.</translation>
+    </message>
+    <message>
+        <source>Bit-perfect playback is on, but the output couldn&apos;t be switched to this song&apos;s rate, so it&apos;s converted on the way. On Linux with PipeWire, install its tools (pw-metadata) and Hallucinate asks for each song&apos;s rate.</source>
+        <translation>La lecture bit-perfect est activée, mais la sortie n’a pas pu passer à la fréquence de ce morceau : il est donc converti en chemin. Sous Linux avec PipeWire, installez ses outils (pw-metadata) et Hallucinate demandera la fréquence de chaque morceau.</translation>
     </message>
     <message>
         <source>Output</source>
@@ -11447,6 +11567,18 @@
 </context>
 <context>
     <name>WhatsNew</name>
+    <message>
+        <source>Bit-perfect playback (Settings → Sound): every song reaches your sound output untouched, at its own rate.</source>
+        <translation>Lecture bit-perfect (Paramètres → Son) : chaque morceau atteint votre sortie audio intact, à sa propre fréquence.</translation>
+    </message>
+    <message>
+        <source>DSD files play, AutoEQ headphone profiles are applied exactly, and casting is gapless.</source>
+        <translation>Les fichiers DSD sont lus, les profils de casque AutoEQ sont appliqués exactement et la diffusion se fait sans blanc entre les morceaux.</translation>
+    </message>
+    <message>
+        <source>Hallucinate&apos;s sound goes to cast devices as 24-bit FLAC where they play it.</source>
+        <translation>Le son de Hallucinate part vers les appareils de diffusion en FLAC 24 bits quand ils le lisent.</translation>
+    </message>
     <message>
         <source>Your phone can play the music itself: in the phone remote, Play on → This phone.</source>
         <translation>Votre téléphone peut lire la musique lui-même : dans la télécommande du téléphone, Lire sur → Ce téléphone.</translation>

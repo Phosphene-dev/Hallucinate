@@ -34,6 +34,9 @@ class CastError(Exception):
 
 
 # --- the CastMessage protobuf ---------------------------------------------------------------------------------
+PRELOAD_S = 10  # how long before a song's end the device starts fetching the next one
+
+
 def _varint(n):
     out = bytearray()
     while True:
@@ -106,8 +109,9 @@ def decode(msg):
 
 
 def media_status(payload):
-    """The parts of a MEDIA_STATUS we use, checked: {"session", "state", "idle_reason", "position", "duration"},
-    or None."""
+    """The parts of a MEDIA_STATUS we use, checked: {"session", "state", "idle_reason", "position", "duration",
+    "content" (the playing item's address, "" when not said), "items" ({item id: address} of its queue, None when
+    not said)}, or None."""
     status = payload.get("status") if isinstance(payload, dict) else None
     if not isinstance(status, list) or not status or not isinstance(status[0], dict):
         return None
@@ -123,7 +127,21 @@ def media_status(payload):
         "idle_reason": st.get("idleReason") if isinstance(st.get("idleReason"), str) else "",
         "position": num(st.get("currentTime")),
         "duration": num(media.get("duration")),
+        "content": media.get("contentId")[:2048] if isinstance(media.get("contentId"), str) else "",
+        "items": _items(st.get("items")),
     }
+
+
+def _items(items):
+    if not isinstance(items, list):
+        return None
+    out = {}
+    for item in items[:500]:
+        if not isinstance(item, dict) or not isinstance(item.get("itemId"), int) or isinstance(item.get("itemId"), bool):
+            continue
+        media = item.get("media") if isinstance(item.get("media"), dict) else {}
+        out[item["itemId"]] = media.get("contentId")[:2048] if isinstance(media.get("contentId"), str) else ""
+    return out
 
 
 def receiver_status(payload):
@@ -320,10 +338,8 @@ class CastClient:
         if not self._app_ready.wait(timeout) or self._app is None:
             raise CastError("the device didn't open its media player")
 
-    def load(self, url, content_type, title="", artist="", album="", image="", duration=None, position=0.0,
-             live=False, autoplay=True):
-        if self._app is None:
-            self.launch()
+    @staticmethod
+    def _media_info(url, content_type, title="", artist="", album="", image="", duration=None, live=False):
         metadata = {"metadataType": 3, "title": title, "artist": artist, "albumName": album}
         if image:
             metadata["images"] = [{"url": image}]
@@ -331,10 +347,30 @@ class CastClient:
                  "contentType": content_type, "metadata": metadata}
         if duration:
             media["duration"] = float(duration)
+        return media
+
+    def load(self, url, content_type, title="", artist="", album="", image="", duration=None, position=0.0,
+             live=False, autoplay=True):
+        if self._app is None:
+            self.launch()
+        media = self._media_info(url, content_type, title, artist, album, image, duration, live)
         self._media_session = None
         self._request(NS_MEDIA, {"type": "LOAD", "sessionId": self._app["session"], "media": media,
                                  "autoplay": bool(autoplay), "currentTime": float(position)},
                       destination=self._app["transport"])
+
+    def queue_next(self, url, content_type, title="", artist="", album="", image="", duration=None):
+        """Puts a song after the playing one in the device's queue, so it goes straight on into it (gapless); it
+        starts fetching it some seconds before. Returns False when there's no song playing to put it after."""
+        if self._app is None or self._media_session is None:
+            return False
+        media = self._media_info(url, content_type, title, artist, album, image, duration)
+        self._media("QUEUE_INSERT", items=[{"media": media, "autoplay": True, "preloadTime": PRELOAD_S}])
+        return True
+
+    def queue_remove(self, item_ids):
+        if item_ids:
+            self._media("QUEUE_REMOVE", itemIds=[int(i) for i in item_ids])
 
     def _media(self, kind, **extra):
         if self._app is None or self._media_session is None:
