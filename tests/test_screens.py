@@ -155,6 +155,9 @@ def app_window(qapp, tmp_path, monkeypatch, request):
     from hallucinate.cast import Casting
 
     objects["casting"] = Casting(player)
+    from hallucinate.handoff import Handoff
+
+    objects["handoff"] = Handoff(player, library, objects["webRemote"])
     from hallucinate.i18n import Translations
 
     objects["i18n"] = Translations(qapp)

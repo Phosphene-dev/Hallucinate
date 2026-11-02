@@ -385,6 +385,8 @@ class _Handler(ServesLinks, BaseHTTPRequestHandler):
             lang = next((code for code in wanted if code in available()), "en")
             return self._send(HTTPStatus.OK, web_catalog_json(lang).encode("utf-8"), "application/json; charset=utf-8",
                               cache="no-cache")
+        if path.startswith("/h/"):  # a song another computer is streaming after a handoff (see handoff.py)
+            return self._handoff_song(path)
         if path == "/api/hello":  # whether this browser is paired yet (nothing else)
             return self._send(HTTPStatus.OK, {"app": "Hallucinate", "paired": self._device() is not None})
         device = self._device()
@@ -431,6 +433,9 @@ class _Handler(ServesLinks, BaseHTTPRequestHandler):
         try:
             if isinstance(method, str) and method.startswith("phone."):  # the phone as the player: needs to know which
                 result = self.owner.run(lambda: self.owner.phone_command(method, data.get("params"), device))
+            elif method == "handoff.receive":  # another computer hands what it's playing here (from its own address)
+                caller = self.client_address[0]
+                result = self.owner.run(lambda: self.owner.handoff_receive(data.get("params"), caller))
             else:
                 result = self.owner.run(lambda: self.owner.command(method, data.get("params")))
         except ApiError as exc:
@@ -455,6 +460,25 @@ class _Handler(ServesLinks, BaseHTTPRequestHandler):
         # terminal version) asks for it to send as a Bearer token.
         body = {"ok": True, **({"key": key} if data.get("token") is True else {})}
         return self._send(HTTPStatus.OK, body, extra={"Set-Cookie": cookie})
+
+    def _handoff_song(self, path):
+        """/h/<token>/<index>: only for the computer the queue was handed to (its address), while the link lasts."""
+        import re
+
+        from .core.cast.mediaserver import Link, content_type
+
+        m = re.fullmatch(r"/h/([A-Za-z0-9_-]{16,64})/(\d{1,5})", urllib.parse.urlsplit(path).path)
+        handoff = self.owner.handoff
+        link = handoff.stream_link(m.group(1)) if m and handoff is not None else None
+        file = link.path_for(int(m.group(2))) if link is not None else None
+        from .core import net
+
+        if file is None or not net.same_address(self.client_address[0], link.client):
+            return self._error(HTTPStatus.NOT_FOUND, QT_TRANSLATE_NOOP("Api", "Not found"))
+        try:
+            return self.serve_link(Link(link.client, content_type(file), path=file), self.command == "HEAD")
+        finally:
+            self.close_connection = True
 
     def _art(self, album_key, query):
         from PySide6.QtCore import QBuffer, QByteArray, QIODevice
@@ -537,6 +561,7 @@ class WebRemote(QObject):
         self._streams = 0
         self._streams_lock = threading.Lock()
         self._player = player
+        self.handoff = None  # taking what another computer was playing (set by the app; see handoff.py)
         self._publish_timer = QTimer(self)
         self._publish_timer.setSingleShot(True)
         self._publish_timer.setInterval(120)  # changes that come together go out as one
@@ -783,6 +808,16 @@ class WebRemote(QObject):
             result = casting.phone_stop(device["id"])
         else:
             raise ApiError(QT_TRANSLATE_NOOP("Api", "No such command"))
+        self._soon()
+        return result
+
+    def handoff_receive(self, params, caller):
+        if self.handoff is None:
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "No such command"))
+        try:
+            result = self.handoff.receive(params, caller)
+        except ValueError as e:
+            raise ApiError(str(e)) from e
         self._soon()
         return result
 

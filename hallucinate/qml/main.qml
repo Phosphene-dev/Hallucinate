@@ -60,6 +60,10 @@ ApplicationWindow {
         target: casting
         function onNotice(text) { toast.show(text) }
     }
+    Connections {  // handoff: paired, handed over, carrying on from another computer
+        target: handoff
+        function onNotice(text) { toast.show(text) }
+    }
     Connections {  // music servers say how adding and syncing went
         target: servers
         function onMessage(text) { toast.show(text) }

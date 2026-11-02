@@ -56,3 +56,39 @@ def test_the_handoff_link_expires_and_can_be_revoked():
     link2 = handoff.HandoffLink("192.168.1.5", ["/a.flac"])
     link2.revoke()
     assert link2.path_for(0) is None and len(link2.token) >= 32
+
+
+def test_other_computers_answer_a_search():
+    import json
+    import socket
+
+    from hallucinate import handoff as h
+
+    info = {"id": "abcdef0123456789", "name": "Study", "port": 8483}
+    responder = h.Responder(lambda: info)
+    if not responder.start():
+        import pytest
+        pytest.skip("the discovery port is taken here")
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.settimeout(2)
+            s.sendto(b"something else", ("127.0.0.1", h.DISCOVERY_PORT))
+            s.sendto(h.HELLO, ("127.0.0.1", h.DISCOVERY_PORT))
+            data, (sender, _port) = s.recvfrom(1024)  # (only the real question is answered)
+        peer = h._read_answer(data, sender)
+        assert peer == {"id": "abcdef0123456789", "name": "Study", "host": "127.0.0.1", "port": 8483}
+        assert json.loads(data[len(h.ANSWER):]) == info  # nothing more than that is said
+    finally:
+        responder.stop()
+
+
+def test_answers_that_break_the_rules_are_ignored():
+    from hallucinate import handoff as h
+
+    good = h.ANSWER + b'{"id": "abcdef0123456789", "name": "x", "port": 8483}'
+    assert h._read_answer(good, "192.168.1.4")["host"] == "192.168.1.4"
+    assert h._read_answer(good, "8.8.8.8") is None  # not from this network
+    assert h._read_answer(h.ANSWER + b'{"id": "short", "port": 8483}', "192.168.1.4") is None
+    assert h._read_answer(h.ANSWER + b'{"id": "abcdef0123456789", "port": 99999}', "192.168.1.4") is None
+    assert h._read_answer(h.ANSWER + b"[1, 2]", "192.168.1.4") is None
+    assert h._read_answer(b"HELLO", "192.168.1.4") is None

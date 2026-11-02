@@ -279,6 +279,11 @@ def main(argv=None) -> int:
     web_remote.api.casting = casting  # the phone remote can choose where the music plays (while the feature's on)
     web_remote.api.casting_on = lambda: shell.features.get("casting", True)
     casting.notify_remote = web_remote._soon  # the phone playing the music hears what to do at once
+
+    from .handoff import Handoff
+
+    handoff = Handoff(player, library, web_remote)  # handing what's playing to another computer, and taking it
+    web_remote.handoff = handoff
     shell.settingsChanged.connect(servers.recheck)  # offline mode switched off: try servers again
 
     offline = [net.is_offline()]
@@ -370,6 +375,7 @@ def main(argv=None) -> int:
     ctx.setContextProperty("serverCopies", server_copies)
     ctx.setContextProperty("webRemote", web_remote)
     ctx.setContextProperty("casting", casting)
+    ctx.setContextProperty("handoff", handoff)
     ctx.setContextProperty("podcasts", podcasts)
     ctx.setContextProperty("spectrograms", spectrograms)
     engine.addImportPath(str(HERE / "qml"))
@@ -436,6 +442,7 @@ def main(argv=None) -> int:
     del engine
     web_remote.shutdown()  # (before the player: remotes are told it's going)
     casting.shutdown()  # the device stops too: its songs came from this computer
+    handoff.shutdown()
     shell.saveWindow()
     discord.shutdown()
     shell.shutdown()

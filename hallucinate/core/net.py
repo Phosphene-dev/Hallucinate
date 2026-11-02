@@ -208,6 +208,19 @@ def is_local_address(host):
     return (ip.is_private or ip.is_link_local or ip.is_loopback) and not ip.is_multicast and not ip.is_unspecified
 
 
+def same_address(a, b):
+    """Whether two addresses are the same machine's, an IPv4 address and its IPv6-mapped form ("::ffff:1.2.3.4",
+    as a dual-stack server sees IPv4 clients) counting as one."""
+    def plain(x):
+        try:
+            ip = ipaddress.ip_address(str(x).strip("[]"))
+        except ValueError:
+            return None
+        return getattr(ip, "ipv4_mapped", None) or ip
+    pa, pb = plain(a), plain(b)
+    return pa is not None and pa == pb
+
+
 def _local_or_refuse(host):
     if _offline:
         raise OfflineError()
