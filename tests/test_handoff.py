@@ -158,3 +158,25 @@ def test_pairing_with_a_wrong_code_says_so(two_computers):
     assert not any(c["paired"] for c in a.computers)
     a.pair("8.8.8.8", 8483, "123456", "elsewhere")
     assert "address" in a.error
+
+
+def test_received_stations_are_only_internet_ones(two_computers):
+    _a, (_bl, _bp, _br, b) = two_computers
+    assert b._station_ok("https://stream.radio.example/live.mp3")
+    assert b._station_ok("http://203.0.113.9:8000/stream") is False  # (a documentation range: not global)
+    assert b._station_ok("http://8.8.8.8:8000/stream")
+    for local in ("http://192.168.1.1/admin", "http://127.0.0.1:8483/api/call", "http://localhost:631/",
+                  "http://router.local/", "http://[::1]:8000/", "http://10.0.0.5/x", "file:///etc/passwd"):
+        assert not b._station_ok(local), local
+
+
+def test_a_long_queue_is_cut_to_fit_and_keeps_the_playing_song(two_computers):
+    (a_lib, a_player, _ar, a), _b = two_computers
+    one = a_lib.allTracks()[0]
+    queue = [dict(one, title=f"Song {i} " + "x" * 120, id=i) for i in range(5000)]
+    a_player.playList(queue, 4000, autoplay=False)
+    payload, paths = a._describe_queue()
+    import json
+    assert len(json.dumps(payload).encode()) < 64 * 1024
+    assert payload["songs"][payload["index"]]["title"].startswith("Song 4000 ")
+    assert len(payload["songs"]) == len(paths) == len(payload["streamable"]) > 100

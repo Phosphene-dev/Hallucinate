@@ -33,6 +33,7 @@ KEYRING_SERVICE = "Hallucinate Paired computers"
 SEARCH_S = 2.0
 ANSWERS_PER_MINUTE = 120  # a responder flooded with questions stops answering for a moment
 TIMEOUT_S = 8.0
+SEND_LIMIT = 52 * 1024  # the queue's share of a request the other computer's remote takes (64 KB in all)
 
 
 class PeerError(Exception):
@@ -324,7 +325,11 @@ class Handoff(QObject):
                 if problem:
                     raise PeerError(str(problem))
             except Exception as e:  # noqa: BLE001
-                message = fill(translate("Handoff", "Couldn't pair with %1: %2"), name, str(e) or type(e).__name__)
+                from .servers import KeyringUnsafe
+
+                why = (translate("Handoff", "there's no safe system keyring to keep the pairing in")
+                       if isinstance(e, KeyringUnsafe) else str(e) or type(e).__name__)
+                message = fill(translate("Handoff", "Couldn't pair with %1: %2"), name, why)
                 self._done.emit(lambda: self._fail(message))
                 return
             self._done.emit(lambda: self._paired(peer_id, name, host, port))
@@ -412,7 +417,18 @@ class Handoff(QObject):
             # only this computer's own files are streamed (a CUE song plays its part of the album's file there)
             paths.append(f if isinstance(f, str) and f and not is_url(f) and os.path.isfile(f)
                          and not t.get("file") else None)
-        payload = {"from": self.my_name(), "songs": songs, "index": player.currentIndex - start,
+        index = player.currentIndex - start
+        # the other computer takes requests up to 64 KB: a long queue is cut, songs furthest from the playing one
+        # first (mostly from the end: what's coming matters more than what's been)
+        while len(songs) > 1 and len(json.dumps(songs, ensure_ascii=False).encode("utf-8")) > SEND_LIMIT:
+            if len(songs) - 1 - index >= index // 2:
+                songs.pop()
+                paths.pop()
+            else:
+                songs.pop(0)
+                paths.pop(0)
+                index -= 1
+        payload = {"from": self.my_name(), "songs": songs, "index": index,
                    "position": int(player.position), "playing": bool(player.playing),
                    "shuffle": bool(player.shuffle), "repeat": int(player.repeat), "streamable": [p is not None for p in paths]}
         return payload, paths
@@ -456,7 +472,7 @@ class Handoff(QObject):
                 continue
             if path and path in rows:
                 tracks.append(rows[path])
-            elif song["kind"] == "station":
+            elif song["kind"] == "station" and self._station_ok(song["url"]):
                 tracks.append({"path": song["url"], "kind": "station", "station": song.get("station") or song["title"],
                                "title": song.get("station") or song["title"], "artist": "", "album": "",
                                "duration": 0, "artUrl": ""})
@@ -479,6 +495,31 @@ class Handoff(QObject):
         sender = params.get("from") if isinstance(params.get("from"), str) else ""
         self.notice.emit(fill(translate("Handoff", "Carrying on from %1"), sender[:60] or caller))
         return {"ok": True, "songs": len(tracks), "missing": missing}
+
+    def _station_ok(self, url):
+        """A received station's address is one to play: on the internet (an address on this network, or this
+        computer itself, could be anything there), or a station already saved here (a local Icecast, say)."""
+        import ipaddress
+        import urllib.parse
+
+        stations = getattr(self, "stations", None)
+        if stations is not None:
+            try:
+                if any(s.get("url") == url for s in stations._db.stations()):
+                    return True
+            except Exception:  # noqa: BLE001 - no stations database: judge by the address alone
+                pass
+        try:
+            host = (urllib.parse.urlsplit(url).hostname or "").strip("[]").lower()
+        except ValueError:
+            return False
+        if not host or host == "localhost" or host.endswith((".local", ".lan", ".home", ".internal", ".localhost")):
+            return False
+        try:
+            ip = ipaddress.ip_address(host)
+        except ValueError:
+            return "." in host  # a name on the internet
+        return ip.is_global
 
     def _rows_for(self, paths):
         from .library import decorate

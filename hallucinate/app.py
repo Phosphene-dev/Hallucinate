@@ -284,6 +284,7 @@ def main(argv=None) -> int:
 
     handoff = Handoff(player, library, web_remote)  # handing what's playing to another computer, and taking it
     web_remote.handoff = handoff
+    handoff.stations = stations  # (a received station already saved here may be on this network)
     shell.settingsChanged.connect(servers.recheck)  # offline mode switched off: try servers again
 
     offline = [net.is_offline()]

@@ -2359,6 +2359,10 @@
         <translation>Saisissez l’adresse de l’autre ordinateur sur votre réseau (comme 192.168.1.20)</translation>
     </message>
     <message>
+        <source>there&apos;s no safe system keyring to keep the pairing in</source>
+        <translation>aucun trousseau système sûr pour conserver l’association</translation>
+    </message>
+    <message>
         <source>Couldn&apos;t pair with %1: %2</source>
         <translation>Impossible d’associer %1 : %2</translation>
     </message>
