@@ -263,7 +263,6 @@ def test_a_cue_song_is_cut_out_for_the_device(setup, songs):
     connect(casting)
     assert wait_for(lambda: dev.fetched, timeout=30)
     import io
-
     import wave
     with wave.open(io.BytesIO(dev.fetched[2])) as w:  # (waited on: WAV)
         assert abs(w.getnframes() / w.getframerate() - 1.5) < 0.05  # just that song, not the whole album
