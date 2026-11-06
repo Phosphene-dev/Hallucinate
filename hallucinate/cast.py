@@ -709,7 +709,8 @@ class _StreamedSession(CastSession):
         if media is None:
             self._feeder.queue_next(None)
             return
-        self._feeder.queue_next(self._file(media), tag=("next", self._n, media.get("link")))
+        self._feeder.queue_next(self._file(media), tag=("next", self._n, media.get("link")),
+                                fade_s=float(media.get("crossfade") or 0))
 
     def _do_play(self):
         self._feeder.play()
@@ -974,6 +975,7 @@ class Casting(QObject):
     changed = Signal()
     devicesChanged = Signal()
     notice = Signal(str)
+    reconnectOffered = Signal(str, str)  # (name, id): the device played on when Hallucinate last quit, found again
     _found = Signal(object)
     _connected = Signal(object, object)  # (session, error)
 
@@ -986,6 +988,8 @@ class Casting(QObject):
         self._searching = False
         self._connecting = ""
         self._session = None
+        self._offer_id = ""
+        self._feature_on = lambda: True  # whether casting's feature switch is on (set by the app)
         self._error = ""
         port = self._settings.value("cast/port", mediaserver.DEFAULT_PORT)
         try:
@@ -1090,6 +1094,11 @@ class Casting(QObject):
             found = [current] + list(found)  # still connected, even if it didn't answer this time
         self._devices = sorted(found, key=lambda d: d["name"].casefold())
         self.devicesChanged.emit()
+        if self._offer_id:  # (casting when Hallucinate last quit: offer that device again, once it's found)
+            device = next((d for d in self._devices if d["id"] == self._offer_id and not d.get("unsupported")), None)
+            self._offer_id = ""
+            if device is not None and self._session is None and not self._connecting:
+                self.reconnectOffered.emit(device["name"], device["id"])
 
     # --- the session ----------------------------------------------------------------------------------------
     @Property(bool, notify=changed)
@@ -1176,6 +1185,8 @@ class Casting(QObject):
         self.changed.emit()
         self.devicesChanged.emit()
         self.notice.emit(fill(translate("Casting", "Playing on %1"), session.name))
+        if session.kind != "phone":
+            self._settings.setValue("cast/lastDevice", session.device["id"])
 
     @Slot()
     def cancelConnecting(self):
@@ -1417,7 +1428,31 @@ class Casting(QObject):
         buf.close()
         return bytes(data)
 
+    # --- the device last played on ---------------------------------------------------------------------------
+    @Property(bool, notify=changed)
+    def offerReconnect(self):
+        """When Hallucinate quit while playing on a device, offer that device again at the next start."""
+        return self._settings.value("cast/offerReconnect", True, bool)
+
+    @Slot(bool)
+    def setOfferReconnect(self, on):
+        self._settings.setValue("cast/offerReconnect", bool(on))
+        self.changed.emit()
+
+    @Slot()
+    def offerLastDevice(self):
+        """At start (the app calls this): if Hallucinate quit while playing on a device, look for it, and once it's
+        found, offer it (reconnectOffered). Nothing is looked for otherwise."""
+        last = str(self._settings.value("cast/lastDevice", "") or "")
+        if not (last and self._settings.value("cast/lastWasCasting", False, bool) and self.offerReconnect):
+            return
+        if net.is_offline() or not self._feature_on():
+            return
+        self._offer_id = last
+        self.refresh()
+
     def shutdown(self):
+        self._settings.setValue("cast/lastWasCasting", bool(self._session is not None and self._session.kind != "phone"))
         if self._session is not None:
             self._session.close(stop_device=True)
             self._session = None

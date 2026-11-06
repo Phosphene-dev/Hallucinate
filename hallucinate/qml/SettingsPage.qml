@@ -2185,6 +2185,12 @@ Item {
                 }
                 PillButton { text: qsTr("Play here instead"); onClicked: casting.stopCasting() }
             }
+            StyledCheck {
+                objectName: "castOfferReconnect"
+                text: qsTr("When Hallucinate starts, offer the device it was playing on when it quit")
+                checked: casting.offerReconnect
+                onToggled: casting.setOfferReconnect(checked)
+            }
             OptionCombo {
                 objectName: "castSending"
                 label: qsTr("What to send")

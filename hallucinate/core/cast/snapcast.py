@@ -200,9 +200,9 @@ class Feeder:
         except pcm.FormatError as e:
             raise SnapcastError(str(e)) from None
 
-    def queue_next(self, path, tag=None):
+    def queue_next(self, path, tag=None, fade_s=0.0):
         try:
-            self.queue.queue_next(path, tag)
+            self.queue.queue_next(path, tag, fade_s)
         except pcm.FormatError as e:
             raise SnapcastError(str(e)) from None
 

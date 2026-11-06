@@ -4,7 +4,7 @@ bar, and the queue, albums, artists, playlists, liked songs and search, with the
 
 Keys (also on screen, and ? for all of them):
   space play/pause   n next   p previous   ← → seek 10 s   + - volume   m mute
-  s shuffle   r repeat   R radio mode   l like   1–6 views   / search   enter play or open
+  s shuffle   r repeat   R radio mode   l like   1–7 views   / search   enter play or open   c play on
   a add to the queue   A play next   d remove from the queue   backspace back   q quit
 
 The view logic (Browser) is separate from the drawing (Screen), so it can be tested without a terminal."""
@@ -15,11 +15,12 @@ import unicodedata
 from .cli import CommandError, call, clock, marks
 
 VIEWS = [("queue", "Queue"), ("albums", "Albums"), ("artists", "Artists"), ("playlists", "Playlists"),
-         ("liked", "Liked"), ("search", "Search")]
+         ("liked", "Liked"), ("search", "Search"), ("cast", "Play on")]
 HELP = [
     ("space", "play / pause"), ("n / p", "next / previous song"), ("← / →", "back / forward 10 seconds"),
     ("+ / -", "volume up / down"), ("m", "mute"), ("s", "shuffle"), ("r", "repeat (off, all, one)"),
-    ("R", "radio mode"), ("l", "like the playing song"), ("1–6", "queue, albums, artists, playlists, liked, search"),
+    ("R", "radio mode"), ("l", "like the playing song"),
+    ("1–7", "queue, albums, artists, playlists, liked, search, play on"), ("c", "where it plays: this computer or a device"),
     ("/", "search"), ("enter", "play the song, or open the album, artist or playlist"),
     ("a", "add to the queue"), ("A", "play next"), ("d", "remove from the queue"), ("u", "undo a queue change"),
     ("backspace", "back"), ("↑ ↓ PgUp PgDn Home End", "move"), ("q", "quit (Hallucinate keeps playing)"),
@@ -73,6 +74,7 @@ class Browser:
         self.help = False
         self._queue_seen = None
         self._loader = None
+        self._looked = False
 
     # --- talking to Hallucinate --------------------------------------------------------------------------
     def say(self, text):
@@ -91,6 +93,8 @@ class Browser:
         if st is None:
             return False
         self.state = st
+        if self.view == "cast" and not self.stack:
+            self.load_devices()  # (devices come in as they're found)
         if self.view == "queue" and not self.stack:
             seen = (st["queueLength"], st["index"], (st.get("song") or {}).get("title"))
             if seen != self._queue_seen:
@@ -126,6 +130,26 @@ class Browser:
         elif view == "search":
             self.rows = []
             self.searching = True
+        elif view == "cast":
+            self.load_devices()
+
+    def load_devices(self):
+        """This computer and the devices found (Enter plays there)."""
+        r = self.do("cast.devices")
+        if r is None:
+            self.rows = []
+            return
+        here = Row("This computer", "▶" if not r["device"] else "", open_=("cast", ""), current=not r["device"])
+        self.rows = [here] + [Row(d["name"] + (f" · {d['model']}" if d["model"] else ""),
+                                  d["unsupported"] or ("▶" if d["active"] else ""), open_=("cast", d["id"]),
+                                  current=d["active"]) for d in r["devices"]]
+        if r.get("connecting"):
+            self.title = f"Play on  (connecting to {r['connecting']}…)"
+        elif not r["devices"]:
+            self.title = "Play on  (looking for devices…)" if r["searching"] else "Play on  (none found: press c to look again)"
+        if not r["devices"] and not r["searching"] and not self._looked:
+            self._looked = True
+            self.do("cast.search")
 
     def song_rows(self, songs):
         return [Row(f"{s['title']}{marks(s)} — {s['artist']}", clock(s["duration"], ms=False) if s.get("duration") else "",
@@ -146,6 +170,13 @@ class Browser:
 
     def open(self, row):
         kind, what = row.open
+        if kind == "cast":
+            device = next((d for d in (self.do("cast.devices") or {}).get("devices", []) if d["id"] == what), None)
+            if device and device.get("unsupported"):
+                self.say(f"{device['name']} can't be played to: {device['unsupported']}")
+            elif self.do("cast.to", id=what) if what else self.do("cast.stop"):
+                self.say(f"Connecting to {device['name']}…" if device else "Playing on this computer")
+            return None
         self.stack.append((self.view, self.title, self.rows, self.cursor))
         if kind == "album":
             r = self.do("album", key=what)
@@ -260,7 +291,13 @@ class Browser:
                 r = self.do("like", id=song["id"])
                 if r:
                     self.say("♥ Liked" if r["liked"] else "Not liked")
-        elif k in "123456" and len(k) == 1:
+        elif k == "c":
+            if self.view == "cast":
+                self._looked = True
+                self.do("cast.search")
+                self.say("Looking for devices on your network…")
+            self.show("cast")
+        elif k in "1234567" and len(k) == 1:
             self.show(VIEWS[int(k) - 1][0])
         elif k == "/":
             self.show("search")
@@ -341,6 +378,8 @@ class Screen:
             flags.append("repeat " + ("one" if st["repeat"] == 2 else "all"))
         if song.get("liked"):
             flags.append("♥")
+        if st.get("castingOn"):
+            flags.append(f"▷ on {st['castingOn']}")
         self.put(3, 2, "  ".join(flags), c.A_DIM)
         # the views
         x = 0

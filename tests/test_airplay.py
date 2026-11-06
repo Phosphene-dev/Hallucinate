@@ -372,3 +372,39 @@ def test_no_keepalive_while_it_plays(tmp_path, speaker, monkeypatch):
         assert speaker.methods()[-1] == "OPTIONS"  # (paused: it's checked in with)
     finally:
         sp.close()
+
+
+def test_songs_can_crossfade_on_a_streamed_device(tmp_path):
+    now = [0.0]
+    q = pcm.Queue(airplay.RATE, lambda: now[0])
+    q.load(wav(tmp_path / "a.wav", 3.0, 10000), tag="a")
+    q.queue_next(wav(tmp_path / "b.wav", 3.0, 20000), tag="b", fade_s=1.0)
+    out, events = [], []
+    while True:
+        data, ev = q.pull(441, behind=0.0)
+        if data is None:
+            break
+        out.append(np.frombuffer(data, "<i2").reshape(-1, 2)[:, 0])
+        events += ev
+    left = np.concatenate(out)
+    assert events == [("advanced", "b"), ("ended", "b")]
+    assert len(left) == pytest.approx(5.0 * airplay.RATE, abs=441)  # (3 + 3 - 1 seconds: they overlap by one)
+    fade = left[int(2.0 * airplay.RATE):int(3.0 * airplay.RATE)]
+    assert fade[0] == pytest.approx(10000, abs=60) and fade[-1] == pytest.approx(20000, abs=60)
+    mid = fade[len(fade) // 2]
+    assert 10000 * 0.7071 + 20000 * 0.7071 - 60 < mid < 10000 * 0.7071 + 20000 * 0.7071 + 60  # (equal power)
+    assert left[int(1.0 * airplay.RATE)] == 10000 and left[int(4.0 * airplay.RATE)] == 20000
+
+
+def test_no_crossfade_when_asked_for_none_or_songs_are_short(tmp_path):
+    for fade, length in ((0.0, 3.0), (1.0, 1.5)):
+        q = pcm.Queue(airplay.RATE, lambda: 0.0)
+        q.load(wav(tmp_path / "a.wav", length, 10000), tag="a")
+        q.queue_next(wav(tmp_path / "b.wav", length, 20000), tag="b", fade_s=fade)
+        total = 0
+        while True:
+            data, _ev = q.pull(441, behind=0.0)
+            if data is None:
+                break
+            total += len(data) // 4
+        assert total == pytest.approx(2 * length * airplay.RATE, abs=441)  # (straight on, gapless)

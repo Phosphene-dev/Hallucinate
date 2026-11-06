@@ -1891,6 +1891,16 @@ class Player(QObject):
             return None
         return nxt
 
+    def _cast_crossfade(self, nxt):
+        """Seconds to crossfade into queue entry `nxt` on a device that can (one Hallucinate streams to), by the
+        same rules as here: not into the next song of the same album unless that's chosen."""
+        if not self._crossfade or self._repeat == REPEAT_ONE:
+            return 0
+        album = (self.current or {}).get("album_key") or ""
+        if not self._crossfade_albums and album and (self._queue[nxt].get("album_key") or "") == album:
+            return 0
+        return self._crossfade
+
     def _cast_queue_next(self):
         """Hands the device the next song (getting it ready first if it must be), or takes back one that isn't
         next any more (the queue was changed, shuffle or repeat switched)."""
@@ -1926,6 +1936,7 @@ class Player(QObject):
                 if media.get("error"):
                     self._cast_next_failed = (nxt, track)
                 return  # it'll be loaded the usual way when its turn comes (and say what's wrong then)
+            media = dict(media, crossfade=self._cast_crossfade(nxt))
             self._cast_queued = (nxt, track, media)
             session.queue_next(media)
         self._cast_next_pending = (nxt, gen)

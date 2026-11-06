@@ -6,8 +6,11 @@ the song playing and the one after it, hands out the audio a slice at a time (pu
 plays what it's sent a little later (its buffer, and how far ahead the sender runs), so the queue remembers a
 song that has just been sent to the end until it has been heard to the end, and says where the listener is
 (position). It's driven by the sender's thread and the window's at once, so everything goes under one lock."""
+import math
 import threading
 import wave
+
+import numpy as np
 
 
 class FormatError(OSError):
@@ -59,6 +62,8 @@ class Queue:
         self.paused = True
         self._ending = None  # (tag, seconds it ends at, when that's heard): a song still playing out of the buffer
         self._previous = None  # that song, kept to go back into (see rewind)
+        self._fade = 0  # frames to crossfade into the next song over (0: straight on, gapless)
+        self._out = None  # [source, frames it fades over, frames left]: a song fading out under the next
 
     def _source(self, path, start_s=0.0, end_s=0.0, tag=None):
         return Source(path, self.rate, self.channels, self.width, start_s, end_s, tag)
@@ -74,12 +79,14 @@ class Queue:
             self.current, self.next = source, None
             self.paused = not play
 
-    def queue_next(self, path, tag=None):
+    def queue_next(self, path, tag=None, fade_s=0.0):
+        """The song to go on into: straight on (gapless), or crossfading over the last `fade_s` seconds."""
         source = self._source(path, tag=tag) if path else None
         with self.lock:
             if self.next is not None:
                 self.next.close()
             self.next = source
+            self._fade = int(max(0.0, float(fade_s)) * self.rate) if source is not None else 0
 
     def pause(self):
         with self.lock:
@@ -128,7 +135,13 @@ class Queue:
                 return None, 0.0
             return src.tag, max(0.0, src.at / self.rate - behind)
 
+    def _drop_fade(self):
+        if self._out is not None:
+            self._out[0].close()
+            self._out = None
+
     def _forget_previous(self):
+        self._drop_fade()
         self._ending = None
         if self._previous is not None:
             self._previous.close()
@@ -139,6 +152,7 @@ class Queue:
         heard. That can be the song before, still playing out of the buffer: it becomes the one playing again
         (the one after it next, from its start), and True says so (its "advanced" or "ended" didn't happen)."""
         with self.lock:
+            self._drop_fade()  # (a crossfade that was sent but not heard: the next song starts plainly)
             prev, ending = self._previous, self._ending
             self._previous = self._ending = None
             if prev is not None and ending is not None and self._clock() < ending[2]:
@@ -166,6 +180,17 @@ class Queue:
             events = []
             want = frames * self.frame
             src = self.current
+            nxt = self.next
+            if nxt is not None and self._fade and src.end - src.at <= self._fade and self._out is None \
+                    and src.end >= 2 * self._fade and nxt.end - nxt.at >= 2 * self._fade:  # (as here: not short songs)
+                # into the crossfade: the next song is the one playing now, this one fades out under it
+                left = src.end - src.at
+                self._out = [src, max(1, left), left]
+                self._forget_previous_keep_out()
+                self._ending = (src.tag, src.end / self.rate, self._clock() + behind)
+                self.current, self.next, self._fade = nxt, None, 0
+                events.append(("advanced", nxt.tag))
+                src = nxt
             data = src.read(frames)
             if len(data) < want:  # this song is over: on into the next, or silence
                 nxt = self.next
@@ -180,4 +205,33 @@ class Queue:
                     self.paused = True
                     events.append(("ended", src.tag))
                 data += b"\0" * (want - len(data))
+            if self._out is not None:
+                data = self._mix_out(data)
             return data, events
+
+    def _forget_previous_keep_out(self):
+        if self._previous is not None:
+            self._previous.close()
+            self._previous = None
+
+    def _mix_out(self, data):
+        """`data` (the song coming in) with the one fading out mixed under it, equal power."""
+        out, total, left = self._out
+        n = len(data) // self.frame
+        take = min(n, left)
+        tail = out.read(take)
+        take = len(tail) // self.frame
+        if take:
+            done = total - left  # (frames of the fade gone by)
+            t = (done + np.arange(take, dtype=np.float32)) / total
+            g_in = np.sin(t * (math.pi / 2)).astype(np.float32)[:, None]
+            g_out = np.cos(t * (math.pi / 2)).astype(np.float32)[:, None]
+            a = np.frombuffer(data, "<i2").reshape(-1, self.channels).astype(np.float32)
+            b = np.frombuffer(tail, "<i2").reshape(-1, self.channels).astype(np.float32)
+            a[:take] = a[:take] * g_in + b * g_out
+            data = np.clip(np.round(a), -32768, 32767).astype("<i2").tobytes()
+        self._out[2] = left - take
+        if self._out[2] <= 0 or not take:
+            out.close()
+            self._out = None
+        return data

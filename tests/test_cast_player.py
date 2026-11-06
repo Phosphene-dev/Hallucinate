@@ -532,3 +532,34 @@ def test_a_next_song_that_cant_be_got_ready_isnt_tried_over_and_over(setup, song
     wait_for(lambda: False, timeout=5)  # (five seconds of the device reporting how it's doing)
     assert len(tries) <= 1
     casting._analyser.submit = submit
+
+
+def test_the_device_played_on_at_quit_is_offered_at_the_next_start(setup, songs):
+    from PySide6.QtCore import QSettings
+
+    QSettings().remove("cast")
+    try:
+        player, casting, dev = setup()
+        player.playList(songs, 0)
+        connect(casting)
+        casting.shutdown()  # (quit while playing there)
+        player2, casting2, _dev2 = setup()
+        offered = []
+        casting2.reconnectOffered.connect(lambda name, id_: offered.append((name, id_)))
+        casting2.offerLastDevice()
+        assert wait_for(lambda: offered, timeout=10) and offered[0] == ("Living Room", "cc1")
+        casting2.castTo(offered[0][1])
+        assert wait_for(lambda: casting2.active)
+        casting2.stopCasting()  # (back here before quitting: nothing offered next time)
+        casting2.shutdown()
+        _p3, casting3, _d3 = setup()
+        offered.clear()
+        casting3.reconnectOffered.connect(lambda name, id_: offered.append((name, id_)))
+        casting3.offerLastDevice()
+        assert not casting3.searching and offered == []  # (not even looked for)
+        casting3.setOfferReconnect(False)
+        QSettings().setValue("cast/lastWasCasting", True)
+        casting3.offerLastDevice()
+        assert not casting3.searching  # (switched off)
+    finally:
+        QSettings().remove("cast")

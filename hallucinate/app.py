@@ -292,6 +292,8 @@ def main(argv=None) -> int:
     shell.setReportSources(library=library, theme_manager=theme_manager, casting=casting)
     web_remote.api.casting = casting  # the phone remote can choose where the music plays (while the feature's on)
     web_remote.api.casting_on = lambda: shell.features.get("casting", True)
+    casting._feature_on = web_remote.api.casting_on
+    QTimer.singleShot(4000, casting.offerLastDevice)  # (casting when Hallucinate last quit: offer it again)
     casting.notify_remote = web_remote._soon  # the phone playing the music hears what to do at once
 
     from .handoff import Handoff

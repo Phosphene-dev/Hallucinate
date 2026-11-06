@@ -59,6 +59,10 @@ ApplicationWindow {
     Connections {  // casting: connected, lost, couldn't connect
         target: casting
         function onNotice(text) { toast.show(text) }
+        // quit while playing on a device: it's offered again once found
+        function onReconnectOffered(name, id) {
+            toast.show(qsTr("Play on %1 again?").arg(name), 0, qsTr("Play there"), function () { casting.castTo(id) })
+        }
     }
     Connections {  // Discover: "Not interested", with Undo
         target: discover

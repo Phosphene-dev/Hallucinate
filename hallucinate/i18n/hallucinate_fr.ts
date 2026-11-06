@@ -9247,6 +9247,10 @@
         <translation>Lire ici plutôt</translation>
     </message>
     <message>
+        <source>When Hallucinate starts, offer the device it was playing on when it quit</source>
+        <translation>Au démarrage d’Hallucinate, proposer l’appareil sur lequel il jouait quand il a été fermé</translation>
+    </message>
+    <message>
         <source>What to send</source>
         <translation>Ce qui est envoyé</translation>
     </message>
@@ -13302,6 +13306,14 @@
             <numerusform>%n morceau</numerusform>
             <numerusform>%n morceaux</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Play on %1 again?</source>
+        <translation>Lire à nouveau sur %1 ?</translation>
+    </message>
+    <message>
+        <source>Play there</source>
+        <translation>Y lire</translation>
     </message>
     <message>
         <source>%1 added to “%2”</source>

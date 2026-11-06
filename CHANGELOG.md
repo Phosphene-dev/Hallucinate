@@ -5,6 +5,14 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Added
+- Songs crossfade on AirPlay speakers and Snapcast rooms too, by the crossfade setting (and, as here, not
+  between songs of the same album unless that's chosen).
+- When Hallucinate quit while playing on a device, it offers that device again at the next start ("Play on
+  Kitchen again?"), once it's found (Settings → Casting can switch the offer off).
+- The terminal version and `hallucinate cmd cast` can choose where the music plays: `c` (or view 7) in the
+  terminal, `hallucinate cmd cast Kitchen` and `hallucinate cmd cast here`; `status` says where it's playing.
+
 ### Changed
 - AirPlay speakers that can't be played to (they need a password, or only take Apple's encrypted audio) are
   listed greyed out with the reason, instead of not at all.

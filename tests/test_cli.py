@@ -55,6 +55,14 @@ class FakeApi:
             return {"repeat": params.get("mode", 1)}
         if method == "queue.undo":
             return {"undone": True}
+        if method == "cast.devices":
+            return {"devices": [{"id": "a1", "name": "Kitchen", "model": "AirPort", "kind": "airplay", "active": False,
+                                 "unsupported": ""},
+                                {"id": "s1", "name": "Living room", "model": "Snapcast", "kind": "snapcast",
+                                 "active": True, "unsupported": ""},
+                                {"id": "h1", "name": "HomePod", "model": "", "kind": "airplay", "active": False,
+                                 "unsupported": "needs a password"}],
+                    "searching": False, "device": "Living room", "connecting": ""}
         return {"ok": True}
 
 
@@ -249,3 +257,37 @@ def test_badges_in_text(api):
     b = tui.Browser(api)
     api.state["song"]["explicit"] = False
     assert b.song_rows([{"id": 1, "title": "T", "artist": "A", "duration": 60, "explicit": True}])[0].text.startswith("T [E] — A")
+
+
+def test_cast(api):
+    _r, text = run("cast")
+    assert "Playing on Living room" in text and "▶ Living room" in text and "(needs a password)" in text
+    _r, text = run("cast", "kitch")
+    assert api.calls[-1] == ("cast.to", {"id": "a1"}) and "Connecting to Kitchen" in text
+    with pytest.raises(cli.CommandError, match="can't be played to"):
+        run("cast", "HomePod")
+    with pytest.raises(cli.CommandError, match="No device"):
+        run("cast", "Garage")
+    run("cast", "here")
+    assert api.calls[-1] == ("cast.stop", {})
+    api.state["castingOn"] = "Kitchen"
+    assert "playing on Kitchen" in run("status")[1]
+
+
+def test_terminal_play_on():
+    api = FakeApi()
+    b = tui.Browser(api)
+    b.key("c")
+    assert b.view == "cast" and [r.text for r in b.rows][:2] == ["This computer", "Kitchen · AirPort"]
+    assert b.rows[2].current and b.rows[3].right == "needs a password"
+    b.cursor = 1
+    b.key("\n")
+    assert api.calls[-1] == ("cast.to", {"id": "a1"}) and "Connecting to Kitchen" in b.message
+    b.cursor = 3
+    b.key("\n")
+    assert api.calls[-1][0] != "cast.to" and "can't be played to" in b.message
+    b.cursor = 0
+    b.key("\n")
+    assert api.calls[-1] == ("cast.stop", {})
+    b.key("c")  # (again, in Play on: look for devices again)
+    assert ("cast.search", {}) in api.calls
