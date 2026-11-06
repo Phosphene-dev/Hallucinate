@@ -206,7 +206,8 @@ def main(argv=None) -> int:
     dbguard.backup_if_due(streams_db, backup_dir)
     from . import cachetrim
     cachetrim.trim_in_background({paths.data_dir() / "thumbs": cachetrim.LIMITS["thumbs"],
-                                  paths.cache_dir() / "waveforms": cachetrim.LIMITS["waveforms"]})
+                                  paths.cache_dir() / "waveforms": cachetrim.LIMITS["waveforms"],
+                                  paths.data_dir() / "online": cachetrim.LIMITS["online"]})
     control.setLibrary(library)
     player = Player(session_file=paths.data_dir() / "session.json")
     waveforms = WaveformService(paths.cache_dir() / "waveforms")
@@ -251,6 +252,10 @@ def main(argv=None) -> int:
     sounds_like = SoundsLike(paths.db_path(), player, user_lib, shell)
     library.scanFinished.connect(lambda _stats: sounds_like.libraryChanged())
     library.setSoundsLike(sounds_like)
+    from .discoveronline import OnlineDiscover
+
+    online_discover = OnlineDiscover(paths.db_path(), paths.data_dir(), player, shell, sources)
+    library.scanFinished.connect(lambda _stats: online_discover.libraryChanged())
     shell.setReportSources(library=library, theme_manager=theme_manager)
     shell.setStartupNotice(db_notice)
     shell.setCrashReport(last_crash, last_crashed)
@@ -367,6 +372,7 @@ def main(argv=None) -> int:
     ctx.setContextProperty("userLib", user_lib)
     ctx.setContextProperty("discover", discover)
     ctx.setContextProperty("soundsLike", sounds_like)
+    ctx.setContextProperty("onlineDiscover", online_discover)
     ctx.setContextProperty("metaEditor", meta_editor)
     ctx.setContextProperty("replayGain", replay_gain)
     ctx.setContextProperty("headphones", headphones)
@@ -479,6 +485,7 @@ def main(argv=None) -> int:
     user_lib.shutdown()
     discover.shutdown()
     sounds_like.shutdown()
+    online_discover.shutdown()
     library.shutdown()
     dbguard.mark_clean(paths.db_path())  # every connection is closed now
     dbguard.mark_clean(paths.data_dir() / "streams.db")

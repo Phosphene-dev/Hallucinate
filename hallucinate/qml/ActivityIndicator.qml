@@ -39,6 +39,12 @@ Item {
                            soundsLike.pause()
                            Nav.notifyAction(qsTr("Paused. Resume it any time in Settings → Discover."), qsTr("Undo"), function () { soundsLike.resume() })
                        } })
+        if (typeof onlineDiscover !== "undefined" && onlineDiscover.busy !== "")
+            out.push({ key: "discoverOnline",
+                       label: (onlineDiscover.busy === "releases" ? qsTr("Looking for new releases: %1 of %2") : qsTr("Looking for artists like yours: %1 of %2"))
+                              .arg(Theme.num(onlineDiscover.done)).arg(Theme.num(onlineDiscover.total)),
+                       fraction: onlineDiscover.total > 0 ? onlineDiscover.done / onlineDiscover.total : -1,
+                       stop: function () { onlineDiscover.stop() } })
         if (podcasts.downloadingCount > 0)
             out.push({ key: "downloads", label: Theme.counted(qsTr("Downloading %n episode(s)", "", podcasts.downloadingCount), podcasts.downloadingCount),
                        fraction: podcasts.downloadsFraction, stop: function () { podcasts.cancelAllDownloads() } })

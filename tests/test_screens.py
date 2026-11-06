@@ -164,6 +164,9 @@ def app_window(qapp, tmp_path, monkeypatch, request):
     from hallucinate.likethis import SoundsLike
 
     objects["soundsLike"] = SoundsLike(db_path, player, user_lib, objects["shell"], battery=lambda: False, autostart=False)
+    from hallucinate.discoveronline import OnlineDiscover
+
+    objects["onlineDiscover"] = OnlineDiscover(db_path, tmp_path / "data", player, objects["shell"], None, autostart=False)
     from hallucinate.i18n import Translations
 
     objects["i18n"] = Translations(qapp)
@@ -2848,3 +2851,62 @@ def test_sounds_like_this_in_a_song_s_menu_and_settings(qapp, app_window):
     assert box is not None and box.property("visible")
     assert window.findChild(QObject, "soundsLikeWhen") is not None
     assert not [w for w in warnings if "soundsLike" in w or "TrackMenu" in w], warnings[:3]
+
+
+def test_discover_online_shelves_and_the_wishlist(qapp, app_window, tmp_path):
+    """Discover's online shelves (off unless chosen) and the wishlist: offered once, shown when on and found,
+    gone when off; a release and an artist like yours have their cards, a wish its row."""
+    import time
+
+    from conftest import wait_for
+
+    from hallucinate.core import online_discover as od
+    from hallucinate.core.db import Database
+
+    window, objects, warnings = app_window
+    shell, online = objects["shell"], objects["onlineDiscover"]
+    db = Database(tmp_path / "library.db")
+    artist = db.conn.execute("SELECT album_artist FROM tracks LIMIT 1").fetchone()[0]
+    key = od.fold(artist)
+    od.remember_mbid(db, key, artist, "11111111-1111-1111-1111-000000000001", time.time())
+    today = time.strftime("%Y-%m-%d")
+    od.store_releases(db, key, [{"id": "11111111-1111-1111-1111-000000000002", "title": "Brand New", "kind": "Album",
+                                 "extra": [], "date": today, "artist": artist}], time.time())
+    od.store_similar(db, key, "listenbrainz", [{"name": "Somebody Else", "score": 1.0, "url": "https://listenbrainz.org/"}],
+                     time.time())
+    od.wish(db, "album", "Somebody Else", "Their Record", now=time.time())
+    db.close()
+
+    def go():
+        QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "discover"))
+        qapp.processEvents()
+        return window.findChild(QObject, "pageStack").property("currentItem")
+
+    page = go()
+    assert wait_for(lambda: online.wishlist, timeout=10)
+    offer = page.findChild(QObject, "onlineOffer")
+    assert offer is not None and offer.property("visible")  # (offered while both are off)
+    assert not page.findChild(QObject, "newReleasesShelf").property("visible")
+    assert page.findChild(QObject, "wishlistShelf").property("visible")  # (the wishlist is on, and has a wish)
+    shell.setFeature("discoverNewReleases", True)
+    shell.setFeature("discoverSimilar", True)
+    try:
+        net_off = __import__("hallucinate.core.net", fromlist=["net"])
+        net_off.set_offline(True)  # (shown from what's kept; nothing asked here)
+        online.open()
+        assert wait_for(lambda: online.newReleases and online.similarArtists, timeout=10)
+        qapp.processEvents()
+        assert not offer.property("visible")
+        assert page.findChild(QObject, "newReleasesShelf").property("visible")
+        assert wait_for(lambda: find_item(window, "release_0") is not None and find_item(window, "similar_0") is not None)
+        assert find_item(window, "wish_0") is not None
+    finally:
+        net_off.set_offline(False)
+        shell.setFeature("discoverNewReleases", False)
+        shell.setFeature("discoverSimilar", False)
+    qapp.processEvents()
+    assert not page.findChild(QObject, "newReleasesShelf").property("visible")
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "settings"))
+    qapp.processEvents()
+    assert window.findChild(QObject, "discoverOnlineSettings") is not None
+    assert not [w for w in warnings if "Discover" in w or "onlineDiscover" in w or "Settings" in w], warnings[:5]

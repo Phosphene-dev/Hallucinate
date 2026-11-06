@@ -19,7 +19,7 @@ from .i18n import fill, translate
 from .insights import _ALBUM_COLS, _month_year
 
 DAY = 86400
-KINDS = ("album", "song", "artist")
+KINDS = ("album", "song", "artist", "release")  # (release: a new release found online, by its id)
 
 
 def _album_artist_key():

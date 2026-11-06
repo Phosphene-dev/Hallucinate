@@ -228,6 +228,16 @@
     </message>
 </context>
 <context>
+    <name>DiscoverOnline</name>
+    <message numerus="yes">
+        <source>%n new release(s) by artists you play</source>
+        <translation>
+            <numerusform>%n new release by artists you play</numerusform>
+            <numerusform>%n new releases by artists you play</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>FoldersPage</name>
     <message numerus="yes">
         <source>Open %1, %n song(s)</source>

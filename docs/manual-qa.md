@@ -22,6 +22,16 @@
       starts again. Features → Sounds like this off: the menu entry goes and nothing is measured.
 - [ ] Radio mode with "Radio mode picks songs: By how they sound" and "Both ways": the songs that follow make sense.
 - [ ] Windows: the helper runs below normal priority (Task Manager → Details) while listening in the background.
+- [ ] Discover with a fresh profile: the "Look beyond your library?" card shows once at the bottom; Not now hides it
+      for good. Nothing is sent anywhere until New releases or Artists like yours is turned on (watch the network).
+- [ ] New releases on: within a minute or so (the background list shows "Looking for new releases"), releases from
+      artists you play appear with covers; ones you own don't; Settings choices (kinds, live, compilations, window)
+      change the shelf; right-click → Add to wishlist, Look for it…, Open on MusicBrainz, Not interested.
+- [ ] Artists like yours with each source (ListenBrainz, Deezer, Last.fm): sensible artists, "Like X, Y"; ▶ plays a
+      preview from Deezer and from Apple, the music pauses and carries on after; pressing again stops it.
+- [ ] Offline mode on: the shelves keep what was found, say offline mode is on, and nothing is asked (no previews).
+- [ ] Wishlist: add, note, Look for it at each store, Remove (Undo). Add an album that's on it to your library and
+      rescan: it's ticked off with a toast.
 
 ## Release testing for 1.13.0
 

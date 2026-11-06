@@ -22,6 +22,16 @@ All notable changes to this project are documented here. Format based on
   first, how many, keep the tempo close, keep to keys that mix well, the song's own artist or not, how many by
   one artist, pause, and forget what it heard. It shows with Stop in the background list, and can be switched off
   entirely in Features.
+- Discover, online (each off until you turn it on in Settings → Discover; offline mode stops them): new releases
+  from the artists you play (MusicBrainz; the 50 or 200 you play most, or all of them; albums, EPs, singles, live
+  albums and compilations as you choose; looked up at most once a day, with a desktop notification if you want
+  one), and artists like yours that you don't have yet (from ListenBrainz, Deezer or Last.fm, based on the 10, 25
+  or 50 artists you play most) with 30-second previews from Deezer or Apple (the music you were playing pauses
+  and carries on after). Only artist names are sent. Releases you have already, and anything marked Not
+  interested, are left out. A quiet card on Discover offers them once.
+- A wishlist on Discover: add new releases and artists to it, keep a note, and look for them at the store you
+  choose (Bandcamp, Qobuz, Apple Music, Amazon, Discogs, HDtracks, 7digital or the web). Wishes are ticked off
+  when they turn up in your library. Kept on your computer only.
 
 ### Changed
 - Home's Rediscover and On this day shelves are off unless you turn them on (Settings → Features → Home):

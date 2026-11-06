@@ -27,6 +27,9 @@ FEATURES = {
     "discoverForgottenArtists": True, "discoverDeepCuts": True, "discoverNeverPlayed": True, "discoverOnThisDay": True,
     # "Sounds like this": measuring how songs sound, and the song menus' Sounds like this
     "soundsLike": True,
+    # Discover online: new releases and artists like yours (off until chosen: they ask services online), and the
+    # wishlist (kept here; it only shows once something is on it)
+    "discoverNewReleases": False, "discoverSimilar": False, "discoverWishlist": True,
 }
 # The sidebar's pages in their usual order; people can rearrange them (Settings → Appearance or right-click).
 SIDEBAR_PAGES = ("home", "discover", "albums", "artists", "genres", "songs", "folders", "liked", "stats", "history", "recap", "visualizer",

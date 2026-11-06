@@ -93,6 +93,18 @@ CREATE TABLE IF NOT EXISTS discover_dismissed(kind TEXT NOT NULL, key TEXT NOT N
 -- how a song sounds (core/soundlike.py): measured from the file at mtime; vec NULL when it couldn't be measured
 CREATE TABLE IF NOT EXISTS sound_features(path TEXT PRIMARY KEY, mtime REAL NOT NULL, version INTEGER NOT NULL,
   bpm REAL NOT NULL DEFAULT 0, music_key INTEGER NOT NULL DEFAULT -1, vec BLOB);
+-- Discover online (core/online_discover.py): artists' MusicBrainz ids ("" when there was no sure match), new
+-- releases found for them, similar artists found (by source, as JSON), and the wishlist (kept here, never sent)
+CREATE TABLE IF NOT EXISTS online_artists(s_aa TEXT PRIMARY KEY, name TEXT NOT NULL, mbid TEXT NOT NULL DEFAULT '',
+  looked REAL NOT NULL DEFAULT 0, releases_checked REAL NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS new_releases(id TEXT PRIMARY KEY, s_aa TEXT NOT NULL, artist TEXT NOT NULL,
+  title TEXT NOT NULL, kind TEXT NOT NULL, extra TEXT NOT NULL DEFAULT '', date TEXT NOT NULL, found REAL NOT NULL,
+  seen INTEGER NOT NULL DEFAULT 0, cover TEXT NOT NULL DEFAULT '');
+CREATE TABLE IF NOT EXISTS online_similar(seed TEXT NOT NULL, source TEXT NOT NULL, names TEXT NOT NULL DEFAULT '[]',
+  fetched REAL NOT NULL, PRIMARY KEY(seed, source));
+CREATE TABLE IF NOT EXISTS wishlist(key TEXT PRIMARY KEY, kind TEXT NOT NULL, artist TEXT NOT NULL,
+  title TEXT NOT NULL DEFAULT '', note TEXT NOT NULL DEFAULT '', link TEXT NOT NULL DEFAULT '',
+  ref TEXT NOT NULL DEFAULT '', added REAL NOT NULL, got REAL);
 """
 
 FTS = (

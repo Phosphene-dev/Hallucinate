@@ -306,6 +306,10 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
 
     sounds_like = SoundsLike(tmp_path / "library.db", player, user_lib, shell, battery=lambda: False, autostart=False)
     context.setContextProperty("soundsLike", sounds_like)
+    from hallucinate.discoveronline import OnlineDiscover
+
+    online_discover = OnlineDiscover(tmp_path / "library.db", tmp_path / "data", player, shell, None, autostart=False)
+    context.setContextProperty("onlineDiscover", online_discover)
     qml_dir = Path(__file__).parents[1] / "hallucinate" / "qml"
     engine.addImportPath(str(qml_dir))
     qml_warnings = []
@@ -562,6 +566,7 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     handoff.shutdown()
     discover.shutdown()
     sounds_like.shutdown()
+    online_discover.shutdown()
     library.shutdown()
     qapp.setFont(old_font)
 
