@@ -2036,14 +2036,14 @@ Item {
             id: sec_casting
             objectName: "settings_casting"
             title: qsTr("Casting")
-            keywords: qsTr("cast casting chromecast google nest home speaker tv television dlna upnp renderer receiver kodi sonos snapcast snapserver multiroom room rooms play on another device network wifi firewall port original bit-perfect processed equalizer sound")
+            keywords: qsTr("cast casting chromecast google nest home speaker tv television dlna upnp renderer receiver kodi sonos snapcast snapserver multiroom room rooms airplay apple homepod raop shairport play on another device network wifi firewall port original bit-perfect processed equalizer sound")
             query: page.query
             visible: matches && shell.features.casting !== false
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: qsTr("Play your music on a Chromecast, a Google or Nest speaker, a TV, receiver or speaker that takes DLNA/UPnP, or a room of a Snapcast server. Pick one with the cast button beside the volume; your queue, likes and play counts stay here, and Hallucinate's controls, media keys and phone remote all control the device.")
+                text: qsTr("Play your music on a Chromecast, a Google or Nest speaker, an AirPlay speaker, a TV, receiver or speaker that takes DLNA/UPnP, or a room of a Snapcast server. Pick one with the cast button beside the volume; your queue, likes and play counts stay here, and Hallucinate's controls, media keys and phone remote all control the device.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Row {

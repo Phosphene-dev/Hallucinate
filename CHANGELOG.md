@@ -14,6 +14,13 @@ All notable changes to this project are documented here. Format based on
   message. The server takes the sound on the port after the cast port, and Settings → Casting's firewall commands
   open both.
 
+- AirPlay: AirPlay speakers (AirPort Express, shairport-sync, and the speakers, receivers and TVs that take
+  AirPlay) appear with the other cast devices. Hallucinate streams the sound to the speaker itself, lossless at
+  44.1 kHz/16-bit, every song going straight on into the next; pause, seek and skipping answer at once, and the
+  volume slider sets the speaker's own volume (remembered for each speaker, half way the first time). Speakers
+  that need a password or AirPlay 2 pairing (recent Apple TVs and HomePods, when set to) say so instead of
+  playing. Songs on this computer play there; radio and music servers' songs are skipped with a message.
+
 ### Fixed
 - Pressing play or pause while a cast song was still being got ready (Hallucinate's sound, or a converted file) is
   no longer forgotten once it's ready.

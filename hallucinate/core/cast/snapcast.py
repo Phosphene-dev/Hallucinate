@@ -20,6 +20,7 @@ import time
 import wave
 
 from .. import net
+from . import pcm
 
 CONTROL_PORT = 1705
 SERVICE = "_snapcast-jsonrpc._tcp.local"
@@ -161,43 +162,12 @@ def local_address_for(host):
 
 
 # --- the stream ------------------------------------------------------------------------------------------------
-class _Source:
-    """A WAV file (48 kHz, 16-bit stereo) being read, from a frame on."""
-
-    def __init__(self, path, start_s=0.0, end_s=0.0, tag=None):
-        self.tag = tag
-        self.wav = wave.open(path, "rb")
-        if (self.wav.getframerate(), self.wav.getnchannels(), self.wav.getsampwidth()) != (RATE, CHANNELS, WIDTH):
-            self.wav.close()
-            raise SnapcastError("the song wasn't got ready in the stream's format")
-        self.frames = self.wav.getnframes()
-        self.end = min(self.frames, int(end_s * RATE)) if end_s else self.frames
-        self.at = max(0, min(self.end, int(start_s * RATE)))
-        self.wav.setpos(self.at)
-
-    def read(self, frames):
-        frames = max(0, min(frames, self.end - self.at))
-        data = self.wav.readframes(frames) if frames else b""
-        self.at += len(data) // FRAME
-        return data
-
-    def seek(self, seconds):
-        self.at = max(0, min(self.end, int(seconds * RATE)))
-        self.wav.setpos(self.at)
-
-    def close(self):
-        try:
-            self.wav.close()
-        except Exception:  # noqa: BLE001
-            pass
-
-
 class Feeder:
     """Serves the stream to the Snapcast server: it connects to us (mode=client) on `port` from `server_ip`.
+    The songs are a pcm.Queue's.
 
-    on_event(kind, tag): "started" (a song began to be heard), "ended" (it finished, nothing next), "advanced"
-    (it went straight on into the next song), "lost" (the server went away and didn't come back). Called on the
-    feeder's thread."""
+    on_event(kind, tag): "ended" (it finished, nothing next), "advanced" (it went straight on into the next
+    song), "lost" (the server went away and didn't come back). Called on the feeder's thread, once heard."""
 
     def __init__(self, bind_host, server_ip, on_event=None, clock=time.monotonic, port=0):
         self.server_ip = server_ip
@@ -214,11 +184,8 @@ class Feeder:
         self._sock.listen(2)
         self._sock.settimeout(0.5)
         self.port = self._sock.getsockname()[1]
-        self._lock = threading.Lock()
-        self._current = self._next = None
-        self._paused = True
+        self.queue = pcm.Queue(RATE, clock, CHANNELS, WIDTH)
         self._closed = False
-        self._ending = None  # (tag, seconds it ends at, when that's heard): a song still playing out of the buffer
         self.connected = threading.Event()
         self._thread = threading.Thread(target=self._run, name="snapcast-stream", daemon=True)
         self._thread.start()
@@ -228,59 +195,33 @@ class Feeder:
 
     # --- commands --------------------------------------------------------------------------------------------
     def load(self, path, start_s=0.0, end_s=0.0, tag=None, play=True):
-        source = _Source(path, start_s, end_s, tag)
-        with self._lock:
-            self._ending = None
-            for old in (self._current, self._next):
-                if old is not None:
-                    old.close()
-            self._current, self._next = source, None
-            self._paused = not play
+        try:
+            self.queue.load(path, start_s, end_s, tag, play)
+        except pcm.FormatError as e:
+            raise SnapcastError(str(e)) from None
 
     def queue_next(self, path, tag=None):
-        source = _Source(path, tag=tag) if path else None
-        with self._lock:
-            if self._next is not None:
-                self._next.close()
-            self._next = source
+        try:
+            self.queue.queue_next(path, tag)
+        except pcm.FormatError as e:
+            raise SnapcastError(str(e)) from None
 
     def pause(self):
-        with self._lock:
-            self._paused = True
+        self.queue.pause()
 
     def play(self):
-        with self._lock:
-            self._paused = False
+        self.queue.play()
 
     def seek(self, seconds):
-        with self._lock:
-            if self._current is not None:
-                self._current.seek(seconds)
+        self.queue.seek(seconds)
 
     def stop(self):
-        with self._lock:
-            self._ending = None
-            for old in (self._current, self._next):
-                if old is not None:
-                    old.close()
-            self._current = self._next = None
-            self._paused = True
+        self.queue.stop()
 
     def position(self):
         """(tag, seconds) of what the speakers are playing now, as near as can be told: what's been sent less
         what's still on its way (a song that just ended is still heard for that long)."""
-        with self._lock:
-            now = self._clock()
-            if self._ending is not None:
-                tag, end, heard = self._ending
-                if now < heard:
-                    return tag, max(0.0, end - (heard - now))
-                self._ending = None
-            src = self._current
-            if src is None:
-                return None, 0.0
-            behind = (LEAD_S + SERVER_BUFFER_S) if not self._paused else 0.0
-            return src.tag, max(0.0, src.at / RATE - behind)
+        return self.queue.position(0.0 if self.queue.paused else LEAD_S + SERVER_BUFFER_S)
 
     def close(self):
         self._closed = True
@@ -327,30 +268,11 @@ class Feeder:
             if ahead > LEAD_S:
                 time.sleep(min(0.02, ahead - LEAD_S))
                 continue
-            events = []
-            with self._lock:
-                if self._paused or self._current is None:
-                    data = silence
-                else:
-                    src = self._current
-                    data = src.read(CHUNK_FRAMES)
-                    if len(data) < len(silence):  # this song is over: on into the next, or silence
-                        nxt = self._next
-                        src.close()
-                        self._ending = (src.tag, src.end / RATE, self._clock() + LEAD_S + SERVER_BUFFER_S)
-                        self._current, self._next = nxt, None
-                        if nxt is not None:
-                            data += nxt.read(CHUNK_FRAMES - len(data) // FRAME)
-                            events.append(("advanced", nxt.tag))
-                        else:
-                            self._paused = True
-                            events.append(("ended", src.tag))
-                        data += silence[len(data):]
-            conn.sendall(data)
-            sent += len(data) // FRAME
+            delay = LEAD_S + SERVER_BUFFER_S  # heard once what's ahead of the speakers has played
+            data, events = self.queue.pull(CHUNK_FRAMES, delay)
+            conn.sendall(data if data is not None else silence)  # (paused: silence keeps the server's clock going)
+            sent += CHUNK_FRAMES
             for kind, tag in events:
-                # heard once what's ahead of the speakers has played: say so then
-                delay = LEAD_S + SERVER_BUFFER_S
                 threading.Timer(delay, self.on_event, (kind, tag)).start()
 
 

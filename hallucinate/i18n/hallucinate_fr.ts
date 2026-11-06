@@ -969,12 +969,20 @@
         <translation>le serveur Snapcast n’a pas pu joindre cet ordinateur (un pare-feu bloque peut-être le port %1 : autorisez-le pour votre réseau local)</translation>
     </message>
     <message>
-        <source>Snapcast plays the songs on this computer</source>
-        <translation>Snapcast lit les morceaux de cet ordinateur</translation>
-    </message>
-    <message>
         <source>%1 can only play songs on this computer, not radio or a music server&apos;s songs.</source>
         <translation>%1 ne peut lire que les morceaux de cet ordinateur, pas la radio ni les morceaux d’un serveur de musique.</translation>
+    </message>
+    <message>
+        <source>it asks for a password, which Hallucinate can&apos;t give it yet</source>
+        <translation>il demande un mot de passe, qu’Hallucinate ne sait pas encore lui donner</translation>
+    </message>
+    <message>
+        <source>it only plays from devices paired with it (AirPlay 2), which Hallucinate can&apos;t do yet</source>
+        <translation>il ne joue que depuis les appareils jumelés avec lui (AirPlay 2), ce qu’Hallucinate ne sait pas encore faire</translation>
+    </message>
+    <message>
+        <source>it&apos;s playing from another device</source>
+        <translation>il joue depuis un autre appareil</translation>
     </message>
     <message>
         <source>Offline mode is on, so devices on your network can&apos;t be found</source>
@@ -9079,6 +9087,14 @@
         <translation>Nom du serveur</translation>
     </message>
     <message>
+        <source>cast casting chromecast google nest home speaker tv television dlna upnp renderer receiver kodi sonos snapcast snapserver multiroom room rooms airplay apple homepod raop shairport play on another device network wifi firewall port original bit-perfect processed equalizer sound</source>
+        <translation>diffuser diffusion cast chromecast google nest home enceinte tv télévision dlna upnp lecteur récepteur kodi sonos snapcast snapserver multiroom pièce pièces airplay apple homepod raop shairport lire sur un autre appareil réseau wifi pare-feu port original bit-perfect traité égaliseur son</translation>
+    </message>
+    <message>
+        <source>Play your music on a Chromecast, a Google or Nest speaker, an AirPlay speaker, a TV, receiver or speaker that takes DLNA/UPnP, or a room of a Snapcast server. Pick one with the cast button beside the volume; your queue, likes and play counts stay here, and Hallucinate&apos;s controls, media keys and phone remote all control the device.</source>
+        <translation>Écoutez votre musique sur un Chromecast, une enceinte Google ou Nest, une enceinte AirPlay, une TV, un ampli ou une enceinte compatible DLNA/UPnP, ou une pièce d’un serveur Snapcast. Choisissez-le avec le bouton de diffusion à côté du volume ; votre file d’attente, vos favoris et vos écoutes restent ici, et les commandes d’Hallucinate, les touches multimédia et la télécommande sur téléphone pilotent l’appareil.</translation>
+    </message>
+    <message>
         <source>Playing on %1</source>
         <translation>Lecture sur %1</translation>
     </message>
@@ -9401,14 +9417,6 @@
     <message>
         <source>Take the output by itself (exclusive mode)</source>
         <translation>Prendre la sortie pour lui seul (mode exclusif)</translation>
-    </message>
-    <message>
-        <source>cast casting chromecast google nest home speaker tv television dlna upnp renderer receiver kodi sonos snapcast snapserver multiroom room rooms play on another device network wifi firewall port original bit-perfect processed equalizer sound</source>
-        <translation>diffuser diffusion cast chromecast google nest home enceinte tv télévision dlna upnp lecteur récepteur kodi sonos snapcast snapserver multiroom pièce pièces lire sur un autre appareil réseau wifi pare-feu port original bit-perfect traité égaliseur son</translation>
-    </message>
-    <message>
-        <source>Play your music on a Chromecast, a Google or Nest speaker, a TV, receiver or speaker that takes DLNA/UPnP, or a room of a Snapcast server. Pick one with the cast button beside the volume; your queue, likes and play counts stay here, and Hallucinate&apos;s controls, media keys and phone remote all control the device.</source>
-        <translation>Écoutez votre musique sur un Chromecast, une enceinte Google ou Nest, une TV, un ampli ou une enceinte compatible DLNA/UPnP, ou une pièce d’un serveur Snapcast. Choisissez-le avec le bouton de diffusion à côté du volume ; votre file d’attente, vos favoris et vos écoutes restent ici, et les commandes d’Hallucinate, les touches multimédia et la télécommande sur téléphone pilotent l’appareil.</translation>
     </message>
     <message>
         <source>The device fetches each song from this computer on this port, and only the device you picked can, only while you&apos;re casting (a Snapcast server takes the sound on the port after it). If nothing plays, your firewall may be blocking them: allow both for your home network. For example, on Fedora, Bazzite and other systems with firewalld:</source>

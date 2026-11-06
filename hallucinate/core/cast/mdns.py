@@ -151,6 +151,7 @@ def services(records, service=CHROMECAST, sender=None):
             "id": (txt.get("id") or label)[:64],
             "host": address,
             "port": port,
+            "txt": {str(k)[:32].lower(): str(v)[:200] for k, v in list(txt.items())[:40]},
         }
     return found
 

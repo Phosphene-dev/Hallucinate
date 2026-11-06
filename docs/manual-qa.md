@@ -86,6 +86,12 @@
 - [ ] An internet radio station or a music server's song while on a Snapcast room: skipped with a message.
 - [ ] With the firewall on: the message names the port after the cast port, and the command in Settings → Casting
       (which now opens both) fixes it.
+- [ ] An AirPlay speaker (an AirPort Express, a speaker or receiver with AirPlay, or shairport-sync on a
+      Raspberry Pi): the cast button lists it within a few seconds; picking it plays the song there from the same
+      place (after about two seconds). Pause, seek, next and previous answer straight away; an album plays without
+      gaps; the volume slider moves the speaker's volume, and it's the same next time.
+- [ ] An Apple TV or HomePod: plays, or (when it's set to need pairing or a password) says why it can't.
+- [ ] Switch the AirPlay speaker off while playing: within about 20 seconds the music waits here, paused.
 - [ ] Press play while "Getting ready for…" shows (Hallucinate's sound on a Chromecast or DLNA device), and pause
       while it shows: once ready the device plays or stays paused as last asked.
 
