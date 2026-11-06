@@ -1,4 +1,4 @@
-"""Casting: playing the queue on a Chromecast or a DLNA/UPnP device on your network.
+"""Casting: playing the queue on a Chromecast, a DLNA/UPnP device or a Snapcast server's room on your network.
 
 `Casting` (the `casting` object in QML) finds devices, connects to one and hands the player a session. While a
 session is attached the player keeps the queue, shuffle, repeat, play counts and scrobbling, and sends play,
@@ -16,12 +16,13 @@ import os
 import shutil
 import threading
 import time
+import weakref
 from concurrent.futures import ThreadPoolExecutor
 
 from PySide6.QtCore import Property, QObject, QSettings, Qt, QTimer, Signal, Slot
 
 from .core import net, remote
-from .core.cast import castv2, mdns, mediaserver, upnp
+from .core.cast import castv2, mdns, mediaserver, snapcast, upnp
 from .core.i18n import QT_TRANSLATE_NOOP, fill, translate
 from .core.kinds import is_url, track_kind
 
@@ -607,6 +608,174 @@ class UpnpSession(CastSession):
         return "audio/flac" in self._formats  # (said by the device itself, not assumed)
 
 
+class SnapcastSession(CastSession):
+    """A room of a Snapcast server (see core/cast/snapcast.py). Hallucinate streams the sound to the server itself,
+    so every song goes as its prepared WAV (48 kHz, the stream's rate) and plays straight on into the next. The
+    room's volume is its speakers'. Stopping puts the room back on what it was playing before."""
+
+    kind = "snapcast"
+    gapless = True
+    render_rate = snapcast.RATE
+
+    def __init__(self, device, server, parent=None, connect=None):
+        super().__init__(device, server, parent)
+        self._connect = connect
+        self._ctl = None
+        self._feeder = None
+        self._stream = ""
+        self._was = ""  # the stream the room was on before
+        self._files = {}
+        self._n = 0
+        self._playing_tag = None
+
+    def connect_device(self):
+        host, port, group = self.device["host"], self.device.get("port") or snapcast.CONTROL_PORT, self.device["group"]
+        ctl = snapcast.Control(host, port, connect=self._connect)
+        try:
+            room = next((g for g in snapcast.groups(ctl.status()) if g["id"] == group), None)
+            if room is None:
+                raise snapcast.SnapcastError(translate("Casting", "that room isn't on the Snapcast server any more"))
+            here = snapcast.local_address_for(host)
+            me = weakref.WeakMethod(self._on_feed)  # (the feeder's thread mustn't keep the session alive)
+            self._feeder = snapcast.Feeder(here, socket_address(host),
+                                           on_event=lambda kind, tag: (me() or (lambda *a: None))(kind, tag))
+            try:  # (a stream left from before, if Hallucinate stopped without tidying up)
+                ctl.call("Stream.RemoveStream", {"id": snapcast.STREAM_NAME})
+            except (OSError, snapcast.SnapcastError):
+                pass
+            self._stream = ctl.call("Stream.AddStream", {"streamUri": self._feeder.uri(here)})["id"]
+            self._was = room["stream"] if room["stream"] != self._stream else ""
+            ctl.call("Group.SetStream", {"id": group, "stream_id": self._stream})
+            if not self._feeder.connected.wait(8):
+                raise snapcast.SnapcastError(translate(
+                    "Casting", "the Snapcast server couldn't reach this computer (a firewall may be in the way)"))
+            levels = [c["volume"] for c in room["clients"] if c["connected"]]
+            self.volume = sum(levels) / len(levels) / 100 if levels else None
+            self._ctl = ctl
+        except Exception:
+            self._tidy(ctl)
+            raise
+
+    def _tidy(self, ctl):
+        try:
+            if self._was:
+                ctl.call("Group.SetStream", {"id": self.device["group"], "stream_id": self._was})
+            if self._stream:
+                ctl.call("Stream.RemoveStream", {"id": self._stream})
+        except (OSError, snapcast.SnapcastError):
+            pass
+        ctl.close()
+        if self._feeder is not None:
+            self._feeder.close()
+            self._feeder.on_event = lambda kind, tag: None
+
+    # what it plays: Hallucinate's sound as WAV, made at the stream's rate
+    def plays(self, ctype, track):
+        return False
+
+    def share(self, **what):
+        if "path" not in what:
+            return ""  # (a stream or a server's song: there's no file here to play)
+        self._n += 1
+        link = f"snap:{self._n}"
+        self._files[link] = what["path"]
+        if len(self._files) > 8:
+            self._files.pop(next(iter(self._files)))
+        return link
+
+    def url(self, link):
+        return link
+
+    def _file(self, media):
+        path = self._files.get(media.get("link", ""))
+        if not path:
+            raise snapcast.SnapcastError(translate("Casting", "Snapcast plays the songs on this computer"))
+        return path
+
+    def _on_feed(self, kind, tag):
+        if kind == "lost":
+            self._gone("")
+        elif kind == "advanced":
+            self._later(lambda: self._advanced(tag))
+        elif kind == "ended":
+            self._later(lambda: self._ended(tag))
+
+    def _advanced(self, tag):
+        self._playing_tag = tag
+        self._advance(self._gen)
+
+    def _ended(self, tag):
+        if tag == self._playing_tag:
+            self._status(self._gen, "IDLE", finished=True)
+
+    def _do_load(self, media, position, autoplay, gen):
+        if media.get("link", "") not in self._files:  # (radio, or a server's song not kept here)
+            message = fill(translate("Casting", "%1 can only play songs on this computer, not radio or a music "
+                                                "server's songs."), self.name)
+            self._later(lambda: self._skip(gen, message))
+            return
+        tag = ("load", gen)
+        self._feeder.load(self._file(media), position, tag=tag, play=autoplay)
+        self._playing_tag = tag
+        self._status(gen, "PLAYING" if autoplay else "PAUSED", position, media.get("file_duration"))
+
+    def _skip(self, gen, message):
+        if gen == self._gen:
+            self._set("IDLE")
+            self.failed.emit(message, True)
+
+    def _do_queue_next(self, media, old):
+        if media is not None and media.get("link", "") not in self._files:
+            self._not_queued(media)
+            return
+        if media is None:
+            self._feeder.queue_next(None)
+            return
+        self._feeder.queue_next(self._file(media), tag=("next", self._n, media.get("link")))
+
+    def _do_play(self):
+        self._feeder.play()
+
+    def _do_pause(self):
+        self._feeder.pause()
+
+    def _do_seek(self, seconds):
+        self._feeder.seek(seconds)
+
+    def _do_volume(self, level):
+        for c in self._room_clients():
+            self._ctl.call("Client.SetVolume", {"id": c["id"], "volume": {"percent": int(round(level * 100)),
+                                                                          "muted": False}})
+
+    def _room_clients(self):
+        room = next((g for g in snapcast.groups(self._ctl.status()) if g["id"] == self.device["group"]), None)
+        return [c for c in (room or {}).get("clients", []) if c["connected"]]
+
+    def _do_stop(self):
+        self._feeder.stop()
+
+    def _do_poll(self, gen):
+        tag, at = self._feeder.position()
+        if tag is not None and tag == self._playing_tag and self.state in ("PLAYING", "PAUSED"):
+            self._status(gen, self.state, at)
+
+    def _do_close(self, stop_device):
+        if self._ctl is not None:
+            self._feeder.stop()
+            self._tidy(self._ctl)
+            self._ctl = None
+
+
+def socket_address(host):
+    """`host`'s IPv4 address (a name is looked up)."""
+    import socket as _socket
+
+    try:
+        return _socket.gethostbyname(host)
+    except OSError:
+        return host
+
+
 PHONE_FORMATS = {"audio/mpeg", "audio/flac", "audio/mp4", "audio/aac", "audio/ogg", "audio/wav", "audio/webm"}
 
 
@@ -719,8 +888,9 @@ class Casting(QObject):
         self._server = mediaserver.MediaServer(port if 1024 <= port < 65536 else mediaserver.DEFAULT_PORT)
         self._found.connect(self._on_found, Qt.ConnectionType.QueuedConnection)
         self._connected.connect(self._on_connected, Qt.ConnectionType.QueuedConnection)
-        self.session_factories = {"chromecast": ChromecastSession, "upnp": UpnpSession}  # (tests swap these)
-        self.discover = _discover
+        self.session_factories = {"chromecast": ChromecastSession, "upnp": UpnpSession,
+                                  "snapcast": SnapcastSession}  # (tests swap these)
+        self.discover = _discover  # discover(snapcast_servers) (tests swap it)
         self.phone_links = mediaserver.Links()  # songs for a phone playing them, served by the web remote
         self.notify_remote = lambda: None  # tells the web remote its state changed (set by the app)
         self._analyser = None  # the decoding helper that prepares songs (made when first needed)
@@ -752,6 +922,20 @@ class Casting(QObject):
                 self._server.port = port
             self.changed.emit()
 
+    def _snapcast_servers(self):
+        """The Snapcast servers typed in Settings (for networks where they don't announce themselves)."""
+        return [s for s in str(self._settings.value("cast/snapcastServers", "") or "").split() if s][:8]
+
+    @Property(str, notify=changed)
+    def snapcastServers(self):
+        return " ".join(self._snapcast_servers())
+
+    @Slot(str)
+    def setSnapcastServers(self, text):
+        servers = [s.strip() for s in str(text).replace(",", " ").split() if s.strip()][:8]
+        self._settings.setValue("cast/snapcastServers", " ".join(servers))
+        self.changed.emit()
+
     @Property(int, notify=changed)
     def portInUse(self):
         return self._server.port if self._server.running else self.port
@@ -778,10 +962,12 @@ class Casting(QObject):
         self._searching = True
         self.devicesChanged.emit()
 
+        servers, discover = self._snapcast_servers(), self.discover  # (settings are read here, not on the thread)
+
         def run():
             found = []
             try:
-                found = self.discover()
+                found = discover(servers)
             except Exception as e:  # noqa: BLE001
                 logger.info("Looking for cast devices failed: %s", e)
             self._found.emit(found)
@@ -1000,20 +1186,22 @@ class Casting(QObject):
                                                                       name="cover.jpg"))
         return out
 
-    def _render_options(self, track, processed, kind="wav"):
+    def _render_options(self, track, processed, kind="wav", fixed_rate=0):
         from .analysis import render_options
         from .player import track_window
 
         start, end = track_window(track)
         rate = track.get("sample_rate") or 0
         rate = min(int(rate) if isinstance(rate, (int, float)) and rate > 0 else 44100, RENDER_MAX_RATE)
-        sound = self._player.cast_sound(track) if processed else {}
+        if fixed_rate:
+            rate = fixed_rate  # (a device that takes one rate only: Snapcast's stream)
+        sound = self._player.cast_sound(track) if processed and self._player is not None else {}
         return render_options(start=start / 1000, end=end / 1000, rate=rate, kind=kind, **sound)
 
     def _prepare(self, track, path, session, out, processed, ready, urgent=False):
         """Renders the song (on the decoding helper) and hands `ready` the media once it's written."""
         def key_for(kind):
-            options = self._render_options(track, processed, kind)
+            options = self._render_options(track, processed, kind, getattr(session, "render_rate", 0))
             return hashlib.sha256(repr((path, sorted(options.items(), key=str))).encode()).hexdigest()[:32], options
 
         kind = "flac" if session.takes_flac() else "wav"
@@ -1129,9 +1317,10 @@ class Casting(QObject):
             self._analyser.shutdown()
 
 
-def _discover():
-    """Chromecasts and DLNA renderers on the network, each a device dict with "kind". Both searches run at once.
-    A machine that is both (some TVs) is listed once, as a Chromecast (the better connection)."""
+def _discover(snapcast_servers=()):
+    """Chromecasts, DLNA renderers and Snapcast servers' rooms on the network (and on the Snapcast servers typed in
+    Settings), each a device dict with "kind". The searches run at once. A machine that is both a Chromecast and a
+    DLNA renderer (some TVs) is listed once, as a Chromecast (the better connection)."""
     interfaces = upnp.local_interfaces()
     results = {}
 
@@ -1141,7 +1330,17 @@ def _discover():
     def dlna():
         results["dlna"] = upnp.discover(DISCOVERY_S, interfaces)
 
-    threads = [threading.Thread(target=f, daemon=True) for f in (cast, dlna)]
+    def snap():
+        found = snapcast.discover(DISCOVERY_S, interfaces)
+        for entry in snapcast_servers:
+            host, _, port = entry.rpartition(":") if entry.count(":") == 1 else (entry, "", "")
+            try:
+                found.update(snapcast.devices(host, int(port or snapcast.CONTROL_PORT)))
+            except (OSError, ValueError) as e:
+                logger.info("Couldn't reach the Snapcast server %s: %s", entry, e)
+        results["snap"] = found
+
+    threads = [threading.Thread(target=f, daemon=True) for f in (cast, dlna, snap)]
     for t in threads:
         t.start()
     for t in threads:
@@ -1153,4 +1352,5 @@ def _discover():
     for dev in (results.get("dlna") or {}).values():
         if dev["host"] not in hosts:
             out.append(dict(dev, kind="upnp"))
+    out.extend((results.get("snap") or {}).values())  # (each already says it's "snapcast")
     return out

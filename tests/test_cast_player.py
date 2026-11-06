@@ -123,7 +123,7 @@ def setup(qapp, tmp_path):
         else:
             dev = Renderer(**device_args)
             info = dict(upnp.describe(dev.location, "127.0.0.1"), kind="upnp")
-        casting.discover = lambda: [info]
+        casting.discover = lambda servers: [info]
         made.append((player, casting, dev))
         return player, casting, dev
 
