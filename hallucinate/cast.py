@@ -1421,8 +1421,8 @@ def _discover(snapcast_servers=()):
         found = snapcast.discover(DISCOVERY_S, interfaces)
         for entry in snapcast_servers:
             host, _, port = entry.rpartition(":") if entry.count(":") == 1 else (entry, "", "")
-            try:
-                found.update(snapcast.devices(host, int(port or snapcast.CONTROL_PORT)))
+            try:  # (a name is looked up here: only an address on this network is then connected to)
+                found.update(snapcast.devices(socket_address(host), int(port or snapcast.CONTROL_PORT)))
             except (OSError, ValueError) as e:
                 logger.info("Couldn't reach the Snapcast server %s: %s", entry, e)
         results["snap"] = found

@@ -65,6 +65,10 @@ def test_only_the_artists_own_upcoming_shows_are_kept(monkeypatch):
     for part in ("keyword=Aurora", "apikey=KEY", "radius=50", "unit=km", "locale=%2A", "classificationName=music",
                  f"geoPoint={concerts.geohash(45.7578, 4.832)}", "startDateTime=2026-11-06T00%3A00%3A00Z"):
         assert part in url, part
+    for link, ok in (("https://www.ticketmaster.co.uk/event/1", True), ("https://concerts.livenation.com/x", True),
+                     ("https://ticketmaster.evil.com/x", False), ("http://www.ticketmaster.com/x", False),
+                     ("https://www.ticketmaster.com.evil.net/x", False), ("https://ticketmaster.fr", True)):
+        assert bool(concerts._link(link)) is ok, link
     monkeypatch.setattr(concerts, "_json", lambda url, **k: {"page": {"totalElements": 0}})
     assert concerts.shows("Aurora", "KEY", 0, 0, 25, today=TODAY) == []
 

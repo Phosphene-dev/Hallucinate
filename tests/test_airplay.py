@@ -27,6 +27,8 @@ def test_speakers_that_can_play_the_stream_are_offered():
     assert dev == {"id": "airplay:A1B2C3D4E5F6", "kind": "airplay", "name": "Kitchen", "model": "AirPort10,115",
                    "host": "192.168.1.30", "port": 7000}
     assert airplay.describe(service(et=None, cn=None))  # (nothing said: try)
+    own_id = dict(service(), id="0123-4567")  # (a speaker whose announcement carries an id of its own)
+    assert airplay.describe(own_id)["name"] == "Kitchen"
     for txt in ({"pw": "true"}, {"et": "1"}, {"et": "3,5"}, {"cn": "0"}, {"sr": "48000"}, {"ss": "24"}):
         assert airplay.describe(service(**txt)) is None, txt
 

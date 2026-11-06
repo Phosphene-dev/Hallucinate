@@ -65,7 +65,8 @@ def describe(service):
     """A speaker from its mDNS answer (mdns.services), or None when it can't play this stream: one that needs a
     password, only takes encrypted audio, or doesn't take ALAC at 44.1 kHz 16-bit stereo."""
     txt = service.get("txt") or {}
-    label = service.get("id", "")
+    # the service is called "MAC@Name" (mdns.services gives that as the name, or as the id when it has no id of its own)
+    label = next((v for v in (service.get("name", ""), service.get("id", "")) if "@" in v), service.get("name", ""))
     mac, _, name = label.partition("@")
     if not name:
         mac, name = "", label
@@ -260,6 +261,7 @@ class Speaker:
         self._pending = []  # [(when heard, kind, tag)]
         self._closed = False
         self._lost = False
+        self._wake = threading.Event()  # (paused, the sender sleeps until there's something to send)
         self._threads = []
         self._last_talk = clock()
 
@@ -318,6 +320,7 @@ class Speaker:
                 self.queue.load(path, start_s, end_s, tag, play)
             except pcm.FormatError as e:
                 raise AirplayError(str(e)) from None
+        self._wake.set()
 
     def queue_next(self, path, tag=None):
         try:
@@ -338,11 +341,13 @@ class Speaker:
     def play(self):
         with self._lock:
             self.queue.play()
+        self._wake.set()
 
     def seek(self, seconds):
         with self._lock:
             self._back_to_heard()  # (the song being heard is the one seeked in)
             self.queue.seek(seconds)
+        self._wake.set()
 
     def stop(self):
         with self._lock:
@@ -361,6 +366,7 @@ class Speaker:
 
     def close(self):
         self._closed = True
+        self._wake.set()
         try:
             self.queue.stop()
         except Exception:  # noqa: BLE001
@@ -441,7 +447,11 @@ class Speaker:
                         if ahead <= LEAD_S:
                             self._packet(ahead)
                             continue
-                time.sleep(0.02 if idle else min(0.01, max(0.001, ahead - LEAD_S)))
+                if idle:  # (until played, or the next event or keep-alive is due)
+                    self._wake.wait(0.05 if self._pending else 1.0)
+                    self._wake.clear()
+                else:
+                    time.sleep(min(0.01, max(0.001, ahead - LEAD_S)))
         except OSError:
             self._gone()
 

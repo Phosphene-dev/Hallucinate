@@ -26,7 +26,10 @@ NOMINATIM = "https://nominatim.openstreetmap.org/search"
 TICKETMASTER = "https://app.ticketmaster.com/discovery/v2/events.json"
 RADII = (25, 50, 100, 250)  # km
 GEOHASH = "0123456789bcdefghjkmnpqrstuvwxyz"
-LINK_HOSTS = re.compile(r"^https://([a-z0-9-]+\.)*(ticketmaster|livenation|ticketweb|universe)\.[a-z.]+(/|$)")
+# the ticket sellers' own sites (a show's link is only opened when it's one of these)
+LINK_HOSTS = re.compile(r"^https://([a-z0-9-]+\.)*(ticketmaster|livenation|ticketweb|universe)"
+                        r"\.(com|ca|ie|fr|de|nl|be|es|it|at|ch|dk|no|se|fi|pl|cz|ae|co\.uk|co\.nz|co\.za|com\.au|"
+                        r"com\.mx|com\.br|com\.tr)(/|$)", re.IGNORECASE)
 
 
 class BadKey(OSError):

@@ -115,3 +115,18 @@ def test_typed_snapcast_servers_are_kept_tidy(qapp, tmp_path):
     finally:
         casting.shutdown()
         player.shutdown()
+
+
+def test_a_typed_server_name_is_looked_up_first(monkeypatch):
+    """Only addresses on this network are connected to, so a name typed in Settings is looked up first."""
+    from hallucinate import cast
+
+    seen = []
+    monkeypatch.setattr(cast.snapcast, "devices", lambda host, port: seen.append((host, port)) or {})
+    monkeypatch.setattr(cast.snapcast, "discover", lambda *a: {})
+    monkeypatch.setattr(cast.mdns, "browse", lambda *a, **k: {})
+    monkeypatch.setattr(cast.upnp, "discover", lambda *a: {})
+    monkeypatch.setattr(cast.airplay, "discover", lambda *a: {})
+    monkeypatch.setattr(cast, "DISCOVERY_S", 0.1)
+    cast._discover(["localhost:1780", "127.0.0.1"])
+    assert seen == [("127.0.0.1", 1780), ("127.0.0.1", 1705)]
