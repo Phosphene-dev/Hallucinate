@@ -41,7 +41,8 @@ def test_a_chromecast_answer_is_read():
     devices = mdns.services(mdns.parse(cast_reply()), sender="192.168.1.50")
     (dev,) = devices.values()
     assert dev == {"name": "Living Room speaker", "model": "Google Home", "id": "abc123",
-                   "host": "192.168.1.50", "port": 8009}
+                   "host": "192.168.1.50", "port": 8009,
+                   "txt": {"id": "abc123", "fn": "Living Room speaker", "md": "Google Home"}}
 
 
 def test_a_device_cant_point_us_at_another_machine():

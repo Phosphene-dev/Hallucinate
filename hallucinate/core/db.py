@@ -105,6 +105,17 @@ CREATE TABLE IF NOT EXISTS online_similar(seed TEXT NOT NULL, source TEXT NOT NU
 CREATE TABLE IF NOT EXISTS wishlist(key TEXT PRIMARY KEY, kind TEXT NOT NULL, artist TEXT NOT NULL,
   title TEXT NOT NULL DEFAULT '', note TEXT NOT NULL DEFAULT '', link TEXT NOT NULL DEFAULT '',
   ref TEXT NOT NULL DEFAULT '', added REAL NOT NULL, got REAL);
+-- pictures of suggested artists from Deezer, for any similar-artists source ("" when Deezer had none)
+CREATE TABLE IF NOT EXISTS artist_pictures(key TEXT PRIMARY KEY, picture TEXT NOT NULL DEFAULT '',
+  looked REAL NOT NULL);
+-- Discover's concerts nearby (core/concerts.py): shows found near a place (a geohash and distance), and when each
+-- artist was last asked about for that place
+CREATE TABLE IF NOT EXISTS concerts(id TEXT NOT NULL, s_aa TEXT NOT NULL, place TEXT NOT NULL, artist TEXT NOT NULL,
+  name TEXT NOT NULL DEFAULT '', date TEXT NOT NULL, time TEXT NOT NULL DEFAULT '', venue TEXT NOT NULL DEFAULT '',
+  city TEXT NOT NULL DEFAULT '', country TEXT NOT NULL DEFAULT '', link TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT '', found REAL NOT NULL, PRIMARY KEY(id, place));
+CREATE TABLE IF NOT EXISTS concerts_checked(s_aa TEXT NOT NULL, place TEXT NOT NULL, checked REAL NOT NULL,
+  PRIMARY KEY(s_aa, place));
 """
 
 FTS = (

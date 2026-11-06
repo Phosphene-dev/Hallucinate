@@ -2912,6 +2912,58 @@ def test_discover_online_shelves_and_the_wishlist(qapp, app_window, tmp_path):
     assert not [w for w in warnings if "Discover" in w or "onlineDiscover" in w or "Settings" in w], warnings[:5]
 
 
+def test_discover_concerts_nearby(qapp, app_window, tmp_path):
+    """Concerts near you (off unless chosen): a show kept for the place chosen has its row, with Tickets; the
+    settings have the place, the distance and the key."""
+    import datetime
+    import time
+
+    from conftest import wait_for
+    from PySide6.QtCore import QSettings
+
+    from hallucinate.core import concerts
+    from hallucinate.core import online_discover as od
+    from hallucinate.core.db import Database
+
+    window, objects, warnings = app_window
+    shell, online = objects["shell"], objects["onlineDiscover"]
+    db = Database(tmp_path / "library.db")
+    artist = db.conn.execute("SELECT album_artist FROM tracks LIMIT 1").fetchone()[0]
+    place = concerts.place_key(45.7578, 4.832, 50)
+    soon = (datetime.date.today() + datetime.timedelta(days=12)).isoformat()
+    concerts.store(db, od.fold(artist), place, [{"id": "g1", "artist": artist, "name": artist, "date": soon,
+                                                 "time": "20:00:00", "venue": "Le Transbordeur", "city": "Lyon",
+                                                 "country": "France", "status": "",
+                                                 "link": "https://www.ticketmaster.fr/x"}], time.time())
+    db.close()
+    settings = QSettings()
+    for k, v in (("concertPlace", "Lyon"), ("concertPlaceName", "Lyon, France"), ("concertLat", 45.7578),
+                 ("concertLon", 4.832), ("concertRadius", 50)):
+        settings.setValue(f"discoverOnline/{k}", v)
+    net = __import__("hallucinate.core.net", fromlist=["net"])
+    net.set_offline(True)  # (shown from what's kept; nothing asked here)
+    shell.setFeature("discoverConcerts", True)
+    try:
+        QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "discover"))
+        qapp.processEvents()
+        page = window.findChild(QObject, "pageStack").property("currentItem")
+        online.open()
+        assert wait_for(lambda: online.concerts, timeout=10)
+        qapp.processEvents()
+        assert page.findChild(QObject, "concertsShelf").property("visible")
+        assert wait_for(lambda: find_item(window, "concert_0") is not None)
+        assert find_item(window, "concertTickets") is not None
+        QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "settings"))
+        qapp.processEvents()
+        for name in ("concertPlace", "concertRadius", "concertFollow", "concertPlaceFound"):
+            assert window.findChild(QObject, name) is not None, name
+    finally:
+        net.set_offline(False)
+        shell.setFeature("discoverConcerts", False)
+        settings.remove("discoverOnline")
+    assert not [w for w in warnings if "Discover" in w or "oncert" in w or "Settings" in w], warnings[:5]
+
+
 def test_discover_song_shelves_show_their_songs(qapp, app_window):
     """Songs you used to love and Deep cuts showed their buttons but no songs: a ListView sized to its own contents
     starts at no height, so it never made a row. Five rows show, the rest with Show all."""

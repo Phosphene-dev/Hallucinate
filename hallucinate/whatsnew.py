@@ -4,6 +4,11 @@ newest version's lines are ever shown, so translators can leave the older ones."
 from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication
 
 HIGHLIGHTS = {
+    "2.1.0": [
+        QT_TRANSLATE_NOOP("WhatsNew", "Play on AirPlay speakers and Snapcast rooms: they're in the cast button beside the volume."),
+        QT_TRANSLATE_NOOP("WhatsNew", "Concerts near you by the artists you play, on Discover (Settings → Discover; off until chosen)."),
+        QT_TRANSLATE_NOOP("WhatsNew", "Artists like yours can show their pictures from Deezer, whichever source suggests them."),
+    ],
     "2.0.0": [
         QT_TRANSLATE_NOOP("WhatsNew", "Discover: daily mixes, forgotten favourites, deep cuts and what you played on this day, all from your own library."),
         QT_TRANSLATE_NOOP("WhatsNew", "Right-click a song → Sounds like this, for songs that sound like it (tempo, key, energy), measured on your computer."),

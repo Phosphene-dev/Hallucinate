@@ -766,7 +766,7 @@ Item {
             id: sec_discover
             objectName: "settings_discover"
             title: qsTr("Discover")
-            keywords: qsTr("discover suggestions recommendations daily mixes forgotten favourites deep cuts never played on this day not interested hidden shelves rediscover sounds like this similar songs tempo bpm key energy timbre measure listen analyse radio flow new releases wishlist want buy store bandcamp preview similar artists musicbrainz listenbrainz deezer online")
+            keywords: qsTr("discover suggestions recommendations daily mixes forgotten favourites deep cuts never played on this day not interested hidden shelves rediscover sounds like this similar songs tempo bpm key energy timbre measure listen analyse radio flow new releases wishlist want buy store bandcamp preview similar artists musicbrainz listenbrainz deezer online concerts gigs shows tour tickets ticketmaster nearby city")
             query: page.query
             visible: matches && (shell.features.discover !== false || shell.features.soundsLike !== false)
             readonly property bool pageOn: shell.features.discover !== false
@@ -858,7 +858,7 @@ Item {
                     textFormat: Text.PlainText
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    text: qsTr("These look beyond your library, so they're off until you turn them on. They send only the names of artists you play (to MusicBrainz, ListenBrainz, Deezer or Last.fm, as chosen below), never what you play or when. Offline mode stops them all.")
+                    text: qsTr("These look beyond your library, so they're off until you turn them on. They send only the names of artists you play (to MusicBrainz, ListenBrainz, Deezer, Last.fm or Ticketmaster, as chosen below), never what you play or when. Offline mode stops them all.")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                 }
                 StyledCheck {
@@ -926,6 +926,13 @@ Item {
                         current: onlineDiscover.similarSource
                         onPicked: function (v) { onlineDiscover.setSimilarSource(v) }
                     }
+                    StyledCheck {
+                        objectName: "deezerPictures"
+                        visible: onlineDiscover.similarSource !== "deezer"
+                        text: qsTr("Show their pictures, from Deezer (only the artists' names are sent)")
+                        checked: onlineDiscover.deezerPictures
+                        onToggled: onlineDiscover.setDeezerPictures(checked)
+                    }
                     OptionCombo {
                         objectName: "similarSeeds"
                         labelWidth: 202  // (indented: lined up with the others, and inside narrow windows)
@@ -943,6 +950,125 @@ Item {
                         labels: [qsTr("From Deezer"), qsTr("From Apple"), qsTr("None")]
                         current: onlineDiscover.previews
                         onPicked: function (v) { onlineDiscover.setPreviews(v) }
+                    }
+                }
+                StyledCheck {
+                    objectName: "feature_discoverConcerts"
+                    text: qsTr("Concerts near you by artists you play (Ticketmaster)")
+                    checked: shell.features.discoverConcerts === true
+                    onToggled: shell.setFeature("discoverConcerts", checked)
+                }
+                Column {
+                    id: concertBox
+                    visible: shell.features.discoverConcerts === true
+                    x: 28
+                    width: parent.width - 28
+                    spacing: 8
+                    Text {
+                        textFormat: Text.PlainText
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: qsTr("Where you are is found on the map once, with OpenStreetMap (only what you type is sent). Ticketmaster is then asked about each artist every few days, with the artist's name and that point. It needs a key of your own: free at developer.ticketmaster.com (sign up, then copy the app's Consumer Key). It's kept in your system keyring.")
+                        color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                    }
+                    Row {
+                        spacing: 10
+                        width: parent.width
+                        Text { id: placeLabel; textFormat: Text.PlainText; width: 190; text: qsTr("Near"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 36; verticalAlignment: Text.AlignVCenter }
+                        TextField {
+                            id: placeField
+                            objectName: "concertPlace"
+                            Accessible.name: qsTr("Near")
+                            width: Math.min(300, parent.width - placeLabel.width - 10); height: 36
+                            text: onlineDiscover.concertPlace
+                            placeholderText: qsTr("A town or city, e.g. Lyon")
+                            maximumLength: 120
+                            color: Theme.text
+                            font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
+                            selectByMouse: true
+                            onEditingFinished: onlineDiscover.setConcertPlace(text)
+                            background: Rectangle { radius: Theme.round(8); color: Theme.surface; border.color: placeField.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
+                        }
+                    }
+                    Text {
+                        objectName: "concertPlaceFound"
+                        textFormat: Text.PlainText
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        visible: text.length > 0
+                        text: onlineDiscover.concertPlaceStatus === "looking" ? qsTr("Finding it on the map…")
+                              : onlineDiscover.concertPlaceStatus === "missing" ? qsTr("Couldn't find that place: try adding the country")
+                              : onlineDiscover.concertPlaceStatus.length > 0 ? onlineDiscover.concertPlaceStatus
+                              : onlineDiscover.concertPlaceName.length > 0 ? qsTr("Found: %1").arg(onlineDiscover.concertPlaceName) : ""
+                        color: onlineDiscover.concertPlaceStatus.length > 0 && onlineDiscover.concertPlaceStatus !== "looking" ? Theme.accent : Theme.textDim
+                        font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                    }
+                    OptionCombo {
+                        objectName: "concertRadius"
+                        labelWidth: 202  // (indented: lined up with the others, and inside narrow windows)
+                        label: qsTr("Within")
+                        values: [25, 50, 100, 250]
+                        labels: [qsTr("25 km (15 miles)"), qsTr("50 km (30 miles)"), qsTr("100 km (60 miles)"), qsTr("250 km (155 miles)")]
+                        current: onlineDiscover.concertRadius
+                        onPicked: function (v) { onlineDiscover.setConcertRadius(v) }
+                    }
+                    OptionCombo {
+                        objectName: "concertFollow"
+                        labelWidth: 202  // (indented: lined up with the others, and inside narrow windows)
+                        label: qsTr("Look for")
+                        values: ["top50", "top200"]
+                        labels: [qsTr("My 50 most played artists"), qsTr("My 200 most played")]
+                        current: onlineDiscover.concertFollow
+                        onPicked: function (v) { onlineDiscover.setConcertFollow(v) }
+                    }
+                    Row {
+                        spacing: 10
+                        width: parent.width
+                        visible: typeof sources !== "undefined"
+                        Text { id: keyLabel; textFormat: Text.PlainText; width: 190; text: qsTr("Ticketmaster key"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 36; verticalAlignment: Text.AlignVCenter }
+                        TextField {
+                            id: tmKey
+                            objectName: "ticketmasterKey"
+                            visible: !sources.ticketmasterConnected
+                            Accessible.name: qsTr("Ticketmaster key")
+                            width: Math.min(260, parent.width - keyLabel.width - tmButton.width - 20); height: 36
+                            echoMode: TextInput.Password
+                            placeholderText: qsTr("Consumer Key")
+                            maximumLength: 100
+                            color: Theme.text
+                            font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
+                            selectByMouse: true
+                            onAccepted: if (text.trim().length > 0) sources.connectTicketmaster(text)
+                            background: Rectangle { radius: Theme.round(8); color: Theme.surface; border.color: tmKey.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
+                        }
+                        Text {
+                            visible: sources.ticketmasterConnected
+                            textFormat: Text.PlainText
+                            height: 36; verticalAlignment: Text.AlignVCenter
+                            text: qsTr("Set up")
+                            color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
+                        }
+                        PillButton {
+                            id: tmButton
+                            objectName: "ticketmasterConnect"
+                            height: 32
+                            anchors.verticalCenter: parent.verticalCenter
+                            enabled: !sources.ticketmasterBusy && (sources.ticketmasterConnected || tmKey.text.trim().length > 0)
+                            text: sources.ticketmasterConnected ? qsTr("Forget the key") : qsTr("Use this key")
+                            onClicked: {
+                                if (sources.ticketmasterConnected) sources.forgetTicketmaster()
+                                else { sources.connectTicketmaster(tmKey.text); tmKey.text = "" }
+                            }
+                        }
+                    }
+                    Text {
+                        objectName: "ticketmasterStatus"
+                        textFormat: Text.PlainText
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        visible: typeof sources !== "undefined" && sources.ticketmasterStatus.length > 0
+                        text: typeof sources !== "undefined" ? sources.ticketmasterStatus : ""
+                        color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
                     }
                 }
                 StyledCheck {
@@ -975,6 +1101,7 @@ Item {
                 Row {
                     spacing: 8
                     visible: shell.features.discoverNewReleases === true || shell.features.discoverSimilar === true
+                             || shell.features.discoverConcerts === true
                     PillButton {
                         objectName: "discoverCheckNow"
                         height: 30
@@ -2036,14 +2163,14 @@ Item {
             id: sec_casting
             objectName: "settings_casting"
             title: qsTr("Casting")
-            keywords: qsTr("cast casting chromecast google nest home speaker tv television dlna upnp renderer receiver kodi sonos play on another device network wifi firewall port original bit-perfect processed equalizer sound")
+            keywords: qsTr("cast casting chromecast google nest home speaker tv television dlna upnp renderer receiver kodi sonos snapcast snapserver multiroom room rooms airplay apple homepod raop shairport play on another device network wifi firewall port original bit-perfect processed equalizer sound")
             query: page.query
             visible: matches && shell.features.casting !== false
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: qsTr("Play your music on a Chromecast, a Google or Nest speaker, or a TV, receiver or speaker that takes DLNA/UPnP. Pick one with the cast button beside the volume; your queue, likes and play counts stay here, and Hallucinate's controls, media keys and phone remote all control the device.")
+                text: qsTr("Play your music on a Chromecast, a Google or Nest speaker, an AirPlay speaker, a TV, receiver or speaker that takes DLNA/UPnP, or a room of a Snapcast server. Pick one with the cast button beside the volume; your queue, likes and play counts stay here, and Hallucinate's controls, media keys and phone remote all control the device.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Row {
@@ -2097,7 +2224,7 @@ Item {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: qsTr("The device fetches each song from this computer on this port, and only the device you picked can, only while you're casting. If nothing plays, your firewall may be blocking it: allow the port for your home network. For example, on Fedora, Bazzite and other systems with firewalld:")
+                text: qsTr("The device fetches each song from this computer on this port, and only the device you picked can, only while you're casting (a Snapcast server takes the sound on the port after it). If nothing plays, your firewall may be blocking them: allow both for your home network. For example, on Fedora, Bazzite and other systems with firewalld:")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             TextEdit {
@@ -2105,7 +2232,7 @@ Item {
                 readOnly: true; selectByMouse: true
                 wrapMode: TextEdit.WrapAnywhere
                 textFormat: TextEdit.PlainText
-                text: "sudo firewall-cmd --permanent --add-port=" + casting.port + "/tcp && sudo firewall-cmd --reload"  // i18n: keep
+                text: "sudo firewall-cmd --permanent --add-port=" + casting.port + "-" + (casting.port + 1) + "/tcp && sudo firewall-cmd --reload"  // i18n: keep
                 color: Theme.text; font.family: Theme.monoFamily; font.pixelSize: Theme.fontSize(12)
             }
             Text {
@@ -2120,8 +2247,33 @@ Item {
                 readOnly: true; selectByMouse: true
                 wrapMode: TextEdit.WrapAnywhere
                 textFormat: TextEdit.PlainText
-                text: "sudo ufw allow " + casting.port + "/tcp"  // i18n: keep
+                text: "sudo ufw allow " + casting.port + ":" + (casting.port + 1) + "/tcp"  // i18n: keep
                 color: Theme.text; font.family: Theme.monoFamily; font.pixelSize: Theme.fontSize(12)
+            }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: qsTr("Snapcast servers are found by themselves when they announce themselves on your network. If yours doesn't show up, type its address here (host or host:port, more than one separated by spaces).")
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            Row {
+                spacing: 12
+                width: parent.width
+                Text { id: snapLabel; textFormat: Text.PlainText; text: qsTr("Snapcast servers"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 36; verticalAlignment: Text.AlignVCenter }
+                TextField {
+                    id: snapServers
+                    objectName: "castSnapcastServers"
+                    Accessible.name: qsTr("Snapcast servers")
+                    width: Math.min(360, parent.width - snapLabel.width - 12); height: 36
+                    text: casting.snapcastServers
+                    placeholderText: "192.168.1.20 snapserver.local:1705"  // i18n: keep
+                    color: Theme.text
+                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
+                    selectByMouse: true
+                    onEditingFinished: { casting.setSnapcastServers(text); text = casting.snapcastServers }
+                    background: Rectangle { radius: Theme.round(8); color: Theme.surface; border.color: snapServers.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
+                }
             }
         }
         SettingsSection {

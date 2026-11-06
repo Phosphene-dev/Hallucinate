@@ -1,5 +1,6 @@
 """Where genres and artist bios come from: MusicBrainz and Wikipedia (nothing to set up), Discogs (a personal
-access token, kept in the system keyring) and Last.fm (the API key set up for scrobbling)."""
+access token, kept in the system keyring) and Last.fm (the API key set up for scrobbling). And Ticketmaster's key,
+for Discover's concerts nearby (also yours, also kept in the keyring)."""
 import logging
 import threading
 
@@ -12,6 +13,7 @@ from .core.i18n import fill, translate
 
 logger = logging.getLogger(__name__)
 KEYRING_SERVICE = "Hallucinate Discogs"
+TICKETMASTER_SERVICE = "Hallucinate Ticketmaster"
 BIO_SOURCES = ("Wikipedia", "Last.fm", "Discogs")
 
 
@@ -20,6 +22,8 @@ class OnlineSources(QObject):
     _keyring_late = Signal(object)
     _checked = Signal(str, str, str)  # token, user, error
     _stored = Signal(str)  # a keyring write finished: "" or what went wrong
+    _tm_late = Signal(object)
+    _tm_checked = Signal(str, str)  # key, error ("bad": not accepted)
 
     def __init__(self, lastfm_key=None, parent=None):
         super().__init__(parent)
@@ -37,6 +41,23 @@ class OnlineSources(QObject):
                                late=self._keyring_late.emit)
         if got is not None:
             self._apply_keyring(got)
+        self._tm_key, self._tm_status, self._tm_busy, self._tm_acted = "", "", False, False
+        self._tm_loaded = threading.Event()
+        self._tm_late.connect(self._apply_tm)
+        self._tm_checked.connect(self._on_tm_checked)
+        got = keyringwait.read(lambda k: keyring.get_password(TICKETMASTER_SERVICE, k), ("key",),
+                               late=self._tm_late.emit)
+        if got is not None:
+            self._apply_tm(got)
+
+    @Slot(object)
+    def _apply_tm(self, got):
+        if not self._tm_acted:
+            self._tm_key = got["values"].get("key", "") or self._tm_key
+        if got["error"]:
+            logger.info("Ticketmaster key unavailable: %s", got["error"])
+        self._tm_loaded.set()
+        self.changed.emit()
 
     @Slot(object)
     def _apply_keyring(self, got):
@@ -184,20 +205,93 @@ class OnlineSources(QObject):
 
         self._store(forget)
 
-    def _store(self, fn):
+    def _store(self, fn, tm=False):
         """Keyring writes on a thread of their own: a locked keyring mustn't freeze the window."""
         def run():
-            self._stored.emit(keyringwait.call(fn))
+            failed = keyringwait.call(fn)
+            self._stored.emit(f"{'tm' if tm else 'discogs'}:{failed}" if failed else "")
 
         threading.Thread(target=run, name="discogs-keyring", daemon=True).start()
 
     @Slot(str)
     def _on_stored(self, failed):
         if failed:
-            self._status += " " + fill(translate("Sources", "(the system keyring couldn't be updated: %1)"), failed)
+            which, _, why = failed.partition(":")
+            note = " " + fill(translate("Sources", "(the system keyring couldn't be updated: %1)"), why)
+            if which == "tm":
+                self._tm_status += note
+            else:
+                self._status += note
             self.changed.emit()
 
+    # --- Ticketmaster key (concerts nearby) ---------------------------------------------------------------
+    @Property(bool, notify=changed)
+    def ticketmasterConnected(self):
+        return bool(self._tm_key)
+
+    @Property(str, notify=changed)
+    def ticketmasterStatus(self):
+        return self._tm_status
+
+    @Property(bool, notify=changed)
+    def ticketmasterBusy(self):
+        return self._tm_busy
+
+    @Slot(str)
+    def connectTicketmaster(self, key):
+        key = (key or "").strip()
+        if not key or self._tm_busy:
+            return
+        if net.is_offline():
+            self._tm_status = translate("Sources", "Offline mode is on, so the key can't be checked")
+            self.changed.emit()
+            return
+        self._tm_busy, self._tm_status = True, translate("Sources", "Checking the key…")
+        self.changed.emit()
+
+        def check():
+            from .core import concerts
+
+            try:
+                concerts.check_key(key)
+                self._tm_checked.emit(key, "")
+            except concerts.BadKey:
+                self._tm_checked.emit(key, "bad")
+            except (OSError, ValueError) as exc:
+                self._tm_checked.emit(key, net.describe(exc))
+
+        threading.Thread(target=check, name="ticketmaster-key", daemon=True).start()
+
+    @Slot(str, str)
+    def _on_tm_checked(self, key, error):
+        self._tm_busy = False
+        if error:
+            self._tm_status = (translate("Sources", "Ticketmaster didn't accept that key") if error == "bad"
+                               else fill(translate("Sources", "Couldn't check the key: %1"), error))
+            self.changed.emit()
+            return
+        self._tm_acted = True
+        self._tm_key, self._tm_status = key, translate("Sources", "Connected")
+        self.changed.emit()
+        self._store(lambda: keyring.set_password(TICKETMASTER_SERVICE, "key", key), tm=True)
+
+    @Slot()
+    def forgetTicketmaster(self):
+        self._tm_acted = True
+        self._tm_key, self._tm_status = "", translate("Sources", "The key is forgotten")
+        self.changed.emit()
+
+        def forget():
+            if keyring.get_password(TICKETMASTER_SERVICE, "key"):
+                keyring.delete_password(TICKETMASTER_SERVICE, "key")
+
+        self._store(forget, tm=True)
+
     # --- for the lookups (any thread) -------------------------------------------------------------------
+    def ticketmaster_key(self, wait=3.0):
+        self._tm_loaded.wait(wait)
+        return self._tm_key
+
     def discogs_token(self, wait=3.0):
         self._loaded.wait(wait)
         return self._token

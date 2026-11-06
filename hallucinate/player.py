@@ -1847,7 +1847,8 @@ class Player(QObject):
 
         def ready(media):  # a song that had to be got ready first (Hallucinate's sound, a format, a CUE song)
             if gen == self._cast_gen and self._cast is session and self._index == i:
-                self._cast_start(media, start_ms, autoplay)
+                # (play or pause pressed while it was got ready counts, not what was wanted back then)
+                self._cast_start(media, start_ms, session.playing)
         media = self._cast_media(track, session, ready) if self._cast_media else {"error": "?"}
         if media.get("pending"):
             session.preparing(start_ms, autoplay)

@@ -310,3 +310,38 @@ def test_stop_drops_lookups_waiting_their_turn(qapp, db, tmp_path, monkeypatch, 
         assert "similar" not in asked and len(asked) <= 1
     finally:
         o.shutdown()
+
+
+def test_deezer_pictures_for_any_source(qapp, db, tmp_path, monkeypatch, settings):
+    """Off unless chosen: artists like yours from ListenBrainz get their pictures from Deezer (asked once, by
+    name; one Deezer doesn't know is asked about again only after a month)."""
+    from conftest import wait_for
+    from PySide6.QtCore import QSettings
+
+    from hallucinate.discoveronline import OnlineDiscover
+
+    monkeypatch.setattr(od, "artist_id", lambda name: RID.format(len(name)))
+    monkeypatch.setattr(od, "fetch_image", lambda url, folder: "")
+    monkeypatch.setattr(od, "cached_image", lambda url, folder: url)
+    monkeypatch.setattr(od, "similar_listenbrainz", lambda mbid: [{"name": "Cinder", "score": 1.0, "mbid": "", "url": ""},
+                                                                  {"name": "Nobody Knows", "score": 0.5, "mbid": "", "url": ""}])
+    asked = []
+    monkeypatch.setattr(od, "deezer_artist", lambda name: asked.append(name) or (
+        {"id": 1, "name": name, "picture": "https://e-cdns-images.dzcdn.net/cinder.jpg", "url": ""} if name == "Cinder" else None))
+    o = OnlineDiscover(tmp_path / "lib.db", tmp_path, None, FakeShell(discoverSimilar=True), None, autostart=False)
+    try:
+        o.open()
+        assert wait_for(lambda: o.similarArtists and o.busy == "", timeout=10)
+        assert asked == [] and all(not s["picture"] for s in o.similarArtists)  # (off: Deezer isn't asked)
+        o.setDeezerPictures(True)
+        assert wait_for(lambda: any(s["picture"] for s in o.similarArtists), timeout=10)
+        pics = {s["name"]: s["picture"] for s in o.similarArtists}
+        assert pics["Cinder"].endswith("cinder.jpg") and not pics["Nobody Knows"]
+        assert sorted(asked) == ["Cinder", "Nobody Knows"]
+        o.refresh()
+        assert wait_for(lambda: o.busy == "", timeout=10)
+        time.sleep(0.2)
+        assert sorted(asked) == ["Cinder", "Nobody Knows"]  # (kept: not asked again)
+        assert QSettings().value("discoverOnline/deezerPictures") in (True, "true")
+    finally:
+        o.shutdown()

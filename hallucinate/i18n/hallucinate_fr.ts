@@ -55,6 +55,10 @@
         <translation>Recherche de nouveautés : %1 sur %2</translation>
     </message>
     <message>
+        <source>Looking for concerts nearby: %1 of %2</source>
+        <translation>Recherche de concerts à proximité : %1 sur %2</translation>
+    </message>
+    <message>
         <source>Looking for artists like yours: %1 of %2</source>
         <translation>Recherche d’artistes proches des vôtres : %1 sur %2</translation>
     </message>
@@ -959,6 +963,30 @@
     <message>
         <source>Lost the connection to %1</source>
         <translation>Connexion à %1 perdue</translation>
+    </message>
+    <message>
+        <source>that room isn&apos;t on the Snapcast server any more</source>
+        <translation>cette pièce n’est plus sur le serveur Snapcast</translation>
+    </message>
+    <message>
+        <source>the Snapcast server couldn&apos;t reach this computer (a firewall may be blocking port %1: allow it for your local network)</source>
+        <translation>le serveur Snapcast n’a pas pu joindre cet ordinateur (un pare-feu bloque peut-être le port %1 : autorisez-le pour votre réseau local)</translation>
+    </message>
+    <message>
+        <source>%1 can only play songs on this computer, not radio or a music server&apos;s songs.</source>
+        <translation>%1 ne peut lire que les morceaux de cet ordinateur, pas la radio ni les morceaux d’un serveur de musique.</translation>
+    </message>
+    <message>
+        <source>it asks for a password, which Hallucinate can&apos;t give it yet</source>
+        <translation>il demande un mot de passe, qu’Hallucinate ne sait pas encore lui donner</translation>
+    </message>
+    <message>
+        <source>it only plays from devices paired with it (AirPlay 2), which Hallucinate can&apos;t do yet</source>
+        <translation>il ne joue que depuis les appareils jumelés avec lui (AirPlay 2), ce qu’Hallucinate ne sait pas encore faire</translation>
+    </message>
+    <message>
+        <source>it&apos;s playing from another device</source>
+        <translation>il joue depuis un autre appareil</translation>
     </message>
     <message>
         <source>Offline mode is on, so devices on your network can&apos;t be found</source>
@@ -1907,6 +1935,18 @@
 <context>
     <name>DiscoverOnline</name>
     <message>
+        <source>Offline mode is on, so the place can&apos;t be found</source>
+        <translation>Le mode hors ligne est activé : le lieu ne peut pas être trouvé</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t look the place up: %1</source>
+        <translation>Impossible de chercher le lieu : %1</translation>
+    </message>
+    <message>
+        <source>Ticketmaster didn&apos;t accept the key: check it in Settings → Discover</source>
+        <translation>Ticketmaster n’a pas accepté la clé : vérifiez-la dans Paramètres → Découvrir</translation>
+    </message>
+    <message>
         <source>New releases</source>
         <translation>Nouveautés</translation>
     </message>
@@ -2035,6 +2075,30 @@
     <message>
         <source>Nothing found yet: play some music and check again.</source>
         <translation>Rien de trouvé pour l’instant : écoutez de la musique et vérifiez à nouveau.</translation>
+    </message>
+    <message>
+        <source>Concerts near you</source>
+        <translation>Concerts près de chez vous</translation>
+    </message>
+    <message>
+        <source>Artists you play, within %1 km of %2 (from Ticketmaster)</source>
+        <translation>Les artistes que vous écoutez, à moins de %1 km de %2 (d’après Ticketmaster)</translation>
+    </message>
+    <message>
+        <source>Artists you play, playing near you (from Ticketmaster)</source>
+        <translation>Les artistes que vous écoutez, en concert près de chez vous (d’après Ticketmaster)</translation>
+    </message>
+    <message>
+        <source>Ticketmaster needs a key first: Settings → Discover tells you how to get one (it&apos;s free).</source>
+        <translation>Ticketmaster demande d’abord une clé : Paramètres → Découvrir explique comment l’obtenir (c’est gratuit).</translation>
+    </message>
+    <message>
+        <source>Type where you are in Settings → Discover.</source>
+        <translation>Indiquez où vous êtes dans Paramètres → Découvrir.</translation>
+    </message>
+    <message>
+        <source>No concerts nearby by the artists you play, for now.</source>
+        <translation>Aucun concert à proximité des artistes que vous écoutez, pour le moment.</translation>
     </message>
     <message>
         <source>Deep cuts</source>
@@ -2215,6 +2279,30 @@
     <message>
         <source>Which edition, where you heard of it…</source>
         <translation>Quelle édition, où vous en avez entendu parler…</translation>
+    </message>
+    <message>
+        <source>%1, %2, %3</source>
+        <translation>%1, %2, %3</translation>
+    </message>
+    <message>
+        <source>Cancelled</source>
+        <translation>Annulé</translation>
+    </message>
+    <message>
+        <source>Postponed</source>
+        <translation>Reporté</translation>
+    </message>
+    <message>
+        <source>Tickets</source>
+        <translation>Billets</translation>
+    </message>
+    <message>
+        <source>More for this concert</source>
+        <translation>Plus pour ce concert</translation>
+    </message>
+    <message>
+        <source>Not interested in %1</source>
+        <translation>Pas intéressé par %1</translation>
     </message>
     <message>
         <source>Options for this shelf</source>
@@ -8382,10 +8470,6 @@
         <translation>Rayon Ce jour-là</translation>
     </message>
     <message>
-        <source>discover suggestions recommendations daily mixes forgotten favourites deep cuts never played on this day not interested hidden shelves rediscover sounds like this similar songs tempo bpm key energy timbre measure listen analyse radio flow new releases wishlist want buy store bandcamp preview similar artists musicbrainz listenbrainz deezer online</source>
-        <translation>découvrir suggestions recommandations mix du jour favoris oubliés pépites jamais écouté ce jour-là pas intéressé masqué étagères redécouvrir dans le même son morceaux similaires tempo bpm tonalité énergie timbre mesurer écouter analyser radio enchaînement nouveautés liste d’envies envie acheter boutique bandcamp extrait artistes similaires musicbrainz listenbrainz deezer en ligne</translation>
-    </message>
-    <message>
         <source>Discover suggests music from your own library, worked out on this computer from what you play. Choose which shelves it shows; a shelf that&apos;s off isn&apos;t even worked out. The whole page can be turned off in Features.</source>
         <translation>Découvrir suggère de la musique de votre bibliothèque, calculée sur cet ordinateur à partir de ce que vous écoutez. Choisissez les rayons affichés ; un rayon désactivé n’est même pas calculé. La page entière peut être désactivée dans Fonctionnalités.</translation>
     </message>
@@ -8469,10 +8553,6 @@
         <translation>En ligne</translation>
     </message>
     <message>
-        <source>These look beyond your library, so they&apos;re off until you turn them on. They send only the names of artists you play (to MusicBrainz, ListenBrainz, Deezer or Last.fm, as chosen below), never what you play or when. Offline mode stops them all.</source>
-        <translation>Ces fonctions regardent au-delà de votre bibliothèque : elles restent désactivées tant que vous ne les activez pas. Elles n’envoient que le nom des artistes que vous écoutez (à MusicBrainz, ListenBrainz, Deezer ou Last.fm, selon votre choix ci-dessous), jamais ce que vous écoutez ni quand. Le mode hors ligne les arrête toutes.</translation>
-    </message>
-    <message>
         <source>New releases from artists you play (MusicBrainz)</source>
         <translation>Nouveautés des artistes que vous écoutez (MusicBrainz)</translation>
     </message>
@@ -8541,6 +8621,10 @@
         <translation>Last.fm (configuré pour le scrobbling)</translation>
     </message>
     <message>
+        <source>Show their pictures, from Deezer (only the artists&apos; names are sent)</source>
+        <translation>Afficher leurs photos, depuis Deezer (seuls les noms des artistes sont envoyés)</translation>
+    </message>
+    <message>
         <source>Based on</source>
         <translation>D’après</translation>
     </message>
@@ -8559,6 +8643,74 @@
     <message>
         <source>None</source>
         <translation>Aucun</translation>
+    </message>
+    <message>
+        <source>Concerts near you by artists you play (Ticketmaster)</source>
+        <translation>Concerts près de chez vous des artistes que vous écoutez (Ticketmaster)</translation>
+    </message>
+    <message>
+        <source>Where you are is found on the map once, with OpenStreetMap (only what you type is sent). Ticketmaster is then asked about each artist every few days, with the artist&apos;s name and that point. It needs a key of your own: free at developer.ticketmaster.com (sign up, then copy the app&apos;s Consumer Key). It&apos;s kept in your system keyring.</source>
+        <translation>Le lieu est trouvé sur la carte une seule fois, avec OpenStreetMap (seul ce que vous saisissez est envoyé). Ticketmaster est ensuite interrogé pour chaque artiste tous les quelques jours, avec le nom de l’artiste et ce point. Il faut une clé personnelle : gratuite sur developer.ticketmaster.com (inscrivez-vous, puis copiez la « Consumer Key » de l’application). Elle est conservée dans le trousseau du système.</translation>
+    </message>
+    <message>
+        <source>Near</source>
+        <translation>Près de</translation>
+    </message>
+    <message>
+        <source>A town or city, e.g. Lyon</source>
+        <translation>Une ville, par ex. Lyon</translation>
+    </message>
+    <message>
+        <source>Finding it on the map…</source>
+        <translation>Recherche sur la carte…</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t find that place: try adding the country</source>
+        <translation>Lieu introuvable : essayez d’ajouter le pays</translation>
+    </message>
+    <message>
+        <source>Found: %1</source>
+        <translation>Trouvé : %1</translation>
+    </message>
+    <message>
+        <source>Within</source>
+        <translation>À moins de</translation>
+    </message>
+    <message>
+        <source>25 km (15 miles)</source>
+        <translation>25 km</translation>
+    </message>
+    <message>
+        <source>50 km (30 miles)</source>
+        <translation>50 km</translation>
+    </message>
+    <message>
+        <source>100 km (60 miles)</source>
+        <translation>100 km</translation>
+    </message>
+    <message>
+        <source>250 km (155 miles)</source>
+        <translation>250 km</translation>
+    </message>
+    <message>
+        <source>Ticketmaster key</source>
+        <translation>Clé Ticketmaster</translation>
+    </message>
+    <message>
+        <source>Consumer Key</source>
+        <translation>Consumer Key</translation>
+    </message>
+    <message>
+        <source>Set up</source>
+        <translation>Configurée</translation>
+    </message>
+    <message>
+        <source>Forget the key</source>
+        <translation>Oublier la clé</translation>
+    </message>
+    <message>
+        <source>Use this key</source>
+        <translation>Utiliser cette clé</translation>
     </message>
     <message>
         <source>Wishlist (kept on this computer)</source>
@@ -9063,12 +9215,12 @@
         <translation>Nom du serveur</translation>
     </message>
     <message>
-        <source>cast casting chromecast google nest home speaker tv television dlna upnp renderer receiver kodi sonos play on another device network wifi firewall port original bit-perfect processed equalizer sound</source>
-        <translation>diffuser diffusion caster chromecast google nest home enceinte téléviseur télé tv dlna upnp récepteur amplificateur kodi sonos lire sur un autre appareil réseau wifi pare-feu port original bit-perfect traité égaliseur son</translation>
+        <source>cast casting chromecast google nest home speaker tv television dlna upnp renderer receiver kodi sonos snapcast snapserver multiroom room rooms airplay apple homepod raop shairport play on another device network wifi firewall port original bit-perfect processed equalizer sound</source>
+        <translation>diffuser diffusion cast chromecast google nest home enceinte tv télévision dlna upnp lecteur récepteur kodi sonos snapcast snapserver multiroom pièce pièces airplay apple homepod raop shairport lire sur un autre appareil réseau wifi pare-feu port original bit-perfect traité égaliseur son</translation>
     </message>
     <message>
-        <source>Play your music on a Chromecast, a Google or Nest speaker, or a TV, receiver or speaker that takes DLNA/UPnP. Pick one with the cast button beside the volume; your queue, likes and play counts stay here, and Hallucinate&apos;s controls, media keys and phone remote all control the device.</source>
-        <translation>Écoutez votre musique sur un Chromecast, une enceinte Google ou Nest, ou un téléviseur, un ampli ou une enceinte compatible DLNA/UPnP. Choisissez-le avec le bouton de diffusion à côté du volume ; votre file d’attente, vos favoris et vos écoutes restent ici, et les commandes d’Hallucinate, les touches multimédia et la télécommande du téléphone pilotent l’appareil.</translation>
+        <source>Play your music on a Chromecast, a Google or Nest speaker, an AirPlay speaker, a TV, receiver or speaker that takes DLNA/UPnP, or a room of a Snapcast server. Pick one with the cast button beside the volume; your queue, likes and play counts stay here, and Hallucinate&apos;s controls, media keys and phone remote all control the device.</source>
+        <translation>Écoutez votre musique sur un Chromecast, une enceinte Google ou Nest, une enceinte AirPlay, une TV, un ampli ou une enceinte compatible DLNA/UPnP, ou une pièce d’un serveur Snapcast. Choisissez-le avec le bouton de diffusion à côté du volume ; votre file d’attente, vos favoris et vos écoutes restent ici, et les commandes d’Hallucinate, les touches multimédia et la télécommande sur téléphone pilotent l’appareil.</translation>
     </message>
     <message>
         <source>Playing on %1</source>
@@ -9101,10 +9253,6 @@
     <message>
         <source>Port</source>
         <translation>Port</translation>
-    </message>
-    <message>
-        <source>The device fetches each song from this computer on this port, and only the device you picked can, only while you&apos;re casting. If nothing plays, your firewall may be blocking it: allow the port for your home network. For example, on Fedora, Bazzite and other systems with firewalld:</source>
-        <translation>L’appareil récupère chaque morceau sur cet ordinateur par ce port, et seul l’appareil choisi le peut, uniquement pendant la diffusion. Si rien ne se lit, votre pare-feu le bloque peut-être : autorisez ce port pour votre réseau domestique. Par exemple, sur Fedora, Bazzite et les autres systèmes avec firewalld :</translation>
     </message>
     <message>
         <source>or with ufw (Ubuntu, Mint):</source>
@@ -9219,6 +9367,14 @@
     <message>
         <source>Sounds like this</source>
         <translation>Dans le même son</translation>
+    </message>
+    <message>
+        <source>discover suggestions recommendations daily mixes forgotten favourites deep cuts never played on this day not interested hidden shelves rediscover sounds like this similar songs tempo bpm key energy timbre measure listen analyse radio flow new releases wishlist want buy store bandcamp preview similar artists musicbrainz listenbrainz deezer online concerts gigs shows tour tickets ticketmaster nearby city</source>
+        <translation>découvrir suggestions recommandations mix du jour favoris oubliés pépites jamais écouté ce jour-là pas intéressé masqué étagères redécouvrir dans le même son morceaux similaires tempo bpm tonalité énergie timbre mesurer écouter analyser radio enchaînement nouveautés liste d’envies envie acheter boutique bandcamp extrait artistes similaires musicbrainz listenbrainz deezer en ligne concerts spectacles tournée billets ticketmaster proximité ville</translation>
+    </message>
+    <message>
+        <source>These look beyond your library, so they&apos;re off until you turn them on. They send only the names of artists you play (to MusicBrainz, ListenBrainz, Deezer, Last.fm or Ticketmaster, as chosen below), never what you play or when. Offline mode stops them all.</source>
+        <translation>Ces fonctions regardent au-delà de votre bibliothèque : elles restent désactivées tant que vous ne les activez pas. Elles n’envoient que le nom des artistes que vous écoutez (à MusicBrainz, ListenBrainz, Deezer, Last.fm ou Ticketmaster, selon votre choix ci-dessous), jamais ce que vous écoutez ni quand. Le mode hors ligne les arrête toutes.</translation>
     </message>
     <message>
         <source>Right-click a song and choose Sounds like this for songs in your library that sound like it: their tempo, key, energy and timbre. To know, Hallucinate first listens to about a minute of each song on this computer, quietly in the background, the songs you like and play most first. Nothing leaves this computer. Turn it off in Features.</source>
@@ -9397,6 +9553,18 @@
     <message>
         <source>Take the output by itself (exclusive mode)</source>
         <translation>Prendre la sortie pour lui seul (mode exclusif)</translation>
+    </message>
+    <message>
+        <source>The device fetches each song from this computer on this port, and only the device you picked can, only while you&apos;re casting (a Snapcast server takes the sound on the port after it). If nothing plays, your firewall may be blocking them: allow both for your home network. For example, on Fedora, Bazzite and other systems with firewalld:</source>
+        <translation>L’appareil récupère chaque morceau sur cet ordinateur par ce port, et seul l’appareil choisi le peut, seulement pendant la diffusion (un serveur Snapcast reçoit le son par le port suivant). Si rien ne joue, votre pare-feu les bloque peut-être : autorisez les deux pour votre réseau domestique. Par exemple, sur Fedora, Bazzite et les autres systèmes avec firewalld :</translation>
+    </message>
+    <message>
+        <source>Snapcast servers are found by themselves when they announce themselves on your network. If yours doesn&apos;t show up, type its address here (host or host:port, more than one separated by spaces).</source>
+        <translation>Les serveurs Snapcast sont trouvés d’eux-mêmes lorsqu’ils s’annoncent sur votre réseau. Si le vôtre n’apparaît pas, saisissez son adresse ici (hôte ou hôte:port, plusieurs séparés par des espaces).</translation>
+    </message>
+    <message>
+        <source>Snapcast servers</source>
+        <translation>Serveurs Snapcast</translation>
     </message>
     <message>
         <source>remote phone web browser interface control pair pairing device devices network lan wifi headless tablet handoff hand over another computer</source>
@@ -11009,6 +11177,26 @@
         <source>(the system keyring couldn&apos;t be updated: %1)</source>
         <translation>(le trousseau du système n’a pas pu être mis à jour&#xa0;: %1)</translation>
     </message>
+    <message>
+        <source>Offline mode is on, so the key can&apos;t be checked</source>
+        <translation>Le mode hors ligne est activé : la clé ne peut pas être vérifiée</translation>
+    </message>
+    <message>
+        <source>Checking the key…</source>
+        <translation>Vérification de la clé…</translation>
+    </message>
+    <message>
+        <source>Ticketmaster didn&apos;t accept that key</source>
+        <translation>Ticketmaster n’a pas accepté cette clé</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t check the key: %1</source>
+        <translation>Impossible de vérifier la clé : %1</translation>
+    </message>
+    <message>
+        <source>The key is forgotten</source>
+        <translation>La clé est oubliée</translation>
+    </message>
 </context>
 <context>
     <name>Spectrum</name>
@@ -12588,6 +12776,18 @@
 </context>
 <context>
     <name>WhatsNew</name>
+    <message>
+        <source>Play on AirPlay speakers and Snapcast rooms: they&apos;re in the cast button beside the volume.</source>
+        <translation>Lisez sur des enceintes AirPlay et dans des pièces Snapcast : elles sont dans le bouton de diffusion à côté du volume.</translation>
+    </message>
+    <message>
+        <source>Concerts near you by the artists you play, on Discover (Settings → Discover; off until chosen).</source>
+        <translation>Les concerts près de chez vous des artistes que vous écoutez, dans Découvrir (Paramètres → Découvrir ; désactivé par défaut).</translation>
+    </message>
+    <message>
+        <source>Artists like yours can show their pictures from Deezer, whichever source suggests them.</source>
+        <translation>Les artistes proches des vôtres peuvent afficher leur photo depuis Deezer, quelle que soit la source qui les suggère.</translation>
+    </message>
     <message>
         <source>Discover: daily mixes, forgotten favourites, deep cuts and what you played on this day, all from your own library.</source>
         <translation>Découvrir : mix du jour, favoris oubliés, pépites et ce que vous écoutiez ce jour-là, tout depuis votre bibliothèque.</translation>

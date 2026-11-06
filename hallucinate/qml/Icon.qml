@@ -63,6 +63,13 @@ Canvas {
             ctx.beginPath(); ctx.arc(w*.5, h*.62, w*.15, 0, 2*Math.PI); ctx.stroke()
             ctx.beginPath(); ctx.arc(w*.5, h*.26, w*.05, 0, 2*Math.PI); ctx.fill()
             break
+        case "speakers":  // two speakers side by side (a room of speakers playing together)
+            line([.06,.16,.44,.16,.44,.9,.06,.9,.06,.16]); line([.56,.16,.94,.16,.94,.9,.56,.9,.56,.16])
+            ctx.beginPath(); ctx.arc(w*.25, h*.64, w*.11, 0, 2*Math.PI); ctx.stroke()
+            ctx.beginPath(); ctx.arc(w*.75, h*.64, w*.11, 0, 2*Math.PI); ctx.stroke()
+            ctx.beginPath(); ctx.arc(w*.25, h*.33, w*.04, 0, 2*Math.PI); ctx.fill()
+            ctx.beginPath(); ctx.arc(w*.75, h*.33, w*.04, 0, 2*Math.PI); ctx.fill()
+            break
         case "phone": line([.3,.06,.7,.06,.7,.94,.3,.94,.3,.06]); line([.44,.84,.56,.84]); break
         case "tv": line([.08,.2,.92,.2,.92,.76,.08,.76,.08,.2]); line([.34,.88,.66,.88]); line([.36,.06,.5,.2,.64,.06]); break
         case "expand": line([.15,.55,.15,.15,.55,.15]); line([.85,.45,.85,.85,.45,.85]); line([.15,.15,.45,.45]); line([.85,.85,.55,.55]); break
