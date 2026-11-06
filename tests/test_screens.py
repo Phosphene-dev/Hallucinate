@@ -2853,6 +2853,37 @@ def test_sounds_like_this_in_a_song_s_menu_and_settings(qapp, app_window):
     assert not [w for w in warnings if "soundsLike" in w or "TrackMenu" in w], warnings[:3]
 
 
+def test_discover_and_sounds_like_settings_change_when_chosen(qapp, app_window):
+    """Choosing in Settings → Discover's combos changes the setting, and the combo shows it (they used to snap back:
+    the setters weren't reachable from the page)."""
+    window, objects, warnings = app_window
+    discover, like = objects["discover"], objects["soundsLike"]
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "settings"))
+    qapp.processEvents()
+
+    def choose(name, i):
+        row = window.findChild(QObject, name)
+        assert row is not None, name
+        QMetaObject.invokeMethod(row, "chosen", Q_ARG(int, i))
+        qapp.processEvents()
+        return [c for c in row.children() if c.property("selection") is not None][0]  # (its combo)
+
+    assert choose("forgottenDays", 3).property("currentIndex") == 3 and discover.forgottenDays == 365
+    assert choose("mixCount", 1).property("currentIndex") == 1 and discover.mixCount == 2
+    assert choose("mixSize", 3).property("currentIndex") == 3 and discover.mixSize == 100
+    assert choose("mixFresh", 2).property("currentIndex") == 2 and discover.fresh == "more"
+    assert "2 mixes" in choose("mixCount", 1).property("model")[1]  # (an English plural, not "2 mix(es)")
+
+    def pick(name, value):
+        QMetaObject.invokeMethod(window.findChild(QObject, name), "picked", Q_ARG("QVariant", value))
+        qapp.processEvents()
+    pick("soundsLikeWhen", "ask")
+    pick("soundsLikeOrder", "alike")
+    pick("soundsLikeSize", 100)
+    assert (like.when, like.order, like.size) == ("ask", "alike", 100)
+    assert not [w for w in warnings if "is not a function" in w], warnings[:3]
+
+
 def test_discover_online_shelves_and_the_wishlist(qapp, app_window, tmp_path):
     """Discover's online shelves (off unless chosen) and the wishlist: offered once, shown when on and found,
     gone when off; a release and an artist like yours have their cards, a wish its row."""
@@ -2962,6 +2993,66 @@ def test_discover_concerts_nearby(qapp, app_window, tmp_path):
         shell.setFeature("discoverConcerts", False)
         settings.remove("discoverOnline")
     assert not [w for w in warnings if "Discover" in w or "oncert" in w or "Settings" in w], warnings[:5]
+
+
+def test_playing_on_several_speakers_together(qapp, app_window):
+    """The cast menu offers Play on several when two or more AirPlay speakers or Snapcast rooms are found; its
+    dialog lists only those, and Play together starts a group of the ticked ones."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    casting = objects["casting"]
+
+    def popup_item(name):  # (a dialog's items are its own, not the window's)
+        found = QMetaObject.invokeMethod(window, "findItem", Qt.ConnectionType.DirectConnection,
+                                         Q_RETURN_ARG("QVariant"), Q_ARG("QVariant", name),
+                                         Q_ARG("QVariant", dialog.property("contentItem").parentItem()))
+        return found if isinstance(found, QObject) else None
+    made = []
+
+    class Never:
+        def __init__(self, device, server):
+            made.append(device)
+            from PySide6.QtCore import QObject as _Q
+
+            self.name = device["name"]
+            self._q = _Q()
+
+        def connect_device(self):
+            raise OSError("not really")
+
+        def close(self, stop_device=True):
+            pass
+
+    casting.session_factories["group"] = Never
+    casting._devices = [
+        {"id": "air:1", "kind": "airplay", "name": "Kitchen", "model": "", "host": "192.168.1.30", "port": 7000},
+        {"id": "air:2", "kind": "airplay", "name": "Bedroom", "model": "", "host": "192.168.1.31", "port": 7000},
+        {"id": "cc:1", "kind": "chromecast", "name": "TV", "model": "", "host": "192.168.1.32", "port": 8009}]
+    casting.devicesChanged.emit()
+    menu = window.findChild(QObject, "castMenu")
+    QMetaObject.invokeMethod(menu, "open", Qt.ConnectionType.DirectConnection)
+    qapp.processEvents()
+    several = menu.findChild(QObject, "castSeveral")
+    assert several is not None and several.property("visible")
+    dialog = menu.findChild(QObject, "castGroupDialog")
+    QMetaObject.invokeMethod(dialog, "open", Qt.ConnectionType.DirectConnection)
+    assert wait_for(lambda: popup_item("castGroup_air:1") is not None)
+    assert popup_item("castGroup_cc:1") is None  # (a Chromecast can't be kept in step)
+    play = popup_item("castGroupPlay")
+    assert not play.property("enabled")
+    for name in ("castGroup_air:1", "castGroup_air:2"):
+        popup_item(name).setProperty("checked", True)
+        QMetaObject.invokeMethod(popup_item(name), "toggled", Qt.ConnectionType.DirectConnection)
+    qapp.processEvents()
+    assert play.property("enabled")
+    QMetaObject.invokeMethod(dialog, "accept", Qt.ConnectionType.DirectConnection)
+    assert wait_for(lambda: made, timeout=5)
+    assert made[0]["kind"] == "group" and sorted(made[0]["name"].split(" + ")) == ["Bedroom", "Kitchen"]
+    assert wait_for(lambda: not casting.connecting, timeout=5)
+    casting._devices = []
+    casting.devicesChanged.emit()
+    assert not [w for w in warnings if "CastMenu" in w], warnings[:3]
 
 
 def test_discover_song_shelves_show_their_songs(qapp, app_window):

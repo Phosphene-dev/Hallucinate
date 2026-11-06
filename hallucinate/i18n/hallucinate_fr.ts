@@ -36,10 +36,10 @@
         </translation>
     </message>
     <message numerus="yes">
-        <source>Listening to your music: %1 of %n song(s)</source>
+        <source>Measuring how songs sound, for Sounds like this: %1 of %n song(s)</source>
         <translation>
-            <numerusform>Écoute de votre musique : %1 sur %n morceau</numerusform>
-            <numerusform>Écoute de votre musique : %1 sur %n morceaux</numerusform>
+            <numerusform>Mesure du son des morceaux, pour Dans le même son : %1 sur %n morceau</numerusform>
+            <numerusform>Mesure du son des morceaux, pour Dans le même son : %1 sur %n morceaux</numerusform>
         </translation>
     </message>
     <message>
@@ -475,6 +475,14 @@
         <translation>La diffusion est désactivée</translation>
     </message>
     <message>
+        <source>Choose two or more devices</source>
+        <translation>Choisissez au moins deux appareils</translation>
+    </message>
+    <message>
+        <source>Only AirPlay speakers and Snapcast rooms can play together</source>
+        <translation>Seules les enceintes AirPlay et les pièces Snapcast peuvent jouer ensemble</translation>
+    </message>
+    <message>
         <source>Internet radio is switched off</source>
         <translation>La radio internet est désactivée</translation>
     </message>
@@ -525,6 +533,10 @@
     <message>
         <source>Pair this device first</source>
         <translation>Associez d’abord cet appareil</translation>
+    </message>
+    <message>
+        <source>Sharing the library is off on that computer</source>
+        <translation>Le partage de la bibliothèque est désactivé sur cet ordinateur</translation>
     </message>
     <message>
         <source>Not from this app</source>
@@ -918,6 +930,10 @@
         <translation>Aucun appareil trouvé</translation>
     </message>
     <message>
+        <source>Play on several together…</source>
+        <translation>Lire sur plusieurs à la fois…</translation>
+    </message>
+    <message>
         <source>Hand over to another computer</source>
         <translation>Passer à un autre ordinateur</translation>
     </message>
@@ -944,6 +960,22 @@
     <message>
         <source>Casting settings…</source>
         <translation>Réglages de diffusion…</translation>
+    </message>
+    <message>
+        <source>Play on several together</source>
+        <translation>Lire sur plusieurs à la fois</translation>
+    </message>
+    <message>
+        <source>Play together</source>
+        <translation>Lire ensemble</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annuler</translation>
+    </message>
+    <message>
+        <source>AirPlay speakers and Snapcast rooms can play the same music in step. Chromecasts and DLNA devices can&apos;t be kept in step, so they aren&apos;t listed.</source>
+        <translation>Les enceintes AirPlay et les pièces Snapcast peuvent jouer la même musique en même temps. Les Chromecast et appareils DLNA ne peuvent pas être synchronisés : ils ne sont pas listés.</translation>
     </message>
 </context>
 <context>
@@ -975,6 +1007,26 @@
     <message>
         <source>%1 can only play songs on this computer, not radio or a music server&apos;s songs.</source>
         <translation>%1 ne peut lire que les morceaux de cet ordinateur, pas la radio ni les morceaux d’un serveur de musique.</translation>
+    </message>
+    <message>
+        <source>needs a password</source>
+        <translation>demande un mot de passe</translation>
+    </message>
+    <message>
+        <source>only plays from Apple devices</source>
+        <translation>ne lit que depuis des appareils Apple</translation>
+    </message>
+    <message>
+        <source>can&apos;t play this kind of stream</source>
+        <translation>ne peut pas lire ce type de flux</translation>
+    </message>
+    <message>
+        <source>the room was switched to something else</source>
+        <translation>la pièce est passée à autre chose</translation>
+    </message>
+    <message>
+        <source>%1 dropped out; the others play on</source>
+        <translation>%1 s’est déconnecté ; les autres continuent</translation>
     </message>
     <message>
         <source>it asks for a password, which Hallucinate can&apos;t give it yet</source>
@@ -1476,10 +1528,6 @@
         <translation>Chercher des appareils où lire</translation>
     </message>
     <message>
-        <source>Casting  ·  Chromecast, DLNA/UPnP</source>
-        <translation>Diffusion  ·  Chromecast, DLNA/UPnP</translation>
-    </message>
-    <message>
         <source>Genre</source>
         <translation>Genre</translation>
     </message>
@@ -1501,6 +1549,10 @@
     <message>
         <source>Go to what&apos;s playing</source>
         <translation>Aller à ce qui est en lecture</translation>
+    </message>
+    <message>
+        <source>Casting  ·  Chromecast, DLNA/UPnP, AirPlay, Snapcast</source>
+        <translation>Diffusion  ·  Chromecast, DLNA/UPnP, AirPlay, Snapcast</translation>
     </message>
     <message>
         <source>Go to  ·  its album, station or show</source>
@@ -7456,6 +7508,10 @@
         <translation>La connexion n’a pas pu être gardée (%1), le serveur n’a donc pas été ajouté</translation>
     </message>
     <message>
+        <source>That computer&apos;s library is already added</source>
+        <translation>La bibliothèque de cet ordinateur est déjà ajoutée</translation>
+    </message>
+    <message>
         <source>Type the password you sign in to the server with</source>
         <translation>Tapez le mot de passe avec lequel vous vous connectez au serveur</translation>
     </message>
@@ -9104,6 +9160,10 @@
         <translation>Les morceaux de votre serveur Jellyfin, ou de votre serveur Navidrome, Gonic, Airsonic ou autre Subsonic, rejoignent votre bibliothèque et se lisent comme vos propres fichiers. La connexion reste dans le trousseau de votre système (pour Jellyfin, seulement le jeton d’accès qu’il donne). Les morceaux d’un serveur injoignable sont passés.</translation>
     </message>
     <message>
+        <source>%1 (another computer)</source>
+        <translation>%1 (un autre ordinateur)</translation>
+    </message>
+    <message>
         <source>Reading its songs…</source>
         <translation>Lecture de ses morceaux…</translation>
     </message>
@@ -9130,6 +9190,14 @@
     <message>
         <source>Add a server…</source>
         <translation>Ajouter un serveur…</translation>
+    </message>
+    <message>
+        <source>Your other computers running Hallucinate can share their libraries too: pair with one (the cast button → Hand over to another computer), switch on Paired computers can play my library in its Settings → Remote &amp; web, then add it here.</source>
+        <translation>Vos autres ordinateurs avec Hallucinate peuvent aussi partager leur bibliothèque : jumelez-en un (bouton de diffusion → Passer à un autre ordinateur), activez « Les ordinateurs jumelés peuvent lire ma bibliothèque » dans ses Paramètres → Télécommande et web, puis ajoutez-le ici.</translation>
+    </message>
+    <message>
+        <source>Add %1&apos;s library</source>
+        <translation>Ajouter la bibliothèque de %1</translation>
     </message>
     <message numerus="yes">
         <source>%n song(s) kept on this computer (%1): they play without the server, in offline mode too.</source>
@@ -9231,6 +9299,10 @@
         <translation>Lire ici plutôt</translation>
     </message>
     <message>
+        <source>When Hallucinate starts, offer the device it was playing on when it quit</source>
+        <translation>Au démarrage d’Hallucinate, proposer l’appareil sur lequel il jouait quand il a été fermé</translation>
+    </message>
+    <message>
         <source>What to send</source>
         <translation>Ce qui est envoyé</translation>
     </message>
@@ -9269,6 +9341,10 @@
     <message>
         <source>Let other devices on your network connect (your phone on the same Wi-Fi). Only on networks you trust, like your home&apos;s</source>
         <translation>Laisser d’autres appareils de votre réseau se connecter (votre téléphone sur le même Wi-Fi). Seulement sur des réseaux de confiance, comme celui de chez vous</translation>
+    </message>
+    <message>
+        <source>Paired computers can play my library (they add it in Settings → Music servers; nothing here can be changed from there)</source>
+        <translation>Les ordinateurs jumelés peuvent lire ma bibliothèque (ils l’ajoutent dans Paramètres → Serveurs de musique ; rien ici ne peut être modifié depuis là-bas)</translation>
     </message>
     <message>
         <source>Open one of these on your phone or another computer:</source>
@@ -11837,8 +11913,13 @@
         </translation>
     </message>
     <message>
-        <source> Empty fields marked “mixed” differ between them and stay as they are.</source>
-        <translation> Les champs vides marqués «&#xa0;mixte&#xa0;» diffèrent d’une piste à l’autre et restent tels quels.</translation>
+        <source> Empty fields marked “%1” differ between them and stay as they are.</source>
+        <translation> Les champs vides marqués «&#xa0;%1&#xa0;» diffèrent d’une piste à l’autre et restent tels quels.</translation>
+    </message>
+    <message>
+        <source>mixed</source>
+        <comment>an empty field whose value differs between the songs being edited</comment>
+        <translation>mixte</translation>
     </message>
     <message>
         <source>Am, F#, 8A…</source>
@@ -12622,10 +12703,6 @@
         <translation>Impossible de lire %1</translation>
     </message>
     <message>
-        <source>Switch on what you&apos;ll use. Nothing here goes online unless you tick it, and it can all be changed later in Settings → Features and Settings → Internet &amp; sharing.</source>
-        <translation>Activez ce dont vous vous servirez. Rien ici ne va en ligne sauf si vous le cochez, et tout peut être changé plus tard dans Paramètres → Fonctions et Paramètres → Internet et partage.</translation>
-    </message>
-    <message>
         <source>Features</source>
         <translation>Fonctions</translation>
     </message>
@@ -12706,8 +12783,16 @@
         <translation>Hallucinate garde votre historique d’écoute sur cet ordinateur dans tous les cas. Le scrobbling l’envoie aussi à ListenBrainz ou Last.fm. C’est facultatif, et vous pouvez le configurer plus tard dans les paramètres.</translation>
     </message>
     <message>
+        <source>Last.fm asks each app user for an API key of their own. Add yours in Settings → Scrobbling &amp; sharing whenever you like.</source>
+        <translation>Last.fm demande à chaque utilisateur d’une application sa propre clé d’API. Ajoutez la vôtre dans Paramètres → Scrobbling et partage quand vous voulez.</translation>
+    </message>
+    <message>
         <source>Keep a record of what you play?</source>
         <translation>Garder une trace de ce que vous écoutez&#xa0;?</translation>
+    </message>
+    <message>
+        <source>Switch on what you&apos;ll use. Nothing here goes online unless you tick it, and it can all be changed later in Settings → Features and Settings → Online &amp; privacy.</source>
+        <translation>Activez ce dont vous vous servirez. Rien ici ne va en ligne sauf si vous le cochez, et tout peut être changé plus tard dans Paramètres → Fonctions et Paramètres → En ligne et confidentialité.</translation>
     </message>
     <message>
         <source>ListenBrainz</source>
@@ -12750,10 +12835,6 @@
         <translation>J’ai autorisé l’accès</translation>
     </message>
     <message>
-        <source>Last.fm asks each app user for an API key of their own. Add yours in Settings → Internet &amp; sharing whenever you like.</source>
-        <translation>Last.fm demande à chaque utilisateur d’une application sa propre clé d’API. Ajoutez la vôtre dans Paramètres → Internet et partage quand vous voulez.</translation>
-    </message>
-    <message>
         <source>Skip setup</source>
         <translation>Passer la configuration</translation>
     </message>
@@ -12776,6 +12857,18 @@
 </context>
 <context>
     <name>WhatsNew</name>
+    <message>
+        <source>Play on several AirPlay speakers and Snapcast rooms together, in step: cast button → Play on several together.</source>
+        <translation>Jouez sur plusieurs enceintes AirPlay et pièces Snapcast à la fois, en phase : bouton de diffusion → Lire sur plusieurs à la fois.</translation>
+    </message>
+    <message>
+        <source>Your other computers&apos; libraries can join this one (Settings → Remote &amp; web on the one sharing, then Music servers here).</source>
+        <translation>Les bibliothèques de vos autres ordinateurs peuvent rejoindre celle-ci (Paramètres → Télécommande et web sur celui qui partage, puis Serveurs de musique ici).</translation>
+    </message>
+    <message>
+        <source>Hallucinate speaks Spanish: Settings → Appearance → Language → Español.</source>
+        <translation>Hallucinate parle espagnol : Paramètres → Apparence → Langue → Español.</translation>
+    </message>
     <message>
         <source>Play on AirPlay speakers and Snapcast rooms: they&apos;re in the cast button beside the volume.</source>
         <translation>Lisez sur des enceintes AirPlay et dans des pièces Snapcast : elles sont dans le bouton de diffusion à côté du volume.</translation>
@@ -13288,6 +13381,14 @@
         </translation>
     </message>
     <message>
+        <source>Play on %1 again?</source>
+        <translation>Lire à nouveau sur %1 ?</translation>
+    </message>
+    <message>
+        <source>Play there</source>
+        <translation>Y lire</translation>
+    </message>
+    <message>
         <source>%1 added to “%2”</source>
         <translation>%1 ajouté à «&#xa0;%2&#xa0;»</translation>
     </message>
@@ -13695,12 +13796,32 @@
         <translation>Ce téléphone</translation>
     </message>
     <message>
+        <source>%1 can&apos;t be played to: %2</source>
+        <translation>Impossible de lire sur %1 : %2</translation>
+    </message>
+    <message>
         <source>Connecting to %1…</source>
         <translation>Connexion à %1…</translation>
     </message>
     <message>
+        <source>Several together…</source>
+        <translation>Plusieurs à la fois…</translation>
+    </message>
+    <message>
         <source>Look again</source>
         <translation>Chercher à nouveau</translation>
+    </message>
+    <message>
+        <source>Play on several together</source>
+        <translation>Lire sur plusieurs à la fois</translation>
+    </message>
+    <message>
+        <source>Play together (%1)</source>
+        <translation>Lire ensemble (%1)</translation>
+    </message>
+    <message>
+        <source>Tick two or more</source>
+        <translation>Cochez-en au moins deux</translation>
     </message>
     <message>
         <source>The equaliser isn&apos;t available on this computer</source>

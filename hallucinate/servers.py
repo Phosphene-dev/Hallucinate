@@ -24,14 +24,14 @@ import time
 from PySide6.QtCore import Property, QObject, QSettings, QTimer, Signal, Slot
 
 from . import keyringwait
-from .core import jellyfin, net, remote, subsonic, tags
+from .core import jellyfin, net, peerlib, remote, subsonic, tags
 from .core.atomic import write_atomic
 from .core.i18n import QT_TRANSLATE_NOOP, fill, translate
 from .library import _Reader
 
 logger = logging.getLogger(__name__)
 KEYRING_SERVICE = "Hallucinate Music servers"
-KINDS = ("subsonic", "jellyfin")
+KINDS = ("subsonic", "jellyfin", "hallucinate")  # (hallucinate: a paired computer's library, core/peerlib.py)
 RETRY_MS = 5 * 60 * 1000  # a server that didn't answer is tried again this often
 SYNC_EVERY_S = 12 * 3600  # synced again when the last sync is older than this
 KEYRING_WAIT_S = 10.0  # a keyring read that takes longer than this is taken for a locked keyring
@@ -92,6 +92,11 @@ def _keyring():
 
 def _client(entry, secret):
     """The client for a kept server: Subsonic with its password, Jellyfin with its token."""
+    if entry.get("kind") == "hallucinate":
+        kept = json.loads(secret)
+        if not isinstance(kept, dict):
+            raise ValueError(translate("Servers", "The kept sign-in is damaged"))
+        return peerlib.Server(entry["base"], kept.get("key", ""), kept.get("device", ""))
     if entry.get("kind") == "jellyfin":
         kept = json.loads(secret)
         if not isinstance(kept, dict):
@@ -329,6 +334,44 @@ class Servers(QObject):
                         "error": fill(translate("Servers", "The sign-in couldn't be kept (%1), so the server wasn't added"), failed)}
             if not entry["name"]:
                 entry["name"] = (info.get("type") or kind).title()
+            return {"op": "add", "id": sid, "entry": entry}
+
+        self._run(work)
+
+    @Slot(str)
+    def addComputer(self, peer_id):
+        """Adds the library a paired computer shares (it must have Paired computers can play my library on). Its key
+        is the one pairing gave (handoff.py), kept here too so the computer can be forgotten separately."""
+        handoff = getattr(self, "handoff", None)
+        peer = next((p for p in (handoff.computers if handoff is not None else []) if p["id"] == peer_id
+                     and p.get("paired")), None)
+        if peer is None:
+            return
+        base = f"http://{peer['host']}:{int(peer['port'])}"
+        if any(s["kind"] == "hallucinate" and s["user"] == peer_id for s in self._list) or \
+                ("", peer_id, "hallucinate") in self._pending.values():
+            self.message.emit(translate("Servers", "That computer's library is already added"))
+            return
+        if net.is_offline():
+            self.message.emit(translate("Servers", "Offline mode is on, so the server can't be checked"))
+            return
+        sid = secrets.token_hex(4)
+        self._pending[sid] = ("", peer_id, "hallucinate")
+        self.changed.emit()
+        entry = {"id": sid, "kind": "hallucinate", "base": base, "user": peer_id, "name": peer["name"][:100],
+                 "songs": 0, "synced": 0.0, "device": ""}
+
+        def work(_db):
+            try:
+                key = handoff._read_key(peer_id)
+                client = peerlib.Server(base, key)
+                info = client.ping()
+            except (OSError, ValueError, Exception) as exc:  # noqa: BLE001 - (a lost pairing says so)
+                return {"op": "add", "id": sid, "error": fill(translate("Servers", "Couldn't reach the server: %1"), _plain(exc))}
+            failed = _write_secret(sid, json.dumps({"key": key, "device": info["device"]}))
+            if failed:
+                return {"op": "add", "id": sid,
+                        "error": fill(translate("Servers", "The sign-in couldn't be kept (%1), so the server wasn't added"), failed)}
             return {"op": "add", "id": sid, "entry": entry}
 
         self._run(work)

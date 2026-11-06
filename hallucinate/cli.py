@@ -100,6 +100,8 @@ def describe_state(st):
     if song.get("rating"):
         extras.append("★" * int(song["rating"]))
     lines.append("  " + " · ".join(extras))
+    if st.get("castingOn"):
+        lines.append(f"  playing on {st['castingOn']}")
     if st.get("error"):
         lines.append("  ! " + st["error"])
     return "\n".join(lines)
@@ -281,6 +283,8 @@ def run(args):
     if c == "library":
         r = call("library.info")
         return r, f"{r['songs']} songs on {r['albums']} albums" + (" (scanning…)" if r["scanning"] else "")
+    if c == "cast":
+        return _cast(args)
     if c == "remote":
         return _remote(args)
     if c == "pair":
@@ -362,6 +366,52 @@ def _remote(args):
     elif r["on"]:
         lines.append("No devices paired yet: hallucinate --pair")
     return r, "\n".join(lines)
+
+
+def _device_named(devices, what):
+    wanted = what.lower()
+    matches = [d for d in devices if d["name"].lower() == wanted] or [d for d in devices if wanted in d["name"].lower()]
+    if not matches:
+        raise CommandError(f"No device called “{what}”: `hallucinate cmd cast` lists them")
+    if len(matches) > 1:
+        raise CommandError("More than one device matches: " + ", ".join(d["name"] for d in matches))
+    return matches[0]
+
+
+def _cast(args):
+    """List the devices to play on, play on one (by name), or come back here."""
+    what = " ".join(args.device).strip()
+    if what.lower() in ("here", "stop", "off", "this computer"):
+        call("cast.stop")
+        return {"ok": True}, "Playing on this computer"
+    if what.lower() == "search":
+        call("cast.search")
+        return {"ok": True}, "Looking for devices (a few seconds): `hallucinate cmd cast` lists them"
+    c = call("cast.devices")
+    if not what:
+        lines = [f"Playing on {c['device']}" if c["device"] else "Playing on this computer"]
+        if c.get("connecting"):
+            lines.append(f"Connecting to {c['connecting']}…")
+        for d in c["devices"]:
+            note = f"  ({d['unsupported']})" if d.get("unsupported") else ""
+            lines.append(f"  {'▶' if d['active'] else ' '} {d['name']}" + (f" · {d['model']}" if d["model"] else "") + note)
+        if not c["devices"]:
+            lines.append("No devices found" + (" yet: still looking" if c["searching"] else ": `hallucinate cmd cast search`"))
+        return c, "\n".join(lines)
+    names = [n.strip() for n in what.split("+") if n.strip()]
+    chosen = [_device_named(c["devices"], n) for n in names]
+    if len(chosen) > 1:  # several together: Kitchen + Living room
+        cant = [d["name"] for d in chosen if not d.get("groupable")]
+        if cant:
+            raise CommandError("Only AirPlay speakers and Snapcast rooms can play together: " + ", ".join(cant))
+        call("cast.group", ids=[d["id"] for d in chosen])
+        together = " + ".join(d["name"] for d in chosen)
+        return {"devices": [d["name"] for d in chosen]}, f"Connecting to {together}…"
+    d = chosen[0]
+    if d.get("unsupported"):
+        raise CommandError(f"{d['name']} can't be played to: {d['unsupported']}")
+    call("cast.to", id=d["id"])
+    return {"device": d["name"]}, f"Connecting to {d['name']}…"
 
 
 def _pair():
@@ -446,6 +496,9 @@ def parser():
     p.add_argument("--host-name", metavar="NAMES",
                    help="other names it answers to, comma-separated (a reverse proxy, music.example.lan); \"\" for none")
     sub.add_parser("pair", help="a code to pair a phone or browser with the web remote")
+    p = sub.add_parser("cast", help="list devices to play on, play on one by NAME (or several: A + B), `search`, "
+                                    "or `here` to come back")
+    p.add_argument("device", nargs="*")
     return ap
 
 

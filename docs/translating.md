@@ -1,6 +1,6 @@
 # Translating Hallucinate
 
-Hallucinate speaks English and French, and can speak your language too. You don't need to know how to program:
+Hallucinate speaks English, Spanish and French, and can speak your language too. You don't need to know how to program:
 a translation is one text file, and you can work on it in Qt Linguist (a free editor made for this) or in any text
 editor.
 
@@ -20,7 +20,7 @@ Everything goes in one file per language: the desktop app, its messages, and the
    people look for "Deutsch", not "German":
 
    ```python
-   LANGUAGES = [("en", "English"), ("fr", "Français"), ("de", "Deutsch")]
+   LANGUAGES = [("en", "English"), ("es", "Español"), ("fr", "Français"), ("de", "Deutsch")]
    ```
 
    Also add the code to `LANGS` in `scripts/build_translations.py`, and its plural rule to `plural_rule()` in
@@ -77,7 +77,7 @@ Keep sentences natural rather than word for word: Hallucinate talks to people pl
 ### Counts
 
 A string with `%n` changes with the number: `%n song(s)` becomes "1 song" and "2 songs" in English. In the editor
-these have a box for each form your language has: French uses the first for 0 and 1 and the second for 2 and up;
+these have a box for each form your language has: French uses the first for 0 and 1 and the second for 2 and up (Spanish, like English, the first only for 1);
 some languages have three or more forms, and the editor shows the right number of boxes.
 
 The web remote works out which form to use itself, from `plural_rule()` in `hallucinate/i18n.py`. If your

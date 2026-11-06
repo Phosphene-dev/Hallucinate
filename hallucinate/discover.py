@@ -272,6 +272,7 @@ class Discover(QObject):
 
     # --- settings -----------------------------------------------------------------------------------------
     def _setting_prop(key, default, kind, choices=None):  # noqa: N805
+        # (each setter below is given its name for Qt by hand: a Slot takes its function's name, and these are all set_)
         def get(self):
             v = self._setting(key, default, kind)
             return v if choices is None or v in choices else default
@@ -288,16 +289,16 @@ class Discover(QObject):
 
     _fd = _setting_prop("forgottenDays", 90, int, FORGOTTEN_DAYS)
     forgottenDays = Property(int, _fd[0], notify=settingsChanged)
-    setForgottenDays = Slot(int)(_fd[1])
+    setForgottenDays = Slot(int, name="setForgottenDays")(_fd[1])
     _mc = _setting_prop("mixCount", 4, int, range(1, 9))
     mixCount = Property(int, _mc[0], notify=settingsChanged)
-    setMixCount = Slot(int)(_mc[1])
+    setMixCount = Slot(int, name="setMixCount")(_mc[1])
     _ms = _setting_prop("mixSize", 40, int, MIX_SIZES)
     mixSize = Property(int, _ms[0], notify=settingsChanged)
-    setMixSize = Slot(int)(_ms[1])
+    setMixSize = Slot(int, name="setMixSize")(_ms[1])
     _fr = _setting_prop("fresh", "some", str, tuple(FRESH))
     fresh = Property(str, _fr[0], notify=settingsChanged)
-    setFresh = Slot(str)(_fr[1])
+    setFresh = Slot(str, name="setFresh")(_fr[1])
 
     @Slot(str, bool)
     def setShelf(self, name, on):

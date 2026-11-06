@@ -256,7 +256,6 @@ def main(argv=None) -> int:
 
     online_discover = OnlineDiscover(paths.db_path(), paths.data_dir(), player, shell, sources)
     library.scanFinished.connect(lambda _stats: online_discover.libraryChanged())
-    shell.setReportSources(library=library, theme_manager=theme_manager)
     shell.setStartupNotice(db_notice)
     shell.setCrashReport(last_crash, last_crashed)
     if safe_mode:
@@ -290,13 +289,17 @@ def main(argv=None) -> int:
     from .cast import Casting
 
     casting = Casting(player)  # playing on a Chromecast or a DLNA/UPnP device
+    shell.setReportSources(library=library, theme_manager=theme_manager, casting=casting)
     web_remote.api.casting = casting  # the phone remote can choose where the music plays (while the feature's on)
     web_remote.api.casting_on = lambda: shell.features.get("casting", True)
+    casting._feature_on = web_remote.api.casting_on
+    QTimer.singleShot(4000, casting.offerLastDevice)  # (casting when Hallucinate last quit: offer it again)
     casting.notify_remote = web_remote._soon  # the phone playing the music hears what to do at once
 
     from .handoff import Handoff
 
     handoff = Handoff(player, library, web_remote)  # handing what's playing to another computer, and taking it
+    servers.handoff = handoff  # (a paired computer's shared library can be added in Settings → Music servers)
     web_remote.handoff = handoff
     handoff.stations = stations  # (a received station already saved here may be on this network)
     shell.settingsChanged.connect(servers.recheck)  # offline mode switched off: try servers again

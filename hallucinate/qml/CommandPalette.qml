@@ -98,10 +98,10 @@ Popup {
                 c.push({ t: qsTr("Play here instead"), s: qsTr("Casting  ·  playing on %1").arg(casting.deviceName), i: "computer", run: () => casting.stopCasting() })
             for (var d = 0; d < casting.devices.length; d++) {
                 var dev = casting.devices[d]
-                if (!dev.active)
+                if (!dev.active && !dev.unsupported)
                     c.push({ t: qsTr("Play on %1").arg(dev.name), s: qsTr("Casting"), i: Theme.castIcon(dev.kind), run: ((id) => () => casting.castTo(id))(dev.id) })
             }
-            c.push({ t: qsTr("Look for devices to play on"), s: qsTr("Casting  ·  Chromecast, DLNA/UPnP"), i: "cast", run: () => casting.refresh() })
+            c.push({ t: qsTr("Look for devices to play on"), s: qsTr("Casting  ·  Chromecast, DLNA/UPnP, AirPlay, Snapcast"), i: "cast", run: () => casting.refresh() })
         }
         if (player.hasTrack) {
             c.push({ t: qsTr("Go to what's playing"), s: qsTr("Go to  ·  its album, station or show"), i: "album", run: () => Nav.goToPlaying() })

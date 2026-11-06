@@ -35,7 +35,7 @@
 - **Plays it properly.** True gapless, ReplayGain, a 10-band equalizer, headphone correction, CUE sheets, and a readout that shows when the sound is untouched.
 - **Remembers every listen.** History, weekly to yearly recaps, smart playlists, radio mode, and history brought over from Last.fm or your old player.
 - **Fast to drive.** Instant search that forgives typos, Ctrl+K for anything, multi-select, and Ctrl+Z for the queue.
-- **Plays where you are.** Cast to a Chromecast, a Google or Nest speaker, an AirPlay speaker, a DLNA/UPnP TV or speaker, or a Snapcast server's rooms, with the original files untouched or with your equalizer along; your queue and play counts stay here.
+- **Plays where you are.** Cast to a Chromecast, a Google or Nest speaker, an AirPlay speaker, a DLNA/UPnP TV or speaker, or a Snapcast server's rooms (several AirPlay speakers and Snapcast rooms can play together, in step), with the original files untouched or with your equalizer along; your queue and play counts stay here.
 - **From your phone too.** A web interface and phone remote, off until you switch it on, for paired devices only: your library, queue, lyrics, equaliser, internet radio and podcasts, in light or dark.
 - **Only what you want.** Internet radio, podcasts and music servers (Jellyfin, Navidrome and other Subsonic servers) are there if you switch them on.
 - **Wear it your way.** Over twenty themes, from frosted glass and pride flags to two retro ones with a 90s hi-fi Now Playing, and Afterimage: neon noir with a cockpit or a terminal you type commands into.
@@ -158,7 +158,7 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 <details>
 <summary>The full list, for the curious</summary>
 
-- In your language: English and French, chosen in Settings → Appearance → Language (or as the system is set) and switched without a restart. Dates, counts and numbers follow the language; the web remote follows the phone's. [Translate it into yours](docs/translating.md).
+- In your language: English, Spanish and French, chosen in Settings → Appearance → Language (or as the system is set) and switched without a restart. Dates, counts and numbers follow the language; the web remote follows the phone's. [Translate it into yours](docs/translating.md).
 - Scans folders (mutagen tags + embedded/folder cover art) into SQLite with FTS5 instant search; incremental rescans (mtime/size), background scanning, file watching, and removal of moved/deleted paths.
 - Formats: FLAC, MP3, OGG/Vorbis, Opus, WAV, AAC/M4A, ALAC, WMA, APE, WavPack, AIFF and more (anything Qt's FFmpeg backend decodes). WAV/AIFF RIFF/FORM text tags are read; missing tags fall back to the filename and unknown values.
 - Features (Settings): switch off Liked Songs, Folders, Stats, History, Recap, Visualizer, Library health, lyrics or any card on Home; it leaves the sidebar, Ctrl+K, links, buttons and shortcuts. Internet radio and podcasts start switched off. Rearrange the sidebar by dragging its entries, from their right-click menu, or in Settings.

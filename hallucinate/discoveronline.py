@@ -108,7 +108,8 @@ class OnlineDiscover(QObject):
             return default
         return v if choices is None or v in choices else default
 
-    def _prop(key, default, kind, notify, choices=None, reread=False, refetch=""):  # noqa: N805
+    def _prop(key, default, kind, notify, choices=None, reread=False, refetch="", slot=""):  # noqa: N805
+        # (the setter is named for Qt by hand: a Slot takes its function's name, and every one here is set_)
         def get(self):
             return self._get(key, default, kind, choices)
 
@@ -121,7 +122,7 @@ class OnlineDiscover(QObject):
                     self._check(force=True, only=refetch)  # (only what this setting changes is asked again)
                 elif reread:
                     self._queue_read()
-        return Property(kind, get, notify=notify), Slot(kind)(set_)
+        return Property(kind, get, notify=notify), Slot(kind, name=slot or "set" + key[0].upper() + key[1:])(set_)
 
     follow, setFollow = _prop("follow", "top50", str, settingsChanged, tuple(FOLLOW), refetch="releases")
     window, setWindow = _prop("window", 90, int, settingsChanged, WINDOWS, refetch="releases")
@@ -130,7 +131,7 @@ class OnlineDiscover(QObject):
     singles, setSingles = _prop("singles", False, bool, settingsChanged, reread=True)
     live, setLive = _prop("live", False, bool, settingsChanged, reread=True)
     compilations, setCompilations = _prop("compilations", False, bool, settingsChanged, reread=True)
-    notifyNew, setNotifyNew = _prop("notify", False, bool, settingsChanged)
+    notifyNew, setNotifyNew = _prop("notify", False, bool, settingsChanged, slot="setNotifyNew")
     similarSource, setSimilarSource = _prop("similarSource", "listenbrainz", str, settingsChanged, SIMILAR_SOURCES,
                                             refetch="similar")
     seeds, setSeeds = _prop("seeds", 25, int, settingsChanged, SEEDS, refetch="similar")
@@ -419,7 +420,7 @@ class OnlineDiscover(QObject):
             try:
                 found = core.releases_since(mbid, since)
             except (OSError, ValueError) as exc:
-                logger.info("Couldn't look up %s's releases: %s", name, exc)
+                logger.info("Couldn't look up an artist's releases: %s", exc)  # (no names: the log goes into debug info)
                 continue
             core.store_releases(db, key, found, now)
             if first:  # (an artist looked at for the first time: their past year isn't news)
@@ -445,7 +446,7 @@ class OnlineDiscover(QObject):
             try:
                 mbid = core.artist_id(name)
             except (OSError, ValueError) as exc:
-                logger.info("Couldn't look up %s on MusicBrainz: %s", name, exc)
+                logger.info("Couldn't look up an artist on MusicBrainz: %s", exc)
                 return ""
             core.remember_mbid(db, key, name, mbid, now)
         return mbid
@@ -470,7 +471,7 @@ class OnlineDiscover(QObject):
                 else:
                     names = core.similar_lastfm(name, o["lastfm"])
             except (OSError, ValueError) as exc:
-                logger.info("Couldn't look up artists like %s: %s", name, exc)
+                logger.info("Couldn't look up similar artists: %s", exc)
                 continue
             core.store_similar(db, key, source, names, now)
         # pictures only for the artists the shelf shows (each artist's list has dozens)
@@ -495,7 +496,7 @@ class OnlineDiscover(QObject):
             try:
                 found = core.deezer_artist(s["name"])
             except (OSError, ValueError) as exc:
-                logger.info("Couldn't look up a picture of %s: %s", s["name"], exc)
+                logger.info("Couldn't look up an artist's picture: %s", exc)
                 continue
             core.remember_picture(db, s["key"], (found or {}).get("picture", ""), now)
 
@@ -515,7 +516,7 @@ class OnlineDiscover(QObject):
                 self._progress.emit("badkey", 0, 0)
                 return
             except (OSError, ValueError) as exc:
-                logger.info("Couldn't look up %s's concerts: %s", name, exc)
+                logger.info("Couldn't look up an artist's concerts: %s", exc)
                 continue
             gigs.store(db, key, o["place"], found, now)
             time.sleep(TICKETMASTER_GAP_S)
@@ -654,7 +655,7 @@ class OnlineDiscover(QObject):
             try:
                 self._preview_ready.emit((artist, core.preview(artist, source)))
             except (OSError, ValueError) as exc:
-                logger.info("Couldn't find a preview of %s: %s", artist, exc)
+                logger.info("Couldn't find a preview: %s", exc)
                 self._preview_ready.emit((artist, None))
         self._jobs.put(("quiet", work))
 

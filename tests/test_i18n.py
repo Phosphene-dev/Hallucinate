@@ -72,13 +72,19 @@ def test_english_plurals_and_french(translations):
     assert describe({"rules": [{"field": "liked", "op": "is_true", "value": True}], "match": "all", "sort": "random",
                      "limit": 0}) == "Aimé est oui · aléatoire"
     names = [entry["name"] for entry in translations.languages]
-    assert "Français" in names and "English" in names
+    assert "Français" in names and "English" in names and "Español" in names
+
+    translations.setLanguage("es")  # Spanish: 0 is plural, as in English
+    assert translate("Player", "Playback error") == "Error de reproducción"
+    assert translate("Selection", "%n song(s)", None, 1) == "1 canción"
+    assert translate("Selection", "%n song(s)", None, 0) == "0 canciones"
 
     translations.setLanguage("en")
     assert translate("Player", "Playback error") == "Playback error"
 
 
-def test_every_french_translation_keeps_its_placeholders():
+@pytest.mark.parametrize("lang", ["fr", "es"])
+def test_every_translation_keeps_its_placeholders(lang):
     """A translation that drops %1 or %n shows the wrong thing (or nothing) where the value should be."""
     import re
     import xml.etree.ElementTree as ET
@@ -87,7 +93,7 @@ def test_every_french_translation_keeps_its_placeholders():
         return sorted(set(re.findall(r"%\d|%n", text or "")))
 
     bad = []
-    for msg in ET.parse(ROOT / "hallucinate" / "i18n" / "hallucinate_fr.ts").getroot().iter("message"):
+    for msg in ET.parse(ROOT / "hallucinate" / "i18n" / f"hallucinate_{lang}.ts").getroot().iter("message"):
         src, tr = msg.findtext("source"), msg.find("translation")
         if tr is None or tr.get("type") == "unfinished":
             continue
@@ -112,6 +118,10 @@ def test_the_web_catalogue():
     assert fr["strings"]["Flat"] == "Plat"  # the equaliser's presets (context Equalizer)
     assert fr["strings"]["%n song(s)"] == ["%n morceau", "%n morceaux"]
     assert {"code": "fr", "name": "Français"} in fr["languages"]
+    es = json.loads(web_catalog_json("es"))
+    assert es["lang"] == "es" and es["plural"] == "en"  # (Spanish counts as English does: only 1 is singular)
+    assert es["strings"]["Undo"] == "Deshacer" and es["strings"]["%n song(s)"] == ["%n canción", "%n canciones"]
+    assert {"code": "es", "name": "Español"} in es["languages"]
     for odd in ("", "en", "xx", "../../etc/passwd", "fr\x00"):
         assert json.loads(web_catalog_json(odd))["lang"] == "en"
         assert json.loads(web_catalog_json(odd))["strings"] == {}
@@ -199,5 +209,21 @@ def test_the_web_remote_follows_the_phones_language(remote, tmp_path):  # noqa: 
     assert "<b>Paramètres → Télécommande et web</b>" in seen["pairHtml"] and "<code>hallucinate --pair</code>" in seen["pairHtml"]
     assert seen["codeLabel"] == "Code d’association"
     assert seen["settings"] == "Paramètres"
-    assert seen["chips"] == ["Automatique", "English", "Français"]
+    assert seen["chips"] == ["Automatique", "English", "Español", "Français"]
     assert seen["settingsEn"] == "Settings" and seen["saved"] == "en"
+
+
+def test_english_counts_are_spelled_out():
+    """The English catalogue gives each "%n thing(s)" its real words ("2 mixes", not "2 mix(es)")."""
+    import re
+    import xml.etree.ElementTree as ET
+
+    bad = []
+    for msg in ET.parse(ROOT / "hallucinate" / "i18n" / "hallucinate_en.ts").getroot().iter("message"):
+        if msg.get("numerus") != "yes":
+            continue
+        tr = msg.find("translation")
+        forms = [f.text or "" for f in tr.findall("numerusform")]
+        if tr.get("type") == "unfinished" or any(re.search(r"\w\((s|es|ies)\)", f) for f in forms):
+            bad.append(f"{msg.findtext('source')!r} → {forms}")
+    assert not bad, bad

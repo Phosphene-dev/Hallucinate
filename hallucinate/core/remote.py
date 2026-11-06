@@ -12,7 +12,7 @@ import os
 import threading
 import urllib.parse
 
-SCHEMES = ("subsonic", "jellyfin")
+SCHEMES = ("subsonic", "jellyfin", "hallucinate")  # (hallucinate: another computer's shared library)
 # In SQL: a row that's a file on this computer (not a server's song). Local paths never start "word://".
 SQL_LOCAL = "path NOT GLOB '[a-z]*://*'"
 

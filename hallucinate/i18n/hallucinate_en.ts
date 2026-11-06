@@ -31,10 +31,10 @@
         </translation>
     </message>
     <message numerus="yes">
-        <source>Listening to your music: %1 of %n song(s)</source>
+        <source>Measuring how songs sound, for Sounds like this: %1 of %n song(s)</source>
         <translation>
-            <numerusform>Listening to your music: %1 of %n song</numerusform>
-            <numerusform>Listening to your music: %1 of %n songs</numerusform>
+            <numerusform>Measuring how songs sound, for Sounds like this: %1 of %n song</numerusform>
+            <numerusform>Measuring how songs sound, for Sounds like this: %1 of %n songs</numerusform>
         </translation>
     </message>
     <message numerus="yes">
@@ -1032,8 +1032,8 @@
     <message numerus="yes">
         <source>%n mix(es)</source>
         <translation>
-            <numerusform>%n mix(es)</numerusform>
-            <numerusform>%n mix(es)</numerusform>
+            <numerusform>%n mix</numerusform>
+            <numerusform>%n mixes</numerusform>
         </translation>
     </message>
     <message numerus="yes">

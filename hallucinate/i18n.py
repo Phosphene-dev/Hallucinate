@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 
 # The languages offered, by their own name (a French speaker looks for "Français", not "French"). "pseudo" is for
 # development: every string stretched and accented, to find text that isn't translated or doesn't fit.
-LANGUAGES = [("en", "English"), ("fr", "Français")]
+LANGUAGES = [("en", "English"), ("es", "Español"), ("fr", "Français")]
 PSEUDO = "pseudo"
 
 
@@ -187,5 +187,5 @@ def web_catalog_json(code):
 
 def plural_rule(code):
     """Which plural form a count takes, for the web remote (Qt does this itself in the app): "fr" counts 0 and 1
-    as one; English only 1."""
+    as one; English (and Spanish) only 1."""
     return "fr" if code == "fr" else "en"

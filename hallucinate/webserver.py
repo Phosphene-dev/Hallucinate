@@ -125,6 +125,12 @@ class Devices:
                     return dict(d)
         return None
 
+    def secret(self, device_id):
+        """What a device's song links are signed with (the hash of its key), or None."""
+        with self._lock:
+            d = next((d for d in self._devices if d["id"] == device_id), None)
+        return d["hash"] if d else None
+
     def remove(self, device_id):
         with self._lock:
             before = len(self._devices)
@@ -387,6 +393,8 @@ class _Handler(ServesLinks, BaseHTTPRequestHandler):
                               cache="no-cache")
         if path.startswith("/h/"):  # a song another computer is streaming after a handoff (see handoff.py)
             return self._handoff_song(path)
+        if path.startswith("/lib/s/"):  # a shared song another computer plays: its link is signed (core/peerlib.py)
+            return self._lib_song(path)
         if path == "/api/hello":  # whether this browser is paired yet (nothing else)
             return self._send(HTTPStatus.OK, {"app": "Hallucinate", "paired": self._device() is not None})
         device = self._device()
@@ -405,7 +413,58 @@ class _Handler(ServesLinks, BaseHTTPRequestHandler):
                 self.close_connection = True
         if path.startswith("/art/"):
             return self._art(urllib.parse.unquote(path[5:]), urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query))
+        if path.startswith("/lib/"):  # this library, shared with paired computers (if that's switched on)
+            return self._lib(path, urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query), device)
         return self._error(HTTPStatus.NOT_FOUND, QT_TRANSLATE_NOOP("Api", "Not found"))
+
+    # --- the library, shared with paired computers (core/peerlib.py) -------------------------------------------
+    def _lib(self, path, query, device):
+        from .core import peerlib
+
+        owner = self.owner
+        if not owner.share_library:
+            return self._error(HTTPStatus.FORBIDDEN, QT_TRANSLATE_NOOP("Api", "Sharing the library is off on that computer"))
+
+        def number(name, default):
+            try:
+                return int((query.get(name) or [default])[0])
+            except ValueError:
+                return default
+        if path == "/lib/hello":
+            total = owner.run(lambda: peerlib.listing(owner.api._db, 0, 1)["total"])
+            return self._send(HTTPStatus.OK, {"app": "Hallucinate", "name": owner.share_name, "device": device["id"],
+                                              "songs": total})
+        if path == "/lib/songs":
+            page = owner.run(lambda: peerlib.listing(owner.api._db, number("offset", 0), number("limit", peerlib.PAGE)))
+            return self._send(HTTPStatus.OK, page)
+        if path.startswith("/lib/cover/"):
+            cover = urllib.parse.unquote(path[len("/lib/cover/"):])[:40]
+            album_key = owner.run(lambda: owner.lib_index.album(owner.api._db, cover))
+            if not album_key:
+                return self._error(HTTPStatus.NOT_FOUND, QT_TRANSLATE_NOOP("Api", "No cover"))
+            return self._art(album_key, {"s": ["512"]})
+        return self._error(HTTPStatus.NOT_FOUND, QT_TRANSLATE_NOOP("Api", "Not found"))
+
+    def _lib_song(self, path):
+        import re
+
+        from .core import peerlib
+        from .core.cast.mediaserver import Link, content_type
+
+        owner = self.owner
+        m = re.fullmatch(r"/lib/s/([0-9a-f]{6,40})/([0-9a-f]{24})", path)
+        query = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        secret = owner.devices.secret(m.group(1)) if m and owner.share_library else None
+        if not secret or not peerlib.check(secret, m.group(1), m.group(2), (query.get("e") or [""])[0],
+                                           (query.get("s") or [""])[0]):
+            return self._error(HTTPStatus.NOT_FOUND, QT_TRANSLATE_NOOP("Api", "Not found"))
+        file = owner.run(lambda: owner.lib_index.path(owner.api._db, m.group(2)))
+        if not file:
+            return self._error(HTTPStatus.NOT_FOUND, QT_TRANSLATE_NOOP("Api", "Not found"))
+        try:
+            return self.serve_link(Link(self.client_address[0], content_type(file), path=file), self.command == "HEAD")
+        finally:
+            self.close_connection = True
 
     def do_POST(self):  # noqa: N802
         if not self._host_ok():
@@ -562,6 +621,9 @@ class WebRemote(QObject):
         self._streams_lock = threading.Lock()
         self._player = player
         self.handoff = None  # taking what another computer was playing (set by the app; see handoff.py)
+        from .core import peerlib
+
+        self.lib_index = peerlib.Index()  # shared songs' and covers' ids back to the library
         self._publish_timer = QTimer(self)
         self._publish_timer.setSingleShot(True)
         self._publish_timer.setInterval(120)  # changes that come together go out as one
@@ -601,6 +663,23 @@ class WebRemote(QObject):
         except (TypeError, ValueError):
             p = DEFAULT_PORT
         return p if 1024 <= p <= 65535 else DEFAULT_PORT
+
+    @property
+    def share_library(self):
+        """Paired computers can list and play this library (off unless chosen)."""
+        return self._settings.value("remote/shareLibrary", False, bool)
+
+    def set_share_library(self, on):
+        self._settings.setValue("remote/shareLibrary", bool(on))
+        self.changed.emit()
+
+    @property
+    def share_name(self):
+        """What other computers call this one (as handoff does)."""
+        try:
+            return ((self.handoff.my_name() if self.handoff is not None else "") or socket.gethostname())[:60]
+        except Exception:  # noqa: BLE001
+            return socket.gethostname()[:60]
 
     def configure(self, enabled=None, lan=None, port=None):
         if enabled is not None:
@@ -704,6 +783,14 @@ class WebRemote(QObject):
     @Slot(bool)
     def setNetwork(self, on):
         self.configure(lan=on)
+
+    @Property(bool, notify=changed)
+    def sharing(self):
+        return self.share_library
+
+    @Slot(bool)
+    def setSharing(self, on):
+        self.set_share_library(on)
 
     @Slot(int)
     def setPortNumber(self, port):

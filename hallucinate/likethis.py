@@ -121,7 +121,8 @@ class SoundsLike(QObject):
         self._settings.setValue(f"soundsLike/{key}", value)
         self.settingsChanged.emit()
 
-    def _prop(key, default, kind, notify, choices=None):  # noqa: N805
+    def _prop(key, default, kind, notify, choices=None, slot=""):  # noqa: N805
+        # (the setter is named for Qt by hand: a Slot takes its function's name, and every one here is set_)
         def get(self):
             return self._get(key, default, kind, choices)
 
@@ -130,7 +131,7 @@ class SoundsLike(QObject):
             if (choices is None or value in choices) and value != get(self):
                 self._set(key, value)
                 self._consider()
-        return Property(kind if kind is not str else str, get, notify=notify), Slot(kind)(set_)
+        return Property(kind if kind is not str else str, get, notify=notify), Slot(kind, name=slot or "set" + key[0].upper() + key[1:])(set_)
 
     when, setWhen = _prop("when", "idle", str, settingsChanged, WHEN)
     notOnBattery, setNotOnBattery = _prop("notOnBattery", True, bool, settingsChanged)
@@ -141,7 +142,7 @@ class SoundsLike(QObject):
     keys, setKeys = _prop("keys", False, bool, settingsChanged)
     sameArtist, setSameArtist = _prop("sameArtist", True, bool, settingsChanged)
     perArtist, setPerArtist = _prop("perArtist", 3, int, settingsChanged, PER_ARTIST)
-    radioPicks, setRadioPicks = _prop("radio", "together", str, settingsChanged, RADIO)
+    radioPicks, setRadioPicks = _prop("radio", "together", str, settingsChanged, RADIO, slot="setRadioPicks")
 
     @Property(bool, notify=settingsChanged)
     def enabled(self):

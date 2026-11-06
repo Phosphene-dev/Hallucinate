@@ -3,6 +3,49 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.2.0] - 2026-11-06
+
+### Added
+- Hallucinate in Spanish: choose Español in Settings → Appearance → Language (or let it follow the system). The
+  phone remote follows the phone's language as before.
+- Libraries shared between your computers: switch on Paired computers can play my library (Settings → Remote &
+  web) on one, and the other adds it in Settings → Music servers. Its songs join the library like a music
+  server's: albums, artists, search, playlists, and they play from the first computer over the local network.
+  Nothing is sent but titles, artists and the like (never a path), only paired computers can ask, a song's link
+  is signed and works for a few hours, and nothing on the sharing computer can be changed from the other.
+- Play on several speakers together: AirPlay speakers and Snapcast rooms, in any mix, play the same music in step
+  (cast menu → Play on several together…, the phone remote's Play on, or `hallucinate cmd cast Kitchen + Bedroom`).
+  AirPlay speakers start at the same moment and stay together; Snapcast rooms are held back to be heard with
+  them; rooms on the same Snapcast server share one stream. One volume moves them all, and a speaker that drops
+  out leaves the others playing. (Chromecasts and DLNA devices fetch songs by themselves, so they can't be kept
+  in step and aren't offered.)
+- Songs crossfade on AirPlay speakers and Snapcast rooms too, by the crossfade setting (and, as here, not
+  between songs of the same album unless that's chosen).
+- When Hallucinate quit while playing on a device, it offers that device again at the next start ("Play on
+  Kitchen again?"), once it's found (Settings → Casting can switch the offer off).
+- The terminal version and `hallucinate cmd cast` can choose where the music plays: `c` (or view 7) in the
+  terminal, `hallucinate cmd cast Kitchen` and `hallucinate cmd cast here`; `status` says where it's playing.
+
+### Changed
+- AirPlay speakers that can't be played to (they need a password, or only take Apple's encrypted audio) are
+  listed greyed out with the reason, instead of not at all.
+- The background measuring for Sounds like this says so ("Measuring how songs sound…"), instead of
+  "Listening to your music".
+- Copy debug info says whether casting is on and to what kind of device (never its name).
+
+### Fixed
+- Choices in Settings → Discover (forgotten after, daily mixes and their size, songs you haven't played, the
+  online shelves' options) and in Sounds like this snapped back to what they were: they were never saved.
+  They're kept now. "Daily mixes" also reads "2 mixes" in English, not "2 mix(es)".
+- When another device starts playing to an AirPlay speaker, Hallucinate notices at once and says so, instead of
+  carrying on unheard for up to 15 seconds.
+- When a Snapcast room is switched to something else in Snapcast's own app, Hallucinate stops casting there
+  and says so (and leaves the room on what was chosen).
+- AirPlay no longer checks in with the speaker while it plays (a slow answer could make the sound skip).
+- The log (and so Copy debug info) no longer names the artists looked up online.
+- The welcome screen pointed to a Settings section that's been renamed; it names Online & privacy and Scrobbling
+  & sharing now. The tag editor's "mixed" (a field that differs between the songs being edited) is translated.
+
 ## [2.1.0] - 2026-11-06
 
 ### Added

@@ -95,6 +95,13 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="2.2.0" date="2026-11-06">
+      <description>
+        <p>Play on several speakers together: AirPlay speakers and Snapcast rooms, in any mix, play the same music in step, with one volume for all.</p>
+        <p>Libraries shared between your computers: a paired computer's songs join your library and play from it over your home network.</p>
+        <p>Hallucinate in Spanish, crossfade on AirPlay and Snapcast, an offer to play on the last device again, and casting from the terminal.</p>
+      </description>
+    </release>
     <release version="2.1.0" date="2026-11-06">
       <description>
         <p>Play on AirPlay speakers (AirPort Express, shairport-sync, and speakers, receivers and TVs with AirPlay) and in the rooms of a Snapcast server, lossless and without gaps between songs, alongside Chromecast and DLNA.</p>

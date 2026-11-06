@@ -74,6 +74,25 @@
 - [ ] Handoff with a typed address (on a network that blocks broadcasts), a wrong code (says so), Forget in
       Settings → Remote & web (needs pairing again), and with the firewall on (firewalld: the remote's port).
 
+## Release testing for 2.2.0
+
+- [ ] Two AirPlay speakers (or shairport-sync on two machines) → cast menu → Play on several together: both play in
+      step (stand between them: no echo). Pause, seek, next: they stay together. The volume moves both.
+- [ ] An AirPlay speaker with a Snapcast room: heard together, close enough not to notice in different rooms.
+- [ ] Switch one speaker off while the group plays: a message says it dropped out, the other plays on.
+- [ ] Quit while casting to one device, start again: "Play on … again?" appears once it's found; Play there works.
+- [ ] Crossfade set to a few seconds: songs from different albums crossfade on an AirPlay speaker; an album plays
+      gapless.
+- [ ] `hallucinate cmd cast`, `cast Kitchen`, `cast here`; the terminal version's Play on view (c).
+- [ ] Two computers: pair them (cast button → Hand over to another computer), switch on Paired computers can play
+      my library on one; on the other, Settings → Music servers → Add …'s library. Its songs appear (albums,
+      artists, covers) and play; switching sharing off makes them unavailable; Remove takes them away.
+- [ ] Settings → Discover and Sounds like this: change every choice, leave Settings and come back, restart: each
+      stays as chosen.
+- [ ] Settings → Appearance → Language → Español (a Spanish speaker, ideally): every page reads naturally, nothing
+      spills out of its button or line; counts read right (« 1 canción », « 2 canciones », « 0 canciones »),
+      dates are Spanish (lunes, 3 de marzo de 2025). The phone remote on a phone set to Spanish opens in Spanish.
+
 ## Release testing for 2.1.0
 
 - [ ] Snapcast (a snapserver with a snapclient or two, e.g. on a Raspberry Pi): the cast button lists each room
