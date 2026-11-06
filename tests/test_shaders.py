@@ -20,7 +20,7 @@ def test_every_shader_is_compiled_and_packaged():
     for source in SOURCES:
         assert (ROOT / "hallucinate" / "qml" / "shaders" / (source.name + ".qsb")).stat().st_size > 1000
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    assert '"qml/shaders/*"' in pyproject
+    assert '"hallucinate.qml.shaders"' in pyproject and '"hallucinate.qml.shaders" = ["*"]' in pyproject
 
 
 @pytest.mark.skipif(not (shutil.which("pyside6-qsb") or shutil.which("qsb")), reason="needs pyside6-qsb")

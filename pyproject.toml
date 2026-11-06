@@ -42,10 +42,22 @@ hallucinate = "hallucinate.app:main"
 musicplayer = "hallucinate.app:main"
 
 [tool.setuptools]
-packages = ["hallucinate", "hallucinate.core", "hallucinate.core.cast", "musicplayer"]
+# The folders of QML, pictures, fonts, themes and the web remote are listed as packages of their own: newer
+# setuptools warns about folders it could import but wasn't told of, and python-appimage (the AppImage's
+# builder) takes any warning as a failed build.
+packages = ["hallucinate", "hallucinate.core", "hallucinate.core.cast", "hallucinate.qml", "hallucinate.qml.shaders",
+            "hallucinate.qml.HallucinateStyle", "hallucinate.assets", "hallucinate.assets.fonts", "hallucinate.themes",
+            "hallucinate.web", "hallucinate.i18n", "musicplayer"]
 
 [tool.setuptools.package-data]
-hallucinate = ["qml/*", "qml/shaders/*", "qml/HallucinateStyle/*", "assets/*", "assets/fonts/*", "themes/*.json", "web/*", "i18n/*.qm", "i18n/*.ts"]
+"hallucinate.i18n" = ["*.qm", "*.ts"]
+"hallucinate.qml" = ["*"]
+"hallucinate.qml.shaders" = ["*"]
+"hallucinate.qml.HallucinateStyle" = ["*"]
+"hallucinate.assets" = ["*"]
+"hallucinate.assets.fonts" = ["*"]
+"hallucinate.themes" = ["*.json"]
+"hallucinate.web" = ["*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

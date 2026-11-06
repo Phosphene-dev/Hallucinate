@@ -14,6 +14,11 @@ on:
         type: boolean
         required: false
         default: false
+      replace:
+        description: "Replace this version's release if it exists already (its tag and release are deleted first). Only for a release that came out broken or incomplete."
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: write
@@ -38,13 +43,21 @@ jobs:
       - name: Check the version and create the tag and release
         env:
           VERSION: ${{ inputs.version }}
+          REPLACE: ${{ inputs.replace }}
           GH_TOKEN: ${{ github.token }}
         run: |
           [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){2,3}$ ]] || { echo "::error::version must look like 1.2.3 or 1.2.3.4"; exit 1; }
           grep -qx "version = \"$VERSION\"" pyproject.toml || { echo "::error::pyproject.toml is not at $VERSION"; exit 1; }
           grep -qx "__version__ = \"$VERSION\"" hallucinate/__init__.py || { echo "::error::hallucinate/__init__.py is not at $VERSION"; exit 1; }
           if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
-            echo "::error::$TAG already exists"; exit 1
+            if [ "$REPLACE" != "true" ]; then
+              echo "::error::$TAG already exists (run again with replace to remake it)"; exit 1
+            fi
+            echo "::warning::Replacing $TAG: its release and tag are deleted and made again from main"
+            gh release delete "$TAG" --cleanup-tag --yes || true
+            if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+              git push origin ":refs/tags/$TAG"
+            fi
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
