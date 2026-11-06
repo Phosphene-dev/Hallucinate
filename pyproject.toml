@@ -34,7 +34,7 @@ Issues = "https://github.com/Phosphene-dev/Hallucinate/issues"
 Changelog = "https://github.com/Phosphene-dev/Hallucinate/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-test = ["pytest>=9.1.1"]
+test = ["pytest>=9.2.0"]
 icons = ["Pillow>=9"]
 
 [project.gui-scripts]
