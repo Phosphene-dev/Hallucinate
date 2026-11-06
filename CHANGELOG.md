@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [2.0.0] - 2026-11-06
 
 ### Added
 - Discover: a page of music from your own library to find again, worked out on this computer from what you play

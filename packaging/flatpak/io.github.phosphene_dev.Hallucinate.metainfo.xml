@@ -95,6 +95,13 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="2.0.0" date="2026-11-06">
+      <description>
+        <p>Discover: daily mixes, forgotten favourites, deep cuts, albums never played and what you listened to on this day in other years, all worked out on your computer from your own library and listening.</p>
+        <p>Sounds like this: right-click a song for songs in your library that sound like it (tempo, key, energy and timbre), measured on your computer at low priority; radio can pick by sound too.</p>
+        <p>If you want them (off until switched on): new releases from the artists you play, artists like yours with short previews, and a wishlist kept on your computer. Covers no longer go missing at random during a scan.</p>
+      </description>
+    </release>
     <release version="1.13.0" date="2026-11-02">
       <description>
         <p>Bit-perfect playback: every song reaches the sound output exactly as it's stored, at its own rate (PipeWire on Linux, the output's own rate on macOS, exclusive mode on Windows).</p>

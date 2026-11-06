@@ -1,6 +1,6 @@
 # Manual QA checklist
 
-## Release testing for the next version
+## Release testing for 2.0.0
 
 - [ ] Discover with a library you've listened to for a while: daily mixes appear (titles make sense for your
       music, mostly songs you know plus a few you don't), the same all day, different tomorrow; play, shuffle,
