@@ -32,6 +32,9 @@ All notable changes to this project are documented here. Format based on
   2,000 songs, now a few milliseconds).
 
 ### Fixed
+- Covers: during or after a scan, random songs and albums could show no cover until you scrolled away and back.
+  A cover not there yet (the scan was still writing it) was tried for about 18 seconds and then given up on;
+  now it keeps looking, more slowly, and turns up by itself, and a cover that fails to load is tried again too.
 - Casting: after a few changes to the queue mid-song, the playing song's link could be dropped, so the device
   couldn't seek in it or pick it up again after a pause.
 - Casting: a next song that couldn't be got ready (a damaged file) was tried again every second while it stayed

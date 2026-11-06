@@ -21,24 +21,30 @@ Rectangle {
     property string tryTag: ""
     // covers that may have changed on disk (after a scan, or Library health → Repair covers) are asked for again
     readonly property int revision: typeof library !== "undefined" && library ? library.artRevision : 0
-    readonly property bool missing: img.status === Image.Ready && img.sourceSize.width <= 1
+    // (a load that failed outright counts too: it's tried again the same way)
+    readonly property bool missing: (img.status === Image.Ready && img.sourceSize.width <= 1) || img.status === Image.Error
     readonly property string resolved: sourceText.length === 0 ? ""
         : sourceText.indexOf("file:") === 0 ? "image://art/" + bucketPx + (attempt ? "~" + tryTag : "") + (revision ? "~r" + revision : "")
                                               + "/" + encodeURIComponent(sourceText)
         : sourceText
     onSourceTextChanged: { attempt = 0; retry.stop() }
-    onMissingChanged: if (missing && attempt < 6 && sourceText.indexOf("file:") === 0) retry.restart()
-    // the first try again comes quickly (it's usually the image cache's old placeholder), then further apart
+    onRevisionChanged: attempt = 0  // (covers were read again: a fresh set of quick tries)
+    onMissingChanged: if (missing && sourceText.indexOf("file:") === 0) retry.restart()
+    // The first try again comes quickly (it's usually the image cache's old placeholder), then further apart. It
+    // never gives up for good: a cover a scan writes a minute later still turns up, without scrolling away and
+    // back (a tester: random songs stayed blank until their row was made again). After the quick tries, a missing
+    // cover is looked for every 10 s, then 30 s: a cheap check while it's on screen.
     Timer {
         id: retry
-        interval: cover.attempt === 0 ? 250 : 1200 * cover.attempt
-        onTriggered: { cover.tryTag = cover.attempt + 1 + "-" + Date.now(); cover.attempt++ }
+        interval: cover.attempt === 0 ? 250 : cover.attempt < 6 ? 1200 * cover.attempt : cover.attempt < 12 ? 10000 : 30000
+        onTriggered: cover.again()
     }
+    function again() { tryTag = attempt + 1 + "-" + Date.now(); attempt++ }
     // a picture still loading after a long while (its request lost while rows came and went) is asked for again
     Timer {
-        interval: 6000
-        running: img.status === Image.Loading && cover.attempt < 6
-        onTriggered: { cover.tryTag = cover.attempt + 1 + "-" + Date.now(); cover.attempt++ }
+        interval: 10000
+        running: img.status === Image.Loading
+        onTriggered: cover.again()
     }
 
     Rectangle {

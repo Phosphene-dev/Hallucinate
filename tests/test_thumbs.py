@@ -97,3 +97,34 @@ def test_a_cover_tries_again_at_a_new_address(qapp):
     assert "~1-111" in second and "~2-222" in third
     from hallucinate.thumbs import ArtProvider
     assert ArtProvider.parse(third.split("image://art/")[1])[0] == 64
+
+
+def test_a_cover_written_late_still_turns_up(qapp, tmp_path):
+    """A tester's songs stayed blank, at random, until scrolled away and back: a cover that wasn't there yet
+    (a scan writing it) was tried six times in about 18 s, then given up for good. Now it keeps looking, more
+    slowly, and shows up when the file does; a load that fails outright is tried again too."""
+    import pathlib
+
+    from conftest import wait_for
+    from PySide6.QtCore import QUrl
+    from PySide6.QtQml import QQmlComponent, QQmlEngine
+
+    import hallucinate
+    from hallucinate.thumbs import ArtProvider
+
+    qml = pathlib.Path(hallucinate.__file__).parent / "qml"
+    engine = QQmlEngine()
+    engine.addImageProvider("art", ArtProvider(tmp_path / "cache"))
+    late = tmp_path / "late.jpg"
+    comp = QQmlComponent(engine)
+    comp.setData(('import QtQuick\nimport "."\nCover { width: 64; height: 64; source: "%s" }'
+                  % QUrl.fromLocalFile(str(late)).toString()).encode(), QUrl.fromLocalFile(str(qml / "CoverProbe.qml")))
+    cover = comp.create()
+    assert cover is not None, comp.errorString()
+    assert wait_for(lambda: cover.property("missing"), timeout=5)
+    cover.setProperty("attempt", 6)  # (the quick tries are spent, as they were when it gave up)
+    cover.setProperty("tryTag", "6-1")
+    assert wait_for(lambda: cover.property("missing"), timeout=5)
+    make_cover(late)
+    assert wait_for(lambda: not cover.property("missing") and cover.property("attempt") > 6, timeout=15)
+    cover.deleteLater()
