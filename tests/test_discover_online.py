@@ -255,3 +255,58 @@ def test_a_preview_pauses_the_music_and_carries_on_after(qapp, db, tmp_path, mon
         assert o.previewing == ""
     finally:
         o.shutdown()
+
+
+def test_news_is_only_whats_new_and_shown(qapp, db, tmp_path, monkeypatch, settings):
+    """An artist looked at for the first time brings no notification (their past year isn't news); later, only
+    new releases the shelf shows count (not a live album when live albums are off)."""
+    import datetime
+
+    from conftest import wait_for
+
+    from hallucinate.discoveronline import OnlineDiscover
+
+    today = datetime.date.today().isoformat()
+    found = {"Aurora": [release(1, "Old News", date=today)]}
+    monkeypatch.setattr(od, "artist_id", lambda name: RID.format(500 + len(name)))
+    by_id = {RID.format(500 + len(n)): n for n in ("Aurora", "Bloom")}
+    monkeypatch.setattr(od, "releases_since", lambda mbid, since: found.get(by_id[mbid], []))
+    monkeypatch.setattr(od, "fetch_image", lambda url, folder: "")
+    shell = FakeShell(discoverNewReleases=True)
+    o = OnlineDiscover(tmp_path / "lib.db", tmp_path, None, shell, None, autostart=False)
+    o.setNotifyNew(True)
+    try:
+        o.open()
+        assert wait_for(lambda: o.newReleases and o.busy == "", timeout=10)
+        assert shell.said == []  # (first look at these artists)
+        found["Aurora"] += [release(2, "Fresh", date=today), release(3, "Live One", extra=["Live"], date=today)]
+        o.refresh()
+        assert wait_for(lambda: len(o.newReleases) == 2 and o.busy == "", timeout=10)
+        assert len(shell.said) == 1 and "1 new release" in shell.said[0][1]
+    finally:
+        o.shutdown()
+
+
+def test_stop_drops_lookups_waiting_their_turn(qapp, db, tmp_path, monkeypatch, settings):
+    import threading
+
+    from conftest import wait_for
+
+    from hallucinate.discoveronline import OnlineDiscover
+
+    gate, asked = threading.Event(), []
+    monkeypatch.setattr(od, "artist_id", lambda name: gate.wait(5) and RID.format(1))
+    monkeypatch.setattr(od, "releases_since", lambda mbid, since: asked.append(mbid) or [])
+    monkeypatch.setattr(od, "similar_listenbrainz", lambda mbid: asked.append("similar") or [])
+    o = OnlineDiscover(tmp_path / "lib.db", tmp_path, None, FakeShell(discoverNewReleases=True, discoverSimilar=True),
+                       None, autostart=False)
+    try:
+        o.open()
+        o.open()  # (asked again while waiting: not queued twice)
+        assert wait_for(lambda: o.busy == "releases", timeout=5)
+        o.stop()
+        gate.set()
+        assert wait_for(lambda: o.busy == "", timeout=10)
+        assert "similar" not in asked and len(asked) <= 1
+    finally:
+        o.shutdown()

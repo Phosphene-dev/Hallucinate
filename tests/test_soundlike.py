@@ -334,3 +334,31 @@ def test_the_real_helper_listens(qapp, tmp_path):
         assert time.monotonic() - t0 < 30
     finally:
         analyser.shutdown()
+
+
+def test_a_helper_that_cant_decode_anything_doesnt_write_the_library_off(qapp, db, tmp_path, settings):
+    """If every song fails (the helper not starting, a drive gone), the songs aren't saved as "can't be measured":
+    it stops for the session after a run of failures and says so; one bad song among good ones is saved."""
+    from conftest import wait_for
+    from PySide6.QtCore import QTimer
+
+    from hallucinate.likethis import BROKEN_AFTER, SoundsLike
+
+    class Failing(FakeAnalyser):
+        def submit(self, path, kind, then, envelope=False, first=False, extra=None):
+            self.jobs.append((path, kind, extra))
+            QTimer.singleShot(0, lambda: then(None))
+
+    sl.forget(db)
+    analyser = Failing()
+    s = SoundsLike(tmp_path / "lib.db", None, FakeLib(), FakeShell(), analyser, FakeAnalyser(), battery=lambda: False,
+                   autostart=False)
+    said = []
+    s.message.connect(said.append)
+    try:
+        s._recount()
+        assert wait_for(lambda: s.waiting == "broken", 15), (s.waiting, len(analyser.jobs))
+        assert len(analyser.jobs) == BROKEN_AFTER and said and "next time" in said[0]
+        assert sl.counts(db)[0] == 0  # (nothing written off)
+    finally:
+        s.shutdown()

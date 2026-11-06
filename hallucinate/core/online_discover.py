@@ -174,15 +174,28 @@ def preview(artist, source="deezer"):
 
 
 # --- pictures ----------------------------------------------------------------------------------------------------
-def fetch_image(url, folder):
-    """Downloads a cover or artist picture (https, at most MAX_IMAGE, a JPEG, PNG or WebP) into `folder`, named
-    for its link; returns the file's path, or "" when it couldn't be had. Already there: not fetched again."""
+def _image_path(url, folder):
     import hashlib
 
+    return os.path.join(folder, hashlib.sha1(url.encode("utf-8")).hexdigest()[:24] + ".img")
+
+
+def cached_image(url, folder):
+    """The file fetch_image() kept for `url`, or "" (nothing is fetched here)."""
     url = _web(url)
     if not url:
         return ""
-    path = os.path.join(folder, hashlib.sha1(url.encode("utf-8")).hexdigest()[:24] + ".img")
+    path = _image_path(url, folder)
+    return path if os.path.exists(path) else ""
+
+
+def fetch_image(url, folder):
+    """Downloads a cover or artist picture (https, at most MAX_IMAGE, a JPEG, PNG or WebP) into `folder`, named
+    for its link; returns the file's path, or "" when it couldn't be had. Already there: not fetched again."""
+    url = _web(url)
+    if not url:
+        return ""
+    path = _image_path(url, folder)
     if os.path.exists(path):
         return path
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
@@ -257,22 +270,20 @@ def set_note(db, key, note):
 
 
 def tick_off(db, now):
-    """Marks wishes that are now in the library as got (an album by its artist and title, an artist by name);
-    returns those just ticked off."""
+    """Marks wishes that are now in the library as got (an album by its artist and title, loosely: "(Deluxe)" and
+    the like don't matter; an artist by name); returns those just ticked off. The library is read once."""
+    wanted = db.conn.execute("SELECT * FROM wishlist WHERE got IS NULL").fetchall()
+    if not wanted:
+        return []
+    albums = {}  # folded artist (album artist or song artist) -> album titles
+    for r in db.conn.execute("SELECT DISTINCT s_aa, s_artist, album FROM tracks"):
+        for k in {r["s_aa"], r["s_artist"]}:
+            if k:
+                albums.setdefault(k, set()).add(r["album"])
     found = []
-    for w in db.conn.execute("SELECT * FROM wishlist WHERE got IS NULL").fetchall():
-        if w["kind"] == "album":
-            rows = db.conn.execute("SELECT album, album_artist, artist FROM tracks WHERE s_album = ? OR s_album = ? LIMIT 50",
-                                   (fold(w["title"]), fold(w["title"]).strip())).fetchall()
-            hit = any(_same(r["album"], w["title"]) and (_same(r["album_artist"], w["artist"]) or _same(r["artist"], w["artist"]))
-                      for r in rows)
-            if not hit:  # (an edition's title can differ: "(Deluxe)", so compare loosely)
-                rows = db.conn.execute("SELECT album, album_artist, artist FROM tracks WHERE s_aa = ? OR s_artist = ? "
-                                       "GROUP BY album LIMIT 500", (fold(w["artist"]), fold(w["artist"]))).fetchall()
-                hit = any(_same(r["album"], w["title"]) for r in rows)
-        else:
-            hit = db.conn.execute("SELECT 1 FROM tracks WHERE s_aa = ? OR s_artist = ? LIMIT 1",
-                                  (fold(w["artist"]), fold(w["artist"]))).fetchone() is not None
+    for w in wanted:
+        theirs = albums.get(fold(w["artist"]).strip(), ())
+        hit = any(_same(a, w["title"]) for a in theirs) if w["kind"] == "album" else bool(theirs)
         if hit:
             db.conn.execute("UPDATE wishlist SET got = ? WHERE key = ?", (now, w["key"]))
             found.append(dict(w))

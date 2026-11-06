@@ -46,6 +46,7 @@ class OnlineDiscover(QObject):
     previewChanged = Signal()
     message = Signal(str)
     _found = Signal(object)  # {"releases": [...], "similar": [...]} read on the worker
+    _finished = Signal(str)  # a lookup ("releases", "similar") is over
     _wishes = Signal(object)
     _progress = Signal(str, int, int)
     _ticked = Signal(object)
@@ -60,10 +61,13 @@ class OnlineDiscover(QObject):
         self._releases, self._similar, self._wishlist = [], [], []
         self._busy, self._done, self._total = "", 0, 0
         self._stop = threading.Event()
+        self._generation = 0  # Stop moves it on: lookups asked for before then are dropped, not run
+        self._pending = []  # lookups asked for and not over yet (one of each at a time)
         self._closing = False
         self._wanted = False  # the Discover page has been opened: the shelves are kept up to date from then on
         self._jobs = queue.Queue()
         self._found.connect(self._on_found)
+        self._finished.connect(self._on_finished)
         self._wishes.connect(self._on_wishes)
         self._progress.connect(self._on_progress)
         self._ticked.connect(self._on_ticked)
@@ -153,8 +157,8 @@ class OnlineDiscover(QObject):
 
     @Property(str, notify=progressChanged)
     def busy(self):
-        """What's being looked up now: "releases", "similar" or ""."""
-        return self._busy
+        """What's being looked up now (or waiting its turn): "releases", "similar" or ""."""
+        return self._busy or (self._pending[0] if self._pending else "")
 
     @Property(int, notify=progressChanged)
     def done(self):
@@ -181,6 +185,8 @@ class OnlineDiscover(QObject):
     def _features_changed(self):
         if not any(self._on(f) for f in FEATURES):
             self.stop()
+        if not self._on("discoverSimilar"):
+            self.stopPreview()
         self._queue_read()
         self._check()
 
@@ -189,8 +195,17 @@ class OnlineDiscover(QObject):
             return
         self._read_opts = self._read_options()
         for feature, job in (("discoverNewReleases", "releases"), ("discoverSimilar", "similar")):
-            if self._on(feature):
-                self._jobs.put((job, {"force": bool(force), **self._job_options(job)}))
+            if self._on(feature) and job not in self._pending:  # (one at a time: visiting the page again adds none)
+                self._pending.append(job)
+                self._jobs.put((job, {"force": bool(force), "generation": self._generation, "read": self._read_opts,
+                                      **self._job_options(job)}))
+        self.progressChanged.emit()
+
+    @Slot(str)
+    def _on_finished(self, job):
+        if job in self._pending:
+            self._pending.remove(job)
+        self.progressChanged.emit()
 
     def _job_options(self, job):
         """What a lookup goes by, read here (settings aren't to be read from the worker)."""
@@ -201,8 +216,10 @@ class OnlineDiscover(QObject):
 
     @Slot()
     def stop(self):
-        """Stop looking things up (what's found so far stays)."""
-        self._stop.set()
+        """Stop looking things up (what's found so far stays): the lookup going now, and any waiting its turn."""
+        self._generation += 1
+        if self._busy or self._pending:
+            self._stop.set()
 
     def _read_options(self):
         kinds = [k for k, on in (("Album", self.albums), ("EP", self.eps), ("Single", self.singles)) if on]
@@ -217,9 +234,10 @@ class OnlineDiscover(QObject):
             job, options = self._jobs.get()
             if job is None:
                 break
-            if job == "read":
-                options = None
+            lookup = job in ("releases", "similar")
             try:
+                if lookup and options["generation"] != self._generation:
+                    continue  # (stopped before its turn came)
                 if db is None:
                     db = Database(self._db_path)
                 if job == "releases":
@@ -228,14 +246,19 @@ class OnlineDiscover(QObject):
                     self._look_up_similar(db, options)
                 elif job == "tick":
                     self._ticked.emit(core.tick_off(db, time.time()))
+                elif job == "quiet":
+                    options(db)  # (a preview's lookup: the shelves needn't be read again)
+                    continue
                 elif callable(job):
                     job(db)
                 self._read(db)
             except Exception:  # noqa: BLE001 - one bad answer mustn't stop the worker
                 logger.exception("Discover couldn't look that up")
             finally:
-                self._progress.emit("", 0, 0)
-                self._stop.clear()
+                if lookup:
+                    self._progress.emit("", 0, 0)
+                    self._stop.clear()
+                    self._finished.emit(job)
         if db is not None:
             db.close()
 
@@ -243,7 +266,7 @@ class OnlineDiscover(QObject):
         opts = self._read_opts
         releases = core.recent_releases(db, opts["since"], opts["kinds"], opts["live"], opts["compilations"]) \
             if opts["releases"] else []
-        similar = core.suggestions(db, core.top_artists(db, opts["seeds"]), opts["source"]) if opts["similar"] else []
+        similar = self._suggestions(db, opts) if opts["similar"] else []
         self._wishes.emit(core.wishes(db))  # (first: the shelves mark what's on it)
         self._found.emit({"releases": releases, "similar": similar})
 
@@ -254,16 +277,19 @@ class OnlineDiscover(QObject):
         self._read_opts = self._read_options()
         self._jobs.put(("read", None))
 
+    def _stopped(self, o):
+        return self._stop.is_set() or self._closing or net.is_offline() or o["generation"] != self._generation
+
     def _look_up_releases(self, db, o):
         artists = core.top_artists(db, o["follow"])
         now = time.time()
         due = [(k, n) for k, n in artists if o["force"] or now - core.releases_checked(db, k) > RELEASES_EVERY_S]
         since = (datetime.date.today() - datetime.timedelta(days=max(WINDOWS))).isoformat()
-        before = {r[0] for r in db.conn.execute("SELECT id FROM new_releases")}
         for i, (key, name) in enumerate(due):
-            if self._stop.is_set() or self._closing or net.is_offline():
+            if self._stopped(o):
                 break
             self._progress.emit("releases", i, len(due))
+            first = core.releases_checked(db, key) == 0
             mbid = self._mbid(db, key, name, now)
             if not mbid:
                 core.store_releases(db, key, [], now)  # (checked: not asked again until tomorrow)
@@ -274,16 +300,22 @@ class OnlineDiscover(QObject):
                 logger.info("Couldn't look up %s's releases: %s", name, exc)
                 continue
             core.store_releases(db, key, found, now)
-            for r in found:
-                if r["id"] not in before and not self._stop.is_set():
-                    path = core.fetch_image(core.cover_url(r["id"]), os.path.join(self._art_dir, "online"))
-                    if path:
-                        core.set_release_cover(db, r["id"], path)
-        fresh = db.conn.execute("SELECT COUNT(*) FROM new_releases WHERE seen = 0").fetchone()[0]
-        if fresh and before:  # (not the very first look: everything would be new)
-            self._notify_new(fresh)
+            if first:  # (an artist looked at for the first time: their past year isn't news)
+                core.mark_seen(db, [r["id"] for r in found])
+        # what the shelf shows: news (for the notification) and covers, only for those
+        r = o["read"]
+        shown = core.recent_releases(db, r["since"], r["kinds"], r["live"], r["compilations"])
+        fresh = [x for x in shown if not x["seen"]]
+        if fresh:
+            self._notify_new(len(fresh))
         db.conn.execute("UPDATE new_releases SET seen = 1")
         db.conn.commit()
+        folder = os.path.join(self._art_dir, "online")
+        for x in shown:
+            if not x["cover"] and not self._stopped(o):
+                path = core.fetch_image(core.cover_url(x["id"]), folder)
+                if path:
+                    core.set_release_cover(db, x["id"], path)
 
     def _mbid(self, db, key, name, now):
         mbid, looked = core.known_mbid(db, key)
@@ -304,7 +336,7 @@ class OnlineDiscover(QObject):
         now = time.time()
         due = [(k, n) for k, n in seeds if o["force"] or now - core.similar_fetched(db, k, source) > SIMILAR_EVERY_S]
         for i, (key, name) in enumerate(due):
-            if self._stop.is_set() or self._closing or net.is_offline():
+            if self._stopped(o):
                 break
             self._progress.emit("similar", i, len(due))
             try:
@@ -318,10 +350,20 @@ class OnlineDiscover(QObject):
             except (OSError, ValueError) as exc:
                 logger.info("Couldn't look up artists like %s: %s", name, exc)
                 continue
-            for s in names:
-                if s.get("picture"):
-                    s["picture"] = core.fetch_image(s["picture"], os.path.join(self._art_dir, "online"))
             core.store_similar(db, key, source, names, now)
+        # pictures only for the artists the shelf shows (each artist's list has dozens)
+        folder = os.path.join(self._art_dir, "online")
+        for s in core.suggestions(db, core.top_artists(db, o["seeds"]), source):
+            if s.get("picture") and not self._stopped(o):
+                core.fetch_image(s["picture"], folder)
+
+    def _suggestions(self, db, opts):
+        """The shelf's artists, with their pictures as files here (when they've been fetched)."""
+        folder = os.path.join(self._art_dir, "online")
+        out = core.suggestions(db, core.top_artists(db, opts["seeds"]), opts["source"])
+        for s in out:
+            s["picture"] = core.cached_image(s.get("picture", ""), folder)
+        return out
 
     def _notify_new(self, count):
         self._progress.emit("notify", count, 0)  # (said on the window's thread, where the setting is read)
@@ -445,7 +487,7 @@ class OnlineDiscover(QObject):
             except (OSError, ValueError) as exc:
                 logger.info("Couldn't find a preview of %s: %s", artist, exc)
                 self._preview_ready.emit((artist, None))
-        self._jobs.put((work, None))
+        self._jobs.put(("quiet", work))
 
     @Slot(object)
     def _on_preview(self, payload):

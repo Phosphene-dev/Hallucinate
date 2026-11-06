@@ -32,6 +32,7 @@ BATCH = 40  # songs asked for at a time
 SAVE_EVERY = 20
 RESUME_MS = 15_000  # after playback stops, wait this long before measuring again (a pause to skip isn't idle)
 ENOUGH = 30  # fewer songs measured than this: picks may not be close, and that's said
+BROKEN_AFTER = 12  # this many songs in a row not measured: it's the helper (or a missing drive), not the songs
 
 
 def on_battery():
@@ -86,6 +87,8 @@ class SoundsLike(QObject):
         self.index = core.Index()
         self._measured, self._total = -1, 0
         self._todo, self._results = [], []
+        self._failing = []  # songs not measured in a row: kept back until one is (see BROKEN_AFTER)
+        self._broken = False  # the helper didn't work: not tried again until the app is started again
         self._current = None
         self._fetching = False
         self._running = False
@@ -160,8 +163,8 @@ class SoundsLike(QObject):
 
     @Property(str, notify=changed)
     def waiting(self):
-        """Why it isn't measuring now: "" (it is, or it's all done), "off", "paused", "playing", "battery" or
-        "ask"."""
+        """Why it isn't measuring now: "" (it is, or it's all done), "off", "paused", "playing", "battery",
+        "ask" or "broken" (the helper didn't work this session)."""
         if self._running or (self._total and self._measured >= self._total):
             return ""
         return self._why_not() or ""
@@ -189,6 +192,8 @@ class SoundsLike(QObject):
     def _why_not(self):
         if not self.enabled:
             return "off"
+        if self._broken:
+            return "broken"
         if self.paused:
             return "paused"
         if self.when == "ask" and not self._asked:
@@ -268,7 +273,7 @@ class SoundsLike(QObject):
         if not self._todo:
             if not self._fetching:
                 self._fetching = True
-                skip = {r["path"] for r in self._results}
+                skip = {r["path"] for r in self._results + self._failing}
 
                 def work(db):
                     try:
@@ -298,9 +303,24 @@ class SoundsLike(QObject):
         if self._current is not row:
             return  # (stopped meanwhile: it's measured again later)
         self._current = None
-        got = None if result is None or result.get("empty") else result
-        self._results.append({"path": row["path"], "mtime": row["mtime"], "result": got})
-        self._measured = min(self._total, self._measured + 1)
+        entry = {"path": row["path"], "mtime": row["mtime"], "result": None}
+        if result is None:
+            # It couldn't be decoded: a damaged file, or the helper not working at all (or the drive gone). Those
+            # aren't saved as "can't be measured" until a song after them is measured, so a broken helper doesn't
+            # write the whole library off.
+            self._failing.append(entry)
+            if len(self._failing) >= BROKEN_AFTER:
+                logger.warning("Sounds like this: %d songs in a row couldn't be decoded; stopping", len(self._failing))
+                self._failing = []
+                self._broken = True
+                self._stop()
+                self.message.emit(translate("SoundsLike", "Hallucinate couldn't listen to your music just now (song after song failed to decode), so it has stopped for this session. It tries again next time it starts."))
+                return
+        else:
+            entry["result"] = None if result.get("empty") else result
+            self._results += self._failing + [entry]
+            self._measured = min(self._total, self._measured + 1 + len(self._failing))
+            self._failing = []
         if len(self._results) >= SAVE_EVERY:
             self._save()
         self.changed.emit()

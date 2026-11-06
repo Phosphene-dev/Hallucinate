@@ -877,7 +877,7 @@ Item {
                         labelWidth: 202  // (indented: lined up with the others, and inside narrow windows)
                         label: qsTr("Look for")
                         values: ["top50", "top200", "all"]
-                        labels: [qsTr("The 50 artists I play most"), qsTr("The 200 artists I play most"), qsTr("Every artist in my library")]
+                        labels: [qsTr("My 50 most played artists"), qsTr("My 200 most played"), qsTr("Every artist I have")]
                         current: onlineDiscover.follow
                         onPicked: function (v) { onlineDiscover.setFollow(v) }
                     }
@@ -931,7 +931,7 @@ Item {
                         labelWidth: 202  // (indented: lined up with the others, and inside narrow windows)
                         label: qsTr("Based on")
                         values: [10, 25, 50]
-                        labels: [qsTr("The 10 artists I play most"), qsTr("The 25 artists I play most"), qsTr("The 50 artists I play most")]
+                        labels: [qsTr("My 10 most played artists"), qsTr("My 25 most played"), qsTr("My 50 most played")]
                         current: onlineDiscover.seeds
                         onPicked: function (v) { onlineDiscover.setSeeds(v) }
                     }
@@ -1016,7 +1016,8 @@ Item {
                     wrapMode: Text.WordWrap
                     readonly property var why: ({
                         paused: qsTr("Paused."), playing: qsTr("Waiting until nothing is playing."),
-                        battery: qsTr("Waiting until this computer is plugged in."), ask: qsTr("Waiting until you ask."), off: "" })
+                        battery: qsTr("Waiting until this computer is plugged in."), ask: qsTr("Waiting until you ask."), off: "",
+                        broken: qsTr("Stopped: songs couldn't be decoded just now. It tries again when Hallucinate next starts.") })
                     text: soundsLike.measured < 0 ? qsTr("Counting your songs…")
                           : soundsLike.total === 0 ? qsTr("No songs on this computer to listen to yet.")
                           : soundsLike.measured >= soundsLike.total ? Theme.counted(qsTr("Listened to all %n song(s).", "", soundsLike.total), soundsLike.total)
@@ -1052,7 +1053,7 @@ Item {
                     objectName: "soundsLikeWhen"
                     label: qsTr("Listen to my music")
                     values: ["idle", "always", "ask"]
-                    labels: [qsTr("While nothing is playing"), qsTr("Any time (it goes after everything else)"), qsTr("Only when I ask")]
+                    labels: [qsTr("While nothing is playing"), qsTr("Any time, at low priority"), qsTr("Only when I ask")]
                     current: soundsLike.when
                     onPicked: function (v) { soundsLike.setWhen(v) }
                 }
@@ -1060,7 +1061,7 @@ Item {
                     objectName: "soundsLikeOrder"
                     label: qsTr("Play them as")
                     values: ["flow", "alike"]
-                    labels: [qsTr("A smooth flow, each into the next"), qsTr("The most alike first")]
+                    labels: [qsTr("A smooth flow"), qsTr("Most alike first")]
                     current: soundsLike.order
                     onPicked: function (v) { soundsLike.setOrder(v) }
                 }
@@ -1076,7 +1077,7 @@ Item {
                     objectName: "soundsLikeRadio"
                     label: qsTr("Radio mode picks songs")
                     values: ["together", "sound", "both"]
-                    labels: [qsTr("By what you play together, and tags"), qsTr("By how they sound"), qsTr("Both ways, taking turns")]
+                    labels: [qsTr("What you play together"), qsTr("How songs sound"), qsTr("Both, taking turns")]
                     current: soundsLike.radioPicks
                     onPicked: function (v) { soundsLike.setRadioPicks(v) }
                 }

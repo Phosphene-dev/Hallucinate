@@ -151,3 +151,29 @@ def test_playlist_folders_are_kept_renamed_and_backed_up(tmp_path):
     dst.rename_playlist_folder("Moods", "")  # Ungroup: the playlists stay, in no folder
     assert dst.playlist_folders() == ["Out"] and len(dst.playlists()) == 3
     dst.close()
+
+
+def test_the_wishlist_and_not_interested_are_backed_up(tmp_path):
+    from hallucinate.core import discover as dcore
+    from hallucinate.core import online_discover as od
+
+    src = make(tmp_path, "src")
+    od.wish(src, "album", "Björk", "Vespertine", note="on vinyl", link="https://musicbrainz.org/x", now=5)
+    od.wish(src, "artist", "Tricky", now=6)
+    dcore.dismiss(src, "artist", "coldplay", "Coldplay", now=7)
+    src.close()
+    data = backup.export(tmp_path / "src.db", None, tmp_path / "b.hallucinate-backup")
+    assert data
+    loaded = backup.read(tmp_path / "b.hallucinate-backup")
+    loaded["wishlist"].append({"kind": "nonsense", "artist": "X"})
+    loaded["wishlist"].append({"kind": "album", "artist": "Y", "title": "Z", "link": "javascript:alert(1)"})
+    loaded["discover_dismissed"].append({"kind": "whatever", "key": "k"})
+    dst = make(tmp_path, "dst")
+    dst.close()
+    backup.restore(loaded, tmp_path / "dst.db", None)
+    dst = Database(tmp_path / "dst.db")
+    wishes = {(w["kind"], w["artist"], w["title"]): w for w in od.wishes(dst)}
+    assert set(wishes) == {("album", "Björk", "Vespertine"), ("artist", "Tricky", ""), ("album", "Y", "Z")}
+    assert wishes[("album", "Björk", "Vespertine")]["note"] == "on vinyl" and wishes[("album", "Y", "Z")]["link"] == ""
+    assert [(d["kind"], d["key"]) for d in dcore.dismissed(dst)] == [("artist", "coldplay")]
+    dst.close()

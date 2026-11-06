@@ -31,7 +31,8 @@ All notable changes to this project are documented here. Format based on
   interested, are left out. A quiet card on Discover offers them once.
 - A wishlist on Discover: add new releases and artists to it, keep a note, and look for them at the store you
   choose (Bandcamp, Qobuz, Apple Music, Amazon, Discogs, HDtracks, 7digital or the web). Wishes are ticked off
-  when they turn up in your library. Kept on your computer only.
+  when they turn up in your library. Kept on your computer only, and in backups (Settings → Library), along with
+  what you've marked Not interested.
 
 ### Changed
 - Home's Rediscover and On this day shelves are off unless you turn them on (Settings → Features → Home):

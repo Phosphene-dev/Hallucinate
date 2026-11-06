@@ -8123,6 +8123,30 @@
         <translation>Descendre %1</translation>
     </message>
     <message>
+        <source>My 50 most played artists</source>
+        <translation>Mes 50 artistes les plus écoutés</translation>
+    </message>
+    <message>
+        <source>My 200 most played</source>
+        <translation>Mes 200 plus écoutés</translation>
+    </message>
+    <message>
+        <source>Every artist I have</source>
+        <translation>Tous mes artistes</translation>
+    </message>
+    <message>
+        <source>My 10 most played artists</source>
+        <translation>Mes 10 artistes les plus écoutés</translation>
+    </message>
+    <message>
+        <source>My 25 most played</source>
+        <translation>Mes 25 plus écoutés</translation>
+    </message>
+    <message>
+        <source>My 50 most played</source>
+        <translation>Mes 50 plus écoutés</translation>
+    </message>
+    <message>
         <source>podcast episodes skip back forward seconds feeds check refresh download keep remove storage played speed next</source>
         <translation>podcast épisodes reculer avancer secondes flux vérifier actualiser télécharger garder supprimer stockage écouté vitesse suivant podcast episodes skip back forward seconds feeds check refresh download keep remove storage played speed next</translation>
     </message>
@@ -8457,18 +8481,6 @@
         <translation>Chercher pour</translation>
     </message>
     <message>
-        <source>The 50 artists I play most</source>
-        <translation>Les 50 artistes que j’écoute le plus</translation>
-    </message>
-    <message>
-        <source>The 200 artists I play most</source>
-        <translation>Les 200 artistes que j’écoute le plus</translation>
-    </message>
-    <message>
-        <source>Every artist in my library</source>
-        <translation>Tous les artistes de ma bibliothèque</translation>
-    </message>
-    <message>
         <source>Out in the last</source>
         <translation>Sortis au cours du dernier</translation>
     </message>
@@ -8533,14 +8545,6 @@
         <translation>D’après</translation>
     </message>
     <message>
-        <source>The 10 artists I play most</source>
-        <translation>Les 10 artistes que j’écoute le plus</translation>
-    </message>
-    <message>
-        <source>The 25 artists I play most</source>
-        <translation>Les 25 artistes que j’écoute le plus</translation>
-    </message>
-    <message>
         <source>Previews</source>
         <translation>Extraits</translation>
     </message>
@@ -8579,6 +8583,34 @@
     <message>
         <source>Forgotten: it&apos;s looked up again when the shelves are next shown</source>
         <translation>Oublié : la recherche reprendra la prochaine fois que les étagères s’afficheront</translation>
+    </message>
+    <message>
+        <source>Stopped: songs couldn&apos;t be decoded just now. It tries again when Hallucinate next starts.</source>
+        <translation>Arrêté : les morceaux n’ont pas pu être décodés. Nouvel essai au prochain démarrage d’Hallucinate.</translation>
+    </message>
+    <message>
+        <source>Any time, at low priority</source>
+        <translation>À tout moment, en priorité basse</translation>
+    </message>
+    <message>
+        <source>A smooth flow</source>
+        <translation>Un enchaînement fluide</translation>
+    </message>
+    <message>
+        <source>Most alike first</source>
+        <translation>Les plus proches d’abord</translation>
+    </message>
+    <message>
+        <source>What you play together</source>
+        <translation>Ce que vous écoutez ensemble</translation>
+    </message>
+    <message>
+        <source>How songs sound</source>
+        <translation>Le son des morceaux</translation>
+    </message>
+    <message>
+        <source>Both, taking turns</source>
+        <translation>Les deux, en alternance</translation>
     </message>
     <message>
         <source>Not interested</source>
@@ -9255,20 +9287,8 @@
         <translation>Quand rien ne joue</translation>
     </message>
     <message>
-        <source>Any time (it goes after everything else)</source>
-        <translation>À tout moment (après tout le reste)</translation>
-    </message>
-    <message>
         <source>Play them as</source>
         <translation>Les jouer</translation>
-    </message>
-    <message>
-        <source>A smooth flow, each into the next</source>
-        <translation>En enchaînement fluide, l’un dans l’autre</translation>
-    </message>
-    <message>
-        <source>The most alike first</source>
-        <translation>Les plus ressemblants d’abord</translation>
     </message>
     <message>
         <source>Songs each time</source>
@@ -9277,18 +9297,6 @@
     <message>
         <source>Radio mode picks songs</source>
         <translation>Le mode radio choisit les morceaux</translation>
-    </message>
-    <message>
-        <source>By what you play together, and tags</source>
-        <translation>Selon ce que vous écoutez ensemble, et les tags</translation>
-    </message>
-    <message>
-        <source>By how they sound</source>
-        <translation>Selon leur son</translation>
-    </message>
-    <message>
-        <source>Both ways, taking turns</source>
-        <translation>Des deux façons, en alternance</translation>
     </message>
     <message>
         <source>Tempo, keys, artists and listening</source>
@@ -10899,6 +10907,10 @@
 </context>
 <context>
     <name>SoundsLike</name>
+    <message>
+        <source>Hallucinate couldn&apos;t listen to your music just now (song after song failed to decode), so it has stopped for this session. It tries again next time it starts.</source>
+        <translation>Hallucinate n’a pas pu écouter votre musique (les morceaux n’ont pas pu être décodés les uns après les autres) : l’écoute est arrêtée pour cette session. Nouvel essai au prochain démarrage.</translation>
+    </message>
     <message>
         <source>Only songs on this computer can be matched by how they sound.</source>
         <translation>Seuls les morceaux de cet ordinateur peuvent être comparés par leur son.</translation>

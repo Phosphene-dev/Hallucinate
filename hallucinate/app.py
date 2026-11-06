@@ -312,6 +312,8 @@ def main(argv=None) -> int:
         if offline[0]:
             podcasts.stopNetwork()
             stations.stopNetwork()
+            online_discover.stopPreview()
+            online_discover.stop()
             server_copies.stopNetwork()
             path = str(player.current.get("path", "")) if player.hasTrack else ""
             # a stream, not a file here (a server song kept on this computer plays on)
