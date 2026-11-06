@@ -95,6 +95,13 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="2.1.0" date="2026-11-06">
+      <description>
+        <p>Play on AirPlay speakers (AirPort Express, shairport-sync, and speakers, receivers and TVs with AirPlay) and in the rooms of a Snapcast server, lossless and without gaps between songs, alongside Chromecast and DLNA.</p>
+        <p>Concerts near you (off until switched on): upcoming shows by the artists you play, near the town you type in, from Ticketmaster with a free key of your own.</p>
+        <p>Artists like yours can show pictures from Deezer whichever source suggests them, and play or pause pressed while a cast song gets ready is no longer forgotten.</p>
+      </description>
+    </release>
     <release version="2.0.0" date="2026-11-06">
       <description>
         <p>Discover: daily mixes, forgotten favourites, deep cuts, albums never played and what you listened to on this day in other years, all worked out on your computer from your own library and listening.</p>

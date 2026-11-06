@@ -315,8 +315,8 @@ def test_stop_drops_lookups_waiting_their_turn(qapp, db, tmp_path, monkeypatch, 
 def test_deezer_pictures_for_any_source(qapp, db, tmp_path, monkeypatch, settings):
     """Off unless chosen: artists like yours from ListenBrainz get their pictures from Deezer (asked once, by
     name; one Deezer doesn't know is asked about again only after a month)."""
-    from PySide6.QtCore import QSettings
     from conftest import wait_for
+    from PySide6.QtCore import QSettings
 
     from hallucinate.discoveronline import OnlineDiscover
 

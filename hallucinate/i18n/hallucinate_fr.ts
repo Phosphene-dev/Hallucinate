@@ -12777,6 +12777,18 @@
 <context>
     <name>WhatsNew</name>
     <message>
+        <source>Play on AirPlay speakers and Snapcast rooms: they&apos;re in the cast button beside the volume.</source>
+        <translation>Lisez sur des enceintes AirPlay et dans des pièces Snapcast : elles sont dans le bouton de diffusion à côté du volume.</translation>
+    </message>
+    <message>
+        <source>Concerts near you by the artists you play, on Discover (Settings → Discover; off until chosen).</source>
+        <translation>Les concerts près de chez vous des artistes que vous écoutez, dans Découvrir (Paramètres → Découvrir ; désactivé par défaut).</translation>
+    </message>
+    <message>
+        <source>Artists like yours can show their pictures from Deezer, whichever source suggests them.</source>
+        <translation>Les artistes proches des vôtres peuvent afficher leur photo depuis Deezer, quelle que soit la source qui les suggère.</translation>
+    </message>
+    <message>
         <source>Discover: daily mixes, forgotten favourites, deep cuts and what you played on this day, all from your own library.</source>
         <translation>Découvrir : mix du jour, favoris oubliés, pépites et ce que vous écoutiez ce jour-là, tout depuis votre bibliothèque.</translation>
     </message>

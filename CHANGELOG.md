@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [2.1.0] - 2026-11-06
 
 ### Added
 - Snapcast: a Snapcast server's rooms appear with the other cast devices, found on the network by themselves, or
