@@ -20,6 +20,13 @@ All notable changes to this project are documented here. Format based on
   volume slider sets the speaker's own volume (remembered for each speaker, half way the first time). Speakers
   that need a password or AirPlay 2 pairing (recent Apple TVs and HomePods, when set to) say so instead of
   playing. Songs on this computer play there; radio and music servers' songs are skipped with a message.
+- Concerts near you, on Discover (off until switched on in Settings → Discover): upcoming shows by the artists
+  you play, within the distance you choose of the town or city you type in, soonest first, with a link to the
+  tickets. The place is found on the map once with OpenStreetMap (only what you typed is sent); the shows come
+  from Ticketmaster with a free key of your own (kept in the system keyring), asked about each artist every few
+  days with only the artist's name and that point. A show only counts when the artist is among its performers;
+  cancelled and postponed ones say so; Not interested hides an artist's shows. Offline mode asks nothing.
+- Discover: changing a setting of one online shelf asks again only for that shelf.
 
 ### Fixed
 - Pressing play or pause while a cast song was still being got ready (Hallucinate's sound, or a converted file) is

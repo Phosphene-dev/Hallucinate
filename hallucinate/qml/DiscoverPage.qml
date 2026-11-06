@@ -13,7 +13,7 @@ Item {
 
     readonly property bool online: typeof onlineDiscover !== "undefined"
     // the online shelves and the wishlist are switched on and off as features of their own (off unless chosen)
-    readonly property var ownSwitches: ["discoverNewReleases", "discoverSimilar", "discoverWishlist"]
+    readonly property var ownSwitches: ["discoverNewReleases", "discoverSimilar", "discoverConcerts", "discoverWishlist"]
     function shelfOn(name) { return ownSwitches.indexOf(name) >= 0 ? shell.features[name] === true : shell.features[name] !== false }
     function setShelf(name, on) { if (ownSwitches.indexOf(name) >= 0) shell.setFeature(name, on); else discover.setShelf(name, on) }
     function hideShelf(name, title) {
@@ -23,6 +23,7 @@ Item {
     }
     readonly property bool onlineShown: online && ((shelfOn("discoverNewReleases") && onlineDiscover.newReleases.length > 0)
                                                    || (shelfOn("discoverSimilar") && onlineDiscover.similarArtists.length > 0)
+                                                   || (shelfOn("discoverConcerts") && onlineDiscover.concerts.length > 0)
                                                    || (shelfOn("discoverWishlist") && onlineDiscover.wishlist.length > 0))
 
     Flickable {
@@ -60,7 +61,7 @@ Item {
                         textFormat: Text.PlainText
                         width: parent.width
                         wrapMode: Text.WordWrap
-                        text: shell.features.discoverNewReleases === true || shell.features.discoverSimilar === true
+                        text: shell.features.discoverNewReleases === true || shell.features.discoverSimilar === true || shell.features.discoverConcerts === true
                               ? qsTr("Music in your own library to find again, worked out on this computer from what you play. The online shelves you turned on send only artist names.")
                               : qsTr("Music in your own library to find again. Worked out on this computer from what you play; nothing is sent anywhere.")
                         color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
@@ -227,6 +228,38 @@ Item {
                     ShelfArrows { row: similarRow; anchors.fill: parent }
                 }
             }
+            // --- concerts nearby (online, off unless chosen) ---------------------------------------------------
+            Column {
+                id: concertShelf
+                objectName: "concertsShelf"
+                visible: page.online && page.shelfOn("discoverConcerts")
+                width: parent.width
+                spacing: 6
+                property bool all: false
+                ShelfHeader {
+                    shelf: "discoverConcerts"
+                    title: qsTr("Concerts near you")
+                    subtitle: onlineDiscover.concertPlaceName.length > 0
+                              ? qsTr("Artists you play, within %1 km of %2 (from Ticketmaster)").arg(onlineDiscover.concertRadius).arg(onlineDiscover.concertPlace)
+                              : qsTr("Artists you play, playing near you (from Ticketmaster)")
+                    online: true
+                }
+                OnlineNote { busyWith: "concerts"; count: onlineDiscover.concerts.length
+                             emptyText: !onlineDiscover.ticketmasterReady ? qsTr("Ticketmaster needs a key first: Settings → Discover tells you how to get one (it's free).")
+                                        : onlineDiscover.concertPlaceName.length === 0 ? qsTr("Type where you are in Settings → Discover.")
+                                        : qsTr("No concerts nearby by the artists you play, for now.") }
+                Repeater {
+                    model: concertShelf.all ? onlineDiscover.concerts : onlineDiscover.concerts.slice(0, 6)
+                    ConcertRow {}
+                }
+                PillButton {
+                    objectName: "concertsAll"
+                    visible: onlineDiscover.concerts.length > 6
+                    height: 28
+                    text: concertShelf.all ? qsTr("Show fewer") : qsTr("Show all %1").arg(Theme.num(onlineDiscover.concerts.length))
+                    onClicked: concertShelf.all = !concertShelf.all
+                }
+            }
             SongShelf {
                 shelf: "discoverDeepCuts"
                 listName: "deepCuts"
@@ -326,6 +359,7 @@ Item {
                 id: offerCard
                 objectName: "onlineOffer"
                 visible: page.online && shell.features.discoverNewReleases !== true && shell.features.discoverSimilar !== true
+                         && shell.features.discoverConcerts !== true
                          && shell.uiValue("discoverOnlineOffer", "") !== "no" && !offerGone
                 property bool offerGone: false
                 width: parent.width
@@ -614,6 +648,90 @@ Item {
                 selectByMouse: true
                 maximumLength: 300
                 onAccepted: noteDlg.accept()
+            }
+        }
+    }
+
+    // A concert: when, who, where; Tickets opens its page
+    component ConcertRow: Rectangle {
+        id: gig
+        required property var modelData
+        required property int index
+        objectName: "concert_" + index
+        readonly property var day: new Date(modelData.date + "T12:00:00")
+        width: col.width
+        height: 58
+        radius: Theme.radiusSmall
+        color: gigHover.hovered ? Theme.surfaceHi : "transparent"
+        Accessible.role: Accessible.ListItem
+        Accessible.name: qsTr("%1, %2, %3").arg(modelData.artist).arg(day.toLocaleDateString(Qt.locale(), Locale.LongFormat)).arg(modelData.venue)
+        HoverHandler { id: gigHover }
+        TapHandler { acceptedButtons: Qt.RightButton; onTapped: gigMenu.popup() }
+        RowLayout {
+            anchors { fill: parent; leftMargin: 8; rightMargin: 8 }
+            spacing: 12
+            Rectangle {  // the date, as a calendar leaf
+                Layout.preferredWidth: 44; Layout.preferredHeight: 44
+                radius: Theme.radiusSmall
+                color: Theme.surface
+                border.color: Theme.border
+                Column {
+                    anchors.centerIn: parent
+                    Text {
+                        textFormat: Text.PlainText
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: gig.day.toLocaleDateString(Qt.locale(), "MMM")
+                        color: Theme.accent; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(10); font.weight: Font.DemiBold
+                    }
+                    Text {
+                        textFormat: Text.PlainText
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: gig.day.getDate()
+                        color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(16); font.weight: Font.Bold
+                    }
+                }
+            }
+            Column {
+                Layout.fillWidth: true
+                spacing: 2
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width; elide: Text.ElideRight
+                    text: gig.modelData.artist
+                    color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
+                    font.strikeout: gig.modelData.status === "cancelled"
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width; elide: Text.ElideRight
+                    text: (gig.modelData.status === "cancelled" ? qsTr("Cancelled") + "  ·  "
+                           : gig.modelData.status === "postponed" ? qsTr("Postponed") + "  ·  " : "")
+                          + [gig.day.toLocaleDateString(Qt.locale(), "dddd") + (gig.modelData.time ? " " + gig.modelData.time.slice(0, 5) : ""),
+                             gig.modelData.venue, gig.modelData.city].filter(function (x) { return x }).join("  ·  ")
+                    color: gig.modelData.status ? Theme.accent : Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                }
+            }
+            PillButton {
+                objectName: "concertTickets"
+                visible: gig.modelData.link.length > 0
+                height: 28
+                text: qsTr("Tickets")
+                onClicked: onlineDiscover.openLink(gig.modelData.link)
+            }
+            IconButton { icon: "more"; tip: qsTr("More for this concert"); onClicked: gigMenu.popup() }
+        }
+        Menu {
+            id: gigMenu
+            MenuItem {
+                visible: gig.modelData.link.length > 0; height: visible ? implicitHeight : 0
+                text: qsTr("Open its page"); icon.name: "discover"; onTriggered: onlineDiscover.openLink(gig.modelData.link)
+            }
+            MenuItem { text: qsTr("Go to %1").arg(Theme.plain(gig.modelData.artist)); icon.name: "artist"; onTriggered: Nav.openArtist(gig.modelData.artist) }
+            MenuSeparator {}
+            MenuItem {
+                objectName: "concertNotInterested"
+                text: qsTr("Not interested in %1").arg(Theme.plain(gig.modelData.artist)); icon.name: "remove"
+                onTriggered: onlineDiscover.notInterestedArtist(gig.modelData.artist, gig.modelData.artist)
             }
         }
     }

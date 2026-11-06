@@ -90,6 +90,10 @@
       Raspberry Pi): the cast button lists it within a few seconds; picking it plays the song there from the same
       place (after about two seconds). Pause, seek, next and previous answer straight away; an album plays without
       gaps; the volume slider moves the speaker's volume, and it's the same next time.
+- [ ] Concerts near you: switch it on in Settings → Discover, type your town (it says what it found, or
+      that it can't find it), set up a Ticketmaster key (a wrong one says so). Discover shows upcoming shows by
+      artists you play, soonest first; Tickets opens the ticket page; Not interested hides that artist's shows;
+      a bigger distance finds more. Offline mode: what was found stays, nothing is asked.
 - [ ] An Apple TV or HomePod: plays, or (when it's set to need pairing or a password) says why it can't.
 - [ ] Switch the AirPlay speaker off while playing: within about 20 seconds the music waits here, paused.
 - [ ] Press play while "Getting ready for…" shows (Hallucinate's sound on a Chromecast or DLNA device), and pause

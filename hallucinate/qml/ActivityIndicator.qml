@@ -41,7 +41,9 @@ Item {
                        } })
         if (typeof onlineDiscover !== "undefined" && onlineDiscover.busy !== "")
             out.push({ key: "discoverOnline",
-                       label: (onlineDiscover.busy === "releases" ? qsTr("Looking for new releases: %1 of %2") : qsTr("Looking for artists like yours: %1 of %2"))
+                       label: (onlineDiscover.busy === "releases" ? qsTr("Looking for new releases: %1 of %2")
+                              : onlineDiscover.busy === "concerts" ? qsTr("Looking for concerts nearby: %1 of %2")
+                              : qsTr("Looking for artists like yours: %1 of %2"))
                               .arg(Theme.num(onlineDiscover.done)).arg(Theme.num(onlineDiscover.total)),
                        fraction: onlineDiscover.total > 0 ? onlineDiscover.done / onlineDiscover.total : -1,
                        stop: function () { onlineDiscover.stop() } })

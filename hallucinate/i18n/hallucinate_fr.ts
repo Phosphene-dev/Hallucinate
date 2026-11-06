@@ -55,6 +55,10 @@
         <translation>Recherche de nouveautés : %1 sur %2</translation>
     </message>
     <message>
+        <source>Looking for concerts nearby: %1 of %2</source>
+        <translation>Recherche de concerts à proximité : %1 sur %2</translation>
+    </message>
+    <message>
         <source>Looking for artists like yours: %1 of %2</source>
         <translation>Recherche d’artistes proches des vôtres : %1 sur %2</translation>
     </message>
@@ -1931,6 +1935,18 @@
 <context>
     <name>DiscoverOnline</name>
     <message>
+        <source>Offline mode is on, so the place can&apos;t be found</source>
+        <translation>Le mode hors ligne est activé : le lieu ne peut pas être trouvé</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t look the place up: %1</source>
+        <translation>Impossible de chercher le lieu : %1</translation>
+    </message>
+    <message>
+        <source>Ticketmaster didn&apos;t accept the key: check it in Settings → Discover</source>
+        <translation>Ticketmaster n’a pas accepté la clé : vérifiez-la dans Paramètres → Découvrir</translation>
+    </message>
+    <message>
         <source>New releases</source>
         <translation>Nouveautés</translation>
     </message>
@@ -2059,6 +2075,30 @@
     <message>
         <source>Nothing found yet: play some music and check again.</source>
         <translation>Rien de trouvé pour l’instant : écoutez de la musique et vérifiez à nouveau.</translation>
+    </message>
+    <message>
+        <source>Concerts near you</source>
+        <translation>Concerts près de chez vous</translation>
+    </message>
+    <message>
+        <source>Artists you play, within %1 km of %2 (from Ticketmaster)</source>
+        <translation>Les artistes que vous écoutez, à moins de %1 km de %2 (d’après Ticketmaster)</translation>
+    </message>
+    <message>
+        <source>Artists you play, playing near you (from Ticketmaster)</source>
+        <translation>Les artistes que vous écoutez, en concert près de chez vous (d’après Ticketmaster)</translation>
+    </message>
+    <message>
+        <source>Ticketmaster needs a key first: Settings → Discover tells you how to get one (it&apos;s free).</source>
+        <translation>Ticketmaster demande d’abord une clé : Paramètres → Découvrir explique comment l’obtenir (c’est gratuit).</translation>
+    </message>
+    <message>
+        <source>Type where you are in Settings → Discover.</source>
+        <translation>Indiquez où vous êtes dans Paramètres → Découvrir.</translation>
+    </message>
+    <message>
+        <source>No concerts nearby by the artists you play, for now.</source>
+        <translation>Aucun concert à proximité des artistes que vous écoutez, pour le moment.</translation>
     </message>
     <message>
         <source>Deep cuts</source>
@@ -2239,6 +2279,30 @@
     <message>
         <source>Which edition, where you heard of it…</source>
         <translation>Quelle édition, où vous en avez entendu parler…</translation>
+    </message>
+    <message>
+        <source>%1, %2, %3</source>
+        <translation>%1, %2, %3</translation>
+    </message>
+    <message>
+        <source>Cancelled</source>
+        <translation>Annulé</translation>
+    </message>
+    <message>
+        <source>Postponed</source>
+        <translation>Reporté</translation>
+    </message>
+    <message>
+        <source>Tickets</source>
+        <translation>Billets</translation>
+    </message>
+    <message>
+        <source>More for this concert</source>
+        <translation>Plus pour ce concert</translation>
+    </message>
+    <message>
+        <source>Not interested in %1</source>
+        <translation>Pas intéressé par %1</translation>
     </message>
     <message>
         <source>Options for this shelf</source>
@@ -8406,10 +8470,6 @@
         <translation>Rayon Ce jour-là</translation>
     </message>
     <message>
-        <source>discover suggestions recommendations daily mixes forgotten favourites deep cuts never played on this day not interested hidden shelves rediscover sounds like this similar songs tempo bpm key energy timbre measure listen analyse radio flow new releases wishlist want buy store bandcamp preview similar artists musicbrainz listenbrainz deezer online</source>
-        <translation>découvrir suggestions recommandations mix du jour favoris oubliés pépites jamais écouté ce jour-là pas intéressé masqué étagères redécouvrir dans le même son morceaux similaires tempo bpm tonalité énergie timbre mesurer écouter analyser radio enchaînement nouveautés liste d’envies envie acheter boutique bandcamp extrait artistes similaires musicbrainz listenbrainz deezer en ligne</translation>
-    </message>
-    <message>
         <source>Discover suggests music from your own library, worked out on this computer from what you play. Choose which shelves it shows; a shelf that&apos;s off isn&apos;t even worked out. The whole page can be turned off in Features.</source>
         <translation>Découvrir suggère de la musique de votre bibliothèque, calculée sur cet ordinateur à partir de ce que vous écoutez. Choisissez les rayons affichés ; un rayon désactivé n’est même pas calculé. La page entière peut être désactivée dans Fonctionnalités.</translation>
     </message>
@@ -8491,10 +8551,6 @@
     <message>
         <source>Online</source>
         <translation>En ligne</translation>
-    </message>
-    <message>
-        <source>These look beyond your library, so they&apos;re off until you turn them on. They send only the names of artists you play (to MusicBrainz, ListenBrainz, Deezer or Last.fm, as chosen below), never what you play or when. Offline mode stops them all.</source>
-        <translation>Ces fonctions regardent au-delà de votre bibliothèque : elles restent désactivées tant que vous ne les activez pas. Elles n’envoient que le nom des artistes que vous écoutez (à MusicBrainz, ListenBrainz, Deezer ou Last.fm, selon votre choix ci-dessous), jamais ce que vous écoutez ni quand. Le mode hors ligne les arrête toutes.</translation>
     </message>
     <message>
         <source>New releases from artists you play (MusicBrainz)</source>
@@ -8583,6 +8639,74 @@
     <message>
         <source>None</source>
         <translation>Aucun</translation>
+    </message>
+    <message>
+        <source>Concerts near you by artists you play (Ticketmaster)</source>
+        <translation>Concerts près de chez vous des artistes que vous écoutez (Ticketmaster)</translation>
+    </message>
+    <message>
+        <source>Where you are is found on the map once, with OpenStreetMap (only what you type is sent). Ticketmaster is then asked about each artist every few days, with the artist&apos;s name and that point. It needs a key of your own: free at developer.ticketmaster.com (sign up, then copy the app&apos;s Consumer Key). It&apos;s kept in your system keyring.</source>
+        <translation>Le lieu est trouvé sur la carte une seule fois, avec OpenStreetMap (seul ce que vous saisissez est envoyé). Ticketmaster est ensuite interrogé pour chaque artiste tous les quelques jours, avec le nom de l’artiste et ce point. Il faut une clé personnelle : gratuite sur developer.ticketmaster.com (inscrivez-vous, puis copiez la « Consumer Key » de l’application). Elle est conservée dans le trousseau du système.</translation>
+    </message>
+    <message>
+        <source>Near</source>
+        <translation>Près de</translation>
+    </message>
+    <message>
+        <source>A town or city, e.g. Lyon</source>
+        <translation>Une ville, par ex. Lyon</translation>
+    </message>
+    <message>
+        <source>Finding it on the map…</source>
+        <translation>Recherche sur la carte…</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t find that place: try adding the country</source>
+        <translation>Lieu introuvable : essayez d’ajouter le pays</translation>
+    </message>
+    <message>
+        <source>Found: %1</source>
+        <translation>Trouvé : %1</translation>
+    </message>
+    <message>
+        <source>Within</source>
+        <translation>À moins de</translation>
+    </message>
+    <message>
+        <source>25 km (15 miles)</source>
+        <translation>25 km</translation>
+    </message>
+    <message>
+        <source>50 km (30 miles)</source>
+        <translation>50 km</translation>
+    </message>
+    <message>
+        <source>100 km (60 miles)</source>
+        <translation>100 km</translation>
+    </message>
+    <message>
+        <source>250 km (155 miles)</source>
+        <translation>250 km</translation>
+    </message>
+    <message>
+        <source>Ticketmaster key</source>
+        <translation>Clé Ticketmaster</translation>
+    </message>
+    <message>
+        <source>Consumer Key</source>
+        <translation>Consumer Key</translation>
+    </message>
+    <message>
+        <source>Set up</source>
+        <translation>Configurée</translation>
+    </message>
+    <message>
+        <source>Forget the key</source>
+        <translation>Oublier la clé</translation>
+    </message>
+    <message>
+        <source>Use this key</source>
+        <translation>Utiliser cette clé</translation>
     </message>
     <message>
         <source>Wishlist (kept on this computer)</source>
@@ -9239,6 +9363,14 @@
     <message>
         <source>Sounds like this</source>
         <translation>Dans le même son</translation>
+    </message>
+    <message>
+        <source>discover suggestions recommendations daily mixes forgotten favourites deep cuts never played on this day not interested hidden shelves rediscover sounds like this similar songs tempo bpm key energy timbre measure listen analyse radio flow new releases wishlist want buy store bandcamp preview similar artists musicbrainz listenbrainz deezer online concerts gigs shows tour tickets ticketmaster nearby city</source>
+        <translation>découvrir suggestions recommandations mix du jour favoris oubliés pépites jamais écouté ce jour-là pas intéressé masqué étagères redécouvrir dans le même son morceaux similaires tempo bpm tonalité énergie timbre mesurer écouter analyser radio enchaînement nouveautés liste d’envies envie acheter boutique bandcamp extrait artistes similaires musicbrainz listenbrainz deezer en ligne concerts spectacles tournée billets ticketmaster proximité ville</translation>
+    </message>
+    <message>
+        <source>These look beyond your library, so they&apos;re off until you turn them on. They send only the names of artists you play (to MusicBrainz, ListenBrainz, Deezer, Last.fm or Ticketmaster, as chosen below), never what you play or when. Offline mode stops them all.</source>
+        <translation>Ces fonctions regardent au-delà de votre bibliothèque : elles restent désactivées tant que vous ne les activez pas. Elles n’envoient que le nom des artistes que vous écoutez (à MusicBrainz, ListenBrainz, Deezer, Last.fm ou Ticketmaster, selon votre choix ci-dessous), jamais ce que vous écoutez ni quand. Le mode hors ligne les arrête toutes.</translation>
     </message>
     <message>
         <source>Right-click a song and choose Sounds like this for songs in your library that sound like it: their tempo, key, energy and timbre. To know, Hallucinate first listens to about a minute of each song on this computer, quietly in the background, the songs you like and play most first. Nothing leaves this computer. Turn it off in Features.</source>
@@ -11040,6 +11172,26 @@
     <message>
         <source>(the system keyring couldn&apos;t be updated: %1)</source>
         <translation>(le trousseau du système n’a pas pu être mis à jour&#xa0;: %1)</translation>
+    </message>
+    <message>
+        <source>Offline mode is on, so the key can&apos;t be checked</source>
+        <translation>Le mode hors ligne est activé : la clé ne peut pas être vérifiée</translation>
+    </message>
+    <message>
+        <source>Checking the key…</source>
+        <translation>Vérification de la clé…</translation>
+    </message>
+    <message>
+        <source>Ticketmaster didn&apos;t accept that key</source>
+        <translation>Ticketmaster n’a pas accepté cette clé</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t check the key: %1</source>
+        <translation>Impossible de vérifier la clé : %1</translation>
+    </message>
+    <message>
+        <source>The key is forgotten</source>
+        <translation>La clé est oubliée</translation>
     </message>
 </context>
 <context>
