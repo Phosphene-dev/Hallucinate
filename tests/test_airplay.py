@@ -29,8 +29,10 @@ def test_speakers_that_can_play_the_stream_are_offered():
     assert airplay.describe(service(et=None, cn=None))  # (nothing said: try)
     own_id = dict(service(), id="0123-4567")  # (a speaker whose announcement carries an id of its own)
     assert airplay.describe(own_id)["name"] == "Kitchen"
-    for txt in ({"pw": "true"}, {"et": "1"}, {"et": "3,5"}, {"cn": "0"}, {"sr": "48000"}, {"ss": "24"}):
-        assert airplay.describe(service(**txt)) is None, txt
+    assert "unsupported" not in dev
+    for txt, why in (({"pw": "true"}, "password"), ({"et": "1"}, "encrypted"), ({"et": "3,5"}, "encrypted"),
+                     ({"cn": "0"}, "format"), ({"sr": "48000"}, "format"), ({"ss": "24"}, "format")):
+        assert airplay.describe(service(**txt))["unsupported"] == why, txt  # (listed, but can't be picked)
 
 
 def test_discovery_reads_the_announcements():
@@ -42,7 +44,8 @@ def test_discovery_reads_the_announcements():
 
     found = airplay.discover(browse=browse)
     assert seen["service"] == "_raop._tcp.local"
-    assert list(found) == ["airplay:A1B2C3D4E5F6"]
+    assert list(found) == ["airplay:A1B2C3D4E5F6"]  # (both answers are the same speaker)
+    assert found["airplay:A1B2C3D4E5F6"]["unsupported"] == "password"
 
 
 def unpack_alac(frame):
@@ -105,6 +108,7 @@ class FakeSpeaker:
 
     def _rtsp(self):
         conn, _ = self.tcp.accept()
+        self.conn = conn
         conn.settimeout(10)
         buf = b""
         while not self.stop:
@@ -333,3 +337,38 @@ def test_the_queue_goes_back_into_a_song_still_being_heard(tmp_path):
     assert q.current.tag == "a" and q.next.tag == "b" and q.next.at == 0
     assert abs(q.current.at / airplay.RATE - 0.5) < 0.01
     assert q.rewind(0.0) is False
+
+
+def test_another_device_taking_the_speaker_is_noticed_at_once(tmp_path, speaker, monkeypatch):
+    monkeypatch.setattr(airplay, "LATENCY_FRAMES", 4410)
+    events = []
+    sp = airplay.Speaker("127.0.0.1", speaker.port, on_event=lambda k, t: events.append(k), connect=plain)
+    sp.connect()
+    try:
+        sp.load(wav(tmp_path / "a.wav", 5.0, 1000), tag="a")
+        time.sleep(0.3)
+        speaker.conn.shutdown(socket.SHUT_RDWR)  # (the speaker hangs up, as when someone else plays to it)
+        deadline = time.monotonic() + 3
+        while "lost" not in events and time.monotonic() < deadline:
+            time.sleep(0.02)
+        assert events == ["lost"] and sp.taken
+    finally:
+        sp.close()
+
+
+def test_no_keepalive_while_it_plays(tmp_path, speaker, monkeypatch):
+    monkeypatch.setattr(airplay, "LATENCY_FRAMES", 4410)
+    monkeypatch.setattr(airplay, "KEEPALIVE_S", 0.2)
+    sp = airplay.Speaker("127.0.0.1", speaker.port, connect=plain)
+    sp.connect()
+    try:
+        sp.load(wav(tmp_path / "a.wav", 1.5, 1000), tag="a")
+        time.sleep(0.2)
+        n = len(speaker.requests)
+        time.sleep(0.7)
+        assert "OPTIONS" not in speaker.methods()[n:]  # (the sound keeps it with us)
+        sp.pause()
+        time.sleep(1.6)  # (paused, the sender wakes about once a second)
+        assert speaker.methods()[-1] == "OPTIONS"  # (paused: it's checked in with)
+    finally:
+        sp.close()

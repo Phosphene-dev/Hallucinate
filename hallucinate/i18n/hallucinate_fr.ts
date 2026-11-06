@@ -36,10 +36,10 @@
         </translation>
     </message>
     <message numerus="yes">
-        <source>Listening to your music: %1 of %n song(s)</source>
+        <source>Measuring how songs sound, for Sounds like this: %1 of %n song(s)</source>
         <translation>
-            <numerusform>Écoute de votre musique : %1 sur %n morceau</numerusform>
-            <numerusform>Écoute de votre musique : %1 sur %n morceaux</numerusform>
+            <numerusform>Mesure du son des morceaux, pour Dans le même son : %1 sur %n morceau</numerusform>
+            <numerusform>Mesure du son des morceaux, pour Dans le même son : %1 sur %n morceaux</numerusform>
         </translation>
     </message>
     <message>
@@ -977,6 +977,22 @@
         <translation>%1 ne peut lire que les morceaux de cet ordinateur, pas la radio ni les morceaux d’un serveur de musique.</translation>
     </message>
     <message>
+        <source>needs a password</source>
+        <translation>demande un mot de passe</translation>
+    </message>
+    <message>
+        <source>only plays from Apple devices</source>
+        <translation>ne lit que depuis des appareils Apple</translation>
+    </message>
+    <message>
+        <source>can&apos;t play this kind of stream</source>
+        <translation>ne peut pas lire ce type de flux</translation>
+    </message>
+    <message>
+        <source>the room was switched to something else</source>
+        <translation>la pièce est passée à autre chose</translation>
+    </message>
+    <message>
         <source>it asks for a password, which Hallucinate can&apos;t give it yet</source>
         <translation>il demande un mot de passe, qu’Hallucinate ne sait pas encore lui donner</translation>
     </message>
@@ -1476,10 +1492,6 @@
         <translation>Chercher des appareils où lire</translation>
     </message>
     <message>
-        <source>Casting  ·  Chromecast, DLNA/UPnP</source>
-        <translation>Diffusion  ·  Chromecast, DLNA/UPnP</translation>
-    </message>
-    <message>
         <source>Genre</source>
         <translation>Genre</translation>
     </message>
@@ -1501,6 +1513,10 @@
     <message>
         <source>Go to what&apos;s playing</source>
         <translation>Aller à ce qui est en lecture</translation>
+    </message>
+    <message>
+        <source>Casting  ·  Chromecast, DLNA/UPnP, AirPlay, Snapcast</source>
+        <translation>Diffusion  ·  Chromecast, DLNA/UPnP, AirPlay, Snapcast</translation>
     </message>
     <message>
         <source>Go to  ·  its album, station or show</source>
@@ -13693,6 +13709,10 @@
     <message>
         <source>This phone</source>
         <translation>Ce téléphone</translation>
+    </message>
+    <message>
+        <source>%1 can&apos;t be played to: %2</source>
+        <translation>Impossible de lire sur %1 : %2</translation>
     </message>
     <message>
         <source>Connecting to %1…</source>

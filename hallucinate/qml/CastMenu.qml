@@ -39,8 +39,10 @@ Menu {
         model: casting.devices
         delegate: MenuItem {
             required property var modelData
-            text: Theme.plain(modelData.name) + (modelData.model && modelData.model !== modelData.name
+            text: Theme.plain(modelData.name) + (modelData.unsupported ? "  ·  " + modelData.unsupported
+                                                 : modelData.model && modelData.model !== modelData.name
                                                  ? "  ·  " + Theme.plain(modelData.model) : "")
+            enabled: !modelData.unsupported
             icon.name: Theme.castIcon(modelData.kind)
             checkable: true
             checked: modelData.active

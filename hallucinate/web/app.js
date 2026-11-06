@@ -360,8 +360,10 @@ async function castPicker(searched) {
   pick(t("Play on"), [
     [(c.device ? "" : "✓ ") + t("The computer"), () => { phoneStop(false); call("cast.stop"); }],
     ...(window.Audio ? [[(phoneOn() ? "✓ " : "") + t("This phone"), () => { if (!phoneOn()) phoneStart(); }]] : []),
-    ...c.devices.map((d) => [(d.active ? "✓ " : "") + d.name + (d.model && d.model !== d.name ? " · " + d.model : ""),
-      () => call("cast.to", { id: d.id }).then(() => toast(fill(t("Connecting to %1…"), d.name)))]),
+    ...c.devices.map((d) => [(d.active ? "✓ " : "") + d.name + (d.unsupported ? " · " + d.unsupported
+                             : d.model && d.model !== d.name ? " · " + d.model : ""),
+      () => d.unsupported ? toast(fill(t("%1 can't be played to: %2"), d.name, d.unsupported))
+                          : call("cast.to", { id: d.id }).then(() => toast(fill(t("Connecting to %1…"), d.name)))]),
     [t("Look again"), () => { call("cast.search"); toast(t("Looking for devices on your network…")); setTimeout(() => castPicker(true), 3500); }],
   ]);
 }

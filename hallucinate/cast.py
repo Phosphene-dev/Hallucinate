@@ -50,6 +50,11 @@ KEEP_RENDERS = 4  # prepared songs kept while casting (the playing one, the next
 # a Snapcast server typed in Settings: a host name or IPv4 address, and a port if not the usual one
 _SNAP_SERVER = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9.-]{0,252})(?::(?:[1-9][0-9]{0,4}))?")
 
+# why a device that was found can't be played to (listed, greyed out)
+_UNSUPPORTED = {"password": QT_TRANSLATE_NOOP("Casting", "needs a password"),
+                "encrypted": QT_TRANSLATE_NOOP("Casting", "only plays from Apple devices"),
+                "format": QT_TRANSLATE_NOOP("Casting", "can't play this kind of stream")}
+
 FIREWALL_HINT = QT_TRANSLATE_NOOP(
     "Casting", "%1 couldn't fetch the song from this computer. A firewall may be blocking port %2: allow it for "
                "your local network, or pick another port in Settings → Casting.")
@@ -782,6 +787,16 @@ class SnapcastSession(_StreamedSession):
             self._ctl.call("Client.SetVolume", {"id": c["id"], "volume": {"percent": int(round(level * 100)),
                                                                           "muted": False}})
 
+    def _do_poll(self, gen):
+        super()._do_poll(gen)
+        self._polls = getattr(self, "_polls", 0) + 1
+        if self._ctl is None or self._polls % 5:
+            return  # (every five seconds: is the room still on our stream?)
+        room = next((g for g in snapcast.groups(self._ctl.status()) if g["id"] == self.device["group"]), None)
+        if room is not None and room["stream"] != self._stream:
+            self._was = ""  # (someone chose something else for it: that stays)
+            self._gone(translate("Casting", "the room was switched to something else"))
+
     def _room_clients(self):
         room = next((g for g in snapcast.groups(self._ctl.status()) if g["id"] == self.device["group"]), None)
         return [c for c in (room or {}).get("clients", []) if c["connected"]]
@@ -846,6 +861,12 @@ class AirplaySession(_StreamedSession):
 
     def _do_volume(self, level):
         self._feeder.set_volume(level)
+
+    def _on_feed(self, kind, tag):
+        if kind == "lost" and getattr(self._feeder, "taken", False):
+            self._gone(translate("Casting", "it's playing from another device"))
+        else:
+            super()._on_feed(kind, tag)
 
     def _do_close(self, stop_device):
         if self._feeder is not None:
@@ -1031,6 +1052,8 @@ class Casting(QObject):
     @Property("QVariantList", notify=devicesChanged)
     def devices(self):
         return [{"id": d["id"], "name": d["name"], "model": d.get("model", ""), "kind": d.get("kind", ""),
+                 "unsupported": _UNSUPPORTED.get(d.get("unsupported", ""), "") and translate(
+                     "Casting", _UNSUPPORTED[d["unsupported"]]),
                  "active": bool(self._session and self._session.device["id"] == d["id"])} for d in self._devices]
 
     @Property(bool, notify=devicesChanged)
@@ -1098,7 +1121,7 @@ class Casting(QObject):
     @Slot(str)
     def castTo(self, device_id):
         device = next((d for d in self._devices if d["id"] == device_id), None)
-        if device is None or self._connecting:
+        if device is None or self._connecting or device.get("unsupported"):
             return
         if self._session and self._session.device["id"] == device_id:
             return

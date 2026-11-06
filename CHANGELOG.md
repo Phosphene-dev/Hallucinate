@@ -3,6 +3,23 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Changed
+- AirPlay speakers that can't be played to (they need a password, or only take Apple's encrypted audio) are
+  listed greyed out with the reason, instead of not at all.
+- The background measuring for Sounds like this says so ("Measuring how songs sound…"), instead of
+  "Listening to your music".
+- Copy debug info says whether casting is on and to what kind of device (never its name).
+
+### Fixed
+- When another device starts playing to an AirPlay speaker, Hallucinate notices at once and says so, instead of
+  carrying on unheard for up to 15 seconds.
+- When a Snapcast room is switched to something else in Snapcast's own app, Hallucinate stops casting there
+  and says so (and leaves the room on what was chosen).
+- AirPlay no longer checks in with the speaker while it plays (a slow answer could make the sound skip).
+- The log (and so Copy debug info) no longer names the artists looked up online.
+
 ## [2.1.0] - 2026-11-06
 
 ### Added

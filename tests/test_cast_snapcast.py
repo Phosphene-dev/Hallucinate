@@ -55,6 +55,37 @@ def heard(out, seconds=1.0):
 
 
 @needs_snapserver
+def test_switching_the_room_away_is_noticed(qapp, tmp_path, snapserver):
+    from hallucinate.cast import Casting, SnapcastSession
+    from hallucinate.player import Player
+
+    port, ctl, out = snapserver
+    song = {"id": 1, "path": str(encode(tmp_path / "s.flac", "flac", seconds=8.0, title="S")), "title": "T",
+            "artist": "A", "album": "B", "duration": 8.0, "artUrl": ""}
+    player = Player(session_file=tmp_path / "session.json")
+    casting = Casting(player)
+    casting._server.port = 0
+    casting.session_factories["snapcast"] = lambda d, s: SnapcastSession(d, s, connect=plain)
+    casting.discover = lambda servers: list(snapcast.devices("127.0.0.1", port, connect=plain).values())
+    lost = []
+    try:
+        player.playList([song], 0)
+        casting.refresh()
+        assert wait_for(lambda: casting.devices, timeout=10)
+        group = snapcast.groups(ctl.status())[0]["id"]
+        casting.castTo(casting.devices[0]["id"])
+        assert wait_for(lambda: casting.active, timeout=15), casting.error
+        casting._session.lost.connect(lost.append)
+        ctl.call("Group.SetStream", {"id": group, "stream_id": "default"})  # (someone picks something else)
+        assert wait_for(lambda: not casting.active, timeout=10)
+        assert lost and "switched" in lost[0]
+        assert snapcast.groups(ctl.status())[0]["stream"] == "default"  # (and it stays so)
+    finally:
+        casting.shutdown()
+        player.shutdown()
+
+
+@needs_snapserver
 def test_the_queue_plays_on_a_snapcast_room(qapp, tmp_path, snapserver, monkeypatch):
     from hallucinate.cast import Casting, SnapcastSession
     from hallucinate.player import Player

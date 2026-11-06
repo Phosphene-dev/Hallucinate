@@ -419,7 +419,7 @@ class OnlineDiscover(QObject):
             try:
                 found = core.releases_since(mbid, since)
             except (OSError, ValueError) as exc:
-                logger.info("Couldn't look up %s's releases: %s", name, exc)
+                logger.info("Couldn't look up an artist's releases: %s", exc)  # (no names: the log goes into debug info)
                 continue
             core.store_releases(db, key, found, now)
             if first:  # (an artist looked at for the first time: their past year isn't news)
@@ -445,7 +445,7 @@ class OnlineDiscover(QObject):
             try:
                 mbid = core.artist_id(name)
             except (OSError, ValueError) as exc:
-                logger.info("Couldn't look up %s on MusicBrainz: %s", name, exc)
+                logger.info("Couldn't look up an artist on MusicBrainz: %s", exc)
                 return ""
             core.remember_mbid(db, key, name, mbid, now)
         return mbid
@@ -470,7 +470,7 @@ class OnlineDiscover(QObject):
                 else:
                     names = core.similar_lastfm(name, o["lastfm"])
             except (OSError, ValueError) as exc:
-                logger.info("Couldn't look up artists like %s: %s", name, exc)
+                logger.info("Couldn't look up similar artists: %s", exc)
                 continue
             core.store_similar(db, key, source, names, now)
         # pictures only for the artists the shelf shows (each artist's list has dozens)
@@ -495,7 +495,7 @@ class OnlineDiscover(QObject):
             try:
                 found = core.deezer_artist(s["name"])
             except (OSError, ValueError) as exc:
-                logger.info("Couldn't look up a picture of %s: %s", s["name"], exc)
+                logger.info("Couldn't look up an artist's picture: %s", exc)
                 continue
             core.remember_picture(db, s["key"], (found or {}).get("picture", ""), now)
 
@@ -515,7 +515,7 @@ class OnlineDiscover(QObject):
                 self._progress.emit("badkey", 0, 0)
                 return
             except (OSError, ValueError) as exc:
-                logger.info("Couldn't look up %s's concerts: %s", name, exc)
+                logger.info("Couldn't look up an artist's concerts: %s", exc)
                 continue
             gigs.store(db, key, o["place"], found, now)
             time.sleep(TICKETMASTER_GAP_S)
@@ -654,7 +654,7 @@ class OnlineDiscover(QObject):
             try:
                 self._preview_ready.emit((artist, core.preview(artist, source)))
             except (OSError, ValueError) as exc:
-                logger.info("Couldn't find a preview of %s: %s", artist, exc)
+                logger.info("Couldn't find a preview: %s", exc)
                 self._preview_ready.emit((artist, None))
         self._jobs.put(("quiet", work))
 

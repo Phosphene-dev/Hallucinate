@@ -256,7 +256,6 @@ def main(argv=None) -> int:
 
     online_discover = OnlineDiscover(paths.db_path(), paths.data_dir(), player, shell, sources)
     library.scanFinished.connect(lambda _stats: online_discover.libraryChanged())
-    shell.setReportSources(library=library, theme_manager=theme_manager)
     shell.setStartupNotice(db_notice)
     shell.setCrashReport(last_crash, last_crashed)
     if safe_mode:
@@ -290,6 +289,7 @@ def main(argv=None) -> int:
     from .cast import Casting
 
     casting = Casting(player)  # playing on a Chromecast or a DLNA/UPnP device
+    shell.setReportSources(library=library, theme_manager=theme_manager, casting=casting)
     web_remote.api.casting = casting  # the phone remote can choose where the music plays (while the feature's on)
     web_remote.api.casting_on = lambda: shell.features.get("casting", True)
     casting.notify_remote = web_remote._soon  # the phone playing the music hears what to do at once

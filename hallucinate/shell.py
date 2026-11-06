@@ -712,8 +712,8 @@ class DesktopShell(QObject):
         self._crash_report = ""
         self.crashReportChanged.emit()
 
-    def setReportSources(self, library=None, theme_manager=None):
-        self._report_sources = {"library": library, "theme_manager": theme_manager}
+    def setReportSources(self, library=None, theme_manager=None, casting=None):
+        self._report_sources = {"library": library, "theme_manager": theme_manager, "casting": casting}
 
     @Slot(result=str)
     def debugInfo(self):

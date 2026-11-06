@@ -171,7 +171,7 @@ def _graphics_line():
     return ", ".join(parts)
 
 
-def report(player=None, library=None, theme_manager=None, window=None):
+def report(player=None, library=None, theme_manager=None, window=None, casting=None):
     """The debug info as plain text, ready to paste into an issue."""
     import PySide6
     from PySide6 import QtCore
@@ -219,6 +219,12 @@ def report(player=None, library=None, theme_manager=None, window=None):
                      f" ({'available' if player.visualizerAvailable else 'unavailable'})")
         if player.error:
             lines.append(f"Player error: {_redact(player.error)}")
+    if casting is not None:
+        try:  # (the kind of device only: never its name)
+            lines.append(f"Casting: {casting.deviceKind if casting.active else 'off'}, sending {casting.sending}"
+                         + (f", {len(casting.devices)} device(s) found" if casting.devices else ""))
+        except Exception:  # noqa: BLE001
+            pass
     if library is not None:
         lines.append(f"Library: {library.trackCount} songs, {len(library.folders)} folder(s), "
                      f"{len(library.missingFolders)} missing, {library.unreadableFiles} unreadable files")

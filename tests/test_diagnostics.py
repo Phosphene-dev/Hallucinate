@@ -139,3 +139,16 @@ def test_debug_info_names_the_graphics_card(monkeypatch):
     assert diagnostics._graphics_line() == "Graphics: OpenGL, AMD Radeon RX 6600 (Mesa), driver 4.6 Mesa 25.2.8"
     monkeypatch.setattr(diagnostics, "_graphics", {"api": "Vulkan"})
     assert diagnostics._graphics_line() == "Graphics: Vulkan"
+
+
+def test_debug_info_says_how_casting_is_going_but_not_to_what():
+    from hallucinate import diagnostics
+
+    class FakeCasting:
+        active, deviceKind, sending = True, "airplay", "processed"
+        devices = [{"name": "Kitchen speaker"}, {"name": "Bedroom"}]
+        deviceName = "Kitchen speaker"
+
+    text = diagnostics.report(casting=FakeCasting())
+    assert "Casting: airplay, sending processed, 2 device(s) found" in text
+    assert "Kitchen" not in text and "Bedroom" not in text

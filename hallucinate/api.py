@@ -581,7 +581,7 @@ class Api:
     def m_cast_devices(self):
         """The devices found on the network (the last search), and which one is playing, if any."""
         c = self._casting()
-        return {"devices": [{k: d[k] for k in ("id", "name", "model", "kind", "active")} for d in c.devices],
+        return {"devices": [{k: d[k] for k in ("id", "name", "model", "kind", "active", "unsupported")} for d in c.devices],
                 "searching": bool(c.searching), "device": c.deviceName if c.active else "",
                 "connecting": c.connecting}
 

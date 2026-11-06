@@ -62,23 +62,27 @@ def _flags(txt, key):
 
 
 def describe(service):
-    """A speaker from its mDNS answer (mdns.services), or None when it can't play this stream: one that needs a
-    password, only takes encrypted audio, or doesn't take ALAC at 44.1 kHz 16-bit stereo."""
+    """A speaker from its mDNS answer (mdns.services). One that can't play this stream has "unsupported": why
+    ("password": it needs one; "encrypted": it only takes encrypted audio; "format": not ALAC at 44.1 kHz 16-bit
+    stereo), so it can be listed but not picked."""
     txt = service.get("txt") or {}
     # the service is called "MAC@Name" (mdns.services gives that as the name, or as the id when it has no id of its own)
     label = next((v for v in (service.get("name", ""), service.get("id", "")) if "@" in v), service.get("name", ""))
     mac, _, name = label.partition("@")
     if not name:
         mac, name = "", label
-    if str(txt.get("pw", "")).lower() == "true":
-        return None
     et, cn = _flags(txt, "et"), _flags(txt, "cn")
-    if (et and "0" not in et) or (cn and "1" not in cn):
-        return None
-    if txt.get("sr", "44100") != "44100" or txt.get("ss", "16") != "16" or txt.get("ch", "2") != "2":
-        return None
-    return {"id": "airplay:" + (mac or name)[:64], "kind": "airplay", "name": name[:100] or "AirPlay",
-            "model": (txt.get("am") or "AirPlay")[:100], "host": service["host"], "port": service["port"]}
+    why = ""
+    if str(txt.get("pw", "")).lower() == "true":
+        why = "password"
+    elif et and "0" not in et:
+        why = "encrypted"
+    elif (cn and "1" not in cn) or txt.get("sr", "44100") != "44100" or txt.get("ss", "16") != "16" \
+            or txt.get("ch", "2") != "2":
+        why = "format"
+    device = {"id": "airplay:" + (mac or name)[:64], "kind": "airplay", "name": name[:100] or "AirPlay",
+              "model": (txt.get("am") or "AirPlay")[:100], "host": service["host"], "port": service["port"]}
+    return dict(device, unsupported=why) if why else device
 
 
 def discover(timeout=2.0, interfaces=("",), browse=None):
@@ -88,8 +92,7 @@ def discover(timeout=2.0, interfaces=("",), browse=None):
     found = {}
     for service in (browse or mdns.browse)(timeout=timeout, interfaces=interfaces, service=SERVICE).values():
         device = describe(service)
-        if device is not None:
-            found[device["id"]] = device
+        found[device["id"]] = device
     return found
 
 
@@ -261,6 +264,7 @@ class Speaker:
         self._pending = []  # [(when heard, kind, tag)]
         self._closed = False
         self._lost = False
+        self.taken = False  # the speaker hung up: another device took it over
         self._wake = threading.Event()  # (paused, the sender sleeps until there's something to send)
         self._threads = []
         self._last_talk = clock()
@@ -431,8 +435,8 @@ class Speaker:
         try:
             while not self._closed and not self._lost:
                 self._fire_due()
-                if self._clock() - self._last_talk > KEEPALIVE_S:
-                    self._keepalive()
+                if not self.queue.playing and self._clock() - self._last_talk > KEEPALIVE_S:
+                    self._keepalive()  # (paused; while it plays, the sound itself keeps the speaker with us)
                 with self._lock:
                     if not self.queue.playing:
                         idle = True
@@ -489,13 +493,42 @@ class Speaker:
         except (OSError, ValueError):
             self._gone()
 
+    def _taken(self):
+        """Whether the speaker has hung up on us (it closes the RTSP connection when another device takes it
+        over). Only looked at between requests: an answer to one is read by that request."""
+        if self._closed or not self._rtsp._lock.acquire(blocking=False):
+            return False
+        try:
+            if self._rtsp._buf:
+                return False
+            try:
+                self._sock.setblocking(False)
+                try:
+                    return self._sock.recv(1, socket.MSG_PEEK) == b""
+                finally:
+                    self._sock.settimeout(8.0)
+            except (BlockingIOError, InterruptedError):
+                return False
+            except OSError:
+                return not self._closed  # (closed here: not taken, just done)
+        finally:
+            self._rtsp._lock.release()
+
     def _listen_loop(self):
         socks = [s for s in (self._control, self._timing) if s is not None]
         while not self._closed and not self._lost:
             try:
-                ready, _, _ = select.select(socks, [], [], 0.5)
+                ready, _, _ = select.select(socks + ([self._sock] if self._sock is not None else []), [], [], 0.5)
             except (OSError, ValueError):
                 return
+            if self._sock in ready:
+                if self._taken():
+                    self.taken = True
+                    self._gone()
+                    return
+                ready = [s for s in ready if s is not self._sock]
+                if not ready:
+                    time.sleep(0.05)  # (an answer waiting for its request to read it)
             for s in ready:
                 try:
                     data, (ip, port) = s.recvfrom(2048)
