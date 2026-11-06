@@ -535,6 +535,10 @@
         <translation>Associez d’abord cet appareil</translation>
     </message>
     <message>
+        <source>Sharing the library is off on that computer</source>
+        <translation>Le partage de la bibliothèque est désactivé sur cet ordinateur</translation>
+    </message>
+    <message>
         <source>Not from this app</source>
         <translation>Ne vient pas de cette application</translation>
     </message>
@@ -7504,6 +7508,10 @@
         <translation>La connexion n’a pas pu être gardée (%1), le serveur n’a donc pas été ajouté</translation>
     </message>
     <message>
+        <source>That computer&apos;s library is already added</source>
+        <translation>La bibliothèque de cet ordinateur est déjà ajoutée</translation>
+    </message>
+    <message>
         <source>Type the password you sign in to the server with</source>
         <translation>Tapez le mot de passe avec lequel vous vous connectez au serveur</translation>
     </message>
@@ -9152,6 +9160,10 @@
         <translation>Les morceaux de votre serveur Jellyfin, ou de votre serveur Navidrome, Gonic, Airsonic ou autre Subsonic, rejoignent votre bibliothèque et se lisent comme vos propres fichiers. La connexion reste dans le trousseau de votre système (pour Jellyfin, seulement le jeton d’accès qu’il donne). Les morceaux d’un serveur injoignable sont passés.</translation>
     </message>
     <message>
+        <source>%1 (another computer)</source>
+        <translation>%1 (un autre ordinateur)</translation>
+    </message>
+    <message>
         <source>Reading its songs…</source>
         <translation>Lecture de ses morceaux…</translation>
     </message>
@@ -9178,6 +9190,14 @@
     <message>
         <source>Add a server…</source>
         <translation>Ajouter un serveur…</translation>
+    </message>
+    <message>
+        <source>Your other computers running Hallucinate can share their libraries too: pair with one (the cast button → Hand over to another computer), switch on Paired computers can play my library in its Settings → Remote &amp; web, then add it here.</source>
+        <translation>Vos autres ordinateurs avec Hallucinate peuvent aussi partager leur bibliothèque : jumelez-en un (bouton de diffusion → Passer à un autre ordinateur), activez « Les ordinateurs jumelés peuvent lire ma bibliothèque » dans ses Paramètres → Télécommande et web, puis ajoutez-le ici.</translation>
+    </message>
+    <message>
+        <source>Add %1&apos;s library</source>
+        <translation>Ajouter la bibliothèque de %1</translation>
     </message>
     <message numerus="yes">
         <source>%n song(s) kept on this computer (%1): they play without the server, in offline mode too.</source>
@@ -9321,6 +9341,10 @@
     <message>
         <source>Let other devices on your network connect (your phone on the same Wi-Fi). Only on networks you trust, like your home&apos;s</source>
         <translation>Laisser d’autres appareils de votre réseau se connecter (votre téléphone sur le même Wi-Fi). Seulement sur des réseaux de confiance, comme celui de chez vous</translation>
+    </message>
+    <message>
+        <source>Paired computers can play my library (they add it in Settings → Music servers; nothing here can be changed from there)</source>
+        <translation>Les ordinateurs jumelés peuvent lire ma bibliothèque (ils l’ajoutent dans Paramètres → Serveurs de musique ; rien ici ne peut être modifié depuis là-bas)</translation>
     </message>
     <message>
         <source>Open one of these on your phone or another computer:</source>

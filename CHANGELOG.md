@@ -6,6 +6,11 @@ All notable changes to this project are documented here. Format based on
 ## [Unreleased]
 
 ### Added
+- Libraries shared between your computers: switch on Paired computers can play my library (Settings → Remote &
+  web) on one, and the other adds it in Settings → Music servers. Its songs join the library like a music
+  server's: albums, artists, search, playlists, and they play from the first computer over the local network.
+  Nothing is sent but titles, artists and the like (never a path), only paired computers can ask, a song's link
+  is signed and works for a few hours, and nothing on the sharing computer can be changed from the other.
 - Play on several speakers together: AirPlay speakers and Snapcast rooms, in any mix, play the same music in step
   (cast menu → Play on several together…, the phone remote's Play on, or `hallucinate cmd cast Kitchen + Bedroom`).
   AirPlay speakers start at the same moment and stay together; Snapcast rooms are held back to be heard with

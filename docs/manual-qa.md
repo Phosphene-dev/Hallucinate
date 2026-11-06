@@ -84,6 +84,9 @@
 - [ ] Crossfade set to a few seconds: songs from different albums crossfade on an AirPlay speaker; an album plays
       gapless.
 - [ ] `hallucinate cmd cast`, `cast Kitchen`, `cast here`; the terminal version's Play on view (c).
+- [ ] Two computers: pair them (cast button → Hand over to another computer), switch on Paired computers can play
+      my library on one; on the other, Settings → Music servers → Add …'s library. Its songs appear (albums,
+      artists, covers) and play; switching sharing off makes them unavailable; Remove takes them away.
 
 ## Release testing for 2.1.0
 

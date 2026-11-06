@@ -1963,7 +1963,8 @@ Item {
                             textFormat: Text.PlainText
                             width: parent.width
                             elide: Text.ElideRight
-                            text: serverRow.modelData.name + "  ·  " + serverRow.modelData.user
+                            text: serverRow.modelData.kind === "hallucinate" ? qsTr("%1 (another computer)").arg(serverRow.modelData.name)
+                                                                             : serverRow.modelData.name + "  ·  " + serverRow.modelData.user
                             color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
                         }
                         Text {
@@ -2014,6 +2015,32 @@ Item {
                 primary: true
                 text: qsTr("Add a server…")
                 onClicked: addServerDlg.open()
+            }
+            // Another computer running Hallucinate: its library, shared (it switches that on in Remote & web)
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                visible: typeof handoff !== "undefined"
+                text: qsTr("Your other computers running Hallucinate can share their libraries too: pair with one (the cast button → Hand over to another computer), switch on Paired computers can play my library in its Settings → Remote & web, then add it here.")
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            Flow {
+                width: parent.width
+                spacing: 8
+                visible: typeof handoff !== "undefined"
+                Repeater {
+                    model: typeof handoff !== "undefined" ? handoff.computers.filter(function (c) {
+                        return c.paired && !servers.servers.some(function (s) { return s.kind === "hallucinate" && s.user === c.id }) }) : []
+                    PillButton {
+                        required property var modelData
+                        objectName: "addComputer_" + modelData.id
+                        height: 32
+                        text: qsTr("Add %1's library").arg(modelData.name)
+                        enabled: !servers.busy
+                        onClicked: servers.addComputer(modelData.id)
+                    }
+                }
             }
             // Songs kept on this computer, to play without the server (right-click an album, playlist or song)
             Text {
@@ -2307,6 +2334,13 @@ Item {
                 text: qsTr("Let other devices on your network connect (your phone on the same Wi-Fi). Only on networks you trust, like your home's")
                 checked: webRemote.network
                 onToggled: webRemote.setNetwork(checked)
+            }
+            StyledCheck {
+                objectName: "remoteShareLibrary"
+                enabled: webRemote.on && webRemote.network
+                text: qsTr("Paired computers can play my library (they add it in Settings → Music servers; nothing here can be changed from there)")
+                checked: webRemote.sharing
+                onToggled: webRemote.setSharing(checked)
             }
             Text {
                 textFormat: Text.PlainText
