@@ -704,29 +704,31 @@ Item {
             spacing: 10
             PillButton { text: qsTr("Play all"); height: 30; onClicked: discover.playSongs(songShelf.listName, 0) }
         }
-        ListView {
-            id: songs
+        // (a Column of rows: a shelf holds a couple of dozen songs at most. Rows keep TrackRow's own height: it
+        // has no implicit height, and sizing rows by it made every row nothing tall, an empty shelf)
+        Column {
+            id: songList
             width: parent.width
-            height: contentHeight
-            interactive: false
-            readonly property int shown: songShelf.expanded ? count : Math.min(count, 5)
-            delegate: TrackRow {
-                width: songs.width
-                visible: index < songs.shown
-                height: visible ? implicitHeight : 0
-                number: index + 1
-                title: model.title
-                artist: model.artist
-                album: model.reason || model.album
-                durText: model.durText
-                artUrl: model.artUrl
-                path: model.path
-                context: "discover"
-                rowIndex: index
-                selectionSource: songs.model
-                current: player.current && player.current.path === model.path
-                onActivated: discover.playSongs(songShelf.listName, index)
-                onEnqueue: player.enqueue(songs.model.get(index))
+            Repeater {
+                id: songs
+                readonly property int shown: songShelf.expanded ? count : Math.min(count, 5)
+                delegate: TrackRow {
+                    width: songList.width
+                    visible: index < songs.shown  // (a Column leaves hidden rows out)
+                    number: index + 1
+                    title: model.title
+                    artist: model.artist
+                    album: model.reason || model.album
+                    durText: model.durText
+                    artUrl: model.artUrl
+                    path: model.path
+                    context: "discover"
+                    rowIndex: index
+                    selectionSource: songs.model
+                    current: player.current && player.current.path === model.path
+                    onActivated: discover.playSongs(songShelf.listName, index)
+                    onEnqueue: player.enqueue(songs.model.get(index))
+                }
             }
         }
         PillButton {

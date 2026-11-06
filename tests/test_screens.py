@@ -2910,3 +2910,25 @@ def test_discover_online_shelves_and_the_wishlist(qapp, app_window, tmp_path):
     qapp.processEvents()
     assert window.findChild(QObject, "discoverOnlineSettings") is not None
     assert not [w for w in warnings if "Discover" in w or "onlineDiscover" in w or "Settings" in w], warnings[:5]
+
+
+def test_discover_song_shelves_show_their_songs(qapp, app_window):
+    """Songs you used to love and Deep cuts showed their buttons but no songs: a ListView sized to its own contents
+    starts at no height, so it never made a row. Five rows show, the rest with Show all."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    discover, library = objects["discover"], objects["library"]
+    tracks = [dict(t, reason="Played 12 times, last in 2024", durText="3:20") for t in library.allTracks()]
+    assert len(tracks) >= 6
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "discover"))
+    qapp.processEvents()
+    assert wait_for(lambda: not discover.loading, timeout=10)
+    discover.forgottenSongs.set_items(tracks[:6])
+    discover.deepCuts.set_items(tracks[:3])
+    qapp.processEvents()
+    for shelf, n in (("shelf_discoverForgottenSongs", 5), ("shelf_discoverDeepCuts", 3)):
+        item = find_item(window, shelf)
+        assert item is not None and item.property("visible")
+        assert wait_for(lambda: item.property("height") > 60 * n, timeout=5), (shelf, item.property("height"))
+    assert not [w for w in warnings if "DiscoverPage" in w or "TrackRow" in w], warnings[:3]
