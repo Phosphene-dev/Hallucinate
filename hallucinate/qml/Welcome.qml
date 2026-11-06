@@ -293,6 +293,7 @@ FocusScope {
                             Feature { name: "stats"; text: qsTr("Stats") }
                             Feature { name: "history"; text: qsTr("History") }
                             Feature { name: "recap"; text: qsTr("Recap") }
+                            Feature { name: "discover"; text: qsTr("Discover") }
                             Feature { name: "health"; text: qsTr("Library health") }
                         }
                         Group { text: qsTr("Going online") }

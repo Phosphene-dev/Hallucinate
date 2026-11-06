@@ -243,13 +243,13 @@ Item {
 
             AlbumShelf {
                 objectName: "rediscoverShelf"
-                visible: userLib.rediscover.count > 0 && shell.features.homeShelves !== false
+                visible: userLib.rediscover.count > 0 && shell.features.homeShelves !== false && shell.features.homeRediscover === true
                 title: qsTr("Rediscover")
                 subtitle: qsTr("Albums you haven't played in a while, or ever")
                 model: userLib.rediscover
             }
             AlbumShelf {
-                visible: userLib.onThisDay.count > 0 && shell.features.homeShelves !== false
+                visible: userLib.onThisDay.count > 0 && shell.features.homeShelves !== false && shell.features.homeOnThisDay === true
                 title: qsTr("On this day")
                 subtitle: qsTr("What you were listening to around this date in past years")
                 model: userLib.onThisDay

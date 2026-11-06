@@ -24,7 +24,8 @@ Menu {
         Nav.selectionMenu()
         return true
     }
-    function showArtist(n) { kind = "artist"; name = n; path = ""; showNow() }
+    property bool fromDiscover: false
+    function showArtist(n) { kind = "artist"; name = n; path = ""; fromDiscover = Nav.discoverMenu; Nav.discoverMenu = false; showNow() }
     function showFolder(p, n) {
         kind = "folder"; path = p; name = n || p.split("/").pop()
         if (ofSelection()) return
@@ -44,6 +45,13 @@ Menu {
         else library.playFolder(path, shuffle)
     }
 
+    MenuItem {  // (only on Discover's shelves: that artist isn't suggested there again)
+        objectName: "artistNotInterested"
+        visible: collectionMenu.artist && collectionMenu.fromDiscover; height: visible ? implicitHeight : 0
+        text: qsTr("Not interested"); icon.name: "close"
+        onTriggered: discover.notInterested("artist", discover.artistKey(collectionMenu.name), collectionMenu.name)
+    }
+    MenuSeparator { visible: collectionMenu.artist && collectionMenu.fromDiscover; height: visible ? implicitHeight : 0 }
     MenuItem { text: qsTr("Play"); icon.name: "play"; onTriggered: collectionMenu.play(false) }
     MenuItem { text: qsTr("Shuffle"); icon.name: "shuffle"; onTriggered: collectionMenu.play(true) }
     MenuItem {

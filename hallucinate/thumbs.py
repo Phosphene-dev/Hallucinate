@@ -3,6 +3,7 @@
 QML requests run on Qt's image-loader threads (``Image.asynchronous``), so decoding and scaling
 large embedded covers never touches the GUI thread. Scaled results are cached on disk."""
 import hashlib
+import logging
 import os
 import tempfile
 import time
@@ -46,7 +47,11 @@ class ArtProvider(QQuickImageProvider):
         px, path = self.parse(image_id)
         image = QImage()
         if px and path:
-            image = self.load(path, px)
+            try:
+                image = self.load(path, px)
+            except Exception:  # noqa: BLE001 - an odd file mustn't fail the load: the placeholder, and it's tried again
+                logging.getLogger(__name__).debug("Couldn't make a thumbnail of %s", path, exc_info=True)
+                image = QImage()
         if image.isNull():
             # Undecodable/missing art: a transparent pixel keeps QML quiet and shows the placeholder.
             image = QImage(1, 1, QImage.Format.Format_ARGB32)

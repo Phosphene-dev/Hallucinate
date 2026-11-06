@@ -22,8 +22,10 @@ readonly property string what: single ? qsTr("“%1”").arg(albumTitle) : Theme
     readonly property bool onServer: /^(subsonic|jellyfin):\/\//.test(firstPath)
 
     // keys: the album keys to act on (the clicked album, or the whole selection when it was part of it)
+    property bool fromDiscover: false
     function show(k, title, art) {
         keys = k; albumTitle = title; artist = art
+        fromDiscover = Nav.discoverMenu; Nav.discoverMenu = false
         var p = paths()
         allLiked = userLib.allLiked(p)
         firstPath = p.length ? p[0] : ""
@@ -40,6 +42,14 @@ readonly property string what: single ? qsTr("“%1”").arg(albumTitle) : Theme
         userLib.playPaths(p)
     }
 
+    MenuItem {  // (only on Discover's shelves: that album isn't suggested there again)
+        objectName: "albumNotInterested"
+        visible: albumMenu.fromDiscover && albumMenu.single; height: visible ? implicitHeight : 0
+        text: qsTr("Not interested"); icon.name: "close"
+        onTriggered: discover.notInterested("album", albumMenu.keys[0],
+                                             albumMenu.artist ? qsTr("%1 by %2").arg(albumMenu.albumTitle).arg(albumMenu.artist) : albumMenu.albumTitle)
+    }
+    MenuSeparator { visible: albumMenu.fromDiscover && albumMenu.single; height: visible ? implicitHeight : 0 }
     MenuItem { text: qsTr("Play"); icon.name: "play"; onTriggered: albumMenu.single ? library.playAlbum(albumMenu.keys[0], 0) : userLib.playPaths(albumMenu.paths()) }
     MenuItem { objectName: "albumShuffle"; text: qsTr("Shuffle"); icon.name: "shuffle"; onTriggered: albumMenu.shuffle() }
     MenuItem { text: qsTr("Play next"); icon.name: "next"; onTriggered: { userLib.playNextPaths(albumMenu.paths()); Nav.notify(qsTr("%1 will play next").arg(albumMenu.what)) } }

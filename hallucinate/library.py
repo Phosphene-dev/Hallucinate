@@ -548,17 +548,46 @@ class Library(QObject):
         if player is not None and hasattr(player, "setRadioSource"):
             player.setRadioSource(self.radioTracks)
 
+    def setSoundsLike(self, sounds):
+        """Radio can pick by how songs sound too (likethis.SoundsLike), as chosen in Settings."""
+        self._sounds = sounds
+
     def radioTracks(self, seeds, exclude, done, rules=None, limit=10):
-        """Pick radio tracks on the search worker and pass them to `done` (called on that worker)."""
+        """Pick radio tracks on the search worker and pass them to `done` (called on that worker). Following a
+        smart playlist, its rules decide, so it's picked by what's played together and tags then."""
+        sounds = getattr(self, "_sounds", None)
+        mode = sounds.radio_mode() if sounds is not None and not rules else "together"
+        opts = sounds.radio_options((limit + 1) // 2 if mode == "both" else limit) if mode != "together" else None
+
         def work(db):
             try:
-                tracks = decorate(radio_tracks(db, seeds, exclude, limit, rules=rules))
+                if mode != "together":
+                    tracks = self._radio_by_sound(db, sounds, mode, seeds, exclude, limit, opts)
+                else:
+                    tracks = decorate(radio_tracks(db, seeds, exclude, limit, rules=rules))
             except Exception:  # noqa: BLE001
                 logger.exception("Radio could not pick tracks")
                 tracks = []
             done(tracks)
 
         self._quick.submit(work)
+
+    @staticmethod
+    def _radio_by_sound(db, sounds, mode, seeds, exclude, limit, opts):
+        """Radio's picks by sound ("sound"), or half by sound and half the usual way, taking turns ("both").
+        Songs not measured yet (or too few measured) fall back on the usual way."""
+        paths = sounds.radio_pick(db, seeds, exclude, opts)
+        rows = {r["path"]: r for r in db._rows(
+            f"SELECT * FROM tracks WHERE path IN ({','.join('?' * len(paths))})", paths)} if paths else {}
+        by_sound = [rows[p] for p in paths if p in rows]
+        usual = radio_tracks(db, seeds, set(exclude) | set(paths), limit - len(by_sound)) \
+            if len(by_sound) < limit else []
+        if mode == "both":
+            mixed = []
+            for i in range(max(len(by_sound), len(usual))):
+                mixed += [t for t in (by_sound[i:i + 1] + usual[i:i + 1])]
+            by_sound, usual = mixed, []
+        return decorate([*by_sound, *usual][:limit])
 
     # --- loading -----------------------------------------------------------
     @staticmethod

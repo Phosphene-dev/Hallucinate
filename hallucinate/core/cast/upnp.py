@@ -92,6 +92,8 @@ def safe_xml(raw):
         raise UpnpError("answer too large")
     if re.search(rb"<!(?:ENTITY|DOCTYPE)", raw, re.IGNORECASE):
         raise UpnpError("XML with a DOCTYPE")
+    if b"\x00" in raw:  # (UTF-16/32, where the check above can't see a DOCTYPE: no device answers that way)
+        raise UpnpError("XML in UTF-16")
     try:
         return ET.fromstring(raw)
     except ET.ParseError as e:

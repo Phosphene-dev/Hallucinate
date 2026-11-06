@@ -36,6 +36,29 @@
         </translation>
     </message>
     <message numerus="yes">
+        <source>Listening to your music: %1 of %n song(s)</source>
+        <translation>
+            <numerusform>Écoute de votre musique : %1 sur %n morceau</numerusform>
+            <numerusform>Écoute de votre musique : %1 sur %n morceaux</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Paused. Resume it any time in Settings → Discover.</source>
+        <translation>En pause. Reprenez quand vous voulez dans Paramètres → Découvrir.</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Annuler</translation>
+    </message>
+    <message>
+        <source>Looking for new releases: %1 of %2</source>
+        <translation>Recherche de nouveautés : %1 sur %2</translation>
+    </message>
+    <message>
+        <source>Looking for artists like yours: %1 of %2</source>
+        <translation>Recherche d’artistes proches des vôtres : %1 sur %2</translation>
+    </message>
+    <message numerus="yes">
         <source>Downloading %n episode(s)</source>
         <translation>
             <numerusform>Téléchargement de %n épisode</numerusform>
@@ -214,6 +237,14 @@
             <numerusform>%n album</numerusform>
             <numerusform>%n albums</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Not interested</source>
+        <translation>Pas intéressé</translation>
+    </message>
+    <message>
+        <source>%1 by %2</source>
+        <translation>%1 de %2</translation>
     </message>
     <message>
         <source>%1 will play next</source>
@@ -973,6 +1004,10 @@
         <translation>Tout ce qui est dans «&#xa0;%1&#xa0;»</translation>
     </message>
     <message>
+        <source>Not interested</source>
+        <translation>Pas intéressé</translation>
+    </message>
+    <message>
         <source>Play</source>
         <translation>Lire</translation>
     </message>
@@ -1187,6 +1222,14 @@
     <message>
         <source>Go to  ·  your week, month or year</source>
         <translation>Aller à  ·  votre semaine, mois ou année</translation>
+    </message>
+    <message>
+        <source>Discover</source>
+        <translation>Découvrir</translation>
+    </message>
+    <message>
+        <source>Go to  ·  daily mixes and music to find again</source>
+        <translation>Aller à  ·  mix du jour et musique à redécouvrir</translation>
     </message>
     <message>
         <source>Podcasts</source>
@@ -1797,6 +1840,445 @@
     <message>
         <source>Needs a Discord application ID</source>
         <translation>Il faut un identifiant d’application Discord</translation>
+    </message>
+</context>
+<context>
+    <name>Discover</name>
+    <message>
+        <source>Played %1 times, last in %2</source>
+        <translation>Écouté %1 fois, la dernière en %2</translation>
+    </message>
+    <message>
+        <source>Last played %1</source>
+        <translation>Écouté pour la dernière fois en %1</translation>
+    </message>
+    <message>
+        <source>Loved, never played here</source>
+        <translation>Aimé, jamais écouté ici</translation>
+    </message>
+    <message>
+        <source>Never played, by %1</source>
+        <translation>Jamais écouté, de %1</translation>
+    </message>
+    <message>
+        <source>Added %1, never played</source>
+        <translation>Ajouté en %1, jamais écouté</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n year(s) ago</source>
+        <translation>
+            <numerusform>il y a %n an</numerusform>
+            <numerusform>il y a %n ans</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Around this day in %1</source>
+        <translation>Vers ce jour en %1</translation>
+    </message>
+    <message>
+        <source>the &apos;%1s</source>
+        <translation>années %1</translation>
+    </message>
+    <message>
+        <source>%1 from %2</source>
+        <translation>%1 des %2</translation>
+    </message>
+    <message>
+        <source>%1 mix</source>
+        <translation>Mix %1</translation>
+    </message>
+    <message>
+        <source>Music from %1</source>
+        <translation>Musique des %1</translation>
+    </message>
+    <message>
+        <source>%1 and more</source>
+        <translation>%1 et plus</translation>
+    </message>
+    <message>
+        <source>%1 (%2)</source>
+        <translation>%1 (%2)</translation>
+    </message>
+    <message>
+        <source>“%1” won&apos;t be suggested again</source>
+        <translation>« %1 » ne sera plus suggéré</translation>
+    </message>
+</context>
+<context>
+    <name>DiscoverOnline</name>
+    <message>
+        <source>New releases</source>
+        <translation>Nouveautés</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n new release(s) by artists you play</source>
+        <translation>
+            <numerusform>%n nouveauté d’un artiste que vous écoutez</numerusform>
+            <numerusform>%n nouveautés d’artistes que vous écoutez</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>“%1” won&apos;t be shown again</source>
+        <translation>« %1 » ne sera plus affiché</translation>
+    </message>
+    <message>
+        <source>“%1” won&apos;t be suggested again</source>
+        <translation>« %1 » ne sera plus suggéré</translation>
+    </message>
+    <message>
+        <source>%1 by %2</source>
+        <translation>%1 de %2</translation>
+    </message>
+    <message>
+        <source>“%1” is on your wishlist</source>
+        <translation>« %1 » est dans votre liste d’envies</translation>
+    </message>
+    <message>
+        <source>“%1” from your wishlist is in your library now</source>
+        <translation>« %1 », de votre liste d’envies, est maintenant dans votre bibliothèque</translation>
+    </message>
+    <message>
+        <source>No preview of %1 found</source>
+        <translation>Aucun extrait de %1 trouvé</translation>
+    </message>
+</context>
+<context>
+    <name>DiscoverPage</name>
+    <message>
+        <source>“%1” hidden. Settings → Discover brings it back</source>
+        <translation>« %1 » masqué. Paramètres → Découvrir le fait revenir</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Annuler</translation>
+    </message>
+    <message>
+        <source>Discover</source>
+        <translation>Découvrir</translation>
+    </message>
+    <message>
+        <source>Music in your own library to find again, worked out on this computer from what you play. The online shelves you turned on send only artist names.</source>
+        <translation>De la musique de votre bibliothèque à redécouvrir, choisie sur cet ordinateur d’après ce que vous écoutez. Les étagères en ligne que vous avez activées n’envoient que des noms d’artistes.</translation>
+    </message>
+    <message>
+        <source>Music in your own library to find again. Worked out on this computer from what you play; nothing is sent anywhere.</source>
+        <translation>De la musique de votre bibliothèque à redécouvrir. Calculé sur cet ordinateur à partir de ce que vous écoutez ; rien n’est envoyé nulle part.</translation>
+    </message>
+    <message>
+        <source>Discover settings</source>
+        <translation>Paramètres de Découvrir</translation>
+    </message>
+    <message>
+        <source>Nothing to suggest yet</source>
+        <translation>Rien à suggérer pour l’instant</translation>
+    </message>
+    <message>
+        <source>Play some music and come back: suggestions come from what you listen to. Hidden shelves can be brought back in Settings → Discover.</source>
+        <translation>Écoutez de la musique et revenez : les suggestions viennent de ce que vous écoutez. Les rayons masqués reviennent dans Paramètres → Découvrir.</translation>
+    </message>
+    <message>
+        <source>Daily mixes</source>
+        <translation>Mix du jour</translation>
+    </message>
+    <message>
+        <source>Made fresh each day from what you play, with a few songs you haven&apos;t yet</source>
+        <translation>Refaits chaque jour à partir de ce que vous écoutez, avec quelques morceaux pas encore écoutés</translation>
+    </message>
+    <message>
+        <source>New releases</source>
+        <translation>Nouveautés</translation>
+    </message>
+    <message>
+        <source>Out lately from artists you play, and not in your library (from MusicBrainz)</source>
+        <translation>Sortis récemment par des artistes que vous écoutez, et absents de votre bibliothèque (d’après MusicBrainz)</translation>
+    </message>
+    <message>
+        <source>Nothing new from the artists you play in the last %1 days.</source>
+        <translation>Rien de nouveau des artistes que vous écoutez ces %1 derniers jours.</translation>
+    </message>
+    <message>
+        <source>Forgotten favourites</source>
+        <translation>Favoris oubliés</translation>
+    </message>
+    <message>
+        <source>Albums you played a lot, but not for a while</source>
+        <translation>Des albums très écoutés, mais pas depuis un moment</translation>
+    </message>
+    <message>
+        <source>Songs you used to love</source>
+        <translation>Des morceaux que vous adoriez</translation>
+    </message>
+    <message>
+        <source>Played often, liked or rated highly, then left behind</source>
+        <translation>Souvent écoutés, aimés ou bien notés, puis délaissés</translation>
+    </message>
+    <message>
+        <source>Artists to return to</source>
+        <translation>Des artistes à retrouver</translation>
+    </message>
+    <message>
+        <source>Ones you played often, not lately</source>
+        <translation>Souvent écoutés, mais pas récemment</translation>
+    </message>
+    <message>
+        <source>Artists like yours</source>
+        <translation>Artistes proches des vôtres</translation>
+    </message>
+    <message>
+        <source>Not in your library, but like the artists you play most</source>
+        <translation>Absents de votre bibliothèque, mais proches des artistes que vous écoutez le plus</translation>
+    </message>
+    <message>
+        <source>Last.fm needs to be set up first (Settings → Scrobbling &amp; sharing), or choose another source in Settings → Discover.</source>
+        <translation>Last.fm doit d’abord être configuré (Paramètres → Scrobbling et partage), ou choisissez une autre source dans Paramètres → Découvrir.</translation>
+    </message>
+    <message>
+        <source>Nothing found yet: play some music and check again.</source>
+        <translation>Rien de trouvé pour l’instant : écoutez de la musique et vérifiez à nouveau.</translation>
+    </message>
+    <message>
+        <source>Deep cuts</source>
+        <translation>Pépites cachées</translation>
+    </message>
+    <message>
+        <source>Songs you&apos;ve never played by the artists you play most</source>
+        <translation>Des morceaux jamais écoutés de vos artistes les plus écoutés</translation>
+    </message>
+    <message>
+        <source>Never played</source>
+        <translation>Jamais écoutés</translation>
+    </message>
+    <message>
+        <source>Albums you added a while ago and haven&apos;t listened to yet</source>
+        <translation>Des albums ajoutés il y a un moment et pas encore écoutés</translation>
+    </message>
+    <message>
+        <source>On this day</source>
+        <translation>Ce jour-là</translation>
+    </message>
+    <message>
+        <source>What you listened to around today&apos;s date in other years</source>
+        <translation>Ce que vous écoutiez vers cette date les autres années</translation>
+    </message>
+    <message>
+        <source>%1  ·  %2</source>
+        <translation>%1  ·  %2</translation>
+    </message>
+    <message>
+        <source>Play those songs</source>
+        <translation>Écouter ces morceaux</translation>
+    </message>
+    <message>
+        <source>Wishlist</source>
+        <translation>Liste d’envies</translation>
+    </message>
+    <message>
+        <source>Albums and artists you want, kept on this computer. They&apos;re ticked off when they turn up in your library.</source>
+        <translation>Les albums et artistes que vous voulez, gardés sur cet ordinateur. Ils sont cochés quand ils arrivent dans votre bibliothèque.</translation>
+    </message>
+    <message>
+        <source>Look beyond your library?</source>
+        <translation>Regarder au-delà de votre bibliothèque ?</translation>
+    </message>
+    <message>
+        <source>Discover can also show new releases from the artists you play, and artists like yours you don&apos;t have yet, with short previews. For that it sends the names of artists you play to MusicBrainz, ListenBrainz or Deezer (nothing else). Each is off until you turn it on, and offline mode stops them.</source>
+        <translation>Découvrir peut aussi montrer les nouveautés des artistes que vous écoutez, et des artistes proches des vôtres que vous n’avez pas encore, avec de courts extraits. Pour cela, il envoie le nom des artistes que vous écoutez à MusicBrainz, ListenBrainz ou Deezer (rien d’autre). Chacun reste désactivé tant que vous ne l’activez pas, et le mode hors ligne les arrête.</translation>
+    </message>
+    <message>
+        <source>Show new releases</source>
+        <translation>Afficher les nouveautés</translation>
+    </message>
+    <message>
+        <source>Show artists like yours</source>
+        <translation>Afficher les artistes proches</translation>
+    </message>
+    <message>
+        <source>Not now</source>
+        <translation>Pas maintenant</translation>
+    </message>
+    <message>
+        <source>They&apos;re in Settings → Discover whenever you want them</source>
+        <translation>Ils sont dans Paramètres → Découvrir quand vous le voulez</translation>
+    </message>
+    <message>
+        <source>Offline mode is on: what was found before is shown, and nothing new is looked up.</source>
+        <translation>Le mode hors ligne est activé : ce qui a été trouvé avant est affiché, et rien de nouveau n’est recherché.</translation>
+    </message>
+    <message>
+        <source>Offline mode is on, so nothing is looked up.</source>
+        <translation>Le mode hors ligne est activé : rien n’est recherché.</translation>
+    </message>
+    <message>
+        <source>Looking… %1 of %2</source>
+        <translation>Recherche… %1 sur %2</translation>
+    </message>
+    <message>
+        <source>%1 by %2</source>
+        <translation>%1 de %2</translation>
+    </message>
+    <message>
+        <source>Album</source>
+        <translation>Album</translation>
+    </message>
+    <message>
+        <source>EP</source>
+        <translation>EP</translation>
+    </message>
+    <message>
+        <source>Single</source>
+        <translation>Single</translation>
+    </message>
+    <message>
+        <source>On your wishlist</source>
+        <translation>Dans votre liste d’envies</translation>
+    </message>
+    <message>
+        <source>Add to wishlist</source>
+        <translation>Ajouter à la liste d’envies</translation>
+    </message>
+    <message>
+        <source>Look for it…</source>
+        <translation>Le chercher…</translation>
+    </message>
+    <message>
+        <source>Open on MusicBrainz</source>
+        <translation>Ouvrir sur MusicBrainz</translation>
+    </message>
+    <message>
+        <source>Go to %1</source>
+        <translation>Aller à %1</translation>
+    </message>
+    <message>
+        <source>Not interested</source>
+        <translation>Pas intéressé</translation>
+    </message>
+    <message>
+        <source>Stop the preview</source>
+        <translation>Arrêter l’extrait</translation>
+    </message>
+    <message>
+        <source>Play a preview</source>
+        <translation>Écouter un extrait</translation>
+    </message>
+    <message>
+        <source>Playing “%1”</source>
+        <translation>Lecture de « %1 »</translation>
+    </message>
+    <message>
+        <source>Like %1</source>
+        <translation>Proche de %1</translation>
+    </message>
+    <message>
+        <source>Look for them…</source>
+        <translation>Les chercher…</translation>
+    </message>
+    <message>
+        <source>Open their page</source>
+        <translation>Ouvrir leur page</translation>
+    </message>
+    <message>
+        <source>In your library now</source>
+        <translation>Maintenant dans votre bibliothèque</translation>
+    </message>
+    <message>
+        <source>Added %1</source>
+        <translation>Ajouté le %1</translation>
+    </message>
+    <message>
+        <source>Look for it</source>
+        <translation>Le chercher</translation>
+    </message>
+    <message>
+        <source>More for this wish</source>
+        <translation>Plus pour cette envie</translation>
+    </message>
+    <message>
+        <source>Edit the note…</source>
+        <translation>Modifier la note…</translation>
+    </message>
+    <message>
+        <source>Open its page</source>
+        <translation>Ouvrir sa page</translation>
+    </message>
+    <message>
+        <source>Remove from the wishlist</source>
+        <translation>Retirer de la liste d’envies</translation>
+    </message>
+    <message>
+        <source>Removed from your wishlist</source>
+        <translation>Retiré de votre liste d’envies</translation>
+    </message>
+    <message>
+        <source>Note</source>
+        <translation>Note</translation>
+    </message>
+    <message>
+        <source>Which edition, where you heard of it…</source>
+        <translation>Quelle édition, où vous en avez entendu parler…</translation>
+    </message>
+    <message>
+        <source>Options for this shelf</source>
+        <translation>Options de ce rayon</translation>
+    </message>
+    <message>
+        <source>Check now</source>
+        <translation>Vérifier maintenant</translation>
+    </message>
+    <message>
+        <source>Hide this shelf</source>
+        <translation>Masquer ce rayon</translation>
+    </message>
+    <message>
+        <source>Discover settings…</source>
+        <translation>Paramètres de Découvrir…</translation>
+    </message>
+    <message>
+        <source>Play all</source>
+        <translation>Tout lire</translation>
+    </message>
+    <message>
+        <source>Show fewer</source>
+        <translation>En montrer moins</translation>
+    </message>
+    <message>
+        <source>Show all %1</source>
+        <translation>Les montrer tous (%1)</translation>
+    </message>
+    <message>
+        <source>%1 songs  ·  %2 min</source>
+        <translation>%1 morceaux  ·  %2 min</translation>
+    </message>
+    <message>
+        <source>More for this mix</source>
+        <translation>Plus pour ce mix</translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation>Lire</translation>
+    </message>
+    <message>
+        <source>Shuffle</source>
+        <translation>Lecture aléatoire</translation>
+    </message>
+    <message>
+        <source>Add to queue</source>
+        <translation>Ajouter à la file d’attente</translation>
+    </message>
+    <message>
+        <source>“%1” added to the queue</source>
+        <translation>« %1 » ajouté à la file d’attente</translation>
+    </message>
+    <message>
+        <source>Save as a playlist</source>
+        <translation>Enregistrer comme playlist</translation>
+    </message>
+    <message>
+        <source>Saved as a playlist: it stays as it is when the mix changes</source>
+        <translation>Enregistré comme playlist : elle reste telle quelle quand le mix change</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Ouvrir</translation>
     </message>
 </context>
 <context>
@@ -7641,6 +8123,30 @@
         <translation>Descendre %1</translation>
     </message>
     <message>
+        <source>My 50 most played artists</source>
+        <translation>Mes 50 artistes les plus écoutés</translation>
+    </message>
+    <message>
+        <source>My 200 most played</source>
+        <translation>Mes 200 plus écoutés</translation>
+    </message>
+    <message>
+        <source>Every artist I have</source>
+        <translation>Tous mes artistes</translation>
+    </message>
+    <message>
+        <source>My 10 most played artists</source>
+        <translation>Mes 10 artistes les plus écoutés</translation>
+    </message>
+    <message>
+        <source>My 25 most played</source>
+        <translation>Mes 25 plus écoutés</translation>
+    </message>
+    <message>
+        <source>My 50 most played</source>
+        <translation>Mes 50 plus écoutés</translation>
+    </message>
+    <message>
         <source>podcast episodes skip back forward seconds feeds check refresh download keep remove storage played speed next</source>
         <translation>podcast épisodes reculer avancer secondes flux vérifier actualiser télécharger garder supprimer stockage écouté vitesse suivant podcast episodes skip back forward seconds feeds check refresh download keep remove storage played speed next</translation>
     </message>
@@ -7862,6 +8368,277 @@
     <message>
         <source>Album</source>
         <translation>Album</translation>
+    </message>
+    <message>
+        <source>Discover</source>
+        <translation>Découvrir</translation>
+    </message>
+    <message>
+        <source>Rediscover shelf</source>
+        <translation>Rayon À redécouvrir</translation>
+    </message>
+    <message>
+        <source>On this day shelf</source>
+        <translation>Rayon Ce jour-là</translation>
+    </message>
+    <message>
+        <source>discover suggestions recommendations daily mixes forgotten favourites deep cuts never played on this day not interested hidden shelves rediscover sounds like this similar songs tempo bpm key energy timbre measure listen analyse radio flow new releases wishlist want buy store bandcamp preview similar artists musicbrainz listenbrainz deezer online</source>
+        <translation>découvrir suggestions recommandations mix du jour favoris oubliés pépites jamais écouté ce jour-là pas intéressé masqué étagères redécouvrir dans le même son morceaux similaires tempo bpm tonalité énergie timbre mesurer écouter analyser radio enchaînement nouveautés liste d’envies envie acheter boutique bandcamp extrait artistes similaires musicbrainz listenbrainz deezer en ligne</translation>
+    </message>
+    <message>
+        <source>Discover suggests music from your own library, worked out on this computer from what you play. Choose which shelves it shows; a shelf that&apos;s off isn&apos;t even worked out. The whole page can be turned off in Features.</source>
+        <translation>Découvrir suggère de la musique de votre bibliothèque, calculée sur cet ordinateur à partir de ce que vous écoutez. Choisissez les rayons affichés ; un rayon désactivé n’est même pas calculé. La page entière peut être désactivée dans Fonctionnalités.</translation>
+    </message>
+    <message>
+        <source>Daily mixes</source>
+        <translation>Mix du jour</translation>
+    </message>
+    <message>
+        <source>Forgotten favourites</source>
+        <translation>Favoris oubliés</translation>
+    </message>
+    <message>
+        <source>Songs you used to love</source>
+        <translation>Des morceaux que vous adoriez</translation>
+    </message>
+    <message>
+        <source>Artists to return to</source>
+        <translation>Des artistes à retrouver</translation>
+    </message>
+    <message>
+        <source>Deep cuts</source>
+        <translation>Pépites cachées</translation>
+    </message>
+    <message>
+        <source>Never played</source>
+        <translation>Jamais écoutés</translation>
+    </message>
+    <message>
+        <source>On this day</source>
+        <translation>Ce jour-là</translation>
+    </message>
+    <message>
+        <source>Forgotten after</source>
+        <translation>Oublié après</translation>
+    </message>
+    <message>
+        <source>A month without playing</source>
+        <translation>Un mois sans écoute</translation>
+    </message>
+    <message>
+        <source>3 months without playing</source>
+        <translation>3 mois sans écoute</translation>
+    </message>
+    <message>
+        <source>6 months without playing</source>
+        <translation>6 mois sans écoute</translation>
+    </message>
+    <message>
+        <source>A year without playing</source>
+        <translation>Un an sans écoute</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n mix(es)</source>
+        <translation>
+            <numerusform>%n mix</numerusform>
+            <numerusform>%n mix</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Songs in each mix</source>
+        <translation>Morceaux par mix</translation>
+    </message>
+    <message>
+        <source>Songs you haven&apos;t played</source>
+        <translation>Morceaux pas encore écoutés</translation>
+    </message>
+    <message>
+        <source>None: only songs I know</source>
+        <translation>Aucun : seulement ceux que je connais</translation>
+    </message>
+    <message>
+        <source>Some (about a quarter)</source>
+        <translation>Quelques-uns (environ un quart)</translation>
+    </message>
+    <message>
+        <source>More (about half)</source>
+        <translation>Davantage (environ la moitié)</translation>
+    </message>
+    <message>
+        <source>Online</source>
+        <translation>En ligne</translation>
+    </message>
+    <message>
+        <source>These look beyond your library, so they&apos;re off until you turn them on. They send only the names of artists you play (to MusicBrainz, ListenBrainz, Deezer or Last.fm, as chosen below), never what you play or when. Offline mode stops them all.</source>
+        <translation>Ces fonctions regardent au-delà de votre bibliothèque : elles restent désactivées tant que vous ne les activez pas. Elles n’envoient que le nom des artistes que vous écoutez (à MusicBrainz, ListenBrainz, Deezer ou Last.fm, selon votre choix ci-dessous), jamais ce que vous écoutez ni quand. Le mode hors ligne les arrête toutes.</translation>
+    </message>
+    <message>
+        <source>New releases from artists you play (MusicBrainz)</source>
+        <translation>Nouveautés des artistes que vous écoutez (MusicBrainz)</translation>
+    </message>
+    <message>
+        <source>Look for</source>
+        <translation>Chercher pour</translation>
+    </message>
+    <message>
+        <source>Out in the last</source>
+        <translation>Sortis au cours du dernier</translation>
+    </message>
+    <message>
+        <source>Month</source>
+        <translation>Mois</translation>
+    </message>
+    <message>
+        <source>3 months</source>
+        <translation>3 mois</translation>
+    </message>
+    <message>
+        <source>6 months</source>
+        <translation>6 mois</translation>
+    </message>
+    <message>
+        <source>Year</source>
+        <translation>Année</translation>
+    </message>
+    <message>
+        <source>EPs</source>
+        <translation>EP</translation>
+    </message>
+    <message>
+        <source>Singles</source>
+        <translation>Singles</translation>
+    </message>
+    <message>
+        <source>Live albums</source>
+        <translation>Albums live</translation>
+    </message>
+    <message>
+        <source>Compilations</source>
+        <translation>Compilations</translation>
+    </message>
+    <message>
+        <source>Tell me when something new comes out (a desktop notification)</source>
+        <translation>Me prévenir quand quelque chose sort (une notification)</translation>
+    </message>
+    <message>
+        <source>Artists like yours that you don&apos;t have yet</source>
+        <translation>Artistes proches des vôtres que vous n’avez pas encore</translation>
+    </message>
+    <message>
+        <source>Ask</source>
+        <translation>Demander à</translation>
+    </message>
+    <message>
+        <source>ListenBrainz (open data)</source>
+        <translation>ListenBrainz (données ouvertes)</translation>
+    </message>
+    <message>
+        <source>Deezer (with pictures)</source>
+        <translation>Deezer (avec photos)</translation>
+    </message>
+    <message>
+        <source>Last.fm (set up for scrobbling)</source>
+        <translation>Last.fm (configuré pour le scrobbling)</translation>
+    </message>
+    <message>
+        <source>Based on</source>
+        <translation>D’après</translation>
+    </message>
+    <message>
+        <source>Previews</source>
+        <translation>Extraits</translation>
+    </message>
+    <message>
+        <source>From Deezer</source>
+        <translation>De Deezer</translation>
+    </message>
+    <message>
+        <source>From Apple</source>
+        <translation>D’Apple</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>Aucun</translation>
+    </message>
+    <message>
+        <source>Wishlist (kept on this computer)</source>
+        <translation>Liste d’envies (gardée sur cet ordinateur)</translation>
+    </message>
+    <message>
+        <source>Look for wishes at</source>
+        <translation>Chercher les envies sur</translation>
+    </message>
+    <message>
+        <source>The web</source>
+        <translation>Le web</translation>
+    </message>
+    <message>
+        <source>Tick wishes off when they turn up in my library</source>
+        <translation>Cocher les envies quand elles arrivent dans ma bibliothèque</translation>
+    </message>
+    <message>
+        <source>Forget what was found</source>
+        <translation>Oublier ce qui a été trouvé</translation>
+    </message>
+    <message>
+        <source>Forgotten: it&apos;s looked up again when the shelves are next shown</source>
+        <translation>Oublié : la recherche reprendra la prochaine fois que les étagères s’afficheront</translation>
+    </message>
+    <message>
+        <source>Stopped: songs couldn&apos;t be decoded just now. It tries again when Hallucinate next starts.</source>
+        <translation>Arrêté : les morceaux n’ont pas pu être décodés. Nouvel essai au prochain démarrage d’Hallucinate.</translation>
+    </message>
+    <message>
+        <source>Any time, at low priority</source>
+        <translation>À tout moment, en priorité basse</translation>
+    </message>
+    <message>
+        <source>A smooth flow</source>
+        <translation>Un enchaînement fluide</translation>
+    </message>
+    <message>
+        <source>Most alike first</source>
+        <translation>Les plus proches d’abord</translation>
+    </message>
+    <message>
+        <source>What you play together</source>
+        <translation>Ce que vous écoutez ensemble</translation>
+    </message>
+    <message>
+        <source>How songs sound</source>
+        <translation>Le son des morceaux</translation>
+    </message>
+    <message>
+        <source>Both, taking turns</source>
+        <translation>Les deux, en alternance</translation>
+    </message>
+    <message>
+        <source>Not interested</source>
+        <translation>Pas intéressé</translation>
+    </message>
+    <message>
+        <source>Nothing yet: right-click an album, song or artist in Discover and choose Not interested, and it&apos;s left out from then on.</source>
+        <translation>Rien pour l’instant : faites un clic droit sur un album, un morceau ou un artiste dans Découvrir et choisissez Pas intéressé ; il est exclu dès lors.</translation>
+    </message>
+    <message>
+        <source>Song</source>
+        <translation>Morceau</translation>
+    </message>
+    <message>
+        <source>Artist</source>
+        <translation>Artiste</translation>
+    </message>
+    <message>
+        <source>New release</source>
+        <translation>Nouveauté</translation>
+    </message>
+    <message>
+        <source>Let back in</source>
+        <translation>Réintégrer</translation>
+    </message>
+    <message>
+        <source>Let them all back in</source>
+        <translation>Tout réintégrer</translation>
     </message>
     <message>
         <source>ReplayGain details</source>
@@ -8438,6 +9215,148 @@
     <message>
         <source>Wikipedia, then Last.fm, then Discogs</source>
         <translation>Wikipédia, puis Last.fm, puis Discogs</translation>
+    </message>
+    <message>
+        <source>Sounds like this</source>
+        <translation>Dans le même son</translation>
+    </message>
+    <message>
+        <source>Right-click a song and choose Sounds like this for songs in your library that sound like it: their tempo, key, energy and timbre. To know, Hallucinate first listens to about a minute of each song on this computer, quietly in the background, the songs you like and play most first. Nothing leaves this computer. Turn it off in Features.</source>
+        <translation>Faites un clic droit sur un morceau et choisissez Dans le même son pour trouver dans votre bibliothèque les morceaux qui lui ressemblent : tempo, tonalité, énergie et timbre. Pour le savoir, Hallucinate écoute d’abord environ une minute de chaque morceau de cet ordinateur, discrètement en arrière-plan, en commençant par ceux que vous aimez et écoutez le plus. Rien ne quitte cet ordinateur. Désactivez-le dans Fonctionnalités.</translation>
+    </message>
+    <message>
+        <source>Paused.</source>
+        <translation>En pause.</translation>
+    </message>
+    <message>
+        <source>Waiting until nothing is playing.</source>
+        <translation>En attente que plus rien ne joue.</translation>
+    </message>
+    <message>
+        <source>Waiting until this computer is plugged in.</source>
+        <translation>En attente que cet ordinateur soit branché.</translation>
+    </message>
+    <message>
+        <source>Waiting until you ask.</source>
+        <translation>En attente de votre demande.</translation>
+    </message>
+    <message>
+        <source>Counting your songs…</source>
+        <translation>Comptage de vos morceaux…</translation>
+    </message>
+    <message>
+        <source>No songs on this computer to listen to yet.</source>
+        <translation>Aucun morceau à écouter sur cet ordinateur pour l’instant.</translation>
+    </message>
+    <message numerus="yes">
+        <source>Listened to all %n song(s).</source>
+        <translation>
+            <numerusform>Le morceau a été écouté.</numerusform>
+            <numerusform>Les %n morceaux ont tous été écoutés.</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Listened to %1 of %n song(s).</source>
+        <translation>
+            <numerusform>%1 morceau écouté sur %n.</numerusform>
+            <numerusform>%1 morceaux écoutés sur %n.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Listening now.</source>
+        <translation>Écoute en cours.</translation>
+    </message>
+    <message>
+        <source>Listen now</source>
+        <translation>Écouter maintenant</translation>
+    </message>
+    <message>
+        <source>Pause</source>
+        <translation>Pause</translation>
+    </message>
+    <message>
+        <source>Resume</source>
+        <translation>Reprendre</translation>
+    </message>
+    <message>
+        <source>Listen to my music</source>
+        <translation>Écouter ma musique</translation>
+    </message>
+    <message>
+        <source>While nothing is playing</source>
+        <translation>Quand rien ne joue</translation>
+    </message>
+    <message>
+        <source>Play them as</source>
+        <translation>Les jouer</translation>
+    </message>
+    <message>
+        <source>Songs each time</source>
+        <translation>Morceaux à chaque fois</translation>
+    </message>
+    <message>
+        <source>Radio mode picks songs</source>
+        <translation>Le mode radio choisit les morceaux</translation>
+    </message>
+    <message>
+        <source>Tempo, keys, artists and listening</source>
+        <translation>Tempo, tonalités, artistes et écoute</translation>
+    </message>
+    <message>
+        <source>Keep the tempo close (half and double time count as close)</source>
+        <translation>Garder un tempo proche (la moitié et le double comptent comme proches)</translation>
+    </message>
+    <message>
+        <source>Keep to keys that mix well (the Camelot wheel)</source>
+        <translation>S’en tenir aux tonalités qui s’enchaînent bien (la roue Camelot)</translation>
+    </message>
+    <message>
+        <source>Include the song&apos;s own artist</source>
+        <translation>Inclure l’artiste du morceau</translation>
+    </message>
+    <message>
+        <source>Songs by any one artist</source>
+        <translation>Morceaux par artiste</translation>
+    </message>
+    <message>
+        <source>At most 1</source>
+        <translation>1 au plus</translation>
+    </message>
+    <message>
+        <source>At most 2</source>
+        <translation>2 au plus</translation>
+    </message>
+    <message>
+        <source>At most 3</source>
+        <translation>3 au plus</translation>
+    </message>
+    <message>
+        <source>At most 5</source>
+        <translation>5 au plus</translation>
+    </message>
+    <message>
+        <source>No limit</source>
+        <translation>Sans limite</translation>
+    </message>
+    <message>
+        <source>Don&apos;t listen while this computer is on battery</source>
+        <translation>Ne pas écouter quand cet ordinateur est sur batterie</translation>
+    </message>
+    <message>
+        <source>Forget what it has heard</source>
+        <translation>Oublier ce qui a été écouté</translation>
+    </message>
+    <message>
+        <source>Forget what it has heard?</source>
+        <translation>Oublier ce qui a été écouté ?</translation>
+    </message>
+    <message>
+        <source>Every song&apos;s measurements are thrown away and Sounds like this starts again from nothing, listening to your music as set above. Your songs and files aren&apos;t touched.</source>
+        <translation>Les mesures de chaque morceau sont effacées et Dans le même son repart de zéro, en écoutant votre musique comme réglé ci-dessus. Vos morceaux et fichiers ne sont pas modifiés.</translation>
+    </message>
+    <message>
+        <source>Left out of Discover and Sounds like this (right-click something in Discover and choose Not interested to add to this).</source>
+        <translation>Exclus de Découvrir et de Dans le même son (faites un clic droit sur un élément de Découvrir et choisissez Pas intéressé pour l’ajouter ici).</translation>
     </message>
     <message>
         <source>equalizer eq bass treble headphones autoeq crossfeed bit-perfect bitperfect exclusive untouched resample sample rate pipewire audiophile dsd dsf dff sacd wasapi exclusive mode core audio</source>
@@ -9031,6 +9950,10 @@
     <message>
         <source>Home</source>
         <translation>Accueil</translation>
+    </message>
+    <message>
+        <source>Discover</source>
+        <translation>Découvrir</translation>
     </message>
     <message>
         <source>Albums</source>
@@ -9983,6 +10906,76 @@
     </message>
 </context>
 <context>
+    <name>SoundsLike</name>
+    <message>
+        <source>Hallucinate couldn&apos;t listen to your music just now (song after song failed to decode), so it has stopped for this session. It tries again next time it starts.</source>
+        <translation>Hallucinate n’a pas pu écouter votre musique (les morceaux n’ont pas pu être décodés les uns après les autres) : l’écoute est arrêtée pour cette session. Nouvel essai au prochain démarrage.</translation>
+    </message>
+    <message>
+        <source>Only songs on this computer can be matched by how they sound.</source>
+        <translation>Seuls les morceaux de cet ordinateur peuvent être comparés par leur son.</translation>
+    </message>
+    <message>
+        <source>Listening to the song first…</source>
+        <translation>Écoute du morceau d’abord…</translation>
+    </message>
+    <message>
+        <source>That song isn&apos;t in the library any more.</source>
+        <translation>Ce morceau n’est plus dans la bibliothèque.</translation>
+    </message>
+    <message>
+        <source>Hallucinate couldn&apos;t listen to that song (it may be silent, too short or damaged).</source>
+        <translation>Hallucinate n’a pas pu écouter ce morceau (il est peut-être silencieux, trop court ou endommagé).</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t find songs that sound like that.</source>
+        <translation>Impossible de trouver des morceaux qui sonnent ainsi.</translation>
+    </message>
+    <message>
+        <source>No songs that sound like that yet: Hallucinate hasn&apos;t listened to enough of your music.</source>
+        <translation>Pas encore de morceaux au son proche : Hallucinate n’a pas assez écouté votre musique.</translation>
+    </message>
+    <message>
+        <source>No other songs sound like that with these settings.</source>
+        <translation>Aucun autre morceau ne sonne ainsi avec ces réglages.</translation>
+    </message>
+    <message>
+        <source>%1 added to the queue</source>
+        <translation>%1 ajoutés à la file d’attente</translation>
+    </message>
+    <message>
+        <source>Sounds like %1 (%2)</source>
+        <translation>Dans le son de %1 (%2)</translation>
+    </message>
+    <message>
+        <source>this</source>
+        <translation>ce morceau</translation>
+    </message>
+    <message>
+        <source>Saved as “%1”</source>
+        <translation>Enregistré sous « %1 »</translation>
+    </message>
+    <message>
+        <source>Picked from the %1 songs listened to so far: they&apos;ll get closer as Hallucinate listens to more of your music.</source>
+        <translation>Choisis parmi les %1 morceaux écoutés jusqu’ici : ils seront plus proches à mesure qu’Hallucinate écoute votre musique.</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n song(s)</source>
+        <translation>
+            <numerusform>%n morceau</numerusform>
+            <numerusform>%n morceaux</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>%1 minor</source>
+        <translation>%1 mineur</translation>
+    </message>
+    <message>
+        <source>%1 major</source>
+        <translation>%1 majeur</translation>
+    </message>
+</context>
+<context>
     <name>Sources</name>
     <message>
         <source>Offline mode is on, so the token can&apos;t be checked</source>
@@ -10923,6 +11916,10 @@
         <translation>Note</translation>
     </message>
     <message>
+        <source>Not interested</source>
+        <translation>Pas intéressé</translation>
+    </message>
+    <message>
         <source>Copy stream link</source>
         <translation>Copier le lien du flux</translation>
     </message>
@@ -10969,6 +11966,22 @@
     <message>
         <source>(%1 of %2)</source>
         <translation>(%1 sur %2)</translation>
+    </message>
+    <message>
+        <source>Sounds like this</source>
+        <translation>Dans le même son</translation>
+    </message>
+    <message>
+        <source>Play it and songs like it</source>
+        <translation>Le jouer avec des morceaux semblables</translation>
+    </message>
+    <message>
+        <source>Add songs like it to the queue</source>
+        <translation>Ajouter des morceaux semblables à la file</translation>
+    </message>
+    <message>
+        <source>Save them as a playlist</source>
+        <translation>Les enregistrer comme liste de lecture</translation>
     </message>
     <message>
         <source>Go to album</source>
@@ -11067,6 +12080,10 @@
     <message>
         <source>Home</source>
         <translation>Accueil</translation>
+    </message>
+    <message>
+        <source>Discover</source>
+        <translation>Découvrir</translation>
     </message>
     <message>
         <source>Albums</source>
@@ -11465,6 +12482,10 @@
         <translation>Bilan</translation>
     </message>
     <message>
+        <source>Discover</source>
+        <translation>Découvrir</translation>
+    </message>
+    <message>
         <source>Library health</source>
         <translation>Santé de la bibliothèque</translation>
     </message>
@@ -11567,6 +12588,18 @@
 </context>
 <context>
     <name>WhatsNew</name>
+    <message>
+        <source>Discover: daily mixes, forgotten favourites, deep cuts and what you played on this day, all from your own library.</source>
+        <translation>Découvrir : mix du jour, favoris oubliés, pépites et ce que vous écoutiez ce jour-là, tout depuis votre bibliothèque.</translation>
+    </message>
+    <message>
+        <source>Right-click a song → Sounds like this, for songs that sound like it (tempo, key, energy), measured on your computer.</source>
+        <translation>Clic droit sur un morceau → Dans le même son, pour des morceaux qui lui ressemblent (tempo, tonalité, énergie), mesurés sur votre ordinateur.</translation>
+    </message>
+    <message>
+        <source>If you like: new releases and artists like yours with previews, and a wishlist (Settings → Discover; off until chosen).</source>
+        <translation>Si vous le voulez : nouveautés et artistes proches des vôtres avec extraits, et une liste d’envies (Paramètres → Découvrir ; désactivés par défaut).</translation>
+    </message>
     <message>
         <source>Bit-perfect playback (Settings → Sound): every song reaches your sound output untouched, at its own rate.</source>
         <translation>Lecture bit-perfect (Paramètres → Son) : chaque morceau atteint votre sortie audio intact, à sa propre fréquence.</translation>

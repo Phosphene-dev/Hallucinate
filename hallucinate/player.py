@@ -389,6 +389,7 @@ class Player(QObject):
         self._cast_next_gen = 0
         self._cast_adopting = False
         self._cast_next_pending = None  # (index, generation) of a next song being got ready to hand over
+        self._cast_next_failed = None  # (index, queue entry) that couldn't be got ready: not tried again for now
         self._session_file = Path(session_file) if session_file else None
         self._restore_pos = 0
         self._parked = False  # a station shown but not connected (see _park_station)
@@ -1903,6 +1904,10 @@ class Player(QObject):
             return  # already there
         if queued is None and self._cast_next_pending == (nxt, self._cast_next_gen):
             return  # being got ready
+        failed = self._cast_next_failed
+        if (queued is None and nxt is not None and failed is not None and failed[0] == nxt
+                and failed[1] is self._queue[nxt]):
+            return  # (it couldn't be got ready: it's loaded the usual way when its turn comes)
         self._cast_next_gen += 1
         gen = self._cast_next_gen
         if queued is not None:
@@ -1917,11 +1922,13 @@ class Player(QObject):
                 return
             self._cast_next_pending = None
             if media.get("error") or media.get("live") or media.get("start") or media.get("end"):
+                if media.get("error"):
+                    self._cast_next_failed = (nxt, track)
                 return  # it'll be loaded the usual way when its turn comes (and say what's wrong then)
             self._cast_queued = (nxt, track, media)
             session.queue_next(media)
         self._cast_next_pending = (nxt, gen)
-        media = self._cast_media(track, session, hand)
+        media = self._cast_media(track, session, hand, urgent=False)  # (FLAC: there's time to make it)
         if not media.get("pending"):
             hand(media)
 

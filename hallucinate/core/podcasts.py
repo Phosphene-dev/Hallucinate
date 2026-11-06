@@ -97,7 +97,9 @@ def _xml(data, what):  # what: the error to give ("That isn't a podcast feed")
     such documents are refused before parsing."""
     raw = data.encode("utf-8") if isinstance(data, str) else bytes(data)
     # anywhere in it, not only near the top: comments may come before a DOCTYPE, as many as a feed likes
-    if re.search(rb"<!(?:ENTITY|DOCTYPE)", raw, re.IGNORECASE):
+    # NUL bytes: UTF-16/32, where "<!DOCTYPE" is spelt with a zero between letters and the check above can't see
+    # it (no feed is sent that way; the parser would read it all the same)
+    if re.search(rb"<!(?:ENTITY|DOCTYPE)", raw, re.IGNORECASE) or b"\x00" in raw:
         raise ValueError(what)
     try:
         return ET.fromstring(raw)

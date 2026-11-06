@@ -1,16 +1,17 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
+import QtQuick.Layouts
 import "."
 
 Item {
     id: page
     objectName: "settings"
     property string query: ""
-    readonly property var sectionIds: ["appearance", "features", "podcasts", "playback", "sound", "library", "servers", "casting", "remote", "sharing", "scrobbling", "desktop", "about"]
-    readonly property var sectionTitles: [qsTr("Appearance"), qsTr("Features"), qsTr("Podcasts"), qsTr("Playback"), qsTr("Sound"), qsTr("Library"), qsTr("Music servers"), qsTr("Casting"), qsTr("Remote & web"), qsTr("Online & privacy"), qsTr("Scrobbling & sharing"), qsTr("Desktop"), qsTr("About")]
+    readonly property var sectionIds: ["appearance", "features", "discover", "podcasts", "playback", "sound", "library", "servers", "casting", "remote", "sharing", "scrobbling", "desktop", "about"]
+    readonly property var sectionTitles: [qsTr("Appearance"), qsTr("Features"), qsTr("Discover"), qsTr("Podcasts"), qsTr("Playback"), qsTr("Sound"), qsTr("Library"), qsTr("Music servers"), qsTr("Casting"), qsTr("Remote & web"), qsTr("Online & privacy"), qsTr("Scrobbling & sharing"), qsTr("Desktop"), qsTr("About")]
 
-    function sectionItem(i) { return [sec_appearance, sec_features, sec_podcasts, sec_playback, sec_sound, sec_library, sec_servers, sec_casting, sec_remote, sec_sharing, sec_scrobbling, sec_desktop, sec_about][i] }
+    function sectionItem(i) { return [sec_appearance, sec_features, sec_discover, sec_podcasts, sec_playback, sec_sound, sec_library, sec_servers, sec_casting, sec_remote, sec_sharing, sec_scrobbling, sec_desktop, sec_about][i] }
     function jumpToId(id) { var i = sectionIds.indexOf(id); if (i >= 0 && sectionItem(i).visible) jumpTo(i) }
     function jumpToSidebar() {
         jumpTo(1)
@@ -96,6 +97,7 @@ Item {
                     required property int index
                     // (by the section's id: its title is in your language)
                     visible: (page.sectionIds[index] !== "podcasts" || shell.features.podcasts !== false)
+                             && (page.sectionIds[index] !== "discover" || shell.features.discover !== false || shell.features.soundsLike !== false)
                              && (page.sectionIds[index] !== "servers" || shell.features.servers === true)
                              && (page.sectionIds[index] !== "casting" || shell.features.casting !== false)
                     text: modelData
@@ -673,17 +675,19 @@ Item {
             FeatureGroup {
                 heading: qsTr("Listening")
                 items: [["stations", qsTr("Internet radio")], ["podcasts", qsTr("Podcasts")], ["servers", qsTr("Music servers")],
-                        ["lyrics", qsTr("Lyrics")], ["visualizer", qsTr("Visualizer")], ["casting", qsTr("Casting")]]
+                        ["lyrics", qsTr("Lyrics")], ["visualizer", qsTr("Visualizer")], ["casting", qsTr("Casting")],
+                        ["soundsLike", qsTr("Sounds like this")]]
             }
             FeatureGroup {
                 heading: qsTr("Pages")
-                items: [["liked", qsTr("Liked Songs")], ["folders", qsTr("Folders")], ["stats", qsTr("Stats")], ["history", qsTr("History")],
+                items: [["discover", qsTr("Discover")], ["liked", qsTr("Liked Songs")], ["folders", qsTr("Folders")], ["stats", qsTr("Stats")], ["history", qsTr("History")],
                         ["recap", qsTr("Recap")], ["health", qsTr("Library health")]]
             }
             FeatureGroup {
                 heading: qsTr("Home")
                 items: [["homeRandom", qsTr("Random album")], ["homeListening", qsTr("Listening card")],
-                        ["homeFacts", qsTr("Library facts")], ["homeShelves", qsTr("Album shelves")]]
+                        ["homeFacts", qsTr("Library facts")], ["homeShelves", qsTr("Album shelves")],
+                        ["homeRediscover", qsTr("Rediscover shelf")], ["homeOnThisDay", qsTr("On this day shelf")]]
             }
             SettingsGroup {
                 id: sidebarGroup
@@ -696,7 +700,7 @@ Item {
                     objectName: "sidebarOrder"
                     width: parent.width
                     spacing: 6
-                    readonly property var names: ({ home: qsTr("Home"), albums: qsTr("Albums"), artists: qsTr("Artists"), songs: qsTr("Songs"),
+                    readonly property var names: ({ home: qsTr("Home"), discover: qsTr("Discover"), albums: qsTr("Albums"), artists: qsTr("Artists"), songs: qsTr("Songs"),
                         folders: qsTr("Folders"), liked: qsTr("Liked Songs"), stats: qsTr("Stats"), history: qsTr("History"), recap: qsTr("Recap"),
                         visualizer: qsTr("Visualizer"), stations: qsTr("Internet radio"), podcasts: qsTr("Podcasts") })
                     readonly property var shown: shell.sidebarOrder.filter(function (p) { return shell.features[p] !== false })
@@ -754,6 +758,427 @@ Item {
                             }
                         }
                     }
+                }
+            }
+        }
+
+        SettingsSection {
+            id: sec_discover
+            objectName: "settings_discover"
+            title: qsTr("Discover")
+            keywords: qsTr("discover suggestions recommendations daily mixes forgotten favourites deep cuts never played on this day not interested hidden shelves rediscover sounds like this similar songs tempo bpm key energy timbre measure listen analyse radio flow new releases wishlist want buy store bandcamp preview similar artists musicbrainz listenbrainz deezer online")
+            query: page.query
+            visible: matches && (shell.features.discover !== false || shell.features.soundsLike !== false)
+            readonly property bool pageOn: shell.features.discover !== false
+            Text {
+                textFormat: Text.PlainText
+                visible: sec_discover.pageOn
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: qsTr("Discover suggests music from your own library, worked out on this computer from what you play. Choose which shelves it shows; a shelf that's off isn't even worked out. The whole page can be turned off in Features.")
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+            }
+            Flow {
+                visible: sec_discover.pageOn
+                width: parent.width
+                spacing: 4
+                Repeater {
+                    model: [["discoverMixes", qsTr("Daily mixes")], ["discoverForgotten", qsTr("Forgotten favourites")],
+                            ["discoverForgottenSongs", qsTr("Songs you used to love")], ["discoverForgottenArtists", qsTr("Artists to return to")],
+                            ["discoverDeepCuts", qsTr("Deep cuts")], ["discoverNeverPlayed", qsTr("Never played")],
+                            ["discoverOnThisDay", qsTr("On this day")]]
+                    StyledCheck {
+                        required property var modelData
+                        objectName: "feature_" + modelData[0]
+                        width: Math.max(240, implicitWidth + 12)
+                        text: modelData[1]
+                        checked: shell.features[modelData[0]] !== false
+                        onToggled: discover.setShelf(modelData[0], checked)
+                    }
+                }
+            }
+            component DiscoverChoice: Row {
+                property alias label: choiceLabel.text
+                property alias model: choiceCombo.model
+                property alias selection: choiceCombo.selection
+                property alias combo: choiceCombo
+                signal chosen(int i)
+                spacing: 12
+                Text { id: choiceLabel; textFormat: Text.PlainText; width: 220; height: 38; verticalAlignment: Text.AlignVCenter; wrapMode: Text.WordWrap; color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14) }
+                StyledCombo { id: choiceCombo; width: 240; onActivated: function (i) { parent.chosen(i) }; Accessible.name: choiceLabel.text }
+            }
+            DiscoverChoice {
+                objectName: "forgottenDays"
+                visible: sec_discover.pageOn
+                label: qsTr("Forgotten after")
+                readonly property var days: [30, 90, 180, 365]
+                model: [qsTr("A month without playing"), qsTr("3 months without playing"), qsTr("6 months without playing"), qsTr("A year without playing")]
+                selection: Math.max(0, days.indexOf(discover.forgottenDays))
+                onChosen: function (i) { discover.setForgottenDays(days[i]) }
+            }
+            DiscoverChoice {
+                objectName: "mixCount"
+                label: qsTr("Daily mixes")
+                visible: sec_discover.pageOn && shell.features.discoverMixes !== false
+                model: [1, 2, 3, 4, 5, 6].map(function (n) { return Theme.counted(qsTr("%n mix(es)", "", n), n) })
+                selection: Math.max(0, discover.mixCount - 1)
+                onChosen: function (i) { discover.setMixCount(i + 1) }
+            }
+            DiscoverChoice {
+                objectName: "mixSize"
+                label: qsTr("Songs in each mix")
+                visible: sec_discover.pageOn && shell.features.discoverMixes !== false
+                readonly property var sizes: [25, 40, 60, 100]
+                model: sizes.map(function (n) { return Theme.counted(qsTr("%n song(s)", "", n), n) })
+                selection: Math.max(0, sizes.indexOf(discover.mixSize))
+                onChosen: function (i) { discover.setMixSize(sizes[i]) }
+            }
+            DiscoverChoice {
+                objectName: "mixFresh"
+                label: qsTr("Songs you haven't played")
+                visible: sec_discover.pageOn && shell.features.discoverMixes !== false
+                readonly property var choices: ["none", "some", "more"]
+                model: [qsTr("None: only songs I know"), qsTr("Some (about a quarter)"), qsTr("More (about half)")]
+                selection: Math.max(0, choices.indexOf(discover.fresh))
+                onChosen: function (i) { discover.setFresh(choices[i]) }
+            }
+            // Online: new releases and artists like yours (each off unless chosen), and the wishlist
+            Column {
+                id: onlineBox
+                objectName: "discoverOnlineSettings"
+                visible: sec_discover.pageOn && typeof onlineDiscover !== "undefined"
+                width: parent.width
+                spacing: 10
+                Text {
+                    textFormat: Text.PlainText
+                    text: qsTr("Online")
+                    color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: qsTr("These look beyond your library, so they're off until you turn them on. They send only the names of artists you play (to MusicBrainz, ListenBrainz, Deezer or Last.fm, as chosen below), never what you play or when. Offline mode stops them all.")
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                }
+                StyledCheck {
+                    objectName: "feature_discoverNewReleases"
+                    text: qsTr("New releases from artists you play (MusicBrainz)")
+                    checked: shell.features.discoverNewReleases === true
+                    onToggled: shell.setFeature("discoverNewReleases", checked)
+                }
+                Column {
+                    visible: shell.features.discoverNewReleases === true
+                    x: 28
+                    width: parent.width - 28
+                    spacing: 8
+                    OptionCombo {
+                        objectName: "releasesFollow"
+                        labelWidth: 202  // (indented: lined up with the others, and inside narrow windows)
+                        label: qsTr("Look for")
+                        values: ["top50", "top200", "all"]
+                        labels: [qsTr("My 50 most played artists"), qsTr("My 200 most played"), qsTr("Every artist I have")]
+                        current: onlineDiscover.follow
+                        onPicked: function (v) { onlineDiscover.setFollow(v) }
+                    }
+                    OptionCombo {
+                        objectName: "releasesWindow"
+                        labelWidth: 202  // (indented: lined up with the others, and inside narrow windows)
+                        label: qsTr("Out in the last")
+                        values: [30, 90, 180, 365]
+                        labels: [qsTr("Month"), qsTr("3 months"), qsTr("6 months"), qsTr("Year")]
+                        current: onlineDiscover.window
+                        onPicked: function (v) { onlineDiscover.setWindow(v) }
+                    }
+                    Flow {
+                        width: parent.width
+                        spacing: 4
+                        StyledCheck { objectName: "releasesAlbums"; text: qsTr("Albums"); checked: onlineDiscover.albums; onToggled: onlineDiscover.setAlbums(checked) }
+                        StyledCheck { objectName: "releasesEps"; text: qsTr("EPs"); checked: onlineDiscover.eps; onToggled: onlineDiscover.setEps(checked) }
+                        StyledCheck { objectName: "releasesSingles"; text: qsTr("Singles"); checked: onlineDiscover.singles; onToggled: onlineDiscover.setSingles(checked) }
+                        StyledCheck { objectName: "releasesLive"; text: qsTr("Live albums"); checked: onlineDiscover.live; onToggled: onlineDiscover.setLive(checked) }
+                        StyledCheck { objectName: "releasesCompilations"; text: qsTr("Compilations"); checked: onlineDiscover.compilations; onToggled: onlineDiscover.setCompilations(checked) }
+                    }
+                    StyledCheck {
+                        objectName: "releasesNotify"
+                        text: qsTr("Tell me when something new comes out (a desktop notification)")
+                        checked: onlineDiscover.notifyNew
+                        onToggled: onlineDiscover.setNotifyNew(checked)
+                    }
+                }
+                StyledCheck {
+                    objectName: "feature_discoverSimilar"
+                    text: qsTr("Artists like yours that you don't have yet")
+                    checked: shell.features.discoverSimilar === true
+                    onToggled: shell.setFeature("discoverSimilar", checked)
+                }
+                Column {
+                    visible: shell.features.discoverSimilar === true
+                    x: 28
+                    width: parent.width - 28
+                    spacing: 8
+                    OptionCombo {
+                        objectName: "similarSource"
+                        labelWidth: 202  // (indented: lined up with the others, and inside narrow windows)
+                        label: qsTr("Ask")
+                        values: ["listenbrainz", "deezer", "lastfm"]
+                        labels: [qsTr("ListenBrainz (open data)"), qsTr("Deezer (with pictures)"), qsTr("Last.fm (set up for scrobbling)")]
+                        current: onlineDiscover.similarSource
+                        onPicked: function (v) { onlineDiscover.setSimilarSource(v) }
+                    }
+                    OptionCombo {
+                        objectName: "similarSeeds"
+                        labelWidth: 202  // (indented: lined up with the others, and inside narrow windows)
+                        label: qsTr("Based on")
+                        values: [10, 25, 50]
+                        labels: [qsTr("My 10 most played artists"), qsTr("My 25 most played"), qsTr("My 50 most played")]
+                        current: onlineDiscover.seeds
+                        onPicked: function (v) { onlineDiscover.setSeeds(v) }
+                    }
+                    OptionCombo {
+                        objectName: "previewSource"
+                        labelWidth: 202  // (indented: lined up with the others, and inside narrow windows)
+                        label: qsTr("Previews")
+                        values: ["deezer", "itunes", "off"]
+                        labels: [qsTr("From Deezer"), qsTr("From Apple"), qsTr("None")]
+                        current: onlineDiscover.previews
+                        onPicked: function (v) { onlineDiscover.setPreviews(v) }
+                    }
+                }
+                StyledCheck {
+                    objectName: "feature_discoverWishlist"
+                    text: qsTr("Wishlist (kept on this computer)")
+                    checked: shell.features.discoverWishlist !== false
+                    onToggled: shell.setFeature("discoverWishlist", checked)
+                }
+                Column {
+                    visible: shell.features.discoverWishlist !== false
+                    x: 28
+                    width: parent.width - 28
+                    spacing: 8
+                    OptionCombo {
+                        objectName: "wishStore"
+                        labelWidth: 202  // (indented: lined up with the others, and inside narrow windows)
+                        label: qsTr("Look for wishes at")
+                        values: onlineDiscover.stores.map(function (s) { return s.key })
+                        labels: onlineDiscover.stores.map(function (s) { return s.name === "The web" ? qsTr("The web") : s.name })
+                        current: onlineDiscover.store
+                        onPicked: function (v) { onlineDiscover.setStore(v) }
+                    }
+                    StyledCheck {
+                        objectName: "wishTickOff"
+                        text: qsTr("Tick wishes off when they turn up in my library")
+                        checked: onlineDiscover.tickOff
+                        onToggled: onlineDiscover.setTickOff(checked)
+                    }
+                }
+                Row {
+                    spacing: 8
+                    visible: shell.features.discoverNewReleases === true || shell.features.discoverSimilar === true
+                    PillButton {
+                        objectName: "discoverCheckNow"
+                        height: 30
+                        enabled: !onlineDiscover.offline && onlineDiscover.busy === ""
+                        text: qsTr("Check now")
+                        onClicked: onlineDiscover.refresh()
+                    }
+                    PillButton {
+                        objectName: "discoverForgetOnline"
+                        height: 30
+                        text: qsTr("Forget what was found")
+                        onClicked: { onlineDiscover.forget(); Nav.notify(qsTr("Forgotten: it's looked up again when the shelves are next shown")) }
+                    }
+                }
+            }
+            // Sounds like this: the song menus' songs that sound like one, and listening to the music to know
+            Column {
+                id: likeBox
+                objectName: "soundsLikeSettings"
+                visible: shell.features.soundsLike !== false && typeof soundsLike !== "undefined"
+                width: parent.width
+                spacing: 10
+                Text {
+                    textFormat: Text.PlainText
+                    text: qsTr("Sounds like this")
+                    color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: qsTr("Right-click a song and choose Sounds like this for songs in your library that sound like it: their tempo, key, energy and timbre. To know, Hallucinate first listens to about a minute of each song on this computer, quietly in the background, the songs you like and play most first. Nothing leaves this computer. Turn it off in Features.")
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                }
+                Text {
+                    objectName: "soundsLikeProgress"
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    readonly property var why: ({
+                        paused: qsTr("Paused."), playing: qsTr("Waiting until nothing is playing."),
+                        battery: qsTr("Waiting until this computer is plugged in."), ask: qsTr("Waiting until you ask."), off: "",
+                        broken: qsTr("Stopped: songs couldn't be decoded just now. It tries again when Hallucinate next starts.") })
+                    text: soundsLike.measured < 0 ? qsTr("Counting your songs…")
+                          : soundsLike.total === 0 ? qsTr("No songs on this computer to listen to yet.")
+                          : soundsLike.measured >= soundsLike.total ? Theme.counted(qsTr("Listened to all %n song(s).", "", soundsLike.total), soundsLike.total)
+                          : Theme.counted(qsTr("Listened to %1 of %n song(s).", "", soundsLike.total), soundsLike.total).arg(Theme.num(soundsLike.measured))
+                            + (soundsLike.running ? " " + qsTr("Listening now.") : (why[soundsLike.waiting] ? " " + why[soundsLike.waiting] : ""))
+                    color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                }
+                Row {
+                    spacing: 8
+                    PillButton {
+                        objectName: "soundsLikeNow"
+                        visible: !soundsLike.running && soundsLike.measured >= 0 && soundsLike.measured < soundsLike.total
+                        height: 30
+                        text: qsTr("Listen now")
+                        onClicked: soundsLike.measureNow()
+                    }
+                    PillButton {
+                        objectName: "soundsLikePause"
+                        visible: soundsLike.running
+                        height: 30
+                        text: qsTr("Pause")
+                        onClicked: soundsLike.pause()
+                    }
+                    PillButton {
+                        objectName: "soundsLikeResume"
+                        visible: soundsLike.paused && !soundsLike.running
+                        height: 30
+                        text: qsTr("Resume")
+                        onClicked: soundsLike.resume()
+                    }
+                }
+                OptionCombo {
+                    objectName: "soundsLikeWhen"
+                    label: qsTr("Listen to my music")
+                    values: ["idle", "always", "ask"]
+                    labels: [qsTr("While nothing is playing"), qsTr("Any time, at low priority"), qsTr("Only when I ask")]
+                    current: soundsLike.when
+                    onPicked: function (v) { soundsLike.setWhen(v) }
+                }
+                OptionCombo {
+                    objectName: "soundsLikeOrder"
+                    label: qsTr("Play them as")
+                    values: ["flow", "alike"]
+                    labels: [qsTr("A smooth flow"), qsTr("Most alike first")]
+                    current: soundsLike.order
+                    onPicked: function (v) { soundsLike.setOrder(v) }
+                }
+                OptionCombo {
+                    objectName: "soundsLikeSize"
+                    label: qsTr("Songs each time")
+                    values: [25, 50, 100]
+                    labels: values.map(function (n) { return Theme.counted(qsTr("%n song(s)", "", n), n) })
+                    current: soundsLike.size
+                    onPicked: function (v) { soundsLike.setSize(v) }
+                }
+                OptionCombo {
+                    objectName: "soundsLikeRadio"
+                    label: qsTr("Radio mode picks songs")
+                    values: ["together", "sound", "both"]
+                    labels: [qsTr("What you play together"), qsTr("How songs sound"), qsTr("Both, taking turns")]
+                    current: soundsLike.radioPicks
+                    onPicked: function (v) { soundsLike.setRadioPicks(v) }
+                }
+                SettingsGroup {
+                    key: "soundsLikeMore"
+                    title: qsTr("Tempo, keys, artists and listening")
+                    query: page.query
+                    StyledCheck {
+                        objectName: "soundsLikeTempo"
+                        text: qsTr("Keep the tempo close (half and double time count as close)")
+                        checked: soundsLike.tempo
+                        onToggled: soundsLike.setTempo(checked)
+                    }
+                    StyledCheck {
+                        objectName: "soundsLikeKeys"
+                        text: qsTr("Keep to keys that mix well (the Camelot wheel)")
+                        checked: soundsLike.keys
+                        onToggled: soundsLike.setKeys(checked)
+                    }
+                    StyledCheck {
+                        objectName: "soundsLikeSameArtist"
+                        text: qsTr("Include the song's own artist")
+                        checked: soundsLike.sameArtist
+                        onToggled: soundsLike.setSameArtist(checked)
+                    }
+                    OptionCombo {
+                        objectName: "soundsLikePerArtist"
+                        label: qsTr("Songs by any one artist")
+                        values: [1, 2, 3, 5, 0]
+                        labels: [qsTr("At most 1"), qsTr("At most 2"), qsTr("At most 3"), qsTr("At most 5"), qsTr("No limit")]
+                        current: soundsLike.perArtist
+                        onPicked: function (v) { soundsLike.setPerArtist(v) }
+                    }
+                    StyledCheck {
+                        objectName: "soundsLikeBattery"
+                        text: qsTr("Don't listen while this computer is on battery")
+                        checked: soundsLike.notOnBattery
+                        onToggled: soundsLike.setNotOnBattery(checked)
+                    }
+                    PillButton {
+                        objectName: "soundsLikeForget"
+                        height: 30
+                        text: qsTr("Forget what it has heard")
+                        onClicked: forgetSounds.open()
+                    }
+                    Dialog {
+                        id: forgetSounds
+                        parent: Overlay.overlay
+                        anchors.centerIn: parent
+                        modal: true
+                        title: qsTr("Forget what it has heard?")
+                        standardButtons: Dialog.Ok | Dialog.Cancel
+                        onAccepted: soundsLike.forget()
+                        Text {
+                            textFormat: Text.PlainText
+                            width: 360
+                            wrapMode: Text.WordWrap
+                            text: qsTr("Every song's measurements are thrown away and Sounds like this starts again from nothing, listening to your music as set above. Your songs and files aren't touched.")
+                            color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                        }
+                    }
+                }
+            }
+            Column {
+                width: parent.width
+                spacing: 6
+                Text {
+                    textFormat: Text.PlainText
+                    text: qsTr("Not interested")
+                    color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: discover.dismissed.length
+                          ? qsTr("Left out of Discover and Sounds like this (right-click something in Discover and choose Not interested to add to this).")
+                          : qsTr("Nothing yet: right-click an album, song or artist in Discover and choose Not interested, and it's left out from then on.")
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                }
+                Repeater {
+                    model: discover.dismissed.slice(0, 50)
+                    RowLayout {
+                        required property var modelData
+                        width: parent.width
+                        Text {
+                            textFormat: Text.PlainText
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                            text: ({ album: qsTr("Album"), song: qsTr("Song"), artist: qsTr("Artist"), release: qsTr("New release") })[modelData.kind] + "  ·  " + (modelData.label || modelData.key)
+                            color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                        }
+                        PillButton { height: 28; text: qsTr("Let back in"); onClicked: discover.letBackIn(modelData.kind, modelData.key) }
+                    }
+                }
+                PillButton {
+                    objectName: "letAllBackIn"
+                    visible: discover.dismissed.length > 1
+                    height: 30
+                    text: qsTr("Let them all back in")
+                    onClicked: discover.letAllBackIn()
                 }
             }
         }

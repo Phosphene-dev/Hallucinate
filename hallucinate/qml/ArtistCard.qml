@@ -22,7 +22,8 @@ Item {
     }
     readonly property bool selected: pick.selected
     function openIt() { if (composer) Nav.openComposer(name); else Nav.openArtist(name) }
-    function menuIt() { if (!composer) Nav.artistMenu(name); else if (composerMenu.item) composerMenu.item.showComposer(name) }
+    property bool fromDiscover: false  // (its menu offers "Not interested")
+    function menuIt() { if (!composer) { Nav.discoverMenu = fromDiscover; Nav.artistMenu(name) } else if (composerMenu.item) composerMenu.item.showComposer(name) }
     width: cardWidth
     height: cardWidth + 56
     Accessible.role: Accessible.Button

@@ -83,6 +83,12 @@ Menu {
         }
     }
     MenuSeparator { visible: songMenu.single && !songMenu.stream; height: visible ? implicitHeight : 0 }
+    MenuItem {  // (only on Discover's shelves: that song isn't suggested there again)
+        objectName: "trackNotInterested"
+        visible: songMenu.single && songMenu.context === "discover"; height: visible ? implicitHeight : 0
+        text: qsTr("Not interested"); icon.name: "close"
+        onTriggered: discover.notInterested("song", songMenu.path, songMenu.trackTitle)
+    }
     MenuItem {
         objectName: "trackCopyLink"
         visible: songMenu.stream && songMenu.single && /^https?:\/\//.test(songMenu.path)
@@ -144,6 +150,38 @@ Menu {
             onObjectAdded: (i, o) => plMenu.addItem(o)
             onObjectRemoved: (i, o) => plMenu.removeItem(o)
         }
+    }
+    // Sounds like this (Discover): songs that sound like this one, for a song on this computer, while it's switched on
+    readonly property bool canLike: songMenu.single && !songMenu.stream && !songMenu.onServer
+                                    && shell.features.soundsLike !== false && typeof soundsLike !== "undefined"
+    Instantiator {
+        model: songMenu.canLike ? 1 : 0
+        Menu {
+            objectName: "soundsLikeMenu"
+            title: qsTr("Sounds like this")
+            icon.name: "discover"
+            MenuItem {
+                objectName: "likePlay"
+                text: qsTr("Play it and songs like it"); icon.name: "play"
+                onTriggered: soundsLike.playLike(songMenu.path)
+            }
+            MenuItem {
+                objectName: "likeQueue"
+                text: qsTr("Add songs like it to the queue"); icon.name: "queue"
+                onTriggered: soundsLike.queueLike(songMenu.path)
+            }
+            MenuItem {
+                objectName: "likeSave"
+                text: qsTr("Save them as a playlist"); icon.name: "playlist"
+                onTriggered: soundsLike.saveLike(songMenu.path, songMenu.trackTitle || songMenu.info.title || "")
+            }
+        }
+        onObjectAdded: function (i, o) {
+            var at = songMenu.count
+            for (var k = 0; k < songMenu.count; k++) if (songMenu.menuAt(k) === plMenu) at = k + 1
+            songMenu.insertMenu(at, o)
+        }
+        onObjectRemoved: (i, o) => songMenu.removeMenu(o)
     }
     MenuSeparator { visible: !songMenu.stream; height: visible ? implicitHeight : 0 }
     MenuItem {

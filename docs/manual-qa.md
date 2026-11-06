@@ -1,5 +1,38 @@
 # Manual QA checklist
 
+## Release testing for 2.0.0
+
+- [ ] Discover with a library you've listened to for a while: daily mixes appear (titles make sense for your
+      music, mostly songs you know plus a few you don't), the same all day, different tomorrow; play, shuffle,
+      queue and "Save as a playlist" from a mix's menu.
+- [ ] Each shelf's ⋯ → Hide this shelf: it goes (Undo brings it back), Settings → Discover shows it off; turning
+      it on there brings it back. Features → Discover off: the page leaves the sidebar, Ctrl+K and the tray.
+- [ ] Right-click an album, song or artist in Discover → Not interested: it goes (Undo), Settings → Discover lists
+      it, Let back in returns it. Not interested is not offered anywhere outside Discover.
+- [ ] Home: Rediscover and On this day are gone unless turned on in Features → Home.
+- [ ] A new library (no listening yet): Discover says there's nothing to suggest yet, calmly.
+- [ ] Sounds like this: with nothing playing, the background list shows "Listening to your music: x of y" after
+      a short while; play something and it stops within a moment, stop playing and it carries on ~15 s later.
+      The computer stays responsive (it runs at low priority). On a laptop on battery it waits (Settings can allow it).
+- [ ] Right-click a song → Sounds like this → Play it and songs like it: the song plays first, then songs that
+      really do sound alike (try a quiet acoustic song and a loud electronic one). Add to the queue and Save as a
+      playlist work; a song not listened to yet is listened to first ("Listening to the song first…").
+- [ ] Settings → Discover → Sounds like this: each choice changes the next pick (flow vs most alike, how many,
+      tempo, keys, own artist, per artist); Pause/Resume/Listen now; Forget what it has heard asks first, then
+      starts again. Features → Sounds like this off: the menu entry goes and nothing is measured.
+- [ ] Radio mode with "Radio mode picks songs: By how they sound" and "Both ways": the songs that follow make sense.
+- [ ] Windows: the helper runs below normal priority (Task Manager → Details) while listening in the background.
+- [ ] Discover with a fresh profile: the "Look beyond your library?" card shows once at the bottom; Not now hides it
+      for good. Nothing is sent anywhere until New releases or Artists like yours is turned on (watch the network).
+- [ ] New releases on: within a minute or so (the background list shows "Looking for new releases"), releases from
+      artists you play appear with covers; ones you own don't; Settings choices (kinds, live, compilations, window)
+      change the shelf; right-click → Add to wishlist, Look for it…, Open on MusicBrainz, Not interested.
+- [ ] Artists like yours with each source (ListenBrainz, Deezer, Last.fm): sensible artists, "Like X, Y"; ▶ plays a
+      preview from Deezer and from Apple, the music pauses and carries on after; pressing again stops it.
+- [ ] Offline mode on: the shelves keep what was found, say offline mode is on, and nothing is asked (no previews).
+- [ ] Wishlist: add, note, Look for it at each store, Remove (Undo). Add an album that's on it to your library and
+      rescan: it's ticked off with a toast.
+
 ## Release testing for 1.13.0
 
 - [ ] Headphone correction: choose a headphone with a ParametricEQ profile; the Equalizer lists its filters; switch

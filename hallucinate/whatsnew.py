@@ -4,6 +4,11 @@ newest version's lines are ever shown, so translators can leave the older ones."
 from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication
 
 HIGHLIGHTS = {
+    "2.0.0": [
+        QT_TRANSLATE_NOOP("WhatsNew", "Discover: daily mixes, forgotten favourites, deep cuts and what you played on this day, all from your own library."),
+        QT_TRANSLATE_NOOP("WhatsNew", "Right-click a song → Sounds like this, for songs that sound like it (tempo, key, energy), measured on your computer."),
+        QT_TRANSLATE_NOOP("WhatsNew", "If you like: new releases and artists like yours with previews, and a wishlist (Settings → Discover; off until chosen)."),
+    ],
     "1.13.0": [
         QT_TRANSLATE_NOOP("WhatsNew", "Bit-perfect playback (Settings → Sound): every song reaches your sound output untouched, at its own rate."),
         QT_TRANSLATE_NOOP("WhatsNew", "DSD files play, AutoEQ headphone profiles are applied exactly, and casting is gapless."),

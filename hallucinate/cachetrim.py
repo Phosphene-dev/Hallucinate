@@ -9,7 +9,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-LIMITS = {"thumbs": 512 * 1024 * 1024, "waveforms": 256 * 1024 * 1024}
+LIMITS = {"thumbs": 512 * 1024 * 1024, "waveforms": 256 * 1024 * 1024, "online": 64 * 1024 * 1024}
 TOUCH_AFTER_S = 7 * 24 * 3600
 
 

@@ -214,7 +214,7 @@ def test_a_format_the_device_cant_play_is_converted(setup, songs, tmp_path):
     assert wait_for(lambda: dev.loads, timeout=30)
     assert wait_for(lambda: dev.fetched)
     status, ctype, body = dev.fetched
-    assert status == 200 and ctype == "audio/flac" and body[:4] == b"fLaC"  # converted, so it plays there
+    assert status == 200 and ctype == "audio/wav" and body[:4] == b"RIFF"  # converted (at once: WAV), so it plays
     assert player.currentIndex == 0 and player.error == ""
 
 
@@ -238,13 +238,14 @@ def test_hallucinates_own_sound(setup, songs):
         connect(casting)
         assert wait_for(lambda: dev.fetched, timeout=30)
         status, ctype, body = dev.fetched
-        assert ctype == "audio/flac" and body[:4] == b"fLaC"  # (24-bit FLAC: every Cast device plays it)
+        assert ctype == "audio/wav" and body[:4] == b"RIFF"  # (the first song, waited on: WAV, ready at once)
         url, start, autoplay, meta = dev.loads[0]
         assert meta["title"] == "T0" and autoplay
         keys = [st["key"] for st in player.signalPath["stages"]]
         assert "eq" in keys and "convert" in keys and not player.signalPath["untouched"]
         assert len(casting._renders) >= 1
         assert wait_for(lambda: len([r for r in casting._renders.values() if "file" in r]) >= 2, timeout=30)  # the next song got ready too
+        assert any(r["file"].endswith(".flac") for r in casting._renders.values() if "file" in r)  # (ahead: FLAC)
     finally:
         casting.setSending("original")
         player.setEqEnabled(False)
@@ -262,11 +263,9 @@ def test_a_cue_song_is_cut_out_for_the_device(setup, songs):
     connect(casting)
     assert wait_for(lambda: dev.fetched, timeout=30)
     import io
-
-    from mutagen.flac import FLAC
-    info = FLAC(io.BytesIO(dev.fetched[2])).info
-    assert abs(info.length - 1.5) < 0.05  # just that song, not the whole album
-    assert info.bits_per_sample == 24
+    import wave
+    with wave.open(io.BytesIO(dev.fetched[2])) as w:  # (waited on: WAV)
+        assert abs(w.getnframes() / w.getframerate() - 1.5) < 0.05  # just that song, not the whole album
     assert dev.loads[0][3]["title"] == "Middle"
 
 
@@ -437,13 +436,16 @@ def test_the_phone_remote_can_choose_where_it_plays(setup, songs):
 
 @pytest.mark.parametrize("sink,kind", [("audio/flac,audio/mpeg", "flac"), ("audio/mpeg,audio/wav", "wav"), ("", "wav")])
 def test_converted_songs_go_as_flac_only_where_the_device_says_it_plays_it(setup, tmp_path, sink, kind):
+    """The song waited on goes as WAV (ready at once); the next one, got ready while the first plays, as FLAC
+    where the device says it plays it."""
     player, casting, dev = setup("upnp", sink=sink)
-    wv = encode(tmp_path / "x.wv", "wv", seconds=2.0)
-    player.playList([track(wv, 9, dur=2.0, codec="WavPack")], 0)
+    wv = [encode(tmp_path / f"x{i}.wv", "wv", seconds=2.0) for i in range(2)]
+    player.playList([track(w, 9 + i, dur=2.0, codec="WavPack") for i, w in enumerate(wv)], 0)
     connect(casting)
     assert wait_for(lambda: dev.got, timeout=30)
-    ctype, head = dev.got[0]
-    assert ctype == f"audio/{kind}" and head == (b"fLaC" if kind == "flac" else b"RIFF")
+    assert dev.got[0] == ("audio/wav", b"RIFF")
+    assert wait_for(lambda: dev.next_uri, timeout=30)  # the next one, handed over ahead
+    assert dev.next_uri.endswith("." + kind)
 
 
 # --- gapless on the device ----------------------------------------------------------------------------------
@@ -514,3 +516,18 @@ def test_a_renderer_without_it_moves_on_as_before(setup, songs):
     assert wait_for(lambda: player.currentIndex == 1, timeout=10)
     assert time.monotonic() - started < 3  # (no waiting for a next song it was never going to play)
     assert wait_for(lambda: dev.calls.count("SetAVTransportURI") == 2)
+
+
+def test_a_next_song_that_cant_be_got_ready_isnt_tried_over_and_over(setup, songs, tmp_path):
+    player, casting, dev = setup()
+    bad = tmp_path / "bad.ape"
+    bad.write_bytes(b"MAC " + b"\0" * 100)  # can't be decoded at all
+    player.playList([songs[0], track(bad, 9, codec="APE")], 0)
+    connect(casting)
+    assert wait_for(lambda: casting._analyser is not None, timeout=15)
+    tries = []
+    submit = casting._analyser.submit
+    casting._analyser.submit = lambda *a, **k: (tries.append(a[0]), submit(*a, **k))[1]
+    wait_for(lambda: False, timeout=5)  # (five seconds of the device reporting how it's doing)
+    assert len(tries) <= 1
+    casting._analyser.submit = submit

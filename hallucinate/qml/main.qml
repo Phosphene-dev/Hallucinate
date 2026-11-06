@@ -60,6 +60,18 @@ ApplicationWindow {
         target: casting
         function onNotice(text) { toast.show(text) }
     }
+    Connections {  // Discover: "Not interested", with Undo
+        target: discover
+        function onUndoable(text) { toast.show(text, 0, qsTr("Undo"), function () { discover.undo() }) }
+    }
+    Connections {  // Discover online and the wishlist: what was added, ticked off or not found
+        target: typeof onlineDiscover !== "undefined" ? onlineDiscover : null
+        function onMessage(text) { toast.show(text) }
+    }
+    Connections {  // Sounds like this: what it's doing, and when it couldn't
+        target: typeof soundsLike !== "undefined" ? soundsLike : null
+        function onMessage(text) { toast.show(text) }
+    }
     Connections {  // handoff: paired, handed over, carrying on from another computer
         target: handoff
         function onNotice(text) { toast.show(text) }
@@ -79,6 +91,7 @@ ApplicationWindow {
         case "history": return historyPage
         case "health": return healthPage
         case "recap": return recapPage
+        case "discover": return discoverPage
         case "folders": return foldersPage
         case "visualizer": return visualizerPage
         case "settings": return settingsPage
@@ -311,6 +324,7 @@ ApplicationWindow {
     Component { id: historyPage; HistoryPage {} }
     Component { id: healthPage; HealthPage {} }
     Component { id: recapPage; RecapPage {} }
+    Component { id: discoverPage; DiscoverPage {} }
     Component { id: foldersPage; FoldersPage {} }
     Component { id: visualizerPage; VisualizerPage {} }
     Component { id: settingsPage; SettingsPage {} }

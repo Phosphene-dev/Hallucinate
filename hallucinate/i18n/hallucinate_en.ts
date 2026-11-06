@@ -31,6 +31,13 @@
         </translation>
     </message>
     <message numerus="yes">
+        <source>Listening to your music: %1 of %n song(s)</source>
+        <translation>
+            <numerusform>Listening to your music: %1 of %n song</numerusform>
+            <numerusform>Listening to your music: %1 of %n songs</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
         <source>Downloading %n episode(s)</source>
         <translation>
             <numerusform>Downloading %n episode</numerusform>
@@ -207,6 +214,26 @@
         <translation>
             <numerusform>%n movement</numerusform>
             <numerusform>%n movements</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
+    <name>Discover</name>
+    <message numerus="yes">
+        <source>%n year(s) ago</source>
+        <translation>
+            <numerusform>%n year ago</numerusform>
+            <numerusform>%n years ago</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
+    <name>DiscoverOnline</name>
+    <message numerus="yes">
+        <source>%n new release(s) by artists you play</source>
+        <translation>
+            <numerusform>%n new release by artists you play</numerusform>
+            <numerusform>%n new releases by artists you play</numerusform>
         </translation>
     </message>
 </context>
@@ -1003,6 +1030,27 @@
         </translation>
     </message>
     <message numerus="yes">
+        <source>%n mix(es)</source>
+        <translation>
+            <numerusform>%n mix(es)</numerusform>
+            <numerusform>%n mix(es)</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Listened to all %n song(s).</source>
+        <translation>
+            <numerusform>Listened to all %n song.</numerusform>
+            <numerusform>Listened to all %n songs.</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Listened to %1 of %n song(s).</source>
+        <translation>
+            <numerusform>Listened to %1 of %n song.</numerusform>
+            <numerusform>Listened to %1 of %n songs.</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
         <source>%n song(s) kept on this computer (%1): they play without the server, in offline mode too.</source>
         <translation>
             <numerusform>%n song kept on this computer (%1): they play without the server, in offline mode too.</numerusform>
@@ -1106,6 +1154,16 @@
         <translation>
             <numerusform>%n copy</numerusform>
             <numerusform>%n copies</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
+    <name>SoundsLike</name>
+    <message numerus="yes">
+        <source>%n song(s)</source>
+        <translation>
+            <numerusform>%n song</numerusform>
+            <numerusform>%n songs</numerusform>
         </translation>
     </message>
 </context>

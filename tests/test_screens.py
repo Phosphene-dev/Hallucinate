@@ -12,7 +12,7 @@ from PySide6.QtQuickControls2 import QQuickStyle
 from hallucinate.app import QML_STYLE
 from hallucinate.core.db import Database
 
-PAGES = ("home", "albums", "artists", "songs", "folders", "liked", "stats", "history", "recap", "health",
+PAGES = ("home", "discover", "albums", "artists", "songs", "folders", "liked", "stats", "history", "recap", "health",
          "visualizer", "settings")
 BLOCK = 24
 
@@ -158,6 +158,15 @@ def app_window(qapp, tmp_path, monkeypatch, request):
     from hallucinate.handoff import Handoff
 
     objects["handoff"] = Handoff(player, library, objects["webRemote"])
+    from hallucinate.discover import Discover
+
+    objects["discover"] = Discover(db_path, player, user_lib, objects["shell"])
+    from hallucinate.likethis import SoundsLike
+
+    objects["soundsLike"] = SoundsLike(db_path, player, user_lib, objects["shell"], battery=lambda: False, autostart=False)
+    from hallucinate.discoveronline import OnlineDiscover
+
+    objects["onlineDiscover"] = OnlineDiscover(db_path, tmp_path / "data", player, objects["shell"], None, autostart=False)
     from hallucinate.i18n import Translations
 
     objects["i18n"] = Translations(qapp)
@@ -2807,3 +2816,97 @@ def test_the_window_has_rounded_corners_with_its_own_title_bar(qapp, app_window)
         shell.setCustomTitleBar(False)
         shell.setUiValue("roundWindow", "1")
     assert radius_before == 0  # (the tests run with the system's frame)
+
+
+def test_sounds_like_this_in_a_song_s_menu_and_settings(qapp, app_window):
+    """Discover's Sounds like this: in a song's menu while it's switched on (not for a stream), gone when it's off;
+    its settings in Settings → Discover."""
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    menu = window.findChild(QObject, "trackMenu")
+    path = objects["library"].allTracks()[0]["path"]
+
+    def items(p):  # (how many entries the menu has for `p`; the submenu is one of them when it's there)
+        QMetaObject.invokeMethod(menu, "show", Q_ARG("QVariant", p), Q_ARG("QVariant", "T"),
+                                 Q_ARG("QVariant", "songs"), Q_ARG("QVariant", 0))
+        qapp.processEvents()
+        n = menu.property("count"), menu.property("canLike")
+        QMetaObject.invokeMethod(menu, "close")
+        qapp.processEvents()
+        return n
+
+    on, can = items(path)
+    assert can is True
+    assert items("http://radio.example/stream")[1] is False
+    shell.setFeature("soundsLike", False)
+    try:
+        off, can = items(path)
+        assert can is False and off == on - 1
+    finally:
+        shell.setFeature("soundsLike", True)
+    assert items(path) == (on, True)
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "settings"))
+    qapp.processEvents()
+    box = window.findChild(QObject, "soundsLikeSettings")
+    assert box is not None and box.property("visible")
+    assert window.findChild(QObject, "soundsLikeWhen") is not None
+    assert not [w for w in warnings if "soundsLike" in w or "TrackMenu" in w], warnings[:3]
+
+
+def test_discover_online_shelves_and_the_wishlist(qapp, app_window, tmp_path):
+    """Discover's online shelves (off unless chosen) and the wishlist: offered once, shown when on and found,
+    gone when off; a release and an artist like yours have their cards, a wish its row."""
+    import time
+
+    from conftest import wait_for
+
+    from hallucinate.core import online_discover as od
+    from hallucinate.core.db import Database
+
+    window, objects, warnings = app_window
+    shell, online = objects["shell"], objects["onlineDiscover"]
+    db = Database(tmp_path / "library.db")
+    artist = db.conn.execute("SELECT album_artist FROM tracks LIMIT 1").fetchone()[0]
+    key = od.fold(artist)
+    od.remember_mbid(db, key, artist, "11111111-1111-1111-1111-000000000001", time.time())
+    today = time.strftime("%Y-%m-%d")
+    od.store_releases(db, key, [{"id": "11111111-1111-1111-1111-000000000002", "title": "Brand New", "kind": "Album",
+                                 "extra": [], "date": today, "artist": artist}], time.time())
+    od.store_similar(db, key, "listenbrainz", [{"name": "Somebody Else", "score": 1.0, "url": "https://listenbrainz.org/"}],
+                     time.time())
+    od.wish(db, "album", "Somebody Else", "Their Record", now=time.time())
+    db.close()
+
+    def go():
+        QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "discover"))
+        qapp.processEvents()
+        return window.findChild(QObject, "pageStack").property("currentItem")
+
+    page = go()
+    assert wait_for(lambda: online.wishlist, timeout=10)
+    offer = page.findChild(QObject, "onlineOffer")
+    assert offer is not None and offer.property("visible")  # (offered while both are off)
+    assert not page.findChild(QObject, "newReleasesShelf").property("visible")
+    assert page.findChild(QObject, "wishlistShelf").property("visible")  # (the wishlist is on, and has a wish)
+    shell.setFeature("discoverNewReleases", True)
+    shell.setFeature("discoverSimilar", True)
+    try:
+        net_off = __import__("hallucinate.core.net", fromlist=["net"])
+        net_off.set_offline(True)  # (shown from what's kept; nothing asked here)
+        online.open()
+        assert wait_for(lambda: online.newReleases and online.similarArtists, timeout=10)
+        qapp.processEvents()
+        assert not offer.property("visible")
+        assert page.findChild(QObject, "newReleasesShelf").property("visible")
+        assert wait_for(lambda: find_item(window, "release_0") is not None and find_item(window, "similar_0") is not None)
+        assert find_item(window, "wish_0") is not None
+    finally:
+        net_off.set_offline(False)
+        shell.setFeature("discoverNewReleases", False)
+        shell.setFeature("discoverSimilar", False)
+    qapp.processEvents()
+    assert not page.findChild(QObject, "newReleasesShelf").property("visible")
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "settings"))
+    qapp.processEvents()
+    assert window.findChild(QObject, "discoverOnlineSettings") is not None
+    assert not [w for w in warnings if "Discover" in w or "onlineDiscover" in w or "Settings" in w], warnings[:5]

@@ -2,6 +2,8 @@ pragma Singleton
 import QtQuick
 
 QtObject {
+    // set just before a menu opens from the Discover page: its menus offer "Not interested" there
+    property bool discoverMenu: false
     signal openAlbum(string key)
     signal openArtist(string name)
     signal openGenre(string name)

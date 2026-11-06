@@ -122,6 +122,24 @@ class DictModel(QAbstractListModel):
     def toList(self):
         return list(self._items)
 
+    @Slot(result="QVariantMap")
+    def summary(self):
+        """{"seconds": how long the songs last together, "twice": how many are in it more than once} (a playlist's
+        header), worked out here rather than by copying every song into the page (a big list froze it)."""
+        seconds, seen, twice = 0.0, set(), 0
+        for item in self._items:
+            d = item.get("duration") or 0
+            seconds += d if isinstance(d, (int, float)) else 0
+            path = item.get("path")
+            if path in seen:
+                twice += 1
+            seen.add(path)
+        return {"seconds": seconds, "twice": twice}
+
+    @Slot(result="QVariantList")
+    def paths(self):
+        return [item.get("path") for item in self._items]
+
     @Slot(int, result="QVariantMap")
     def get(self, i):
         return dict(self._items[i]) if 0 <= i < len(self._items) else {}

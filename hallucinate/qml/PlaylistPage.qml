@@ -47,14 +47,9 @@ Item {
 
     // how long it all lasts, and whether a song is in it more than once
     readonly property var summary: {
-        var n = list.count, seconds = 0, seen = {}, twice = 0
-        var items = page.tracksModel ? page.tracksModel.toList() : []
-        for (var i = 0; i < items.length; i++) {
-            seconds += items[i].duration || 0
-            if (seen[items[i].path]) twice++
-            seen[items[i].path] = true
-        }
-        return { seconds: seconds, twice: twice, n: n }
+        var n = list.count  // (worked out again whenever the list changes)
+        var s = page.tracksModel ? page.tracksModel.summary() : { seconds: 0, twice: 0 }
+        return { seconds: s.seconds, twice: s.twice, n: n }
     }
     readonly property real seconds: summary.seconds
     Menu {
@@ -62,7 +57,7 @@ Item {
         objectName: "playlistMenu"
         // its songs from a music server, kept on this computer or not (read as it opens)
         property var copies: ({ servers: 0, kept: 0, waiting: 0 })
-        onAboutToShow: copies = page.tracksModel ? serverCopies.status(page.tracksModel.toList().map(function (t) { return t.path })) : copies
+        onAboutToShow: copies = page.tracksModel ? serverCopies.status(page.tracksModel.paths()) : copies
         MenuItem { objectName: "exportPlaylist"; text: qsTr("Export…"); icon.name: "download"; enabled: list.count > 0; onTriggered: Nav.exportPlaylist(page.liked ? "liked" : "playlist", page.liked ? qsTr("Liked Songs") : page.playlistName) }
         MenuItem { visible: !page.liked; height: visible ? implicitHeight : 0; text: qsTr("Rename…"); icon.name: "edit"; onTriggered: { nameField.text = page.playlistName; renameDlg.open() } }
         MenuItem {
@@ -84,14 +79,14 @@ Item {
             visible: moreMenu.copies.servers > 0 && moreMenu.copies.kept + moreMenu.copies.waiting < moreMenu.copies.servers
             height: visible ? implicitHeight : 0
             text: qsTr("Keep on this computer"); icon.name: "download"
-            onTriggered: serverCopies.keep(page.tracksModel.toList().map(function (t) { return t.path }))
+            onTriggered: serverCopies.keep(page.tracksModel.paths())
         }
         MenuItem {
             objectName: "playlistUnkeep"
             visible: moreMenu.copies.kept + moreMenu.copies.waiting > 0
             height: visible ? implicitHeight : 0
             text: qsTr("Remove the copies from this computer"); icon.name: "remove"
-            onTriggered: serverCopies.remove(page.tracksModel.toList().map(function (t) { return t.path }))
+            onTriggered: serverCopies.remove(page.tracksModel.paths())
         }
         MenuSeparator { visible: !page.liked; height: visible ? implicitHeight : 0 }
         MenuItem { objectName: "deletePlaylist"; visible: !page.liked; height: visible ? implicitHeight : 0; text: qsTr("Delete playlist…"); icon.name: "trash"; icon.color: Theme.error; onTriggered: deleteDlg.open() }

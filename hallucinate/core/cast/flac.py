@@ -106,9 +106,11 @@ def _rice_bits(u, k):
     lengths = q + 1 + k
     starts = np.concatenate([[0], np.cumsum(lengths)[:-1]])
     bits = np.zeros(int(lengths.sum()), dtype=np.uint8)
-    bits[starts + q] = 1
-    for j in range(k):
-        bits[starts + q + 1 + j] = (u >> (k - 1 - j)) & 1
+    ends = starts + q
+    bits[ends] = 1
+    if k:  # each value's low k bits, all at once: (values, k) bits put in place in one go
+        shifts = np.arange(k - 1, -1, -1, dtype=np.int64)
+        bits[(ends + 1)[:, None] + np.arange(k)] = ((u[:, None] >> shifts) & 1).astype(np.uint8)
     return bits
 
 

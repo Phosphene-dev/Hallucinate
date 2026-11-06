@@ -1,5 +1,6 @@
 """Your own data in one file, to keep safe or carry to another computer: likes, ratings, playlists (plain and
-smart), play counts, skips, every listen, songs taken out of the library, music folders, stations, podcast
+smart), play counts, skips, every listen, songs taken out of the library, music folders, your wishlist and what
+you told Discover you're not interested in, stations, podcast
 subscriptions with where you were in each episode, Up next, the songs heard on the radio and the time spent on
 stations and shows.
 
@@ -26,6 +27,8 @@ LIBRARY_TABLES = {
     "skips": ("path", "count", "last"),
     "play_log": ("ts", "path", "artist", "title", "album", "duration", "source", "s_artist", "s_title", "s_album"),
     "smart_playlists": ("name", "rules", "created", "folder"),
+    "wishlist": ("key", "kind", "artist", "title", "note", "link", "ref", "added", "got"),
+    "discover_dismissed": ("kind", "key", "label", "at"),
 }
 STATION_COLUMNS = ("name", "url", "homepage", "favicon", "tags", "country", "codec", "bitrate", "uuid", "added",
                    "last_played", "plays")
@@ -113,6 +116,9 @@ ROWS = {
     "smart_playlists": [("name", S, True), ("rules", S, True), ("created", N, False), ("folder", S, False)],
     "playlists": [("name", S, True), ("created", N, False), ("folder", S, False), ("paths", "paths", False)],
     "artist_bios": [("s_aa", S, True), ("own", S, False), ("picked", S, False)],
+    "wishlist": [("kind", S, True), ("artist", S, True), ("title", S, False), ("note", S, False), ("link", S, False),
+                 ("ref", S, False), ("added", N, False), ("got", N, False)],
+    "discover_dismissed": [("kind", S, True), ("key", S, True), ("label", S, False), ("at", N, False)],
     "stations": [(c, I if c in ("bitrate", "plays") else N if c in ("added", "last_played") else S, c == "url")
                  for c in STATION_COLUMNS],
     "radio_log": [("ts", N, True), ("station", S, False), ("artist", S, False), ("title", S, False)],
@@ -246,6 +252,23 @@ def restore(data, library_db, streams_db):
                 if path not in have:
                     pos += 1
                     cur.execute("INSERT INTO playlist_items(playlist_id, path, pos) VALUES(?, ?, ?)", (pid, path, pos))
+        from . import discover as discover_core
+        from . import online_discover
+
+        if cur.execute("SELECT 1 FROM sqlite_master WHERE name='wishlist'").fetchone():
+            for r in data.get("wishlist", []):
+                if r["kind"] in ("album", "artist"):  # (the key's made again here: it's how a wish is matched)
+                    title = r.get("title", "") if r["kind"] == "album" else ""
+                    cur.execute("INSERT OR IGNORE INTO wishlist(key, kind, artist, title, note, link, ref, added, got) "
+                                "VALUES (?,?,?,?,?,?,?,?,?)",
+                                (online_discover.wish_key(r["kind"], r["artist"], title), r["kind"], r["artist"][:300],
+                                 title[:300], r.get("note", "")[:1000], online_discover._web(r.get("link", "")),
+                                 r.get("ref", "")[:64], r.get("added", time.time()), r.get("got")))
+        if cur.execute("SELECT 1 FROM sqlite_master WHERE name='discover_dismissed'").fetchone():
+            for r in data.get("discover_dismissed", []):
+                if r["kind"] in discover_core.KINDS:
+                    cur.execute("INSERT OR IGNORE INTO discover_dismissed(kind, key, label, at) VALUES (?,?,?,?)",
+                                (r["kind"], r["key"], r.get("label", "")[:500], r.get("at", time.time())))
         bios = data.get("artist_bios", [])
         if bios and cur.execute("SELECT 1 FROM sqlite_master WHERE name='artist_bios'").fetchone():
             for r in bios:  # a bio you've written here since wins

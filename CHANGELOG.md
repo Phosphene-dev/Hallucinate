@@ -3,6 +3,60 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.0.0] - 2026-11-06
+
+### Added
+- Discover: a page of music from your own library to find again, worked out on this computer from what you play
+  (nothing is sent anywhere). Daily mixes (made fresh each day around the genres and eras you listen to, with a few
+  songs you haven't played yet), forgotten favourites (albums, songs and artists you played a lot but not
+  lately), deep cuts (songs you've never played by the artists you play most), albums added long ago and never
+  played, and what you listened to on this day in other years. Each shelf can be hidden from its own menu or in
+  Settings → Discover (a hidden shelf isn't even worked out), the whole page can be turned off in Features,
+  anything can be marked Not interested (and let back in from Settings), and mixes can be saved as playlists.
+  Settings: how long until something counts as forgotten, how many mixes, how long, and how many unheard songs.
+- Sounds like this: right-click a song for songs in your library that sound like it (tempo, key, energy and
+  timbre), to play, add to the queue or save as a playlist; radio mode can pick by sound too, or both ways. To
+  know how songs sound, Hallucinate listens to about a minute of each one on this computer, at low priority and
+  by default only while nothing is playing and not on battery (or any time, or only when asked), liked and most
+  played songs first; nothing leaves your computer. Settings → Discover: play them as a smooth flow or most alike
+  first, how many, keep the tempo close, keep to keys that mix well, the song's own artist or not, how many by
+  one artist, pause, and forget what it heard. It shows with Stop in the background list, and can be switched off
+  entirely in Features.
+- Discover, online (each off until you turn it on in Settings → Discover; offline mode stops them): new releases
+  from the artists you play (MusicBrainz; the 50 or 200 you play most, or all of them; albums, EPs, singles, live
+  albums and compilations as you choose; looked up at most once a day, with a desktop notification if you want
+  one), and artists like yours that you don't have yet (from ListenBrainz, Deezer or Last.fm, based on the 10, 25
+  or 50 artists you play most) with 30-second previews from Deezer or Apple (the music you were playing pauses
+  and carries on after). Only artist names are sent. Releases you have already, and anything marked Not
+  interested, are left out. A quiet card on Discover offers them once.
+- A wishlist on Discover: add new releases and artists to it, keep a note, and look for them at the store you
+  choose (Bandcamp, Qobuz, Apple Music, Amazon, Discogs, HDtracks, 7digital or the web). Wishes are ticked off
+  when they turn up in your library. Kept on your computer only, and in backups (Settings → Library), along with
+  what you've marked Not interested.
+
+### Changed
+- Home's Rediscover and On this day shelves are off unless you turn them on (Settings → Features → Home):
+  Discover has fuller ones.
+- Casting with Hallucinate's sound: the song you're waiting for (the first, or one you skip to) goes as WAV, ready
+  almost at once; songs got ready in the background go as 24-bit FLAC as before.
+- Liked Songs and big playlists open without a pause (their length was added up in the page itself: 0.8 s for
+  2,000 songs, now a few milliseconds).
+
+### Fixed
+- Covers: during or after a scan, random songs and albums could show no cover until you scrolled away and back.
+  A cover not there yet (the scan was still writing it) was tried for about 18 seconds and then given up on;
+  now it keeps looking, more slowly, and turns up by itself, and a cover that fails to load is tried again too.
+- Casting: after a few changes to the queue mid-song, the playing song's link could be dropped, so the device
+  couldn't seek in it or pick it up again after a pause.
+- Casting: a next song that couldn't be got ready (a damaged file) was tried again every second while it stayed
+  next.
+
+### Security
+- The casting server only lets devices something is being cast to hold a connection, and lets idle ones go
+  sooner, so nothing else on the network can tie it up.
+- XML from devices and podcast feeds in UTF-16 is refused (a DOCTYPE written that way slipped past the check that
+  stops entity-expansion attacks; the parser's own limits still applied).
+
 ## [1.13.0] - 2026-11-02
 
 ### Added

@@ -32,6 +32,19 @@ Item {
             out.push({ key: "loudness", label: Theme.counted(qsTr("Measuring loudness: %1 of %n song(s)", "", replayGain.total), replayGain.total).arg(Theme.num(replayGain.done)),
                        fraction: replayGain.total > 0 ? replayGain.done / replayGain.total : -1,
                        stop: function () { replayGain.cancel() } })
+        if (typeof soundsLike !== "undefined" && soundsLike.running)
+            out.push({ key: "soundsLike", label: Theme.counted(qsTr("Listening to your music: %1 of %n song(s)", "", soundsLike.total), soundsLike.total).arg(Theme.num(soundsLike.measured)),
+                       fraction: soundsLike.total > 0 ? soundsLike.measured / soundsLike.total : -1,
+                       stop: function () {
+                           soundsLike.pause()
+                           Nav.notifyAction(qsTr("Paused. Resume it any time in Settings → Discover."), qsTr("Undo"), function () { soundsLike.resume() })
+                       } })
+        if (typeof onlineDiscover !== "undefined" && onlineDiscover.busy !== "")
+            out.push({ key: "discoverOnline",
+                       label: (onlineDiscover.busy === "releases" ? qsTr("Looking for new releases: %1 of %2") : qsTr("Looking for artists like yours: %1 of %2"))
+                              .arg(Theme.num(onlineDiscover.done)).arg(Theme.num(onlineDiscover.total)),
+                       fraction: onlineDiscover.total > 0 ? onlineDiscover.done / onlineDiscover.total : -1,
+                       stop: function () { onlineDiscover.stop() } })
         if (podcasts.downloadingCount > 0)
             out.push({ key: "downloads", label: Theme.counted(qsTr("Downloading %n episode(s)", "", podcasts.downloadingCount), podcasts.downloadingCount),
                        fraction: podcasts.downloadsFraction, stop: function () { podcasts.cancelAllDownloads() } })
