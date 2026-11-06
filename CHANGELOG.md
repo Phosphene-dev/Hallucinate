@@ -6,6 +6,8 @@ All notable changes to this project are documented here. Format based on
 ## [Unreleased]
 
 ### Added
+- Hallucinate in Spanish: choose Español in Settings → Appearance → Language (or let it follow the system). The
+  phone remote follows the phone's language as before.
 - Libraries shared between your computers: switch on Paired computers can play my library (Settings → Remote &
   web) on one, and the other adds it in Settings → Music servers. Its songs join the library like a music
   server's: albums, artists, search, playlists, and they play from the first computer over the local network.
@@ -38,6 +40,8 @@ All notable changes to this project are documented here. Format based on
   and says so (and leaves the room on what was chosen).
 - AirPlay no longer checks in with the speaker while it plays (a slow answer could make the sound skip).
 - The log (and so Copy debug info) no longer names the artists looked up online.
+- The welcome screen pointed to a Settings section that's been renamed; it names Online & privacy and Scrobbling
+  & sharing now. The tag editor's "mixed" (a field that differs between the songs being edited) is translated.
 
 ## [2.1.0] - 2026-11-06
 

@@ -181,7 +181,7 @@ Dialog {
             visible: dlg.albumMode || dlg.manyMode
             Layout.fillWidth: true
             text: Theme.counted(qsTr("%n track(s). Only changed fields are written to every track.", "", dlg.paths.length), dlg.paths.length)
-                + (dlg.manyMode && dlg.mixed.length ? qsTr(" Empty fields marked “mixed” differ between them and stay as they are.") : "")
+                + (dlg.manyMode && dlg.mixed.length ? qsTr(" Empty fields marked “%1” differ between them and stay as they are.").arg(qsTr("mixed", "an empty field whose value differs between the songs being edited")) : "")
             color: Theme.textDim
             wrapMode: Text.WordWrap
             font.family: Theme.fontFamily
@@ -208,7 +208,7 @@ Dialog {
                     color: Theme.text
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSize(14)
-                    placeholderText: dlg.mixed.indexOf(rowItem.key) >= 0 ? "mixed"
+                    placeholderText: dlg.mixed.indexOf(rowItem.key) >= 0 ? qsTr("mixed", "an empty field whose value differs between the songs being edited")
                                      : rowItem.key === "music_key" ? qsTr("Am, F#, 8A…") : rowItem.key === "bpm" ? "120" : ""
                     validator: rowItem.key === "bpm" ? bpmValidator : null
                     placeholderTextColor: Theme.textDim

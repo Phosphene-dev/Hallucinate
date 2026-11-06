@@ -11913,8 +11913,13 @@
         </translation>
     </message>
     <message>
-        <source> Empty fields marked “mixed” differ between them and stay as they are.</source>
-        <translation> Les champs vides marqués «&#xa0;mixte&#xa0;» diffèrent d’une piste à l’autre et restent tels quels.</translation>
+        <source> Empty fields marked “%1” differ between them and stay as they are.</source>
+        <translation> Les champs vides marqués «&#xa0;%1&#xa0;» diffèrent d’une piste à l’autre et restent tels quels.</translation>
+    </message>
+    <message>
+        <source>mixed</source>
+        <comment>an empty field whose value differs between the songs being edited</comment>
+        <translation>mixte</translation>
     </message>
     <message>
         <source>Am, F#, 8A…</source>
@@ -12698,10 +12703,6 @@
         <translation>Impossible de lire %1</translation>
     </message>
     <message>
-        <source>Switch on what you&apos;ll use. Nothing here goes online unless you tick it, and it can all be changed later in Settings → Features and Settings → Internet &amp; sharing.</source>
-        <translation>Activez ce dont vous vous servirez. Rien ici ne va en ligne sauf si vous le cochez, et tout peut être changé plus tard dans Paramètres → Fonctions et Paramètres → Internet et partage.</translation>
-    </message>
-    <message>
         <source>Features</source>
         <translation>Fonctions</translation>
     </message>
@@ -12782,8 +12783,16 @@
         <translation>Hallucinate garde votre historique d’écoute sur cet ordinateur dans tous les cas. Le scrobbling l’envoie aussi à ListenBrainz ou Last.fm. C’est facultatif, et vous pouvez le configurer plus tard dans les paramètres.</translation>
     </message>
     <message>
+        <source>Last.fm asks each app user for an API key of their own. Add yours in Settings → Scrobbling &amp; sharing whenever you like.</source>
+        <translation>Last.fm demande à chaque utilisateur d’une application sa propre clé d’API. Ajoutez la vôtre dans Paramètres → Scrobbling et partage quand vous voulez.</translation>
+    </message>
+    <message>
         <source>Keep a record of what you play?</source>
         <translation>Garder une trace de ce que vous écoutez&#xa0;?</translation>
+    </message>
+    <message>
+        <source>Switch on what you&apos;ll use. Nothing here goes online unless you tick it, and it can all be changed later in Settings → Features and Settings → Online &amp; privacy.</source>
+        <translation>Activez ce dont vous vous servirez. Rien ici ne va en ligne sauf si vous le cochez, et tout peut être changé plus tard dans Paramètres → Fonctions et Paramètres → En ligne et confidentialité.</translation>
     </message>
     <message>
         <source>ListenBrainz</source>
@@ -12824,10 +12833,6 @@
     <message>
         <source>I&apos;ve allowed access</source>
         <translation>J’ai autorisé l’accès</translation>
-    </message>
-    <message>
-        <source>Last.fm asks each app user for an API key of their own. Add yours in Settings → Internet &amp; sharing whenever you like.</source>
-        <translation>Last.fm demande à chaque utilisateur d’une application sa propre clé d’API. Ajoutez la vôtre dans Paramètres → Internet et partage quand vous voulez.</translation>
     </message>
     <message>
         <source>Skip setup</source>

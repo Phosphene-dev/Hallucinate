@@ -277,7 +277,7 @@ FocusScope {
                         spacing: 8
                         Heading { text: qsTr("What would you like?") }
                         Body {
-                            text: qsTr("Switch on what you'll use. Nothing here goes online unless you tick it, and it can all be changed later in Settings → Features and Settings → Internet & sharing.")
+                            text: qsTr("Switch on what you'll use. Nothing here goes online unless you tick it, and it can all be changed later in Settings → Features and Settings → Online & privacy.")
                         }
                         Group { text: qsTr("Features") }
                         Flow {
@@ -402,7 +402,7 @@ FocusScope {
                     Body {
                         text: scrobbler.connected ? scrobbler.status
                             : scrobbler.configured ? scrobbler.status
-                            : qsTr("Last.fm asks each app user for an API key of their own. Add yours in Settings → Internet & sharing whenever you like.")
+                            : qsTr("Last.fm asks each app user for an API key of their own. Add yours in Settings → Scrobbling & sharing whenever you like.")
                         color: scrobbler.connected ? Theme.accent : Theme.textDim
                     }
                     Item { Layout.fillHeight: true }
