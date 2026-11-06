@@ -265,6 +265,7 @@ class Speaker:
         self._closed = False
         self._lost = False
         self.taken = False  # the speaker hung up: another device took it over
+        self.start_at = None  # (clock time) when to start from, set for speakers playing together (see group.py)
         self._wake = threading.Event()  # (paused, the sender sleeps until there's something to send)
         self._threads = []
         self._last_talk = clock()
@@ -437,13 +438,16 @@ class Speaker:
                 self._fire_due()
                 if not self.queue.playing and self._clock() - self._last_talk > KEEPALIVE_S:
                     self._keepalive()  # (paused; while it plays, the sound itself keeps the speaker with us)
+                wait = None
                 with self._lock:
                     if not self.queue.playing:
-                        idle = True
+                        wait = 0.05 if self._pending else 1.0  # (until played, or an event or keep-alive is due)
+                    elif self._anchor is None and self.start_at is not None and self._clock() < self.start_at:
+                        wait = min(0.05, self.start_at - self._clock())  # (playing together: not before they all start)
                     else:
-                        idle = False
                         if self._anchor is None:
-                            self._anchor = (self._clock(), self._rtp)
+                            start, self.start_at = self.start_at, None
+                            self._anchor = (start if start is not None else self._clock(), self._rtp)
                             self._sent, self._first = 0, True
                             self._last_sync = self._rtp
                             self._sync(first=True)
@@ -451,8 +455,8 @@ class Speaker:
                         if ahead <= LEAD_S:
                             self._packet(ahead)
                             continue
-                if idle:  # (until played, or the next event or keep-alive is due)
-                    self._wake.wait(0.05 if self._pending else 1.0)
+                if wait is not None:
+                    self._wake.wait(wait)
                     self._wake.clear()
                 else:
                     time.sleep(min(0.01, max(0.001, ahead - LEAD_S)))

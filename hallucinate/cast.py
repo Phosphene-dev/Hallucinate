@@ -24,7 +24,7 @@ from concurrent.futures import ThreadPoolExecutor
 from PySide6.QtCore import Property, QObject, QSettings, Qt, QTimer, Signal, Slot
 
 from .core import net, remote
-from .core.cast import airplay, castv2, mdns, mediaserver, snapcast, upnp
+from .core.cast import airplay, castv2, group, mdns, mediaserver, snapcast, upnp
 from .core.i18n import QT_TRANSLATE_NOOP, fill, translate
 from .core.kinds import is_url, track_kind
 
@@ -49,6 +49,9 @@ KEEP_RENDERS = 4  # prepared songs kept while casting (the playing one, the next
 
 # a Snapcast server typed in Settings: a host name or IPv4 address, and a port if not the usual one
 _SNAP_SERVER = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9.-]{0,252})(?::(?:[1-9][0-9]{0,4}))?")
+
+# devices that can play together (Hallucinate streams to them itself, so it can keep them in step)
+GROUPABLE = ("airplay", "snapcast")
 
 # why a device that was found can't be played to (listed, greyed out)
 _UNSUPPORTED = {"password": QT_TRANSLATE_NOOP("Casting", "needs a password"),
@@ -77,6 +80,7 @@ class CastSession(QObject):
 
     gapless = False
     changed = Signal()
+    notice = Signal(str)  # something to say that doesn't end the session ("Kitchen dropped out")
     ended = Signal()
     advanced = Signal()
     failed = Signal(str, bool)
@@ -730,83 +734,196 @@ class _StreamedSession(CastSession):
             self._status(gen, self.state, at)
 
 
+class _SnapcastRooms:
+    """Rooms of one Snapcast server playing Hallucinate's stream (see core/cast/snapcast.py): the stream is added
+    to the server, the rooms are switched to it, and afterwards put back on what they played before and the
+    stream taken away. On the worker thread."""
+
+    def __init__(self, host, port, groups, connect=None, feeder_port=0, rate=snapcast.RATE, delay_s=0.0):
+        self.host, self.port, self.groups = host, port or snapcast.CONTROL_PORT, list(groups)
+        self._connect, self._feeder_port, self._rate, self._delay = connect, feeder_port, rate, delay_s
+        self.ctl = self.feeder = None
+        self.stream = ""
+        self.was = {}  # room -> the stream it was on before
+        self.level = None  # the rooms' speakers' volume when it began (0–1), or None
+
+    def open(self, on_event):
+        self.ctl = ctl = snapcast.Control(self.host, self.port, connect=self._connect)
+        try:
+            rooms = {g["id"]: g for g in snapcast.groups(ctl.status())}
+            if any(g not in rooms for g in self.groups):
+                raise snapcast.SnapcastError(translate("Casting", "that room isn't on the Snapcast server any more"))
+            here = snapcast.local_address_for(self.host)
+            self.feeder = snapcast.Feeder(here, socket_address(self.host), port=self._feeder_port, rate=self._rate,
+                                          delay_s=self._delay, on_event=on_event)
+            try:  # (a stream left from before, if Hallucinate stopped without tidying up)
+                ctl.call("Stream.RemoveStream", {"id": snapcast.STREAM_NAME})
+            except (OSError, snapcast.SnapcastError):
+                pass
+            self.stream = ctl.call("Stream.AddStream", {"streamUri": self.feeder.uri(here)})["id"]
+            for g in self.groups:
+                if rooms[g]["stream"] != self.stream:
+                    self.was[g] = rooms[g]["stream"]
+                ctl.call("Group.SetStream", {"id": g, "stream_id": self.stream})
+            if not self.feeder.connected.wait(8):
+                raise snapcast.SnapcastError(fill(translate(
+                    "Casting", "the Snapcast server couldn't reach this computer (a firewall may be blocking port %1: "
+                               "allow it for your local network)"), self.feeder.port))
+            levels = [c["volume"] for g in self.groups for c in rooms[g]["clients"] if c["connected"]]
+            self.level = sum(levels) / len(levels) / 100 if levels else None
+        except Exception:
+            self.tidy()
+            raise
+
+    def tidy(self):
+        if self.ctl is None:
+            return
+        try:
+            for g, was in self.was.items():
+                self.ctl.call("Group.SetStream", {"id": g, "stream_id": was})
+            if self.stream:
+                self.ctl.call("Stream.RemoveStream", {"id": self.stream})
+        except (OSError, snapcast.SnapcastError):
+            pass
+        self.ctl.close()
+        self.ctl = None
+        if self.feeder is not None:
+            self.feeder.close()
+            self.feeder.on_event = lambda kind, tag: None
+
+    def set_volume(self, level):
+        rooms = {g["id"]: g for g in snapcast.groups(self.ctl.status())}
+        for g in self.groups:
+            for c in rooms.get(g, {}).get("clients", []):
+                if c["connected"]:
+                    self.ctl.call("Client.SetVolume", {"id": c["id"], "volume": {"percent": int(round(level * 100)),
+                                                                                 "muted": False}})
+
+    def switched_away(self):
+        """Whether every room was switched to something else (in Snapcast's own app): those stay so."""
+        rooms = {g["id"]: g for g in snapcast.groups(self.ctl.status())}
+        away = [g for g in self.groups if g in rooms and rooms[g]["stream"] != self.stream]
+        for g in away:
+            self.was.pop(g, None)
+        return bool(away) and len(away) == len(self.groups)
+
+
 class SnapcastSession(_StreamedSession):
-    """A room of a Snapcast server (see core/cast/snapcast.py), at 48 kHz (the stream's rate). The room's volume is
-    its speakers'. Stopping puts the room back on what it was playing before."""
+    """A room of a Snapcast server, at 48 kHz (the stream's rate). The room's volume is its speakers'. Stopping
+    puts the room back on what it was playing before."""
 
     kind = "snapcast"
     render_rate = snapcast.RATE
 
     def __init__(self, device, server, parent=None, connect=None):
         super().__init__(device, server, parent, connect)
-        self._ctl = None
-        self._stream = ""
-        self._was = ""  # the stream the room was on before
+        self._rooms = None
 
     def connect_device(self):
-        host, port, group = self.device["host"], self.device.get("port") or snapcast.CONTROL_PORT, self.device["group"]
-        ctl = snapcast.Control(host, port, connect=self._connect)
-        try:
-            room = next((g for g in snapcast.groups(ctl.status()) if g["id"] == group), None)
-            if room is None:
-                raise snapcast.SnapcastError(translate("Casting", "that room isn't on the Snapcast server any more"))
-            here = snapcast.local_address_for(host)
-            port = getattr(self._server, "port", 0)  # (the port after the cast port, so one firewall rule covers both)
-            self._feeder = snapcast.Feeder(here, socket_address(host), port=port + 1 if port else 0,
-                                           on_event=self._feed_events())
-            try:  # (a stream left from before, if Hallucinate stopped without tidying up)
-                ctl.call("Stream.RemoveStream", {"id": snapcast.STREAM_NAME})
-            except (OSError, snapcast.SnapcastError):
-                pass
-            self._stream = ctl.call("Stream.AddStream", {"streamUri": self._feeder.uri(here)})["id"]
-            self._was = room["stream"] if room["stream"] != self._stream else ""
-            ctl.call("Group.SetStream", {"id": group, "stream_id": self._stream})
-            if not self._feeder.connected.wait(8):
-                raise snapcast.SnapcastError(fill(translate(
-                    "Casting", "the Snapcast server couldn't reach this computer (a firewall may be blocking port %1: "
-                               "allow it for your local network)"), self._feeder.port))
-            levels = [c["volume"] for c in room["clients"] if c["connected"]]
-            self.volume = sum(levels) / len(levels) / 100 if levels else None
-            self._ctl = ctl
-        except Exception:
-            self._tidy(ctl)
-            raise
-
-    def _tidy(self, ctl):
-        try:
-            if self._was:
-                ctl.call("Group.SetStream", {"id": self.device["group"], "stream_id": self._was})
-            if self._stream:
-                ctl.call("Stream.RemoveStream", {"id": self._stream})
-        except (OSError, snapcast.SnapcastError):
-            pass
-        ctl.close()
-        self._drop_feeder()
+        port = getattr(self._server, "port", 0)  # (the port after the cast port, so one firewall rule covers both)
+        rooms = _SnapcastRooms(self.device["host"], self.device.get("port"), [self.device["group"]],
+                               connect=self._connect, feeder_port=port + 1 if port else 0)
+        rooms.open(self._feed_events())
+        self._feeder, self._rooms, self.volume = rooms.feeder, rooms, rooms.level
 
     def _do_volume(self, level):
-        for c in self._room_clients():
-            self._ctl.call("Client.SetVolume", {"id": c["id"], "volume": {"percent": int(round(level * 100)),
-                                                                          "muted": False}})
+        self._rooms.set_volume(level)
 
     def _do_poll(self, gen):
         super()._do_poll(gen)
         self._polls = getattr(self, "_polls", 0) + 1
-        if self._ctl is None or self._polls % 5:
+        if self._rooms is None or self._polls % 5:
             return  # (every five seconds: is the room still on our stream?)
-        room = next((g for g in snapcast.groups(self._ctl.status()) if g["id"] == self.device["group"]), None)
-        if room is not None and room["stream"] != self._stream:
-            self._was = ""  # (someone chose something else for it: that stays)
+        if self._rooms.switched_away():
             self._gone(translate("Casting", "the room was switched to something else"))
 
-    def _room_clients(self):
-        room = next((g for g in snapcast.groups(self._ctl.status()) if g["id"] == self.device["group"]), None)
-        return [c for c in (room or {}).get("clients", []) if c["connected"]]
+    def _do_close(self, stop_device):
+        if self._rooms is not None:
+            self._feeder.stop()
+            self._rooms.tidy()
+            self._rooms = None
+
+
+class GroupSession(_StreamedSession):
+    """Several AirPlay speakers and Snapcast rooms playing together (see core/cast/group.py). The device is
+    {"id": "group:…", "name": "Kitchen + Living room", "members": [device, …]}. Its volume moves them all."""
+
+    kind = "group"
+
+    def __init__(self, device, server, parent=None, connect=None):
+        super().__init__(device, server, parent, connect)
+        members = device["members"]
+        self.render_rate = airplay.RATE if any(m["kind"] == "airplay" for m in members) else snapcast.RATE
+        self._rooms = []  # one _SnapcastRooms a server
+        self._speakers = []
+        self._settings = QSettings()
+
+    def connect_device(self):
+        me = weakref.WeakMethod(self._group_event)  # (the senders' threads mustn't keep the session alive)
+        feeder = group.GroupFeeder(on_event=lambda kind, tag, member=None: (me() or (lambda *a: None))(kind, tag, member))
+        self._feeder = feeder
+        members = self.device["members"]
+        with_airplay = any(m["kind"] == "airplay" for m in members)
+        # (held back to be heard with the AirPlay speakers: they play about two seconds after a command)
+        delay = (group.START_IN_S + airplay.LATENCY_FRAMES / airplay.RATE
+                 - snapcast.LEAD_S - snapcast.SERVER_BUFFER_S) if with_airplay else 0.0
+        port = getattr(self._server, "port", 0)
+        levels = []
+        try:
+            servers = {}
+            for m in members:
+                if m["kind"] == "snapcast":
+                    servers.setdefault((m["host"], m.get("port") or snapcast.CONTROL_PORT), []).append(m)
+            for n, ((host, sport), rooms_here) in enumerate(servers.items()):
+                rooms = _SnapcastRooms(host, sport, [m["group"] for m in rooms_here], connect=self._connect,
+                                       feeder_port=port + 1 + n if port else 0, rate=self.render_rate,
+                                       delay_s=max(0.0, delay))
+                rooms.open(lambda kind, tag: None)
+                self._rooms.append(rooms)
+                feeder.add(" + ".join(m["name"] for m in rooms_here), rooms.feeder)
+                if rooms.level is not None:
+                    levels.append(rooms.level)
+            for m in members:
+                if m["kind"] != "airplay":
+                    continue
+                speaker = airplay.Speaker(m["host"], m["port"], connect=self._connect)
+                speaker.connect()
+                self._speakers.append(speaker)
+                feeder.add(m["name"], speaker)
+                level = AirplaySession.remembered(self._settings, m["id"])
+                speaker.set_volume(level)
+                levels.append(level)
+            self.volume = sum(levels) / len(levels) if levels else None
+        except Exception:
+            self._do_close(True)
+            raise
+
+    def _group_event(self, kind, tag, member):
+        if kind == "lost" and member:
+            name = member
+            self._later(lambda: self.notice.emit(fill(translate("Casting", "%1 dropped out; the others play on"), name)))
+        else:
+            self._on_feed(kind, tag)
+
+    def _do_volume(self, level):
+        for rooms in self._rooms:
+            rooms.set_volume(level)
+        for speaker in self._speakers:
+            speaker.set_volume(level)
 
     def _do_close(self, stop_device):
-        if self._ctl is not None:
-            self._feeder.stop()
-            self._tidy(self._ctl)
-            self._ctl = None
+        if self._feeder is not None:
+            try:
+                self._feeder.stop()
+            except OSError:
+                pass
+        for speaker in self._speakers:
+            speaker.close()
+        for rooms in self._rooms:
+            rooms.tidy()
+        self._speakers, self._rooms = [], []
+        if self._feeder is not None:
+            self._feeder.on_event = lambda kind, tag, member=None: None
 
 
 class AirplaySession(_StreamedSession):
@@ -821,16 +938,25 @@ class AirplaySession(_StreamedSession):
         self._settings = QSettings()
         self.volume = self._remembered_volume()
 
-    def _volumes(self):
+    @staticmethod
+    def volumes(settings):
+        """{speaker id: the volume last set for it}."""
         try:
-            value = json.loads(str(self._settings.value("cast/airplayVolumes", "{}") or "{}"))
+            value = json.loads(str(settings.value("cast/airplayVolumes", "{}") or "{}"))
             return value if isinstance(value, dict) else {}
         except ValueError:
             return {}
 
-    def _remembered_volume(self):
-        level = self._volumes().get(self.device["id"], 0.5)
+    @staticmethod
+    def remembered(settings, device_id):
+        level = AirplaySession.volumes(settings).get(device_id, 0.5)
         return min(1.0, max(0.0, float(level))) if isinstance(level, (int, float)) else 0.5
+
+    def _volumes(self):
+        return self.volumes(self._settings)
+
+    def _remembered_volume(self):
+        return self.remembered(self._settings, self.device["id"])
 
     def set_volume(self, level):
         volumes = self._volumes()
@@ -999,8 +1125,8 @@ class Casting(QObject):
         self._server = mediaserver.MediaServer(port if 1024 <= port < 65536 else mediaserver.DEFAULT_PORT)
         self._found.connect(self._on_found, Qt.ConnectionType.QueuedConnection)
         self._connected.connect(self._on_connected, Qt.ConnectionType.QueuedConnection)
-        self.session_factories = {"chromecast": ChromecastSession, "upnp": UpnpSession,
-                                  "snapcast": SnapcastSession, "airplay": AirplaySession}  # (tests swap these)
+        self.session_factories = {"chromecast": ChromecastSession, "upnp": UpnpSession, "snapcast": SnapcastSession,
+                                  "airplay": AirplaySession, "group": GroupSession}  # (tests swap these)
         self.discover = _discover  # discover(snapcast_servers) (tests swap it)
         self.phone_links = mediaserver.Links()  # songs for a phone playing them, served by the web remote
         self.notify_remote = lambda: None  # tells the web remote its state changed (set by the app)
@@ -1058,7 +1184,13 @@ class Casting(QObject):
         return [{"id": d["id"], "name": d["name"], "model": d.get("model", ""), "kind": d.get("kind", ""),
                  "unsupported": _UNSUPPORTED.get(d.get("unsupported", ""), "") and translate(
                      "Casting", _UNSUPPORTED[d["unsupported"]]),
-                 "active": bool(self._session and self._session.device["id"] == d["id"])} for d in self._devices]
+                 "groupable": d.get("kind") in GROUPABLE and not d.get("unsupported"),
+                 "active": d["id"] in self._playing_ids()} for d in self._devices]
+
+    def _playing_ids(self):
+        if self._session is None:
+            return set()
+        return {m["id"] for m in self._session.device.get("members", [])} | {self._session.device["id"]}
 
     @Property(bool, notify=devicesChanged)
     def searching(self):
@@ -1089,7 +1221,7 @@ class Casting(QObject):
 
     def _on_found(self, found):
         self._searching = False
-        current = self._session.device if self._session and self._session.kind != "phone" else None
+        current = self._session.device if self._session and self._session.kind not in ("phone", "group") else None
         if current and all(d["id"] != current["id"] for d in found):
             found = [current] + list(found)  # still connected, even if it didn't answer this time
         self._devices = sorted(found, key=lambda d: d["name"].casefold())
@@ -1132,7 +1264,27 @@ class Casting(QObject):
         device = next((d for d in self._devices if d["id"] == device_id), None)
         if device is None or self._connecting or device.get("unsupported"):
             return
-        if self._session and self._session.device["id"] == device_id:
+        self._cast(device)
+
+    @Slot("QVariantList")
+    def castToGroup(self, device_ids):
+        """Plays on several AirPlay speakers and Snapcast rooms together (others can't be kept in step)."""
+        ids = [str(i) for i in device_ids]
+        members = [d for d in self._devices if d["id"] in ids and d.get("kind") in GROUPABLE
+                   and not d.get("unsupported")]
+        if self._connecting:
+            return
+        if len(members) == 1:
+            return self._cast(members[0])
+        if len(members) < 2:
+            return
+        members.sort(key=lambda d: ids.index(d["id"]))
+        self._cast({"id": "group:" + "+".join(sorted(d["id"] for d in members))[:500], "kind": "group",
+                    "name": " + ".join(d["name"] for d in members), "model": "", "host": members[0]["host"],
+                    "members": members})
+
+    def _cast(self, device):
+        if self._session and self._session.device["id"] == device["id"]:
             return
         # Listen only where the device is: on the network interface that reaches it (a laptop on another network
         # at the same time has nothing open there)
@@ -1180,6 +1332,7 @@ class Casting(QObject):
         session.setParent(self)
         session.lost.connect(self._on_lost)
         session.failed.connect(self._on_failed)
+        session.notice.connect(self.notice)
         if self._player is not None:
             self._player.attachCast(session, self.media_for, self.prepare)
         self.changed.emit()

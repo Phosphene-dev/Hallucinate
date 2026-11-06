@@ -581,7 +581,8 @@ class Api:
     def m_cast_devices(self):
         """The devices found on the network (the last search), and which one is playing, if any."""
         c = self._casting()
-        return {"devices": [{k: d[k] for k in ("id", "name", "model", "kind", "active", "unsupported")} for d in c.devices],
+        return {"devices": [{k: d[k] for k in ("id", "name", "model", "kind", "active", "unsupported", "groupable")}
+                            for d in c.devices],
                 "searching": bool(c.searching), "device": c.deviceName if c.active else "",
                 "connecting": c.connecting}
 
@@ -602,6 +603,20 @@ class Api:
         return {"ok": True}
 
     m_cast_to._api_scope = "control"
+
+    def m_cast_group(self, ids):
+        """Play on several AirPlay speakers and Snapcast rooms together (`ids` from cast.devices)."""
+        c = self._casting()
+        if not isinstance(ids, list) or not 2 <= len(ids) <= 16:
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "Choose two or more devices"))
+        wanted = [_str(i, 200) for i in ids]
+        groupable = {d["id"] for d in c.devices if d.get("groupable")}
+        if not all(i in groupable for i in wanted):
+            raise ApiError(QT_TRANSLATE_NOOP("Api", "Only AirPlay speakers and Snapcast rooms can play together"))
+        c.castToGroup(wanted)
+        return {"ok": True}
+
+    m_cast_group._api_scope = "control"
 
     def m_cast_stop(self):
         """Play on this computer again."""

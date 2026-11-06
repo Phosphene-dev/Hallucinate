@@ -420,7 +420,7 @@ def test_the_phone_remote_can_choose_where_it_plays(setup, songs):
     assert wait_for(lambda: api.call("cast.devices")["devices"])
     listed = api.call("cast.devices")["devices"]
     assert listed == [{"id": "cc1", "name": "Living Room", "model": "Chromecast", "kind": "chromecast", "active": False,
-                       "unsupported": ""}]
+                       "unsupported": "", "groupable": False}]
     with pytest.raises(ApiError):
         api.call("cast.to", {"id": "nope"})
     api.call("cast.to", {"id": "cc1"})

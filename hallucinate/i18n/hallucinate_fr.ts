@@ -475,6 +475,14 @@
         <translation>La diffusion est désactivée</translation>
     </message>
     <message>
+        <source>Choose two or more devices</source>
+        <translation>Choisissez au moins deux appareils</translation>
+    </message>
+    <message>
+        <source>Only AirPlay speakers and Snapcast rooms can play together</source>
+        <translation>Seules les enceintes AirPlay et les pièces Snapcast peuvent jouer ensemble</translation>
+    </message>
+    <message>
         <source>Internet radio is switched off</source>
         <translation>La radio internet est désactivée</translation>
     </message>
@@ -918,6 +926,10 @@
         <translation>Aucun appareil trouvé</translation>
     </message>
     <message>
+        <source>Play on several together…</source>
+        <translation>Lire sur plusieurs à la fois…</translation>
+    </message>
+    <message>
         <source>Hand over to another computer</source>
         <translation>Passer à un autre ordinateur</translation>
     </message>
@@ -944,6 +956,22 @@
     <message>
         <source>Casting settings…</source>
         <translation>Réglages de diffusion…</translation>
+    </message>
+    <message>
+        <source>Play on several together</source>
+        <translation>Lire sur plusieurs à la fois</translation>
+    </message>
+    <message>
+        <source>Play together</source>
+        <translation>Lire ensemble</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annuler</translation>
+    </message>
+    <message>
+        <source>AirPlay speakers and Snapcast rooms can play the same music in step. Chromecasts and DLNA devices can&apos;t be kept in step, so they aren&apos;t listed.</source>
+        <translation>Les enceintes AirPlay et les pièces Snapcast peuvent jouer la même musique en même temps. Les Chromecast et appareils DLNA ne peuvent pas être synchronisés : ils ne sont pas listés.</translation>
     </message>
 </context>
 <context>
@@ -991,6 +1019,10 @@
     <message>
         <source>the room was switched to something else</source>
         <translation>la pièce est passée à autre chose</translation>
+    </message>
+    <message>
+        <source>%1 dropped out; the others play on</source>
+        <translation>%1 s’est déconnecté ; les autres continuent</translation>
     </message>
     <message>
         <source>it asks for a password, which Hallucinate can&apos;t give it yet</source>
@@ -13731,8 +13763,24 @@
         <translation>Connexion à %1…</translation>
     </message>
     <message>
+        <source>Several together…</source>
+        <translation>Plusieurs à la fois…</translation>
+    </message>
+    <message>
         <source>Look again</source>
         <translation>Chercher à nouveau</translation>
+    </message>
+    <message>
+        <source>Play on several together</source>
+        <translation>Lire sur plusieurs à la fois</translation>
+    </message>
+    <message>
+        <source>Play together (%1)</source>
+        <translation>Lire ensemble (%1)</translation>
+    </message>
+    <message>
+        <source>Tick two or more</source>
+        <translation>Cochez-en au moins deux</translation>
     </message>
     <message>
         <source>The equaliser isn&apos;t available on this computer</source>

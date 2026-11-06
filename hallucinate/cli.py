@@ -368,6 +368,16 @@ def _remote(args):
     return r, "\n".join(lines)
 
 
+def _device_named(devices, what):
+    wanted = what.lower()
+    matches = [d for d in devices if d["name"].lower() == wanted] or [d for d in devices if wanted in d["name"].lower()]
+    if not matches:
+        raise CommandError(f"No device called “{what}”: `hallucinate cmd cast` lists them")
+    if len(matches) > 1:
+        raise CommandError("More than one device matches: " + ", ".join(d["name"] for d in matches))
+    return matches[0]
+
+
 def _cast(args):
     """List the devices to play on, play on one (by name), or come back here."""
     what = " ".join(args.device).strip()
@@ -388,14 +398,16 @@ def _cast(args):
         if not c["devices"]:
             lines.append("No devices found" + (" yet: still looking" if c["searching"] else ": `hallucinate cmd cast search`"))
         return c, "\n".join(lines)
-    wanted = what.lower()
-    matches = [d for d in c["devices"] if d["name"].lower() == wanted] or \
-              [d for d in c["devices"] if wanted in d["name"].lower()]
-    if not matches:
-        raise CommandError(f"No device called “{what}”: `hallucinate cmd cast` lists them")
-    if len(matches) > 1:
-        raise CommandError("More than one device matches: " + ", ".join(d["name"] for d in matches))
-    d = matches[0]
+    names = [n.strip() for n in what.split("+") if n.strip()]
+    chosen = [_device_named(c["devices"], n) for n in names]
+    if len(chosen) > 1:  # several together: Kitchen + Living room
+        cant = [d["name"] for d in chosen if not d.get("groupable")]
+        if cant:
+            raise CommandError("Only AirPlay speakers and Snapcast rooms can play together: " + ", ".join(cant))
+        call("cast.group", ids=[d["id"] for d in chosen])
+        together = " + ".join(d["name"] for d in chosen)
+        return {"devices": [d["name"] for d in chosen]}, f"Connecting to {together}…"
+    d = chosen[0]
     if d.get("unsupported"):
         raise CommandError(f"{d['name']} can't be played to: {d['unsupported']}")
     call("cast.to", id=d["id"])
@@ -484,7 +496,8 @@ def parser():
     p.add_argument("--host-name", metavar="NAMES",
                    help="other names it answers to, comma-separated (a reverse proxy, music.example.lan); \"\" for none")
     sub.add_parser("pair", help="a code to pair a phone or browser with the web remote")
-    p = sub.add_parser("cast", help="list devices to play on, play on one by NAME, `search`, or `here` to come back")
+    p = sub.add_parser("cast", help="list devices to play on, play on one by NAME (or several: A + B), `search`, "
+                                    "or `here` to come back")
     p.add_argument("device", nargs="*")
     return ap
 

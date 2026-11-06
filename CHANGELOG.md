@@ -6,6 +6,12 @@ All notable changes to this project are documented here. Format based on
 ## [Unreleased]
 
 ### Added
+- Play on several speakers together: AirPlay speakers and Snapcast rooms, in any mix, play the same music in step
+  (cast menu → Play on several together…, the phone remote's Play on, or `hallucinate cmd cast Kitchen + Bedroom`).
+  AirPlay speakers start at the same moment and stay together; Snapcast rooms are held back to be heard with
+  them; rooms on the same Snapcast server share one stream. One volume moves them all, and a speaker that drops
+  out leaves the others playing. (Chromecasts and DLNA devices fetch songs by themselves, so they can't be kept
+  in step and aren't offered.)
 - Songs crossfade on AirPlay speakers and Snapcast rooms too, by the crossfade setting (and, as here, not
   between songs of the same album unless that's chosen).
 - When Hallucinate quit while playing on a device, it offers that device again at the next start ("Play on

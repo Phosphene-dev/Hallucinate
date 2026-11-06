@@ -2964,6 +2964,66 @@ def test_discover_concerts_nearby(qapp, app_window, tmp_path):
     assert not [w for w in warnings if "Discover" in w or "oncert" in w or "Settings" in w], warnings[:5]
 
 
+def test_playing_on_several_speakers_together(qapp, app_window):
+    """The cast menu offers Play on several when two or more AirPlay speakers or Snapcast rooms are found; its
+    dialog lists only those, and Play together starts a group of the ticked ones."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    casting = objects["casting"]
+
+    def popup_item(name):  # (a dialog's items are its own, not the window's)
+        found = QMetaObject.invokeMethod(window, "findItem", Qt.ConnectionType.DirectConnection,
+                                         Q_RETURN_ARG("QVariant"), Q_ARG("QVariant", name),
+                                         Q_ARG("QVariant", dialog.property("contentItem").parentItem()))
+        return found if isinstance(found, QObject) else None
+    made = []
+
+    class Never:
+        def __init__(self, device, server):
+            made.append(device)
+            from PySide6.QtCore import QObject as _Q
+
+            self.name = device["name"]
+            self._q = _Q()
+
+        def connect_device(self):
+            raise OSError("not really")
+
+        def close(self, stop_device=True):
+            pass
+
+    casting.session_factories["group"] = Never
+    casting._devices = [
+        {"id": "air:1", "kind": "airplay", "name": "Kitchen", "model": "", "host": "192.168.1.30", "port": 7000},
+        {"id": "air:2", "kind": "airplay", "name": "Bedroom", "model": "", "host": "192.168.1.31", "port": 7000},
+        {"id": "cc:1", "kind": "chromecast", "name": "TV", "model": "", "host": "192.168.1.32", "port": 8009}]
+    casting.devicesChanged.emit()
+    menu = window.findChild(QObject, "castMenu")
+    QMetaObject.invokeMethod(menu, "open", Qt.ConnectionType.DirectConnection)
+    qapp.processEvents()
+    several = menu.findChild(QObject, "castSeveral")
+    assert several is not None and several.property("visible")
+    dialog = menu.findChild(QObject, "castGroupDialog")
+    QMetaObject.invokeMethod(dialog, "open", Qt.ConnectionType.DirectConnection)
+    assert wait_for(lambda: popup_item("castGroup_air:1") is not None)
+    assert popup_item("castGroup_cc:1") is None  # (a Chromecast can't be kept in step)
+    play = popup_item("castGroupPlay")
+    assert not play.property("enabled")
+    for name in ("castGroup_air:1", "castGroup_air:2"):
+        popup_item(name).setProperty("checked", True)
+        QMetaObject.invokeMethod(popup_item(name), "toggled", Qt.ConnectionType.DirectConnection)
+    qapp.processEvents()
+    assert play.property("enabled")
+    QMetaObject.invokeMethod(dialog, "accept", Qt.ConnectionType.DirectConnection)
+    assert wait_for(lambda: made, timeout=5)
+    assert made[0]["kind"] == "group" and sorted(made[0]["name"].split(" + ")) == ["Bedroom", "Kitchen"]
+    assert wait_for(lambda: not casting.connecting, timeout=5)
+    casting._devices = []
+    casting.devicesChanged.emit()
+    assert not [w for w in warnings if "CastMenu" in w], warnings[:3]
+
+
 def test_discover_song_shelves_show_their_songs(qapp, app_window):
     """Songs you used to love and Deep cuts showed their buttons but no songs: a ListView sized to its own contents
     starts at no height, so it never made a row. Five rows show, the rest with Show all."""

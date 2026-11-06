@@ -57,11 +57,13 @@ class FakeApi:
             return {"undone": True}
         if method == "cast.devices":
             return {"devices": [{"id": "a1", "name": "Kitchen", "model": "AirPort", "kind": "airplay", "active": False,
-                                 "unsupported": ""},
+                                 "unsupported": "", "groupable": True},
                                 {"id": "s1", "name": "Living room", "model": "Snapcast", "kind": "snapcast",
-                                 "active": True, "unsupported": ""},
+                                 "active": True, "unsupported": "", "groupable": True},
                                 {"id": "h1", "name": "HomePod", "model": "", "kind": "airplay", "active": False,
-                                 "unsupported": "needs a password"}],
+                                 "unsupported": "needs a password", "groupable": False},
+                                {"id": "c1", "name": "TV", "model": "Chromecast", "kind": "chromecast",
+                                 "active": False, "unsupported": "", "groupable": False}],
                     "searching": False, "device": "Living room", "connecting": ""}
         return {"ok": True}
 
@@ -268,6 +270,10 @@ def test_cast(api):
         run("cast", "HomePod")
     with pytest.raises(cli.CommandError, match="No device"):
         run("cast", "Garage")
+    _r, text = run("cast", "Kitchen", "+", "Living", "room")
+    assert api.calls[-1] == ("cast.group", {"ids": ["a1", "s1"]}) and "Kitchen + Living room" in text
+    with pytest.raises(cli.CommandError, match="can play together: TV"):
+        run("cast", "Kitchen + TV")
     run("cast", "here")
     assert api.calls[-1] == ("cast.stop", {})
     api.state["castingOn"] = "Kitchen"

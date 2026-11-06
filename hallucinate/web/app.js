@@ -364,7 +364,24 @@ async function castPicker(searched) {
                              : d.model && d.model !== d.name ? " · " + d.model : ""),
       () => d.unsupported ? toast(fill(t("%1 can't be played to: %2"), d.name, d.unsupported))
                           : call("cast.to", { id: d.id }).then(() => toast(fill(t("Connecting to %1…"), d.name)))]),
+    ...(c.devices.filter((d) => d.groupable).length >= 2
+      ? [[t("Several together…"), () => groupPicker(c.devices.filter((d) => d.groupable), new Set())]] : []),
     [t("Look again"), () => { call("cast.search"); toast(t("Looking for devices on your network…")); setTimeout(() => castPicker(true), 3500); }],
+  ]);
+}
+
+// AirPlay speakers and Snapcast rooms playing together: tick them, then Play together
+function groupPicker(devices, chosen) {
+  pick(t("Play on several together"), [
+    ...devices.map((d) => [(chosen.has(d.id) ? "☑ " : "☐ ") + d.name, () => {
+      chosen.has(d.id) ? chosen.delete(d.id) : chosen.add(d.id);
+      groupPicker(devices, chosen);
+    }]),
+    [chosen.size >= 2 ? fill(t("Play together (%1)"), chosen.size) : t("Tick two or more"), () => {
+      if (chosen.size < 2) return groupPicker(devices, chosen);
+      const names = devices.filter((d) => chosen.has(d.id)).map((d) => d.name).join(" + ");
+      call("cast.group", { ids: [...chosen] }).then(() => toast(fill(t("Connecting to %1…"), names)));
+    }],
   ]);
 }
 $("btnCast").onclick = () => castPicker(false).catch(() => {});  // (call() has already said what went wrong)
