@@ -12858,6 +12858,18 @@
 <context>
     <name>WhatsNew</name>
     <message>
+        <source>Play on several AirPlay speakers and Snapcast rooms together, in step: cast button → Play on several together.</source>
+        <translation>Reproduce en varios altavoces AirPlay y salas Snapcast a la vez, sincronizados: botón de transmitir → Reproducir en varios a la vez.</translation>
+    </message>
+    <message>
+        <source>Your other computers&apos; libraries can join this one (Settings → Remote &amp; web on the one sharing, then Music servers here).</source>
+        <translation>Las bibliotecas de tus otros ordenadores pueden unirse a esta (Ajustes → Control remoto y web en el que comparte, y luego Servidores de música aquí).</translation>
+    </message>
+    <message>
+        <source>Hallucinate speaks Spanish: Settings → Appearance → Language → Español.</source>
+        <translation>Hallucinate habla español: Ajustes → Apariencia → Idioma → Español.</translation>
+    </message>
+    <message>
         <source>Play on AirPlay speakers and Snapcast rooms: they&apos;re in the cast button beside the volume.</source>
         <translation>Reproduce en altavoces AirPlay y salas Snapcast: están en el botón de transmitir junto al volumen.</translation>
     </message>

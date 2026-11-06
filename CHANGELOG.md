@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [2.2.0] - 2026-11-06
 
 ### Added
 - Hallucinate in Spanish: choose Español in Settings → Appearance → Language (or let it follow the system). The
@@ -34,6 +34,9 @@ All notable changes to this project are documented here. Format based on
 - Copy debug info says whether casting is on and to what kind of device (never its name).
 
 ### Fixed
+- Choices in Settings → Discover (forgotten after, daily mixes and their size, songs you haven't played, the
+  online shelves' options) and in Sounds like this snapped back to what they were: they were never saved.
+  They're kept now. "Daily mixes" also reads "2 mixes" in English, not "2 mix(es)".
 - When another device starts playing to an AirPlay speaker, Hallucinate notices at once and says so, instead of
   carrying on unheard for up to 15 seconds.
 - When a Snapcast room is switched to something else in Snapcast's own app, Hallucinate stops casting there

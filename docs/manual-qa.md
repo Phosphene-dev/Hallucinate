@@ -87,6 +87,8 @@
 - [ ] Two computers: pair them (cast button → Hand over to another computer), switch on Paired computers can play
       my library on one; on the other, Settings → Music servers → Add …'s library. Its songs appear (albums,
       artists, covers) and play; switching sharing off makes them unavailable; Remove takes them away.
+- [ ] Settings → Discover and Sounds like this: change every choice, leave Settings and come back, restart: each
+      stays as chosen.
 - [ ] Settings → Appearance → Language → Español (a Spanish speaker, ideally): every page reads naturally, nothing
       spills out of its button or line; counts read right (« 1 canción », « 2 canciones », « 0 canciones »),
       dates are Spanish (lunes, 3 de marzo de 2025). The phone remote on a phone set to Spanish opens in Spanish.
