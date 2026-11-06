@@ -8621,6 +8621,10 @@
         <translation>Last.fm (configuré pour le scrobbling)</translation>
     </message>
     <message>
+        <source>Show their pictures, from Deezer (only the artists&apos; names are sent)</source>
+        <translation>Afficher leurs photos, depuis Deezer (seuls les noms des artistes sont envoyés)</translation>
+    </message>
+    <message>
         <source>Based on</source>
         <translation>D’après</translation>
     </message>

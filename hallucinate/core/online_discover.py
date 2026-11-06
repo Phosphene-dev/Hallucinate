@@ -416,8 +416,36 @@ def suggestions(db, seeds, source, limit=30):
     return ranked[:limit]
 
 
+# --- pictures from Deezer, for suggestions from any source ------------------------------------------------------
+def pictures(db, keys):
+    """{folded name: (picture link or "", when looked)} for the artists asked about so far."""
+    keys = list(keys)
+    out = {}
+    for i in range(0, len(keys), 500):
+        chunk = keys[i:i + 500]
+        rows = db.conn.execute(f"SELECT key, picture, looked FROM artist_pictures WHERE key IN ({','.join('?' * len(chunk))})",  # noqa: S608
+                               chunk)
+        out.update({r[0]: (r[1], r[2]) for r in rows})
+    return out
+
+
+def remember_picture(db, key, picture, now):
+    db.conn.execute("INSERT OR REPLACE INTO artist_pictures(key, picture, looked) VALUES (?, ?, ?)",
+                    (key, _web(picture), now))
+    db.conn.commit()
+
+
+def with_pictures(db, found):
+    """`found` (suggestions) with the pictures Deezer gave for those that had none."""
+    known = pictures(db, [s["key"] for s in found if not s.get("picture")])
+    for s in found:
+        if not s.get("picture") and known.get(s["key"], ("", 0))[0]:
+            s["picture"] = known[s["key"]][0]
+    return found
+
+
 def forget(db):
     """Throws away what was found online (not the wishlist)."""
-    for table in ("online_artists", "new_releases", "online_similar"):
+    for table in ("online_artists", "new_releases", "online_similar", "artist_pictures"):
         db.conn.execute(f"DELETE FROM {table}")  # noqa: S608 - fixed names
     db.conn.commit()

@@ -27,6 +27,8 @@ All notable changes to this project are documented here. Format based on
   days with only the artist's name and that point. A show only counts when the artist is among its performers;
   cancelled and postponed ones say so; Not interested hides an artist's shows. Offline mode asks nothing.
 - Discover: changing a setting of one online shelf asks again only for that shelf.
+- Discover: artists like yours from ListenBrainz or Last.fm can show their pictures, from Deezer (Settings →
+  Discover; off until chosen, and only the artists' names are sent).
 
 ### Fixed
 - Pressing play or pause while a cast song was still being got ready (Hallucinate's sound, or a converted file) is

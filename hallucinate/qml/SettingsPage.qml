@@ -926,6 +926,13 @@ Item {
                         current: onlineDiscover.similarSource
                         onPicked: function (v) { onlineDiscover.setSimilarSource(v) }
                     }
+                    StyledCheck {
+                        objectName: "deezerPictures"
+                        visible: onlineDiscover.similarSource !== "deezer"
+                        text: qsTr("Show their pictures, from Deezer (only the artists' names are sent)")
+                        checked: onlineDiscover.deezerPictures
+                        onToggled: onlineDiscover.setDeezerPictures(checked)
+                    }
                     OptionCombo {
                         objectName: "similarSeeds"
                         labelWidth: 202  // (indented: lined up with the others, and inside narrow windows)

@@ -39,6 +39,7 @@ PREVIEWS = ("deezer", "itunes", "off")
 RELEASES_EVERY_S = 20 * 3600
 SIMILAR_EVERY_S = 14 * 86400
 MBID_AGAIN_S = 30 * 86400  # an artist MusicBrainz didn't know is looked for again after a month
+PICTURE_AGAIN_S = 30 * 86400  # a picture Deezer didn't have is asked for again after a month
 CONCERTS_EVERY_S = 3 * 86400
 CONCERT_FOLLOW = {"top50": 50, "top200": 200}
 TICKETMASTER_GAP_S = 0.25  # (it takes five requests a second)
@@ -133,6 +134,7 @@ class OnlineDiscover(QObject):
     similarSource, setSimilarSource = _prop("similarSource", "listenbrainz", str, settingsChanged, SIMILAR_SOURCES,
                                             refetch="similar")
     seeds, setSeeds = _prop("seeds", 25, int, settingsChanged, SEEDS, refetch="similar")
+    deezerPictures, setDeezerPictures = _prop("deezerPictures", False, bool, settingsChanged, refetch="similar")
     previews, setPreviews = _prop("previews", "deezer", str, settingsChanged, PREVIEWS)
     store, setStore = _prop("store", "bandcamp", str, settingsChanged, tuple(core.STORES))
     tickOff, setTickOff = _prop("tickOff", True, bool, settingsChanged)
@@ -326,7 +328,7 @@ class OnlineDiscover(QObject):
             return {"key": key, "lat": point[0], "lon": point[1], "radius": self.concertRadius,
                     "place": self._concert_place(), "artists": CONCERT_FOLLOW[self.concertFollow]}
         key = self._sources.lastfm_key() if self._sources is not None else ""
-        return {"source": self.similarSource, "seeds": self.seeds, "lastfm": key}
+        return {"source": self.similarSource, "seeds": self.seeds, "lastfm": key, "pictures": self.deezerPictures}
 
     @Slot()
     def stop(self):
@@ -340,7 +342,8 @@ class OnlineDiscover(QObject):
         kinds = [k for k, on in (("Album", self.albums), ("EP", self.eps), ("Single", self.singles)) if on]
         since = (datetime.date.today() - datetime.timedelta(days=self.window)).isoformat()
         return {"kinds": kinds, "since": since, "live": self.live, "compilations": self.compilations,
-                "source": self.similarSource, "seeds": self.seeds, "releases": self._on("discoverNewReleases"),
+                "source": self.similarSource, "seeds": self.seeds, "pictures": self.deezerPictures,
+                "releases": self._on("discoverNewReleases"),
                 "similar": self._on("discoverSimilar"), "concerts": self._on("discoverConcerts"),
                 "place": self._concert_place()}
 
@@ -390,7 +393,7 @@ class OnlineDiscover(QObject):
         self._found.emit({"releases": releases, "similar": similar, "concerts": shows})
 
     _read_opts = {"kinds": [], "since": "9999", "live": False, "compilations": False, "source": "listenbrainz",
-                  "seeds": 25, "releases": False, "similar": False, "concerts": False, "place": ""}
+                  "seeds": 25, "pictures": False, "releases": False, "similar": False, "concerts": False, "place": ""}
 
     def _queue_read(self):
         self._read_opts = self._read_options()
@@ -471,10 +474,30 @@ class OnlineDiscover(QObject):
                 continue
             core.store_similar(db, key, source, names, now)
         # pictures only for the artists the shelf shows (each artist's list has dozens)
+        shown = core.suggestions(db, core.top_artists(db, o["seeds"]), source)
+        if source != "deezer" and o.get("pictures"):  # (Deezer's own come with the names)
+            self._deezer_pictures(db, o, shown, now)
+            shown = core.with_pictures(db, shown)
         folder = os.path.join(self._art_dir, "online")
-        for s in core.suggestions(db, core.top_artists(db, o["seeds"]), source):
+        for s in shown:
             if s.get("picture") and not self._stopped(o):
                 core.fetch_image(s["picture"], folder)
+
+    def _deezer_pictures(self, db, o, shown, now):
+        """Asks Deezer for pictures of the shown artists that have none (only their names are sent)."""
+        known = core.pictures(db, [s["key"] for s in shown])
+        for s in shown:
+            if self._stopped(o):
+                return
+            picture, looked = known.get(s["key"], ("", 0.0))
+            if s.get("picture") or picture or (looked and now - looked < PICTURE_AGAIN_S):
+                continue
+            try:
+                found = core.deezer_artist(s["name"])
+            except (OSError, ValueError) as exc:
+                logger.info("Couldn't look up a picture of %s: %s", s["name"], exc)
+                continue
+            core.remember_picture(db, s["key"], (found or {}).get("picture", ""), now)
 
     def _look_up_concerts(self, db, o):
         if not o["key"] or not o["place"]:
@@ -501,6 +524,8 @@ class OnlineDiscover(QObject):
         """The shelf's artists, with their pictures as files here (when they've been fetched)."""
         folder = os.path.join(self._art_dir, "online")
         out = core.suggestions(db, core.top_artists(db, opts["seeds"]), opts["source"])
+        if opts["source"] != "deezer" and opts.get("pictures"):
+            out = core.with_pictures(db, out)
         for s in out:
             s["picture"] = core.cached_image(s.get("picture", ""), folder)
         return out
