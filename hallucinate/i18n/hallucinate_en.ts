@@ -1032,8 +1032,8 @@
     <message numerus="yes">
         <source>%n mix(es)</source>
         <translation>
-            <numerusform>%n mix(es)</numerusform>
-            <numerusform>%n mix(es)</numerusform>
+            <numerusform>%n mix</numerusform>
+            <numerusform>%n mixes</numerusform>
         </translation>
     </message>
     <message numerus="yes">

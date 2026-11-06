@@ -211,3 +211,19 @@ def test_the_web_remote_follows_the_phones_language(remote, tmp_path):  # noqa: 
     assert seen["settings"] == "Paramètres"
     assert seen["chips"] == ["Automatique", "English", "Español", "Français"]
     assert seen["settingsEn"] == "Settings" and seen["saved"] == "en"
+
+
+def test_english_counts_are_spelled_out():
+    """The English catalogue gives each "%n thing(s)" its real words ("2 mixes", not "2 mix(es)")."""
+    import re
+    import xml.etree.ElementTree as ET
+
+    bad = []
+    for msg in ET.parse(ROOT / "hallucinate" / "i18n" / "hallucinate_en.ts").getroot().iter("message"):
+        if msg.get("numerus") != "yes":
+            continue
+        tr = msg.find("translation")
+        forms = [f.text or "" for f in tr.findall("numerusform")]
+        if tr.get("type") == "unfinished" or any(re.search(r"\w\((s|es|ies)\)", f) for f in forms):
+            bad.append(f"{msg.findtext('source')!r} → {forms}")
+    assert not bad, bad
