@@ -961,6 +961,22 @@
         <translation>Connexion à %1 perdue</translation>
     </message>
     <message>
+        <source>that room isn&apos;t on the Snapcast server any more</source>
+        <translation>cette pièce n’est plus sur le serveur Snapcast</translation>
+    </message>
+    <message>
+        <source>the Snapcast server couldn&apos;t reach this computer (a firewall may be blocking port %1: allow it for your local network)</source>
+        <translation>le serveur Snapcast n’a pas pu joindre cet ordinateur (un pare-feu bloque peut-être le port %1 : autorisez-le pour votre réseau local)</translation>
+    </message>
+    <message>
+        <source>Snapcast plays the songs on this computer</source>
+        <translation>Snapcast lit les morceaux de cet ordinateur</translation>
+    </message>
+    <message>
+        <source>%1 can only play songs on this computer, not radio or a music server&apos;s songs.</source>
+        <translation>%1 ne peut lire que les morceaux de cet ordinateur, pas la radio ni les morceaux d’un serveur de musique.</translation>
+    </message>
+    <message>
         <source>Offline mode is on, so devices on your network can&apos;t be found</source>
         <translation>Le mode hors ligne est activé : impossible de trouver les appareils de votre réseau</translation>
     </message>
@@ -9063,14 +9079,6 @@
         <translation>Nom du serveur</translation>
     </message>
     <message>
-        <source>cast casting chromecast google nest home speaker tv television dlna upnp renderer receiver kodi sonos play on another device network wifi firewall port original bit-perfect processed equalizer sound</source>
-        <translation>diffuser diffusion caster chromecast google nest home enceinte téléviseur télé tv dlna upnp récepteur amplificateur kodi sonos lire sur un autre appareil réseau wifi pare-feu port original bit-perfect traité égaliseur son</translation>
-    </message>
-    <message>
-        <source>Play your music on a Chromecast, a Google or Nest speaker, or a TV, receiver or speaker that takes DLNA/UPnP. Pick one with the cast button beside the volume; your queue, likes and play counts stay here, and Hallucinate&apos;s controls, media keys and phone remote all control the device.</source>
-        <translation>Écoutez votre musique sur un Chromecast, une enceinte Google ou Nest, ou un téléviseur, un ampli ou une enceinte compatible DLNA/UPnP. Choisissez-le avec le bouton de diffusion à côté du volume ; votre file d’attente, vos favoris et vos écoutes restent ici, et les commandes d’Hallucinate, les touches multimédia et la télécommande du téléphone pilotent l’appareil.</translation>
-    </message>
-    <message>
         <source>Playing on %1</source>
         <translation>Lecture sur %1</translation>
     </message>
@@ -9101,10 +9109,6 @@
     <message>
         <source>Port</source>
         <translation>Port</translation>
-    </message>
-    <message>
-        <source>The device fetches each song from this computer on this port, and only the device you picked can, only while you&apos;re casting. If nothing plays, your firewall may be blocking it: allow the port for your home network. For example, on Fedora, Bazzite and other systems with firewalld:</source>
-        <translation>L’appareil récupère chaque morceau sur cet ordinateur par ce port, et seul l’appareil choisi le peut, uniquement pendant la diffusion. Si rien ne se lit, votre pare-feu le bloque peut-être : autorisez ce port pour votre réseau domestique. Par exemple, sur Fedora, Bazzite et les autres systèmes avec firewalld :</translation>
     </message>
     <message>
         <source>or with ufw (Ubuntu, Mint):</source>
@@ -9397,6 +9401,26 @@
     <message>
         <source>Take the output by itself (exclusive mode)</source>
         <translation>Prendre la sortie pour lui seul (mode exclusif)</translation>
+    </message>
+    <message>
+        <source>cast casting chromecast google nest home speaker tv television dlna upnp renderer receiver kodi sonos snapcast snapserver multiroom room rooms play on another device network wifi firewall port original bit-perfect processed equalizer sound</source>
+        <translation>diffuser diffusion cast chromecast google nest home enceinte tv télévision dlna upnp lecteur récepteur kodi sonos snapcast snapserver multiroom pièce pièces lire sur un autre appareil réseau wifi pare-feu port original bit-perfect traité égaliseur son</translation>
+    </message>
+    <message>
+        <source>Play your music on a Chromecast, a Google or Nest speaker, a TV, receiver or speaker that takes DLNA/UPnP, or a room of a Snapcast server. Pick one with the cast button beside the volume; your queue, likes and play counts stay here, and Hallucinate&apos;s controls, media keys and phone remote all control the device.</source>
+        <translation>Écoutez votre musique sur un Chromecast, une enceinte Google ou Nest, une TV, un ampli ou une enceinte compatible DLNA/UPnP, ou une pièce d’un serveur Snapcast. Choisissez-le avec le bouton de diffusion à côté du volume ; votre file d’attente, vos favoris et vos écoutes restent ici, et les commandes d’Hallucinate, les touches multimédia et la télécommande sur téléphone pilotent l’appareil.</translation>
+    </message>
+    <message>
+        <source>The device fetches each song from this computer on this port, and only the device you picked can, only while you&apos;re casting (a Snapcast server takes the sound on the port after it). If nothing plays, your firewall may be blocking them: allow both for your home network. For example, on Fedora, Bazzite and other systems with firewalld:</source>
+        <translation>L’appareil récupère chaque morceau sur cet ordinateur par ce port, et seul l’appareil choisi le peut, seulement pendant la diffusion (un serveur Snapcast reçoit le son par le port suivant). Si rien ne joue, votre pare-feu les bloque peut-être : autorisez les deux pour votre réseau domestique. Par exemple, sur Fedora, Bazzite et les autres systèmes avec firewalld :</translation>
+    </message>
+    <message>
+        <source>Snapcast servers are found by themselves when they announce themselves on your network. If yours doesn&apos;t show up, type its address here (host or host:port, more than one separated by spaces).</source>
+        <translation>Les serveurs Snapcast sont trouvés d’eux-mêmes lorsqu’ils s’annoncent sur votre réseau. Si le vôtre n’apparaît pas, saisissez son adresse ici (hôte ou hôte:port, plusieurs séparés par des espaces).</translation>
+    </message>
+    <message>
+        <source>Snapcast servers</source>
+        <translation>Serveurs Snapcast</translation>
     </message>
     <message>
         <source>remote phone web browser interface control pair pairing device devices network lan wifi headless tablet handoff hand over another computer</source>

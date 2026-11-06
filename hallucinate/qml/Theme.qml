@@ -224,6 +224,8 @@ QtObject {
     // For text shown by Qt's own controls (tooltips, menu items, dialog titles), which can't be told to draw plain
     // text: a look-alike for "<" keeps a tag or file name from being read as formatting. Our own Text is plain.
     function plain(s) { return String(s === undefined || s === null ? "" : s).replace(/</g, "\u2039") }
+    // the icon for a kind of cast device (see Casting.devices)
+    function castIcon(kind) { return kind === "chromecast" ? "speaker" : kind === "snapcast" ? "speakers" : "tv" }
 
     function fmtTime(ms) {
         var s = Math.max(0, Math.floor(ms / 1000))

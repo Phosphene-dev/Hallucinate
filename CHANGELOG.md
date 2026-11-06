@@ -3,6 +3,21 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+- Snapcast: a Snapcast server's rooms appear with the other cast devices, found on the network by themselves, or
+  typed in Settings → Casting for networks where servers don't announce themselves. Hallucinate sends its own sound
+  (your ReplayGain, equalizer and crossfeed) to the server, every song going straight on into the next, and the
+  room's speakers play in sync. The volume slider sets the room's speakers, and stopping puts the room back on what
+  it was playing before. Songs on this computer play there; radio and music servers' songs are skipped with a
+  message. The server takes the sound on the port after the cast port, and Settings → Casting's firewall commands
+  open both.
+
+### Fixed
+- Pressing play or pause while a cast song was still being got ready (Hallucinate's sound, or a converted file) is
+  no longer forgotten once it's ready.
+
 ## [2.0.0] - 2026-11-06
 
 ### Added

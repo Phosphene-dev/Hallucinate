@@ -13,6 +13,7 @@ import hashlib
 import html
 import logging
 import os
+import re
 import shutil
 import threading
 import time
@@ -44,6 +45,9 @@ RENDER_MAX_RATE = 48000
 FINISH_GRACE_MS = 4000
 QUEUE_WAIT_S = 3.0  # how long handing over the next song waits for the device to have the playing one  # a song that ended with the next handed over: how long to wait for the device to go on  # what every Chromecast and TV takes as WAV
 KEEP_RENDERS = 4  # prepared songs kept while casting (the playing one, the next, a couple just played)
+
+# a Snapcast server typed in Settings: a host name or IPv4 address, and a port if not the usual one
+_SNAP_SERVER = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9.-]{0,252})(?::(?:[1-9][0-9]{0,4}))?")
 
 FIREWALL_HINT = QT_TRANSLATE_NOOP(
     "Casting", "%1 couldn't fetch the song from this computer. A firewall may be blocking port %2: allow it for "
@@ -637,7 +641,8 @@ class SnapcastSession(CastSession):
                 raise snapcast.SnapcastError(translate("Casting", "that room isn't on the Snapcast server any more"))
             here = snapcast.local_address_for(host)
             me = weakref.WeakMethod(self._on_feed)  # (the feeder's thread mustn't keep the session alive)
-            self._feeder = snapcast.Feeder(here, socket_address(host),
+            port = getattr(self._server, "port", 0)  # (the port after the cast port, so one firewall rule covers both)
+            self._feeder = snapcast.Feeder(here, socket_address(host), port=port + 1 if port else 0,
                                            on_event=lambda kind, tag: (me() or (lambda *a: None))(kind, tag))
             try:  # (a stream left from before, if Hallucinate stopped without tidying up)
                 ctl.call("Stream.RemoveStream", {"id": snapcast.STREAM_NAME})
@@ -647,8 +652,9 @@ class SnapcastSession(CastSession):
             self._was = room["stream"] if room["stream"] != self._stream else ""
             ctl.call("Group.SetStream", {"id": group, "stream_id": self._stream})
             if not self._feeder.connected.wait(8):
-                raise snapcast.SnapcastError(translate(
-                    "Casting", "the Snapcast server couldn't reach this computer (a firewall may be in the way)"))
+                raise snapcast.SnapcastError(fill(translate(
+                    "Casting", "the Snapcast server couldn't reach this computer (a firewall may be blocking port %1: "
+                               "allow it for your local network)"), self._feeder.port))
             levels = [c["volume"] for c in room["clients"] if c["connected"]]
             self.volume = sum(levels) / len(levels) / 100 if levels else None
             self._ctl = ctl
@@ -924,7 +930,8 @@ class Casting(QObject):
 
     def _snapcast_servers(self):
         """The Snapcast servers typed in Settings (for networks where they don't announce themselves)."""
-        return [s for s in str(self._settings.value("cast/snapcastServers", "") or "").split() if s][:8]
+        value = str(self._settings.value("cast/snapcastServers", "") or "")
+        return [s for s in value.split() if _SNAP_SERVER.fullmatch(s)][:8]
 
     @Property(str, notify=changed)
     def snapcastServers(self):
@@ -932,7 +939,7 @@ class Casting(QObject):
 
     @Slot(str)
     def setSnapcastServers(self, text):
-        servers = [s.strip() for s in str(text).replace(",", " ").split() if s.strip()][:8]
+        servers = [s for s in str(text).replace(",", " ").split() if _SNAP_SERVER.fullmatch(s)][:8]
         self._settings.setValue("cast/snapcastServers", " ".join(servers))
         self.changed.emit()
 

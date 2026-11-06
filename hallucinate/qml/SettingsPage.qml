@@ -2036,14 +2036,14 @@ Item {
             id: sec_casting
             objectName: "settings_casting"
             title: qsTr("Casting")
-            keywords: qsTr("cast casting chromecast google nest home speaker tv television dlna upnp renderer receiver kodi sonos play on another device network wifi firewall port original bit-perfect processed equalizer sound")
+            keywords: qsTr("cast casting chromecast google nest home speaker tv television dlna upnp renderer receiver kodi sonos snapcast snapserver multiroom room rooms play on another device network wifi firewall port original bit-perfect processed equalizer sound")
             query: page.query
             visible: matches && shell.features.casting !== false
             Text {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: qsTr("Play your music on a Chromecast, a Google or Nest speaker, or a TV, receiver or speaker that takes DLNA/UPnP. Pick one with the cast button beside the volume; your queue, likes and play counts stay here, and Hallucinate's controls, media keys and phone remote all control the device.")
+                text: qsTr("Play your music on a Chromecast, a Google or Nest speaker, a TV, receiver or speaker that takes DLNA/UPnP, or a room of a Snapcast server. Pick one with the cast button beside the volume; your queue, likes and play counts stay here, and Hallucinate's controls, media keys and phone remote all control the device.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             Row {
@@ -2097,7 +2097,7 @@ Item {
                 textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: qsTr("The device fetches each song from this computer on this port, and only the device you picked can, only while you're casting. If nothing plays, your firewall may be blocking it: allow the port for your home network. For example, on Fedora, Bazzite and other systems with firewalld:")
+                text: qsTr("The device fetches each song from this computer on this port, and only the device you picked can, only while you're casting (a Snapcast server takes the sound on the port after it). If nothing plays, your firewall may be blocking them: allow both for your home network. For example, on Fedora, Bazzite and other systems with firewalld:")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
             }
             TextEdit {
@@ -2105,7 +2105,7 @@ Item {
                 readOnly: true; selectByMouse: true
                 wrapMode: TextEdit.WrapAnywhere
                 textFormat: TextEdit.PlainText
-                text: "sudo firewall-cmd --permanent --add-port=" + casting.port + "/tcp && sudo firewall-cmd --reload"  // i18n: keep
+                text: "sudo firewall-cmd --permanent --add-port=" + casting.port + "-" + (casting.port + 1) + "/tcp && sudo firewall-cmd --reload"  // i18n: keep
                 color: Theme.text; font.family: Theme.monoFamily; font.pixelSize: Theme.fontSize(12)
             }
             Text {
@@ -2120,8 +2120,33 @@ Item {
                 readOnly: true; selectByMouse: true
                 wrapMode: TextEdit.WrapAnywhere
                 textFormat: TextEdit.PlainText
-                text: "sudo ufw allow " + casting.port + "/tcp"  // i18n: keep
+                text: "sudo ufw allow " + casting.port + ":" + (casting.port + 1) + "/tcp"  // i18n: keep
                 color: Theme.text; font.family: Theme.monoFamily; font.pixelSize: Theme.fontSize(12)
+            }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: qsTr("Snapcast servers are found by themselves when they announce themselves on your network. If yours doesn't show up, type its address here (host or host:port, more than one separated by spaces).")
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            Row {
+                spacing: 12
+                width: parent.width
+                Text { id: snapLabel; textFormat: Text.PlainText; text: qsTr("Snapcast servers"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 36; verticalAlignment: Text.AlignVCenter }
+                TextField {
+                    id: snapServers
+                    objectName: "castSnapcastServers"
+                    Accessible.name: qsTr("Snapcast servers")
+                    width: Math.min(360, parent.width - snapLabel.width - 12); height: 36
+                    text: casting.snapcastServers
+                    placeholderText: "192.168.1.20 snapserver.local:1705"  // i18n: keep
+                    color: Theme.text
+                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14)
+                    selectByMouse: true
+                    onEditingFinished: { casting.setSnapcastServers(text); text = casting.snapcastServers }
+                    background: Rectangle { radius: Theme.round(8); color: Theme.surface; border.color: snapServers.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
+                }
             }
         }
         SettingsSection {

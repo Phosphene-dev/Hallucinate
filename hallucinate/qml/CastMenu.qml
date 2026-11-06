@@ -41,7 +41,7 @@ Menu {
             required property var modelData
             text: Theme.plain(modelData.name) + (modelData.model && modelData.model !== modelData.name
                                                  ? "  ·  " + Theme.plain(modelData.model) : "")
-            icon.name: modelData.kind === "chromecast" ? "speaker" : "tv"
+            icon.name: Theme.castIcon(modelData.kind)
             checkable: true
             checked: modelData.active
             onTriggered: { if (!modelData.active) casting.castTo(modelData.id); checked = Qt.binding(() => modelData.active) }

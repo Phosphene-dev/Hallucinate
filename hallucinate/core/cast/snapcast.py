@@ -199,13 +199,18 @@ class Feeder:
     (it went straight on into the next song), "lost" (the server went away and didn't come back). Called on the
     feeder's thread."""
 
-    def __init__(self, bind_host, server_ip, on_event=None, clock=time.monotonic):
+    def __init__(self, bind_host, server_ip, on_event=None, clock=time.monotonic, port=0):
         self.server_ip = server_ip
         self.on_event = on_event or (lambda kind, tag: None)
         self._clock = clock
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self._sock.bind((bind_host, 0))
+        try:  # `port` (one a firewall can be opened for), or any free one if it's taken
+            self._sock.bind((bind_host, port))
+        except OSError:
+            if not port:
+                raise
+            self._sock.bind((bind_host, 0))
         self._sock.listen(2)
         self._sock.settimeout(0.5)
         self.port = self._sock.getsockname()[1]

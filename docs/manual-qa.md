@@ -74,6 +74,21 @@
 - [ ] Handoff with a typed address (on a network that blocks broadcasts), a wrong code (says so), Forget in
       Settings → Remote & web (needs pairing again), and with the firewall on (firewalld: the remote's port).
 
+## Release testing for 2.1.0
+
+- [ ] Snapcast (a snapserver with a snapclient or two, e.g. on a Raspberry Pi): the cast button lists each room
+      within a few seconds (or, on a network without mDNS, once its address is typed in Settings → Casting →
+      Snapcast servers). Picking a room plays the song there from the same place; the speakers stay in sync.
+- [ ] On a Snapcast room: pause, seek, next and previous answer within about a second; an album plays without gaps;
+      the volume slider moves the room's speakers (Snapcast's own app shows the same); the queue ends quietly.
+- [ ] "Play here instead": the room goes back to the stream it played before, and Hallucinate's stream is gone
+      from the server (Snapcast's app no longer lists it).
+- [ ] An internet radio station or a music server's song while on a Snapcast room: skipped with a message.
+- [ ] With the firewall on: the message names the port after the cast port, and the command in Settings → Casting
+      (which now opens both) fixes it.
+- [ ] Press play while "Getting ready for…" shows (Hallucinate's sound on a Chromecast or DLNA device), and pause
+      while it shows: once ready the device plays or stays paused as last asked.
+
 ## Release testing for 1.11.0
 
 Casting needs real devices: as many of these as you have.

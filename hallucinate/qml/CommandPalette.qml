@@ -99,7 +99,7 @@ Popup {
             for (var d = 0; d < casting.devices.length; d++) {
                 var dev = casting.devices[d]
                 if (!dev.active)
-                    c.push({ t: qsTr("Play on %1").arg(dev.name), s: qsTr("Casting"), i: dev.kind === "chromecast" ? "speaker" : "tv", run: ((id) => () => casting.castTo(id))(dev.id) })
+                    c.push({ t: qsTr("Play on %1").arg(dev.name), s: qsTr("Casting"), i: Theme.castIcon(dev.kind), run: ((id) => () => casting.castTo(id))(dev.id) })
             }
             c.push({ t: qsTr("Look for devices to play on"), s: qsTr("Casting  ·  Chromecast, DLNA/UPnP"), i: "cast", run: () => casting.refresh() })
         }

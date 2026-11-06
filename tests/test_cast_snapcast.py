@@ -12,8 +12,8 @@ from conftest import wait_for
 
 from hallucinate.core.cast import snapcast
 
-pytestmark = pytest.mark.skipif(not (FFMPEG and shutil.which("snapserver") and shutil.which("snapclient")),
-                                reason="needs ffmpeg, snapserver and snapclient")
+needs_snapserver = pytest.mark.skipif(not (FFMPEG and shutil.which("snapserver") and shutil.which("snapclient")),
+                                      reason="needs ffmpeg, snapserver and snapclient")
 
 
 def plain(host, port, timeout):
@@ -54,6 +54,7 @@ def heard(out, seconds=1.0):
     return max((abs(v) for v in a), default=0)
 
 
+@needs_snapserver
 def test_the_queue_plays_on_a_snapcast_room(qapp, tmp_path, snapserver, monkeypatch):
     from hallucinate.cast import Casting, SnapcastSession
     from hallucinate.player import Player
@@ -89,6 +90,28 @@ def test_the_queue_plays_on_a_snapcast_room(qapp, tmp_path, snapserver, monkeypa
         casting.stopCasting()
         assert wait_for(lambda: snapcast.groups(ctl.status())[0]["stream"] == "default", timeout=10)
         assert wait_for(lambda: not any(s["id"] == snapcast.STREAM_NAME for s in ctl.status()["streams"]), timeout=10)
+    finally:
+        casting.shutdown()
+        player.shutdown()
+
+
+def test_typed_snapcast_servers_are_kept_tidy(qapp, tmp_path):
+    from hallucinate.cast import Casting
+    from hallucinate.player import Player
+
+    player = Player(session_file=tmp_path / "session.json")
+    casting = Casting(player)
+    try:
+        casting.setSnapcastServers("192.168.1.20, snap.local:1705  http://x/y  ;rm  host:99999x " + " h".join("abcdefghij"))
+        kept = casting.snapcastServers.split()
+        assert kept[:2] == ["192.168.1.20", "snap.local:1705"]
+        assert not any("/" in s or ";" in s or "99999x" in s for s in kept)
+        assert len(kept) <= 8
+        seen = []
+        casting.discover = lambda servers: seen.append(servers) or []
+        casting.refresh()
+        assert wait_for(lambda: seen, timeout=5)
+        assert seen[0][:2] == ["192.168.1.20", "snap.local:1705"]
     finally:
         casting.shutdown()
         player.shutdown()
