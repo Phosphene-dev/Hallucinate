@@ -12589,6 +12589,18 @@
 <context>
     <name>WhatsNew</name>
     <message>
+        <source>Discover: daily mixes, forgotten favourites, deep cuts and what you played on this day, all from your own library.</source>
+        <translation>Découvrir : mix du jour, favoris oubliés, pépites et ce que vous écoutiez ce jour-là, tout depuis votre bibliothèque.</translation>
+    </message>
+    <message>
+        <source>Right-click a song → Sounds like this, for songs that sound like it (tempo, key, energy), measured on your computer.</source>
+        <translation>Clic droit sur un morceau → Dans le même son, pour des morceaux qui lui ressemblent (tempo, tonalité, énergie), mesurés sur votre ordinateur.</translation>
+    </message>
+    <message>
+        <source>If you like: new releases and artists like yours with previews, and a wishlist (Settings → Discover; off until chosen).</source>
+        <translation>Si vous le voulez : nouveautés et artistes proches des vôtres avec extraits, et une liste d’envies (Paramètres → Découvrir ; désactivés par défaut).</translation>
+    </message>
+    <message>
         <source>Bit-perfect playback (Settings → Sound): every song reaches your sound output untouched, at its own rate.</source>
         <translation>Lecture bit-perfect (Paramètres → Son) : chaque morceau atteint votre sortie audio intact, à sa propre fréquence.</translation>
     </message>
