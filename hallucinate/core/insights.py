@@ -110,10 +110,16 @@ def listening_heatmap(db, now=None, weeks=26):
     first = today - datetime.timedelta(days=today.weekday() + (weeks - 1) * 7)
     start = time.mktime(first.timetuple())
     counts = [0] * (weeks * 7)
-    for (ts,) in db.conn.execute("SELECT ts FROM play_log WHERE ts >= ? AND ts <= ?", (start, now)):
-        index = (datetime.date.fromtimestamp(ts) - first).days
+    # counted per local day by SQLite: one row a day, not one a listen (a year of listening is tens of thousands)
+    for day, plays in db.conn.execute(
+            "SELECT date(ts, 'unixepoch', 'localtime') AS day, COUNT(*) FROM play_log WHERE ts >= ? AND ts <= ?"
+            " GROUP BY day", (start, now)):
+        try:
+            index = (datetime.date.fromisoformat(day) - first).days
+        except (TypeError, ValueError):
+            continue
         if 0 <= index < len(counts):
-            counts[index] += 1
+            counts[index] += plays
     today_index = (today - first).days
     streak, i = 0, today_index if counts[today_index] else today_index - 1
     while i >= 0 and counts[i]:

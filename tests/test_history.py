@@ -230,3 +230,30 @@ def test_songs_without_a_cover_take_their_album_s(db):
     arts = {r[0]: r[1] for r in db.conn.execute("SELECT path, art FROM tracks")}
     assert arts["/m/a1"] == "/art/record.jpg" and arts["/m/a2"] == "/art/record.jpg"
     assert not arts["/m/b1"]  # an album with no cover anywhere stays without one
+
+
+def test_day_totals_cover_the_days_shown(qapp, db, monkeypatch):
+    """The day headers' totals come for the days of the listens loaded so far, not every day ever listened (handed
+    to the page all at once, they froze it on a long history); loading more brings the new days' totals."""
+    from conftest import wait_for
+
+    from hallucinate import userlib
+    from hallucinate.userlib import UserLibrary
+
+    add(db, "/m/a", "A", "Artist", "Album")
+    for i in range(6):
+        db.record_play("/m/a", NOW - i * 86400)  # (one listen a day, six days)
+    monkeypatch.setattr(userlib, "HISTORY_PAGE", 2)
+    ul = UserLibrary(db.conn.execute("PRAGMA database_list").fetchone()["file"])
+    try:
+        ul.loadHistory("", "all", "", "")
+        assert wait_for(lambda: ul.historyModel.count == 2 and not ul.historyInfo["loading"])
+        days = ul.historyInfo["days"]
+        assert set(days) == {ul.historyModel.get(i)["day"] for i in range(2)}
+        assert all(v["plays"] == 1 for v in days.values())
+        ul.loadMoreHistory()
+        assert wait_for(lambda: ul.historyModel.count == 4 and not ul.historyInfo["loading"])
+        assert set(ul.historyInfo["days"]) == {ul.historyModel.get(i)["day"] for i in range(4)}
+        assert ul.historyInfo["heatmap"]["total"] == 6  # (the heatmap still counts them all)
+    finally:
+        ul.shutdown()

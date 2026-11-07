@@ -5,6 +5,10 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Changed
+- History opens faster on a long listening history: its heatmap is counted by the database a day at a time,
+  not a listen at a time, and the day headers' totals come for the days shown, not every day ever listened.
+
 ### Fixed
 - Covers: random songs and albums could show a blank square (no ♪) in lists until you scrolled away and back,
   during a scan or long after (#115). The picture had loaded; what failed was rounding its corners on the graphics

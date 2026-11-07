@@ -1118,9 +1118,12 @@ class UserLibrary(QObject):
                 args = (f["query"], start, end, f["artist"], f["source"])
                 rows = history.plays(db, *args, limit=HISTORY_PAGE + 1, offset=offset)
                 payload = {"rows": decorate(rows[:HISTORY_PAGE]), "hasMore": len(rows) > HISTORY_PAGE}
+                # the day headers' totals, for the days these listens are on only (all of them would be every
+                # day ever listened, handed to the page at once)
+                shown = {r["day"] for r in payload["rows"]}
+                payload["days"] = {d: v for d, v in history.daily_totals(db, *args).items() if d in shown}
                 if offset == 0:
                     payload["summary"] = history.summary(db, *args)
-                    payload["days"] = history.daily_totals(db, *args)
                     payload["heatmap"] = insights.listening_heatmap(db, weeks=HISTORY_WEEKS)
             except Exception:  # noqa: BLE001
                 logger.exception("History query failed")
@@ -1143,6 +1146,7 @@ class UserLibrary(QObject):
                     self._history_info[key] = payload[key]
         else:
             self._models["history"].append_items(payload["rows"])
+            self._history_info["days"] = {**(self._history_info.get("days") or {}), **payload.get("days", {})}
         self._history_info["hasMore"] = payload["hasMore"]
         self._history_info["loading"] = False
         self.historyChanged.emit()
