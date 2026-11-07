@@ -6,6 +6,8 @@ All notable changes to this project are documented here. Format based on
 ## [Unreleased]
 
 ### Added
+- Like what's playing in one click: a heart beside the song in the player bar and the mini player, or press H
+  anywhere (it says whether it liked or unliked it; also in Ctrl+K). Settings → Appearance can hide the heart.
 - Discover: clicking a daily mix shows its songs first, to look through before playing it, with Play, Shuffle,
   Add to queue and Save as a playlist; double-click a song to play the mix from it. Each mix card has a play
   button for playing it straight away, and its menu has Show its songs. Settings → Discover → Clicking a mix can

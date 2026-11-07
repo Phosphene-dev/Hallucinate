@@ -88,7 +88,7 @@ Item {
         }
         Column {
             anchors.verticalCenter: parent.verticalCenter
-            width: parent.width - art.width - 12
+            width: parent.width - art.width - 12 - (barLike.visible ? barLike.width + 12 : 0)
             spacing: 3
             MarqueeText {  // a long title glides to its end and back while it plays (#112)
                 objectName: "barTitle"
@@ -196,6 +196,18 @@ Item {
                                 + barQuality.used + implicitWidth <= infoRow.room
                 }
             }
+        }
+        // Like what's playing in one click (H does it from anywhere); Settings → Appearance can hide it
+        IconButton {
+            id: barLike
+            objectName: "barLike"
+            anchors.verticalCenter: parent.verticalCenter
+            visible: player.hasTrack && !(player.current.kind || "").length && shell.features.liked !== false
+                     && shell.ui.barLike !== "0"  // i18n: keep
+            icon: "heart"
+            active: player.hasTrack && userLib.likesRevision >= 0 && userLib.isLiked(player.current.path)
+            tip: active ? qsTr("Remove from Liked Songs (H)") : qsTr("Add to Liked Songs (H)")
+            onClicked: Nav.likePlaying(false)
         }
     }
 

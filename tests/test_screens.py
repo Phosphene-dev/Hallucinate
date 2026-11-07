@@ -3122,3 +3122,41 @@ def test_a_daily_mix_shows_its_songs_before_playing(qapp, app_window):
         player.playList = real_play
         discover.setMixClick("preview")
     assert not [w for w in warnings if "DiscoverPage" in w or "TrackRow" in w], warnings[:3]
+
+
+def test_like_what_is_playing_from_the_player_bar_or_with_h(qapp, app_window, tmp_path):
+    """A heart beside the playing song in the player bar likes it in one click (and unlikes it); H does the same
+    from anywhere, saying which. Settings → Appearance can hide the heart; a station's song has none."""
+    from conftest import wait_for
+    from PySide6.QtTest import QTest
+
+    window, objects, warnings = app_window
+    player, user_lib, shell = objects["player"], objects["userLib"], objects["shell"]
+    from audio import encode
+
+    song = encode(tmp_path / "like.flac", "flac", seconds=3, title="Like me")
+    player.playList([{"id": 99, "path": str(song), "title": "Like me", "artist": "A", "album": "B", "duration": 3}], 0)
+    assert wait_for(lambda: player.hasTrack)
+    player.pause()
+    path = player.current["path"]
+    heart = find_item(window, "barLike")
+    assert heart is not None and heart.property("visible")
+    was = user_lib.isLiked(path)
+    QMetaObject.invokeMethod(heart, "clicked")
+    assert wait_for(lambda: user_lib.isLiked(path) != was)
+    assert wait_for(lambda: heart.property("active") == (not was))
+    window.requestActivate()
+    window.contentItem().forceActiveFocus()
+    QTest.keyClick(window, Qt.Key.Key_H)
+    assert wait_for(lambda: user_lib.isLiked(path) == was)
+    toast = window.findChild(QObject, "toast")
+    assert toast.property("message") == ("Added to Liked Songs" if was else "Removed from Liked Songs")  # (H undid the click)
+    shell.setUiValue("barLike", "0")
+    try:
+        qapp.processEvents()
+        assert not heart.property("visible")
+    finally:
+        shell.setUiValue("barLike", "1")
+    qapp.processEvents()
+    assert heart.property("visible")
+    assert not [w for w in warnings if "NowPlayingBar" in w or "MiniPlayer" in w], warnings[:3]

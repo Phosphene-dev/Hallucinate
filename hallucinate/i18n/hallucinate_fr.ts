@@ -1396,6 +1396,14 @@
         <translation>Lecture  ·  R</translation>
     </message>
     <message>
+        <source>Like or unlike what&apos;s playing</source>
+        <translation>Aimer ou ne plus aimer ce qui joue</translation>
+    </message>
+    <message>
+        <source>Playback  ·  H</source>
+        <translation>Lecture  ·  H</translation>
+    </message>
+    <message>
         <source>Radio off</source>
         <translation>Désactiver la radio</translation>
     </message>
@@ -4188,6 +4196,14 @@
         <source>Next</source>
         <translation>Suivant</translation>
     </message>
+    <message>
+        <source>Remove from Liked Songs</source>
+        <translation>Retirer des Morceaux aimés</translation>
+    </message>
+    <message>
+        <source>Add to Liked Songs</source>
+        <translation>Ajouter aux Morceaux aimés</translation>
+    </message>
     <message numerus="yes">
         <source>Forward %n second(s)</source>
         <translation>
@@ -5184,6 +5200,14 @@
     <message>
         <source>Playing on %1</source>
         <translation>Lecture sur %1</translation>
+    </message>
+    <message>
+        <source>Remove from Liked Songs (H)</source>
+        <translation>Retirer des Morceaux aimés (H)</translation>
+    </message>
+    <message>
+        <source>Add to Liked Songs (H)</source>
+        <translation>Ajouter aux Morceaux aimés (H)</translation>
     </message>
     <message numerus="yes">
         <source>Back %n second(s)</source>
@@ -8524,6 +8548,10 @@
     <message>
         <source>Discover</source>
         <translation>Découvrir</translation>
+    </message>
+    <message>
+        <source>A heart beside the playing song in the player bar and mini player, to like it in one click</source>
+        <translation>Un cœur à côté du morceau en cours dans la barre de lecture et le mini-lecteur, pour l’aimer en un clic</translation>
     </message>
     <message>
         <source>Rediscover shelf</source>
@@ -13437,6 +13465,10 @@
     <message>
         <source>%1 removed from “%2”</source>
         <translation>%1 retiré de «&#xa0;%2&#xa0;»</translation>
+    </message>
+    <message>
+        <source>Added to Liked Songs</source>
+        <translation>Ajouté aux Morceaux aimés</translation>
     </message>
     <message>
         <source>%1: matched %2 of %3 songs · %4 plays, %5 ratings, %6 playlists</source>

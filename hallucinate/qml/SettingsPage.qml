@@ -474,6 +474,13 @@ Item {
                 }
             }
             StyledCheck {
+                objectName: "barLikeCheck"
+                visible: shell.features.liked !== false
+                text: qsTr("A heart beside the playing song in the player bar and mini player, to like it in one click")
+                checked: shell.ui.barLike !== "0"  // i18n: keep
+                onToggled: shell.setUiValue("barLike", checked ? "1" : "0")  // i18n: keep
+            }
+            StyledCheck {
                 objectName: "reduceMotion"
                 text: qsTr("Reduce motion (no page transitions, zooms, spinning record or growing buttons)")
                 checked: shell.reduceMotion

@@ -83,6 +83,9 @@
 - [ ] Discover → a daily mix: clicking shows its songs; Play, Shuffle, Add to queue and Save work from there, and
       double-clicking a song plays the mix from it. The card's play button plays at once. Settings → Discover →
       Clicking a mix → Plays it: a click plays again.
+- [ ] The heart beside the playing song (player bar, mini player): one click likes, another unlikes, and Liked Songs
+      follows; H does the same from any page and says which. No heart for a radio station or a podcast episode.
+      Settings → Appearance → untick the heart: gone from both.
 
 ## Release testing for 2.2.0
 

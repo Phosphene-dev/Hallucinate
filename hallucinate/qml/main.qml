@@ -455,6 +455,13 @@ ApplicationWindow {
             exportDialog.open()
         }
         function onNotify(message) { toast.show(message) }
+        function onLikePlaying(say) {
+            // a song in the library only: a station's or an episode's "song" can't be liked
+            if (!player.hasTrack || (player.current.kind || "").length || !window.featureOn("liked")) return
+            var was = userLib.isLiked(player.current.path)
+            userLib.toggleLike(player.current.path)
+            if (say) toast.show(was ? qsTr("Removed from Liked Songs") : qsTr("Added to Liked Songs"))
+        }
         function onNotifyAction(message, actionText, action) { toast.show(message, 0, actionText, action) }
         function onBack() { window.goBack() }
         function onRouteGone(kind, id) { window.forgetRoute(kind, id) }
@@ -1176,6 +1183,7 @@ ApplicationWindow {
     Shortcut { sequence: "P"; enabled: !window.typing; onActivated: player.previous() }
     Shortcut { sequence: "S"; enabled: !window.typing; onActivated: player.toggleShuffle() }
     Shortcut { sequence: "R"; enabled: !window.typing; onActivated: player.cycleRepeat() }
+    Shortcut { sequence: "H"; enabled: !window.typing; onActivated: Nav.likePlaying(true) }  // (a heart)
     Shortcut { sequence: "Q"; enabled: !window.typing; onActivated: { window.queueOpen = !window.queueOpen; if (window.queueOpen) window.lyricsOpen = false } }
     Shortcut { sequence: "Ctrl+M"; enabled: !welcomeView.open; onActivated: shell.toggleMini() }
     Shortcut {

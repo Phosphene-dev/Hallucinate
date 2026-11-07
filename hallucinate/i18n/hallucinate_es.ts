@@ -1396,6 +1396,14 @@
         <translation>Reproducción  ·  R</translation>
     </message>
     <message>
+        <source>Like or unlike what&apos;s playing</source>
+        <translation>Dar o quitar Me gusta a lo que suena</translation>
+    </message>
+    <message>
+        <source>Playback  ·  H</source>
+        <translation>Reproducción  ·  H</translation>
+    </message>
+    <message>
         <source>Radio off</source>
         <translation>Desactivar radio</translation>
     </message>
@@ -4188,6 +4196,14 @@
         <source>Next</source>
         <translation>Siguiente</translation>
     </message>
+    <message>
+        <source>Remove from Liked Songs</source>
+        <translation>Quitar de Canciones que me gustan</translation>
+    </message>
+    <message>
+        <source>Add to Liked Songs</source>
+        <translation>Añadir a Canciones que me gustan</translation>
+    </message>
     <message numerus="yes">
         <source>Forward %n second(s)</source>
         <translation>
@@ -5184,6 +5200,14 @@
     <message>
         <source>Playing on %1</source>
         <translation>Sonando en %1</translation>
+    </message>
+    <message>
+        <source>Remove from Liked Songs (H)</source>
+        <translation>Quitar de Canciones que me gustan (H)</translation>
+    </message>
+    <message>
+        <source>Add to Liked Songs (H)</source>
+        <translation>Añadir a Canciones que me gustan (H)</translation>
     </message>
     <message numerus="yes">
         <source>Back %n second(s)</source>
@@ -7872,6 +7896,10 @@
     <message>
         <source>A record, spinning while playing</source>
         <translation>Un disco que gira mientras suena</translation>
+    </message>
+    <message>
+        <source>A heart beside the playing song in the player bar and mini player, to like it in one click</source>
+        <translation>Un corazón junto a la canción que suena en la barra del reproductor y el minirreproductor, para darle Me gusta con un clic</translation>
     </message>
     <message>
         <source>Reduce motion (no page transitions, zooms, spinning record or growing buttons)</source>
@@ -13362,6 +13390,10 @@
     <message>
         <source>Playlist</source>
         <translation>Playlist</translation>
+    </message>
+    <message>
+        <source>Added to Liked Songs</source>
+        <translation>Añadido a Canciones que me gustan</translation>
     </message>
     <message>
         <source>Import a playlist</source>
