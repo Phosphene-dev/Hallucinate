@@ -3,6 +3,15 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Fixed
+- Covers: random songs and albums could show a blank square (no ♪) in lists until you scrolled away and back,
+  during a scan or long after (#115). The picture had loaded; what failed was rounding its corners on the graphics
+  card (a hidden copy of each cover through a shader mask), which now and then drew nothing. Covers now come with
+  their corners already round and are drawn as plain pictures: nothing in between to go blank, and lighter on the
+  graphics card. The software renderer gets rounded covers too.
+
 ## [2.2.0] - 2026-11-06
 
 ### Added
