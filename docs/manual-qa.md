@@ -74,7 +74,7 @@
 - [ ] Handoff with a typed address (on a network that blocks broadcasts), a wrong code (says so), Forget in
       Settings → Remote & web (needs pairing again), and with the firewall on (firewalld: the remote's port).
 
-## Release testing for the next release
+## Release testing for 2.3.0
 
 - [ ] The covers in long lists (Songs, an album, Liked) during and after a scan, on a computer with a graphics card:
       every song shows its cover (or the ♪ when it has none), never a blank square, without scrolling away and back.

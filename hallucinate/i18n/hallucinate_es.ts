@@ -13256,6 +13256,22 @@
 <context>
     <name>WhatsNew</name>
     <message>
+        <source>Home is yours to arrange: choose its sections and their order (a section&apos;s ⋯ menu, or Settings → Features → Home).</source>
+        <translation>Organiza Inicio a tu gusto: elige sus secciones y su orden (el menú ⋯ de cada sección, o Ajustes → Funciones → Inicio).</translation>
+    </message>
+    <message>
+        <source>New on Home: Jump back in, Today&apos;s mixes, Your playlists, Most played lately, Continue listening and Your stations.</source>
+        <translation>Nuevo en Inicio: Vuelve a escuchar, Mezclas de hoy, Tus listas, Lo más escuchado últimamente, Seguir escuchando y Tus emisoras.</translation>
+    </message>
+    <message>
+        <source>Like what&apos;s playing with the heart beside the song, or press H. Daily mixes show their songs before you play them.</source>
+        <translation>Marca como favorita la canción que suena con el corazón a su lado, o pulsa H. Las mezclas diarias muestran sus canciones antes de reproducirlas.</translation>
+    </message>
+    <message>
+        <source>Library health fixes missing years, track numbers and artist or album tags all at once, after you check them.</source>
+        <translation>La salud de la biblioteca corrige de una vez los años, números de pista y etiquetas de artista o álbum que faltan, después de que los revises.</translation>
+    </message>
+    <message>
         <source>Play on several AirPlay speakers and Snapcast rooms together, in step: cast button → Play on several together.</source>
         <translation>Reproduce en varios altavoces AirPlay y salas Snapcast a la vez, sincronizados: botón de transmitir → Reproducir en varios a la vez.</translation>
     </message>

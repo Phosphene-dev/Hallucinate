@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [2.3.0] - 2026-11-07
 
 ### Added
 - Like what's playing in one click: a heart beside the song in the player bar and the mini player, or press H
