@@ -8,6 +8,8 @@ All notable changes to this project are documented here. Format based on
 ### Changed
 - Settings opens about a quarter faster: what its controls say is gathered for the search the first time you
   search, not every time the page opens, and a neon theme's options are only made while one is chosen.
+- History and Discover no longer freeze for a moment as their results arrive: History shows its list, then its
+  totals and heatmap; Discover remakes only the shelves whose songs changed, one at a time.
 - History opens faster on a long listening history: its heatmap is counted by the database a day at a time,
   not a listen at a time, and the day headers' totals come for the days shown, not every day ever listened.
 

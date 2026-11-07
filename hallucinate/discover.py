@@ -48,6 +48,9 @@ class Discover(QObject):
         self._mixes, self._mix_songs, self._days, self._dismissed = [], [], [], []
         self._wanted = False  # the page has been opened: keep it up to date from now on
         self._loading = False
+        self._shelves_pending = []  # (shelves whose new rows are still to show, one a turn)
+        self._shelf_timer = QTimer(self, singleShot=True, interval=0)
+        self._shelf_timer.timeout.connect(self._next_shelf)
         self._loaded_day = ""
         self._last_undo = None
         self._done.connect(self._apply)
@@ -150,12 +153,14 @@ class Discover(QObject):
             self.changed.emit()
             return
         self._loaded_day = data["day"]
-        for name in ("albums", "songs", "deepCuts", "neverPlayed"):
-            self._models[name].set_items(data[name])
         for a in data["artists"]:
             a["artUrl"] = QUrl.fromLocalFile(a["art"]).toString() if a.get("art") else ""
             a["key"] = core.artist_key({"album_artist": a["name"]})
-        self._models["artists"].set_items(data["artists"])
+        # Only the shelves whose songs changed are made again, one per turn of the event loop: all five at once
+        # (each one's rows made anew) froze the page for a moment
+        self._shelves_pending = [(n, data[n]) for n in ("albums", "songs", "deepCuts", "neverPlayed", "artists")
+                                 if self._models[n].items() != data[n]]
+        self._next_shelf()
         self._mix_songs = [decorate(m["songs"]) for m in data["mixes"]]
         self._mixes = [{"title": m["title"], "subtitle": m["subtitle"], "count": len(m["songs"]),
                         "minutes": round(sum(s.get("duration") or 0 for s in m["songs"]) / 60),
@@ -167,6 +172,14 @@ class Discover(QObject):
         self._dismissed = data["dismissed"]
         self.changed.emit()
         self.dismissedChanged.emit()
+
+    @Slot()
+    def _next_shelf(self):
+        if self._shelves_pending:
+            name, items = self._shelves_pending.pop(0)
+            self._models[name].set_items(items)
+            if self._shelves_pending:
+                self._shelf_timer.start()
 
     def _check_day(self):
         if self._wanted and self._loaded_day and self._loaded_day != datetime.date.today().isoformat():

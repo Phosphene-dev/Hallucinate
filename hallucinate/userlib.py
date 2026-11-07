@@ -9,7 +9,7 @@ import random
 import sqlite3
 import time
 
-from PySide6.QtCore import Property, QObject, QSettings, QUrl, Signal, Slot
+from PySide6.QtCore import Property, QObject, QSettings, QTimer, QUrl, Signal, Slot
 
 from .core import history, insights, player_import, playlist_files, recap
 from .core import rules as smart_rules
@@ -119,6 +119,9 @@ class UserLibrary(QObject):
         }
         self._history_filter = None
         self._history_generation = 0
+        self._history_header = None  # (rows applied, header still to show: see _apply_history)
+        self._header_timer = QTimer(self, singleShot=True, interval=0)
+        self._header_timer.timeout.connect(self._apply_history_header)
         self._history_info = {"summary": {}, "days": {}, "heatmap": {}, "hasMore": False, "loading": False}
         self._history_loaded.connect(self._apply_history)
         self._history_requery.connect(self._reload_history)
@@ -1098,6 +1101,8 @@ class UserLibrary(QObject):
 
     @Slot()
     def loadMoreHistory(self):
+        if self._history_header is not None:
+            self._apply_history_header()  # (the page asked before the last rows' header was shown: show it now)
         if self._history_filter is not None and self._history_info["hasMore"] and not self._history_info["loading"]:
             self._query_history(self._models["history"].count)
 
@@ -1141,11 +1146,25 @@ class UserLibrary(QObject):
             row["dayLabel"] = history.day_label(row["day"])
         if offset == 0:
             self._models["history"].set_items(payload["rows"])
+        else:
+            self._models["history"].append_items(payload["rows"])
+
+        # The header (totals, heatmap, the day headers' sums) on the next turn of the event loop: the list's new
+        # rows and the header together froze the page for a moment as it appeared; apart, a frame goes between
+        self._history_header = (generation, offset, payload)
+        self._header_timer.start()
+
+    @Slot()
+    def _apply_history_header(self):
+        pending, self._history_header = self._history_header, None
+        if pending is None or pending[0] != self._history_generation:
+            return
+        _generation, offset, payload = pending
+        if offset == 0:
             for key in ("summary", "days", "heatmap"):
                 if key in payload:
                     self._history_info[key] = payload[key]
         else:
-            self._models["history"].append_items(payload["rows"])
             self._history_info["days"] = {**(self._history_info.get("days") or {}), **payload.get("days", {})}
         self._history_info["hasMore"] = payload["hasMore"]
         self._history_info["loading"] = False
