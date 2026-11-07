@@ -12,7 +12,17 @@ Item {
     readonly property var sectionTitles: [qsTr("Appearance"), qsTr("Features"), qsTr("Discover"), qsTr("Podcasts"), qsTr("Playback"), qsTr("Sound"), qsTr("Library"), qsTr("Music servers"), qsTr("Casting"), qsTr("Remote & web"), qsTr("Online & privacy"), qsTr("Scrobbling & sharing"), qsTr("Desktop"), qsTr("About")]
 
     function sectionItem(i) { return [sec_appearance, sec_features, sec_discover, sec_podcasts, sec_playback, sec_sound, sec_library, sec_servers, sec_casting, sec_remote, sec_sharing, sec_scrobbling, sec_desktop, sec_about][i] }
-    function jumpToId(id) { var i = sectionIds.indexOf(id); if (i >= 0 && sectionItem(i).visible) jumpTo(i) }
+    function jumpToId(id) {
+        if (id === "home") { jumpToHome(); return }
+        var i = sectionIds.indexOf(id); if (i >= 0 && sectionItem(i).visible) jumpTo(i)
+    }
+    // Settings → Features → Home (from a Home section's "Customize Home…")
+    function jumpToHome() {
+        jumpTo(sectionIds.indexOf("features"))
+        homeGroup.open = true
+        var y = homeOrderBox.mapToItem(flick.contentItem, 0, 0).y - 60
+        flick.contentY = Math.max(0, Math.min(y, flick.contentHeight - flick.height))
+    }
     function jumpToSidebar() {
         jumpTo(1)
         sidebarGroup.open = true
@@ -315,114 +325,119 @@ Item {
                 PillButton { objectName: "makeTheme"; text: qsTr("Make my own theme…"); onClicked: themeEditor.open() }
             }
             ThemeEditor { id: themeEditor }
-            // A neon theme's own options (Afterimage): shown only while one is chosen
-            Column {
-                objectName: "neonOptions"
-                visible: Theme.neon
+            // A neon theme's own options: built only while one is chosen (a few hundred items the page otherwise
+            // made, hidden, on every visit)
+            Loader {
+                active: Theme.neon
+                visible: active
                 width: parent.width
-                spacing: 8
-                Text { textFormat: Text.PlainText; text: qsTr("%1 options").arg(themeManager.currentTheme); color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(15) * Theme.displayScale; font.weight: Font.DemiBold }
-                Flow {
-                    width: parent.width
-                    spacing: 10
-                    Text { textFormat: Text.PlainText; text: qsTr("Now Playing"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
-                    StyledCombo {
-                        objectName: "neonNowPlaying"
-                        readonly property var modes: ["cockpit", "terminal", "classic"]
-                        width: 320
-                        model: [qsTr("Cockpit (gauges and a hologram)"), qsTr("Terminal (typed out)"), qsTr("Classic (the usual one)")]
-                        selection: Math.max(0, modes.indexOf(shell.ui.neonNowPlaying || "cockpit"))
-                        onActivated: shell.setUiValue("neonNowPlaying", modes[currentIndex])
-                        Accessible.name: qsTr("Now Playing in this theme")
-                    }
-                    Text { textFormat: Text.PlainText; text: qsTr("Cockpit colours"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
-                    StyledCombo {
-                        objectName: "neonTint"
-                        readonly property var modes: ["theme", "cover"]
-                        width: 200
-                        model: [qsTr("The theme's neon"), qsTr("The cover's")]
-                        selection: shell.ui.neonTint === "cover" ? 1 : 0
-                        onActivated: shell.setUiValue("neonTint", modes[currentIndex])
-                        Accessible.name: qsTr("Cockpit colours")
-                    }
-                    Text { textFormat: Text.PlainText; text: qsTr("Terminal"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
-                    StyledCombo {
-                        objectName: "neonPhosphor"
-                        readonly property var modes: ["theme", "green", "amber"]
-                        width: 200
-                        model: [qsTr("The theme's colour"), qsTr("Green phosphor"), qsTr("Amber phosphor")]
-                        selection: Math.max(0, modes.indexOf(shell.ui.neonPhosphor || "theme"))
-                        onActivated: shell.setUiValue("neonPhosphor", modes[currentIndex])
-                        Accessible.name: qsTr("Terminal colour")
-                    }
-                }
-                StyledCheck {
-                    objectName: "neonScanlines"
-                    text: qsTr("Scanlines and a vignette over the window")
-                    checked: Theme.neonOption("Scanlines")
-                    onToggled: shell.setUiValue("neonScanlines", checked ? "1" : "0")
-                }
-                StyledCheck {
-                    objectName: "neonGlitch"
-                    text: qsTr("A glitch when the song changes (and a hologram's flicker)")
-                    checked: Theme.neonOption("Glitch")
-                    enabled: !shell.reduceMotion
-                    onToggled: shell.setUiValue("neonGlitch", checked ? "1" : "0")
-                }
-                StyledCheck {
-                    objectName: "neonGreebles"
-                    text: qsTr("HUD details (corner brackets, ticks, status lights and readouts)")
-                    checked: Theme.neonGreebles
-                    onToggled: shell.setUiValue("neonGreebles", checked ? "1" : "0")
-                }
-                StyledCheck {
-                    objectName: "neonBoot"
-                    text: qsTr("A start-up sequence when the terminal opens")
-                    checked: shell.ui.neonBoot !== "0"
-                    onToggled: shell.setUiValue("neonBoot", checked ? "1" : "0")
-                }
-                // the terminal's panes, in the order they show (it can pin and unpin them itself too)
-                Text { textFormat: Text.PlainText; text: qsTr("Terminal panes"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13) }
-                Flow {
-                    objectName: "neonPanes"
+                sourceComponent: Column {
+                    objectName: "neonOptions"
                     width: parent.width
                     spacing: 8
-                    readonly property var names: ({ now: qsTr("Now playing"), wave: qsTr("Waveform"), spectrum: qsTr("Spectrum"), lyrics: qsTr("Lyrics"),
-                        queue: qsTr("Up next"), signal: qsTr("Signal path"), stats: qsTr("Today's stats"), tags: qsTr("Tags"), similar: qsTr("Similar artists"),
-                        whoami: qsTr("Your library"), log: qsTr("Log") })
-                    readonly property var shown: {
-                        var v = shell.ui.neonTermPanes  // (blank: the usual ones; "none": every one unpinned)
-                        return (v === undefined || v === "" ? "now,wave,spectrum,lyrics,queue" : v === "none" ? "" : v).split(",").filter(function (p) { return p })
+                    Text { textFormat: Text.PlainText; text: qsTr("%1 options").arg(themeManager.currentTheme); color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(15) * Theme.displayScale; font.weight: Font.DemiBold }
+                    Flow {
+                        width: parent.width
+                        spacing: 10
+                        Text { textFormat: Text.PlainText; text: qsTr("Now Playing"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                        StyledCombo {
+                            objectName: "neonNowPlaying"
+                            readonly property var modes: ["cockpit", "terminal", "classic"]
+                            width: 320
+                            model: [qsTr("Cockpit (gauges and a hologram)"), qsTr("Terminal (typed out)"), qsTr("Classic (the usual one)")]
+                            selection: Math.max(0, modes.indexOf(shell.ui.neonNowPlaying || "cockpit"))
+                            onActivated: shell.setUiValue("neonNowPlaying", modes[currentIndex])
+                            Accessible.name: qsTr("Now Playing in this theme")
+                        }
+                        Text { textFormat: Text.PlainText; text: qsTr("Cockpit colours"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                        StyledCombo {
+                            objectName: "neonTint"
+                            readonly property var modes: ["theme", "cover"]
+                            width: 200
+                            model: [qsTr("The theme's neon"), qsTr("The cover's")]
+                            selection: shell.ui.neonTint === "cover" ? 1 : 0
+                            onActivated: shell.setUiValue("neonTint", modes[currentIndex])
+                            Accessible.name: qsTr("Cockpit colours")
+                        }
+                        Text { textFormat: Text.PlainText; text: qsTr("Terminal"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                        StyledCombo {
+                            objectName: "neonPhosphor"
+                            readonly property var modes: ["theme", "green", "amber"]
+                            width: 200
+                            model: [qsTr("The theme's colour"), qsTr("Green phosphor"), qsTr("Amber phosphor")]
+                            selection: Math.max(0, modes.indexOf(shell.ui.neonPhosphor || "theme"))
+                            onActivated: shell.setUiValue("neonPhosphor", modes[currentIndex])
+                            Accessible.name: qsTr("Terminal colour")
+                        }
                     }
-                    Repeater {
-                        model: ["now", "wave", "spectrum", "lyrics", "queue", "signal", "stats", "tags", "similar", "whoami", "log"]
-                        Chip {
-                            required property string modelData
-                            text: parent.names[modelData]
-                            selected: parent.shown.indexOf(modelData) >= 0
-                            onClicked: {
-                                var list = parent.shown.filter(function (p) { return p !== modelData })
-                                if (!selected) list.push(modelData)
-                                shell.setUiValue("neonTermPanes", list.length ? list.join(",") : "none")
+                    StyledCheck {
+                        objectName: "neonScanlines"
+                        text: qsTr("Scanlines and a vignette over the window")
+                        checked: Theme.neonOption("Scanlines")
+                        onToggled: shell.setUiValue("neonScanlines", checked ? "1" : "0")
+                    }
+                    StyledCheck {
+                        objectName: "neonGlitch"
+                        text: qsTr("A glitch when the song changes (and a hologram's flicker)")
+                        checked: Theme.neonOption("Glitch")
+                        enabled: !shell.reduceMotion
+                        onToggled: shell.setUiValue("neonGlitch", checked ? "1" : "0")
+                    }
+                    StyledCheck {
+                        objectName: "neonGreebles"
+                        text: qsTr("HUD details (corner brackets, ticks, status lights and readouts)")
+                        checked: Theme.neonGreebles
+                        onToggled: shell.setUiValue("neonGreebles", checked ? "1" : "0")
+                    }
+                    StyledCheck {
+                        objectName: "neonBoot"
+                        text: qsTr("A start-up sequence when the terminal opens")
+                        checked: shell.ui.neonBoot !== "0"
+                        onToggled: shell.setUiValue("neonBoot", checked ? "1" : "0")
+                    }
+                    // the terminal's panes, in the order they show (it can pin and unpin them itself too)
+                    Text { textFormat: Text.PlainText; text: qsTr("Terminal panes"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13) }
+                    Flow {
+                        objectName: "neonPanes"
+                        width: parent.width
+                        spacing: 8
+                        readonly property var names: ({ now: qsTr("Now playing"), wave: qsTr("Waveform"), spectrum: qsTr("Spectrum"), lyrics: qsTr("Lyrics"),
+                            queue: qsTr("Up next"), signal: qsTr("Signal path"), stats: qsTr("Today's stats"), tags: qsTr("Tags"), similar: qsTr("Similar artists"),
+                            whoami: qsTr("Your library"), log: qsTr("Log") })
+                        readonly property var shown: {
+                            var v = shell.ui.neonTermPanes  // (blank: the usual ones; "none": every one unpinned)
+                            return (v === undefined || v === "" ? "now,wave,spectrum,lyrics,queue" : v === "none" ? "" : v).split(",").filter(function (p) { return p })
+                        }
+                        Repeater {
+                            model: ["now", "wave", "spectrum", "lyrics", "queue", "signal", "stats", "tags", "similar", "whoami", "log"]
+                            Chip {
+                                required property string modelData
+                                text: parent.names[modelData]
+                                selected: parent.shown.indexOf(modelData) >= 0
+                                onClicked: {
+                                    var list = parent.shown.filter(function (p) { return p !== modelData })
+                                    if (!selected) list.push(modelData)
+                                    shell.setUiValue("neonTermPanes", list.length ? list.join(",") : "none")
+                                }
                             }
                         }
                     }
-                }
-                StyledCheck {
-                    objectName: "neonTitleCard"
-                    text: qsTr("A title card for each new song in the cockpit")
-                    checked: shell.ui.neonTitleCard !== "0"
-                    enabled: !shell.reduceMotion
-                    onToggled: shell.setUiValue("neonTitleCard", checked ? "1" : "0")
-                }
-                PillButton {
-                    objectName: "neonReset"
-                    text: qsTr("Reset these options")
-                    onClicked: {
-                        var keys = ["neonNowPlaying", "neonTint", "neonPhosphor", "neonScanlines", "neonGlitch", "neonGreebles",
-                                    "neonTitleCard", "neonBoot", "neonTermPanes", "neonVisStyle"]
-                        for (var i = 0; i < keys.length; i++) shell.setUiValue(keys[i], "")
-                        Nav.notify(qsTr("%1's options are back as they came").arg(themeManager.currentTheme))
+                    StyledCheck {
+                        objectName: "neonTitleCard"
+                        text: qsTr("A title card for each new song in the cockpit")
+                        checked: shell.ui.neonTitleCard !== "0"
+                        enabled: !shell.reduceMotion
+                        onToggled: shell.setUiValue("neonTitleCard", checked ? "1" : "0")
+                    }
+                    PillButton {
+                        objectName: "neonReset"
+                        text: qsTr("Reset these options")
+                        onClicked: {
+                            var keys = ["neonNowPlaying", "neonTint", "neonPhosphor", "neonScanlines", "neonGlitch", "neonGreebles",
+                                        "neonTitleCard", "neonBoot", "neonTermPanes", "neonVisStyle"]
+                            for (var i = 0; i < keys.length; i++) shell.setUiValue(keys[i], "")
+                            Nav.notify(qsTr("%1's options are back as they came").arg(themeManager.currentTheme))
+                        }
                     }
                 }
             }
@@ -467,6 +482,13 @@ Item {
                     onActivated: shell.setUiValue("spinningArt", currentIndex === 1 ? "1" : "0")  // i18n: keep
                     Accessible.name: qsTr("Covers in the player bar and mini player")
                 }
+            }
+            StyledCheck {
+                objectName: "barLikeCheck"
+                visible: shell.features.liked !== false
+                text: qsTr("A heart beside the playing song in the player bar and mini player, to like it in one click")
+                checked: shell.ui.barLike !== "0"  // i18n: keep
+                onToggled: shell.setUiValue("barLike", checked ? "1" : "0")  // i18n: keep
             }
             StyledCheck {
                 objectName: "reduceMotion"
@@ -683,11 +705,104 @@ Item {
                 items: [["discover", qsTr("Discover")], ["liked", qsTr("Liked Songs")], ["folders", qsTr("Folders")], ["stats", qsTr("Stats")], ["history", qsTr("History")],
                         ["recap", qsTr("Recap")], ["health", qsTr("Library health")]]
             }
-            FeatureGroup {
-                heading: qsTr("Home")
-                items: [["homeRandom", qsTr("Random album")], ["homeListening", qsTr("Listening card")],
-                        ["homeFacts", qsTr("Library facts")], ["homeShelves", qsTr("Album shelves")],
-                        ["homeRediscover", qsTr("Rediscover shelf")], ["homeOnThisDay", qsTr("On this day shelf")]]
+            SettingsGroup {
+                id: homeGroup
+                key: "homeSections"
+                title: qsTr("Home")
+                summary: qsTr("Choose Home's sections and their order")
+                query: page.query
+                Column {
+                    id: homeOrderBox
+                    objectName: "homeOrder"
+                    width: parent.width
+                    spacing: 6
+                    readonly property var names: ({ random: qsTr("Random album"), listening: qsTr("Listening card"),
+                        facts: qsTr("Library facts"), jumpBackIn: qsTr("Jump back in"), mixes: qsTr("Today's mixes"),
+                        recent: qsTr("Recently added"), playlists: qsTr("Your playlists"), mostPlayed: qsTr("Most played lately"),
+                        continue: qsTr("Continue listening (podcasts)"), stations: qsTr("Your stations (internet radio)"),
+                        rediscover: qsTr("Rediscover"), onThisDay: qsTr("On this day") })
+                    // what a section needs besides its own switch (shown when that's off)
+                    readonly property var needs: ({ mixes: ["discover", "discoverMixes"], continue: ["podcasts"], stations: ["stations"] })
+                    function featureOf(id) { return shell.homeFeatures[id] }
+                    function isOn(id) {
+                        var f = featureOf(id)
+                        return id === "rediscover" || id === "onThisDay" ? shell.features[f] === true : shell.features[f] !== false
+                    }
+                    function blocked(id) {
+                        var n = needs[id] || []
+                        for (var i = 0; i < n.length; i++) if (shell.features[n[i]] === false) return true
+                        return false
+                    }
+                    Row {
+                        width: parent.width
+                        spacing: 12
+                        Text {
+                            textFormat: Text.PlainText
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: qsTr("Home")
+                            color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
+                        }
+                        PillButton {
+                            objectName: "resetHomeOrder"; height: 30; text: qsTr("Reset")
+                            onClicked: {
+                                shell.resetHomeOrder()
+                                var order = shell.homeOrder
+                                for (var i = 0; i < order.length; i++)
+                                    shell.setFeature(homeOrderBox.featureOf(order[i]), order[i] !== "rediscover" && order[i] !== "onThisDay")
+                            }
+                        }
+                    }
+                    Text {
+                        textFormat: Text.PlainText
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: qsTr("Tick the sections Home shows and move them up or down; Reset goes back to the usual ones. Each section's menu on Home (⋯, or right-click) moves or hides it too. A section with nothing in it yet waits until it has.")
+                        color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                    }
+                    Repeater {
+                        model: shell.homeOrder
+                        Rectangle {
+                            required property string modelData
+                            required property int index
+                            objectName: "homeOrder_" + modelData
+                            width: Math.min(460, homeOrderBox.width)
+                            height: 38
+                            radius: Theme.radiusSmall
+                            color: Theme.surface
+                            StyledCheck {
+                                objectName: "feature_" + homeOrderBox.featureOf(modelData)
+                                anchors { left: parent.left; leftMargin: 6; right: moves.left; verticalCenter: parent.verticalCenter }
+                                text: homeOrderBox.names[modelData]
+                                      + (homeOrderBox.blocked(modelData) ? "  ·  " + qsTr("needs %1").arg(modelData === "mixes" ? qsTr("Discover's daily mixes")
+                                         : modelData === "continue" ? qsTr("Podcasts") : qsTr("Internet radio")) : "")
+                                checked: homeOrderBox.isOn(modelData)
+                                opacity: homeOrderBox.blocked(modelData) ? 0.55 : 1
+                                onToggled: shell.setFeature(homeOrderBox.featureOf(modelData), checked)
+                            }
+                            Row {
+                                id: moves
+                                anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
+                                spacing: 2
+                                IconButton {
+                                    objectName: "homeOrderUp_" + modelData
+                                    icon: "up"; size: 16
+                                    enabled: index > 0
+                                    opacity: enabled ? 1 : 0.35
+                                    tip: qsTr("Move %1 up").arg(homeOrderBox.names[modelData])
+                                    onClicked: shell.moveHomeSection(modelData, -1)
+                                }
+                                IconButton {
+                                    objectName: "homeOrderDown_" + modelData
+                                    icon: "down"; size: 16
+                                    enabled: index < shell.homeOrder.length - 1
+                                    opacity: enabled ? 1 : 0.35
+                                    tip: qsTr("Move %1 down").arg(homeOrderBox.names[modelData])
+                                    onClicked: shell.moveHomeSection(modelData, 1)
+                                }
+                            }
+                        }
+                    }
+                }
             }
             SettingsGroup {
                 id: sidebarGroup
@@ -841,6 +956,15 @@ Item {
                 model: [qsTr("None: only songs I know"), qsTr("Some (about a quarter)"), qsTr("More (about half)")]
                 selection: Math.max(0, choices.indexOf(discover.fresh))
                 onChosen: function (i) { discover.setFresh(choices[i]) }
+            }
+            DiscoverChoice {
+                objectName: "mixClick"
+                label: qsTr("Clicking a mix")
+                visible: sec_discover.pageOn && shell.features.discoverMixes !== false
+                readonly property var choices: ["preview", "play"]
+                model: [qsTr("Shows its songs"), qsTr("Plays it")]
+                selection: Math.max(0, choices.indexOf(discover.mixClick))
+                onChosen: function (i) { discover.setMixClick(choices[i]) }
             }
             // Online: new releases and artists like yours (each off unless chosen), and the wishlist
             Column {

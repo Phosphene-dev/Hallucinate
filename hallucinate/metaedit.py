@@ -8,7 +8,7 @@ from urllib.parse import unquote, urlparse
 
 from PySide6.QtCore import Property, QObject, QSettings, Signal, Slot
 
-from .core import artfetch, health, net, tagedit
+from .core import artfetch, health, net, remote, tagedit
 from .core.atomic import write_atomic
 from .core.db import Database
 from .core.i18n import fill, translate
@@ -118,6 +118,9 @@ class MetadataEditor(QObject):
     genresChanged = Signal()
     genresFinished = Signal(str)  # the "find all" summary, for a toast
     _genres_progress = Signal(object)
+    fixesChanged = Signal()
+    fixesFinished = Signal(str)  # a "find all" for years, track numbers or missing tags is done: the summary
+    _fixes_progress = Signal(object)
     _done = Signal(object)
 
     def __init__(self, db_path, art_dir, parent=None):
@@ -143,6 +146,13 @@ class MetadataEditor(QObject):
         self._genres_thread = None
         self._genres_progress.connect(self._apply_genres_progress)
         self._sources, self._data_dir = None, None  # Discogs and Last.fm, when set up (see setSources)
+        # Library health's "Find all" for years, track numbers and songs without an artist or album
+        self._fixes = {"kind": "", "busy": False, "done": 0, "total": 0, "found": 0, "current": "", "proposals": []}
+        self._fixes_stop = threading.Event()
+        self._fix_saving = {"kind": "", "busy": False, "done": 0, "total": 0}
+        self._fix_save_stop = threading.Event()
+        self._fixes_thread = None
+        self._fixes_progress.connect(self._apply_fixes_progress)
         settings = QSettings("hallucinate", "hallucinate")
         # Settings → Library: a cover you set is also saved as cover.jpg in the album's folder (on unless switched
         # off) and embedded in the songs if you ask (remembered from the last time)
@@ -653,6 +663,248 @@ class MetadataEditor(QObject):
             self._run(save_all, items)
         self.genresChanged.emit()
 
+    # --- years, track numbers and missing artist/album, for Library health -----------------------------
+    FIX_KINDS = ("year", "numbers", "untagged")
+
+    @Property(str, notify=fixesChanged)
+    def fixKind(self):
+        """Which check the last "Find all" (or the save running now) was for: "year", "numbers", "untagged"."""
+        return self._fix_saving["kind"] if self._fix_saving["busy"] else self._fixes["kind"]
+
+    @Property(bool, notify=fixesChanged)
+    def fixesBusy(self):
+        return self._fixes["busy"]
+
+    @Property(int, notify=fixesChanged)
+    def fixesDone(self):
+        return self._fixes["done"]
+
+    @Property(int, notify=fixesChanged)
+    def fixesTotal(self):
+        return self._fixes["total"]
+
+    @Property(int, notify=fixesChanged)
+    def fixesFound(self):
+        return self._fixes["found"]
+
+    @Property(str, notify=fixesChanged)
+    def fixesCurrent(self):
+        return self._fixes["current"]
+
+    @Property(bool, notify=fixesChanged)
+    def fixesSaving(self):
+        return self._fix_saving["busy"]
+
+    @Property(int, notify=fixesChanged)
+    def fixesSaved(self):
+        return self._fix_saving["done"]
+
+    @Property(int, notify=fixesChanged)
+    def fixesToSave(self):
+        return self._fix_saving["total"]
+
+    @Property("QVariantList", notify=fixesChanged)
+    def fixProposals(self):
+        """What the last "Find all" turned up, waiting to be checked and saved. Every one has kind, key, title
+        (the album, or for missing tags what was guessed), artist, songs, source ("names" | "MusicBrainz") and
+        note; then by kind: year → year; numbers → tracks [{path, title, track_no, disc_no}];
+        untagged → album, paths, folder, fill_artist, fill_album (which gaps the guess fills)."""
+        return list(self._fixes["proposals"])
+
+    @Slot(str)
+    def findFixes(self, kind):
+        """Suggest a year for every album without one, track numbers for every album without them, or an artist
+        and album for every song without them, from folder and file names and (unless offline) MusicBrainz, about
+        one album a second. Nothing is written until saveFixes() is called with the ones you keep."""
+        if kind not in self.FIX_KINDS or self._fixes["busy"] or self._fix_saving["busy"]:
+            return
+        self._fixes_stop.clear()
+        self._fixes = {"kind": kind, "busy": True, "done": 0, "total": 0, "found": 0, "current": "", "proposals": []}
+        self.fixesChanged.emit()
+        self._fixes_thread = threading.Thread(target=self._fetch_fixes, args=(kind, not net.is_offline()),
+                                              name="tag-fixes", daemon=True)
+        self._fixes_thread.start()
+
+    @Slot()
+    def cancelFixes(self):
+        self._fixes_stop.set()
+
+    @Slot()
+    def stopSavingFixes(self):
+        """Stop after the album being written; the ones done so far keep what was saved."""
+        self._fix_save_stop.set()
+
+    @Slot()
+    def clearFixProposals(self):
+        self._fixes["proposals"] = []
+        self.fixesChanged.emit()
+
+    def _fetch_fixes(self, kind, online, search=None, release=None):
+        from .core import musicbrainz, tagfixes
+
+        search = search or (lambda artist, album: musicbrainz.search_releases(artist, album, limit=10))
+        release = release or musicbrainz.release
+        db = Database(self._db_path)
+        found, proposals = 0, []
+
+        def looked_up(fn, *args):
+            if not online or net.is_offline():
+                return None
+            try:
+                return fn(*args)
+            except (OSError, ValueError, KeyError) as exc:
+                logger.info("MusicBrainz lookup failed: %s", exc)
+                return None
+
+        try:
+            if kind == "untagged":
+                rows = db._rows("SELECT path, artist, album FROM tracks WHERE artist = ? OR album = ? ORDER BY path",
+                                (health.UNKNOWN_ARTIST, health.UNKNOWN_ALBUM))
+                rows = [r for r in rows if not remote.is_remote(r["path"]) and os.path.isfile(r["path"])]
+                self._fixes_progress.emit({"total": len(rows)})
+                for g in tagfixes.untagged_groups(rows, db.folders()):
+                    proposals.append({"kind": kind, "key": g["folder"], "title": g["album"], "artist": g["artist"],
+                                      "album": g["album"], "paths": g["paths"], "folder": g["folder"],
+                                      "fill_artist": bool(g["artist"]), "fill_album": bool(g["album"]),
+                                      "songs": len(g["paths"]), "source": "names", "note": g["folder"]})
+                found = sum(p["songs"] for p in proposals)
+                self._fixes_progress.emit({"done": len(rows), "found": found})
+                return
+            having = "MAX(year) <= 0" if kind == "year" else "COUNT(*) > 1 AND MAX(track_no) = 0"
+            albums = health._albums(db, having)
+            self._fixes_progress.emit({"total": len(albums)})
+            for done, album in enumerate(albums, start=1):
+                if self._fixes_stop.is_set():
+                    break
+                name = album.get("album") or ""
+                artist = album.get("album_artist") or ""
+                artist = "" if artist == health.UNKNOWN_ARTIST else artist
+                self._fixes_progress.emit({"current": name})
+                songs = [t for t in db.album_tracks(album["album_key"]) if not remote.is_remote(t["path"])]
+                base = {"kind": kind, "key": album["album_key"], "title": name, "artist": artist, "songs": len(songs)}
+                if not songs:
+                    pass
+                elif kind == "year":
+                    year, source, note = tagfixes.year_from_names([t["path"] for t in songs]), "names", ""
+                    if not year:
+                        hit = looked_up(tagfixes.year_online, artist, name, search)
+                        if hit and hit[0]:
+                            year, source, note = int(hit[0]), "MusicBrainz", hit[1]
+                    if year:
+                        proposals.append({**base, "year": year, "source": source, "note": note})
+                else:
+                    tracks, source, note = tagfixes.numbers_from_names(songs), "names", ""
+                    if not tracks:
+                        hit = looked_up(tagfixes.numbers_online, artist, name, songs, search, release)
+                        if hit and hit[0]:
+                            tracks, source, note = hit[0], "MusicBrainz", hit[1]
+                    if tracks:
+                        proposals.append({**base, "tracks": tracks, "source": source, "note": note})
+                found = len(proposals)
+                self._fixes_progress.emit({"done": done, "found": found})
+        except Exception:  # noqa: BLE001
+            logger.exception("Finding tag fixes failed")
+        finally:
+            db.close()
+            self._fixes_progress.emit({"busy": False, "current": "", "proposals": proposals, "finished": True})
+
+    @Slot(object)
+    def _apply_fixes_progress(self, update):
+        if "saved" in update:  # writing the kept ones: one more done
+            self._fix_saving.update(done=update["saved"], busy=not update.get("over", False))
+            self.fixesChanged.emit()
+            now = time.monotonic()
+            if update.get("over") or now - self._save_refreshed > 5:
+                self._save_refreshed = now
+                self.changed.emit()  # the health counts follow as it goes
+            return
+        finished = update.pop("finished", False)
+        self._fixes.update(update)
+        self.fixesChanged.emit()
+        if not finished:
+            return
+        f = self._fixes
+        stopped = f["done"] < f["total"]
+        if f["kind"] == "untagged":
+            text = fill(translate("MetaEdit", "Found a likely artist or album for %1 of %2 songs. Check them, then save."),
+                        f["found"], f["total"])
+        elif f["kind"] == "year":
+            text = fill(translate("MetaEdit", "Found years for %1 of %2 albums (stopped early). Check them, then save.")
+                        if stopped else translate("MetaEdit", "Found years for %1 of %2 albums. Check them, then save."),
+                        f["found"], f["done"])
+        else:
+            text = fill(translate("MetaEdit", "Found track numbers for %1 of %2 albums (stopped early). Check them, then save.")
+                        if stopped else translate("MetaEdit", "Found track numbers for %1 of %2 albums. Check them, then save."),
+                        f["found"], f["done"])
+        self.fixesFinished.emit(text)
+
+    @Slot("QVariantList")
+    def saveFixes(self, items):
+        """Write the kept suggestions (fixProposals' entries, edited): only what's still missing is written, so
+        anything you've set since the lookup stays."""
+        items = [dict(i) for i in items if i and i.get("kind") in self.FIX_KINDS]
+        kind = items[0]["kind"] if items else self._fixes["kind"]
+
+        def write(db, total, paths, fields):
+            try:
+                result = self._save_tags(db, paths, fields)
+            except Exception as exc:  # noqa: BLE001 - one album that can't be written doesn't stop the rest
+                logger.warning("Could not save a suggested tag: %s", exc)
+                result = {"saved": 0, "errors": [str(exc)]}
+            total["saved"] += result["saved"]
+            total["errors"] += result["errors"]
+
+        def save_all(db, rows):
+            total = {"kind": "tags", "saved": 0, "errors": []}
+            done = 0
+            try:
+                for item in rows:
+                    if self._fix_save_stop.is_set():
+                        break
+                    if item["kind"] == "year":
+                        text = str(item.get("year") or "").strip()
+                        year = int(text) if text.isdigit() else 0
+                        tracks = db.album_tracks(str(item["key"]))
+                        if 1000 <= year <= 9999 and tracks and all((t.get("year") or 0) <= 0 for t in tracks):
+                            write(db, total, [t["path"] for t in tracks if not remote.is_remote(t["path"])], {"year": str(year)})
+                    elif item["kind"] == "numbers":
+                        tracks = db.album_tracks(str(item["key"]))
+                        if tracks and all(not t.get("track_no") for t in tracks):
+                            mine = {t["path"] for t in tracks}
+                            for t in item.get("tracks") or []:
+                                if t.get("path") in mine and int(t.get("track_no") or 0) > 0:
+                                    fields = {"track_no": str(int(t["track_no"]))}
+                                    if int(t.get("disc_no") or 0) > 0:
+                                        fields["disc_no"] = str(int(t["disc_no"]))
+                                    write(db, total, [t["path"]], fields)
+                    else:
+                        artist = str(item.get("artist") or "").strip() if item.get("fill_artist") else ""
+                        album = str(item.get("album") or "").strip() if item.get("fill_album") else ""
+                        for path in item.get("paths") or []:
+                            row = db.track_by_path(path)
+                            if not row:
+                                continue
+                            fields = {}
+                            if artist and row.get("artist") == health.UNKNOWN_ARTIST:
+                                fields["artist"] = artist
+                            if album and row.get("album") == health.UNKNOWN_ALBUM:
+                                fields["album"] = album
+                            if fields:
+                                write(db, total, [path], fields)
+                    done += 1
+                    self._fixes_progress.emit({"saved": done})
+            finally:
+                self._fixes_progress.emit({"saved": done, "over": True})
+            return total
+
+        self._fixes["proposals"] = []
+        if items:
+            self._fix_save_stop.clear()
+            self._save_refreshed = time.monotonic()
+            self._fix_saving = {"kind": kind, "busy": True, "done": 0, "total": len(items)}
+            self._run(save_all, items)
+        self.fixesChanged.emit()
+
     @Slot(str, str)
     def renameGenre(self, old, new):
         """Rename a genre in every song that has it, wherever it is in their list. A name already in use
@@ -682,6 +934,10 @@ class MetadataEditor(QObject):
         self._covers_stop.set()
         self._genres_stop.set()
         self._save_stop.set()
+        self._fixes_stop.set()
+        self._fix_save_stop.set()
+        if self._fixes_thread is not None:
+            self._fixes_thread.join(timeout=2)
         if self._covers_thread is not None:
             self._covers_thread.join(timeout=2)
         if self._genres_thread is not None:

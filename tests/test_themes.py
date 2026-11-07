@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 from conftest import wait_for
-from PySide6.QtCore import Q_ARG, QCoreApplication, QMetaObject, QObject, Qt, QUrl, Signal
+from PySide6.QtCore import Q_ARG, Q_RETURN_ARG, QCoreApplication, QMetaObject, QObject, Qt, QUrl, Signal
 from PySide6.QtGui import QColor, QIcon, QImage
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
@@ -489,8 +489,13 @@ def test_settings_theme_switcher_updates_the_live_window(qapp, tmp_path, monkeyp
     qapp.processEvents()
     assert window.findChild(QObject, "saveQueue") is not None
     assert window.findChild(QObject, "sidebarToggle") is not None
-    for name in ("randomAlbum", "listeningCard", "formatsTile", "librarySummary"):
-        assert window.findChild(QObject, name) is not None, name
+    assert QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "home"))
+    for _ in range(10):
+        qapp.processEvents()
+    for name in ("randomAlbum", "listeningCard", "formatsTile", "librarySummary"):  # (Home's sections are Repeater rows)
+        found = QMetaObject.invokeMethod(window, "findItem", Qt.ConnectionType.DirectConnection, Q_RETURN_ARG("QVariant"),
+                                         Q_ARG("QVariant", name), Q_ARG("QVariant", None))
+        assert found is not None, name
     shell.setSidebarCollapsed(True)  # icon rail with the playlists menu
     qapp.processEvents()
     shell.setSidebarCollapsed(False)

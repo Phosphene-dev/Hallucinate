@@ -264,9 +264,19 @@ ApplicationWindow {
         section = name
         if (shell.startPage === "last") shell.setUiValue("lastPage", name)
         stack.clear()
-        stack.push(pageFor(name))
+        stack.push(keptPage(name) || pageFor(name))
         if (searchField.text.length > 0) searchField.text = ""
     }
+    // The heaviest pages are made once and kept, hidden, between visits: made from nothing each time they took a
+    // fifth of a second or more to open on a big library. Coming back is quick, and finds them as they were left.
+    readonly property var keptNames: ["settings", "stats", "discover", "history"]
+    property var keptPages: ({})
+    function keptPage(name) {
+        if (keptNames.indexOf(name) < 0) return null
+        if (!keptPages[name]) keptPages[name] = pageFor(name).createObject(keptHolder, { visible: false })
+        return keptPages[name]
+    }
+    Item { id: keptHolder; visible: false }  // (where kept pages wait while another page shows)
     function openPlaylist(id, name) {
         remember({ kind: "playlist", id: id, name: name })
         route0 = route
@@ -366,6 +376,7 @@ ApplicationWindow {
         }
         function onOpenLiked() { window.go("liked") }
         function onGoHome() { window.go("home") }
+        function onOpenPage(name) { window.go(name) }
         function onOpenHistory(day) {
             if (!window.featureOn("history")) return
             window.go("history")
@@ -445,6 +456,13 @@ ApplicationWindow {
             exportDialog.open()
         }
         function onNotify(message) { toast.show(message) }
+        function onLikePlaying(say) {
+            // a song in the library only: a station's or an episode's "song" can't be liked
+            if (!player.hasTrack || (player.current.kind || "").length || !window.featureOn("liked")) return
+            var was = userLib.isLiked(player.current.path)
+            userLib.toggleLike(player.current.path)
+            if (say) toast.show(was ? qsTr("Removed from Liked Songs") : qsTr("Added to Liked Songs"))
+        }
         function onNotifyAction(message, actionText, action) { toast.show(message, 0, actionText, action) }
         function onBack() { window.goBack() }
         function onRouteGone(kind, id) { window.forgetRoute(kind, id) }
@@ -1166,6 +1184,7 @@ ApplicationWindow {
     Shortcut { sequence: "P"; enabled: !window.typing; onActivated: player.previous() }
     Shortcut { sequence: "S"; enabled: !window.typing; onActivated: player.toggleShuffle() }
     Shortcut { sequence: "R"; enabled: !window.typing; onActivated: player.cycleRepeat() }
+    Shortcut { sequence: "H"; enabled: !window.typing; onActivated: Nav.likePlaying(true) }  // (a heart)
     Shortcut { sequence: "Q"; enabled: !window.typing; onActivated: { window.queueOpen = !window.queueOpen; if (window.queueOpen) window.lyricsOpen = false } }
     Shortcut { sequence: "Ctrl+M"; enabled: !welcomeView.open; onActivated: shell.toggleMini() }
     Shortcut {

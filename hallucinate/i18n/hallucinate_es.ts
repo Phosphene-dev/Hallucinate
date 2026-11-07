@@ -1396,6 +1396,14 @@
         <translation>Reproducción  ·  R</translation>
     </message>
     <message>
+        <source>Like or unlike what&apos;s playing</source>
+        <translation>Dar o quitar Me gusta a lo que suena</translation>
+    </message>
+    <message>
+        <source>Playback  ·  H</source>
+        <translation>Reproducción  ·  H</translation>
+    </message>
+    <message>
         <source>Radio off</source>
         <translation>Desactivar radio</translation>
     </message>
@@ -2389,8 +2397,16 @@
         <translation>%1 canciones  ·  %2 min</translation>
     </message>
     <message>
+        <source>Play this mix</source>
+        <translation>Reproducir esta mezcla</translation>
+    </message>
+    <message>
         <source>More for this mix</source>
         <translation>Más para esta mezcla</translation>
+    </message>
+    <message>
+        <source>Show its songs</source>
+        <translation>Ver sus canciones</translation>
     </message>
     <message>
         <source>Play</source>
@@ -2643,6 +2659,107 @@
     <message>
         <source>All files (*)</source>
         <translation>Todos los archivos (*)</translation>
+    </message>
+</context>
+<context>
+    <name>FixReview</name>
+    <message>
+        <source>Years found</source>
+        <translation>Años encontrados</translation>
+    </message>
+    <message>
+        <source>Track numbers found</source>
+        <translation>Números de pista encontrados</translation>
+    </message>
+    <message>
+        <source>Artists and albums found</source>
+        <translation>Artistas y álbumes encontrados</translation>
+    </message>
+    <message>
+        <source>from MusicBrainz: %1</source>
+        <translation>de MusicBrainz: %1</translation>
+    </message>
+    <message>
+        <source>from MusicBrainz</source>
+        <translation>de MusicBrainz</translation>
+    </message>
+    <message>
+        <source>from its folder and file names</source>
+        <translation>de los nombres de su carpeta y archivos</translation>
+    </message>
+    <message>
+        <source>from the file and folder names</source>
+        <translation>de los nombres de archivos y carpetas</translation>
+    </message>
+    <message>
+        <source>Save %1</source>
+        <translation>Guardar %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>Saving %n change(s) to your files</source>
+        <translation>
+            <numerusform>Guardando %n cambio en tus archivos</numerusform>
+            <numerusform>Guardando %n cambios en tus archivos</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Ticked albums get this year written to every song. Change any that look wrong; MusicBrainz&apos;s is the earliest release it knows.</source>
+        <translation>Los álbumes marcados reciben este año en todas sus canciones. Cambia los que parezcan incorrectos; el de MusicBrainz es la edición más antigua que conoce.</translation>
+    </message>
+    <message>
+        <source>Ticked albums get these track numbers written to their songs, in the order shown.</source>
+        <translation>Los álbumes marcados reciben estos números de pista en sus canciones, en el orden mostrado.</translation>
+    </message>
+    <message>
+        <source>Ticked songs get the artist or album guessed from their folders and file names. Only what&apos;s missing is filled; change any guess that&apos;s wrong, or clear it to leave that tag alone.</source>
+        <translation>Las canciones marcadas reciben el artista o álbum deducido de sus carpetas y nombres de archivo. Solo se completa lo que falta; cambia cualquier suposición incorrecta o bórrala para dejar esa etiqueta como está.</translation>
+    </message>
+    <message>
+        <source>Tick all</source>
+        <translation>Marcar todos</translation>
+    </message>
+    <message>
+        <source>Untick all</source>
+        <translation>Desmarcar todos</translation>
+    </message>
+    <message>
+        <source>Discard these</source>
+        <translation>Descartar estos</translation>
+    </message>
+    <message>
+        <source>Save the change for %1</source>
+        <translation>Guardar el cambio para %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n song(s)</source>
+        <translation>
+            <numerusform>%n canción</numerusform>
+            <numerusform>%n canciones</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Year for %1</source>
+        <translation>Año de %1</translation>
+    </message>
+    <message>
+        <source>Artist</source>
+        <translation>Artista</translation>
+    </message>
+    <message>
+        <source>Leave as it is</source>
+        <translation>Dejar como está</translation>
+    </message>
+    <message>
+        <source>Artist for the songs in %1</source>
+        <translation>Artista de las canciones en %1</translation>
+    </message>
+    <message>
+        <source>Album</source>
+        <translation>Álbum</translation>
+    </message>
+    <message>
+        <source>Album for the songs in %1</source>
+        <translation>Álbum de las canciones en %1</translation>
     </message>
 </context>
 <context>
@@ -3197,6 +3314,26 @@
         <translation>Editar etiquetas</translation>
     </message>
     <message>
+        <source>Reads years from folder names (offline mode is on, so MusicBrainz isn&apos;t asked). You check them before anything is saved.</source>
+        <translation>Lee los años de los nombres de carpeta (el modo sin conexión está activado, así que no se consulta MusicBrainz). Los revisas antes de guardar nada.</translation>
+    </message>
+    <message>
+        <source>Reads years from folder names, then asks MusicBrainz, about an album a second. You check them before anything is saved.</source>
+        <translation>Lee los años de los nombres de carpeta y luego consulta MusicBrainz, unos un álbum por segundo. Los revisas antes de guardar nada.</translation>
+    </message>
+    <message>
+        <source>Reads numbers from file names (offline mode is on, so MusicBrainz isn&apos;t asked). You check them before anything is saved.</source>
+        <translation>Lee los números de los nombres de archivo (el modo sin conexión está activado, así que no se consulta MusicBrainz). Los revisas antes de guardar nada.</translation>
+    </message>
+    <message>
+        <source>Reads numbers from file names, then matches titles on MusicBrainz. You check them before anything is saved.</source>
+        <translation>Lee los números de los nombres de archivo y luego busca los títulos en MusicBrainz. Los revisas antes de guardar nada.</translation>
+    </message>
+    <message>
+        <source>Guesses from folders (Artist/Album/song) and “Artist - Title” file names. You check them before anything is saved.</source>
+        <translation>Deduce a partir de las carpetas (Artista/Álbum/canción) y de nombres de archivo «Artista - Título». Los revisas antes de guardar nada.</translation>
+    </message>
+    <message>
         <source>Copy path</source>
         <translation>Copiar ruta</translation>
     </message>
@@ -3294,6 +3431,22 @@
     <message>
         <source>Asks MusicBrainz, a couple of seconds an album. You check what it finds before anything is saved.</source>
         <translation>Pregunta a MusicBrainz, un par de segundos por álbum. Revisas lo que encuentra antes de guardar nada.</translation>
+    </message>
+    <message>
+        <source>Guess all</source>
+        <translation>Deducir todo</translation>
+    </message>
+    <message>
+        <source>Find all</source>
+        <translation>Buscar todo</translation>
+    </message>
+    <message>
+        <source>Saving to your files: %1 of %2. You can carry on meanwhile.</source>
+        <translation>Guardando en tus archivos: %1 de %2. Puedes seguir mientras tanto.</translation>
+    </message>
+    <message>
+        <source>Looked at %1 of %2  ·  %3 found</source>
+        <translation>Revisados %1 de %2  ·  %3 encontrados</translation>
     </message>
     <message>
         <source>Keep the best copies</source>
@@ -3602,10 +3755,6 @@
         <translation>Elegir carpeta de música</translation>
     </message>
     <message>
-        <source>of music</source>
-        <translation>de música</translation>
-    </message>
-    <message>
         <source>on disk</source>
         <translation>en disco</translation>
     </message>
@@ -3618,8 +3767,127 @@
         <translation>Redescubrir</translation>
     </message>
     <message>
+        <source>Random album</source>
+        <translation>Álbum al azar</translation>
+    </message>
+    <message>
+        <source>Listening</source>
+        <translation>Escuchas</translation>
+    </message>
+    <message>
+        <source>Library facts</source>
+        <translation>Datos de la biblioteca</translation>
+    </message>
+    <message>
+        <source>Jump back in</source>
+        <translation>Vuelve a escuchar</translation>
+    </message>
+    <message>
+        <source>Today&apos;s mixes</source>
+        <translation>Mezclas de hoy</translation>
+    </message>
+    <message>
+        <source>Your playlists</source>
+        <translation>Tus listas</translation>
+    </message>
+    <message>
+        <source>Most played lately</source>
+        <translation>Lo más escuchado últimamente</translation>
+    </message>
+    <message>
+        <source>Continue listening</source>
+        <translation>Seguir escuchando</translation>
+    </message>
+    <message>
+        <source>Your stations</source>
+        <translation>Tus emisoras</translation>
+    </message>
+    <message>
+        <source>“%1” hidden. Settings → Features → Home brings it back</source>
+        <translation>«%1» oculto. Ajustes → Funciones → Inicio lo recupera</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Deshacer</translation>
+    </message>
+    <message>
+        <source>Move up</source>
+        <translation>Subir</translation>
+    </message>
+    <message>
+        <source>Move down</source>
+        <translation>Bajar</translation>
+    </message>
+    <message>
+        <source>Hide this section</source>
+        <translation>Ocultar esta sección</translation>
+    </message>
+    <message>
+        <source>Customize Home…</source>
+        <translation>Personalizar Inicio…</translation>
+    </message>
+    <message>
+        <source>See all</source>
+        <translation>Ver todo</translation>
+    </message>
+    <message>
+        <source>See all: %1</source>
+        <translation>Ver todo: %1</translation>
+    </message>
+    <message>
+        <source>Options for this section</source>
+        <translation>Opciones de esta sección</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n play(s)</source>
+        <translation>
+            <numerusform>%n reproducción</numerusform>
+            <numerusform>%n reproducciones</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Albums you&apos;ve played lately</source>
+        <translation>Álbumes que has escuchado últimamente</translation>
+    </message>
+    <message>
+        <source>Your most played albums this month</source>
+        <translation>Tus álbumes más escuchados este mes</translation>
+    </message>
+    <message>
         <source>Albums you haven&apos;t played in a while, or ever</source>
         <translation>Álbumes que no escuchas desde hace tiempo, o nunca</translation>
+    </message>
+    <message>
+        <source>Made from your library, new each day</source>
+        <translation>Hechas con tu biblioteca, nuevas cada día</translation>
+    </message>
+    <message>
+        <source>Liked Songs and the playlists you&apos;ve added to lately</source>
+        <translation>Canciones que te gustan y las listas a las que has añadido últimamente</translation>
+    </message>
+    <message>
+        <source>The playlists you&apos;ve added to lately</source>
+        <translation>Las listas a las que has añadido últimamente</translation>
+    </message>
+    <message>
+        <source>Liked Songs</source>
+        <translation>Canciones que me gustan</translation>
+    </message>
+    <message>
+        <source>Podcast episodes you&apos;ve started</source>
+        <translation>Episodios de pódcast que has empezado</translation>
+    </message>
+    <message>
+        <source>%1% heard</source>
+        <translation>%1 % escuchado</translation>
+    </message>
+    <message>
+        <source>Internet radio you&apos;ve saved</source>
+        <translation>Radio por internet que has guardado</translation>
+    </message>
+    <message>
+        <source>plays this week</source>
+        <translation>reproducciones esta semana</translation>
     </message>
     <message>
         <source>On this day</source>
@@ -4146,6 +4414,26 @@
         <source>Found genres for %1 of %2 albums. Check them, then save.</source>
         <translation>Se encontraron géneros para %1 de %2 álbumes. Revísalos y luego guarda.</translation>
     </message>
+    <message>
+        <source>Found a likely artist or album for %1 of %2 songs. Check them, then save.</source>
+        <translation>Se encontró un artista o álbum probable para %1 de %2 canciones. Revísalos y luego guarda.</translation>
+    </message>
+    <message>
+        <source>Found years for %1 of %2 albums (stopped early). Check them, then save.</source>
+        <translation>Se encontraron años para %1 de %2 álbumes (detenido antes de terminar). Revísalos y luego guarda.</translation>
+    </message>
+    <message>
+        <source>Found years for %1 of %2 albums. Check them, then save.</source>
+        <translation>Se encontraron años para %1 de %2 álbumes. Revísalos y luego guarda.</translation>
+    </message>
+    <message>
+        <source>Found track numbers for %1 of %2 albums (stopped early). Check them, then save.</source>
+        <translation>Se encontraron números de pista para %1 de %2 álbumes (detenido antes de terminar). Revísalos y luego guarda.</translation>
+    </message>
+    <message>
+        <source>Found track numbers for %1 of %2 albums. Check them, then save.</source>
+        <translation>Se encontraron números de pista para %1 de %2 álbumes. Revísalos y luego guarda.</translation>
+    </message>
 </context>
 <context>
     <name>MiniPlayer</name>
@@ -4180,6 +4468,14 @@
         <source>Next</source>
         <translation>Siguiente</translation>
     </message>
+    <message>
+        <source>Remove from Liked Songs</source>
+        <translation>Quitar de Canciones que me gustan</translation>
+    </message>
+    <message>
+        <source>Add to Liked Songs</source>
+        <translation>Añadir a Canciones que me gustan</translation>
+    </message>
     <message numerus="yes">
         <source>Forward %n second(s)</source>
         <translation>
@@ -4194,6 +4490,48 @@
     <message>
         <source>Back to full window</source>
         <translation>Volver a la ventana completa</translation>
+    </message>
+</context>
+<context>
+    <name>MixPreview</name>
+    <message>
+        <source>%1 songs  ·  %2 min</source>
+        <translation>%1 canciones  ·  %2 min</translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation>Reproducir</translation>
+    </message>
+    <message>
+        <source>Shuffle</source>
+        <translation>Aleatorio</translation>
+    </message>
+    <message>
+        <source>Add to queue</source>
+        <translation>Añadir a la cola</translation>
+    </message>
+    <message>
+        <source>“%1” added to the queue</source>
+        <translation>«%1» añadida a la cola</translation>
+    </message>
+    <message>
+        <source>Save as a playlist</source>
+        <translation>Guardar como playlist</translation>
+    </message>
+    <message>
+        <source>Saved as a playlist: it stays as it is when the mix changes</source>
+        <translation>Guardada como playlist: se queda como está cuando la mezcla cambie</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Abrir</translation>
+    </message>
+</context>
+<context>
+    <name>MosaicCard</name>
+    <message>
+        <source>Play %1</source>
+        <translation>Reproducir %1</translation>
     </message>
 </context>
 <context>
@@ -5176,6 +5514,14 @@
     <message>
         <source>Playing on %1</source>
         <translation>Sonando en %1</translation>
+    </message>
+    <message>
+        <source>Remove from Liked Songs (H)</source>
+        <translation>Quitar de Canciones que me gustan (H)</translation>
+    </message>
+    <message>
+        <source>Add to Liked Songs (H)</source>
+        <translation>Añadir a Canciones que me gustan (H)</translation>
     </message>
     <message numerus="yes">
         <source>Back %n second(s)</source>
@@ -7866,6 +8212,10 @@
         <translation>Un disco que gira mientras suena</translation>
     </message>
     <message>
+        <source>A heart beside the playing song in the player bar and mini player, to like it in one click</source>
+        <translation>Un corazón junto a la canción que suena en la barra del reproductor y el minirreproductor, para darle Me gusta con un clic</translation>
+    </message>
+    <message>
         <source>Reduce motion (no page transitions, zooms, spinning record or growing buttons)</source>
         <translation>Reducir el movimiento (sin transiciones de página, zooms, disco giratorio ni botones que crecen)</translation>
     </message>
@@ -8118,18 +8468,6 @@
         <translation>Datos de la biblioteca</translation>
     </message>
     <message>
-        <source>Album shelves</source>
-        <translation>Estantes de álbumes</translation>
-    </message>
-    <message>
-        <source>Rediscover shelf</source>
-        <translation>Estante Redescubrir</translation>
-    </message>
-    <message>
-        <source>On this day shelf</source>
-        <translation>Estante Tal día como hoy</translation>
-    </message>
-    <message>
         <source>Sidebar order</source>
         <translation>Orden de la barra lateral</translation>
     </message>
@@ -8202,6 +8540,54 @@
         <translation>Tal día como hoy</translation>
     </message>
     <message>
+        <source>Choose Home&apos;s sections and their order</source>
+        <translation>Elige las secciones de Inicio y su orden</translation>
+    </message>
+    <message>
+        <source>Jump back in</source>
+        <translation>Vuelve a escuchar</translation>
+    </message>
+    <message>
+        <source>Today&apos;s mixes</source>
+        <translation>Mezclas de hoy</translation>
+    </message>
+    <message>
+        <source>Recently added</source>
+        <translation>Añadidos recientemente</translation>
+    </message>
+    <message>
+        <source>Your playlists</source>
+        <translation>Tus listas</translation>
+    </message>
+    <message>
+        <source>Most played lately</source>
+        <translation>Lo más escuchado últimamente</translation>
+    </message>
+    <message>
+        <source>Continue listening (podcasts)</source>
+        <translation>Seguir escuchando (pódcasts)</translation>
+    </message>
+    <message>
+        <source>Your stations (internet radio)</source>
+        <translation>Tus emisoras (radio por internet)</translation>
+    </message>
+    <message>
+        <source>Rediscover</source>
+        <translation>Redescubrir</translation>
+    </message>
+    <message>
+        <source>Tick the sections Home shows and move them up or down; Reset goes back to the usual ones. Each section&apos;s menu on Home (⋯, or right-click) moves or hides it too. A section with nothing in it yet waits until it has.</source>
+        <translation>Marca las secciones que muestra Inicio y súbelas o bájalas; Restablecer vuelve a las habituales. El menú de cada sección en Inicio (⋯, o clic derecho) también la mueve u oculta. Una sección aún vacía espera hasta tener algo.</translation>
+    </message>
+    <message>
+        <source>needs %1</source>
+        <translation>necesita %1</translation>
+    </message>
+    <message>
+        <source>Discover&apos;s daily mixes</source>
+        <translation>las mezclas diarias de Descubrir</translation>
+    </message>
+    <message>
         <source>Forgotten after</source>
         <translation>Olvidada tras</translation>
     </message>
@@ -8254,6 +8640,18 @@
     <message>
         <source>More (about half)</source>
         <translation>Más (como la mitad)</translation>
+    </message>
+    <message>
+        <source>Clicking a mix</source>
+        <translation>Al hacer clic en una mezcla</translation>
+    </message>
+    <message>
+        <source>Shows its songs</source>
+        <translation>Muestra sus canciones</translation>
+    </message>
+    <message>
+        <source>Plays it</source>
+        <translation>La reproduce</translation>
     </message>
     <message>
         <source>Online</source>
@@ -12858,6 +13256,22 @@
 <context>
     <name>WhatsNew</name>
     <message>
+        <source>Home is yours to arrange: choose its sections and their order (a section&apos;s ⋯ menu, or Settings → Features → Home).</source>
+        <translation>Organiza Inicio a tu gusto: elige sus secciones y su orden (el menú ⋯ de cada sección, o Ajustes → Funciones → Inicio).</translation>
+    </message>
+    <message>
+        <source>New on Home: Jump back in, Today&apos;s mixes, Your playlists, Most played lately, Continue listening and Your stations.</source>
+        <translation>Nuevo en Inicio: Vuelve a escuchar, Mezclas de hoy, Tus listas, Lo más escuchado últimamente, Seguir escuchando y Tus emisoras.</translation>
+    </message>
+    <message>
+        <source>Like what&apos;s playing with the heart beside the song, or press H. Daily mixes show their songs before you play them.</source>
+        <translation>Marca como favorita la canción que suena con el corazón a su lado, o pulsa H. Las mezclas diarias muestran sus canciones antes de reproducirlas.</translation>
+    </message>
+    <message>
+        <source>Library health fixes missing years, track numbers and artist or album tags all at once, after you check them.</source>
+        <translation>La salud de la biblioteca corrige de una vez los años, números de pista y etiquetas de artista o álbum que faltan, después de que los revises.</translation>
+    </message>
+    <message>
         <source>Play on several AirPlay speakers and Snapcast rooms together, in step: cast button → Play on several together.</source>
         <translation>Reproduce en varios altavoces AirPlay y salas Snapcast a la vez, sincronizados: botón de transmitir → Reproducir en varios a la vez.</translation>
     </message>
@@ -13342,6 +13756,10 @@
     <message>
         <source>Playlist</source>
         <translation>Playlist</translation>
+    </message>
+    <message>
+        <source>Added to Liked Songs</source>
+        <translation>Añadido a Canciones que me gustan</translation>
     </message>
     <message>
         <source>Import a playlist</source>

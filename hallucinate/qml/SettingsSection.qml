@@ -33,11 +33,14 @@ Rectangle {
         for (var i = 0; i < kids.length; i++) out = out.concat(collect(kids[i]))
         return out
     }
-    Component.onCompleted: searchText = collect(body).join(" ")
+    // what its controls say, for the search: gathered the first time something is searched, not every time the
+    // page opens (walking every control of every section cost Settings about a sixth of its opening time)
+    property bool _collected: false
     // while searching, only the matching rows show (#147); the section's own name shows all of it
     property var _rows: null
     property string _rowQuery: ""
     onQueryChanged: {
+        if (!_collected && query.trim().length) { searchText = collect(body).join(" "); _collected = true }
         _rowQuery = Filter.words(query).every(w => title.toLowerCase().indexOf(w) >= 0) ? "" : query
         _rows = Filter.apply(body, hidden, _rows, _rowQuery)
         Qt.callLater(section.mark)  // after its subsections have filtered themselves

@@ -95,6 +95,13 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="2.3.0" date="2026-11-07">
+      <description>
+        <p>Home is yours to arrange: choose its sections and their order, with new ones for albums played lately, today's mixes, your playlists, this month's most played, podcast episodes you've started and your radio stations.</p>
+        <p>Like the playing song with one click or H, preview a daily mix's songs before playing it, and fix missing years, track numbers and artist or album tags across the library at once, after checking them.</p>
+        <p>Covers no longer go blank in lists, and Settings, Stats, Discover and History open several times faster.</p>
+      </description>
+    </release>
     <release version="2.2.0" date="2026-11-06">
       <description>
         <p>Play on several speakers together: AirPlay speakers and Snapcast rooms, in any mix, play the same music in step, with one volume for all.</p>

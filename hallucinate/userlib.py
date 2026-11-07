@@ -9,7 +9,7 @@ import random
 import sqlite3
 import time
 
-from PySide6.QtCore import Property, QObject, QSettings, QUrl, Signal, Slot
+from PySide6.QtCore import Property, QObject, QSettings, QTimer, QUrl, Signal, Slot
 
 from .core import history, insights, player_import, playlist_files, recap
 from .core import rules as smart_rules
@@ -49,6 +49,13 @@ def _write_ratings(db, paths, stars):
             logger.debug("Rating kept in the library only: %s", exc)
         except OSError as exc:
             logger.debug("Rating kept in the library only: %s", exc)
+
+
+def _card_urls(cards):
+    """Playlist cards with their covers as addresses the page can load."""
+    for c in cards:
+        c["arts"] = [QUrl.fromLocalFile(a).toString() for a in c.get("arts", [])]
+    return cards
 
 
 class UserLibrary(QObject):
@@ -110,6 +117,7 @@ class UserLibrary(QObject):
             "smartPlaylists": DictModel(SMART_KEYS, self, "id"),
             "rediscover": DictModel(REASON_ALBUM_KEYS, self),
             "onThisDay": DictModel(REASON_ALBUM_KEYS, self),
+            "homeTopAlbums": DictModel(STAT_ALBUM_KEYS, self),
             "smartTracks": DictModel(TRACK_KEYS, self),
             "homeMix": DictModel(TRACK_KEYS, self),
             "topArtists": DictModel(STAT_ARTIST_KEYS, self),
@@ -119,6 +127,9 @@ class UserLibrary(QObject):
         }
         self._history_filter = None
         self._history_generation = 0
+        self._history_header = None  # (rows applied, header still to show: see _apply_history)
+        self._header_timer = QTimer(self, singleShot=True, interval=0)
+        self._header_timer.timeout.connect(self._apply_history_header)
         self._history_info = {"summary": {}, "days": {}, "heatmap": {}, "hasMore": False, "loading": False}
         self._history_loaded.connect(self._apply_history)
         self._history_requery.connect(self._reload_history)
@@ -151,6 +162,7 @@ class UserLibrary(QObject):
     smartPlaylists = _model_prop("smartPlaylists")
     rediscover = _model_prop("rediscover")
     onThisDay = _model_prop("onThisDay")
+    homeTopAlbums = _model_prop("homeTopAlbums")  # Home's "Most played lately": the last 30 days
     smartTracks = _model_prop("smartTracks")
     likedTracks = _model_prop("liked")
     mostPlayed = _model_prop("mostPlayed")
@@ -202,6 +214,7 @@ class UserLibrary(QObject):
                         "mostPlayed": decorate(db.most_played(10)),
                         "recentPlayed": decorate(db.recently_played_albums(12)),
                         "homeMix": decorate(db.home_mix(40)),
+                        "homeTopAlbums": decorate(insights.top_albums(db)),
                         "home": {
                             "facts": insights.library_facts(db),
                             "heatmap": insights.listening_heatmap(db),
@@ -221,6 +234,8 @@ class UserLibrary(QObject):
                     "mostPlayed": decorate(db.most_played(10)),
                     "recentPlayed": decorate(db.recently_played_albums(12)),
                     "homeMix": decorate(db.home_mix(40)),
+                    "homeTopAlbums": decorate(insights.top_albums(db)),
+                    "playlistCards": _card_urls(insights.playlist_cards(db)),
                     "smart": self._smart_summaries(db),
                     "rediscover": decorate(insights.rediscover_albums(db)),
                     "onThisDay": decorate(insights.on_this_day(db)),
@@ -246,7 +261,8 @@ class UserLibrary(QObject):
             m["mostPlayed"].set_items(data["mostPlayed"])
             m["recentPlayed"].set_items(data["recentPlayed"])
             m["homeMix"].set_items(data["homeMix"])
-            self._home = data["home"]
+            m["homeTopAlbums"].set_items(data.get("homeTopAlbums", []))
+            self._home = {**data["home"], "playlists": self._home.get("playlists", [])}
             self.homeChanged.emit()
             return
         if data["edits"] == self._edits:
@@ -257,10 +273,11 @@ class UserLibrary(QObject):
         m["mostPlayed"].set_items(data["mostPlayed"])
         m["recentPlayed"].set_items(data["recentPlayed"])
         m["homeMix"].set_items(data["homeMix"])
+        m["homeTopAlbums"].set_items(data.get("homeTopAlbums", []))
         m["smartPlaylists"].set_items(data["smart"])
         m["rediscover"].set_items(data["rediscover"])
         m["onThisDay"].set_items(data["onThisDay"])
-        self._home = data["home"]
+        self._home = {**data["home"], "playlists": data.get("playlistCards", [])}
         self._reload_history()  # songs come and go from the library: History's "Not in library" with them
         self.homeChanged.emit()
         self._smart_revision += 1
@@ -832,6 +849,18 @@ class UserLibrary(QObject):
                 self._player.setShuffle(True)
         self._play(tracks, index)
 
+    @Slot(int, bool)
+    def playPlaylistById(self, pid, shuffle=False):
+        """A playlist from its card (Home), without opening it; -1 is Liked Songs."""
+        def read(db):
+            return decorate(db.liked_tracks() if pid < 0 else db.playlist_tracks(pid))
+        tracks = self._reader.submit(read).result(timeout=10)
+        if not tracks or self._player is None:
+            return
+        if shuffle:
+            self._player.setShuffle(True)
+        self._play(tracks, random.randrange(len(tracks)) if shuffle else 0)
+
     def _play(self, tracks, index=0):
         if self._player is not None and tracks:
             self._player.playList(list(tracks), index)
@@ -1098,6 +1127,8 @@ class UserLibrary(QObject):
 
     @Slot()
     def loadMoreHistory(self):
+        if self._history_header is not None:
+            self._apply_history_header()  # (the page asked before the last rows' header was shown: show it now)
         if self._history_filter is not None and self._history_info["hasMore"] and not self._history_info["loading"]:
             self._query_history(self._models["history"].count)
 
@@ -1118,9 +1149,12 @@ class UserLibrary(QObject):
                 args = (f["query"], start, end, f["artist"], f["source"])
                 rows = history.plays(db, *args, limit=HISTORY_PAGE + 1, offset=offset)
                 payload = {"rows": decorate(rows[:HISTORY_PAGE]), "hasMore": len(rows) > HISTORY_PAGE}
+                # the day headers' totals, for the days these listens are on only (all of them would be every
+                # day ever listened, handed to the page at once)
+                shown = {r["day"] for r in payload["rows"]}
+                payload["days"] = {d: v for d, v in history.daily_totals(db, *args).items() if d in shown}
                 if offset == 0:
                     payload["summary"] = history.summary(db, *args)
-                    payload["days"] = history.daily_totals(db, *args)
                     payload["heatmap"] = insights.listening_heatmap(db, weeks=HISTORY_WEEKS)
             except Exception:  # noqa: BLE001
                 logger.exception("History query failed")
@@ -1138,11 +1172,26 @@ class UserLibrary(QObject):
             row["dayLabel"] = history.day_label(row["day"])
         if offset == 0:
             self._models["history"].set_items(payload["rows"])
+        else:
+            self._models["history"].append_items(payload["rows"])
+
+        # The header (totals, heatmap, the day headers' sums) on the next turn of the event loop: the list's new
+        # rows and the header together froze the page for a moment as it appeared; apart, a frame goes between
+        self._history_header = (generation, offset, payload)
+        self._header_timer.start()
+
+    @Slot()
+    def _apply_history_header(self):
+        pending, self._history_header = self._history_header, None
+        if pending is None or pending[0] != self._history_generation:
+            return
+        _generation, offset, payload = pending
+        if offset == 0:
             for key in ("summary", "days", "heatmap"):
                 if key in payload:
                     self._history_info[key] = payload[key]
         else:
-            self._models["history"].append_items(payload["rows"])
+            self._history_info["days"] = {**(self._history_info.get("days") or {}), **payload.get("days", {})}
         self._history_info["hasMore"] = payload["hasMore"]
         self._history_info["loading"] = False
         self.historyChanged.emit()

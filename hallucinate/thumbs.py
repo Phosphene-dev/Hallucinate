@@ -1,7 +1,12 @@
 """Cached, size-bucketed cover thumbnails served to QML as ``image://art/<px>/<encoded file url>``.
 
 QML requests run on Qt's image-loader threads (``Image.asynchronous``), so decoding and scaling
-large embedded covers never touches the GUI thread. Scaled results are cached on disk."""
+large embedded covers never touches the GUI thread. Scaled results are cached on disk.
+
+A size part like ``128~k12`` asks for the picture cut square with its corners rounded (12% of its side; 50 makes a
+circle). Covers come with their corners already round, so each is drawn as a plain image: rounding them on screen
+with a shader mask (a hidden layer per cover, fed through MultiEffect) sometimes drew nothing at all once the
+picture arrived, leaving a blank square until the row was made again (#115)."""
 import hashlib
 import logging
 import os
@@ -10,8 +15,8 @@ import time
 from pathlib import Path
 from urllib.parse import unquote
 
-from PySide6.QtCore import QSize, Qt, QUrl
-from PySide6.QtGui import QImage, QImageReader
+from PySide6.QtCore import QRectF, QSize, Qt, QUrl
+from PySide6.QtGui import QImage, QImageReader, QPainter, QPainterPath
 from PySide6.QtQuick import QQuickImageProvider
 
 from .cachetrim import touch_if_stale
@@ -43,12 +48,23 @@ class ArtProvider(QQuickImageProvider):
         path = QUrl(rest).toLocalFile() if rest.startswith("file:") else rest
         return px, path
 
+    @staticmethod
+    def corner(image_id: str) -> int:
+        """How round the corners are asked to be, in percent of the side (0: square, as the picture is)."""
+        for part in image_id.partition("/")[0].split("~")[1:]:
+            if part[:1] == "k" and part[1:].isdigit():
+                return min(50, int(part[1:]))
+        return 0
+
     def requestImage(self, image_id, size, requested_size):
         px, path = self.parse(image_id)
         image = QImage()
         if px and path:
             try:
                 image = self.load(path, px)
+                corner = self.corner(image_id)
+                if corner and not image.isNull():
+                    image = rounded(image, corner)
             except Exception:  # noqa: BLE001 - an odd file mustn't fail the load: the placeholder, and it's tried again
                 logging.getLogger(__name__).debug("Couldn't make a thumbnail of %s", path, exc_info=True)
                 image = QImage()
@@ -113,6 +129,24 @@ def load_thumbnail(cache_dir, path: str, px: int) -> QImage:
             except OSError:
                 pass
     return image
+
+
+def rounded(image: QImage, percent: int) -> QImage:
+    """`image` cut to a square from its middle (as a square cover shows it), with its corners rounded by `percent`
+    of the side, transparent outside them."""
+    side = min(image.width(), image.height())
+    out = QImage(side, side, QImage.Format.Format_ARGB32_Premultiplied)
+    out.fill(0)
+    painter = QPainter(out)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+    clip = QPainterPath()
+    r = side * percent / 100
+    clip.addRoundedRect(QRectF(0, 0, side, side), r, r)
+    painter.setClipPath(clip)
+    painter.drawImage(-(image.width() - side) // 2, -(image.height() - side) // 2, image)
+    painter.end()
+    return out
 
 
 def _read_scaled(path: str, px: int) -> QImage:

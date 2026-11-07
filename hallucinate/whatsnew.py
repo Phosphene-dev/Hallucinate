@@ -4,6 +4,12 @@ newest version's lines are ever shown, so translators can leave the older ones."
 from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication
 
 HIGHLIGHTS = {
+    "2.3.0": [
+        QT_TRANSLATE_NOOP("WhatsNew", "Home is yours to arrange: choose its sections and their order (a section's ⋯ menu, or Settings → Features → Home)."),
+        QT_TRANSLATE_NOOP("WhatsNew", "New on Home: Jump back in, Today's mixes, Your playlists, Most played lately, Continue listening and Your stations."),
+        QT_TRANSLATE_NOOP("WhatsNew", "Like what's playing with the heart beside the song, or press H. Daily mixes show their songs before you play them."),
+        QT_TRANSLATE_NOOP("WhatsNew", "Library health fixes missing years, track numbers and artist or album tags all at once, after you check them."),
+    ],
     "2.2.0": [
         QT_TRANSLATE_NOOP("WhatsNew", "Play on several AirPlay speakers and Snapcast rooms together, in step: cast button → Play on several together."),
         QT_TRANSLATE_NOOP("WhatsNew", "Your other computers' libraries can join this one (Settings → Remote & web on the one sharing, then Music servers here)."),

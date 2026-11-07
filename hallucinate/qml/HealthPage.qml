@@ -42,6 +42,22 @@ Item {
     }
     GenreReview { id: genreReview }
     Connections {
+        target: metaEditor
+        function onFixesFinished(text) {
+            Nav.notify(text)
+            if (metaEditor.fixProposals.length) fixReview.open()
+        }
+    }
+    FixReview { id: fixReview }
+    // "Find all" for years, track numbers and missing artist/album: one at a time, so the other two wait
+    function fixHint(id) {
+        if (id === "year") return shell.offlineMode ? qsTr("Reads years from folder names (offline mode is on, so MusicBrainz isn't asked). You check them before anything is saved.")
+                                                    : qsTr("Reads years from folder names, then asks MusicBrainz, about an album a second. You check them before anything is saved.")
+        if (id === "numbers") return shell.offlineMode ? qsTr("Reads numbers from file names (offline mode is on, so MusicBrainz isn't asked). You check them before anything is saved.")
+                                                       : qsTr("Reads numbers from file names, then matches titles on MusicBrainz. You check them before anything is saved.")
+        return qsTr("Guesses from folders (Artist/Album/song) and “Artist - Title” file names. You check them before anything is saved.")
+    }
+    Connections {
         target: replayGain
         function onFinished() { library.checkHealth() }
     }
@@ -322,6 +338,49 @@ Item {
                                       ? qsTr("Looked up %1 of %2 albums  ·  %3 found").arg(Theme.num(metaEditor.genresDone)).arg(Theme.num(metaEditor.genresTotal))
                                         .arg(Theme.num(metaEditor.genresFound)) + (metaEditor.genresCurrent ? "  ·  " + metaEditor.genresCurrent : "")
                                       : qsTr("Asks MusicBrainz, a couple of seconds an album. You check what it finds before anything is saved.")
+                                color: Theme.textDim
+                                font.family: Theme.fontFamily
+                                font.pixelSize: Theme.fontSize(12)
+                            }
+                        }
+                        Row {
+                            id: fixRow
+                            readonly property bool mine: metaEditor.fixKind === card.modelData.id
+                            readonly property bool working: mine && (metaEditor.fixesBusy || metaEditor.fixesSaving)
+                            readonly property bool waiting: mine && !metaEditor.fixesBusy && metaEditor.fixProposals.length > 0
+                            visible: (card.modelData.id === "year" || card.modelData.id === "numbers" || card.modelData.id === "untagged")
+                                     && (card.modelData.count > 0 || working || waiting)
+                            spacing: 12
+                            leftPadding: 24
+                            PillButton {
+                                objectName: "findAll_" + card.modelData.id
+                                primary: !fixRow.working && !fixRow.waiting
+                                height: 32
+                                text: fixRow.working ? qsTr("Stop") : card.modelData.id === "untagged" ? qsTr("Guess all") : qsTr("Find all")
+                                // (one at a time: another check's lookup or save holds this one back)
+                                enabled: fixRow.working || !(metaEditor.fixesBusy || metaEditor.fixesSaving)
+                                onClicked: metaEditor.fixesSaving ? metaEditor.stopSavingFixes()
+                                           : metaEditor.fixesBusy ? metaEditor.cancelFixes() : metaEditor.findFixes(card.modelData.id)
+                            }
+                            PillButton {
+                                objectName: "reviewFixes_" + card.modelData.id
+                                visible: fixRow.waiting
+                                primary: true
+                                height: 32
+                                text: qsTr("Review %1 found…").arg(Theme.num(metaEditor.fixProposals.length))
+                                onClicked: fixReview.open()
+                            }
+                            Text {
+                                textFormat: Text.PlainText
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: Math.max(0, Math.min(implicitWidth, card.width - parent.x - x - 24))  // what the buttons leave (longer in some languages)
+                                elide: Text.ElideRight
+                                text: fixRow.mine && metaEditor.fixesSaving
+                                      ? qsTr("Saving to your files: %1 of %2. You can carry on meanwhile.").arg(Theme.num(metaEditor.fixesSaved)).arg(Theme.num(metaEditor.fixesToSave))
+                                      : fixRow.mine && metaEditor.fixesBusy
+                                      ? qsTr("Looked at %1 of %2  ·  %3 found").arg(Theme.num(metaEditor.fixesDone)).arg(Theme.num(metaEditor.fixesTotal))
+                                        .arg(Theme.num(metaEditor.fixesFound)) + (metaEditor.fixesCurrent ? "  ·  " + metaEditor.fixesCurrent : "")
+                                      : page.fixHint(card.modelData.id)
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily
                                 font.pixelSize: Theme.fontSize(12)

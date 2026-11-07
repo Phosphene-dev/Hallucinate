@@ -3,6 +3,49 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.3.0] - 2026-11-07
+
+### Added
+- Like what's playing in one click: a heart beside the song in the player bar and the mini player, or press H
+  anywhere (it says whether it liked or unliked it; also in Ctrl+K). Settings → Appearance can hide the heart.
+- Discover: clicking a daily mix shows its songs first, to look through before playing it, with Play, Shuffle,
+  Add to queue and Save as a playlist; double-click a song to play the mix from it. Each mix card has a play
+  button for playing it straight away, and its menu has Show its songs. Settings → Discover → Clicking a mix can
+  make a click play it at once, as before.
+- Home is yours to arrange: choose its sections and their order in Settings → Features → Home, or from a section's
+  own menu on Home (⋯ or right-click: Move up, Move down, Hide this section, Customize Home…). Besides the random
+  album, the listening card, the library facts and Recently added, there are new sections: Jump back in (albums
+  played lately), Today's mixes (Discover's daily mixes, to look through or play), Your playlists (Liked Songs
+  and the playlists you've added to lately, as cover mosaics with a play button), Most played lately (this
+  month's), Continue listening (podcast episodes you've started) and Your stations; Rediscover and On this day
+  can be added too. Shelves have a See all for the page with more. Reset in Settings brings back the usual Home.
+- Library health: albums without a year, albums without track numbers and songs missing their artist or album
+  each get a button to fix them all at once, like covers and genres. Years come from folder names ("Album (1997)")
+  and then MusicBrainz (the earliest release); track numbers from file names ("01 - Title", "1-03 Title") and
+  then MusicBrainz, matched by title; a missing artist or album is guessed from the folders (Artist/Album/song,
+  "Artist - Album") and "Artist - Title" file names. You check and change what was found before anything is
+  written, and only what's still missing is filled. Offline mode keeps it to the names.
+
+### Changed
+- Home's facts: the first tile shows this week's plays instead of the hours of music, which the line under the
+  title already gives.
+- Settings opens about a quarter faster: what its controls say is gathered for the search the first time you
+  search, not every time the page opens, and a neon theme's options are only made while one is chosen.
+- Settings, Stats, Discover and History are kept once opened, instead of being made again from nothing on every
+  visit: going back to them is several times quicker (Settings 209 → 25 ms on a 20,000-song library), and they're
+  as you left them.
+- History and Discover no longer freeze for a moment as their results arrive: History shows its list, then its
+  totals and heatmap; Discover remakes only the shelves whose songs changed, one at a time.
+- History opens faster on a long listening history: its heatmap is counted by the database a day at a time,
+  not a listen at a time, and the day headers' totals come for the days shown, not every day ever listened.
+
+### Fixed
+- Covers: random songs and albums could show a blank square (no ♪) in lists until you scrolled away and back,
+  during a scan or long after (#115). The picture had loaded; what failed was rounding its corners on the graphics
+  card (a hidden copy of each cover through a shader mask), which now and then drew nothing. Covers now come with
+  their corners already round and are drawn as plain pictures: nothing in between to go blank, and lighter on the
+  graphics card. The software renderer gets rounded covers too.
+
 ## [2.2.0] - 2026-11-06
 
 ### Added

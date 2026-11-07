@@ -278,6 +278,18 @@ Item {
         objectName: "barControls"
         anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
         spacing: 6
+        // Like what's playing in one click, always in the same place (H does it from anywhere; Settings →
+        // Appearance can hide it)
+        IconButton {
+            id: barLike
+            objectName: "barLike"
+            visible: player.hasTrack && !(player.current.kind || "").length && shell.features.liked !== false
+                     && shell.ui.barLike !== "0"  // i18n: keep
+            icon: "heart"
+            active: player.hasTrack && userLib.likesRevision >= 0 && userLib.isLiked(player.current.path)
+            tip: active ? qsTr("Remove from Liked Songs (H)") : qsTr("Add to Liked Songs (H)")
+            onClicked: Nav.likePlaying(false)
+        }
         IconButton {
             visible: !bar.tight
             icon: "more"; tip: qsTr("Speed and sleep timer")

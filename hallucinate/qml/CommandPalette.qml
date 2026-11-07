@@ -74,6 +74,7 @@ Popup {
             { t: qsTr("Previous track"), s: qsTr("Playback  ·  P"), i: "prev", run: () => player.previous() },
             { t: player.shuffle ? qsTr("Shuffle off") : qsTr("Shuffle on"), s: qsTr("Playback  ·  S"), i: "shuffle", run: () => player.toggleShuffle() },
             { t: qsTr("Change repeat"), s: qsTr("Playback  ·  R"), i: "repeat", run: () => player.cycleRepeat() },
+            { f: "liked", t: qsTr("Like or unlike what's playing"), s: qsTr("Playback  ·  H"), i: "heart", run: () => Nav.likePlaying(true) },
             { t: player.radio ? qsTr("Radio off") : qsTr("Radio on"), s: qsTr("Keep playing similar songs"), i: "radio", run: () => player.setRadio(!player.radio) },
             { t: qsTr("Now playing"), s: qsTr("View  ·  F"), i: "fullscreen", run: () => Nav.toggleNowPlaying() },
             { t: qsTr("Queue"), s: qsTr("View  ·  Q"), i: "queue", run: () => { w.queueOpen = !w.queueOpen; if (w.queueOpen) w.lyricsOpen = false } },

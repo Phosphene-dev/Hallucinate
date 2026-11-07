@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 import "."
 
 Rectangle {
@@ -7,8 +6,10 @@ Rectangle {
     property url source
     property string fallback: "♪"
     color: "transparent"
-    // Shader masking is unavailable with the software renderer; fall back to square corners.
-    readonly property bool useMask: GraphicsInfo.api !== GraphicsInfo.Software
+    // The corners come rounded with the picture (thumbs.py, "~k<percent of the side>"), so it's drawn as a plain
+    // image. Rounding it here with a shader mask instead (a hidden layer per cover through MultiEffect) sometimes
+    // drew nothing once the picture had loaded: a blank square, without the ♪, until the row was made again (#115).
+    readonly property int cornerPct: width > 0 && radius > 0 ? Math.round(Math.min(50, radius * 100 / Math.max(width, height))) : 0
     // Covers are served by the cached "art" image provider in size buckets, decoded off the GUI thread.
     readonly property real wantedPx: Math.max(width, height) * Screen.devicePixelRatio
     readonly property int bucketPx: wantedPx <= 64 ? 64 : wantedPx <= 128 ? 128 : wantedPx <= 256 ? 256 : 512
@@ -25,7 +26,7 @@ Rectangle {
     readonly property bool missing: (img.status === Image.Ready && img.sourceSize.width <= 1) || img.status === Image.Error
     readonly property string resolved: sourceText.length === 0 ? ""
         : sourceText.indexOf("file:") === 0 ? "image://art/" + bucketPx + (attempt ? "~" + tryTag : "") + (revision ? "~r" + revision : "")
-                                              + "/" + encodeURIComponent(sourceText)
+                                              + (cornerPct ? "~k" + cornerPct : "") + "/" + encodeURIComponent(sourceText)
         : sourceText
     onSourceTextChanged: { attempt = 0; retry.stop() }
     onRevisionChanged: attempt = 0  // (covers were read again: a fresh set of quick tries)
@@ -68,31 +69,9 @@ Rectangle {
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         cache: true
+        smooth: true
+        mipmap: true  // (the picture is up to twice the size it's shown: scaled down evenly, corners and all)
         opacity: status === Image.Ready && !cover.missing ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 160 } }
-        visible: !cover.useMask
-        layer.enabled: cover.useMask
-        layer.smooth: true
-    }
-    Rectangle {
-        id: mask
-        anchors.fill: parent
-        radius: cover.radius
-        visible: false
-        antialiasing: true
-        // A hard-edged, screen-sized mask turns small circles into octagons and stair-steps the corners.
-        // Render it at twice the size and let its edge fade over the threshold below.
-        layer.enabled: cover.useMask
-        layer.smooth: true
-        layer.textureSize: Qt.size(Math.ceil(width * 2 * Screen.devicePixelRatio), Math.ceil(height * 2 * Screen.devicePixelRatio))
-    }
-    MultiEffect {
-        anchors.fill: parent
-        source: img
-        maskEnabled: true
-        maskSource: mask
-        maskThresholdMin: 0.5
-        maskSpreadAtMin: 1.0
-        visible: cover.useMask && img.status === Image.Ready && !cover.missing
     }
 }

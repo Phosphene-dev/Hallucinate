@@ -238,6 +238,23 @@
     </message>
 </context>
 <context>
+    <name>FixReview</name>
+    <message numerus="yes">
+        <source>Saving %n change(s) to your files</source>
+        <translation>
+            <numerusform>Saving %n change to your files</numerusform>
+            <numerusform>Saving %n changes to your files</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n song(s)</source>
+        <translation>
+            <numerusform>%n song</numerusform>
+            <numerusform>%n songs</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>FoldersPage</name>
     <message numerus="yes">
         <source>Open %1, %n song(s)</source>
@@ -464,6 +481,13 @@
         <translation>
             <numerusform>%n artist</numerusform>
             <numerusform>%n artists</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n play(s)</source>
+        <translation>
+            <numerusform>%n play</numerusform>
+            <numerusform>%n plays</numerusform>
         </translation>
     </message>
 </context>

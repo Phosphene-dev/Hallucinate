@@ -8,10 +8,15 @@ import "."
 Item {
     id: page
     objectName: "discover"
-    Component.onCompleted: { discover.open(); if (online) onlineDiscover.open() }
+    // (kept between visits: see main.qml's keptPages) read when shown, and a preview stops when you leave
+    StackView.onActivated: { discover.open(); if (online) onlineDiscover.open() }
+    StackView.onDeactivated: if (online) onlineDiscover.stopPreview()
     Component.onDestruction: if (online) onlineDiscover.stopPreview()
 
     readonly property bool online: typeof onlineDiscover !== "undefined"
+    // A daily mix clicked: its songs first (Settings → Discover can make a click play it straight away instead)
+    function openMix(i) { if (discover.mixClick === "play") discover.playMix(i, false); else previewMix(i) }
+    function previewMix(i) { mixPreview.show(i) }
     // the online shelves and the wishlist are switched on and off as features of their own (off unless chosen)
     readonly property var ownSwitches: ["discoverNewReleases", "discoverSimilar", "discoverConcerts", "discoverWishlist"]
     function shelfOn(name) { return ownSwitches.indexOf(name) >= 0 ? shell.features[name] === true : shell.features[name] !== false }
@@ -857,7 +862,9 @@ Item {
         }
     }
 
-    // One daily mix: up to four covers, its name, what's in it; click to play, menu for the rest
+    MixPreview { id: mixPreview }  // a mix's songs, to look through before playing it
+
+    // One daily mix: up to four covers, its name, what's in it; click for its songs, menu for the rest
     component MixCard: Rectangle {
         id: mix
         required property var modelData
@@ -915,20 +922,33 @@ Item {
             cursorShape: Qt.PointingHandCursor
             onClicked: function (mouse) {
                 if (mouse.button === Qt.RightButton) mixMenu.popup()
-                else discover.playMix(mix.index, false)
+                else page.openMix(mix.index)
             }
         }
         IconButton {
+            objectName: "mixPlay_" + mix.index
+            anchors { right: moreButton.left; bottom: parent.bottom; margins: 8; rightMargin: 2 }
+            icon: "play"
+            tip: qsTr("Play this mix")
+            onClicked: discover.playMix(mix.index, false)
+        }
+        IconButton {
+            id: moreButton
             anchors { right: parent.right; bottom: parent.bottom; margins: 8 }
             icon: "more"
             tip: qsTr("More for this mix")
             onClicked: mixMenu.popup()
         }
-        Keys.onReturnPressed: discover.playMix(mix.index, false)
+        Keys.onReturnPressed: page.openMix(mix.index)
         Keys.onMenuPressed: mixMenu.popup()
         activeFocusOnTab: true
         Menu {
             id: mixMenu
+            MenuItem {
+                objectName: "mixShow"
+                text: qsTr("Show its songs"); icon.name: "queue"
+                onTriggered: page.previewMix(mix.index)
+            }
             MenuItem { text: qsTr("Play"); icon.name: "play"; onTriggered: discover.playMix(mix.index, false) }
             MenuItem { text: qsTr("Shuffle"); icon.name: "shuffle"; onTriggered: discover.playMix(mix.index, true) }
             MenuItem {

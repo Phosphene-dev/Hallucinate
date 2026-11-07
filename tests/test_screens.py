@@ -799,6 +799,14 @@ def test_everything_clickable_has_a_name_for_screen_readers(qapp, app_window):
     visit("health")
     dialog("genreReview", "genre review")
     editor.clearGenreProposals()
+    for kind, extra in (("year", {"year": 1999}), ("numbers", {"tracks": [{"path": "/x/1.mp3", "title": "One", "track_no": 1, "disc_no": 0}]}),
+                        ("untagged", {"album": "Record", "paths": ["/x/1.mp3"], "folder": "/x", "fill_artist": True, "fill_album": True})):
+        editor._fixes.update(kind=kind, proposals=[{"kind": kind, "key": album["album_key"] if kind != "untagged" else "/x",
+                                                   "title": album["album"], "artist": "A", "songs": 2, "source": "names",
+                                                   "note": "/x", **extra}])
+        editor.fixesChanged.emit()
+        dialog("fixReview", "fix review " + kind)
+    editor.clearFixProposals()
     dialog("tagEditor", "edit album", lambda d: QMetaObject.invokeMethod(d, "editAlbum", Q_ARG("QVariant", album["album_key"])))
     invoke("go", "settings")
     dialog("themeEditor", "theme editor")
@@ -1211,7 +1219,7 @@ def test_features_switched_off_disappear_everywhere(qapp, app_window):
         assert not {"Stats", "Recap", "Lyrics", "Library health"} & palette_titles()
         invoke("go", "recap")
         assert window.property("section") == "home"
-        assert not window.findChild(QObject, "listeningCard").property("visible")
+        assert "homeSection_listening" not in visible_names(window, "homeSection_")  # gone from Home, not just hidden
         assert not window.findChild(QObject, "homeHealthLink").property("visible")
         assert not window.findChild(QObject, "lyricsToggle").property("visible")
         invoke("go", "settings")
@@ -1520,6 +1528,124 @@ def test_genres_found_online_are_reviewed_before_saving(qapp, app_window):
     assert saved == [[(albums[0]["album_key"], "Shoegaze")]]
     assert plain(editor.genreProposals) == []
     assert not [w for w in warnings if "GenreReview" in w or "HealthPage" in w], warnings
+
+
+def test_years_numbers_and_tags_found_are_reviewed_before_saving(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    library, editor = objects["library"], objects["metaEditor"]
+    albums = [library.albums.get(i) for i in range(2)]
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "health"))
+    assert wait_for(lambda: window.findChild(QObject, "fixReview") is not None)
+    dlg = window.findChild(QObject, "fixReview")
+    asked = []
+
+    def fetch(kind, online):
+        asked.append(kind)
+        editor._fixes_progress.emit({"busy": False, "proposals": [], "finished": True})
+
+    editor._fetch_fixes = fetch  # (no lookups here)
+    try:
+        # the Health page offers each check's "Find all" when it has something to fix
+        assert wait_for(lambda: library.health.get("checks") is not None and not library.health["loading"])
+        library._health = {"checks": [{"id": "year", "title": "Albums without a year", "detail": "", "kind": "album",
+                                       "count": 2, "items": []}], "issues": 2, "score": 90}
+        library.healthChanged.emit()
+        assert wait_for(lambda: "findAll_year" in visible_names(window, "findAll_"))
+        QMetaObject.invokeMethod(find_item(window, "findAll_year"), "clicked")
+        assert wait_for(lambda: asked == ["year"] and not editor.fixesBusy)
+    finally:
+        del editor._fetch_fixes
+    editor._fixes.update(kind="year", proposals=[
+        {"kind": "year", "key": a["album_key"], "title": a["album"], "artist": a["album_artist"], "songs": 2,
+         "year": y, "source": "names", "note": ""} for a, y in zip(albums, (1999, 2004))])
+    editor.fixesChanged.emit()
+    QMetaObject.invokeMethod(dlg, "open")
+    assert wait_for(lambda: dlg.property("opened"))
+    assert dlg.property("kept") == 2
+    saved = []
+    editor._run = lambda fn, items: saved.append(items)  # the seeded songs aren't real files to write to
+    try:
+        QMetaObject.invokeMethod(dlg, "accept")
+        assert wait_for(lambda: saved)
+    finally:
+        del editor._run
+    assert [(i["key"], i["year"]) for i in saved[0]] == [(albums[0]["album_key"], "1999"), (albums[1]["album_key"], "2004")]
+    assert plain(editor.fixProposals) == []
+    assert not [w for w in warnings if "FixReview" in w or "HealthPage" in w], warnings
+
+
+def home_sections(window):
+    order = [n for n in visible_names(window, "homeSection_")]
+    # (visibleNames walks the tree; the Flow lays them out in the model's order, so sort by position)
+    items = {n: find_item(window, n) for n in order}
+    return [n[len("homeSection_"):] for n in sorted(order, key=lambda n: (items[n].property("y"), items[n].property("x")))]
+
+
+def test_home_sections_follow_the_chosen_order_and_switches(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "home"))
+    assert wait_for(lambda: home_sections(window)[:3] == ["random", "listening", "facts"])
+    shown = home_sections(window)
+    assert "jumpBackIn" in shown and "recent" in shown
+    assert "rediscover" not in shown  # off unless chosen
+    try:
+        # a section's menu moves it past the next one shown, and hides it (with an Undo)
+        stack = window.findChild(QObject, "pageStack")
+        wait_for(lambda: False, timeout=0.5)  # (the page it replaces goes first)
+        assert wait_for(lambda: not stack.property("busy"))
+        page = stack.property("currentItem")
+        QMetaObject.invokeMethod(page, "sectionMenu", Q_ARG("QVariant", "jumpBackIn"))
+        up = page.findChild(QObject, "homeSectionUp")
+        assert wait_for(lambda: up.property("enabled"))
+        up.triggered.emit()
+        up = page = None  # (a wrapper kept past the page's life would be handed back for a later item at its address)
+        assert wait_for(lambda: home_sections(window).index("jumpBackIn") < home_sections(window).index("facts"))
+        QMetaObject.invokeMethod(stack.property("currentItem"), "hide", Q_ARG("QVariant", "facts"))
+        assert wait_for(lambda: "facts" not in home_sections(window))
+        assert shell.features["homeFacts"] is False
+        # switched back on in Settings → Features → Home, and Rediscover chosen too
+        shell.setFeature("homeFacts", True)
+        shell.setFeature("homeRediscover", True)
+        assert wait_for(lambda: "facts" in home_sections(window))
+        if objects["userLib"].rediscover.count:
+            assert wait_for(lambda: "rediscover" in home_sections(window))
+        # the random album and the listening card side by side only while they're next to each other
+        shell.resetHomeOrder()
+        window.resize(1280, 800)
+        assert wait_for(lambda: home_sections(window)[:2] == ["random", "listening"])
+        width = find_item(window, "homeSection_random").property("width")
+        assert wait_for(lambda: find_item(window, "homeSection_listening").property("x") > width)  # beside it
+        shell.moveHomeSection("listening", 1)
+        assert wait_for(lambda: home_sections(window)[:3] == ["random", "facts", "listening"])
+        assert wait_for(lambda: find_item(window, "homeSection_random").property("width") > 2 * width - 50)  # alone: full width
+    finally:
+        shell.resetHomeOrder()
+        shell.setFeature("homeFacts", True)
+        shell.setFeature("homeRediscover", False)
+    assert not [w for w in warnings if "HomePage" in w or "MosaicCard" in w], warnings
+
+
+def test_customize_home_opens_its_list_in_settings(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "home"))
+    stack = window.findChild(QObject, "pageStack")
+    wait_for(lambda: False, timeout=0.5)  # (the page it replaces goes first)
+    assert wait_for(lambda: stack.property("currentItem").objectName() == "home" and not stack.property("busy"))
+    QMetaObject.invokeMethod(stack.property("currentItem"), "customize")
+    assert wait_for(lambda: "homeOrder_random" in visible_names(window, "homeOrder_"))
+    assert sorted(visible_names(window, "homeOrder_")) == sorted("homeOrder_" + s for s in shell.homeOrder)
+    QMetaObject.invokeMethod(find_item(window, "homeOrderDown_random"), "clicked")
+    assert wait_for(lambda: shell.homeOrder[:2] == ["listening", "random"])
+    shell.resetHomeOrder()
+    assert not [w for w in warnings if "SettingsPage" in w], warnings
 
 
 FEATURE_LABELS = {"liked": "Liked Songs", "folders": "Folders", "stats": "Stats", "history": "History",
@@ -3075,3 +3201,89 @@ def test_discover_song_shelves_show_their_songs(qapp, app_window):
         assert item is not None and item.property("visible")
         assert wait_for(lambda: item.property("height") > 60 * n, timeout=5), (shelf, item.property("height"))
     assert not [w for w in warnings if "DiscoverPage" in w or "TrackRow" in w], warnings[:3]
+
+
+def test_a_daily_mix_shows_its_songs_before_playing(qapp, app_window):
+    """Clicking a daily mix shows its songs (to look through before playing); one of them plays the mix from it.
+    Settings → Discover → Clicking a mix: Plays it, plays straight away instead."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    discover, library, player = objects["discover"], objects["library"], objects["player"]
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "discover"))
+    wait_for(lambda: False, timeout=0.5)  # (Home may have asked for the mixes already: let that finish first)
+    assert wait_for(lambda: not discover.loading, timeout=10)
+    songs = [dict(t, durText="3:20") for t in library.allTracks()[:5]]
+    discover._mix_songs = [songs]
+    discover._mixes = [{"title": "Mix one", "subtitle": "Aurora Vale and more", "count": 5, "minutes": 17, "arts": []}]
+    discover.changed.emit()
+    qapp.processEvents()
+    page = window.findChild(QObject, "pageStack").property("currentItem")
+    assert discover.mixClick == "preview"
+    QMetaObject.invokeMethod(page, "openMix", Q_ARG("QVariant", 0))
+    preview = page.findChild(QObject, "mixPreview")
+    assert wait_for(lambda: preview.property("opened"), timeout=3)
+    assert len(preview.property("songs")) == 5 and not player.playing
+    def walk(item):
+        for child in item.childItems():
+            if child.objectName() == "mixPreviewSongs":
+                return child
+            found = walk(child)
+            if found is not None:
+                return found
+    rows = walk(preview.property("contentItem"))
+    assert rows is not None and wait_for(lambda: rows.property("count") == 5)
+    played = []  # (the seeded songs aren't real audio: what the mix hands the player is what's checked)
+    real_play = player.playList
+    player.playList = lambda tracks, start=0: played.append(([t["path"] for t in tracks], start))
+    try:
+        discover.playMixFrom(0, 2)  # (what double-clicking the third song does)
+        assert played == [([s["path"] for s in songs], 2)]
+        QMetaObject.invokeMethod(preview, "close")
+        discover.setMixClick("play")
+        assert discover.mixClick == "play"
+        QMetaObject.invokeMethod(page, "openMix", Q_ARG("QVariant", 0))
+        qapp.processEvents()
+        assert played[-1] == ([s["path"] for s in songs], 0) and not preview.property("opened")
+    finally:
+        player.playList = real_play
+        discover.setMixClick("preview")
+    assert not [w for w in warnings if "DiscoverPage" in w or "TrackRow" in w], warnings[:3]
+
+
+def test_like_what_is_playing_from_the_player_bar_or_with_h(qapp, app_window, tmp_path):
+    """A heart beside the playing song in the player bar likes it in one click (and unlikes it); H does the same
+    from anywhere, saying which. Settings → Appearance can hide the heart; a station's song has none."""
+    from conftest import wait_for
+    from PySide6.QtTest import QTest
+
+    window, objects, warnings = app_window
+    player, user_lib, shell = objects["player"], objects["userLib"], objects["shell"]
+    from audio import encode
+
+    song = encode(tmp_path / "like.flac", "flac", seconds=3, title="Like me")
+    player.playList([{"id": 99, "path": str(song), "title": "Like me", "artist": "A", "album": "B", "duration": 3}], 0)
+    assert wait_for(lambda: player.hasTrack)
+    player.pause()
+    path = player.current["path"]
+    heart = find_item(window, "barLike")
+    assert heart is not None and heart.property("visible")
+    was = user_lib.isLiked(path)
+    QMetaObject.invokeMethod(heart, "clicked")
+    assert wait_for(lambda: user_lib.isLiked(path) != was)
+    assert wait_for(lambda: heart.property("active") == (not was))
+    window.requestActivate()
+    window.contentItem().forceActiveFocus()
+    QTest.keyClick(window, Qt.Key.Key_H)
+    assert wait_for(lambda: user_lib.isLiked(path) == was)
+    toast = window.findChild(QObject, "toast")
+    assert toast.property("message") == ("Added to Liked Songs" if was else "Removed from Liked Songs")  # (H undid the click)
+    shell.setUiValue("barLike", "0")
+    try:
+        qapp.processEvents()
+        assert not heart.property("visible")
+    finally:
+        shell.setUiValue("barLike", "1")
+    qapp.processEvents()
+    assert heart.property("visible")
+    assert not [w for w in warnings if "NowPlayingBar" in w or "MiniPlayer" in w], warnings[:3]

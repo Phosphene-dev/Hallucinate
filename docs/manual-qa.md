@@ -74,6 +74,30 @@
 - [ ] Handoff with a typed address (on a network that blocks broadcasts), a wrong code (says so), Forget in
       Settings → Remote & web (needs pairing again), and with the firewall on (firewalld: the remote's port).
 
+## Release testing for 2.3.0
+
+- [ ] The covers in long lists (Songs, an album, Liked) during and after a scan, on a computer with a graphics card:
+      every song shows its cover (or the ♪ when it has none), never a blank square, without scrolling away and back.
+- [ ] Settings, Stats, Discover and History: open each, go elsewhere, come back: quick, and as you left them
+      (Settings' search and scroll, History's filters). A new listen shows in History without leaving it.
+- [ ] Discover → a daily mix: clicking shows its songs; Play, Shuffle, Add to queue and Save work from there, and
+      double-clicking a song plays the mix from it. The card's play button plays at once. Settings → Discover →
+      Clicking a mix → Plays it: a click plays again.
+- [ ] The heart beside the playing song (player bar, mini player): one click likes, another unlikes, and Liked Songs
+      follows; H does the same from any page and says which. No heart for a radio station or a podcast episode.
+      Settings → Appearance → untick the heart: gone from both.
+- [ ] Home: the usual sections in order (random album and listening side by side on a wide window, facts, Jump back
+      in, Today's mixes, Recently added, Your playlists, Most played lately; Continue listening and Your stations
+      when podcasts and radio are on and have something). A section's ⋯ menu and right-click: Move up/down, Hide
+      (with Undo), Customize Home… opens Settings → Features → Home. There, tick/untick and reorder; Home follows at
+      once and keeps it after a restart; Reset brings back the usual Home. A playlist card opens the playlist, its
+      play button plays it; a mix card shows its songs; See all goes to the right page.
+- [ ] Library health, with a few albums missing years or track numbers and songs without an artist or album (in
+      Artist/Album folders, "Album (1997)" folders, "01 - Title" files): Find all / Guess all on each card shows
+      what it found; change one, untick one, save. The files get only what was ticked (check in another tag
+      editor), the counts drop, and a year or number you set yourself in the meantime isn't overwritten. Stop works
+      part way. In offline mode it still reads the names, without asking MusicBrainz.
+
 ## Release testing for 2.2.0
 
 - [ ] Two AirPlay speakers (or shairport-sync on two machines) → cast menu → Play on several together: both play in
