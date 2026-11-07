@@ -27,7 +27,10 @@ Item {
     onPeriodChanged: reload()
     onArtistChanged: reload()
     onSourceChanged: reload()
-    Component.onCompleted: reload()
+    // Read when first shown. It's kept between visits (main.qml's keptPages), and userLib reads it again by itself
+    // whenever a listen is added, imported or forgotten, so coming back needn't
+    property bool loaded: false
+    StackView.onActivated: if (!loaded) { loaded = true; reload() }
     Timer { id: queryTimer; interval: 220; onTriggered: page.reload() }
 
     function dateOf(iso) { return new Date(iso + "T12:00:00") }

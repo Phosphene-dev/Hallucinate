@@ -264,9 +264,19 @@ ApplicationWindow {
         section = name
         if (shell.startPage === "last") shell.setUiValue("lastPage", name)
         stack.clear()
-        stack.push(pageFor(name))
+        stack.push(keptPage(name) || pageFor(name))
         if (searchField.text.length > 0) searchField.text = ""
     }
+    // The heaviest pages are made once and kept, hidden, between visits: made from nothing each time they took a
+    // fifth of a second or more to open on a big library. Coming back is quick, and finds them as they were left.
+    readonly property var keptNames: ["settings", "stats", "discover", "history"]
+    property var keptPages: ({})
+    function keptPage(name) {
+        if (keptNames.indexOf(name) < 0) return null
+        if (!keptPages[name]) keptPages[name] = pageFor(name).createObject(keptHolder, { visible: false })
+        return keptPages[name]
+    }
+    Item { id: keptHolder; visible: false }  // (where kept pages wait while another page shows)
     function openPlaylist(id, name) {
         remember({ kind: "playlist", id: id, name: name })
         route0 = route

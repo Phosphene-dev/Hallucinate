@@ -8,7 +8,9 @@ import "."
 Item {
     id: page
     objectName: "discover"
-    Component.onCompleted: { discover.open(); if (online) onlineDiscover.open() }
+    // (kept between visits: see main.qml's keptPages) read when shown, and a preview stops when you leave
+    StackView.onActivated: { discover.open(); if (online) onlineDiscover.open() }
+    StackView.onDeactivated: if (online) onlineDiscover.stopPreview()
     Component.onDestruction: if (online) onlineDiscover.stopPreview()
 
     readonly property bool online: typeof onlineDiscover !== "undefined"
