@@ -90,41 +90,23 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             width: parent.width - art.width - 12
             spacing: 3
-            Row {  // the title, and right after it a heart to like the song in one click (H does it from anywhere)
+            MarqueeText {  // a long title glides to its end and back while it plays (#112)
+                objectName: "barTitle"
                 width: parent.width
-                spacing: 4
-                MarqueeText {  // a long title glides to its end and back while it plays (#112)
-                    objectName: "barTitle"
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: Math.min(implicitWidth, parent.width - (barLike.visible ? barLike.width + parent.spacing : 0))
-                    text: player.hasTrack ? player.current.title : qsTr("Nothing playing")
-                    active: player.playing
-                    color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
-                    Accessible.role: Accessible.StaticText
-                    Accessible.name: text
-                    MouseArea {  // click: go to what's playing; right-click: its menu
-                        anchors.fill: parent
-                        enabled: player.hasTrack
-                        cursorShape: Qt.PointingHandCursor
-                        acceptedButtons: Qt.LeftButton | Qt.RightButton
-                        onClicked: function (mouse) {
-                            if (mouse.button === Qt.RightButton) Nav.trackMenu(player.current.path, player.current.title, "playing", -1)
-                            else Nav.goToPlaying()
-                        }
+                text: player.hasTrack ? player.current.title : qsTr("Nothing playing")
+                active: player.playing
+                color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
+                Accessible.role: Accessible.StaticText
+                Accessible.name: text
+                MouseArea {  // click: go to what's playing; right-click: its menu
+                    anchors.fill: parent
+                    enabled: player.hasTrack
+                    cursorShape: Qt.PointingHandCursor
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    onClicked: function (mouse) {
+                        if (mouse.button === Qt.RightButton) Nav.trackMenu(player.current.path, player.current.title, "playing", -1)
+                        else Nav.goToPlaying()
                     }
-                }
-                IconButton {  // (Settings → Appearance can hide it)
-                    id: barLike
-                    objectName: "barLike"
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 24; height: 20
-                    size: 14
-                    visible: player.hasTrack && !(player.current.kind || "").length && shell.features.liked !== false
-                             && shell.ui.barLike !== "0"  // i18n: keep
-                    icon: "heart"
-                    active: player.hasTrack && userLib.likesRevision >= 0 && userLib.isLiked(player.current.path)
-                    tip: active ? qsTr("Remove from Liked Songs (H)") : qsTr("Add to Liked Songs (H)")
-                    onClicked: Nav.likePlaying(false)
                 }
             }
             Text {
@@ -296,6 +278,18 @@ Item {
         objectName: "barControls"
         anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
         spacing: 6
+        // Like what's playing in one click, always in the same place (H does it from anywhere; Settings →
+        // Appearance can hide it)
+        IconButton {
+            id: barLike
+            objectName: "barLike"
+            visible: player.hasTrack && !(player.current.kind || "").length && shell.features.liked !== false
+                     && shell.ui.barLike !== "0"  // i18n: keep
+            icon: "heart"
+            active: player.hasTrack && userLib.likesRevision >= 0 && userLib.isLiked(player.current.path)
+            tip: active ? qsTr("Remove from Liked Songs (H)") : qsTr("Add to Liked Songs (H)")
+            onClicked: Nav.likePlaying(false)
+        }
         IconButton {
             visible: !bar.tight
             icon: "more"; tip: qsTr("Speed and sleep timer")
