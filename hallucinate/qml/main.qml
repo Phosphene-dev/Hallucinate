@@ -376,6 +376,7 @@ ApplicationWindow {
         }
         function onOpenLiked() { window.go("liked") }
         function onGoHome() { window.go("home") }
+        function onOpenPage(name) { window.go(name) }
         function onOpenHistory(day) {
             if (!window.featureOn("history")) return
             window.go("history")

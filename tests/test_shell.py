@@ -313,6 +313,32 @@ def test_sidebar_pages_can_be_rearranged(make_shell):
     assert sorted(sidebar_order(["songs"])) == sorted(SIDEBAR_PAGES)
 
 
+def test_home_sections_can_be_rearranged_and_switched(make_shell):
+    from hallucinate.shell import HOME_FEATURES, HOME_SECTIONS, sidebar_order
+
+    shell, _, _ = make_shell()
+    assert shell.homeOrder == list(HOME_SECTIONS) and set(HOME_FEATURES) == set(HOME_SECTIONS)
+    shell.moveHomeSection("mixes", -1)
+    assert shell.homeOrder[2:5] == ["facts", "mixes", "jumpBackIn"]
+    # from Home's own menu: past the next section shown there, the hidden ones keep their places
+    shell.moveHomeSectionAmong("random", 1, ["random", "facts", "mixes"])
+    assert shell.homeOrder[:3] == ["facts", "listening", "random"]
+    shell.moveHomeSectionAmong("random", -1, ["random", "facts", "mixes"])
+    assert shell.homeOrder[:3] == ["random", "listening", "facts"]
+    shell.moveHomeSection("random", -1)  # already first
+    assert shell.homeOrder[0] == "random"
+    assert shell._settings.contains("ui/homeOrder")
+    shell.resetHomeOrder()
+    assert shell.homeOrder == list(HOME_SECTIONS) and not shell._settings.contains("ui/homeOrder")
+    # every section's switch is a feature, so it's saved and listed like the others
+    for feature in HOME_FEATURES.values():
+        assert feature in shell.features
+    shell.setFeature("homeMostPlayed", False)
+    assert shell.features["homeMostPlayed"] is False
+    # an order saved by an older version: new sections go back where they usually are
+    assert sidebar_order(["recent", "random"], HOME_SECTIONS)[:3] == ["recent", "playlists", "mostPlayed"]
+
+
 def test_the_tray_menu_goes_to_the_sidebar_pages(make_shell):
     from PySide6.QtWidgets import QMenu
 

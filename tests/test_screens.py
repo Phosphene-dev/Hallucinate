@@ -1219,7 +1219,7 @@ def test_features_switched_off_disappear_everywhere(qapp, app_window):
         assert not {"Stats", "Recap", "Lyrics", "Library health"} & palette_titles()
         invoke("go", "recap")
         assert window.property("section") == "home"
-        assert not window.findChild(QObject, "listeningCard").property("visible")
+        assert "homeSection_listening" not in visible_names(window, "homeSection_")  # gone from Home, not just hidden
         assert not window.findChild(QObject, "homeHealthLink").property("visible")
         assert not window.findChild(QObject, "lyricsToggle").property("visible")
         invoke("go", "settings")
@@ -1574,6 +1574,78 @@ def test_years_numbers_and_tags_found_are_reviewed_before_saving(qapp, app_windo
     assert [(i["key"], i["year"]) for i in saved[0]] == [(albums[0]["album_key"], "1999"), (albums[1]["album_key"], "2004")]
     assert plain(editor.fixProposals) == []
     assert not [w for w in warnings if "FixReview" in w or "HealthPage" in w], warnings
+
+
+def home_sections(window):
+    order = [n for n in visible_names(window, "homeSection_")]
+    # (visibleNames walks the tree; the Flow lays them out in the model's order, so sort by position)
+    items = {n: find_item(window, n) for n in order}
+    return [n[len("homeSection_"):] for n in sorted(order, key=lambda n: (items[n].property("y"), items[n].property("x")))]
+
+
+def test_home_sections_follow_the_chosen_order_and_switches(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "home"))
+    assert wait_for(lambda: home_sections(window)[:3] == ["random", "listening", "facts"])
+    shown = home_sections(window)
+    assert "jumpBackIn" in shown and "recent" in shown
+    assert "rediscover" not in shown  # off unless chosen
+    try:
+        # a section's menu moves it past the next one shown, and hides it (with an Undo)
+        stack = window.findChild(QObject, "pageStack")
+        wait_for(lambda: False, timeout=0.5)  # (the page it replaces goes first)
+        assert wait_for(lambda: not stack.property("busy"))
+        page = stack.property("currentItem")
+        QMetaObject.invokeMethod(page, "sectionMenu", Q_ARG("QVariant", "jumpBackIn"))
+        up = page.findChild(QObject, "homeSectionUp")
+        assert wait_for(lambda: up.property("enabled"))
+        up.triggered.emit()
+        up = page = None  # (a wrapper kept past the page's life would be handed back for a later item at its address)
+        assert wait_for(lambda: home_sections(window).index("jumpBackIn") < home_sections(window).index("facts"))
+        QMetaObject.invokeMethod(stack.property("currentItem"), "hide", Q_ARG("QVariant", "facts"))
+        assert wait_for(lambda: "facts" not in home_sections(window))
+        assert shell.features["homeFacts"] is False
+        # switched back on in Settings → Features → Home, and Rediscover chosen too
+        shell.setFeature("homeFacts", True)
+        shell.setFeature("homeRediscover", True)
+        assert wait_for(lambda: "facts" in home_sections(window))
+        if objects["userLib"].rediscover.count:
+            assert wait_for(lambda: "rediscover" in home_sections(window))
+        # the random album and the listening card side by side only while they're next to each other
+        shell.resetHomeOrder()
+        window.resize(1280, 800)
+        assert wait_for(lambda: home_sections(window)[:2] == ["random", "listening"])
+        width = find_item(window, "homeSection_random").property("width")
+        assert wait_for(lambda: find_item(window, "homeSection_listening").property("x") > width)  # beside it
+        shell.moveHomeSection("listening", 1)
+        assert wait_for(lambda: home_sections(window)[:3] == ["random", "facts", "listening"])
+        assert wait_for(lambda: find_item(window, "homeSection_random").property("width") > 2 * width - 50)  # alone: full width
+    finally:
+        shell.resetHomeOrder()
+        shell.setFeature("homeFacts", True)
+        shell.setFeature("homeRediscover", False)
+    assert not [w for w in warnings if "HomePage" in w or "MosaicCard" in w], warnings
+
+
+def test_customize_home_opens_its_list_in_settings(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "home"))
+    stack = window.findChild(QObject, "pageStack")
+    wait_for(lambda: False, timeout=0.5)  # (the page it replaces goes first)
+    assert wait_for(lambda: stack.property("currentItem").objectName() == "home" and not stack.property("busy"))
+    QMetaObject.invokeMethod(stack.property("currentItem"), "customize")
+    assert wait_for(lambda: "homeOrder_random" in visible_names(window, "homeOrder_"))
+    assert sorted(visible_names(window, "homeOrder_")) == sorted("homeOrder_" + s for s in shell.homeOrder)
+    QMetaObject.invokeMethod(find_item(window, "homeOrderDown_random"), "clicked")
+    assert wait_for(lambda: shell.homeOrder[:2] == ["listening", "random"])
+    shell.resetHomeOrder()
+    assert not [w for w in warnings if "SettingsPage" in w], warnings
 
 
 FEATURE_LABELS = {"liked": "Liked Songs", "folders": "Folders", "stats": "Stats", "history": "History",
@@ -3139,6 +3211,7 @@ def test_a_daily_mix_shows_its_songs_before_playing(qapp, app_window):
     window, objects, warnings = app_window
     discover, library, player = objects["discover"], objects["library"], objects["player"]
     QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "discover"))
+    wait_for(lambda: False, timeout=0.5)  # (Home may have asked for the mixes already: let that finish first)
     assert wait_for(lambda: not discover.loading, timeout=10)
     songs = [dict(t, durText="3:20") for t in library.allTracks()[:5]]
     discover._mix_songs = [songs]

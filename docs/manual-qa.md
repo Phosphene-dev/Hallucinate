@@ -86,6 +86,12 @@
 - [ ] The heart beside the playing song (player bar, mini player): one click likes, another unlikes, and Liked Songs
       follows; H does the same from any page and says which. No heart for a radio station or a podcast episode.
       Settings → Appearance → untick the heart: gone from both.
+- [ ] Home: the usual sections in order (random album and listening side by side on a wide window, facts, Jump back
+      in, Today's mixes, Recently added, Your playlists, Most played lately; Continue listening and Your stations
+      when podcasts and radio are on and have something). A section's ⋯ menu and right-click: Move up/down, Hide
+      (with Undo), Customize Home… opens Settings → Features → Home. There, tick/untick and reorder; Home follows at
+      once and keeps it after a restart; Reset brings back the usual Home. A playlist card opens the playlist, its
+      play button plays it; a mix card shows its songs; See all goes to the right page.
 - [ ] Library health, with a few albums missing years or track numbers and songs without an artist or album (in
       Artist/Album folders, "Album (1997)" folders, "01 - Title" files): Find all / Guess all on each card shows
       what it found; change one, untick one, save. The files get only what was ticked (check in another tag

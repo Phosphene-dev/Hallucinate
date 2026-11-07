@@ -3755,10 +3755,6 @@
         <translation>Elegir carpeta de música</translation>
     </message>
     <message>
-        <source>of music</source>
-        <translation>de música</translation>
-    </message>
-    <message>
         <source>on disk</source>
         <translation>en disco</translation>
     </message>
@@ -3771,8 +3767,127 @@
         <translation>Redescubrir</translation>
     </message>
     <message>
+        <source>Random album</source>
+        <translation>Álbum al azar</translation>
+    </message>
+    <message>
+        <source>Listening</source>
+        <translation>Escuchas</translation>
+    </message>
+    <message>
+        <source>Library facts</source>
+        <translation>Datos de la biblioteca</translation>
+    </message>
+    <message>
+        <source>Jump back in</source>
+        <translation>Vuelve a escuchar</translation>
+    </message>
+    <message>
+        <source>Today&apos;s mixes</source>
+        <translation>Mezclas de hoy</translation>
+    </message>
+    <message>
+        <source>Your playlists</source>
+        <translation>Tus listas</translation>
+    </message>
+    <message>
+        <source>Most played lately</source>
+        <translation>Lo más escuchado últimamente</translation>
+    </message>
+    <message>
+        <source>Continue listening</source>
+        <translation>Seguir escuchando</translation>
+    </message>
+    <message>
+        <source>Your stations</source>
+        <translation>Tus emisoras</translation>
+    </message>
+    <message>
+        <source>“%1” hidden. Settings → Features → Home brings it back</source>
+        <translation>«%1» oculto. Ajustes → Funciones → Inicio lo recupera</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Deshacer</translation>
+    </message>
+    <message>
+        <source>Move up</source>
+        <translation>Subir</translation>
+    </message>
+    <message>
+        <source>Move down</source>
+        <translation>Bajar</translation>
+    </message>
+    <message>
+        <source>Hide this section</source>
+        <translation>Ocultar esta sección</translation>
+    </message>
+    <message>
+        <source>Customize Home…</source>
+        <translation>Personalizar Inicio…</translation>
+    </message>
+    <message>
+        <source>See all</source>
+        <translation>Ver todo</translation>
+    </message>
+    <message>
+        <source>See all: %1</source>
+        <translation>Ver todo: %1</translation>
+    </message>
+    <message>
+        <source>Options for this section</source>
+        <translation>Opciones de esta sección</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n play(s)</source>
+        <translation>
+            <numerusform>%n reproducción</numerusform>
+            <numerusform>%n reproducciones</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Albums you&apos;ve played lately</source>
+        <translation>Álbumes que has escuchado últimamente</translation>
+    </message>
+    <message>
+        <source>Your most played albums this month</source>
+        <translation>Tus álbumes más escuchados este mes</translation>
+    </message>
+    <message>
         <source>Albums you haven&apos;t played in a while, or ever</source>
         <translation>Álbumes que no escuchas desde hace tiempo, o nunca</translation>
+    </message>
+    <message>
+        <source>Made from your library, new each day</source>
+        <translation>Hechas con tu biblioteca, nuevas cada día</translation>
+    </message>
+    <message>
+        <source>Liked Songs and the playlists you&apos;ve added to lately</source>
+        <translation>Canciones que te gustan y las listas a las que has añadido últimamente</translation>
+    </message>
+    <message>
+        <source>The playlists you&apos;ve added to lately</source>
+        <translation>Las listas a las que has añadido últimamente</translation>
+    </message>
+    <message>
+        <source>Liked Songs</source>
+        <translation>Canciones que me gustan</translation>
+    </message>
+    <message>
+        <source>Podcast episodes you&apos;ve started</source>
+        <translation>Episodios de pódcast que has empezado</translation>
+    </message>
+    <message>
+        <source>%1% heard</source>
+        <translation>%1 % escuchado</translation>
+    </message>
+    <message>
+        <source>Internet radio you&apos;ve saved</source>
+        <translation>Radio por internet que has guardado</translation>
+    </message>
+    <message>
+        <source>plays this week</source>
+        <translation>reproducciones esta semana</translation>
     </message>
     <message>
         <source>On this day</source>
@@ -4410,6 +4525,13 @@
     <message>
         <source>Open</source>
         <translation>Abrir</translation>
+    </message>
+</context>
+<context>
+    <name>MosaicCard</name>
+    <message>
+        <source>Play %1</source>
+        <translation>Reproducir %1</translation>
     </message>
 </context>
 <context>
@@ -8346,18 +8468,6 @@
         <translation>Datos de la biblioteca</translation>
     </message>
     <message>
-        <source>Album shelves</source>
-        <translation>Estantes de álbumes</translation>
-    </message>
-    <message>
-        <source>Rediscover shelf</source>
-        <translation>Estante Redescubrir</translation>
-    </message>
-    <message>
-        <source>On this day shelf</source>
-        <translation>Estante Tal día como hoy</translation>
-    </message>
-    <message>
         <source>Sidebar order</source>
         <translation>Orden de la barra lateral</translation>
     </message>
@@ -8428,6 +8538,54 @@
     <message>
         <source>On this day</source>
         <translation>Tal día como hoy</translation>
+    </message>
+    <message>
+        <source>Choose Home&apos;s sections and their order</source>
+        <translation>Elige las secciones de Inicio y su orden</translation>
+    </message>
+    <message>
+        <source>Jump back in</source>
+        <translation>Vuelve a escuchar</translation>
+    </message>
+    <message>
+        <source>Today&apos;s mixes</source>
+        <translation>Mezclas de hoy</translation>
+    </message>
+    <message>
+        <source>Recently added</source>
+        <translation>Añadidos recientemente</translation>
+    </message>
+    <message>
+        <source>Your playlists</source>
+        <translation>Tus listas</translation>
+    </message>
+    <message>
+        <source>Most played lately</source>
+        <translation>Lo más escuchado últimamente</translation>
+    </message>
+    <message>
+        <source>Continue listening (podcasts)</source>
+        <translation>Seguir escuchando (pódcasts)</translation>
+    </message>
+    <message>
+        <source>Your stations (internet radio)</source>
+        <translation>Tus emisoras (radio por internet)</translation>
+    </message>
+    <message>
+        <source>Rediscover</source>
+        <translation>Redescubrir</translation>
+    </message>
+    <message>
+        <source>Tick the sections Home shows and move them up or down; Reset goes back to the usual ones. Each section&apos;s menu on Home (⋯, or right-click) moves or hides it too. A section with nothing in it yet waits until it has.</source>
+        <translation>Marca las secciones que muestra Inicio y súbelas o bájalas; Restablecer vuelve a las habituales. El menú de cada sección en Inicio (⋯, o clic derecho) también la mueve u oculta. Una sección aún vacía espera hasta tener algo.</translation>
+    </message>
+    <message>
+        <source>needs %1</source>
+        <translation>necesita %1</translation>
+    </message>
+    <message>
+        <source>Discover&apos;s daily mixes</source>
+        <translation>las mezclas diarias de Descubrir</translation>
     </message>
     <message>
         <source>Forgotten after</source>

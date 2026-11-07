@@ -22,6 +22,9 @@ FEATURES = {
     "homeRandom": True, "homeListening": True, "homeFacts": True, "homeShelves": True, "casting": True,
     # Home's Rediscover and On this day: Discover has fuller ones, so these are off unless chosen
     "homeRediscover": False, "homeOnThisDay": False,
+    # Home's other sections (each also needs what it shows: Discover's mixes, Podcasts, Internet radio...)
+    "homeJumpBackIn": True, "homeMixes": True, "homePlaylists": True, "homeMostPlayed": True, "homeContinue": True,
+    "homeStations": True,
     # Discover: the page, and each of its shelves on its own
     "discover": True, "discoverMixes": True, "discoverForgotten": True, "discoverForgottenSongs": True,
     "discoverForgottenArtists": True, "discoverDeepCuts": True, "discoverNeverPlayed": True, "discoverOnThisDay": True,
@@ -31,18 +34,41 @@ FEATURES = {
     # online), and the wishlist (kept here; it only shows once something is on it)
     "discoverNewReleases": False, "discoverSimilar": False, "discoverConcerts": False, "discoverWishlist": True,
 }
+# Home's sections in their usual order, and the switch (FEATURES) each is under; people can rearrange them
+# (Settings → Features → Home, or a section's own menu). "recent" is Recently added (the old "Album shelves").
+HOME_SECTIONS = ("random", "listening", "facts", "jumpBackIn", "mixes", "recent", "playlists", "mostPlayed", "continue",
+                 "stations", "rediscover", "onThisDay")
+HOME_FEATURES = {"random": "homeRandom", "listening": "homeListening", "facts": "homeFacts",
+                 "jumpBackIn": "homeJumpBackIn", "mixes": "homeMixes", "recent": "homeShelves",
+                 "playlists": "homePlaylists", "mostPlayed": "homeMostPlayed", "continue": "homeContinue",
+                 "stations": "homeStations", "rediscover": "homeRediscover", "onThisDay": "homeOnThisDay"}
+def _moved(order, item, step, among=None):
+    """`order` with `item` swapped with its neighbour (step -1 up, +1 down) among the items in `among` (all of
+    them when None); the others keep their places."""
+    order = list(order)
+    slots = [i for i, x in enumerate(order) if among is None or x in among or x == item]
+    if item not in order:
+        return order
+    at = slots.index(order.index(item))
+    to = at + (1 if step > 0 else -1)
+    if 0 <= to < len(slots):
+        a, b = slots[at], slots[to]
+        order[a], order[b] = order[b], order[a]
+    return order
+
+
 # The sidebar's pages in their usual order; people can rearrange them (Settings → Appearance or right-click).
 SIDEBAR_PAGES = ("home", "discover", "albums", "artists", "genres", "songs", "folders", "liked", "stats", "history", "recap", "visualizer",
                  "stations", "podcasts")
 
 
-def sidebar_order(saved):
+def sidebar_order(saved, usual=SIDEBAR_PAGES):
     """The saved order with anything unknown dropped and any page it lacks (new in an update) put back where it
-    usually goes."""
-    order = [p for p in dict.fromkeys(saved or []) if p in SIDEBAR_PAGES]
-    for i, page in enumerate(SIDEBAR_PAGES):
+    usually goes. (Home's sections are kept in order the same way: `usual` HOME_SECTIONS.)"""
+    order = [p for p in dict.fromkeys(saved or []) if p in usual]
+    for i, page in enumerate(usual):
         if page not in order:
-            before = [p for p in SIDEBAR_PAGES[:i] if p in order]
+            before = [p for p in usual[:i] if p in order]
             order.insert(order.index(before[-1]) + 1 if before else 0, page)
     return order
 
@@ -400,6 +426,44 @@ class DesktopShell(QObject):
     @Slot()
     def resetSidebarOrder(self):
         self.setSidebarOrder(list(SIDEBAR_PAGES))
+
+    # --- Home's sections ------------------------------------------------------------------------------------
+    homeOrderChanged = Signal()
+
+    @Property("QStringList", notify=homeOrderChanged)
+    def homeOrder(self):
+        """Home's sections in the order chosen (all of them, switched on or not: see HOME_FEATURES)."""
+        raw = self._settings.value("ui/homeOrder", "")
+        return sidebar_order([s for s in str(raw or "").split(",") if s], HOME_SECTIONS)
+
+    @Slot("QStringList")
+    def setHomeOrder(self, order):
+        order = sidebar_order(list(order), HOME_SECTIONS)
+        if order == list(HOME_SECTIONS):
+            self._settings.remove("ui/homeOrder")
+        else:
+            self._settings.setValue("ui/homeOrder", ",".join(order))
+        self.homeOrderChanged.emit()
+
+    @Slot(str, int)
+    def moveHomeSection(self, section, step):
+        """Move a section up (-1) or down (+1) one place in the full list (Settings → Features → Home)."""
+        self.setHomeOrder(_moved(self.homeOrder, section, step))
+
+    @Slot(str, int, "QStringList")
+    def moveHomeSectionAmong(self, section, step, shown):
+        """Move a section past the next one Home shows (`shown`), from its own menu there; the ones it doesn't
+        show (switched off, or empty for now) keep their places."""
+        self.setHomeOrder(_moved(self.homeOrder, section, step, set(shown)))
+
+    @Slot()
+    def resetHomeOrder(self):
+        self.setHomeOrder(list(HOME_SECTIONS))
+
+    @Property("QVariantMap", constant=True)
+    def homeFeatures(self):
+        """Each of Home's sections and the switch it's under."""
+        return dict(HOME_FEATURES)
 
     featuresChanged = Signal()
 

@@ -86,7 +86,7 @@ def test_user_library_exposes_home_data(qapp, lib):
     ul = UserLibrary(lib.conn.execute("PRAGMA database_list").fetchone()["file"])
     try:
         assert wait_for(lambda: ul.home.get("facts", {}).get("tracks") == 5)
-        assert set(ul.home) == {"facts", "heatmap", "topArtists"}
+        assert set(ul.home) == {"facts", "heatmap", "topArtists", "playlists"}
         assert len(ul.home["heatmap"]["days"]) == 26 * 7
         assert wait_for(lambda: ul.rediscover.count >= 3)
         assert all(ul.rediscover.get(i)["reason"] for i in range(ul.rediscover.count))
@@ -108,3 +108,25 @@ def test_random_album_avoids_the_current_pick(qapp, tmp_path, db, scan, music):
         assert all(lib.randomAlbum(first["album_key"])["album_key"] != first["album_key"] for _ in range(10))
     finally:
         lib.shutdown()
+
+
+def test_most_played_albums_lately(lib):
+    albums = insights.top_albums(lib, now=NOW, days=30)
+    assert [(a["album"], a["plays"]) for a in albums] == [("Fresh", 3)]  # Old Love's plays are from long ago
+    lib.conn.execute("DELETE FROM tracks WHERE album = 'Fresh'")
+    assert insights.top_albums(lib, now=NOW, days=30) == []  # gone from the library: no card leading nowhere
+
+
+def test_playlist_cards_liked_first_then_most_recently_added(lib):
+    lib.conn.execute("UPDATE tracks SET art = '/art/' || album")
+    first = lib.create_playlist("First")
+    lib.playlist_add(first, ["/m/a1", "/m/a2", "/m/b1", "/m/c1", "/m/d1"])
+    second = lib.create_playlist("Second")
+    lib.playlist_add(second, ["/m/b1"])
+    assert [c["id"] for c in insights.playlist_cards(lib)] in ([second, first], [first, second])
+    lib.set_liked("/m/c1", True)
+    cards = insights.playlist_cards(lib)
+    assert cards[0]["id"] == -1 and cards[0]["n"] == 1 and cards[0]["arts"] == ["/art/Untouched"]
+    by_id = {c["id"]: c for c in cards}
+    assert by_id[first]["n"] == 5 and len(by_id[first]["arts"]) == 4  # four different covers at most
+    assert insights.playlist_cards(lib, limit=2)[0]["id"] == -1 and len(insights.playlist_cards(lib, limit=2)) == 2

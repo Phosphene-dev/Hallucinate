@@ -12,7 +12,17 @@ Item {
     readonly property var sectionTitles: [qsTr("Appearance"), qsTr("Features"), qsTr("Discover"), qsTr("Podcasts"), qsTr("Playback"), qsTr("Sound"), qsTr("Library"), qsTr("Music servers"), qsTr("Casting"), qsTr("Remote & web"), qsTr("Online & privacy"), qsTr("Scrobbling & sharing"), qsTr("Desktop"), qsTr("About")]
 
     function sectionItem(i) { return [sec_appearance, sec_features, sec_discover, sec_podcasts, sec_playback, sec_sound, sec_library, sec_servers, sec_casting, sec_remote, sec_sharing, sec_scrobbling, sec_desktop, sec_about][i] }
-    function jumpToId(id) { var i = sectionIds.indexOf(id); if (i >= 0 && sectionItem(i).visible) jumpTo(i) }
+    function jumpToId(id) {
+        if (id === "home") { jumpToHome(); return }
+        var i = sectionIds.indexOf(id); if (i >= 0 && sectionItem(i).visible) jumpTo(i)
+    }
+    // Settings → Features → Home (from a Home section's "Customize Home…")
+    function jumpToHome() {
+        jumpTo(sectionIds.indexOf("features"))
+        homeGroup.open = true
+        var y = homeOrderBox.mapToItem(flick.contentItem, 0, 0).y - 60
+        flick.contentY = Math.max(0, Math.min(y, flick.contentHeight - flick.height))
+    }
     function jumpToSidebar() {
         jumpTo(1)
         sidebarGroup.open = true
@@ -695,11 +705,104 @@ Item {
                 items: [["discover", qsTr("Discover")], ["liked", qsTr("Liked Songs")], ["folders", qsTr("Folders")], ["stats", qsTr("Stats")], ["history", qsTr("History")],
                         ["recap", qsTr("Recap")], ["health", qsTr("Library health")]]
             }
-            FeatureGroup {
-                heading: qsTr("Home")
-                items: [["homeRandom", qsTr("Random album")], ["homeListening", qsTr("Listening card")],
-                        ["homeFacts", qsTr("Library facts")], ["homeShelves", qsTr("Album shelves")],
-                        ["homeRediscover", qsTr("Rediscover shelf")], ["homeOnThisDay", qsTr("On this day shelf")]]
+            SettingsGroup {
+                id: homeGroup
+                key: "homeSections"
+                title: qsTr("Home")
+                summary: qsTr("Choose Home's sections and their order")
+                query: page.query
+                Column {
+                    id: homeOrderBox
+                    objectName: "homeOrder"
+                    width: parent.width
+                    spacing: 6
+                    readonly property var names: ({ random: qsTr("Random album"), listening: qsTr("Listening card"),
+                        facts: qsTr("Library facts"), jumpBackIn: qsTr("Jump back in"), mixes: qsTr("Today's mixes"),
+                        recent: qsTr("Recently added"), playlists: qsTr("Your playlists"), mostPlayed: qsTr("Most played lately"),
+                        continue: qsTr("Continue listening (podcasts)"), stations: qsTr("Your stations (internet radio)"),
+                        rediscover: qsTr("Rediscover"), onThisDay: qsTr("On this day") })
+                    // what a section needs besides its own switch (shown when that's off)
+                    readonly property var needs: ({ mixes: ["discover", "discoverMixes"], continue: ["podcasts"], stations: ["stations"] })
+                    function featureOf(id) { return shell.homeFeatures[id] }
+                    function isOn(id) {
+                        var f = featureOf(id)
+                        return id === "rediscover" || id === "onThisDay" ? shell.features[f] === true : shell.features[f] !== false
+                    }
+                    function blocked(id) {
+                        var n = needs[id] || []
+                        for (var i = 0; i < n.length; i++) if (shell.features[n[i]] === false) return true
+                        return false
+                    }
+                    Row {
+                        width: parent.width
+                        spacing: 12
+                        Text {
+                            textFormat: Text.PlainText
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: qsTr("Home")
+                            color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); font.weight: Font.DemiBold
+                        }
+                        PillButton {
+                            objectName: "resetHomeOrder"; height: 30; text: qsTr("Reset")
+                            onClicked: {
+                                shell.resetHomeOrder()
+                                var order = shell.homeOrder
+                                for (var i = 0; i < order.length; i++)
+                                    shell.setFeature(homeOrderBox.featureOf(order[i]), order[i] !== "rediscover" && order[i] !== "onThisDay")
+                            }
+                        }
+                    }
+                    Text {
+                        textFormat: Text.PlainText
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: qsTr("Tick the sections Home shows and move them up or down; Reset goes back to the usual ones. Each section's menu on Home (⋯, or right-click) moves or hides it too. A section with nothing in it yet waits until it has.")
+                        color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                    }
+                    Repeater {
+                        model: shell.homeOrder
+                        Rectangle {
+                            required property string modelData
+                            required property int index
+                            objectName: "homeOrder_" + modelData
+                            width: Math.min(460, homeOrderBox.width)
+                            height: 38
+                            radius: Theme.radiusSmall
+                            color: Theme.surface
+                            StyledCheck {
+                                objectName: "feature_" + homeOrderBox.featureOf(modelData)
+                                anchors { left: parent.left; leftMargin: 6; right: moves.left; verticalCenter: parent.verticalCenter }
+                                text: homeOrderBox.names[modelData]
+                                      + (homeOrderBox.blocked(modelData) ? "  ·  " + qsTr("needs %1").arg(modelData === "mixes" ? qsTr("Discover's daily mixes")
+                                         : modelData === "continue" ? qsTr("Podcasts") : qsTr("Internet radio")) : "")
+                                checked: homeOrderBox.isOn(modelData)
+                                opacity: homeOrderBox.blocked(modelData) ? 0.55 : 1
+                                onToggled: shell.setFeature(homeOrderBox.featureOf(modelData), checked)
+                            }
+                            Row {
+                                id: moves
+                                anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
+                                spacing: 2
+                                IconButton {
+                                    objectName: "homeOrderUp_" + modelData
+                                    icon: "up"; size: 16
+                                    enabled: index > 0
+                                    opacity: enabled ? 1 : 0.35
+                                    tip: qsTr("Move %1 up").arg(homeOrderBox.names[modelData])
+                                    onClicked: shell.moveHomeSection(modelData, -1)
+                                }
+                                IconButton {
+                                    objectName: "homeOrderDown_" + modelData
+                                    icon: "down"; size: 16
+                                    enabled: index < shell.homeOrder.length - 1
+                                    opacity: enabled ? 1 : 0.35
+                                    tip: qsTr("Move %1 down").arg(homeOrderBox.names[modelData])
+                                    onClicked: shell.moveHomeSection(modelData, 1)
+                                }
+                            }
+                        }
+                    }
+                }
             }
             SettingsGroup {
                 id: sidebarGroup

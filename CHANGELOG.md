@@ -12,6 +12,13 @@ All notable changes to this project are documented here. Format based on
   Add to queue and Save as a playlist; double-click a song to play the mix from it. Each mix card has a play
   button for playing it straight away, and its menu has Show its songs. Settings → Discover → Clicking a mix can
   make a click play it at once, as before.
+- Home is yours to arrange: choose its sections and their order in Settings → Features → Home, or from a section's
+  own menu on Home (⋯ or right-click: Move up, Move down, Hide this section, Customize Home…). Besides the random
+  album, the listening card, the library facts and Recently added, there are new sections: Jump back in (albums
+  played lately), Today's mixes (Discover's daily mixes, to look through or play), Your playlists (Liked Songs
+  and the playlists you've added to lately, as cover mosaics with a play button), Most played lately (this
+  month's), Continue listening (podcast episodes you've started) and Your stations; Rediscover and On this day
+  can be added too. Shelves have a See all for the page with more. Reset in Settings brings back the usual Home.
 - Library health: albums without a year, albums without track numbers and songs missing their artist or album
   each get a button to fix them all at once, like covers and genres. Years come from folder names ("Album (1997)")
   and then MusicBrainz (the earliest release); track numbers from file names ("01 - Title", "1-03 Title") and
@@ -20,6 +27,8 @@ All notable changes to this project are documented here. Format based on
   written, and only what's still missing is filled. Offline mode keeps it to the names.
 
 ### Changed
+- Home's facts: the first tile shows this week's plays instead of the hours of music, which the line under the
+  title already gives.
 - Settings opens about a quarter faster: what its controls say is gathered for the search the first time you
   search, not every time the page opens, and a neon theme's options are only made while one is chosen.
 - Settings, Stats, Discover and History are kept once opened, instead of being made again from nothing on every

@@ -483,6 +483,13 @@
             <numerusform>%n artists</numerusform>
         </translation>
     </message>
+    <message numerus="yes">
+        <source>%n play(s)</source>
+        <translation>
+            <numerusform>%n play</numerusform>
+            <numerusform>%n plays</numerusform>
+        </translation>
+    </message>
 </context>
 <context>
     <name>ListenBrainz</name>

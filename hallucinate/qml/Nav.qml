@@ -15,6 +15,7 @@ QtObject {
     signal openSettingsAt(string section)  // Settings, scrolled to one section (its id: "casting")
     signal openLiked()
     signal goHome()
+    signal openPage(string name)  // a page of the sidebar by name ("albums", "stats"), when it's switched on
     signal openHistory(string day)
     signal toggleNowPlaying()
     signal openHealth()

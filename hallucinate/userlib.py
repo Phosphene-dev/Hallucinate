@@ -51,6 +51,13 @@ def _write_ratings(db, paths, stars):
             logger.debug("Rating kept in the library only: %s", exc)
 
 
+def _card_urls(cards):
+    """Playlist cards with their covers as addresses the page can load."""
+    for c in cards:
+        c["arts"] = [QUrl.fromLocalFile(a).toString() for a in c.get("arts", [])]
+    return cards
+
+
 class UserLibrary(QObject):
     likesChanged = Signal()
     likeChanged = Signal(object, bool)  # [(artist, title)] liked or unliked by you (Last.fm loves follow it)
@@ -110,6 +117,7 @@ class UserLibrary(QObject):
             "smartPlaylists": DictModel(SMART_KEYS, self, "id"),
             "rediscover": DictModel(REASON_ALBUM_KEYS, self),
             "onThisDay": DictModel(REASON_ALBUM_KEYS, self),
+            "homeTopAlbums": DictModel(STAT_ALBUM_KEYS, self),
             "smartTracks": DictModel(TRACK_KEYS, self),
             "homeMix": DictModel(TRACK_KEYS, self),
             "topArtists": DictModel(STAT_ARTIST_KEYS, self),
@@ -154,6 +162,7 @@ class UserLibrary(QObject):
     smartPlaylists = _model_prop("smartPlaylists")
     rediscover = _model_prop("rediscover")
     onThisDay = _model_prop("onThisDay")
+    homeTopAlbums = _model_prop("homeTopAlbums")  # Home's "Most played lately": the last 30 days
     smartTracks = _model_prop("smartTracks")
     likedTracks = _model_prop("liked")
     mostPlayed = _model_prop("mostPlayed")
@@ -205,6 +214,7 @@ class UserLibrary(QObject):
                         "mostPlayed": decorate(db.most_played(10)),
                         "recentPlayed": decorate(db.recently_played_albums(12)),
                         "homeMix": decorate(db.home_mix(40)),
+                        "homeTopAlbums": decorate(insights.top_albums(db)),
                         "home": {
                             "facts": insights.library_facts(db),
                             "heatmap": insights.listening_heatmap(db),
@@ -224,6 +234,8 @@ class UserLibrary(QObject):
                     "mostPlayed": decorate(db.most_played(10)),
                     "recentPlayed": decorate(db.recently_played_albums(12)),
                     "homeMix": decorate(db.home_mix(40)),
+                    "homeTopAlbums": decorate(insights.top_albums(db)),
+                    "playlistCards": _card_urls(insights.playlist_cards(db)),
                     "smart": self._smart_summaries(db),
                     "rediscover": decorate(insights.rediscover_albums(db)),
                     "onThisDay": decorate(insights.on_this_day(db)),
@@ -249,7 +261,8 @@ class UserLibrary(QObject):
             m["mostPlayed"].set_items(data["mostPlayed"])
             m["recentPlayed"].set_items(data["recentPlayed"])
             m["homeMix"].set_items(data["homeMix"])
-            self._home = data["home"]
+            m["homeTopAlbums"].set_items(data.get("homeTopAlbums", []))
+            self._home = {**data["home"], "playlists": self._home.get("playlists", [])}
             self.homeChanged.emit()
             return
         if data["edits"] == self._edits:
@@ -260,10 +273,11 @@ class UserLibrary(QObject):
         m["mostPlayed"].set_items(data["mostPlayed"])
         m["recentPlayed"].set_items(data["recentPlayed"])
         m["homeMix"].set_items(data["homeMix"])
+        m["homeTopAlbums"].set_items(data.get("homeTopAlbums", []))
         m["smartPlaylists"].set_items(data["smart"])
         m["rediscover"].set_items(data["rediscover"])
         m["onThisDay"].set_items(data["onThisDay"])
-        self._home = data["home"]
+        self._home = {**data["home"], "playlists": data.get("playlistCards", [])}
         self._reload_history()  # songs come and go from the library: History's "Not in library" with them
         self.homeChanged.emit()
         self._smart_revision += 1
@@ -834,6 +848,18 @@ class UserLibrary(QObject):
             if self._player is not None:
                 self._player.setShuffle(True)
         self._play(tracks, index)
+
+    @Slot(int, bool)
+    def playPlaylistById(self, pid, shuffle=False):
+        """A playlist from its card (Home), without opening it; -1 is Liked Songs."""
+        def read(db):
+            return decorate(db.liked_tracks() if pid < 0 else db.playlist_tracks(pid))
+        tracks = self._reader.submit(read).result(timeout=10)
+        if not tracks or self._player is None:
+            return
+        if shuffle:
+            self._player.setShuffle(True)
+        self._play(tracks, random.randrange(len(tracks)) if shuffle else 0)
 
     def _play(self, tracks, index=0):
         if self._player is not None and tracks:

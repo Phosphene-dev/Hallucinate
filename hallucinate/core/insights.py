@@ -140,3 +140,33 @@ def top_artists(db, now=None, days=30, limit=5):
 def _month_year(ts):
     day = datetime.date.fromtimestamp(ts)
     return f"{month_name(day.month, short=True)} {day.year}"
+
+
+def top_albums(db, now=None, days=30, limit=12):
+    """The albums of your library played most over the last `days` days (Home's "Most played lately"), with
+    how many times; albums no longer in the library are left out (their card would lead nowhere)."""
+    now = time.time() if now is None else now
+    albums = db.listening_stats(period_start=now - days * DAY, limit=limit * 2)["albums"]
+    return [a for a in albums if a.get("album_key")][:limit]
+
+
+def playlist_cards(db, limit=12, arts=4):
+    """Your playlists for Home's cards, the most recently added to first: {id, name, n, arts (up to four
+    different covers from the start of it)}, Liked Songs first (id -1) when there are any."""
+    cards = []
+    liked = db.conn.execute(
+        "SELECT COUNT(*) FROM likes l JOIN tracks t ON t.path = l.path").fetchone()[0]
+    if liked:
+        covers = [r[0] for r in db.conn.execute(
+            """SELECT t.art FROM likes l JOIN tracks t ON t.path = l.path WHERE t.art IS NOT NULL AND t.art != ''
+               GROUP BY t.art ORDER BY MAX(l.liked_at) DESC LIMIT ?""", (arts,))]
+        cards.append({"id": -1, "name": "", "n": liked, "arts": covers})
+    for p in db.playlists():
+        covers = [r[0] for r in db.conn.execute(
+            """SELECT t.art FROM playlist_items i JOIN tracks t ON t.path = i.path
+               WHERE i.playlist_id = ? AND t.art IS NOT NULL AND t.art != ''
+               GROUP BY t.art ORDER BY MIN(i.pos) LIMIT ?""", (p["id"], arts))]
+        cards.append({"id": p["id"], "name": p["name"], "n": p["n"], "arts": covers, "last": p["last_added"]})
+    head, rest = cards[:1] if liked else [], cards[1:] if liked else cards
+    rest.sort(key=lambda c: -(c.get("last") or 0))
+    return (head + rest)[:limit]
