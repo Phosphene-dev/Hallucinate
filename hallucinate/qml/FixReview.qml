@@ -191,6 +191,7 @@ Dialog {
         selectByMouse: true
         leftPadding: label ? fieldLabel.implicitWidth + 18 : 10
         Text {
+            textFormat: Text.PlainText
             id: fieldLabel
             visible: parent.label.length > 0
             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
