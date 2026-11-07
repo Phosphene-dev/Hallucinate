@@ -5,6 +5,12 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Added
+- Discover: clicking a daily mix shows its songs first, to look through before playing it, with Play, Shuffle,
+  Add to queue and Save as a playlist; double-click a song to play the mix from it. Each mix card has a play
+  button for playing it straight away, and its menu has Show its songs. Settings → Discover → Clicking a mix can
+  make a click play it at once, as before.
+
 ### Changed
 - Settings opens about a quarter faster: what its controls say is gathered for the search the first time you
   search, not every time the page opens, and a neon theme's options are only made while one is chosen.

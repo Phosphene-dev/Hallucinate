@@ -3075,3 +3075,50 @@ def test_discover_song_shelves_show_their_songs(qapp, app_window):
         assert item is not None and item.property("visible")
         assert wait_for(lambda: item.property("height") > 60 * n, timeout=5), (shelf, item.property("height"))
     assert not [w for w in warnings if "DiscoverPage" in w or "TrackRow" in w], warnings[:3]
+
+
+def test_a_daily_mix_shows_its_songs_before_playing(qapp, app_window):
+    """Clicking a daily mix shows its songs (to look through before playing); one of them plays the mix from it.
+    Settings → Discover → Clicking a mix: Plays it, plays straight away instead."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    discover, library, player = objects["discover"], objects["library"], objects["player"]
+    QMetaObject.invokeMethod(window, "go", Qt.ConnectionType.DirectConnection, Q_ARG("QVariant", "discover"))
+    assert wait_for(lambda: not discover.loading, timeout=10)
+    songs = [dict(t, durText="3:20") for t in library.allTracks()[:5]]
+    discover._mix_songs = [songs]
+    discover._mixes = [{"title": "Mix one", "subtitle": "Aurora Vale and more", "count": 5, "minutes": 17, "arts": []}]
+    discover.changed.emit()
+    qapp.processEvents()
+    page = window.findChild(QObject, "pageStack").property("currentItem")
+    assert discover.mixClick == "preview"
+    QMetaObject.invokeMethod(page, "openMix", Q_ARG("QVariant", 0))
+    preview = page.findChild(QObject, "mixPreview")
+    assert wait_for(lambda: preview.property("opened"), timeout=3)
+    assert len(preview.property("songs")) == 5 and not player.playing
+    def walk(item):
+        for child in item.childItems():
+            if child.objectName() == "mixPreviewSongs":
+                return child
+            found = walk(child)
+            if found is not None:
+                return found
+    rows = walk(preview.property("contentItem"))
+    assert rows is not None and wait_for(lambda: rows.property("count") == 5)
+    played = []  # (the seeded songs aren't real audio: what the mix hands the player is what's checked)
+    real_play = player.playList
+    player.playList = lambda tracks, start=0: played.append(([t["path"] for t in tracks], start))
+    try:
+        discover.playMixFrom(0, 2)  # (what double-clicking the third song does)
+        assert played == [([s["path"] for s in songs], 2)]
+        QMetaObject.invokeMethod(preview, "close")
+        discover.setMixClick("play")
+        assert discover.mixClick == "play"
+        QMetaObject.invokeMethod(page, "openMix", Q_ARG("QVariant", 0))
+        qapp.processEvents()
+        assert played[-1] == ([s["path"] for s in songs], 0) and not preview.property("opened")
+    finally:
+        player.playList = real_play
+        discover.setMixClick("preview")
+    assert not [w for w in warnings if "DiscoverPage" in w or "TrackRow" in w], warnings[:3]

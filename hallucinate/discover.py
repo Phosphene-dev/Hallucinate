@@ -202,6 +202,14 @@ class Discover(QObject):
             self._player.setShuffle(bool(shuffle))
             self._player.playList(songs, 0)
 
+    @Slot(int, int)
+    def playMixFrom(self, i, start):
+        """The mix from one of its songs on (a song picked in its preview), in order."""
+        songs = self._mix(i)
+        if songs and self._player is not None:
+            self._player.setShuffle(False)
+            self._player.playList(songs, max(0, min(int(start), len(songs) - 1)))
+
     @Slot(int)
     def queueMix(self, i):
         songs = self._mix(i)
@@ -284,7 +292,7 @@ class Discover(QObject):
         self.refresh()  # (after the write: the reader takes them in turn)
 
     # --- settings -----------------------------------------------------------------------------------------
-    def _setting_prop(key, default, kind, choices=None):  # noqa: N805
+    def _setting_prop(key, default, kind, choices=None, reread=True):  # noqa: N805
         # (each setter below is given its name for Qt by hand: a Slot takes its function's name, and these are all set_)
         def get(self):
             v = self._setting(key, default, kind)
@@ -297,7 +305,8 @@ class Discover(QObject):
             if value != get(self):
                 self._settings.setValue(f"discover/{key}", value)
                 self.settingsChanged.emit()
-                self.refresh()
+                if reread:
+                    self.refresh()
         return get, set_
 
     _fd = _setting_prop("forgottenDays", 90, int, FORGOTTEN_DAYS)
@@ -312,6 +321,10 @@ class Discover(QObject):
     _fr = _setting_prop("fresh", "some", str, tuple(FRESH))
     fresh = Property(str, _fr[0], notify=settingsChanged)
     setFresh = Slot(str, name="setFresh")(_fr[1])
+    # clicking a mix: "preview" (its songs first) or "play" (straight away)
+    _mc2 = _setting_prop("mixClick", "preview", str, ("preview", "play"), reread=False)
+    mixClick = Property(str, _mc2[0], notify=settingsChanged)
+    setMixClick = Slot(str, name="setMixClick")(_mc2[1])
 
     @Slot(str, bool)
     def setShelf(self, name, on):

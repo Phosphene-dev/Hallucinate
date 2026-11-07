@@ -74,6 +74,16 @@
 - [ ] Handoff with a typed address (on a network that blocks broadcasts), a wrong code (says so), Forget in
       Settings → Remote & web (needs pairing again), and with the firewall on (firewalld: the remote's port).
 
+## Release testing for the next release
+
+- [ ] The covers in long lists (Songs, an album, Liked) during and after a scan, on a computer with a graphics card:
+      every song shows its cover (or the ♪ when it has none), never a blank square, without scrolling away and back.
+- [ ] Settings, Stats, Discover and History: open each, go elsewhere, come back: quick, and as you left them
+      (Settings' search and scroll, History's filters). A new listen shows in History without leaving it.
+- [ ] Discover → a daily mix: clicking shows its songs; Play, Shuffle, Add to queue and Save work from there, and
+      double-clicking a song plays the mix from it. The card's play button plays at once. Settings → Discover →
+      Clicking a mix → Plays it: a click plays again.
+
 ## Release testing for 2.2.0
 
 - [ ] Two AirPlay speakers (or shairport-sync on two machines) → cast menu → Play on several together: both play in

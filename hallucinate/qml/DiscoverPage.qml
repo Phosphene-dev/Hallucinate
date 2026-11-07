@@ -14,6 +14,14 @@ Item {
     Component.onDestruction: if (online) onlineDiscover.stopPreview()
 
     readonly property bool online: typeof onlineDiscover !== "undefined"
+    // A daily mix clicked: its songs first (Settings → Discover can make a click play it straight away instead)
+    function openMix(i) { if (discover.mixClick === "play") discover.playMix(i, false); else previewMix(i) }
+    function previewMix(i) {
+        mixPreview.index = i
+        mixPreview.mix = discover.mixes[i] || ({})
+        mixPreview.songs = discover.mixSongs(i)
+        mixPreview.open()
+    }
     // the online shelves and the wishlist are switched on and off as features of their own (off unless chosen)
     readonly property var ownSwitches: ["discoverNewReleases", "discoverSimilar", "discoverConcerts", "discoverWishlist"]
     function shelfOn(name) { return ownSwitches.indexOf(name) >= 0 ? shell.features[name] === true : shell.features[name] !== false }
@@ -859,7 +867,93 @@ Item {
         }
     }
 
-    // One daily mix: up to four covers, its name, what's in it; click to play, menu for the rest
+    // A daily mix's songs, to look through before playing it (or from one of them on)
+    Dialog {
+        id: mixPreview
+        objectName: "mixPreview"
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        modal: true
+        padding: 18
+        property int index: -1
+        property var mix: ({})
+        property var songs: []
+        width: Math.min(620, (parent ? parent.width : 800) - 60)
+        height: Math.min(640, (parent ? parent.height : 700) - 60)
+        title: mix.title || ""
+        contentItem: ColumnLayout {
+            spacing: 12
+            Text {
+                textFormat: Text.PlainText
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                text: (mixPreview.mix.subtitle ? mixPreview.mix.subtitle + "  ·  " : "")
+                      + qsTr("%1 songs  ·  %2 min").arg(mixPreview.songs.length).arg(mixPreview.mix.minutes || 0)
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+            }
+            Flow {
+                Layout.fillWidth: true
+                spacing: 8
+                PillButton {
+                    objectName: "mixPreviewPlay"
+                    text: qsTr("Play"); primary: true
+                    onClicked: { discover.playMix(mixPreview.index, false); mixPreview.close() }
+                }
+                PillButton {
+                    text: qsTr("Shuffle")
+                    onClicked: { discover.playMix(mixPreview.index, true); mixPreview.close() }
+                }
+                PillButton {
+                    text: qsTr("Add to queue")
+                    onClicked: {
+                        discover.queueMix(mixPreview.index)
+                        Nav.notify(qsTr("“%1” added to the queue").arg(mixPreview.mix.title))
+                    }
+                }
+                PillButton {
+                    text: qsTr("Save as a playlist")
+                    onClicked: {
+                        var id = discover.saveMix(mixPreview.index)
+                        if (id >= 0) Nav.notifyAction(qsTr("Saved as a playlist: it stays as it is when the mix changes"),
+                                                      qsTr("Open"), function () { mixPreview.close(); Nav.openPlaylist(id) })
+                    }
+                }
+            }
+            ListView {
+                id: mixSongList
+                objectName: "mixPreviewSongs"
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                boundsBehavior: Flickable.StopAtBounds
+                ScrollBar.vertical: ScrollBar {}
+                model: mixPreview.songs
+                delegate: TrackRow {
+                    required property var modelData
+                    required property int index
+                    width: mixSongList.width - 12
+                    selectionSource: mixPreview.songs
+                    rowIndex: index
+                    number: index + 1
+                    path: modelData.path || ""
+                    title: modelData.title || ""
+                    artist: modelData.artist || ""
+                    album: modelData.album || ""
+                    durText: modelData.durText || ""
+                    artUrl: modelData.artUrl || ""
+                    audioFormat: modelData.codec || ""
+                    audioBitrate: modelData.bitrate || 0
+                    bitDepth: modelData.bit_depth || 0
+                    sampleRate: modelData.sample_rate || 0
+                    explicitTag: modelData.explicit || 0
+                    onActivated: { discover.playMixFrom(mixPreview.index, index); mixPreview.close() }
+                    onEnqueue: player.enqueue(modelData)
+                }
+            }
+        }
+    }
+
+    // One daily mix: up to four covers, its name, what's in it; click for its songs, menu for the rest
     component MixCard: Rectangle {
         id: mix
         required property var modelData
@@ -917,20 +1011,33 @@ Item {
             cursorShape: Qt.PointingHandCursor
             onClicked: function (mouse) {
                 if (mouse.button === Qt.RightButton) mixMenu.popup()
-                else discover.playMix(mix.index, false)
+                else page.openMix(mix.index)
             }
         }
         IconButton {
+            objectName: "mixPlay_" + mix.index
+            anchors { right: moreButton.left; bottom: parent.bottom; margins: 8; rightMargin: 2 }
+            icon: "play"
+            tip: qsTr("Play this mix")
+            onClicked: discover.playMix(mix.index, false)
+        }
+        IconButton {
+            id: moreButton
             anchors { right: parent.right; bottom: parent.bottom; margins: 8 }
             icon: "more"
             tip: qsTr("More for this mix")
             onClicked: mixMenu.popup()
         }
-        Keys.onReturnPressed: discover.playMix(mix.index, false)
+        Keys.onReturnPressed: page.openMix(mix.index)
         Keys.onMenuPressed: mixMenu.popup()
         activeFocusOnTab: true
         Menu {
             id: mixMenu
+            MenuItem {
+                objectName: "mixShow"
+                text: qsTr("Show its songs"); icon.name: "queue"
+                onTriggered: page.previewMix(mix.index)
+            }
             MenuItem { text: qsTr("Play"); icon.name: "play"; onTriggered: discover.playMix(mix.index, false) }
             MenuItem { text: qsTr("Shuffle"); icon.name: "shuffle"; onTriggered: discover.playMix(mix.index, true) }
             MenuItem {

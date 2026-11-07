@@ -847,6 +847,15 @@ Item {
                 selection: Math.max(0, choices.indexOf(discover.fresh))
                 onChosen: function (i) { discover.setFresh(choices[i]) }
             }
+            DiscoverChoice {
+                objectName: "mixClick"
+                label: qsTr("Clicking a mix")
+                visible: sec_discover.pageOn && shell.features.discoverMixes !== false
+                readonly property var choices: ["preview", "play"]
+                model: [qsTr("Shows its songs"), qsTr("Plays it")]
+                selection: Math.max(0, choices.indexOf(discover.mixClick))
+                onChosen: function (i) { discover.setMixClick(choices[i]) }
+            }
             // Online: new releases and artists like yours (each off unless chosen), and the wishlist
             Column {
                 id: onlineBox

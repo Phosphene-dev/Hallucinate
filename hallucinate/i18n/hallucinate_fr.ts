@@ -2377,6 +2377,10 @@
         <translation>Tout lire</translation>
     </message>
     <message>
+        <source>Show its songs</source>
+        <translation>Voir ses morceaux</translation>
+    </message>
+    <message>
         <source>Show fewer</source>
         <translation>En montrer moins</translation>
     </message>
@@ -2387,6 +2391,10 @@
     <message>
         <source>%1 songs  ·  %2 min</source>
         <translation>%1 morceaux  ·  %2 min</translation>
+    </message>
+    <message>
+        <source>Play this mix</source>
+        <translation>Écouter ce mix</translation>
     </message>
     <message>
         <source>More for this mix</source>
@@ -8603,6 +8611,18 @@
     <message>
         <source>More (about half)</source>
         <translation>Davantage (environ la moitié)</translation>
+    </message>
+    <message>
+        <source>Clicking a mix</source>
+        <translation>Cliquer sur un mix</translation>
+    </message>
+    <message>
+        <source>Shows its songs</source>
+        <translation>Montre ses morceaux</translation>
+    </message>
+    <message>
+        <source>Plays it</source>
+        <translation>Le lance</translation>
     </message>
     <message>
         <source>Online</source>

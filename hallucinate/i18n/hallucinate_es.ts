@@ -2389,8 +2389,16 @@
         <translation>%1 canciones  ·  %2 min</translation>
     </message>
     <message>
+        <source>Play this mix</source>
+        <translation>Reproducir esta mezcla</translation>
+    </message>
+    <message>
         <source>More for this mix</source>
         <translation>Más para esta mezcla</translation>
+    </message>
+    <message>
+        <source>Show its songs</source>
+        <translation>Ver sus canciones</translation>
     </message>
     <message>
         <source>Play</source>
@@ -8254,6 +8262,18 @@
     <message>
         <source>More (about half)</source>
         <translation>Más (como la mitad)</translation>
+    </message>
+    <message>
+        <source>Clicking a mix</source>
+        <translation>Al hacer clic en una mezcla</translation>
+    </message>
+    <message>
+        <source>Shows its songs</source>
+        <translation>Muestra sus canciones</translation>
+    </message>
+    <message>
+        <source>Plays it</source>
+        <translation>La reproduce</translation>
     </message>
     <message>
         <source>Online</source>
