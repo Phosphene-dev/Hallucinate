@@ -15,7 +15,7 @@ Column {
     property bool open: shell.uiValue("settingsOpen/" + key, "0") === "1"
     onOpenChanged: shell.setUiValue("settingsOpen/" + key, open ? "1" : "0")
     property string searchText: ""
-    Component.onCompleted: searchText = collect(inner).join(" ").toLowerCase()
+    property bool _collected: false  // (gathered at the first search, as in SettingsSection)
     function collect(item) {
         var out = []
         if (item.text !== undefined && typeof item.text === "string") out.push(item.text)
@@ -34,6 +34,7 @@ Column {
     // while searching, only the matching rows inside show (#147); the title matching shows them all
     property var _rows: null
     onQueryChanged: {
+        if (!_collected && query.trim().length) { searchText = collect(inner).join(" ").toLowerCase(); _collected = true }
         var q = Filter.words(query).every(w => title.toLowerCase().indexOf(w) >= 0) ? "" : query
         _rows = Filter.apply(inner, hidden, _rows, q)
         hits = Filter.hits(inner, q)

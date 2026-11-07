@@ -315,114 +315,119 @@ Item {
                 PillButton { objectName: "makeTheme"; text: qsTr("Make my own theme…"); onClicked: themeEditor.open() }
             }
             ThemeEditor { id: themeEditor }
-            // A neon theme's own options (Afterimage): shown only while one is chosen
-            Column {
-                objectName: "neonOptions"
-                visible: Theme.neon
+            // A neon theme's own options: built only while one is chosen (a few hundred items the page otherwise
+            // made, hidden, on every visit)
+            Loader {
+                active: Theme.neon
+                visible: active
                 width: parent.width
-                spacing: 8
-                Text { textFormat: Text.PlainText; text: qsTr("%1 options").arg(themeManager.currentTheme); color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(15) * Theme.displayScale; font.weight: Font.DemiBold }
-                Flow {
-                    width: parent.width
-                    spacing: 10
-                    Text { textFormat: Text.PlainText; text: qsTr("Now Playing"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
-                    StyledCombo {
-                        objectName: "neonNowPlaying"
-                        readonly property var modes: ["cockpit", "terminal", "classic"]
-                        width: 320
-                        model: [qsTr("Cockpit (gauges and a hologram)"), qsTr("Terminal (typed out)"), qsTr("Classic (the usual one)")]
-                        selection: Math.max(0, modes.indexOf(shell.ui.neonNowPlaying || "cockpit"))
-                        onActivated: shell.setUiValue("neonNowPlaying", modes[currentIndex])
-                        Accessible.name: qsTr("Now Playing in this theme")
-                    }
-                    Text { textFormat: Text.PlainText; text: qsTr("Cockpit colours"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
-                    StyledCombo {
-                        objectName: "neonTint"
-                        readonly property var modes: ["theme", "cover"]
-                        width: 200
-                        model: [qsTr("The theme's neon"), qsTr("The cover's")]
-                        selection: shell.ui.neonTint === "cover" ? 1 : 0
-                        onActivated: shell.setUiValue("neonTint", modes[currentIndex])
-                        Accessible.name: qsTr("Cockpit colours")
-                    }
-                    Text { textFormat: Text.PlainText; text: qsTr("Terminal"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
-                    StyledCombo {
-                        objectName: "neonPhosphor"
-                        readonly property var modes: ["theme", "green", "amber"]
-                        width: 200
-                        model: [qsTr("The theme's colour"), qsTr("Green phosphor"), qsTr("Amber phosphor")]
-                        selection: Math.max(0, modes.indexOf(shell.ui.neonPhosphor || "theme"))
-                        onActivated: shell.setUiValue("neonPhosphor", modes[currentIndex])
-                        Accessible.name: qsTr("Terminal colour")
-                    }
-                }
-                StyledCheck {
-                    objectName: "neonScanlines"
-                    text: qsTr("Scanlines and a vignette over the window")
-                    checked: Theme.neonOption("Scanlines")
-                    onToggled: shell.setUiValue("neonScanlines", checked ? "1" : "0")
-                }
-                StyledCheck {
-                    objectName: "neonGlitch"
-                    text: qsTr("A glitch when the song changes (and a hologram's flicker)")
-                    checked: Theme.neonOption("Glitch")
-                    enabled: !shell.reduceMotion
-                    onToggled: shell.setUiValue("neonGlitch", checked ? "1" : "0")
-                }
-                StyledCheck {
-                    objectName: "neonGreebles"
-                    text: qsTr("HUD details (corner brackets, ticks, status lights and readouts)")
-                    checked: Theme.neonGreebles
-                    onToggled: shell.setUiValue("neonGreebles", checked ? "1" : "0")
-                }
-                StyledCheck {
-                    objectName: "neonBoot"
-                    text: qsTr("A start-up sequence when the terminal opens")
-                    checked: shell.ui.neonBoot !== "0"
-                    onToggled: shell.setUiValue("neonBoot", checked ? "1" : "0")
-                }
-                // the terminal's panes, in the order they show (it can pin and unpin them itself too)
-                Text { textFormat: Text.PlainText; text: qsTr("Terminal panes"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13) }
-                Flow {
-                    objectName: "neonPanes"
+                sourceComponent: Column {
+                    objectName: "neonOptions"
                     width: parent.width
                     spacing: 8
-                    readonly property var names: ({ now: qsTr("Now playing"), wave: qsTr("Waveform"), spectrum: qsTr("Spectrum"), lyrics: qsTr("Lyrics"),
-                        queue: qsTr("Up next"), signal: qsTr("Signal path"), stats: qsTr("Today's stats"), tags: qsTr("Tags"), similar: qsTr("Similar artists"),
-                        whoami: qsTr("Your library"), log: qsTr("Log") })
-                    readonly property var shown: {
-                        var v = shell.ui.neonTermPanes  // (blank: the usual ones; "none": every one unpinned)
-                        return (v === undefined || v === "" ? "now,wave,spectrum,lyrics,queue" : v === "none" ? "" : v).split(",").filter(function (p) { return p })
+                    Text { textFormat: Text.PlainText; text: qsTr("%1 options").arg(themeManager.currentTheme); color: Theme.text; font.family: Theme.displayFamily; font.pixelSize: Theme.fontSize(15) * Theme.displayScale; font.weight: Font.DemiBold }
+                    Flow {
+                        width: parent.width
+                        spacing: 10
+                        Text { textFormat: Text.PlainText; text: qsTr("Now Playing"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                        StyledCombo {
+                            objectName: "neonNowPlaying"
+                            readonly property var modes: ["cockpit", "terminal", "classic"]
+                            width: 320
+                            model: [qsTr("Cockpit (gauges and a hologram)"), qsTr("Terminal (typed out)"), qsTr("Classic (the usual one)")]
+                            selection: Math.max(0, modes.indexOf(shell.ui.neonNowPlaying || "cockpit"))
+                            onActivated: shell.setUiValue("neonNowPlaying", modes[currentIndex])
+                            Accessible.name: qsTr("Now Playing in this theme")
+                        }
+                        Text { textFormat: Text.PlainText; text: qsTr("Cockpit colours"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                        StyledCombo {
+                            objectName: "neonTint"
+                            readonly property var modes: ["theme", "cover"]
+                            width: 200
+                            model: [qsTr("The theme's neon"), qsTr("The cover's")]
+                            selection: shell.ui.neonTint === "cover" ? 1 : 0
+                            onActivated: shell.setUiValue("neonTint", modes[currentIndex])
+                            Accessible.name: qsTr("Cockpit colours")
+                        }
+                        Text { textFormat: Text.PlainText; text: qsTr("Terminal"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); height: 38; verticalAlignment: Text.AlignVCenter }
+                        StyledCombo {
+                            objectName: "neonPhosphor"
+                            readonly property var modes: ["theme", "green", "amber"]
+                            width: 200
+                            model: [qsTr("The theme's colour"), qsTr("Green phosphor"), qsTr("Amber phosphor")]
+                            selection: Math.max(0, modes.indexOf(shell.ui.neonPhosphor || "theme"))
+                            onActivated: shell.setUiValue("neonPhosphor", modes[currentIndex])
+                            Accessible.name: qsTr("Terminal colour")
+                        }
                     }
-                    Repeater {
-                        model: ["now", "wave", "spectrum", "lyrics", "queue", "signal", "stats", "tags", "similar", "whoami", "log"]
-                        Chip {
-                            required property string modelData
-                            text: parent.names[modelData]
-                            selected: parent.shown.indexOf(modelData) >= 0
-                            onClicked: {
-                                var list = parent.shown.filter(function (p) { return p !== modelData })
-                                if (!selected) list.push(modelData)
-                                shell.setUiValue("neonTermPanes", list.length ? list.join(",") : "none")
+                    StyledCheck {
+                        objectName: "neonScanlines"
+                        text: qsTr("Scanlines and a vignette over the window")
+                        checked: Theme.neonOption("Scanlines")
+                        onToggled: shell.setUiValue("neonScanlines", checked ? "1" : "0")
+                    }
+                    StyledCheck {
+                        objectName: "neonGlitch"
+                        text: qsTr("A glitch when the song changes (and a hologram's flicker)")
+                        checked: Theme.neonOption("Glitch")
+                        enabled: !shell.reduceMotion
+                        onToggled: shell.setUiValue("neonGlitch", checked ? "1" : "0")
+                    }
+                    StyledCheck {
+                        objectName: "neonGreebles"
+                        text: qsTr("HUD details (corner brackets, ticks, status lights and readouts)")
+                        checked: Theme.neonGreebles
+                        onToggled: shell.setUiValue("neonGreebles", checked ? "1" : "0")
+                    }
+                    StyledCheck {
+                        objectName: "neonBoot"
+                        text: qsTr("A start-up sequence when the terminal opens")
+                        checked: shell.ui.neonBoot !== "0"
+                        onToggled: shell.setUiValue("neonBoot", checked ? "1" : "0")
+                    }
+                    // the terminal's panes, in the order they show (it can pin and unpin them itself too)
+                    Text { textFormat: Text.PlainText; text: qsTr("Terminal panes"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13) }
+                    Flow {
+                        objectName: "neonPanes"
+                        width: parent.width
+                        spacing: 8
+                        readonly property var names: ({ now: qsTr("Now playing"), wave: qsTr("Waveform"), spectrum: qsTr("Spectrum"), lyrics: qsTr("Lyrics"),
+                            queue: qsTr("Up next"), signal: qsTr("Signal path"), stats: qsTr("Today's stats"), tags: qsTr("Tags"), similar: qsTr("Similar artists"),
+                            whoami: qsTr("Your library"), log: qsTr("Log") })
+                        readonly property var shown: {
+                            var v = shell.ui.neonTermPanes  // (blank: the usual ones; "none": every one unpinned)
+                            return (v === undefined || v === "" ? "now,wave,spectrum,lyrics,queue" : v === "none" ? "" : v).split(",").filter(function (p) { return p })
+                        }
+                        Repeater {
+                            model: ["now", "wave", "spectrum", "lyrics", "queue", "signal", "stats", "tags", "similar", "whoami", "log"]
+                            Chip {
+                                required property string modelData
+                                text: parent.names[modelData]
+                                selected: parent.shown.indexOf(modelData) >= 0
+                                onClicked: {
+                                    var list = parent.shown.filter(function (p) { return p !== modelData })
+                                    if (!selected) list.push(modelData)
+                                    shell.setUiValue("neonTermPanes", list.length ? list.join(",") : "none")
+                                }
                             }
                         }
                     }
-                }
-                StyledCheck {
-                    objectName: "neonTitleCard"
-                    text: qsTr("A title card for each new song in the cockpit")
-                    checked: shell.ui.neonTitleCard !== "0"
-                    enabled: !shell.reduceMotion
-                    onToggled: shell.setUiValue("neonTitleCard", checked ? "1" : "0")
-                }
-                PillButton {
-                    objectName: "neonReset"
-                    text: qsTr("Reset these options")
-                    onClicked: {
-                        var keys = ["neonNowPlaying", "neonTint", "neonPhosphor", "neonScanlines", "neonGlitch", "neonGreebles",
-                                    "neonTitleCard", "neonBoot", "neonTermPanes", "neonVisStyle"]
-                        for (var i = 0; i < keys.length; i++) shell.setUiValue(keys[i], "")
-                        Nav.notify(qsTr("%1's options are back as they came").arg(themeManager.currentTheme))
+                    StyledCheck {
+                        objectName: "neonTitleCard"
+                        text: qsTr("A title card for each new song in the cockpit")
+                        checked: shell.ui.neonTitleCard !== "0"
+                        enabled: !shell.reduceMotion
+                        onToggled: shell.setUiValue("neonTitleCard", checked ? "1" : "0")
+                    }
+                    PillButton {
+                        objectName: "neonReset"
+                        text: qsTr("Reset these options")
+                        onClicked: {
+                            var keys = ["neonNowPlaying", "neonTint", "neonPhosphor", "neonScanlines", "neonGlitch", "neonGreebles",
+                                        "neonTitleCard", "neonBoot", "neonTermPanes", "neonVisStyle"]
+                            for (var i = 0; i < keys.length; i++) shell.setUiValue(keys[i], "")
+                            Nav.notify(qsTr("%1's options are back as they came").arg(themeManager.currentTheme))
+                        }
                     }
                 }
             }
