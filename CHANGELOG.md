@@ -12,6 +12,12 @@ All notable changes to this project are documented here. Format based on
   Add to queue and Save as a playlist; double-click a song to play the mix from it. Each mix card has a play
   button for playing it straight away, and its menu has Show its songs. Settings → Discover → Clicking a mix can
   make a click play it at once, as before.
+- Library health: albums without a year, albums without track numbers and songs missing their artist or album
+  each get a button to fix them all at once, like covers and genres. Years come from folder names ("Album (1997)")
+  and then MusicBrainz (the earliest release); track numbers from file names ("01 - Title", "1-03 Title") and
+  then MusicBrainz, matched by title; a missing artist or album is guessed from the folders (Artist/Album/song,
+  "Artist - Album") and "Artist - Title" file names. You check and change what was found before anything is
+  written, and only what's still missing is filled. Offline mode keeps it to the names.
 
 ### Changed
 - Settings opens about a quarter faster: what its controls say is gathered for the search the first time you

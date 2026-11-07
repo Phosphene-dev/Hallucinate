@@ -799,6 +799,14 @@ def test_everything_clickable_has_a_name_for_screen_readers(qapp, app_window):
     visit("health")
     dialog("genreReview", "genre review")
     editor.clearGenreProposals()
+    for kind, extra in (("year", {"year": 1999}), ("numbers", {"tracks": [{"path": "/x/1.mp3", "title": "One", "track_no": 1, "disc_no": 0}]}),
+                        ("untagged", {"album": "Record", "paths": ["/x/1.mp3"], "folder": "/x", "fill_artist": True, "fill_album": True})):
+        editor._fixes.update(kind=kind, proposals=[{"kind": kind, "key": album["album_key"] if kind != "untagged" else "/x",
+                                                   "title": album["album"], "artist": "A", "songs": 2, "source": "names",
+                                                   "note": "/x", **extra}])
+        editor.fixesChanged.emit()
+        dialog("fixReview", "fix review " + kind)
+    editor.clearFixProposals()
     dialog("tagEditor", "edit album", lambda d: QMetaObject.invokeMethod(d, "editAlbum", Q_ARG("QVariant", album["album_key"])))
     invoke("go", "settings")
     dialog("themeEditor", "theme editor")
@@ -1520,6 +1528,52 @@ def test_genres_found_online_are_reviewed_before_saving(qapp, app_window):
     assert saved == [[(albums[0]["album_key"], "Shoegaze")]]
     assert plain(editor.genreProposals) == []
     assert not [w for w in warnings if "GenreReview" in w or "HealthPage" in w], warnings
+
+
+def test_years_numbers_and_tags_found_are_reviewed_before_saving(qapp, app_window):
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    library, editor = objects["library"], objects["metaEditor"]
+    albums = [library.albums.get(i) for i in range(2)]
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "health"))
+    assert wait_for(lambda: window.findChild(QObject, "fixReview") is not None)
+    dlg = window.findChild(QObject, "fixReview")
+    asked = []
+
+    def fetch(kind, online):
+        asked.append(kind)
+        editor._fixes_progress.emit({"busy": False, "proposals": [], "finished": True})
+
+    editor._fetch_fixes = fetch  # (no lookups here)
+    try:
+        # the Health page offers each check's "Find all" when it has something to fix
+        assert wait_for(lambda: library.health.get("checks") is not None and not library.health["loading"])
+        library._health = {"checks": [{"id": "year", "title": "Albums without a year", "detail": "", "kind": "album",
+                                       "count": 2, "items": []}], "issues": 2, "score": 90}
+        library.healthChanged.emit()
+        assert wait_for(lambda: "findAll_year" in visible_names(window, "findAll_"))
+        QMetaObject.invokeMethod(find_item(window, "findAll_year"), "clicked")
+        assert wait_for(lambda: asked == ["year"] and not editor.fixesBusy)
+    finally:
+        del editor._fetch_fixes
+    editor._fixes.update(kind="year", proposals=[
+        {"kind": "year", "key": a["album_key"], "title": a["album"], "artist": a["album_artist"], "songs": 2,
+         "year": y, "source": "names", "note": ""} for a, y in zip(albums, (1999, 2004))])
+    editor.fixesChanged.emit()
+    QMetaObject.invokeMethod(dlg, "open")
+    assert wait_for(lambda: dlg.property("opened"))
+    assert dlg.property("kept") == 2
+    saved = []
+    editor._run = lambda fn, items: saved.append(items)  # the seeded songs aren't real files to write to
+    try:
+        QMetaObject.invokeMethod(dlg, "accept")
+        assert wait_for(lambda: saved)
+    finally:
+        del editor._run
+    assert [(i["key"], i["year"]) for i in saved[0]] == [(albums[0]["album_key"], "1999"), (albums[1]["album_key"], "2004")]
+    assert plain(editor.fixProposals) == []
+    assert not [w for w in warnings if "FixReview" in w or "HealthPage" in w], warnings
 
 
 FEATURE_LABELS = {"liked": "Liked Songs", "folders": "Folders", "stats": "Stats", "history": "History",

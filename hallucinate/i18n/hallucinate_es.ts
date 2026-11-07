@@ -2662,6 +2662,107 @@
     </message>
 </context>
 <context>
+    <name>FixReview</name>
+    <message>
+        <source>Years found</source>
+        <translation>Años encontrados</translation>
+    </message>
+    <message>
+        <source>Track numbers found</source>
+        <translation>Números de pista encontrados</translation>
+    </message>
+    <message>
+        <source>Artists and albums found</source>
+        <translation>Artistas y álbumes encontrados</translation>
+    </message>
+    <message>
+        <source>from MusicBrainz: %1</source>
+        <translation>de MusicBrainz: %1</translation>
+    </message>
+    <message>
+        <source>from MusicBrainz</source>
+        <translation>de MusicBrainz</translation>
+    </message>
+    <message>
+        <source>from its folder and file names</source>
+        <translation>de los nombres de su carpeta y archivos</translation>
+    </message>
+    <message>
+        <source>from the file and folder names</source>
+        <translation>de los nombres de archivos y carpetas</translation>
+    </message>
+    <message>
+        <source>Save %1</source>
+        <translation>Guardar %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>Saving %n change(s) to your files</source>
+        <translation>
+            <numerusform>Guardando %n cambio en tus archivos</numerusform>
+            <numerusform>Guardando %n cambios en tus archivos</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Ticked albums get this year written to every song. Change any that look wrong; MusicBrainz&apos;s is the earliest release it knows.</source>
+        <translation>Los álbumes marcados reciben este año en todas sus canciones. Cambia los que parezcan incorrectos; el de MusicBrainz es la edición más antigua que conoce.</translation>
+    </message>
+    <message>
+        <source>Ticked albums get these track numbers written to their songs, in the order shown.</source>
+        <translation>Los álbumes marcados reciben estos números de pista en sus canciones, en el orden mostrado.</translation>
+    </message>
+    <message>
+        <source>Ticked songs get the artist or album guessed from their folders and file names. Only what&apos;s missing is filled; change any guess that&apos;s wrong, or clear it to leave that tag alone.</source>
+        <translation>Las canciones marcadas reciben el artista o álbum deducido de sus carpetas y nombres de archivo. Solo se completa lo que falta; cambia cualquier suposición incorrecta o bórrala para dejar esa etiqueta como está.</translation>
+    </message>
+    <message>
+        <source>Tick all</source>
+        <translation>Marcar todos</translation>
+    </message>
+    <message>
+        <source>Untick all</source>
+        <translation>Desmarcar todos</translation>
+    </message>
+    <message>
+        <source>Discard these</source>
+        <translation>Descartar estos</translation>
+    </message>
+    <message>
+        <source>Save the change for %1</source>
+        <translation>Guardar el cambio para %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n song(s)</source>
+        <translation>
+            <numerusform>%n canción</numerusform>
+            <numerusform>%n canciones</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Year for %1</source>
+        <translation>Año de %1</translation>
+    </message>
+    <message>
+        <source>Artist</source>
+        <translation>Artista</translation>
+    </message>
+    <message>
+        <source>Leave as it is</source>
+        <translation>Dejar como está</translation>
+    </message>
+    <message>
+        <source>Artist for the songs in %1</source>
+        <translation>Artista de las canciones en %1</translation>
+    </message>
+    <message>
+        <source>Album</source>
+        <translation>Álbum</translation>
+    </message>
+    <message>
+        <source>Album for the songs in %1</source>
+        <translation>Álbum de las canciones en %1</translation>
+    </message>
+</context>
+<context>
     <name>FolderPicker</name>
     <message>
         <source>Choose your music folder</source>
@@ -3213,6 +3314,26 @@
         <translation>Editar etiquetas</translation>
     </message>
     <message>
+        <source>Reads years from folder names (offline mode is on, so MusicBrainz isn&apos;t asked). You check them before anything is saved.</source>
+        <translation>Lee los años de los nombres de carpeta (el modo sin conexión está activado, así que no se consulta MusicBrainz). Los revisas antes de guardar nada.</translation>
+    </message>
+    <message>
+        <source>Reads years from folder names, then asks MusicBrainz, about an album a second. You check them before anything is saved.</source>
+        <translation>Lee los años de los nombres de carpeta y luego consulta MusicBrainz, unos un álbum por segundo. Los revisas antes de guardar nada.</translation>
+    </message>
+    <message>
+        <source>Reads numbers from file names (offline mode is on, so MusicBrainz isn&apos;t asked). You check them before anything is saved.</source>
+        <translation>Lee los números de los nombres de archivo (el modo sin conexión está activado, así que no se consulta MusicBrainz). Los revisas antes de guardar nada.</translation>
+    </message>
+    <message>
+        <source>Reads numbers from file names, then matches titles on MusicBrainz. You check them before anything is saved.</source>
+        <translation>Lee los números de los nombres de archivo y luego busca los títulos en MusicBrainz. Los revisas antes de guardar nada.</translation>
+    </message>
+    <message>
+        <source>Guesses from folders (Artist/Album/song) and “Artist - Title” file names. You check them before anything is saved.</source>
+        <translation>Deduce a partir de las carpetas (Artista/Álbum/canción) y de nombres de archivo «Artista - Título». Los revisas antes de guardar nada.</translation>
+    </message>
+    <message>
         <source>Copy path</source>
         <translation>Copiar ruta</translation>
     </message>
@@ -3310,6 +3431,22 @@
     <message>
         <source>Asks MusicBrainz, a couple of seconds an album. You check what it finds before anything is saved.</source>
         <translation>Pregunta a MusicBrainz, un par de segundos por álbum. Revisas lo que encuentra antes de guardar nada.</translation>
+    </message>
+    <message>
+        <source>Guess all</source>
+        <translation>Deducir todo</translation>
+    </message>
+    <message>
+        <source>Find all</source>
+        <translation>Buscar todo</translation>
+    </message>
+    <message>
+        <source>Saving to your files: %1 of %2. You can carry on meanwhile.</source>
+        <translation>Guardando en tus archivos: %1 de %2. Puedes seguir mientras tanto.</translation>
+    </message>
+    <message>
+        <source>Looked at %1 of %2  ·  %3 found</source>
+        <translation>Revisados %1 de %2  ·  %3 encontrados</translation>
     </message>
     <message>
         <source>Keep the best copies</source>
@@ -4162,6 +4299,26 @@
         <source>Found genres for %1 of %2 albums. Check them, then save.</source>
         <translation>Se encontraron géneros para %1 de %2 álbumes. Revísalos y luego guarda.</translation>
     </message>
+    <message>
+        <source>Found a likely artist or album for %1 of %2 songs. Check them, then save.</source>
+        <translation>Se encontró un artista o álbum probable para %1 de %2 canciones. Revísalos y luego guarda.</translation>
+    </message>
+    <message>
+        <source>Found years for %1 of %2 albums (stopped early). Check them, then save.</source>
+        <translation>Se encontraron años para %1 de %2 álbumes (detenido antes de terminar). Revísalos y luego guarda.</translation>
+    </message>
+    <message>
+        <source>Found years for %1 of %2 albums. Check them, then save.</source>
+        <translation>Se encontraron años para %1 de %2 álbumes. Revísalos y luego guarda.</translation>
+    </message>
+    <message>
+        <source>Found track numbers for %1 of %2 albums (stopped early). Check them, then save.</source>
+        <translation>Se encontraron números de pista para %1 de %2 álbumes (detenido antes de terminar). Revísalos y luego guarda.</translation>
+    </message>
+    <message>
+        <source>Found track numbers for %1 of %2 albums. Check them, then save.</source>
+        <translation>Se encontraron números de pista para %1 de %2 álbumes. Revísalos y luego guarda.</translation>
+    </message>
 </context>
 <context>
     <name>MiniPlayer</name>
@@ -4218,6 +4375,41 @@
     <message>
         <source>Back to full window</source>
         <translation>Volver a la ventana completa</translation>
+    </message>
+</context>
+<context>
+    <name>MixPreview</name>
+    <message>
+        <source>%1 songs  ·  %2 min</source>
+        <translation>%1 canciones  ·  %2 min</translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation>Reproducir</translation>
+    </message>
+    <message>
+        <source>Shuffle</source>
+        <translation>Aleatorio</translation>
+    </message>
+    <message>
+        <source>Add to queue</source>
+        <translation>Añadir a la cola</translation>
+    </message>
+    <message>
+        <source>“%1” added to the queue</source>
+        <translation>«%1» añadida a la cola</translation>
+    </message>
+    <message>
+        <source>Save as a playlist</source>
+        <translation>Guardar como playlist</translation>
+    </message>
+    <message>
+        <source>Saved as a playlist: it stays as it is when the mix changes</source>
+        <translation>Guardada como playlist: se queda como está cuando la mezcla cambie</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Abrir</translation>
     </message>
 </context>
 <context>

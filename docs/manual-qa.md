@@ -86,6 +86,11 @@
 - [ ] The heart beside the playing song (player bar, mini player): one click likes, another unlikes, and Liked Songs
       follows; H does the same from any page and says which. No heart for a radio station or a podcast episode.
       Settings → Appearance → untick the heart: gone from both.
+- [ ] Library health, with a few albums missing years or track numbers and songs without an artist or album (in
+      Artist/Album folders, "Album (1997)" folders, "01 - Title" files): Find all / Guess all on each card shows
+      what it found; change one, untick one, save. The files get only what was ticked (check in another tag
+      editor), the counts drop, and a year or number you set yourself in the meantime isn't overwritten. Stop works
+      part way. In offline mode it still reads the names, without asking MusicBrainz.
 
 ## Release testing for 2.2.0
 
