@@ -143,6 +143,7 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 | Space · N · P | Play/pause · next · previous |
 | ← → · ↑ ↓ | Seek 5 s · volume |
 | S · R | Shuffle · repeat |
+| H · E | Like what's playing · stop after this song |
 | F · F11 · Esc | Now Playing · full screen · close |
 | Q · L | Queue · lyrics |
 | Ctrl+M | Mini player |

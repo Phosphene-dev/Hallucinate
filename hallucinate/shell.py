@@ -821,6 +821,16 @@ class DesktopShell(QObject):
         """A small remembered view choice (e.g. the Albums page layout), stored under ui/<key>."""
         return str(self._settings.value("ui/" + key, default))
 
+    @Slot(result=str)
+    def scrollPositions(self):
+        """Where the main pages' lists were left scrolled ({"albums": 1234.0, ...} as JSON), for after a restart."""
+        return str(self._settings.value("ui/scrollPositions", "{}") or "{}")
+
+    @Slot(str)
+    def saveScrollPositions(self, text):
+        # (quietly: no uiChanged, so the bindings on shell.ui aren't all read again as you scroll)
+        self._settings.setValue("ui/scrollPositions", text)
+
     @Slot(str, str)
     def setUiValue(self, key, value):
         self._settings.setValue("ui/" + key, value)

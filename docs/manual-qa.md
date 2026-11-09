@@ -74,6 +74,17 @@
 - [ ] Handoff with a typed address (on a network that blocks broadcasts), a wrong code (says so), Forget in
       Settings → Remote & web (needs pairing again), and with the firewall on (firewalld: the remote's port).
 
+## Release testing for the next release
+
+- [ ] The player bar's ⋯ → Stop after this song: ticked; the song ends and nothing plays next. E toggles it and
+      says so; Ctrl+K has it. The sleep timer's End of current track is the same tick.
+- [ ] Middle-click in Songs (and Albums, an album, Settings): the anchor appears; the mouse below scrolls down,
+      above scrolls up, faster further away; a click, the wheel or Esc stops it. Middle-click on the volume icon
+      still mutes. Settings → Appearance → untick it: a middle click does nothing.
+- [ ] Scroll far down Songs, Albums, Artists and Genres; visit other pages and come back: each is where it was,
+      on a big library too. Quit from one of them and start again: still there. Settings → Appearance → untick
+      remembering: after a restart they start at the top.
+
 ## Release testing for 2.3.0
 
 - [ ] The covers in long lists (Songs, an album, Liked) during and after a scan, on a computer with a graphics card:

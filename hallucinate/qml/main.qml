@@ -112,8 +112,12 @@ ApplicationWindow {
     property var forwardRoutes: []
     property bool replaying: false
     function sameRoute(a, b) { return a && b && JSON.stringify(a) === JSON.stringify(b) }
-    // Where each page was scrolled, by route, so going back to a page (or forward again) lands where you were
+    // Where each page was scrolled, by route, so going back to a page (or forward again) lands where you were.
+    // The main lists (Albums, Artists, Songs, Genres...) keep theirs after a restart too (#164), unless Settings →
+    // Appearance says not to.
     property var scrollMemory: ({})
+    readonly property bool keepScroll: shell.ui.keepScroll !== "0"  // i18n: keep
+    function persistable(r) { return !!r && r.kind === "section" && ["albums", "artists", "songs", "genres", "folders", "liked", "composers"].indexOf(r.name) >= 0 }
     function flickOf(item, depth) {
         if (!item || (depth || 0) > 6) return null
         if (item.contentY !== undefined && item.flickableDirection !== undefined && item.contentHeight > item.height)
@@ -124,17 +128,51 @@ ApplicationWindow {
         }
         return null
     }
+    property string savedScroll: ""
     function saveScroll() {
         var f = flickOf(stack.currentItem)
-        if (f) { var m = scrollMemory; m[JSON.stringify(route)] = f.contentY; scrollMemory = m }
+        if (!f) return
+        var m = scrollMemory
+        m[JSON.stringify(route)] = f.contentY
+        scrollMemory = m
+        if (keepScroll && persistable(route)) {
+            var kept = {}
+            for (var k in m) { var r = JSON.parse(k); if (persistable(r)) kept[r.name] = Math.round(m[k]) }
+            var text = JSON.stringify(kept)
+            if (text !== savedScroll) { savedScroll = text; shell.saveScrollPositions(text) }
+        }
     }
+    function loadScroll() {
+        if (!keepScroll) return
+        try {
+            var kept = JSON.parse(shell.scrollPositions()), m = {}
+            for (var name in kept) m[JSON.stringify({ kind: "section", name: name })] = kept[name]
+            scrollMemory = m
+            savedScroll = JSON.stringify(kept)
+        } catch (e) {}
+    }
+    // (now and then while a main list is showing, so a quit straight from it still finds it there next time)
+    Timer { interval: 2000; repeat: true; running: window.keepScroll && window.persistable(window.route) && window.active; onTriggered: window.saveScroll() }
+    // Back on a page: scrolled where it was. A big list fills in over a moment, so this keeps trying (for up to
+    // three seconds) until the list is long enough to reach the spot, and stops as soon as you scroll yourself.
     Timer {
         id: restoreScroll
         interval: 80
+        repeat: true
+        property int tries: 0
+        property real placed: -1
         onTriggered: {
             var y = window.scrollMemory[JSON.stringify(window.route)]
             var f = window.flickOf(stack.currentItem)
-            if (f && y !== undefined) f.contentY = Math.min(y, Math.max(0, f.contentHeight - f.height))
+            tries++
+            if (y === undefined || tries > 38) { stop(); return }
+            if (!f) return
+            if (placed >= 0 && Math.abs(f.contentY - placed) > 1) { stop(); return }  // moved since: yours
+            var top = f.originY - (f.topMargin || 0)
+            var bottom = Math.max(top, f.originY + f.contentHeight + (f.bottomMargin || 0) - f.height)
+            f.contentY = Math.max(top, Math.min(y, bottom))
+            placed = f.contentY
+            if (y <= bottom + 1) stop()  // there
         }
     }
     function remember(next) {
@@ -456,6 +494,13 @@ ApplicationWindow {
             exportDialog.open()
         }
         function onNotify(message) { toast.show(message) }
+        function onStopAfterPlaying() {
+            // a stop at the end of this song, or not any more (#166): the sleep timer's "end of current track"
+            if (!player.hasTrack) return
+            var on = !player.sleepAfterTrack
+            player.setSleepAfterTrack(on)
+            toast.show(on ? qsTr("Stops after this song") : qsTr("Plays on after this song"))
+        }
         function onLikePlaying(say) {
             // a song in the library only: a station's or an episode's "song" can't be liked
             if (!player.hasTrack || (player.current.kind || "").length || !window.featureOn("liked")) return
@@ -1112,7 +1157,7 @@ ApplicationWindow {
                     StackView {
                         id: stack
                         objectName: "pageStack"
-                        onCurrentItemChanged: restoreScroll.restart()
+                        onCurrentItemChanged: { restoreScroll.tries = 0; restoreScroll.placed = -1; restoreScroll.restart() }
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         clip: true
@@ -1185,6 +1230,7 @@ ApplicationWindow {
     Shortcut { sequence: "S"; enabled: !window.typing; onActivated: player.toggleShuffle() }
     Shortcut { sequence: "R"; enabled: !window.typing; onActivated: player.cycleRepeat() }
     Shortcut { sequence: "H"; enabled: !window.typing; onActivated: Nav.likePlaying(true) }  // (a heart)
+    Shortcut { sequence: "E"; enabled: !window.typing; onActivated: Nav.stopAfterPlaying() }  // (the end of this song)
     Shortcut { sequence: "Q"; enabled: !window.typing; onActivated: { window.queueOpen = !window.queueOpen; if (window.queueOpen) window.lyricsOpen = false } }
     Shortcut { sequence: "Ctrl+M"; enabled: !welcomeView.open; onActivated: shell.toggleMini() }
     Shortcut {
@@ -1237,6 +1283,17 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+Q"; onActivated: Qt.quit() }
 
     NowPlayingView { id: nowPlaying; anchors.fill: parent }
+    // Middle-click autoscroll (#165): a middle click that nothing under it took (it's on the window itself, so
+    // the volume button's middle click still mutes) starts it on the list or page under the pointer
+    TapHandler {
+        acceptedButtons: Qt.MiddleButton
+        enabled: shell.ui.middleAutoscroll !== "0" && !autoScroll.active  // i18n: keep
+        onTapped: function (point) {
+            var pos = point.scenePosition
+            autoScroll.start(autoScroll.scrollableAt(window.contentItem, pos.x, pos.y), pos.x, pos.y)
+        }
+    }
+    AutoScroll { id: autoScroll; anchors.fill: parent }
     Welcome { id: welcomeView; anchors.fill: parent; onFinished: { window.go("home"); window.contentItem.forceActiveFocus() } }
 
     Rectangle {
@@ -1263,6 +1320,7 @@ ApplicationWindow {
 
     Component.onCompleted: {
         PickDrag.dropAt = function () { carried.Drag.drop() }  // (see the carried label)
+        loadScroll()
         window.contentItem.layer.effect = cornerEffect  // the rounded corners' mask (below)
         window.contentItem.layer.enabled = Qt.binding(function () { return window.cornerRadius > 0 })
         go(shell.openingPage())
