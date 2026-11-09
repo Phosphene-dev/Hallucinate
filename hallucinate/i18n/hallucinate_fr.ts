@@ -1404,6 +1404,18 @@
         <translation>Lecture  ·  H</translation>
     </message>
     <message>
+        <source>Play on after this song</source>
+        <translation>Continuer après ce titre</translation>
+    </message>
+    <message>
+        <source>Stop after this song</source>
+        <translation>Arrêter après ce titre</translation>
+    </message>
+    <message>
+        <source>Playback  ·  E</source>
+        <translation>Lecture  ·  E</translation>
+    </message>
+    <message>
         <source>Radio off</source>
         <translation>Désactiver la radio</translation>
     </message>
@@ -5812,6 +5824,10 @@
         <translation>Lire sur</translation>
     </message>
     <message>
+        <source>Stop after this song</source>
+        <translation>Arrêter après ce titre</translation>
+    </message>
+    <message>
         <source>Podcast speed</source>
         <translation>Vitesse des podcasts</translation>
     </message>
@@ -8894,6 +8910,14 @@
     <message>
         <source>On this day</source>
         <translation>Ce jour-là</translation>
+    </message>
+    <message>
+        <source>Remember where Albums, Artists, Songs, Genres and other lists were scrolled, also after a restart</source>
+        <translation>Retenir où en étaient Albums, Artistes, Titres, Genres et les autres listes, même après un redémarrage</translation>
+    </message>
+    <message>
+        <source>Middle-click a list to scroll it by moving the mouse (any click stops it)</source>
+        <translation>Clic du milieu sur une liste pour la faire défiler en bougeant la souris (un clic l&apos;arrête)</translation>
     </message>
     <message>
         <source>Choose Home&apos;s sections and their order</source>
@@ -13831,6 +13855,14 @@
     <message>
         <source>%1 removed from “%2”</source>
         <translation>%1 retiré de «&#xa0;%2&#xa0;»</translation>
+    </message>
+    <message>
+        <source>Stops after this song</source>
+        <translation>S&apos;arrêtera après ce titre</translation>
+    </message>
+    <message>
+        <source>Plays on after this song</source>
+        <translation>Continuera après ce titre</translation>
     </message>
     <message>
         <source>Added to Liked Songs</source>

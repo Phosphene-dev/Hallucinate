@@ -1404,6 +1404,18 @@
         <translation>Reproducción  ·  H</translation>
     </message>
     <message>
+        <source>Play on after this song</source>
+        <translation>Seguir después de esta canción</translation>
+    </message>
+    <message>
+        <source>Stop after this song</source>
+        <translation>Parar después de esta canción</translation>
+    </message>
+    <message>
+        <source>Playback  ·  E</source>
+        <translation>Reproducción  ·  E</translation>
+    </message>
+    <message>
         <source>Radio off</source>
         <translation>Desactivar radio</translation>
     </message>
@@ -5812,6 +5824,10 @@
         <translation>Reproducir en</translation>
     </message>
     <message>
+        <source>Stop after this song</source>
+        <translation>Parar después de esta canción</translation>
+    </message>
+    <message>
         <source>Podcast speed</source>
         <translation>Velocidad del pódcast</translation>
     </message>
@@ -8538,6 +8554,14 @@
     <message>
         <source>On this day</source>
         <translation>Tal día como hoy</translation>
+    </message>
+    <message>
+        <source>Remember where Albums, Artists, Songs, Genres and other lists were scrolled, also after a restart</source>
+        <translation>Recordar dónde se quedaron Álbumes, Artistas, Canciones, Géneros y otras listas, también tras reiniciar</translation>
+    </message>
+    <message>
+        <source>Middle-click a list to scroll it by moving the mouse (any click stops it)</source>
+        <translation>Clic central en una lista para desplazarla moviendo el ratón (cualquier clic lo detiene)</translation>
     </message>
     <message>
         <source>Choose Home&apos;s sections and their order</source>
@@ -13756,6 +13780,14 @@
     <message>
         <source>Playlist</source>
         <translation>Playlist</translation>
+    </message>
+    <message>
+        <source>Stops after this song</source>
+        <translation>Se detendrá después de esta canción</translation>
+    </message>
+    <message>
+        <source>Plays on after this song</source>
+        <translation>Seguirá después de esta canción</translation>
     </message>
     <message>
         <source>Added to Liked Songs</source>
