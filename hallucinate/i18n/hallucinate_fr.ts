@@ -3839,6 +3839,26 @@
         <translation>Personnaliser l&apos;accueil…</translation>
     </message>
     <message>
+        <source>Play</source>
+        <translation>Lire</translation>
+    </message>
+    <message>
+        <source>Shuffle</source>
+        <translation>Aléatoire</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Ouvrir</translation>
+    </message>
+    <message>
+        <source>Play next</source>
+        <translation>Lire ensuite</translation>
+    </message>
+    <message>
+        <source>Go to Internet radio</source>
+        <translation>Aller à la radio internet</translation>
+    </message>
+    <message>
         <source>See all</source>
         <translation>Tout voir</translation>
     </message>
@@ -4066,6 +4086,13 @@
     <message>
         <source>As the system (%1)</source>
         <translation>Comme le système (%1)</translation>
+    </message>
+</context>
+<context>
+    <name>LetterRail</name>
+    <message>
+        <source>Jump to a letter</source>
+        <translation>Aller à une lettre</translation>
     </message>
 </context>
 <context>
@@ -8914,6 +8941,10 @@
     <message>
         <source>Remember where Albums, Artists, Songs, Genres and other lists were scrolled, also after a restart</source>
         <translation>Retenir où en étaient Albums, Artistes, Titres, Genres et les autres listes, même après un redémarrage</translation>
+    </message>
+    <message>
+        <source>A–Z letters beside long lists (Albums, Artists, Songs, Genres), to jump to a letter</source>
+        <translation>Lettres A–Z à côté des longues listes (Albums, Artistes, Titres, Genres), pour aller à une lettre</translation>
     </message>
     <message>
         <source>Middle-click a list to scroll it by moving the mouse (any click stops it)</source>

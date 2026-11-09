@@ -84,6 +84,13 @@
 - [ ] Scroll far down Songs, Albums, Artists and Genres; visit other pages and come back: each is where it was,
       on a big library too. Quit from one of them and start again: still there. Settings → Appearance → untick
       remembering: after a restart they start at the top.
+- [ ] The A–Z rail: Songs (by title), Albums (A–Z), Artists (A–Z) and Genres (A–Z) on a big library: letters at
+      the right; click and drag along them, the list follows and the letter shows large. Another sort: gone.
+      Settings → Appearance → untick: gone everywhere. Nothing in a row is covered by it.
+- [ ] Home: right-click a playlist card (Play, Shuffle, Open), an episode, a station; point at the random album,
+      listening card and facts: a ⋯ in the corner opens the section's menu.
+- [ ] Library health: Find all years, then Find all track numbers before reviewing the years: both cards offer
+      Review, each with its own. Saving a few hundred albums' track numbers takes seconds, not a minute.
 
 ## Release testing for 2.3.0
 

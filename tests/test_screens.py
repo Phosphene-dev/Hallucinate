@@ -3393,3 +3393,75 @@ def test_lists_are_found_where_they_were_left_after_a_restart(qapp, app_window):
     finally:
         shell.setUiValue("keepScroll", "1")
     assert not [w for w in warnings if "main.qml" in w], warnings[:3]
+
+
+@pytest.mark.parametrize("app_window", ["varied"], indirect=True)
+def test_a_letter_rail_beside_a_long_list_jumps_to_a_letter(qapp, app_window):
+    """Songs in title order: an A–Z rail beside the list (in a gutter of its own) jumps to where a letter
+    starts; sorted another way, or switched off in Settings → Appearance, it's gone."""
+    from conftest import wait_for
+    from PySide6.QtCore import QPoint
+    from PySide6.QtTest import QTest
+
+    window, objects, warnings = app_window
+    shell, library = objects["shell"], objects["library"]
+    window.resize(1100, 420)
+    # a long list in title order, a song for every few letters
+    base = library.songs.get(0)
+    library.songs.set_items([dict(base, path=f"/x/{c}{i}.flac", title=f"{c}ong {i}") for c in "ACEGJMPSVY" for i in range(8)])
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "songs"))
+    assert wait_for(lambda: "letterRail" in visible_names(window, "letterRail"))
+    rail = find_item(window, "letterRail")
+    marks = plain(rail.property("marks"))
+    assert len(marks) > 2 and marks == plain(library.songs.letterIndex("title"))
+    last = marks[-1]
+    # a click at the bottom of the rail: the last letter's first song at the top of the list
+    pos = rail.mapToScene(QPointF(rail.property("width") / 2, rail.property("height") - 2))
+    QTest.mouseClick(window, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QPoint(int(pos.x()), int(pos.y())))
+    view = rail.property("view")
+    assert wait_for(lambda: view.property("contentY") > 0)
+    assert rail.property("current") == last["letter"]
+    shell.setUiValue("letterRail", "0")
+    try:
+        assert wait_for(lambda: "letterRail" not in visible_names(window, "letterRail"))
+    finally:
+        shell.setUiValue("letterRail", "1")
+    library.setSongSort("artist")
+    try:
+        assert wait_for(lambda: "letterRail" not in visible_names(window, "letterRail"))
+    finally:
+        library.setSongSort("title")
+    assert not [w for w in warnings if "LetterRail" in w], warnings[:3]
+
+
+def test_home_cards_have_their_menus_and_the_headless_sections_a_button(qapp, app_window):
+    """A playlist card's right-click brings Play, Shuffle and Open; the random album, listening card and facts
+    have a ⋯ (shown while pointed at) for their section's menu."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    user_lib = objects["userLib"]
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "home"))
+    stack = window.findChild(QObject, "pageStack")
+    wait_for(lambda: False, timeout=0.5)
+    page = stack.property("currentItem")
+    played = []
+    real = user_lib._play
+    user_lib._play = lambda tracks, index=0: played.append(len(tracks))
+    try:
+        menu = page.findChild(QObject, "homePlaylistMenu")
+        assert menu is not None
+        pls = plain(user_lib.home).get("playlists") or []
+        if pls:
+            menu.setProperty("playlist", pls[0])
+            QMetaObject.invokeMethod(menu, "popup")
+            assert wait_for(lambda: menu.property("visible"))
+            QMetaObject.invokeMethod(menu, "close")
+            user_lib.playPlaylistById(pls[0]["id"], False)
+            assert wait_for(lambda: played)  # (read on the worker, then played)
+    finally:
+        user_lib._play = real
+    for name in ("random", "listening", "facts"):
+        assert find_item(window, "homeSectionMenu_" + name) is not None, name
+    page = None
+    assert not [w for w in warnings if "HomePage" in w], warnings[:3]

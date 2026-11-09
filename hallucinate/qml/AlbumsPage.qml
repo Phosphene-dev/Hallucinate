@@ -56,9 +56,20 @@ Item {
     }
 
     Loader {
+        id: albumsLoader
         anchors { top: header.bottom; topMargin: 14; left: parent.left; right: parent.right; bottom: parent.bottom }
+        anchors.rightMargin: albumsRail.shown ? albumsRail.width + 6 : 0
         sourceComponent: page.view === "colour" ? wallView : page.view === "timeline" ? timelineView
                        : page.view === "genres" ? genresView : gridView
+    }
+
+    LetterRail {
+        id: albumsRail
+        anchors { top: albumsLoader.top; bottom: albumsLoader.bottom; right: parent.right; rightMargin: 4 }
+        view: page.view === "grid" ? albumsLoader.item : null
+        model: library.albums
+        field: "album"
+        active: page.view === "grid"
     }
 
     Component {

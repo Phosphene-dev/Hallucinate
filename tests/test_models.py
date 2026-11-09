@@ -16,3 +16,15 @@ def test_a_playlists_length_and_repeats(qapp):
     assert m.paths()[:2] == ["/m/0.flac", "/m/1.flac"]
     m.set_items([{"path": "/x", "duration": None}])
     assert m.summary() == {"seconds": 0.0, "twice": 0}
+
+
+def test_letter_index_finds_where_each_letter_starts():
+    """The A–Z rail's jumps: each letter's first row, folded the way the library sorts (accents and case set
+    aside), anything but a letter under "#", each letter once."""
+    from hallucinate.models import DictModel
+
+    m = DictModel(["title"])
+    m.set_items([{"title": t} for t in ["1999", "(Intro)", "Abba", "apple", "Émile", "Ecco", "zed", ""]])
+    assert m.letterIndex("title") == [{"letter": "#", "row": 0}, {"letter": "A", "row": 2},
+                                      {"letter": "E", "row": 4}, {"letter": "Z", "row": 6}]
+    assert DictModel(["title"]).letterIndex("title") == []

@@ -140,6 +140,24 @@ class DictModel(QAbstractListModel):
     def paths(self):
         return [item.get("path") for item in self._items]
 
+    @Slot(str, result="QVariantList")
+    def letterIndex(self, field):
+        """Where each letter starts in a list kept in A–Z order of `field`: [{"letter", "row"}], in order, the
+        letter as the library sorts it (accents and case set aside; anything but a letter is "#"). For the A–Z
+        rail beside long lists."""
+        from .core.db import fold
+
+        out, last = [], None
+        for row, item in enumerate(self._items):
+            text = fold(str(item.get(field) or "")).lstrip()
+            first = text[:1]
+            letter = first.upper() if first.isalpha() else "#"
+            if letter != last:
+                if all(m["letter"] != letter for m in out):  # (a letter only once: where it first comes)
+                    out.append({"letter": letter, "row": row})
+                last = letter
+        return out
+
     @Slot(int, result="QVariantMap")
     def get(self, i):
         return dict(self._items[i]) if 0 <= i < len(self._items) else {}

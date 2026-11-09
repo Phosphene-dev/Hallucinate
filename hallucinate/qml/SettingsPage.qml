@@ -535,6 +535,12 @@ Item {
                     onToggled: { shell.setUiValue("keepScroll", checked ? "1" : "0"); if (!checked) shell.saveScrollPositions("{}") }  // i18n: keep
                 }
                 StyledCheck {
+                    objectName: "letterRail"
+                    text: qsTr("A–Z letters beside long lists (Albums, Artists, Songs, Genres), to jump to a letter")
+                    checked: shell.ui.letterRail !== "0"  // i18n: keep
+                    onToggled: shell.setUiValue("letterRail", checked ? "1" : "0")  // i18n: keep
+                }
+                StyledCheck {
                     objectName: "middleAutoscroll"
                     text: qsTr("Middle-click a list to scroll it by moving the mouse (any click stops it)")
                     checked: shell.ui.middleAutoscroll !== "0"  // i18n: keep

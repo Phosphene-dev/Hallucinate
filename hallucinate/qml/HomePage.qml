@@ -143,6 +143,19 @@ Item {
                             acceptedButtons: Qt.RightButton
                             onTapped: page.sectionMenu(slot.modelData)
                         }
+                        // the cards with no heading of their own: their ⋯ in the corner while pointed at
+                        HoverHandler { id: slotHover }
+                        IconButton {
+                            readonly property bool headless: ["random", "listening", "facts"].indexOf(slot.modelData) >= 0
+                            objectName: "homeSectionMenu_" + slot.modelData
+                            visible: headless && (slotHover.hovered || activeFocus)
+                            anchors { top: parent.top; right: parent.right; margins: 4 }
+                            z: 5
+                            icon: "more"
+                            size: 16
+                            tip: qsTr("Options for this section")
+                            onClicked: page.sectionMenu(slot.modelData)
+                        }
                     }
                 }
             }
@@ -247,6 +260,27 @@ Item {
         MenuItem { objectName: "homeCustomize"; text: qsTr("Customize Home…"); icon.name: "settings"; onTriggered: page.customize() }
     }
     MixPreview { id: mixPreview }
+    // The right-click menus of Home's own cards (an album card brings its usual menu with it)
+    Menu {
+        id: cardMenu
+        objectName: "homePlaylistMenu"
+        property var playlist: ({})
+        MenuItem { text: qsTr("Play"); icon.name: "play"; onTriggered: userLib.playPlaylistById(cardMenu.playlist.id, false) }
+        MenuItem { text: qsTr("Shuffle"); icon.name: "shuffle"; onTriggered: userLib.playPlaylistById(cardMenu.playlist.id, true) }
+        MenuItem {
+            text: qsTr("Open"); icon.name: "playlist"
+            onTriggered: cardMenu.playlist.id < 0 ? Nav.openLiked() : Nav.openPlaylist(cardMenu.playlist.id)
+        }
+    }
+    Menu {
+        id: stationCardMenu
+        objectName: "homeStationMenu"
+        property int stationId: -1
+        MenuItem { text: qsTr("Play"); icon.name: "play"; onTriggered: stations.play(stationCardMenu.stationId) }
+        MenuItem { text: qsTr("Play next"); icon.name: "next"; onTriggered: stations.playNext(stationCardMenu.stationId) }
+        MenuItem { text: qsTr("Go to Internet radio"); icon.name: "radio"; onTriggered: Nav.openPage("stations") }
+    }
+    Loader { id: episodeMenuLoader; active: page.hasPodcasts; sourceComponent: Component { EpisodeMenu {} } }
 
     // A shelf's heading: its title, a line under it, "See all" where there's a page for more, and its menu
     component ShelfHeader: Item {
@@ -395,6 +429,7 @@ Item {
                 fallback: modelData.id < 0 ? "♥" : "♪"
                 onOpened: modelData.id < 0 ? Nav.openLiked() : Nav.openPlaylist(modelData.id)
                 onPlay: userLib.playPlaylistById(modelData.id, false)
+                onMenu: { cardMenu.playlist = modelData; cardMenu.popup() }
             }
         }
     }
@@ -405,11 +440,13 @@ Item {
             model: podcasts.inProgress
             delegate: MosaicCard {
                 required property var model
+                required property int index
                 arts: model.artUrl ? [model.artUrl] : []
                 title: model.title
                 subtitle: model.podcast + (model.progress > 0 ? "  ·  " + qsTr("%1% heard").arg(Math.round(model.progress * 100)) : "")
                 onOpened: Nav.openPodcast(model.podcast_id)
                 onPlay: podcasts.play(model.id)
+                onMenu: if (episodeMenuLoader.item) episodeMenuLoader.item.showFor(podcasts.inProgress.get(index), true)
             }
         }
     }
@@ -426,6 +463,7 @@ Item {
                 fallback: "📻"
                 onOpened: stations.play(model.id)
                 onPlay: stations.play(model.id)
+                onMenu: { stationCardMenu.stationId = model.id; stationCardMenu.popup() }
             }
         }
     }

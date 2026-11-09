@@ -70,11 +70,19 @@ Item {
             Accessible.name: page.composers ? qsTr("Order of the composers") : qsTr("Order of the artists")
         }
     }
+    LetterRail {
+        id: artistsRail
+        anchors { top: grid.top; bottom: grid.bottom; right: parent.right; rightMargin: 4 }
+        view: grid
+        model: library.artists
+        field: "name"
+        active: page.order === "az" && !page.composers
+    }
     GridView {
         WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: grid
         anchors { top: title.bottom; topMargin: 14; left: parent.left; right: parent.right; bottom: parent.bottom }
-        anchors.leftMargin: 20; anchors.rightMargin: 8
+        anchors.leftMargin: 20; anchors.rightMargin: 8 + (artistsRail.shown ? artistsRail.width + 4 : 0)
         cellWidth: Math.floor((width - 12) / page.cols)
         cellHeight: cellWidth + 60
         clip: true

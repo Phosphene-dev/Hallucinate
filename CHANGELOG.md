@@ -12,12 +12,28 @@ All notable changes to this project are documented here. Format based on
 - Middle-click autoscroll (#165), as in a web browser: middle-click a list or page and move the mouse below or
   above the click to scroll it, faster the further away; any click, the wheel or Esc stops it. Settings →
   Appearance can switch it off. The volume button's middle click still mutes.
+- An A–Z rail beside long lists in alphabetical order (Albums, Artists, Songs, Genres): click or drag along it to
+  jump to a letter, shown large while you do. It has a gutter of its own, so it never covers a row's buttons, and
+  Settings → Appearance can switch it off.
+- Home: a playlist card's right-click has Play, Shuffle and Open, an episode's its usual menu, a station's Play,
+  Play next and Go to Internet radio; the random album, listening card and facts show a ⋯ for their section's
+  menu while pointed at (it was right-click only).
 
 ### Changed
 - Albums, Artists, Songs, Genres and Liked Songs are found where they were scrolled after a restart too
   (#164), and going back to one of them no longer sometimes lands at the top: on a big library the list hadn't
   filled in yet when its place was put back, so it couldn't get there. It now keeps trying until it can (and
   stops as soon as you scroll yourself). Settings → Appearance can switch the remembering off.
+
+### Fixed
+- Library health's fix-alls and the album editor's MusicBrainz tags saved a song at a time, each one looking over
+  every album's cover first: a few hundred albums' track numbers took most of a minute on a big library before any
+  tag was written. Each album's songs are now written and read back together.
+- Playing a playlist from its Home card read the songs while the window waited (a moment's freeze with a few
+  thousand liked songs); they're read in the background now.
+- Library health: finding one kind of fix (track numbers) threw away another's found and not yet reviewed (years);
+  each keeps its own until reviewed.
+- Years from folder names: an album split into CD1 and CD2 folders read only the first disc's album folder.
 
 ## [2.3.0] - 2026-11-07
 
