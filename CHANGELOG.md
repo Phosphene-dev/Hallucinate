@@ -14,7 +14,7 @@ All notable changes to this project are documented here. Format based on
   Appearance can switch it off. The volume button's middle click still mutes.
 
 ### Changed
-- Albums, Artists, Songs, Genres, Folders and Liked Songs are found where they were scrolled after a restart too
+- Albums, Artists, Songs, Genres and Liked Songs are found where they were scrolled after a restart too
   (#164), and going back to one of them no longer sometimes lands at the top: on a big library the list hadn't
   filled in yet when its place was put back, so it couldn't get there. It now keeps trying until it can (and
   stops as soon as you scroll yourself). Settings → Appearance can switch the remembering off.

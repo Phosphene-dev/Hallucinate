@@ -114,10 +114,10 @@ ApplicationWindow {
     function sameRoute(a, b) { return a && b && JSON.stringify(a) === JSON.stringify(b) }
     // Where each page was scrolled, by route, so going back to a page (or forward again) lands where you were.
     // The main lists (Albums, Artists, Songs, Genres...) keep theirs after a restart too (#164), unless Settings →
-    // Appearance says not to.
+    // Appearance says not to. (Not Folders: where it was depends on the folder open, and it starts at the top one.)
     property var scrollMemory: ({})
     readonly property bool keepScroll: shell.ui.keepScroll !== "0"  // i18n: keep
-    function persistable(r) { return !!r && r.kind === "section" && ["albums", "artists", "songs", "genres", "folders", "liked", "composers"].indexOf(r.name) >= 0 }
+    function persistable(r) { return !!r && r.kind === "section" && ["albums", "artists", "songs", "genres", "liked", "composers"].indexOf(r.name) >= 0 }
     function flickOf(item, depth) {
         if (!item || (depth || 0) > 6) return null
         if (item.contentY !== undefined && item.flickableDirection !== undefined && item.contentHeight > item.height)
