@@ -347,7 +347,9 @@ Item {
                             id: fixRow
                             readonly property bool mine: metaEditor.fixKind === card.modelData.id
                             readonly property bool working: mine && (metaEditor.fixesBusy || metaEditor.fixesSaving)
-                            readonly property bool waiting: mine && !metaEditor.fixesBusy && metaEditor.fixProposals.length > 0
+                            // (each check keeps what it found until it's reviewed: finding another check's doesn't lose them)
+                            readonly property int found: metaEditor.fixCounts[card.modelData.id] || 0
+                            readonly property bool waiting: !(mine && metaEditor.fixesBusy) && found > 0
                             visible: (card.modelData.id === "year" || card.modelData.id === "numbers" || card.modelData.id === "untagged")
                                      && (card.modelData.count > 0 || working || waiting)
                             spacing: 12
@@ -367,8 +369,8 @@ Item {
                                 visible: fixRow.waiting
                                 primary: true
                                 height: 32
-                                text: qsTr("Review %1 found…").arg(Theme.num(metaEditor.fixProposals.length))
-                                onClicked: fixReview.open()
+                                text: qsTr("Review %1 found…").arg(Theme.num(fixRow.found))
+                                onClicked: { metaEditor.reviewFixes(card.modelData.id); fixReview.open() }
                             }
                             Text {
                                 textFormat: Text.PlainText

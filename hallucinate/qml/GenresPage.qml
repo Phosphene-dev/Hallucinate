@@ -88,12 +88,20 @@ Item {
             onTextChanged: page.filter = text.trim().toLowerCase()
             Keys.onEscapePressed: text = ""
         }
+        LetterRail {
+            id: genresRail
+            anchors { top: genreList.top; bottom: genreList.bottom; right: parent.right; rightMargin: 2 }
+            view: genreList
+            model: library.genresAz
+            field: "name"
+            active: page.order === "az" && page.filter.length === 0
+        }
         ListView {
             WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
             id: genreList
             objectName: "genresList"
             anchors { top: filterField.bottom; topMargin: 10; left: parent.left; right: parent.right; bottom: parent.bottom }
-            anchors.leftMargin: 14; anchors.rightMargin: 6
+            anchors.leftMargin: 14; anchors.rightMargin: 6 + (genresRail.shown ? genresRail.width + 4 : 0)
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             model: page.genreModel

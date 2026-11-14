@@ -33,11 +33,14 @@ def year_from_names(paths):
     is read first; the file names only if it has none, and then all of them must say the same."""
     if not paths:
         return 0
-    folders = {os.path.basename(os.path.dirname(p)) for p in paths}
+    folders = set()
+    for p in paths:
+        folder = os.path.dirname(p)
+        if DISC_FOLDER.match(os.path.basename(folder)):  # "CD1": the album's folder is the one above it
+            folder = os.path.dirname(folder)
+        folders.add(os.path.basename(folder))
     years = set()
     for folder in folders:
-        if DISC_FOLDER.match(folder):  # "CD1": the album's folder is the one above
-            folder = os.path.basename(os.path.dirname(os.path.dirname(next(iter(paths)))))
         found = {int(y) for y in YEAR_IN_NAME.findall(folder)}
         if len(found) == 1:
             years |= found

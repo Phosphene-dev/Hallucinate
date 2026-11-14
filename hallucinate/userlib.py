@@ -82,6 +82,7 @@ class UserLibrary(QObject):
     rulesCounted = Signal(str, int)  # (rules JSON, songs it matches now or -1): countRulesAsync's answer
     _refreshed = Signal(object)
     _playlist_loaded = Signal(object)
+    _card_loaded = Signal(object)  # a playlist's songs, read to play it from its Home card
     _stats_loaded = Signal(object)
 
     def __init__(self, db_path, player=None, parent=None):
@@ -142,6 +143,7 @@ class UserLibrary(QObject):
         self._player_import_busy = False
         self._refreshed.connect(self._apply_refresh)
         self._playlist_loaded.connect(self._apply_playlist)
+        self._card_loaded.connect(self._play_card)
         self._smart_loaded.connect(self._apply_smart)
         self._smart_id = -1
         self._smart_open = {}  # smart playlist id -> how many of its pages are open
@@ -852,9 +854,18 @@ class UserLibrary(QObject):
     @Slot(int, bool)
     def playPlaylistById(self, pid, shuffle=False):
         """A playlist from its card (Home), without opening it; -1 is Liked Songs."""
+        # (read on the worker: a few thousand liked songs took the window a moment it froze for)
         def read(db):
-            return decorate(db.liked_tracks() if pid < 0 else db.playlist_tracks(pid))
-        tracks = self._reader.submit(read).result(timeout=10)
+            try:
+                self._card_loaded.emit((decorate(db.liked_tracks() if pid < 0 else db.playlist_tracks(pid)), bool(shuffle)))
+            except Exception:  # noqa: BLE001
+                logger.exception("Couldn't read a playlist to play")
+
+        self._reader.submit(read)
+
+    @Slot(object)
+    def _play_card(self, payload):
+        tracks, shuffle = payload
         if not tracks or self._player is None:
             return
         if shuffle:

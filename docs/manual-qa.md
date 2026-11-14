@@ -74,6 +74,24 @@
 - [ ] Handoff with a typed address (on a network that blocks broadcasts), a wrong code (says so), Forget in
       Settings → Remote & web (needs pairing again), and with the firewall on (firewalld: the remote's port).
 
+## Release testing for 2.4.0
+
+- [ ] The player bar's ⋯ → Stop after this song: ticked; the song ends and nothing plays next. E toggles it and
+      says so; Ctrl+K has it. The sleep timer's End of current track is the same tick.
+- [ ] Middle-click in Songs (and Albums, an album, Settings): the anchor appears; the mouse below scrolls down,
+      above scrolls up, faster further away; a click, the wheel or Esc stops it. Middle-click on the volume icon
+      still mutes. Settings → Appearance → untick it: a middle click does nothing.
+- [ ] Scroll far down Songs, Albums, Artists and Genres; visit other pages and come back: each is where it was,
+      on a big library too. Quit from one of them and start again: still there. Settings → Appearance → untick
+      remembering: after a restart they start at the top.
+- [ ] The A–Z rail: Songs (by title), Albums (A–Z), Artists (A–Z) and Genres (A–Z) on a big library: letters at
+      the right; click and drag along them, the list follows and the letter shows large. Another sort: gone.
+      Settings → Appearance → untick: gone everywhere. Nothing in a row is covered by it.
+- [ ] Home: right-click a playlist card (Play, Shuffle, Open), an episode, a station; point at the random album,
+      listening card and facts: a ⋯ in the corner opens the section's menu.
+- [ ] Library health: Find all years, then Find all track numbers before reviewing the years: both cards offer
+      Review, each with its own. Saving a few hundred albums' track numbers takes seconds, not a minute.
+
 ## Release testing for 2.3.0
 
 - [ ] The covers in long lists (Songs, an album, Liked) during and after a scan, on a computer with a graphics card:

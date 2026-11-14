@@ -1404,6 +1404,18 @@
         <translation>Reproducción  ·  H</translation>
     </message>
     <message>
+        <source>Play on after this song</source>
+        <translation>Seguir después de esta canción</translation>
+    </message>
+    <message>
+        <source>Stop after this song</source>
+        <translation>Parar después de esta canción</translation>
+    </message>
+    <message>
+        <source>Playback  ·  E</source>
+        <translation>Reproducción  ·  E</translation>
+    </message>
+    <message>
         <source>Radio off</source>
         <translation>Desactivar radio</translation>
     </message>
@@ -3827,6 +3839,26 @@
         <translation>Personalizar Inicio…</translation>
     </message>
     <message>
+        <source>Play</source>
+        <translation>Reproducir</translation>
+    </message>
+    <message>
+        <source>Shuffle</source>
+        <translation>Aleatorio</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Abrir</translation>
+    </message>
+    <message>
+        <source>Play next</source>
+        <translation>Reproducir a continuación</translation>
+    </message>
+    <message>
+        <source>Go to Internet radio</source>
+        <translation>Ir a Radio por internet</translation>
+    </message>
+    <message>
         <source>See all</source>
         <translation>Ver todo</translation>
     </message>
@@ -4054,6 +4086,13 @@
     <message>
         <source>As the system (%1)</source>
         <translation>Como el sistema (%1)</translation>
+    </message>
+</context>
+<context>
+    <name>LetterRail</name>
+    <message>
+        <source>Jump to a letter</source>
+        <translation>Saltar a una letra</translation>
     </message>
 </context>
 <context>
@@ -5810,6 +5849,10 @@
     <message>
         <source>Play on</source>
         <translation>Reproducir en</translation>
+    </message>
+    <message>
+        <source>Stop after this song</source>
+        <translation>Parar después de esta canción</translation>
     </message>
     <message>
         <source>Podcast speed</source>
@@ -8538,6 +8581,18 @@
     <message>
         <source>On this day</source>
         <translation>Tal día como hoy</translation>
+    </message>
+    <message>
+        <source>Remember where Albums, Artists, Songs, Genres and other lists were scrolled, also after a restart</source>
+        <translation>Recordar dónde se quedaron Álbumes, Artistas, Canciones, Géneros y otras listas, también tras reiniciar</translation>
+    </message>
+    <message>
+        <source>A–Z letters beside long lists (Albums, Artists, Songs, Genres), to jump to a letter</source>
+        <translation>Letras A–Z junto a las listas largas (Álbumes, Artistas, Canciones, Géneros), para saltar a una letra</translation>
+    </message>
+    <message>
+        <source>Middle-click a list to scroll it by moving the mouse (any click stops it)</source>
+        <translation>Clic central en una lista para desplazarla moviendo el ratón (cualquier clic lo detiene)</translation>
     </message>
     <message>
         <source>Choose Home&apos;s sections and their order</source>
@@ -13256,6 +13311,18 @@
 <context>
     <name>WhatsNew</name>
     <message>
+        <source>Stop after this song: the player bar&apos;s ⋯ menu, or press E.</source>
+        <translation>Parar después de esta canción: el menú ⋯ de la barra del reproductor, o pulsa E.</translation>
+    </message>
+    <message>
+        <source>Long lists have an A–Z rail to jump to a letter, and middle-click scrolls them as you move the mouse.</source>
+        <translation>Las listas largas tienen una barra A–Z para saltar a una letra, y el clic central las desplaza al mover el ratón.</translation>
+    </message>
+    <message>
+        <source>Albums, Artists, Songs and Genres open where you left them, even after a restart.</source>
+        <translation>Álbumes, Artistas, Canciones y Géneros se abren donde los dejaste, incluso tras reiniciar.</translation>
+    </message>
+    <message>
         <source>Home is yours to arrange: choose its sections and their order (a section&apos;s ⋯ menu, or Settings → Features → Home).</source>
         <translation>Organiza Inicio a tu gusto: elige sus secciones y su orden (el menú ⋯ de cada sección, o Ajustes → Funciones → Inicio).</translation>
     </message>
@@ -13756,6 +13823,14 @@
     <message>
         <source>Playlist</source>
         <translation>Playlist</translation>
+    </message>
+    <message>
+        <source>Stops after this song</source>
+        <translation>Se detendrá después de esta canción</translation>
+    </message>
+    <message>
+        <source>Plays on after this song</source>
+        <translation>Seguirá después de esta canción</translation>
     </message>
     <message>
         <source>Added to Liked Songs</source>

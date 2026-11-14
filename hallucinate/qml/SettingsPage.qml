@@ -528,6 +528,24 @@ Item {
                         Accessible.name: qsTr("Scroll speed (mouse wheel)")
                     }
                 }
+                StyledCheck {
+                    objectName: "keepScroll"
+                    text: qsTr("Remember where Albums, Artists, Songs, Genres and other lists were scrolled, also after a restart")
+                    checked: shell.ui.keepScroll !== "0"  // i18n: keep
+                    onToggled: { shell.setUiValue("keepScroll", checked ? "1" : "0"); if (!checked) shell.saveScrollPositions("{}") }  // i18n: keep
+                }
+                StyledCheck {
+                    objectName: "letterRail"
+                    text: qsTr("A–Z letters beside long lists (Albums, Artists, Songs, Genres), to jump to a letter")
+                    checked: shell.ui.letterRail !== "0"  // i18n: keep
+                    onToggled: shell.setUiValue("letterRail", checked ? "1" : "0")  // i18n: keep
+                }
+                StyledCheck {
+                    objectName: "middleAutoscroll"
+                    text: qsTr("Middle-click a list to scroll it by moving the mouse (any click stops it)")
+                    checked: shell.ui.middleAutoscroll !== "0"  // i18n: keep
+                    onToggled: shell.setUiValue("middleAutoscroll", checked ? "1" : "0")  // i18n: keep
+                }
                 Row {
                     spacing: 12
                     Text { textFormat: Text.PlainText; text: qsTr("Wheel over a row of albums"); color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); height: 38; verticalAlignment: Text.AlignVCenter }

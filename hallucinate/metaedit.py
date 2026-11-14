@@ -148,6 +148,7 @@ class MetadataEditor(QObject):
         self._sources, self._data_dir = None, None  # Discogs and Last.fm, when set up (see setSources)
         # Library health's "Find all" for years, track numbers and songs without an artist or album
         self._fixes = {"kind": "", "busy": False, "done": 0, "total": 0, "found": 0, "current": "", "proposals": []}
+        self._fix_kept = {}  # other checks' suggestions waiting to be reviewed, by kind
         self._fixes_stop = threading.Event()
         self._fix_saving = {"kind": "", "busy": False, "done": 0, "total": 0}
         self._fix_save_stop = threading.Event()
@@ -288,14 +289,11 @@ class MetadataEditor(QObject):
         items = [dict(i) for i in items]
 
         def save_each(db, rows):
-            total = {"kind": "tags", "saved": 0, "errors": []}
+            pairs = []
             for row in rows:
                 path = row.pop("path")
-                fields = {k: str(v) for k, v in row.items() if v not in (None, "", 0)}
-                result = self._save_tags(db, [path], fields)
-                total["saved"] += result["saved"]
-                total["errors"] += result["errors"]
-            return total
+                pairs.append((path, {k: str(v) for k, v in row.items() if v not in (None, "", 0)}))
+            return self._save_each(db, pairs)
 
         self._run(save_each, items)
 
@@ -305,8 +303,13 @@ class MetadataEditor(QObject):
         self._run(self._save_tags, paths, fields)
 
     def _save_tags(self, db, paths, fields):
+        return self._save_each(db, [(path, fields) for path in paths])
+
+    def _save_each(self, db, pairs):
+        """Write each song its own fields ([(path, fields)]), then read them all back in one go: setting up the
+        reading looks at every album's cover, so once per song was most of the time on a big library."""
         errors, ok = [], []
-        for path in paths:
+        for path, fields in pairs:
             try:
                 tagedit.write_tags(path, fields)
                 _carry(db, path)
@@ -711,6 +714,26 @@ class MetadataEditor(QObject):
         untagged → album, paths, folder, fill_artist, fill_album (which gaps the guess fills)."""
         return list(self._fixes["proposals"])
 
+    @Property("QVariantMap", notify=fixesChanged)
+    def fixCounts(self):
+        """How many suggestions each check has waiting to be reviewed ({"year": 3, ...}): each keeps its own, so
+        finding track numbers doesn't throw away years found and not looked at yet."""
+        kept = dict(self._fix_kept)
+        if self._fixes["kind"]:
+            kept[self._fixes["kind"]] = self._fixes["proposals"]
+        return {k: len(v) for k, v in kept.items() if v}
+
+    @Slot(str)
+    def reviewFixes(self, kind):
+        """Bring a check's waiting suggestions up for the review (fixProposals, fixKind)."""
+        if kind not in self.FIX_KINDS or self._fixes["busy"] or kind == self._fixes["kind"]:
+            return
+        if self._fixes["kind"]:
+            self._fix_kept[self._fixes["kind"]] = self._fixes["proposals"]
+        self._fixes = {"kind": kind, "busy": False, "done": 0, "total": 0, "found": 0, "current": "",
+                       "proposals": self._fix_kept.pop(kind, [])}
+        self.fixesChanged.emit()
+
     @Slot(str)
     def findFixes(self, kind):
         """Suggest a year for every album without one, track numbers for every album without them, or an artist
@@ -719,6 +742,9 @@ class MetadataEditor(QObject):
         if kind not in self.FIX_KINDS or self._fixes["busy"] or self._fix_saving["busy"]:
             return
         self._fixes_stop.clear()
+        if self._fixes["kind"] and self._fixes["kind"] != kind and self._fixes["proposals"]:
+            self._fix_kept[self._fixes["kind"]] = self._fixes["proposals"]  # (still there to review)
+        self._fix_kept.pop(kind, None)
         self._fixes = {"kind": kind, "busy": True, "done": 0, "total": 0, "found": 0, "current": "", "proposals": []}
         self.fixesChanged.emit()
         self._fixes_thread = threading.Thread(target=self._fetch_fixes, args=(kind, not net.is_offline()),
@@ -845,9 +871,9 @@ class MetadataEditor(QObject):
         items = [dict(i) for i in items if i and i.get("kind") in self.FIX_KINDS]
         kind = items[0]["kind"] if items else self._fixes["kind"]
 
-        def write(db, total, paths, fields):
+        def write(db, total, pairs):
             try:
-                result = self._save_tags(db, paths, fields)
+                result = self._save_each(db, pairs)
             except Exception as exc:  # noqa: BLE001 - one album that can't be written doesn't stop the rest
                 logger.warning("Could not save a suggested tag: %s", exc)
                 result = {"saved": 0, "errors": [str(exc)]}
@@ -866,20 +892,22 @@ class MetadataEditor(QObject):
                         year = int(text) if text.isdigit() else 0
                         tracks = db.album_tracks(str(item["key"]))
                         if 1000 <= year <= 9999 and tracks and all((t.get("year") or 0) <= 0 for t in tracks):
-                            write(db, total, [t["path"] for t in tracks if not remote.is_remote(t["path"])], {"year": str(year)})
+                            write(db, total, [(t["path"], {"year": str(year)}) for t in tracks if not remote.is_remote(t["path"])])
                     elif item["kind"] == "numbers":
                         tracks = db.album_tracks(str(item["key"]))
                         if tracks and all(not t.get("track_no") for t in tracks):
-                            mine = {t["path"] for t in tracks}
+                            mine, pairs = {t["path"] for t in tracks}, []
                             for t in item.get("tracks") or []:
                                 if t.get("path") in mine and int(t.get("track_no") or 0) > 0:
                                     fields = {"track_no": str(int(t["track_no"]))}
                                     if int(t.get("disc_no") or 0) > 0:
                                         fields["disc_no"] = str(int(t["disc_no"]))
-                                    write(db, total, [t["path"]], fields)
+                                    pairs.append((t["path"], fields))
+                            write(db, total, pairs)  # (the album's songs read back together)
                     else:
                         artist = str(item.get("artist") or "").strip() if item.get("fill_artist") else ""
                         album = str(item.get("album") or "").strip() if item.get("fill_album") else ""
+                        pairs = []
                         for path in item.get("paths") or []:
                             row = db.track_by_path(path)
                             if not row:
@@ -890,7 +918,8 @@ class MetadataEditor(QObject):
                             if album and row.get("album") == health.UNKNOWN_ALBUM:
                                 fields["album"] = album
                             if fields:
-                                write(db, total, [path], fields)
+                                pairs.append((path, fields))
+                        write(db, total, pairs)
                     done += 1
                     self._fixes_progress.emit({"saved": done})
             finally:

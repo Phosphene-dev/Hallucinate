@@ -2,6 +2,8 @@
 
 This catches bugs like the Stats rows that fell back to white when their colour binding failed. Rendering uses
 Qt's software renderer, so shader effects are left out, but every control, colour and layout is drawn."""
+import json
+
 import numpy as np
 import pytest
 from PySide6.QtCore import Q_ARG, Q_RETURN_ARG, QMetaObject, QObject, QPointF, Qt, QUrl
@@ -3287,3 +3289,179 @@ def test_like_what_is_playing_from_the_player_bar_or_with_h(qapp, app_window, tm
     qapp.processEvents()
     assert heart.property("visible")
     assert not [w for w in warnings if "NowPlayingBar" in w or "MiniPlayer" in w], warnings[:3]
+
+
+def test_stop_after_this_song_from_the_menu_or_with_e(qapp, app_window, tmp_path):
+    """#166: the player bar's ⋯ menu has Stop after this song (ticked while it's set), E does the same from
+    anywhere and says which."""
+    from conftest import wait_for
+    from PySide6.QtTest import QTest
+
+    window, objects, warnings = app_window
+    player = objects["player"]
+    from audio import encode
+
+    songs = [encode(tmp_path / f"s{i}.flac", "flac", seconds=3, title=f"Song {i}") for i in range(2)]
+    player.playList([{"id": 90 + i, "path": str(s), "title": f"Song {i}", "artist": "A", "album": "B", "duration": 3}
+                     for i, s in enumerate(songs)], 0)
+    assert wait_for(lambda: player.hasTrack)
+    player.pause()
+    try:
+        item = window.findChild(QObject, "stopAfterSong")
+        assert item is not None and not item.property("checked")
+        item.setProperty("checked", True)
+        QMetaObject.invokeMethod(item, "triggered")
+        assert wait_for(lambda: player.sleepAfterTrack) and item.property("checked")
+        window.requestActivate()
+        window.contentItem().forceActiveFocus()
+        QTest.keyClick(window, Qt.Key.Key_E)
+        assert wait_for(lambda: not player.sleepAfterTrack)
+        assert window.findChild(QObject, "toast").property("message") == "Plays on after this song"
+        QTest.keyClick(window, Qt.Key.Key_E)
+        assert wait_for(lambda: player.sleepAfterTrack)
+        assert window.findChild(QObject, "toast").property("message") == "Stops after this song"
+    finally:
+        player.setSleepAfterTrack(False)
+    assert not [w for w in warnings if "PlaybackMenu" in w], warnings[:3]
+
+
+@pytest.mark.parametrize("app_window", ["varied"], indirect=True)
+def test_middle_click_scrolls_a_list_by_moving_the_mouse(qapp, app_window):
+    """#165: a middle click on a list starts autoscroll: the pointer below the click scrolls it down, any click
+    stops it. Settings → Appearance can switch it off."""
+    from conftest import wait_for
+    from PySide6.QtCore import QPoint
+    from PySide6.QtTest import QTest
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    window.resize(1100, 500)
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "songs"))
+    wait_for(lambda: False, timeout=0.5)
+    auto = window.findChild(QObject, "autoScroll")
+    view = QMetaObject.invokeMethod(auto, "scrollableAt", Qt.ConnectionType.DirectConnection, Q_RETURN_ARG("QVariant"),
+                                    Q_ARG("QVariant", window.contentItem()), Q_ARG("QVariant", 600), Q_ARG("QVariant", 300))
+    assert view is not None
+    QTest.mouseClick(window, Qt.MouseButton.MiddleButton, Qt.KeyboardModifier.NoModifier, QPoint(600, 300))
+    assert wait_for(lambda: auto.property("active"))
+    start = view.property("contentY")
+    QTest.mouseMove(window, QPoint(600, 420))
+    assert wait_for(lambda: view.property("contentY") > start + 5)
+    QTest.mouseClick(window, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QPoint(600, 420))
+    assert wait_for(lambda: not auto.property("active"))
+    shell.setUiValue("middleAutoscroll", "0")
+    try:
+        QTest.mouseClick(window, Qt.MouseButton.MiddleButton, Qt.KeyboardModifier.NoModifier, QPoint(600, 300))
+        wait_for(lambda: False, timeout=0.2)
+        assert not auto.property("active")
+    finally:
+        shell.setUiValue("middleAutoscroll", "1")
+    assert not [w for w in warnings if "AutoScroll" in w], warnings[:3]
+
+
+@pytest.mark.parametrize("app_window", ["varied"], indirect=True)
+def test_lists_are_found_where_they_were_left_after_a_restart(qapp, app_window):
+    """#164: the main lists keep where they were scrolled, between pages and (saved in the settings) after a
+    restart; a page coming back keeps trying until its list is long enough to get there."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    shell = objects["shell"]
+    stack = window.findChild(QObject, "pageStack")
+
+    def flick():
+        return QMetaObject.invokeMethod(window, "flickOf", Qt.ConnectionType.DirectConnection, Q_RETURN_ARG("QVariant"),
+                                        Q_ARG("QVariant", stack.property("currentItem")), Q_ARG("QVariant", 0))
+    window.resize(1100, 400)
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "songs"))
+    wait_for(lambda: False, timeout=0.5)
+    assert flick() is not None
+    flick().setProperty("contentY", 60)
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "albums"))
+    assert wait_for(lambda: json.loads(shell.scrollPositions()).get("songs") == 60)
+    # a restart: what was saved is read back, and Songs opens where it was
+    window.setProperty("scrollMemory", {})
+    QMetaObject.invokeMethod(window, "loadScroll")
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "songs"))
+    assert wait_for(lambda: flick() is not None and abs(flick().property("contentY") - 60) < 1)
+    shell.setUiValue("keepScroll", "0")
+    try:
+        shell.saveScrollPositions("{}")
+        QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "albums"))
+        wait_for(lambda: False, timeout=0.3)
+        assert shell.scrollPositions() == "{}"  # switched off: nothing kept for next time
+    finally:
+        shell.setUiValue("keepScroll", "1")
+    assert not [w for w in warnings if "main.qml" in w], warnings[:3]
+
+
+@pytest.mark.parametrize("app_window", ["varied"], indirect=True)
+def test_a_letter_rail_beside_a_long_list_jumps_to_a_letter(qapp, app_window):
+    """Songs in title order: an A–Z rail beside the list (in a gutter of its own) jumps to where a letter
+    starts; sorted another way, or switched off in Settings → Appearance, it's gone."""
+    from conftest import wait_for
+    from PySide6.QtCore import QPoint
+    from PySide6.QtTest import QTest
+
+    window, objects, warnings = app_window
+    shell, library = objects["shell"], objects["library"]
+    window.resize(1100, 420)
+    # a long list in title order, a song for every few letters
+    base = library.songs.get(0)
+    library.songs.set_items([dict(base, path=f"/x/{c}{i}.flac", title=f"{c}ong {i}") for c in "ACEGJMPSVY" for i in range(8)])
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "songs"))
+    assert wait_for(lambda: "letterRail" in visible_names(window, "letterRail"))
+    rail = find_item(window, "letterRail")
+    marks = plain(rail.property("marks"))
+    assert len(marks) > 2 and marks == plain(library.songs.letterIndex("title"))
+    last = marks[-1]
+    # a click at the bottom of the rail: the last letter's first song at the top of the list
+    pos = rail.mapToScene(QPointF(rail.property("width") / 2, rail.property("height") - 2))
+    QTest.mouseClick(window, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QPoint(int(pos.x()), int(pos.y())))
+    view = rail.property("view")
+    assert wait_for(lambda: view.property("contentY") > 0)
+    assert rail.property("current") == last["letter"]
+    shell.setUiValue("letterRail", "0")
+    try:
+        assert wait_for(lambda: "letterRail" not in visible_names(window, "letterRail"))
+    finally:
+        shell.setUiValue("letterRail", "1")
+    library.setSongSort("artist")
+    try:
+        assert wait_for(lambda: "letterRail" not in visible_names(window, "letterRail"))
+    finally:
+        library.setSongSort("title")
+    assert not [w for w in warnings if "LetterRail" in w], warnings[:3]
+
+
+def test_home_cards_have_their_menus_and_the_headless_sections_a_button(qapp, app_window):
+    """A playlist card's right-click brings Play, Shuffle and Open; the random album, listening card and facts
+    have a ⋯ (shown while pointed at) for their section's menu."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    user_lib = objects["userLib"]
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "home"))
+    stack = window.findChild(QObject, "pageStack")
+    wait_for(lambda: False, timeout=0.5)
+    page = stack.property("currentItem")
+    played = []
+    real = user_lib._play
+    user_lib._play = lambda tracks, index=0: played.append(len(tracks))
+    try:
+        menu = page.findChild(QObject, "homePlaylistMenu")
+        assert menu is not None
+        pls = plain(user_lib.home).get("playlists") or []
+        if pls:
+            menu.setProperty("playlist", pls[0])
+            QMetaObject.invokeMethod(menu, "popup")
+            assert wait_for(lambda: menu.property("visible"))
+            QMetaObject.invokeMethod(menu, "close")
+            user_lib.playPlaylistById(pls[0]["id"], False)
+            assert wait_for(lambda: played)  # (read on the worker, then played)
+    finally:
+        user_lib._play = real
+    for name in ("random", "listening", "facts"):
+        assert find_item(window, "homeSectionMenu_" + name) is not None, name
+    page = None
+    assert not [w for w in warnings if "HomePage" in w], warnings[:3]

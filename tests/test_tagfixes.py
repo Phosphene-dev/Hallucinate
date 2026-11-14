@@ -167,3 +167,33 @@ def test_saving_leaves_alone_what_you_have_set_since_the_lookup(qapp, tmp_path):
         assert all(str(ID3(f)["TDRC"].text[0]) == "1998" for f in album.iterdir())
     finally:
         ed.shutdown()
+
+
+def test_a_year_in_the_album_folder_above_cd_folders_counts_for_every_disc():
+    assert tagfixes.year_from_names(["/m/A - B [2003]/CD1/1 x.flac", "/m/A - B [2003]/CD2/1 y.flac"]) == 2003
+    assert tagfixes.year_from_names(["/m/A - B (1999)/Disc 2/1 y.flac"]) == 1999
+
+
+def test_each_check_keeps_what_it_found_until_reviewed(qapp, tmp_path):
+    """Finding track numbers doesn't throw away years found and not reviewed yet: each check keeps its own,
+    and Review brings that check's up."""
+    from conftest import wait_for
+
+    ed = _editor(tmp_path, [])
+    try:
+        ed._fixes.update(kind="year", proposals=[{"kind": "year", "key": "k", "title": "A", "year": 1999}])
+        finished = []
+        ed.fixesFinished.connect(finished.append)
+        ed._fetch_fixes = lambda kind, online: ed._fixes_progress.emit(
+            {"busy": False, "proposals": [{"kind": kind, "key": "n", "title": "B", "tracks": []}], "finished": True})
+        ed.findFixes("numbers")
+        assert wait_for(lambda: finished)
+        assert ed.fixCounts == {"year": 1, "numbers": 1} and ed.fixKind == "numbers"
+        ed.reviewFixes("year")
+        assert ed.fixKind == "year" and [p["title"] for p in ed.fixProposals] == ["A"]
+        assert ed.fixCounts == {"year": 1, "numbers": 1}
+        ed.clearFixProposals()
+        assert ed.fixCounts == {"numbers": 1}
+    finally:
+        del ed._fetch_fixes
+        ed.shutdown()

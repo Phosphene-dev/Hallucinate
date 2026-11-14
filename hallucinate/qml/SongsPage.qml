@@ -120,11 +120,19 @@ Item {
             }
         }
     }
+    LetterRail {
+        id: songsRail
+        anchors { top: list.top; bottom: list.bottom; right: parent.right; rightMargin: 4 }
+        view: list
+        model: library.songs
+        field: "title"
+        active: library.songSort === "title" && !library.filtersActive && !page.duplicatesVisible
+    }
     ListView {
         WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
         id: list
         anchors { top: filters.bottom; topMargin: 10; left: parent.left; right: parent.right; bottom: parent.bottom }
-        anchors.leftMargin: 20; anchors.rightMargin: 8
+        anchors.leftMargin: 20; anchors.rightMargin: 8 + (songsRail.shown ? songsRail.width + 4 : 0)
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         model: page.duplicatesVisible ? library.duplicates

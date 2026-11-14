@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import "."
 
-// Add the song to a playlist, playback speed and sleep timer.
+// Add the song to a playlist, stop after this song, playback speed and sleep timer.
 Menu {
     id: playback  // not "menu": the playlist items' own `menu` (their submenu) would hide it
     readonly property bool song: player.hasTrack && !(player.current.kind || "").length && (player.current.path || "").length > 0
@@ -54,6 +54,15 @@ Menu {
         }
         onObjectAdded: (i, o) => playback.insertMenu(3, o)
         onObjectRemoved: (i, o) => playback.removeMenu(o)
+    }
+    MenuItem {  // (also the sleep timer's "End of current track", and E)
+        objectName: "stopAfterSong"
+        text: qsTr("Stop after this song")
+        icon.name: "pause"
+        checkable: true
+        checked: player.sleepAfterTrack
+        enabled: player.hasTrack
+        onTriggered: player.setSleepAfterTrack(checked)
     }
     Menu {
         id: speedMenu
