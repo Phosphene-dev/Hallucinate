@@ -95,6 +95,13 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="2.4.0" date="2026-11-14">
+      <description>
+        <p>Stop after this song (the player bar's menu, or E), an A–Z rail beside long lists to jump to a letter, and middle-click autoscroll.</p>
+        <p>Albums, Artists, Songs and Genres open where they were left, even after a restart; Home's cards get their own menus.</p>
+        <p>Library health's fixes save far faster on big libraries, and playing a playlist from Home no longer stalls the window.</p>
+      </description>
+    </release>
     <release version="2.3.0" date="2026-11-07">
       <description>
         <p>Home is yours to arrange: choose its sections and their order, with new ones for albums played lately, today's mixes, your playlists, this month's most played, podcast episodes you've started and your radio stations.</p>

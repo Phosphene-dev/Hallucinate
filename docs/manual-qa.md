@@ -74,7 +74,7 @@
 - [ ] Handoff with a typed address (on a network that blocks broadcasts), a wrong code (says so), Forget in
       Settings → Remote & web (needs pairing again), and with the firewall on (firewalld: the remote's port).
 
-## Release testing for the next release
+## Release testing for 2.4.0
 
 - [ ] The player bar's ⋯ → Stop after this song: ticked; the song ends and nothing plays next. E toggles it and
       says so; Ctrl+K has it. The sleep timer's End of current track is the same tick.

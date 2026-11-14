@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [2.4.0] - 2026-11-14
 
 ### Added
 - Stop after this song (#166): a tick in the player bar's ⋯ menu, E anywhere (it says which), or "Stop after this

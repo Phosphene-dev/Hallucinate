@@ -13311,6 +13311,18 @@
 <context>
     <name>WhatsNew</name>
     <message>
+        <source>Stop after this song: the player bar&apos;s ⋯ menu, or press E.</source>
+        <translation>Parar después de esta canción: el menú ⋯ de la barra del reproductor, o pulsa E.</translation>
+    </message>
+    <message>
+        <source>Long lists have an A–Z rail to jump to a letter, and middle-click scrolls them as you move the mouse.</source>
+        <translation>Las listas largas tienen una barra A–Z para saltar a una letra, y el clic central las desplaza al mover el ratón.</translation>
+    </message>
+    <message>
+        <source>Albums, Artists, Songs and Genres open where you left them, even after a restart.</source>
+        <translation>Álbumes, Artistas, Canciones y Géneros se abren donde los dejaste, incluso tras reiniciar.</translation>
+    </message>
+    <message>
         <source>Home is yours to arrange: choose its sections and their order (a section&apos;s ⋯ menu, or Settings → Features → Home).</source>
         <translation>Organiza Inicio a tu gusto: elige sus secciones y su orden (el menú ⋯ de cada sección, o Ajustes → Funciones → Inicio).</translation>
     </message>
