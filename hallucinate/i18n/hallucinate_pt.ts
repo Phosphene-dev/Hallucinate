@@ -4466,6 +4466,18 @@
         <translation>Gêneros encontrados para %1 de %2 álbuns. Confira e depois salve.</translation>
     </message>
     <message>
+        <source>There&apos;s no part called %1</source>
+        <translation>Não existe uma parte chamada %1</translation>
+    </message>
+    <message>
+        <source>The pattern needs {title}, so every song gets its own name</source>
+        <translation>O padrão precisa de {title}, para cada música ter seu próprio nome</translation>
+    </message>
+    <message>
+        <source>A folder can&apos;t be called ..</source>
+        <translation>Uma pasta não pode se chamar ..</translation>
+    </message>
+    <message>
         <source>Songs put back where they were: %1</source>
         <translation>Músicas devolvidas ao lugar de antes: %1</translation>
     </message>

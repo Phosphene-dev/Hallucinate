@@ -4466,6 +4466,18 @@
         <translation>Genres trouvés pour %1 albums sur %2. Vérifiez-les, puis enregistrez.</translation>
     </message>
     <message>
+        <source>There&apos;s no part called %1</source>
+        <translation>Aucun élément ne s’appelle %1</translation>
+    </message>
+    <message>
+        <source>The pattern needs {title}, so every song gets its own name</source>
+        <translation>Le modèle a besoin de {title}, pour que chaque morceau ait son propre nom</translation>
+    </message>
+    <message>
+        <source>A folder can&apos;t be called ..</source>
+        <translation>Un dossier ne peut pas s’appeler ..</translation>
+    </message>
+    <message>
         <source>Songs put back where they were: %1</source>
         <translation>Morceaux remis à leur place&#xa0;: %1</translation>
     </message>

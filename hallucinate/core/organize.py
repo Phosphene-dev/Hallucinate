@@ -32,7 +32,10 @@ _RESERVED = {"con", "prn", "aux", "nul", *(f"com{i}" for i in range(1, 10)), *(f
 
 
 class PatternError(ValueError):
-    pass
+    """What's wrong with a pattern. `kind`: "unknown" (with `part`), "title" or "dots", for the message."""
+    def __init__(self, message, kind, part=""):
+        super().__init__(message)
+        self.kind, self.part = kind, part
 
 
 def check_pattern(pattern):
@@ -41,11 +44,11 @@ def check_pattern(pattern):
     names = re.findall(r"\{([^{}]*)\}", pattern)
     unknown = [n for n in names if n not in TOKENS]
     if unknown:
-        raise PatternError("Unknown part: {%s}" % unknown[0])
+        raise PatternError("Unknown part: {%s}" % unknown[0], "unknown", unknown[0])
     if "title" not in names:
-        raise PatternError("The pattern needs {title}")
+        raise PatternError("The pattern needs {title}", "title")
     if ".." in pattern.split("/"):
-        raise PatternError("A folder can't be ..")
+        raise PatternError("A folder can't be ..", "dots")
     return pattern
 
 
@@ -257,6 +260,8 @@ def apply(db, scanner, moves, folders, journal, progress=None, stop=None):
                 _move(src, dst)
             except OSError as exc:
                 errors.append(f"{os.path.basename(src)}: {exc.strerror or exc}")
+                if progress:
+                    progress(i + 1)  # (the count still moves on past a song that wouldn't move)
                 continue
             record.append([src, dst])
             pairs.append((src, dst))

@@ -4466,6 +4466,18 @@
         <translation>Genres für %1 von %2 Alben gefunden. Prüf sie, dann speichere.</translation>
     </message>
     <message>
+        <source>There&apos;s no part called %1</source>
+        <translation>Es gibt keinen Teil namens %1</translation>
+    </message>
+    <message>
+        <source>The pattern needs {title}, so every song gets its own name</source>
+        <translation>Das Muster braucht {title}, damit jeder Titel seinen eigenen Namen bekommt</translation>
+    </message>
+    <message>
+        <source>A folder can&apos;t be called ..</source>
+        <translation>Ein Ordner kann nicht .. heißen</translation>
+    </message>
+    <message>
         <source>Songs put back where they were: %1</source>
         <translation>Titel zurück an ihren alten Platz gebracht: %1</translation>
     </message>

@@ -733,7 +733,10 @@ class MetadataEditor(QObject):
                                                        "skipped": len(p["skipped"]), "error": ""},
                                               "moves": p["moves"], "previewing": False})
             except organize.PatternError as exc:
-                self._organize_progress.emit({"plan": {"moves": [], "count": 0, "same": 0, "skipped": 0, "error": str(exc)},
+                why = {"unknown": fill(translate("MetaEdit", "There's no part called %1"), "{%s}" % exc.part),
+                       "title": translate("MetaEdit", "The pattern needs {title}, so every song gets its own name"),
+                       "dots": translate("MetaEdit", "A folder can't be called ..")}.get(exc.kind, str(exc))
+                self._organize_progress.emit({"plan": {"moves": [], "count": 0, "same": 0, "skipped": 0, "error": why},
                                               "moves": [], "previewing": False})
             except Exception:  # noqa: BLE001
                 logger.exception("Organize preview failed")

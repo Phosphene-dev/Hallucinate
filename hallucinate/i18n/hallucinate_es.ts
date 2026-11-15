@@ -4466,6 +4466,18 @@
         <translation>Se encontraron géneros para %1 de %2 álbumes. Revísalos y luego guarda.</translation>
     </message>
     <message>
+        <source>There&apos;s no part called %1</source>
+        <translation>No hay ninguna parte llamada %1</translation>
+    </message>
+    <message>
+        <source>The pattern needs {title}, so every song gets its own name</source>
+        <translation>El patrón necesita {title}, para que cada canción tenga su propio nombre</translation>
+    </message>
+    <message>
+        <source>A folder can&apos;t be called ..</source>
+        <translation>Una carpeta no puede llamarse ..</translation>
+    </message>
+    <message>
         <source>Songs put back where they were: %1</source>
         <translation>Canciones devueltas a su sitio: %1</translation>
     </message>
