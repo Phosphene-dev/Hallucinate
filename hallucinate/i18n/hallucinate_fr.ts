@@ -276,7 +276,7 @@
     </message>
     <message>
         <source>Organize files…</source>
-        <translation type="unfinished"></translation>
+        <translation>Ranger les fichiers…</translation>
     </message>
     <message>
         <source>Go to %1</source>
@@ -3378,7 +3378,7 @@
     </message>
     <message>
         <source>Organize files…</source>
-        <translation type="unfinished"></translation>
+        <translation>Ranger les fichiers…</translation>
     </message>
     <message>
         <source>Covers that show blank or garbled are made again: every song&apos;s picture is read afresh (a full rescan, which can take a while with a big library), and any that turn out damaged make way for the folder&apos;s cover. Covers you chose yourself stay as they are.</source>
@@ -4463,15 +4463,15 @@
     </message>
     <message>
         <source>Songs put back where they were: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Morceaux remis à leur place&#xa0;: %1</translation>
     </message>
     <message>
         <source>Songs moved: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Morceaux déplacés&#xa0;: %1</translation>
     </message>
     <message>
         <source>not moved: %1 (%2)</source>
-        <translation type="unfinished"></translation>
+        <translation>non déplacés&#xa0;: %1 (%2)</translation>
     </message>
     <message>
         <source>Found a likely artist or album for %1 of %2 songs. Check them, then save.</source>
@@ -5844,83 +5844,83 @@
     <name>OrganizeDialog</name>
     <message>
         <source>Organize these albums&apos; files</source>
-        <translation type="unfinished"></translation>
+        <translation>Ranger les fichiers de ces albums</translation>
     </message>
     <message>
         <source>Organize your music files</source>
-        <translation type="unfinished"></translation>
+        <translation>Ranger vos fichiers de musique</translation>
     </message>
     <message>
         <source>Stop</source>
-        <translation type="unfinished">Arrêter</translation>
+        <translation>Arrêter</translation>
     </message>
     <message numerus="yes">
         <source>Move %n song(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>Déplacer %n morceau</numerusform>
+            <numerusform>Déplacer %n morceaux</numerusform>
         </translation>
     </message>
     <message>
         <source>Close</source>
-        <translation type="unfinished">Fermer</translation>
+        <translation>Fermer</translation>
     </message>
     <message>
         <source>Undo the last organize</source>
-        <translation type="unfinished"></translation>
+        <translation>Annuler le dernier rangement</translation>
     </message>
     <message>
         <source>Songs are moved into folders and names made from their tags, inside the music folder each is in now. Their likes, plays, ratings and playlists go with them, and so do lyrics files and the folder&apos;s cover. A file is never moved over another (it gets “(2)” instead), and the last organize can be undone.</source>
-        <translation type="unfinished"></translation>
+        <translation>Les morceaux sont déplacés dans des dossiers et des noms tirés de leurs tags, à l’intérieur du dossier de musique où chacun se trouve. Leurs j’aime, écoutes, notes et playlists les suivent, tout comme les fichiers de paroles et la pochette du dossier. Un fichier n’est jamais déplacé par-dessus un autre (il reçoit «&#xa0;(2)&#xa0;» à la place), et le dernier rangement peut être annulé.</translation>
     </message>
     <message>
         <source>Folder and file name pattern</source>
-        <translation type="unfinished"></translation>
+        <translation>Modèle de noms de dossiers et de fichiers</translation>
     </message>
     <message>
         <source>Parts: {albumartist} {artist} {album} {year} {disc} {track} {title} {genre}; “/” starts a folder. {disc} is “2-” on albums with more than one disc.</source>
-        <translation type="unfinished"></translation>
+        <translation>Éléments&#xa0;: {albumartist} {artist} {album} {year} {disc} {track} {title} {genre}&#xa0;; «&#xa0;/&#xa0;» commence un dossier. {disc} vaut «&#xa0;2-&#xa0;» sur les albums de plus d’un disque.</translation>
     </message>
     <message>
         <source>Waiting for the library scan to finish…</source>
-        <translation type="unfinished"></translation>
+        <translation>En attente de la fin de l’analyse de la bibliothèque…</translation>
     </message>
     <message>
         <source>Moving: %1 of %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Déplacement&#xa0;: %1 sur %2</translation>
     </message>
     <message>
         <source>Working out where everything goes…</source>
-        <translation type="unfinished"></translation>
+        <translation>Calcul de la place de chaque fichier…</translation>
     </message>
     <message numerus="yes">
         <source>%n song(s) to move</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n morceau à déplacer</numerusform>
+            <numerusform>%n morceaux à déplacer</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n already in place</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n déjà en place</numerusform>
+            <numerusform>%n déjà en place</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n left where they are (CUE sheets, music servers)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n laissé où il est (fichiers CUE, serveurs de musique)</numerusform>
+            <numerusform>%n laissés où ils sont (fichiers CUE, serveurs de musique)</numerusform>
         </translation>
     </message>
     <message>
         <source>from %1</source>
-        <translation type="unfinished">de %1</translation>
+        <translation>depuis %1</translation>
     </message>
     <message>
         <source>…and %1 more</source>
-        <translation type="unfinished"></translation>
+        <translation>…et %1 de plus</translation>
     </message>
 </context>
 <context>

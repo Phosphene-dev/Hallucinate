@@ -276,7 +276,7 @@
     </message>
     <message>
         <source>Organize files…</source>
-        <translation type="unfinished"></translation>
+        <translation>Organizar archivos…</translation>
     </message>
     <message>
         <source>Go to %1</source>
@@ -3398,7 +3398,7 @@
     </message>
     <message>
         <source>Organize files…</source>
-        <translation type="unfinished"></translation>
+        <translation>Organizar archivos…</translation>
     </message>
     <message>
         <source>Repair covers…</source>
@@ -4463,15 +4463,15 @@
     </message>
     <message>
         <source>Songs put back where they were: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Canciones devueltas a su sitio: %1</translation>
     </message>
     <message>
         <source>Songs moved: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Canciones movidas: %1</translation>
     </message>
     <message>
         <source>not moved: %1 (%2)</source>
-        <translation type="unfinished"></translation>
+        <translation>no movidas: %1 (%2)</translation>
     </message>
     <message>
         <source>Found a likely artist or album for %1 of %2 songs. Check them, then save.</source>
@@ -5844,83 +5844,83 @@
     <name>OrganizeDialog</name>
     <message>
         <source>Organize these albums&apos; files</source>
-        <translation type="unfinished"></translation>
+        <translation>Organizar los archivos de estos álbumes</translation>
     </message>
     <message>
         <source>Organize your music files</source>
-        <translation type="unfinished"></translation>
+        <translation>Organizar tus archivos de música</translation>
     </message>
     <message>
         <source>Stop</source>
-        <translation type="unfinished"></translation>
+        <translation>Detener</translation>
     </message>
     <message numerus="yes">
         <source>Move %n song(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>Mover %n canción</numerusform>
+            <numerusform>Mover %n canciones</numerusform>
         </translation>
     </message>
     <message>
         <source>Close</source>
-        <translation type="unfinished">Cerrar</translation>
+        <translation>Cerrar</translation>
     </message>
     <message>
         <source>Undo the last organize</source>
-        <translation type="unfinished"></translation>
+        <translation>Deshacer la última organización</translation>
     </message>
     <message>
         <source>Songs are moved into folders and names made from their tags, inside the music folder each is in now. Their likes, plays, ratings and playlists go with them, and so do lyrics files and the folder&apos;s cover. A file is never moved over another (it gets “(2)” instead), and the last organize can be undone.</source>
-        <translation type="unfinished"></translation>
+        <translation>Las canciones se mueven a carpetas y nombres creados a partir de sus etiquetas, dentro de la carpeta de música en la que está cada una. Sus me gusta, reproducciones, valoraciones y listas van con ellas, igual que los archivos de letras y la portada de la carpeta. Nunca se mueve un archivo encima de otro (en su lugar recibe «(2)»), y la última organización se puede deshacer.</translation>
     </message>
     <message>
         <source>Folder and file name pattern</source>
-        <translation type="unfinished"></translation>
+        <translation>Patrón de nombres de carpetas y archivos</translation>
     </message>
     <message>
         <source>Parts: {albumartist} {artist} {album} {year} {disc} {track} {title} {genre}; “/” starts a folder. {disc} is “2-” on albums with more than one disc.</source>
-        <translation type="unfinished"></translation>
+        <translation>Partes: {albumartist} {artist} {album} {year} {disc} {track} {title} {genre}; «/» empieza una carpeta. {disc} es «2-» en álbumes con más de un disco.</translation>
     </message>
     <message>
         <source>Waiting for the library scan to finish…</source>
-        <translation type="unfinished"></translation>
+        <translation>Esperando a que termine el análisis de la biblioteca…</translation>
     </message>
     <message>
         <source>Moving: %1 of %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Moviendo: %1 de %2</translation>
     </message>
     <message>
         <source>Working out where everything goes…</source>
-        <translation type="unfinished"></translation>
+        <translation>Calculando dónde va cada cosa…</translation>
     </message>
     <message numerus="yes">
         <source>%n song(s) to move</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n canción para mover</numerusform>
+            <numerusform>%n canciones para mover</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n already in place</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n ya en su sitio</numerusform>
+            <numerusform>%n ya en su sitio</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n left where they are (CUE sheets, music servers)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n se queda donde está (hojas CUE, servidores de música)</numerusform>
+            <numerusform>%n se quedan donde están (hojas CUE, servidores de música)</numerusform>
         </translation>
     </message>
     <message>
         <source>from %1</source>
-        <translation type="unfinished">de %1</translation>
+        <translation>desde %1</translation>
     </message>
     <message>
         <source>…and %1 more</source>
-        <translation type="unfinished"></translation>
+        <translation>…y %1 más</translation>
     </message>
 </context>
 <context>

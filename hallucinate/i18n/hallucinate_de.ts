@@ -11099,7 +11099,7 @@
     </message>
     <message>
         <source>%1 (headphones)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 (Kopfhörer)</translation>
     </message>
     <message>
         <source>Speed</source>
@@ -11111,15 +11111,15 @@
     </message>
     <message>
         <source>Volume</source>
-        <translation type="unfinished"></translation>
+        <translation>Lautstärke</translation>
     </message>
     <message>
         <source>Crossfade</source>
-        <translation type="unfinished"></translation>
+        <translation>Überblenden</translation>
     </message>
     <message>
         <source>%1 s between tracks</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 s zwischen Titeln</translation>
     </message>
     <message>
         <source>System default</source>
@@ -11127,58 +11127,58 @@
     </message>
     <message>
         <source>%1 (switched by %2)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 (umgeschaltet durch %2)</translation>
     </message>
     <message>
         <source>%1 (resampled from %2)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 (umgerechnet von %2)</translation>
     </message>
     <message>
         <source>resampling</source>
-        <translation type="unfinished"></translation>
+        <translation>Umrechnung</translation>
     </message>
     <message>
         <source>Your output runs at %1 and this song is %2, so it&apos;s converted on the way. Songs at %1 play untouched; on Linux, PipeWire can switch the output to each song&apos;s rate (its allowed-rates setting). If your output already follows each song, say so in Settings → Playback → Output sample rate.</source>
-        <translation type="unfinished"></translation>
+        <translation>Deine Ausgabe läuft mit %1 und dieser Titel hat %2, deshalb wird er unterwegs umgerechnet. Titel mit %1 spielen unverändert; unter Linux kann PipeWire die Ausgabe auf die Rate jedes Titels umschalten (seine Einstellung für erlaubte Raten). Wenn deine Ausgabe schon jedem Titel folgt, stell das unter Einstellungen → Wiedergabe → Ausgabe-Abtastrate ein.</translation>
     </message>
     <message>
         <source>%1 switches the output to %2 for this song, as long as nothing else is playing at another rate at the same time (then it&apos;s converted).</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 schaltet die Ausgabe für diesen Titel auf %2 um, solange nichts anderes gleichzeitig mit einer anderen Rate spielt (dann wird umgerechnet).</translation>
     </message>
     <message>
         <source>Hallucinate&apos;s volume is at %1%, which scales the samples. Leave it at 100% and turn your system or amplifier down instead for an untouched path.</source>
-        <translation type="unfinished"></translation>
+        <translation>Die Lautstärke von Hallucinate steht auf %1 %, was die Samples skaliert. Lass sie auf 100 % und dreh stattdessen dein System oder deinen Verstärker leiser, für einen unveränderten Weg.</translation>
     </message>
     <message>
         <source>DSD is converted to %1 PCM here, with the ultrasonic noise it carries filtered out, so any output can play it. The rate is chosen in Settings → Sound.</source>
-        <translation type="unfinished"></translation>
+        <translation>DSD wird hier in %1 PCM umgewandelt, mit herausgefiltertem Ultraschallrauschen, sodass jede Ausgabe es spielen kann. Die Rate wird unter Einstellungen → Klang gewählt.</translation>
     </message>
     <message>
         <source>Bit-perfect after DSD conversion</source>
-        <translation type="unfinished"></translation>
+        <translation>Bit-perfekt nach DSD-Umwandlung</translation>
     </message>
     <message>
         <source>Bit-perfect playback is on: once converted from DSD, the song reaches the sound output untouched, at the conversion&apos;s own rate.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bit-perfekte Wiedergabe ist an: Nach der Umwandlung aus DSD erreicht der Titel die Tonausgabe unverändert, mit der Rate der Umwandlung.</translation>
     </message>
     <message>
         <source>Bit-perfect</source>
-        <translation type="unfinished"></translation>
+        <translation>Bit-perfekt</translation>
     </message>
     <message>
         <source>Bit-perfect playback is on: the song reaches the sound output exactly as it&apos;s stored, at its own rate and bit depth. Use your system&apos;s or your amplifier&apos;s volume.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bit-perfekte Wiedergabe ist an: Der Titel erreicht die Tonausgabe genau so, wie er gespeichert ist, mit seiner eigenen Rate und Bittiefe. Nutze die Lautstärke deines Systems oder Verstärkers.</translation>
     </message>
     <message>
         <source>Bit-perfect playback is on, but the output couldn&apos;t be switched to this song&apos;s rate, so it&apos;s converted on the way. On Linux with PipeWire, install its tools (pw-metadata) and Hallucinate asks for each song&apos;s rate.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bit-perfekte Wiedergabe ist an, aber die Ausgabe konnte nicht auf die Rate dieses Titels umgeschaltet werden, deshalb wird er unterwegs umgerechnet. Unter Linux mit PipeWire installier seine Werkzeuge (pw-metadata), dann fragt Hallucinate nach der Rate jedes Titels.</translation>
     </message>
 </context>
 <context>
     <name>SmartPlaylistEditor</name>
     <message>
         <source>Edit smart playlist</source>
-        <translation type="unfinished"></translation>
+        <translation>Intelligente Playlist bearbeiten</translation>
     </message>
     <message>
         <source>New smart playlist</source>
@@ -11190,43 +11190,43 @@
     </message>
     <message>
         <source>Songs matching</source>
-        <translation type="unfinished"></translation>
+        <translation>Titel, die</translation>
     </message>
     <message>
         <source>all</source>
-        <translation type="unfinished"></translation>
+        <translation>allen</translation>
     </message>
     <message>
         <source>any</source>
-        <translation type="unfinished"></translation>
+        <translation>einer</translation>
     </message>
     <message>
         <source>of these rules:</source>
-        <translation type="unfinished"></translation>
+        <translation>dieser Regeln entsprechen:</translation>
     </message>
     <message>
         <source>and</source>
-        <translation type="unfinished"></translation>
+        <translation>und</translation>
     </message>
     <message>
         <source>Remove rule</source>
-        <translation type="unfinished"></translation>
+        <translation>Regel entfernen</translation>
     </message>
     <message>
         <source>Add rule</source>
-        <translation type="unfinished"></translation>
+        <translation>Regel hinzufügen</translation>
     </message>
     <message>
         <source>Order</source>
-        <translation type="unfinished"></translation>
+        <translation>Reihenfolge</translation>
     </message>
     <message>
         <source>Limit to</source>
-        <translation type="unfinished"></translation>
+        <translation>Begrenzen auf</translation>
     </message>
     <message>
         <source>no limit</source>
-        <translation type="unfinished"></translation>
+        <translation>keine Grenze</translation>
     </message>
     <message>
         <source>songs</source>
@@ -11234,9 +11234,9 @@
     </message>
     <message numerus="yes">
         <source>%n song(s) now</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n Titel jetzt</numerusform>
+            <numerusform>%n Titel jetzt</numerusform>
         </translation>
     </message>
 </context>
@@ -11248,7 +11248,7 @@
     </message>
     <message>
         <source>“%1” and its rules go away for good. No songs are touched.</source>
-        <translation type="unfinished"></translation>
+        <translation>„%1“ und seine Regeln verschwinden endgültig. Keine Titel werden angerührt.</translation>
     </message>
     <message>
         <source>Delete playlist</source>
@@ -11256,7 +11256,7 @@
     </message>
     <message>
         <source>SMART PLAYLIST</source>
-        <translation type="unfinished"></translation>
+        <translation>INTELLIGENTE PLAYLIST</translation>
     </message>
     <message numerus="yes">
         <source>%n song(s)</source>
@@ -11275,7 +11275,7 @@
     </message>
     <message>
         <source>Edit rules</source>
-        <translation type="unfinished"></translation>
+        <translation>Regeln bearbeiten</translation>
     </message>
     <message>
         <source>Export</source>
@@ -11287,11 +11287,11 @@
     </message>
     <message>
         <source>Nothing matches yet</source>
-        <translation type="unfinished"></translation>
+        <translation>Noch passt nichts</translation>
     </message>
     <message>
         <source>Songs appear here as soon as they match the rules. It updates as you play, like and add music.</source>
-        <translation type="unfinished"></translation>
+        <translation>Titel erscheinen hier, sobald sie zu den Regeln passen. Es aktualisiert sich, während du spielst, magst und Musik hinzufügst.</translation>
     </message>
 </context>
 <context>
@@ -11310,7 +11310,7 @@
     </message>
     <message>
         <source>Album artist</source>
-        <translation type="unfinished"></translation>
+        <translation>Album-Künstler</translation>
     </message>
     <message>
         <source>Genre</source>
@@ -11322,11 +11322,11 @@
     </message>
     <message>
         <source>Work</source>
-        <translation type="unfinished"></translation>
+        <translation>Werk</translation>
     </message>
     <message>
         <source>Key</source>
-        <translation type="unfinished"></translation>
+        <translation>Tonart</translation>
     </message>
     <message>
         <source>Format</source>
@@ -11334,7 +11334,7 @@
     </message>
     <message>
         <source>File path</source>
-        <translation type="unfinished"></translation>
+        <translation>Dateipfad</translation>
     </message>
     <message>
         <source>Year</source>
@@ -11342,35 +11342,35 @@
     </message>
     <message>
         <source>Track number</source>
-        <translation type="unfinished"></translation>
+        <translation>Titelnummer</translation>
     </message>
     <message>
         <source>Disc number</source>
-        <translation type="unfinished"></translation>
+        <translation>CD-Nummer</translation>
     </message>
     <message>
         <source>Length (minutes)</source>
-        <translation type="unfinished"></translation>
+        <translation>Länge (Minuten)</translation>
     </message>
     <message>
         <source>Tempo (BPM)</source>
-        <translation type="unfinished"></translation>
+        <translation>Tempo (BPM)</translation>
     </message>
     <message>
         <source>Bitrate (kb/s)</source>
-        <translation type="unfinished"></translation>
+        <translation>Bitrate (kb/s)</translation>
     </message>
     <message>
         <source>Play count</source>
-        <translation type="unfinished"></translation>
+        <translation>Wiedergaben</translation>
     </message>
     <message>
         <source>Date added</source>
-        <translation type="unfinished"></translation>
+        <translation>Hinzugefügt am</translation>
     </message>
     <message>
         <source>Last played</source>
-        <translation type="unfinished"></translation>
+        <translation>Zuletzt gespielt</translation>
     </message>
     <message>
         <source>Liked</source>
@@ -11378,23 +11378,23 @@
     </message>
     <message>
         <source>Rating (stars)</source>
-        <translation type="unfinished"></translation>
+        <translation>Bewertung (Sterne)</translation>
     </message>
     <message>
         <source>Skip count</source>
-        <translation type="unfinished"></translation>
+        <translation>Übersprungen</translation>
     </message>
     <message>
         <source>Lossless</source>
-        <translation type="unfinished"></translation>
+        <translation>Verlustfrei</translation>
     </message>
     <message>
         <source>Sample rate (kHz)</source>
-        <translation type="unfinished"></translation>
+        <translation>Abtastrate (kHz)</translation>
     </message>
     <message>
         <source>Bit depth</source>
-        <translation type="unfinished"></translation>
+        <translation>Bittiefe</translation>
     </message>
     <message>
         <source>Explicit</source>
@@ -11402,91 +11402,91 @@
     </message>
     <message>
         <source>Date liked</source>
-        <translation type="unfinished"></translation>
+        <translation>Gemocht am</translation>
     </message>
     <message>
         <source>contains</source>
-        <translation type="unfinished"></translation>
+        <translation>enthält</translation>
     </message>
     <message>
         <source>does not contain</source>
-        <translation type="unfinished"></translation>
+        <translation>enthält nicht</translation>
     </message>
     <message>
         <source>is</source>
-        <translation type="unfinished"></translation>
+        <translation>ist</translation>
     </message>
     <message>
         <source>is not</source>
-        <translation type="unfinished"></translation>
+        <translation>ist nicht</translation>
     </message>
     <message>
         <source>starts with</source>
-        <translation type="unfinished"></translation>
+        <translation>beginnt mit</translation>
     </message>
     <message>
         <source>ends with</source>
-        <translation type="unfinished"></translation>
+        <translation>endet mit</translation>
     </message>
     <message>
         <source>is empty</source>
-        <translation type="unfinished"></translation>
+        <translation>ist leer</translation>
     </message>
     <message>
         <source>is not empty</source>
-        <translation type="unfinished"></translation>
+        <translation>ist nicht leer</translation>
     </message>
     <message>
         <source>is more than</source>
-        <translation type="unfinished"></translation>
+        <translation>ist mehr als</translation>
     </message>
     <message>
         <source>is less than</source>
-        <translation type="unfinished"></translation>
+        <translation>ist weniger als</translation>
     </message>
     <message>
         <source>is at least</source>
-        <translation type="unfinished"></translation>
+        <translation>ist mindestens</translation>
     </message>
     <message>
         <source>is at most</source>
-        <translation type="unfinished"></translation>
+        <translation>ist höchstens</translation>
     </message>
     <message>
         <source>is between</source>
-        <translation type="unfinished"></translation>
+        <translation>ist zwischen</translation>
     </message>
     <message>
         <source>in the last (days)</source>
-        <translation type="unfinished"></translation>
+        <translation>in den letzten (Tagen)</translation>
     </message>
     <message>
         <source>not in the last (days)</source>
-        <translation type="unfinished"></translation>
+        <translation>nicht in den letzten (Tagen)</translation>
     </message>
     <message>
         <source>never</source>
-        <translation type="unfinished"></translation>
+        <translation>nie</translation>
     </message>
     <message>
         <source>is yes</source>
-        <translation type="unfinished"></translation>
+        <translation>ist ja</translation>
     </message>
     <message>
         <source>is no</source>
-        <translation type="unfinished"></translation>
+        <translation>ist nein</translation>
     </message>
     <message>
         <source>Random</source>
-        <translation type="unfinished"></translation>
+        <translation>Zufällig</translation>
     </message>
     <message>
         <source>Slowest first</source>
-        <translation type="unfinished"></translation>
+        <translation>Langsamste zuerst</translation>
     </message>
     <message>
         <source>Fastest first</source>
-        <translation type="unfinished"></translation>
+        <translation>Schnellste zuerst</translation>
     </message>
     <message>
         <source>Newest first</source>
@@ -11506,35 +11506,35 @@
     </message>
     <message>
         <source>Highest rated</source>
-        <translation type="unfinished"></translation>
+        <translation>Am besten bewertet</translation>
     </message>
     <message>
         <source>Recently played</source>
-        <translation type="unfinished"></translation>
+        <translation>Zuletzt gespielt</translation>
     </message>
     <message>
         <source>Least recently played</source>
-        <translation type="unfinished"></translation>
+        <translation>Am längsten nicht gespielt</translation>
     </message>
     <message numerus="yes">
         <source>%1 in the last %n day(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%1 am letzten %n Tag</numerusform>
+            <numerusform>%1 in den letzten %n Tagen</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%1 not in the last %n day(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%1 nicht am letzten %n Tag</numerusform>
+            <numerusform>%1 nicht in den letzten %n Tagen</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>up to %n song(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>bis zu %n Titel</numerusform>
+            <numerusform>bis zu %n Titel</numerusform>
         </translation>
     </message>
 </context>
@@ -11546,16 +11546,16 @@
     </message>
     <message numerus="yes">
         <source>%n probable duplicate(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n wahrscheinliches Duplikat</numerusform>
+            <numerusform>%n wahrscheinliche Duplikate</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n song(s) shown</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n Titel angezeigt</numerusform>
+            <numerusform>%n Titel angezeigt</numerusform>
         </translation>
     </message>
     <message numerus="yes">
@@ -11567,31 +11567,31 @@
     </message>
     <message>
         <source>Sort by title</source>
-        <translation type="unfinished"></translation>
+        <translation>Nach Titel sortieren</translation>
     </message>
     <message>
         <source>Sort by artist</source>
-        <translation type="unfinished"></translation>
+        <translation>Nach Künstler sortieren</translation>
     </message>
     <message>
         <source>Sort by album</source>
-        <translation type="unfinished"></translation>
+        <translation>Nach Album sortieren</translation>
     </message>
     <message>
         <source>Sort by genre</source>
-        <translation type="unfinished"></translation>
+        <translation>Nach Genre sortieren</translation>
     </message>
     <message>
         <source>Sort by year</source>
-        <translation type="unfinished"></translation>
+        <translation>Nach Jahr sortieren</translation>
     </message>
     <message>
         <source>Sort by composer</source>
-        <translation type="unfinished"></translation>
+        <translation>Nach Komponist sortieren</translation>
     </message>
     <message>
         <source>Sort by tempo</source>
-        <translation type="unfinished"></translation>
+        <translation>Nach Tempo sortieren</translation>
     </message>
     <message>
         <source>Most played</source>
@@ -11611,23 +11611,23 @@
     </message>
     <message>
         <source>Genre to show</source>
-        <translation type="unfinished"></translation>
+        <translation>Anzuzeigendes Genre</translation>
     </message>
     <message>
         <source>All years</source>
-        <translation type="unfinished"></translation>
+        <translation>Alle Jahre</translation>
     </message>
     <message>
         <source>Year to show</source>
-        <translation type="unfinished"></translation>
+        <translation>Anzuzeigendes Jahr</translation>
     </message>
     <message>
         <source>All formats</source>
-        <translation type="unfinished"></translation>
+        <translation>Alle Formate</translation>
     </message>
     <message>
         <source>Format to show</source>
-        <translation type="unfinished"></translation>
+        <translation>Anzuzeigendes Format</translation>
     </message>
     <message>
         <source>Shuffle</source>
@@ -11635,7 +11635,7 @@
     </message>
     <message>
         <source>Play the songs shown here in a random order</source>
-        <translation type="unfinished"></translation>
+        <translation>Die hier gezeigten Titel in zufälliger Reihenfolge spielen</translation>
     </message>
     <message>
         <source>Clear</source>
@@ -11643,11 +11643,11 @@
     </message>
     <message>
         <source>Show songs</source>
-        <translation type="unfinished"></translation>
+        <translation>Titel zeigen</translation>
     </message>
     <message>
         <source>Finding…</source>
-        <translation type="unfinished"></translation>
+        <translation>Suche…</translation>
     </message>
     <message>
         <source>Find duplicates</source>
@@ -11662,27 +11662,27 @@
     </message>
     <message>
         <source>%1 BPM</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 BPM</translation>
     </message>
     <message>
         <source>Checking for duplicates…</source>
-        <translation type="unfinished"></translation>
+        <translation>Suche nach Duplikaten…</translation>
     </message>
     <message>
         <source>No probable duplicates</source>
-        <translation type="unfinished"></translation>
+        <translation>Keine wahrscheinlichen Duplikate</translation>
     </message>
     <message>
         <source>No songs match these filters</source>
-        <translation type="unfinished"></translation>
+        <translation>Keine Titel passen zu diesen Filtern</translation>
     </message>
     <message>
         <source>No two songs share a title, artist and length.</source>
-        <translation type="unfinished"></translation>
+        <translation>Keine zwei Titel haben denselben Titel, Künstler und dieselbe Länge.</translation>
     </message>
     <message>
         <source>Try another genre, year or format.</source>
-        <translation type="unfinished"></translation>
+        <translation>Versuch ein anderes Genre, Jahr oder Format.</translation>
     </message>
     <message>
         <source>Clear filters</source>
@@ -11709,43 +11709,43 @@
     <name>SoundsLike</name>
     <message>
         <source>%1 minor</source>
-        <translation type="unfinished"></translation>
+        <translation>%1-Moll</translation>
     </message>
     <message>
         <source>%1 major</source>
-        <translation type="unfinished"></translation>
+        <translation>%1-Dur</translation>
     </message>
     <message>
         <source>Hallucinate couldn&apos;t listen to your music just now (song after song failed to decode), so it has stopped for this session. It tries again next time it starts.</source>
-        <translation type="unfinished"></translation>
+        <translation>Hallucinate konnte deine Musik gerade nicht anhören (ein Titel nach dem anderen ließ sich nicht dekodieren), deshalb hat es für diese Sitzung aufgehört. Beim nächsten Start versucht es es erneut.</translation>
     </message>
     <message>
         <source>Only songs on this computer can be matched by how they sound.</source>
-        <translation type="unfinished"></translation>
+        <translation>Nur Titel auf diesem Computer lassen sich nach ihrem Klang zuordnen.</translation>
     </message>
     <message>
         <source>Listening to the song first…</source>
-        <translation type="unfinished"></translation>
+        <translation>Hört erst den Titel an…</translation>
     </message>
     <message>
         <source>That song isn&apos;t in the library any more.</source>
-        <translation type="unfinished"></translation>
+        <translation>Dieser Titel ist nicht mehr in der Mediathek.</translation>
     </message>
     <message>
         <source>Hallucinate couldn&apos;t listen to that song (it may be silent, too short or damaged).</source>
-        <translation type="unfinished"></translation>
+        <translation>Hallucinate konnte diesen Titel nicht anhören (vielleicht still, zu kurz oder beschädigt).</translation>
     </message>
     <message>
         <source>Couldn&apos;t find songs that sound like that.</source>
-        <translation type="unfinished"></translation>
+        <translation>Keine Titel gefunden, die so klingen.</translation>
     </message>
     <message>
         <source>No songs that sound like that yet: Hallucinate hasn&apos;t listened to enough of your music.</source>
-        <translation type="unfinished"></translation>
+        <translation>Noch keine Titel, die so klingen: Hallucinate hat noch nicht genug von deiner Musik gehört.</translation>
     </message>
     <message>
         <source>No other songs sound like that with these settings.</source>
-        <translation type="unfinished"></translation>
+        <translation>Mit diesen Einstellungen klingen keine anderen Titel so.</translation>
     </message>
     <message>
         <source>%1 added to the queue</source>
@@ -11753,19 +11753,19 @@
     </message>
     <message>
         <source>Sounds like %1 (%2)</source>
-        <translation type="unfinished"></translation>
+        <translation>Klingt wie %1 (%2)</translation>
     </message>
     <message>
         <source>this</source>
-        <translation type="unfinished"></translation>
+        <translation>das</translation>
     </message>
     <message>
         <source>Saved as “%1”</source>
-        <translation type="unfinished"></translation>
+        <translation>Gespeichert als „%1“</translation>
     </message>
     <message>
         <source>Picked from the %1 songs listened to so far: they&apos;ll get closer as Hallucinate listens to more of your music.</source>
-        <translation type="unfinished"></translation>
+        <translation>Ausgewählt aus den %1 bisher angehörten Titeln: Sie werden genauer, je mehr Hallucinate von deiner Musik hört.</translation>
     </message>
     <message numerus="yes">
         <source>%n song(s)</source>
@@ -11779,93 +11779,93 @@
     <name>Sources</name>
     <message>
         <source>Offline mode is on, so the token can&apos;t be checked</source>
-        <translation type="unfinished"></translation>
+        <translation>Der Offline-Modus ist an, deshalb kann das Token nicht geprüft werden</translation>
     </message>
     <message>
         <source>Checking the token…</source>
-        <translation type="unfinished"></translation>
+        <translation>Prüfe das Token…</translation>
     </message>
     <message>
         <source>Discogs didn&apos;t accept that token</source>
-        <translation type="unfinished"></translation>
+        <translation>Discogs hat dieses Token nicht akzeptiert</translation>
     </message>
     <message>
         <source>Couldn&apos;t check the token: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Das Token konnte nicht geprüft werden: %1</translation>
     </message>
     <message>
         <source>Connected as %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Verbunden als %1</translation>
     </message>
     <message>
         <source>Connected</source>
-        <translation type="unfinished"></translation>
+        <translation>Verbunden</translation>
     </message>
     <message>
         <source>Disconnected from Discogs</source>
-        <translation type="unfinished"></translation>
+        <translation>Von Discogs getrennt</translation>
     </message>
     <message>
         <source>(the system keyring couldn&apos;t be updated: %1)</source>
-        <translation type="unfinished"></translation>
+        <translation>(der Schlüsselbund des Systems konnte nicht aktualisiert werden: %1)</translation>
     </message>
     <message>
         <source>Offline mode is on, so the key can&apos;t be checked</source>
-        <translation type="unfinished"></translation>
+        <translation>Der Offline-Modus ist an, deshalb kann der Schlüssel nicht geprüft werden</translation>
     </message>
     <message>
         <source>Checking the key…</source>
-        <translation type="unfinished"></translation>
+        <translation>Prüfe den Schlüssel…</translation>
     </message>
     <message>
         <source>Ticketmaster didn&apos;t accept that key</source>
-        <translation type="unfinished"></translation>
+        <translation>Ticketmaster hat diesen Schlüssel nicht akzeptiert</translation>
     </message>
     <message>
         <source>Couldn&apos;t check the key: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Der Schlüssel konnte nicht geprüft werden: %1</translation>
     </message>
     <message>
         <source>The key is forgotten</source>
-        <translation type="unfinished"></translation>
+        <translation>Der Schlüssel ist vergessen</translation>
     </message>
 </context>
 <context>
     <name>Spectrum</name>
     <message>
         <source>Only songs on this computer can be analysed</source>
-        <translation type="unfinished"></translation>
+        <translation>Nur Titel auf diesem Computer lassen sich analysieren</translation>
     </message>
     <message>
         <source>This file couldn&apos;t be decoded</source>
-        <translation type="unfinished"></translation>
+        <translation>Diese Datei konnte nicht dekodiert werden</translation>
     </message>
     <message>
         <source>The image couldn&apos;t be drawn</source>
-        <translation type="unfinished"></translation>
+        <translation>Das Bild konnte nicht gezeichnet werden</translation>
     </message>
 </context>
 <context>
     <name>SpectrumWindow</name>
     <message>
         <source>Spectrum analyzer – %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Spektrumanalyse – %1</translation>
     </message>
     <message>
         <source>Spectrum analyzer</source>
-        <translation type="unfinished"></translation>
+        <translation>Spektrumanalyse</translation>
     </message>
     <message>
         <source>Analysing %1…</source>
-        <translation type="unfinished"></translation>
+        <translation>Analysiere %1…</translation>
     </message>
     <message>
         <source>Analysing the song…</source>
-        <translation type="unfinished"></translation>
+        <translation>Analysiere den Titel…</translation>
     </message>
     <message>
         <source>Save image</source>
-        <translation type="unfinished"></translation>
+        <translation>Bild speichern</translation>
     </message>
     <message>
         <source>Saved to %1</source>
@@ -11888,11 +11888,11 @@
     <name>StarRating</name>
     <message>
         <source>Rating: %1 of 5 stars</source>
-        <translation type="unfinished"></translation>
+        <translation>Bewertung: %1 von 5 Sternen</translation>
     </message>
     <message>
         <source>Rating: not rated</source>
-        <translation type="unfinished"></translation>
+        <translation>Bewertung: nicht bewertet</translation>
     </message>
     <message>
         <source>Clear rating</source>
@@ -11900,11 +11900,11 @@
     </message>
     <message>
         <source> stars</source>
-        <translation type="unfinished"></translation>
+        <translation> Sterne</translation>
     </message>
     <message>
         <source> star</source>
-        <translation type="unfinished"></translation>
+        <translation> Stern</translation>
     </message>
 </context>
 <context>
@@ -11915,17 +11915,17 @@
     </message>
     <message>
         <source>Offline mode is on, so the station can&apos;t be checked</source>
-        <translation type="unfinished"></translation>
+        <translation>Der Offline-Modus ist an, deshalb kann der Sender nicht geprüft werden</translation>
     </message>
     <message>
         <source>Couldn&apos;t add that station: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Der Sender konnte nicht hinzugefügt werden: %1</translation>
     </message>
     <message numerus="yes">
         <source>%n station(s) will play next</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n Sender wird als Nächstes gespielt</numerusform>
+            <numerusform>%n Sender werden als Nächstes gespielt</numerusform>
         </translation>
     </message>
     <message>
@@ -11934,7 +11934,7 @@
     </message>
     <message>
         <source>Offline mode is on, so stations can&apos;t play</source>
-        <translation type="unfinished"></translation>
+        <translation>Der Offline-Modus ist an, deshalb können keine Sender spielen</translation>
     </message>
     <message>
         <source>Couldn&apos;t read the file: %1</source>
@@ -11942,32 +11942,32 @@
     </message>
     <message>
         <source>That&apos;s a stream itself, not a list of stations: add it by its link instead</source>
-        <translation type="unfinished"></translation>
+        <translation>Das ist selbst ein Stream, keine Senderliste: Füg ihn stattdessen per Link hinzu</translation>
     </message>
     <message>
         <source>No station links in that file</source>
-        <translation type="unfinished"></translation>
+        <translation>Keine Sender-Links in dieser Datei</translation>
     </message>
     <message numerus="yes">
         <source>Added %n station(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n Sender hinzugefügt</numerusform>
+            <numerusform>%n Sender hinzugefügt</numerusform>
         </translation>
     </message>
     <message>
         <source>Those stations are already saved</source>
-        <translation type="unfinished"></translation>
+        <translation>Diese Sender sind schon gespeichert</translation>
     </message>
     <message>
         <source>Couldn&apos;t save: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Speichern nicht möglich: %1</translation>
     </message>
     <message numerus="yes">
         <source>Saved %n station(s) to %1</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n Sender in %1 gespeichert</numerusform>
+            <numerusform>%n Sender in %1 gespeichert</numerusform>
         </translation>
     </message>
     <message>
@@ -11976,46 +11976,46 @@
     </message>
     <message>
         <source>“%1” is already saved</source>
-        <translation type="unfinished"></translation>
+        <translation>„%1“ ist schon gespeichert</translation>
     </message>
     <message>
         <source>Saved “%1”</source>
-        <translation type="unfinished"></translation>
+        <translation>„%1“ gespeichert</translation>
     </message>
     <message>
         <source>Couldn&apos;t reach the station directory. Check your connection.</source>
-        <translation type="unfinished"></translation>
+        <translation>Das Senderverzeichnis war nicht erreichbar. Prüf deine Verbindung.</translation>
     </message>
     <message>
         <source>No stations match “%1”</source>
-        <translation type="unfinished"></translation>
+        <translation>Keine Sender passen zu „%1“</translation>
     </message>
 </context>
 <context>
     <name>StationsPage</name>
     <message>
         <source>Find in your library</source>
-        <translation type="unfinished"></translation>
+        <translation>In deiner Mediathek suchen</translation>
     </message>
     <message>
         <source>Copy artist and title</source>
-        <translation type="unfinished"></translation>
+        <translation>Künstler und Titel kopieren</translation>
     </message>
     <message>
         <source>Copied “%1”</source>
-        <translation type="unfinished"></translation>
+        <translation>„%1“ kopiert</translation>
     </message>
     <message>
         <source>Remove from the log</source>
-        <translation type="unfinished"></translation>
+        <translation>Aus dem Protokoll entfernen</translation>
     </message>
     <message>
         <source>Clear what you&apos;ve heard?</source>
-        <translation type="unfinished"></translation>
+        <translation>Löschen, was du gehört hast?</translation>
     </message>
     <message>
         <source>Every song in “Heard on the radio” goes. Your stations, and anything already scrobbled, stay.</source>
-        <translation type="unfinished"></translation>
+        <translation>Jeder Titel in „Im Radio gehört“ verschwindet. Deine Sender und alles schon Gescrobbelte bleiben.</translation>
     </message>
     <message>
         <source>Clear</source>
@@ -12035,55 +12035,55 @@
     </message>
     <message>
         <source>Copy stream link</source>
-        <translation type="unfinished"></translation>
+        <translation>Stream-Link kopieren</translation>
     </message>
     <message>
         <source>Stream link copied</source>
-        <translation type="unfinished"></translation>
+        <translation>Stream-Link kopiert</translation>
     </message>
     <message>
         <source>Open the station&apos;s website</source>
-        <translation type="unfinished"></translation>
+        <translation>Die Website des Senders öffnen</translation>
     </message>
     <message>
         <source>That station&apos;s website link can&apos;t be opened</source>
-        <translation type="unfinished"></translation>
+        <translation>Der Website-Link dieses Senders kann nicht geöffnet werden</translation>
     </message>
     <message>
         <source>Remove station</source>
-        <translation type="unfinished"></translation>
+        <translation>Sender entfernen</translation>
     </message>
     <message>
         <source>Add a station</source>
-        <translation type="unfinished"></translation>
+        <translation>Einen Sender hinzufügen</translation>
     </message>
     <message>
         <source>Paste the station&apos;s stream link. A .pls or .m3u link works too.</source>
-        <translation type="unfinished"></translation>
+        <translation>Füg den Stream-Link des Senders ein. Ein .pls- oder .m3u-Link geht auch.</translation>
     </message>
     <message>
         <source>Stream link</source>
-        <translation type="unfinished"></translation>
+        <translation>Stream-Link</translation>
     </message>
     <message>
         <source>Name (optional: the station&apos;s own name is used)</source>
-        <translation type="unfinished"></translation>
+        <translation>Name (optional: der eigene Name des Senders wird verwendet)</translation>
     </message>
     <message>
         <source>Station name</source>
-        <translation type="unfinished"></translation>
+        <translation>Sendername</translation>
     </message>
     <message>
         <source>Rename station</source>
-        <translation type="unfinished"></translation>
+        <translation>Sender umbenennen</translation>
     </message>
     <message>
         <source>Import stations</source>
-        <translation type="unfinished"></translation>
+        <translation>Sender importieren</translation>
     </message>
     <message>
         <source>Station lists (*.m3u *.m3u8 *.pls *.xspf)</source>
-        <translation type="unfinished"></translation>
+        <translation>Senderlisten (*.m3u *.m3u8 *.pls *.xspf)</translation>
     </message>
     <message>
         <source>All files (*)</source>
@@ -12091,11 +12091,11 @@
     </message>
     <message>
         <source>Export your stations</source>
-        <translation type="unfinished"></translation>
+        <translation>Deine Sender exportieren</translation>
     </message>
     <message>
         <source>M3U playlist (*.m3u)</source>
-        <translation type="unfinished"></translation>
+        <translation>M3U-Playlist (*.m3u)</translation>
     </message>
     <message>
         <source>Playing: </source>
@@ -12122,7 +12122,7 @@
     </message>
     <message>
         <source>Add by link</source>
-        <translation type="unfinished"></translation>
+        <translation>Per Link hinzufügen</translation>
     </message>
     <message>
         <source>Import</source>
@@ -12134,11 +12134,11 @@
     </message>
     <message>
         <source>Find stations by name or genre (jazz, BBC, lofi…)</source>
-        <translation type="unfinished"></translation>
+        <translation>Sender nach Name oder Genre finden (Jazz, BBC, Lofi…)</translation>
     </message>
     <message>
         <source>Find stations</source>
-        <translation type="unfinished"></translation>
+        <translation>Sender finden</translation>
     </message>
     <message>
         <source>Searching…</source>
@@ -12150,11 +12150,11 @@
     </message>
     <message>
         <source>Radio Browser, a free and open list of stations</source>
-        <translation type="unfinished"></translation>
+        <translation>Radio Browser, eine freie und offene Senderliste</translation>
     </message>
     <message>
         <source>✓ Saved</source>
-        <translation type="unfinished"></translation>
+        <translation>✓ Gespeichert</translation>
     </message>
     <message>
         <source>Save</source>
@@ -12162,11 +12162,11 @@
     </message>
     <message>
         <source>Listen</source>
-        <translation type="unfinished"></translation>
+        <translation>Anhören</translation>
     </message>
     <message>
         <source>Save to your stations</source>
-        <translation type="unfinished"></translation>
+        <translation>Bei deinen Sendern speichern</translation>
     </message>
     <message>
         <source>Your stations</source>
@@ -12174,7 +12174,7 @@
     </message>
     <message>
         <source>Click to tune in. Next and previous move between them.</source>
-        <translation type="unfinished"></translation>
+        <translation>Klick zum Einschalten. Weiter und Zurück wechseln zwischen ihnen.</translation>
     </message>
     <message>
         <source>LIVE</source>
@@ -12182,7 +12182,7 @@
     </message>
     <message>
         <source>PAUSED</source>
-        <translation type="unfinished"></translation>
+        <translation>PAUSIERT</translation>
     </message>
     <message>
         <source>Your listening</source>
@@ -12190,54 +12190,54 @@
     </message>
     <message>
         <source>Time spent on the radio, kept apart from your music&apos;s stats</source>
-        <translation type="unfinished"></translation>
+        <translation>Zeit mit Radio, getrennt von der Statistik deiner Musik</translation>
     </message>
     <message>
         <source>Heard on the radio</source>
-        <translation type="unfinished"></translation>
+        <translation>Im Radio gehört</translation>
     </message>
     <message>
         <source>Songs a station played while you listened for a minute or more, newest first</source>
-        <translation type="unfinished"></translation>
+        <translation>Titel, die ein Sender gespielt hat, während du eine Minute oder länger zugehört hast, neueste zuerst</translation>
     </message>
     <message>
         <source>Find a song you heard</source>
-        <translation type="unfinished"></translation>
+        <translation>Einen gehörten Titel finden</translation>
     </message>
     <message>
         <source>Find a song you heard on the radio</source>
-        <translation type="unfinished"></translation>
+        <translation>Einen im Radio gehörten Titel finden</translation>
     </message>
     <message>
         <source>Clear…</source>
-        <translation type="unfinished"></translation>
+        <translation>Leeren…</translation>
     </message>
     <message>
         <source>No song you heard matches “%1”</source>
-        <translation type="unfinished"></translation>
+        <translation>Kein gehörter Titel passt zu „%1“</translation>
     </message>
     <message>
         <source>Nothing yet. Songs show up here once a station has said what it&apos;s playing and you&apos;ve listened for a minute.</source>
-        <translation type="unfinished"></translation>
+        <translation>Noch nichts. Titel erscheinen hier, sobald ein Sender sagt, was er spielt, und du eine Minute zugehört hast.</translation>
     </message>
     <message>
         <source>%1 by %2, on %3 at %4</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 von %2, auf %3 um %4</translation>
     </message>
     <message>
         <source>No stations yet</source>
-        <translation type="unfinished"></translation>
+        <translation>Noch keine Sender</translation>
     </message>
     <message>
         <source>Find one above, or add a station you know by its stream link.</source>
-        <translation type="unfinished"></translation>
+        <translation>Finde oben einen oder füg einen Sender, den du kennst, per Stream-Link hinzu.</translation>
     </message>
 </context>
 <context>
     <name>StatsPage</name>
     <message>
         <source>Listening stats</source>
-        <translation type="unfinished"></translation>
+        <translation>Hörstatistik</translation>
     </message>
     <message>
         <source>All time</source>
@@ -12245,37 +12245,37 @@
     </message>
     <message>
         <source>Last 7 days</source>
-        <translation type="unfinished"></translation>
+        <translation>Letzte 7 Tage</translation>
     </message>
     <message>
         <source>Last 30 days</source>
-        <translation type="unfinished"></translation>
+        <translation>Letzte 30 Tage</translation>
     </message>
     <message>
         <source>Last 12 months</source>
-        <translation type="unfinished"></translation>
+        <translation>Letzte 12 Monate</translation>
     </message>
     <message>
         <source>listens</source>
-        <translation type="unfinished"></translation>
+        <translation>Wiedergaben</translation>
     </message>
     <message>
         <source>estimated listening time</source>
-        <translation type="unfinished"></translation>
+        <translation>geschätzte Hörzeit</translation>
     </message>
     <message>
         <source>Top tracks</source>
-        <translation type="unfinished"></translation>
+        <translation>Top-Titel</translation>
     </message>
     <message>
         <source>No listening history for this period yet.</source>
-        <translation type="unfinished"></translation>
+        <translation>Für diesen Zeitraum noch kein Hörverlauf.</translation>
     </message>
     <message numerus="yes">
         <source>%n listen(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n Wiedergabe</numerusform>
+            <numerusform>%n Wiedergaben</numerusform>
         </translation>
     </message>
     <message>
@@ -12295,73 +12295,73 @@
     </message>
     <message>
         <source>Recently played</source>
-        <translation type="unfinished"></translation>
+        <translation>Zuletzt gespielt</translation>
     </message>
     <message>
         <source>Your mix</source>
-        <translation type="unfinished"></translation>
+        <translation>Dein Mix</translation>
     </message>
     <message>
         <source>Songs you play and like most, a few per artist</source>
-        <translation type="unfinished"></translation>
+        <translation>Titel, die du am meisten spielst und magst, ein paar pro Künstler</translation>
     </message>
 </context>
 <context>
     <name>StyledSlider</name>
     <message>
         <source>Slider</source>
-        <translation type="unfinished"></translation>
+        <translation>Schieberegler</translation>
     </message>
 </context>
 <context>
     <name>TagEdit</name>
     <message>
         <source>This song is on a music server: change its tags there</source>
-        <translation type="unfinished"></translation>
+        <translation>Dieser Titel liegt auf einem Musikserver: Ändere seine Tags dort</translation>
     </message>
     <message>
         <source>This song comes from a CUE sheet; edit the .cue file instead</source>
-        <translation type="unfinished"></translation>
+        <translation>Dieser Titel stammt aus einem CUE-Sheet; bearbeite stattdessen die .cue-Datei</translation>
     </message>
     <message>
         <source>File not found</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei nicht gefunden</translation>
     </message>
     <message>
         <source>File is read-only</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei ist schreibgeschützt</translation>
     </message>
     <message>
         <source>Cannot read file: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei kann nicht gelesen werden: %1</translation>
     </message>
     <message>
         <source>Unsupported file type</source>
-        <translation type="unfinished"></translation>
+        <translation>Nicht unterstützter Dateityp</translation>
     </message>
     <message>
         <source>Tag writing is not supported for %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Tags schreiben wird für %1 nicht unterstützt</translation>
     </message>
     <message>
         <source>Could not write tags: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Tags konnten nicht geschrieben werden: %1</translation>
     </message>
     <message>
         <source>Embedding cover art is not supported for %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Cover einbetten wird für %1 nicht unterstützt</translation>
     </message>
     <message>
         <source>Could not embed cover: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Cover konnte nicht eingebettet werden: %1</translation>
     </message>
     <message>
         <source>Ratings can&apos;t be saved in %1 files</source>
-        <translation type="unfinished"></translation>
+        <translation>In %1-Dateien lassen sich keine Bewertungen speichern</translation>
     </message>
     <message>
         <source>Could not save the rating: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Die Bewertung konnte nicht gespeichert werden: %1</translation>
     </message>
 </context>
 <context>
@@ -12372,9 +12372,9 @@
     </message>
     <message numerus="yes">
         <source>Edit %n song(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n Titel bearbeiten</numerusform>
+            <numerusform>%n Titel bearbeiten</numerusform>
         </translation>
     </message>
     <message>
@@ -12395,15 +12395,15 @@
     </message>
     <message>
         <source>Album artist</source>
-        <translation type="unfinished"></translation>
+        <translation>Album-Künstler</translation>
     </message>
     <message>
         <source>Track #</source>
-        <translation type="unfinished"></translation>
+        <translation>Titel-Nr.</translation>
     </message>
     <message>
         <source>Disc #</source>
-        <translation type="unfinished"></translation>
+        <translation>CD-Nr.</translation>
     </message>
     <message>
         <source>Year</source>
@@ -12419,83 +12419,83 @@
     </message>
     <message>
         <source>Work</source>
-        <translation type="unfinished"></translation>
+        <translation>Werk</translation>
     </message>
     <message>
         <source>Movement</source>
-        <translation type="unfinished"></translation>
+        <translation>Satz</translation>
     </message>
     <message>
         <source>Tempo (BPM)</source>
-        <translation type="unfinished"></translation>
+        <translation>Tempo (BPM)</translation>
     </message>
     <message>
         <source>Looking it up…</source>
-        <translation type="unfinished"></translation>
+        <translation>Wird nachgeschlagen…</translation>
     </message>
     <message>
         <source>Filled in from MusicBrainz. Check the fields, then Save.</source>
-        <translation type="unfinished"></translation>
+        <translation>Von MusicBrainz ausgefüllt. Prüf die Felder, dann Speichern.</translation>
     </message>
     <message>
         <source>Filled in the album from MusicBrainz. Its %1 tracks don&apos;t match this album&apos;s %2 songs, so song titles are left as they are.</source>
-        <translation type="unfinished"></translation>
+        <translation>Das Album wurde von MusicBrainz ausgefüllt. Seine %1 Titel passen nicht zu den %2 Titeln dieses Albums, deshalb bleiben die Titelnamen, wie sie sind.</translation>
     </message>
     <message>
         <source>MusicBrainz</source>
-        <translation type="unfinished"></translation>
+        <translation>MusicBrainz</translation>
     </message>
     <message>
         <source>No source has a genre for this album, so this is the artist&apos;s (from MusicBrainz). Click genres below to add or remove them, or type your own, then Save.</source>
-        <translation type="unfinished"></translation>
+        <translation>Keine Quelle hat ein Genre für dieses Album, daher ist das hier das des Künstlers (von MusicBrainz). Klick unten auf Genres, um sie hinzuzufügen oder zu entfernen, oder tipp dein eigenes, dann Speichern.</translation>
     </message>
     <message>
         <source>From %1. The first genre is the main one. Click genres below to add or remove them, or type your own, then Save.</source>
-        <translation type="unfinished"></translation>
+        <translation>Von %1. Das erste Genre ist das wichtigste. Klick unten auf Genres, um sie hinzuzufügen oder zu entfernen, oder tipp dein eigenes, dann Speichern.</translation>
     </message>
     <message>
         <source>Choose cover image</source>
-        <translation type="unfinished"></translation>
+        <translation>Cover-Bild wählen</translation>
     </message>
     <message>
         <source>Images (*.png *.jpg *.jpeg)</source>
-        <translation type="unfinished"></translation>
+        <translation>Bilder (*.png *.jpg *.jpeg)</translation>
     </message>
     <message numerus="yes">
         <source>%n track(s). Only changed fields are written to every track.</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n Titel. Nur geänderte Felder werden in jeden Titel geschrieben.</numerusform>
+            <numerusform>%n Titel. Nur geänderte Felder werden in jeden Titel geschrieben.</numerusform>
         </translation>
     </message>
     <message>
         <source> Empty fields marked “%1” differ between them and stay as they are.</source>
-        <translation type="unfinished"></translation>
+        <translation> Leere Felder mit „%1“ unterscheiden sich zwischen ihnen und bleiben, wie sie sind.</translation>
     </message>
     <message>
         <source>mixed</source>
         <comment>an empty field whose value differs between the songs being edited</comment>
-        <translation type="unfinished"></translation>
+        <translation>gemischt</translation>
     </message>
     <message>
         <source>Am, F#, 8A…</source>
-        <translation type="unfinished"></translation>
+        <translation>Am, F#, 8A…</translation>
     </message>
     <message>
         <source>Find online</source>
-        <translation type="unfinished"></translation>
+        <translation>Online suchen</translation>
     </message>
     <message>
         <source>Find the genre online</source>
-        <translation type="unfinished"></translation>
+        <translation>Das Genre online suchen</translation>
     </message>
     <message>
         <source>More fields: composer, work</source>
-        <translation type="unfinished"></translation>
+        <translation>Weitere Felder: Komponist, Werk</translation>
     </message>
     <message>
         <source>More fields: composer, work, movement, tempo, key</source>
-        <translation type="unfinished"></translation>
+        <translation>Weitere Felder: Komponist, Werk, Satz, Tempo, Tonart</translation>
     </message>
     <message>
         <source>Remove %1</source>
@@ -12503,15 +12503,15 @@
     </message>
     <message>
         <source>Add %1</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 hinzufügen</translation>
     </message>
     <message>
         <source>Look up on MusicBrainz</source>
-        <translation type="unfinished"></translation>
+        <translation>Bei MusicBrainz nachschlagen</translation>
     </message>
     <message>
         <source>Searching MusicBrainz…</source>
-        <translation type="unfinished"></translation>
+        <translation>Durchsuche MusicBrainz…</translation>
     </message>
     <message numerus="yes">
         <source>%n track(s)</source>
@@ -12522,61 +12522,61 @@
     </message>
     <message>
         <source>Fetching the release…</source>
-        <translation type="unfinished"></translation>
+        <translation>Hole die Veröffentlichung…</translation>
     </message>
     <message>
         <source>Use %1 by %2 %3</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 von %2 %3 verwenden</translation>
     </message>
     <message numerus="yes">
         <source>Also set each song&apos;s title and number from MusicBrainz (%n song(s))</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>Auch Titel und Nummer jedes Titels von MusicBrainz setzen (%n Titel)</numerusform>
+            <numerusform>Auch Titel und Nummer jedes Titels von MusicBrainz setzen (%n Titel)</numerusform>
         </translation>
     </message>
     <message>
         <source>Choose cover…</source>
-        <translation type="unfinished"></translation>
+        <translation>Cover wählen…</translation>
     </message>
     <message>
         <source>Working…</source>
-        <translation type="unfinished"></translation>
+        <translation>Arbeite…</translation>
     </message>
     <message>
         <source>Find cover online</source>
-        <translation type="unfinished"></translation>
+        <translation>Cover online suchen</translation>
     </message>
     <message>
         <source>Also embed in the audio files</source>
-        <translation type="unfinished"></translation>
+        <translation>Auch in die Audiodateien einbetten</translation>
     </message>
 </context>
 <context>
     <name>Theme</name>
     <message>
         <source>Scanlines</source>
-        <translation type="unfinished"></translation>
+        <translation>Scanlines</translation>
     </message>
     <message>
         <source>Glitch</source>
-        <translation type="unfinished"></translation>
+        <translation>Glitch</translation>
     </message>
     <message>
         <source>KB</source>
-        <translation type="unfinished"></translation>
+        <translation>KB</translation>
     </message>
     <message>
         <source>MB</source>
-        <translation type="unfinished"></translation>
+        <translation>MB</translation>
     </message>
     <message>
         <source>GB</source>
-        <translation type="unfinished"></translation>
+        <translation>GB</translation>
     </message>
     <message>
         <source>TB</source>
-        <translation type="unfinished"></translation>
+        <translation>TB</translation>
     </message>
     <message numerus="yes">
         <source>%n day(s)</source>
@@ -12588,15 +12588,15 @@
     <message>
         <source>%1 hours</source>
         <extracomment>a number of hours that can have a decimal (&quot;2.5 hours&quot;); %1 is already written out</extracomment>
-        <translation type="unfinished"></translation>
+        <translation>%1 Stunden</translation>
     </message>
     <message>
         <source>Unknown Artist</source>
-        <translation type="unfinished"></translation>
+        <translation>Unbekannter Künstler</translation>
     </message>
     <message>
         <source>Unknown Album</source>
-        <translation type="unfinished"></translation>
+        <translation>Unbekanntes Album</translation>
     </message>
     <message>
         <source>%1 min</source>
@@ -12604,108 +12604,108 @@
     </message>
     <message>
         <source>%1 h %2 min</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 h %2 min</translation>
     </message>
     <message>
         <source>dddd d MMMM yyyy</source>
         <comment>date format (Qt): Monday 3 March 2025</comment>
-        <translation type="unfinished"></translation>
+        <translation>dddd, d. MMMM yyyy</translation>
     </message>
     <message>
         <source>dddd d MMMM</source>
         <comment>date format (Qt): Monday 3 March</comment>
-        <translation type="unfinished"></translation>
+        <translation>dddd, d. MMMM</translation>
     </message>
     <message>
         <source>ddd d MMM yyyy</source>
         <comment>date format (Qt): Mon 3 Mar 2025</comment>
-        <translation type="unfinished"></translation>
+        <translation>ddd, d. MMM yyyy</translation>
     </message>
     <message>
         <source>ddd d MMM</source>
         <comment>date format (Qt): Mon 3 Mar</comment>
-        <translation type="unfinished"></translation>
+        <translation>ddd, d. MMM</translation>
     </message>
     <message>
         <source>MMMM yyyy</source>
         <comment>date format (Qt): March 2025</comment>
-        <translation type="unfinished"></translation>
+        <translation>MMMM yyyy</translation>
     </message>
     <message>
         <source>d MMM yyyy</source>
         <comment>date format (Qt): 3 Mar 2025</comment>
-        <translation type="unfinished">d. MMM yyyy</translation>
+        <translation>d. MMM yyyy</translation>
     </message>
     <message>
         <source>h ap</source>
         <comment>time format (Qt) for a whole hour: 3 pm</comment>
-        <translation type="unfinished"></translation>
+        <translation>H &apos;Uhr&apos;</translation>
     </message>
 </context>
 <context>
     <name>ThemeEditor</name>
     <message>
         <source>Make my own theme</source>
-        <translation type="unfinished"></translation>
+        <translation>Mein eigenes Design erstellen</translation>
     </message>
     <message>
         <source>Background</source>
-        <translation type="unfinished"></translation>
+        <translation>Hintergrund</translation>
     </message>
     <message>
         <source>Cards and fields</source>
-        <translation type="unfinished"></translation>
+        <translation>Karten und Felder</translation>
     </message>
     <message>
         <source>Text</source>
-        <translation type="unfinished"></translation>
+        <translation>Text</translation>
     </message>
     <message>
         <source>Quieter text</source>
-        <translation type="unfinished"></translation>
+        <translation>Leiserer Text</translation>
     </message>
     <message>
         <source>Accent</source>
-        <translation type="unfinished"></translation>
+        <translation>Akzent</translation>
     </message>
     <message>
         <source>%1 (mine)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 (meins)</translation>
     </message>
     <message>
         <source>Saved “%1” in your themes</source>
-        <translation type="unfinished"></translation>
+        <translation>„%1“ in deinen Designs gespeichert</translation>
     </message>
     <message>
         <source>Theme name</source>
-        <translation type="unfinished"></translation>
+        <translation>Name des Designs</translation>
     </message>
     <message>
         <source>%1 colour</source>
-        <translation type="unfinished"></translation>
+        <translation>Farbe für %1</translation>
     </message>
     <message>
         <source>Colours as hex codes (#rrggbb). Everything else (rounded corners, font) comes from the current theme; the file in your theme folder can change those too.</source>
-        <translation type="unfinished"></translation>
+        <translation>Farben als Hex-Codes (#rrggbb). Alles andere (abgerundete Ecken, Schrift) kommt vom aktuellen Design; die Datei in deinem Design-Ordner kann auch das ändern.</translation>
     </message>
 </context>
 <context>
     <name>Themes</name>
     <message>
         <source>Give the theme a name</source>
-        <translation type="unfinished"></translation>
+        <translation>Gib dem Design einen Namen</translation>
     </message>
     <message>
         <source>Those colours don&apos;t make a valid theme</source>
-        <translation type="unfinished"></translation>
+        <translation>Diese Farben ergeben kein gültiges Design</translation>
     </message>
     <message>
         <source>“%1” is a built-in theme&apos;s name; pick another</source>
-        <translation type="unfinished"></translation>
+        <translation>„%1“ ist der Name eines eingebauten Designs; wähl einen anderen</translation>
     </message>
     <message>
         <source>Couldn&apos;t save the theme: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Das Design konnte nicht gespeichert werden: %1</translation>
     </message>
 </context>
 <context>
@@ -12723,13 +12723,13 @@
     </message>
     <message>
         <source>Removed from the playlist</source>
-        <translation type="unfinished"></translation>
+        <translation>Aus der Playlist entfernt</translation>
     </message>
     <message numerus="yes">
         <source>%n song(s) removed from the playlist</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n Titel aus der Playlist entfernt</numerusform>
+            <numerusform>%n Titel aus der Playlist entfernt</numerusform>
         </translation>
     </message>
     <message>
@@ -12738,7 +12738,7 @@
     </message>
     <message>
         <source>Rating</source>
-        <translation type="unfinished"></translation>
+        <translation>Bewertung</translation>
     </message>
     <message>
         <source>Not interested</source>
@@ -12746,11 +12746,11 @@
     </message>
     <message>
         <source>Copy stream link</source>
-        <translation type="unfinished"></translation>
+        <translation>Stream-Link kopieren</translation>
     </message>
     <message>
         <source>Stream link copied</source>
-        <translation type="unfinished"></translation>
+        <translation>Stream-Link kopiert</translation>
     </message>
     <message>
         <source>Play</source>
@@ -12798,19 +12798,19 @@
     </message>
     <message>
         <source>Play it and songs like it</source>
-        <translation type="unfinished"></translation>
+        <translation>Ihn und ähnliche Titel spielen</translation>
     </message>
     <message>
         <source>Add songs like it to the queue</source>
-        <translation type="unfinished"></translation>
+        <translation>Ähnliche Titel zur Warteschlange hinzufügen</translation>
     </message>
     <message>
         <source>Save them as a playlist</source>
-        <translation type="unfinished"></translation>
+        <translation>Als Playlist speichern</translation>
     </message>
     <message>
         <source>Go to album</source>
-        <translation type="unfinished"></translation>
+        <translation>Zum Album</translation>
     </message>
     <message>
         <source>Go to %1</source>
@@ -12850,7 +12850,7 @@
     </message>
     <message>
         <source>Remove from the queue</source>
-        <translation type="unfinished"></translation>
+        <translation>Aus der Warteschlange entfernen</translation>
     </message>
     <message>
         <source>Removed from the queue</source>
@@ -12881,15 +12881,15 @@
     <name>TrackRow</name>
     <message>
         <source>%1 audio</source>
-        <translation type="unfinished"></translation>
+        <translation>%1-Audio</translation>
     </message>
     <message>
         <source>, explicit</source>
-        <translation type="unfinished"></translation>
+        <translation>, explizit</translation>
     </message>
     <message>
         <source>, Hi-Res</source>
-        <translation type="unfinished"></translation>
+        <translation>, Hi-Res</translation>
     </message>
     <message>
         <source>Add to queue</source>
@@ -12952,7 +12952,7 @@
     </message>
     <message>
         <source>Internet Radio</source>
-        <translation type="unfinished"></translation>
+        <translation>Internetradio</translation>
     </message>
     <message>
         <source>Podcasts</source>
@@ -12972,11 +12972,11 @@
     </message>
     <message>
         <source>Show Hallucinate</source>
-        <translation type="unfinished"></translation>
+        <translation>Hallucinate zeigen</translation>
     </message>
     <message>
         <source>Mini Player</source>
-        <translation type="unfinished"></translation>
+        <translation>Mini-Player</translation>
     </message>
     <message>
         <source>Quit</source>
@@ -12984,7 +12984,7 @@
     </message>
     <message>
         <source>Go To</source>
-        <translation type="unfinished"></translation>
+        <translation>Gehe zu</translation>
     </message>
     <message>
         <source>Pause</source>
@@ -13003,86 +13003,86 @@
     </message>
     <message>
         <source>Couldn&apos;t reach GitHub</source>
-        <translation type="unfinished"></translation>
+        <translation>GitHub war nicht erreichbar</translation>
     </message>
     <message>
         <source>Hallucinate %1 is available</source>
-        <translation type="unfinished"></translation>
+        <translation>Hallucinate %1 ist verfügbar</translation>
     </message>
     <message>
         <source>You&apos;re up to date (%1)</source>
-        <translation type="unfinished"></translation>
+        <translation>Du bist auf dem neuesten Stand (%1)</translation>
     </message>
     <message>
         <source>Downloading the update…</source>
-        <translation type="unfinished"></translation>
+        <translation>Lade das Update herunter…</translation>
     </message>
     <message>
         <source>This release has no download for this install; opening its page</source>
-        <translation type="unfinished"></translation>
+        <translation>Diese Version hat keinen Download für diese Installation; ihre Seite wird geöffnet</translation>
     </message>
     <message>
         <source>Update cancelled</source>
-        <translation type="unfinished"></translation>
+        <translation>Update abgebrochen</translation>
     </message>
     <message>
         <source>Couldn&apos;t download the update</source>
-        <translation type="unfinished"></translation>
+        <translation>Das Update konnte nicht heruntergeladen werden</translation>
     </message>
     <message>
         <source>Downloading the update… %1%</source>
-        <translation type="unfinished"></translation>
+        <translation>Lade das Update herunter… %1 %</translation>
     </message>
     <message>
         <source>Installing Hallucinate %1…</source>
-        <translation type="unfinished"></translation>
+        <translation>Installiere Hallucinate %1…</translation>
     </message>
     <message>
         <source>Couldn&apos;t install the update</source>
-        <translation type="unfinished"></translation>
+        <translation>Das Update konnte nicht installiert werden</translation>
     </message>
 </context>
 <context>
     <name>UserLib</name>
     <message>
         <source>Imported playlist</source>
-        <translation type="unfinished"></translation>
+        <translation>Importierte Playlist</translation>
     </message>
     <message>
         <source>Couldn&apos;t read that playlist</source>
-        <translation type="unfinished"></translation>
+        <translation>Diese Playlist konnte nicht gelesen werden</translation>
     </message>
     <message>
         <source>Couldn&apos;t read that library: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Diese Mediathek konnte nicht gelesen werden: %1</translation>
     </message>
     <message>
         <source>Couldn&apos;t import that library</source>
-        <translation type="unfinished"></translation>
+        <translation>Diese Mediathek konnte nicht importiert werden</translation>
     </message>
     <message>
         <source>No file chosen</source>
-        <translation type="unfinished"></translation>
+        <translation>Keine Datei gewählt</translation>
     </message>
     <message>
         <source>There are no songs to export</source>
-        <translation type="unfinished"></translation>
+        <translation>Es gibt keine Titel zum Exportieren</translation>
     </message>
     <message>
         <source>Couldn&apos;t save the playlist: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Die Playlist konnte nicht gespeichert werden: %1</translation>
     </message>
     <message>
         <source>These rules can no longer be read</source>
-        <translation type="unfinished"></translation>
+        <translation>Diese Regeln lassen sich nicht mehr lesen</translation>
     </message>
     <message>
         <source>Invalid rules: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Ungültige Regeln: %1</translation>
     </message>
     <message>
         <source>Could not save imported listening history.</source>
-        <translation type="unfinished"></translation>
+        <translation>Der importierte Hörverlauf konnte nicht gespeichert werden.</translation>
     </message>
 </context>
 <context>
@@ -13125,11 +13125,11 @@
     </message>
     <message>
         <source>React to the music</source>
-        <translation type="unfinished"></translation>
+        <translation>Auf die Musik reagieren</translation>
     </message>
     <message>
         <source>NumPy is required to react to the music</source>
-        <translation type="unfinished"></translation>
+        <translation>Um auf die Musik zu reagieren, wird NumPy benötigt</translation>
     </message>
     <message>
         <source>Nothing playing</source>
@@ -13137,15 +13137,15 @@
     </message>
     <message>
         <source>Play something to see it</source>
-        <translation type="unfinished"></translation>
+        <translation>Spiel etwas ab, um es zu sehen</translation>
     </message>
     <message>
         <source>Turn on “React to the music” to see the sound</source>
-        <translation type="unfinished"></translation>
+        <translation>Schalte „Auf die Musik reagieren“ ein, um den Klang zu sehen</translation>
     </message>
     <message>
         <source>Liquid, Aurora and Nebula need hardware graphics</source>
-        <translation type="unfinished"></translation>
+        <translation>Liquid, Aurora und Nebula brauchen Hardware-Grafik</translation>
     </message>
 </context>
 <context>
@@ -13156,49 +13156,49 @@
     </message>
     <message>
         <source>Unmute</source>
-        <translation type="unfinished"></translation>
+        <translation>Ton an</translation>
     </message>
     <message>
         <source>Mute</source>
-        <translation type="unfinished"></translation>
+        <translation>Stumm</translation>
     </message>
     <message>
         <source>Scroll to change the volume; middle-click to mute</source>
-        <translation type="unfinished"></translation>
+        <translation>Scrollen ändert die Lautstärke; Mittelklick schaltet stumm</translation>
     </message>
     <message>
         <source>Muted — scroll to change, middle-click to unmute</source>
-        <translation type="unfinished"></translation>
+        <translation>Stumm – scrollen zum Ändern, Mittelklick für Ton an</translation>
     </message>
     <message>
         <source>Volume %1% — scroll to change, middle-click to mute</source>
-        <translation type="unfinished"></translation>
+        <translation>Lautstärke %1 % – scrollen zum Ändern, Mittelklick schaltet stumm</translation>
     </message>
     <message>
         <source>Muted</source>
-        <translation type="unfinished"></translation>
+        <translation>Stumm</translation>
     </message>
     <message>
         <source>Volume</source>
-        <translation type="unfinished"></translation>
+        <translation>Lautstärke</translation>
     </message>
 </context>
 <context>
     <name>WaveformSeek</name>
     <message>
         <source>Seek</source>
-        <translation type="unfinished"></translation>
+        <translation>Springen</translation>
     </message>
 </context>
 <context>
     <name>WebRemote</name>
     <message>
         <source>Port %1 is in use or can&apos;t be opened (%2)</source>
-        <translation type="unfinished"></translation>
+        <translation>Port %1 ist belegt oder kann nicht geöffnet werden (%2)</translation>
     </message>
     <message>
         <source>Port %1 is in use or can&apos;t be opened</source>
-        <translation type="unfinished"></translation>
+        <translation>Port %1 ist belegt oder kann nicht geöffnet werden</translation>
     </message>
 </context>
 <context>
@@ -13209,11 +13209,11 @@
     </message>
     <message>
         <source>Where&apos;s your music?</source>
-        <translation type="unfinished"></translation>
+        <translation>Wo ist deine Musik?</translation>
     </message>
     <message>
         <source>Choose the folders that hold your music. Hallucinate reads them without changing a thing, and keeps an eye out for new songs.</source>
-        <translation type="unfinished"></translation>
+        <translation>Wähle die Ordner mit deiner Musik. Hallucinate liest sie, ohne etwas zu verändern, und hält Ausschau nach neuen Titeln.</translation>
     </message>
     <message>
         <source>Remove</source>
@@ -13221,7 +13221,7 @@
     </message>
     <message>
         <source>Add another folder…</source>
-        <translation type="unfinished"></translation>
+        <translation>Einen weiteren Ordner hinzufügen…</translation>
     </message>
     <message>
         <source>Choose folder…</source>
@@ -13229,26 +13229,26 @@
     </message>
     <message numerus="yes">
         <source>%n song(s) found</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n Titel gefunden</numerusform>
+            <numerusform>%n Titel gefunden</numerusform>
         </translation>
     </message>
     <message>
         <source>Can&apos;t read %1</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 kann nicht gelesen werden</translation>
     </message>
     <message>
         <source>No songs found there yet</source>
-        <translation type="unfinished"></translation>
+        <translation>Dort noch keine Titel gefunden</translation>
     </message>
     <message>
         <source>Pick a look</source>
-        <translation type="unfinished"></translation>
+        <translation>Wähl einen Look</translation>
     </message>
     <message>
         <source>Themes change the whole app as you click. There are more options in Settings.</source>
-        <translation type="unfinished"></translation>
+        <translation>Designs ändern die ganze App, während du klickst. Weitere Optionen gibt es in den Einstellungen.</translation>
     </message>
     <message>
         <source>Tint the accent with each album&apos;s cover</source>
@@ -13256,11 +13256,11 @@
     </message>
     <message>
         <source>What would you like?</source>
-        <translation type="unfinished"></translation>
+        <translation>Was möchtest du?</translation>
     </message>
     <message>
         <source>Switch on what you&apos;ll use. Nothing here goes online unless you tick it, and it can all be changed later in Settings → Features and Settings → Online &amp; privacy.</source>
-        <translation type="unfinished"></translation>
+        <translation>Schalte ein, was du nutzen wirst. Nichts hier geht online, außer du hakst es an, und alles lässt sich später unter Einstellungen → Funktionen und Einstellungen → Online &amp; Datenschutz ändern.</translation>
     </message>
     <message>
         <source>Features</source>
@@ -13276,7 +13276,7 @@
     </message>
     <message>
         <source>Music servers (Jellyfin, Navidrome, Subsonic)</source>
-        <translation type="unfinished"></translation>
+        <translation>Musikserver (Jellyfin, Navidrome, Subsonic)</translation>
     </message>
     <message>
         <source>Lyrics</source>
@@ -13316,15 +13316,15 @@
     </message>
     <message>
         <source>Going online</source>
-        <translation type="unfinished"></translation>
+        <translation>Online gehen</translation>
     </message>
     <message>
         <source>Find lyrics online for songs that have none (asks LRCLIB with the song&apos;s artist and title)</source>
-        <translation type="unfinished"></translation>
+        <translation>Songtexte online suchen für Titel, die keine haben (fragt LRCLIB mit Künstler und Titel des Titels)</translation>
     </message>
     <message>
         <source>Look up an artist&apos;s bio when their page opens (asks Wikipedia through MusicBrainz)</source>
-        <translation type="unfinished"></translation>
+        <translation>Die Bio eines Künstlers nachschlagen, wenn seine Seite geöffnet wird (fragt Wikipedia über MusicBrainz)</translation>
     </message>
     <message>
         <source>Tell me when a new version is out (checks GitHub once a day)</source>
@@ -13332,19 +13332,19 @@
     </message>
     <message>
         <source>Offline mode: never go online at all (overrides everything above, and radio, podcasts, servers and scrobbling)</source>
-        <translation type="unfinished"></translation>
+        <translation>Offline-Modus: nie online gehen (hat Vorrang vor allem oben sowie Radio, Podcasts, Servern und Scrobbling)</translation>
     </message>
     <message>
         <source>Covers, tags and genres are only looked up when you ask. Radio, podcasts and music servers only connect to the stations, feeds and servers you add.</source>
-        <translation type="unfinished"></translation>
+        <translation>Cover, Tags und Genres werden nur nachgeschlagen, wenn du darum bittest. Radio, Podcasts und Musikserver verbinden sich nur mit den Sendern, Feeds und Servern, die du hinzufügst.</translation>
     </message>
     <message>
         <source>Keep a record of what you play?</source>
-        <translation type="unfinished"></translation>
+        <translation>Festhalten, was du spielst?</translation>
     </message>
     <message>
         <source>Hallucinate keeps your listening history on this computer either way. Scrobbling also sends it to ListenBrainz or Last.fm. It&apos;s optional, and you can set it up later in Settings.</source>
-        <translation type="unfinished"></translation>
+        <translation>Hallucinate speichert deinen Hörverlauf so oder so auf diesem Computer. Scrobbling sendet ihn außerdem an ListenBrainz oder Last.fm. Das ist optional und lässt sich später in den Einstellungen einrichten.</translation>
     </message>
     <message>
         <source>ListenBrainz</source>
@@ -13352,7 +13352,7 @@
     </message>
     <message>
         <source>Your user token</source>
-        <translation type="unfinished"></translation>
+        <translation>Dein Benutzertoken</translation>
     </message>
     <message>
         <source>Checking…</source>
@@ -13380,23 +13380,23 @@
     </message>
     <message>
         <source>Open Last.fm again</source>
-        <translation type="unfinished"></translation>
+        <translation>Last.fm erneut öffnen</translation>
     </message>
     <message>
         <source>I&apos;ve allowed access</source>
-        <translation type="unfinished"></translation>
+        <translation>Ich habe den Zugriff erlaubt</translation>
     </message>
     <message>
         <source>Last.fm asks each app user for an API key of their own. Add yours in Settings → Scrobbling &amp; sharing whenever you like.</source>
-        <translation type="unfinished"></translation>
+        <translation>Last.fm verlangt von jedem App-Nutzer einen eigenen API-Schlüssel. Füg deinen jederzeit unter Einstellungen → Scrobbling &amp; Teilen hinzu.</translation>
     </message>
     <message>
         <source>Skip setup</source>
-        <translation type="unfinished"></translation>
+        <translation>Einrichtung überspringen</translation>
     </message>
     <message>
         <source>Close the welcome; everything can be set later in Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Die Begrüßung schließen; alles lässt sich später in den Einstellungen festlegen</translation>
     </message>
     <message>
         <source>Back</source>
@@ -13408,22 +13408,22 @@
     </message>
     <message>
         <source>Start listening</source>
-        <translation type="unfinished"></translation>
+        <translation>Loshören</translation>
     </message>
 </context>
 <context>
     <name>WhatsNew</name>
     <message>
         <source>Stop after this song: the player bar&apos;s ⋯ menu, or press E.</source>
-        <translation type="unfinished"></translation>
+        <translation>Nach diesem Titel anhalten: das ⋯-Menü der Player-Leiste, oder drück E.</translation>
     </message>
     <message>
         <source>Long lists have an A–Z rail to jump to a letter, and middle-click scrolls them as you move the mouse.</source>
-        <translation type="unfinished"></translation>
+        <translation>Lange Listen haben eine A–Z-Leiste, um zu einem Buchstaben zu springen, und Mittelklick scrollt sie, während du die Maus bewegst.</translation>
     </message>
     <message>
         <source>Albums, Artists, Songs and Genres open where you left them, even after a restart.</source>
-        <translation type="unfinished"></translation>
+        <translation>Alben, Künstler, Titel und Genres öffnen dort, wo du sie verlassen hast, auch nach einem Neustart.</translation>
     </message>
     <message>
         <source>Home is yours to arrange: choose its sections and their order (a section&apos;s ⋯ menu, or Settings → Features → Home).</source>
@@ -13842,11 +13842,11 @@
     </message>
     <message>
         <source>Restore</source>
-        <translation type="unfinished"></translation>
+        <translation>Wiederherstellen</translation>
     </message>
     <message>
         <source>Maximize</source>
-        <translation type="unfinished"></translation>
+        <translation>Maximieren</translation>
     </message>
     <message>
         <source>Close</source>
@@ -13861,11 +13861,11 @@
     </message>
     <message>
         <source>Play on %1 again?</source>
-        <translation type="unfinished"></translation>
+        <translation>Wieder auf %1 abspielen?</translation>
     </message>
     <message>
         <source>Play there</source>
-        <translation type="unfinished"></translation>
+        <translation>Dort abspielen</translation>
     </message>
     <message>
         <source>Undo</source>
@@ -13873,13 +13873,13 @@
     </message>
     <message>
         <source>Removed from Liked Songs</source>
-        <translation type="unfinished"></translation>
+        <translation>Aus Lieblingstiteln entfernt</translation>
     </message>
     <message numerus="yes">
         <source>%n song(s) removed from Liked Songs</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n Titel aus Lieblingstiteln entfernt</numerusform>
+            <numerusform>%n Titel aus Lieblingstiteln entfernt</numerusform>
         </translation>
     </message>
     <message numerus="yes">
@@ -13891,37 +13891,37 @@
     </message>
     <message>
         <source>%1 added to “%2”</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 zu „%2“ hinzugefügt</translation>
     </message>
     <message>
         <source>Already in “%1”</source>
-        <translation type="unfinished"></translation>
+        <translation>Schon in „%1“</translation>
     </message>
     <message numerus="yes">
         <source>All %n song(s) are already in “%1”</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>Der %n Titel ist schon in „%1“</numerusform>
+            <numerusform>Alle %n Titel sind schon in „%1“</numerusform>
         </translation>
     </message>
     <message>
         <source>%1 added to “%2” (%3 already there)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 zu „%2“ hinzugefügt (%3 schon vorhanden)</translation>
     </message>
     <message>
         <source>Add anyway</source>
-        <translation type="unfinished"></translation>
+        <translation>Trotzdem hinzufügen</translation>
     </message>
     <message numerus="yes">
         <source>%n song(s) added again to “%1”</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n Titel erneut zu „%1“ hinzugefügt</numerusform>
+            <numerusform>%n Titel erneut zu „%1“ hinzugefügt</numerusform>
         </translation>
     </message>
     <message>
         <source>%1 removed from “%2”</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 aus „%2“ entfernt</translation>
     </message>
     <message>
         <source>Playlist</source>
@@ -13929,23 +13929,23 @@
     </message>
     <message>
         <source>Stops after this song</source>
-        <translation type="unfinished"></translation>
+        <translation>Hält nach diesem Titel an</translation>
     </message>
     <message>
         <source>Plays on after this song</source>
-        <translation type="unfinished"></translation>
+        <translation>Spielt nach diesem Titel weiter</translation>
     </message>
     <message>
         <source>Added to Liked Songs</source>
-        <translation type="unfinished"></translation>
+        <translation>Zu Lieblingstiteln hinzugefügt</translation>
     </message>
     <message>
         <source>Import a playlist</source>
-        <translation type="unfinished"></translation>
+        <translation>Eine Playlist importieren</translation>
     </message>
     <message>
         <source>Playlists (*.m3u *.m3u8 *.pls)</source>
-        <translation type="unfinished"></translation>
+        <translation>Playlists (*.m3u *.m3u8 *.pls)</translation>
     </message>
     <message>
         <source>All files (*)</source>
@@ -13953,77 +13953,77 @@
     </message>
     <message>
         <source>Export as a playlist file</source>
-        <translation type="unfinished"></translation>
+        <translation>Als Playlist-Datei exportieren</translation>
     </message>
     <message>
         <source>M3U8 playlist (*.m3u8)</source>
-        <translation type="unfinished"></translation>
+        <translation>M3U8-Playlist (*.m3u8)</translation>
     </message>
     <message>
         <source>M3U playlist (*.m3u)</source>
-        <translation type="unfinished"></translation>
+        <translation>M3U-Playlist (*.m3u)</translation>
     </message>
     <message>
         <source>Playlist saved</source>
-        <translation type="unfinished"></translation>
+        <translation>Playlist gespeichert</translation>
     </message>
     <message>
         <source>%1: matched %2 of %3 songs · %4 plays, %5 ratings, %6 playlists</source>
-        <translation type="unfinished"></translation>
+        <translation>%1: %2 von %3 Titeln zugeordnet · %4 Wiedergaben, %5 Bewertungen, %6 Playlists</translation>
     </message>
     <message>
         <source>None of those songs are in your library</source>
-        <translation type="unfinished"></translation>
+        <translation>Keiner dieser Titel ist in deiner Mediathek</translation>
     </message>
     <message numerus="yes">
         <source>Imported “%1”: %n song(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>„%1“ importiert: %n Titel</numerusform>
+            <numerusform>„%1“ importiert: %n Titel</numerusform>
         </translation>
     </message>
     <message>
         <source>, %1 not found in your library</source>
-        <translation type="unfinished"></translation>
+        <translation>, %1 nicht in deiner Mediathek gefunden</translation>
     </message>
     <message numerus="yes">
         <source>%n of these are already in “%1”</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n davon ist schon in „%1“</numerusform>
+            <numerusform>%n davon sind schon in „%1“</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>Add it again?</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>Erneut hinzufügen?</numerusform>
+            <numerusform>Erneut hinzufügen?</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n song(s) new to it.</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n Titel ist neu darin.</numerusform>
+            <numerusform>%n Titel sind neu darin.</numerusform>
         </translation>
     </message>
     <message>
         <source>Add again</source>
-        <translation type="unfinished"></translation>
+        <translation>Erneut hinzufügen</translation>
     </message>
     <message>
         <source>Add all %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Alle %1 hinzufügen</translation>
     </message>
     <message>
         <source>Add the %1 new</source>
-        <translation type="unfinished"></translation>
+        <translation>Die %1 neuen hinzufügen</translation>
     </message>
     <message numerus="yes">
         <source>Also add the %n that are already there</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>Auch den %n hinzufügen, der schon da ist</numerusform>
+            <numerusform>Auch die %n hinzufügen, die schon da sind</numerusform>
         </translation>
     </message>
     <message numerus="yes">
@@ -14035,31 +14035,31 @@
     </message>
     <message>
         <source>Pair with %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Mit %1 koppeln</translation>
     </message>
     <message>
         <source>Pair with another computer</source>
-        <translation type="unfinished"></translation>
+        <translation>Mit einem anderen Computer koppeln</translation>
     </message>
     <message>
         <source>Pair</source>
-        <translation type="unfinished"></translation>
+        <translation>Koppeln</translation>
     </message>
     <message>
         <source>On the other computer, open Settings → Remote &amp; web, let other devices on your network connect, and choose Pair a device. Type the code it shows here.</source>
-        <translation type="unfinished"></translation>
+        <translation>Öffne auf dem anderen Computer Einstellungen → Fernbedienung &amp; Web, lass andere Geräte in deinem Netzwerk verbinden und wähle „Ein Gerät koppeln“. Gib den angezeigten Code hier ein.</translation>
     </message>
     <message>
         <source>Its address on your network, like 192.168.1.20:8483</source>
-        <translation type="unfinished"></translation>
+        <translation>Seine Adresse in deinem Netzwerk, etwa 192.168.1.20:8483</translation>
     </message>
     <message>
         <source>Address</source>
-        <translation type="unfinished"></translation>
+        <translation>Adresse</translation>
     </message>
     <message>
         <source>Code</source>
-        <translation type="unfinished"></translation>
+        <translation>Code</translation>
     </message>
     <message>
         <source>Type the other computer&apos;s address on your network (like 192.168.1.20)</source>
@@ -14067,7 +14067,7 @@
     </message>
     <message>
         <source>Remove this music folder?</source>
-        <translation type="unfinished"></translation>
+        <translation>Diesen Musikordner entfernen?</translation>
     </message>
     <message>
         <source>Remove</source>
@@ -14075,31 +14075,31 @@
     </message>
     <message>
         <source>“%1” and the songs in it leave the library. The files stay on your disk; add the folder again to bring them back (a full rescan). If it&apos;s on a drive that&apos;s only unplugged, plug it back in instead.</source>
-        <translation type="unfinished"></translation>
+        <translation>„%1“ und die Titel darin verlassen die Mediathek. Die Dateien bleiben auf deiner Festplatte; füg den Ordner erneut hinzu, um sie zurückzuholen (ein vollständiges Durchsuchen). Wenn er auf einem Laufwerk liegt, das nur ausgesteckt ist, steck es lieber wieder ein.</translation>
     </message>
     <message>
         <source>Remove from the library?</source>
-        <translation type="unfinished"></translation>
+        <translation>Aus der Mediathek entfernen?</translation>
     </message>
     <message>
         <source>%1: the music stays on your disk; Hallucinate just stops showing it, and rescans leave it out. Settings → Library can bring it back. Plays, likes and playlists are kept.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1: Die Musik bleibt auf deiner Festplatte; Hallucinate zeigt sie nur nicht mehr, und beim Durchsuchen wird sie ausgelassen. Einstellungen → Mediathek kann sie zurückholen. Wiedergaben, Likes und Playlists bleiben erhalten.</translation>
     </message>
     <message>
         <source>Move to the trash?</source>
-        <translation type="unfinished"></translation>
+        <translation>In den Papierkorb verschieben?</translation>
     </message>
     <message>
         <source>Move to trash</source>
-        <translation type="unfinished"></translation>
+        <translation>In den Papierkorb</translation>
     </message>
     <message>
         <source>%1: the music files go to your system&apos;s trash, where you can restore them from. A folder left with only covers or logs goes too; anything else in it stays.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1: Die Musikdateien kommen in den Papierkorb deines Systems, aus dem du sie wiederherstellen kannst. Ein Ordner, in dem nur Cover oder Logs übrig sind, kommt mit; alles andere darin bleibt.</translation>
     </message>
     <message>
         <source> Songs from a CUE sheet share one audio file with the rest of their album, so that whole file goes.</source>
-        <translation type="unfinished"></translation>
+        <translation> Titel aus einem CUE-Sheet teilen sich eine Audiodatei mit dem Rest ihres Albums, deshalb geht die ganze Datei.</translation>
     </message>
     <message numerus="yes">
         <source>%n album(s)</source>
@@ -14110,73 +14110,73 @@
     </message>
     <message>
         <source>%1 removed from the library</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 aus der Mediathek entfernt</translation>
     </message>
     <message>
         <source>Couldn&apos;t move the files to the trash</source>
-        <translation type="unfinished"></translation>
+        <translation>Die Dateien konnten nicht in den Papierkorb verschoben werden</translation>
     </message>
     <message numerus="yes">
         <source>%1 moved to the trash (%n file(s) couldn&apos;t be moved)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%1 in den Papierkorb verschoben (%n Datei konnte nicht verschoben werden)</numerusform>
+            <numerusform>%1 in den Papierkorb verschoben (%n Dateien konnten nicht verschoben werden)</numerusform>
         </translation>
     </message>
     <message>
         <source>%1 moved to the trash</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 in den Papierkorb verschoben</translation>
     </message>
     <message numerus="yes">
         <source>Liked %n song(s) you&apos;d loved on Last.fm</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n Titel gemocht, den du auf Last.fm geliebt hattest</numerusform>
+            <numerusform>%n Titel gemocht, die du auf Last.fm geliebt hattest</numerusform>
         </translation>
     </message>
     <message>
         <source>No new songs to like from your Last.fm loves</source>
-        <translation type="unfinished"></translation>
+        <translation>Keine neuen Titel zum Mögen aus deinen Last.fm-Loves</translation>
     </message>
     <message>
         <source>Safe start: Hallucinate closed while starting last time, so the visualizer and moving effects are off for now. Next start is a normal one.</source>
-        <translation type="unfinished"></translation>
+        <translation>Sicherer Start: Hallucinate wurde beim letzten Start geschlossen, deshalb sind Visualisierung und Bewegungseffekte vorerst aus. Der nächste Start ist wieder normal.</translation>
     </message>
     <message>
         <source>Turn them back on</source>
-        <translation type="unfinished"></translation>
+        <translation>Wieder einschalten</translation>
     </message>
     <message>
         <source>Hallucinate closed unexpectedly</source>
-        <translation type="unfinished"></translation>
+        <translation>Hallucinate wurde unerwartet geschlossen</translation>
     </message>
     <message>
         <source>Hallucinate stopped responding</source>
-        <translation type="unfinished"></translation>
+        <translation>Hallucinate reagierte nicht mehr</translation>
     </message>
     <message>
         <source>Hallucinate ran into an error</source>
-        <translation type="unfinished"></translation>
+        <translation>Hallucinate ist auf einen Fehler gestoßen</translation>
     </message>
     <message>
         <source>Copy report</source>
-        <translation type="unfinished"></translation>
+        <translation>Bericht kopieren</translation>
     </message>
     <message>
         <source>Last time, Hallucinate closed unexpectedly.</source>
-        <translation type="unfinished"></translation>
+        <translation>Beim letzten Mal wurde Hallucinate unerwartet geschlossen.</translation>
     </message>
     <message>
         <source>Last time, Hallucinate&apos;s window stopped responding for a while.</source>
-        <translation type="unfinished"></translation>
+        <translation>Beim letzten Mal reagierte das Fenster von Hallucinate eine Weile nicht.</translation>
     </message>
     <message>
         <source>Last time, Hallucinate hit an error it couldn&apos;t handle.</source>
-        <translation type="unfinished"></translation>
+        <translation>Beim letzten Mal ist Hallucinate auf einen Fehler gestoßen, den es nicht behandeln konnte.</translation>
     </message>
     <message>
         <source>A report of what happened is ready: paste it into a bug report so it can be fixed. It describes your setup and the error, without file paths, names or anything from your library.</source>
-        <translation type="unfinished"></translation>
+        <translation>Ein Bericht über das Geschehene ist bereit: Füg ihn in einen Fehlerbericht ein, damit es behoben werden kann. Er beschreibt deine Einrichtung und den Fehler, ohne Dateipfade, Namen oder irgendetwas aus deiner Mediathek.</translation>
     </message>
     <message>
         <source>Not now</source>
@@ -14184,39 +14184,39 @@
     </message>
     <message>
         <source>Report copied — paste it into a bug report</source>
-        <translation type="unfinished"></translation>
+        <translation>Bericht kopiert – füg ihn in einen Fehlerbericht ein</translation>
     </message>
     <message>
         <source>New in Hallucinate %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Neu in Hallucinate %1</translation>
     </message>
     <message>
         <source>Everything that changed</source>
-        <translation type="unfinished"></translation>
+        <translation>Alles, was sich geändert hat</translation>
     </message>
     <message>
         <source>Close Hallucinate?</source>
-        <translation type="unfinished"></translation>
+        <translation>Hallucinate schließen?</translation>
     </message>
     <message>
         <source>Quit, minimize, or keep the music going in the background?</source>
-        <translation type="unfinished"></translation>
+        <translation>Beenden, minimieren oder die Musik im Hintergrund weiterlaufen lassen?</translation>
     </message>
     <message>
         <source>Quit, or keep the music going in the background?</source>
-        <translation type="unfinished"></translation>
+        <translation>Beenden oder die Musik im Hintergrund weiterlaufen lassen?</translation>
     </message>
     <message>
         <source> In the background it waits in the tray.</source>
-        <translation type="unfinished"></translation>
+        <translation> Im Hintergrund wartet es im Infobereich.</translation>
     </message>
     <message>
         <source> To bring the window back, open Hallucinate again.</source>
-        <translation type="unfinished"></translation>
+        <translation> Um das Fenster zurückzuholen, öffne Hallucinate erneut.</translation>
     </message>
     <message>
         <source>Remember my choice</source>
-        <translation type="unfinished"></translation>
+        <translation>Meine Wahl merken</translation>
     </message>
     <message>
         <source>Quit</source>
@@ -14240,7 +14240,7 @@
     </message>
     <message>
         <source>Added to “%1”</source>
-        <translation type="unfinished"></translation>
+        <translation>Zu „%1“ hinzugefügt</translation>
     </message>
     <message>
         <source>Playlist name</source>
@@ -14248,7 +14248,7 @@
     </message>
     <message>
         <source>Update to Hallucinate %1?</source>
-        <translation type="unfinished"></translation>
+        <translation>Auf Hallucinate %1 aktualisieren?</translation>
     </message>
     <message>
         <source>Update now</source>
@@ -14256,31 +14256,31 @@
     </message>
     <message>
         <source>Hallucinate downloads the new version from GitHub, checks it against the release&apos;s checksum, then closes and reopens to finish. Your library, playlists and settings stay as they are.</source>
-        <translation type="unfinished"></translation>
+        <translation>Hallucinate lädt die neue Version von GitHub herunter, prüft sie gegen die Prüfsumme der Veröffentlichung, schließt sich dann und öffnet sich erneut, um fertig zu werden. Deine Mediathek, Playlists und Einstellungen bleiben, wie sie sind.</translation>
     </message>
     <message>
         <source> Windows may ask for permission to install.</source>
-        <translation type="unfinished"></translation>
+        <translation> Windows fragt eventuell nach der Erlaubnis zur Installation.</translation>
     </message>
     <message>
         <source>Back (Alt+Left)</source>
-        <translation type="unfinished"></translation>
+        <translation>Zurück (Alt+Links)</translation>
     </message>
     <message>
         <source>Search   ( / )        Ctrl+K  commands &amp; pages</source>
-        <translation type="unfinished"></translation>
+        <translation>Suchen   ( / )        Strg+K  Befehle &amp; Seiten</translation>
     </message>
     <message>
         <source>Undone: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Rückgängig gemacht: %1</translation>
     </message>
     <message>
         <source>Drop to play</source>
-        <translation type="unfinished"></translation>
+        <translation>Zum Abspielen ablegen</translation>
     </message>
     <message>
         <source>Add Hallucinate to your app launcher? Docks and taskbars need it for its icon.</source>
-        <translation type="unfinished"></translation>
+        <translation>Hallucinate zu deinem App-Starter hinzufügen? Docks und Taskleisten brauchen das für sein Symbol.</translation>
     </message>
     <message>
         <source>Add</source>
@@ -14299,19 +14299,19 @@
     </message>
     <message>
         <source>Android phone</source>
-        <translation type="unfinished"></translation>
+        <translation>Android-Handy</translation>
     </message>
     <message>
         <source>Mac browser</source>
-        <translation type="unfinished"></translation>
+        <translation>Mac-Browser</translation>
     </message>
     <message>
         <source>Windows browser</source>
-        <translation type="unfinished"></translation>
+        <translation>Windows-Browser</translation>
     </message>
     <message>
         <source>Browser</source>
-        <translation type="unfinished"></translation>
+        <translation>Browser</translation>
     </message>
     <message>
         <source>Nothing playing</source>
@@ -14327,7 +14327,7 @@
     </message>
     <message>
         <source>Playing on this phone</source>
-        <translation type="unfinished"></translation>
+        <translation>Spielt auf diesem Handy</translation>
     </message>
     <message>
         <source>Playing on %1</source>
@@ -14339,7 +14339,7 @@
     </message>
     <message>
         <source>Radio on: similar songs keep coming</source>
-        <translation type="unfinished"></translation>
+        <translation>Radio an: Ähnliche Titel kommen weiter</translation>
     </message>
     <message>
         <source>Radio off</source>
@@ -14369,7 +14369,7 @@
     </message>
     <message>
         <source>End of this song</source>
-        <translation type="unfinished"></translation>
+        <translation>Ende dieses Titels</translation>
     </message>
     <message>
         <source>End of this album</source>
@@ -14381,15 +14381,15 @@
     </message>
     <message>
         <source>The computer</source>
-        <translation type="unfinished"></translation>
+        <translation>Der Computer</translation>
     </message>
     <message>
         <source>This phone</source>
-        <translation type="unfinished"></translation>
+        <translation>Dieses Handy</translation>
     </message>
     <message>
         <source>%1 can&apos;t be played to: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Auf %1 kann nicht abgespielt werden: %2</translation>
     </message>
     <message>
         <source>Connecting to %1…</source>
@@ -14397,7 +14397,7 @@
     </message>
     <message>
         <source>Several together…</source>
-        <translation type="unfinished"></translation>
+        <translation>Mehrere zusammen…</translation>
     </message>
     <message>
         <source>Look again</source>
@@ -14413,27 +14413,27 @@
     </message>
     <message>
         <source>Play together (%1)</source>
-        <translation type="unfinished"></translation>
+        <translation>Zusammen abspielen (%1)</translation>
     </message>
     <message>
         <source>Tick two or more</source>
-        <translation type="unfinished"></translation>
+        <translation>Hak zwei oder mehr an</translation>
     </message>
     <message>
         <source>The equaliser isn&apos;t available on this computer</source>
-        <translation type="unfinished"></translation>
+        <translation>Der Equalizer ist auf diesem Computer nicht verfügbar</translation>
     </message>
     <message>
         <source>Equaliser</source>
-        <translation type="unfinished"></translation>
+        <translation>Equalizer</translation>
     </message>
     <message>
         <source>Equaliser off</source>
-        <translation type="unfinished"></translation>
+        <translation>Equalizer aus</translation>
     </message>
     <message>
         <source>Equaliser: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Equalizer: %1</translation>
     </message>
     <message>
         <source>Looking for lyrics…</source>
@@ -14445,15 +14445,15 @@
     </message>
     <message>
         <source>Automatic</source>
-        <translation type="unfinished"></translation>
+        <translation>Automatisch</translation>
     </message>
     <message>
         <source>Disconnect this device from Hallucinate? You&apos;ll need a new pairing code to use it again.</source>
-        <translation type="unfinished"></translation>
+        <translation>Dieses Gerät von Hallucinate trennen? Um es wieder zu nutzen, brauchst du einen neuen Kopplungscode.</translation>
     </message>
     <message>
         <source>Couldn&apos;t disconnect: is Hallucinate still running?</source>
-        <translation type="unfinished"></translation>
+        <translation>Trennen nicht möglich: Läuft Hallucinate noch?</translation>
     </message>
     <message>
         <source>More</source>
@@ -14465,7 +14465,7 @@
     </message>
     <message>
         <source>E</source>
-        <translation type="unfinished"></translation>
+        <translation>E</translation>
     </message>
     <message>
         <source>Hi-Res</source>
@@ -14473,7 +14473,7 @@
     </message>
     <message>
         <source>Move %1 (arrow keys move it)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 verschieben (Pfeiltasten verschieben es)</translation>
     </message>
     <message>
         <source>Remove</source>
@@ -14481,11 +14481,11 @@
     </message>
     <message>
         <source>The queue is empty. Play something from your library.</source>
-        <translation type="unfinished"></translation>
+        <translation>Die Warteschlange ist leer. Spiel etwas aus deiner Mediathek ab.</translation>
     </message>
     <message>
         <source>Removed: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Entfernt: %1</translation>
     </message>
     <message>
         <source>Upcoming songs shuffled</source>
@@ -14497,15 +14497,15 @@
     </message>
     <message>
         <source>Undone: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Rückgängig gemacht: %1</translation>
     </message>
     <message>
         <source>Nothing to undo</source>
-        <translation type="unfinished"></translation>
+        <translation>Nichts rückgängig zu machen</translation>
     </message>
     <message>
         <source>Loading…</source>
-        <translation type="unfinished"></translation>
+        <translation>Lädt…</translation>
     </message>
     <message>
         <source>Show more</source>
@@ -14531,23 +14531,23 @@
     </message>
     <message>
         <source>No playlists yet.</source>
-        <translation type="unfinished"></translation>
+        <translation>Noch keine Playlists.</translation>
     </message>
     <message>
         <source>Playing %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Spielt %1</translation>
     </message>
     <message>
         <source>Songs you listen to show up here.</source>
-        <translation type="unfinished"></translation>
+        <translation>Titel, die du hörst, erscheinen hier.</translation>
     </message>
     <message>
         <source>Tuning in to %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Schalte %1 ein</translation>
     </message>
     <message>
         <source>Stations you add in Hallucinate show up here.</source>
-        <translation type="unfinished"></translation>
+        <translation>Sender, die du in Hallucinate hinzufügst, erscheinen hier.</translation>
     </message>
     <message>
         <source>%1 new</source>
@@ -14562,7 +14562,7 @@
     </message>
     <message>
         <source>Shows you follow in Hallucinate show up here.</source>
-        <translation type="unfinished"></translation>
+        <translation>Sendungen, denen du in Hallucinate folgst, erscheinen hier.</translation>
     </message>
     <message>
         <source>Shuffle</source>
@@ -14570,7 +14570,7 @@
     </message>
     <message>
         <source>Songs you like show up here.</source>
-        <translation type="unfinished"></translation>
+        <translation>Titel, die du magst, erscheinen hier.</translation>
     </message>
     <message>
         <source>%1 left</source>
@@ -14586,11 +14586,11 @@
     </message>
     <message>
         <source>Play next: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Als Nächstes spielen: %1</translation>
     </message>
     <message>
         <source>Plays next</source>
-        <translation type="unfinished"></translation>
+        <translation>Spielt als Nächstes</translation>
     </message>
     <message>
         <source>Queue</source>
@@ -14598,15 +14598,15 @@
     </message>
     <message>
         <source>Add to the queue: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Zur Warteschlange hinzufügen: %1</translation>
     </message>
     <message>
         <source>Added to the queue</source>
-        <translation type="unfinished"></translation>
+        <translation>Zur Warteschlange hinzugefügt</translation>
     </message>
     <message>
         <source>Podcast</source>
-        <translation type="unfinished"></translation>
+        <translation>Podcast</translation>
     </message>
     <message>
         <source>Album</source>
@@ -14646,11 +14646,11 @@
     </message>
     <message>
         <source>Nothing found.</source>
-        <translation type="unfinished"></translation>
+        <translation>Nichts gefunden.</translation>
     </message>
     <message>
         <source>Unlike</source>
-        <translation type="unfinished"></translation>
+        <translation>Nicht mehr mögen</translation>
     </message>
     <message>
         <source>Like</source>
@@ -14662,7 +14662,7 @@
     </message>
     <message>
         <source>Unliked</source>
-        <translation type="unfinished"></translation>
+        <translation>Nicht mehr gemocht</translation>
     </message>
     <message>
         <source>Add to playlist</source>
@@ -14670,35 +14670,35 @@
     </message>
     <message>
         <source>Added to %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Zu %1 hinzugefügt</translation>
     </message>
     <message>
         <source>Nothing here yet.</source>
-        <translation type="unfinished"></translation>
+        <translation>Hier ist noch nichts.</translation>
     </message>
     <message>
         <source>Hallucinate isn&apos;t answering. Is it still running?</source>
-        <translation type="unfinished"></translation>
+        <translation>Hallucinate antwortet nicht. Läuft es noch?</translation>
     </message>
     <message>
         <source>Connect to Hallucinate</source>
-        <translation type="unfinished"></translation>
+        <translation>Mit Hallucinate verbinden</translation>
     </message>
     <message>
         <source>On the computer, open &lt;b&gt;Settings → Remote &amp;amp; web&lt;/b&gt; and choose &lt;b&gt;Pair a device&lt;/b&gt; (on a server without a screen, run &lt;code&gt;hallucinate --pair&lt;/code&gt;). Enter the code it shows.</source>
-        <translation type="unfinished"></translation>
+        <translation>Öffne auf dem Computer &lt;b&gt;Einstellungen → Fernbedienung &amp;amp; Web&lt;/b&gt; und wähle &lt;b&gt;Ein Gerät koppeln&lt;/b&gt; (auf einem Server ohne Bildschirm führ &lt;code&gt;hallucinate --pair&lt;/code&gt; aus). Gib den angezeigten Code ein.</translation>
     </message>
     <message>
         <source>Pairing code</source>
-        <translation type="unfinished"></translation>
+        <translation>Kopplungscode</translation>
     </message>
     <message>
         <source>Device name</source>
-        <translation type="unfinished"></translation>
+        <translation>Gerätename</translation>
     </message>
     <message>
         <source>This device&apos;s name (e.g. Phone)</source>
-        <translation type="unfinished"></translation>
+        <translation>Der Name dieses Geräts (z. B. Handy)</translation>
     </message>
     <message>
         <source>Connect</source>
@@ -14706,7 +14706,7 @@
     </message>
     <message>
         <source>Sections</source>
-        <translation type="unfinished"></translation>
+        <translation>Bereiche</translation>
     </message>
     <message>
         <source>Now playing</source>
@@ -14714,7 +14714,7 @@
     </message>
     <message>
         <source>Playing</source>
-        <translation type="unfinished"></translation>
+        <translation>Läuft</translation>
     </message>
     <message>
         <source>Library</source>
@@ -14742,15 +14742,15 @@
     </message>
     <message>
         <source>Mute</source>
-        <translation type="unfinished"></translation>
+        <translation>Stumm</translation>
     </message>
     <message>
         <source>Volume</source>
-        <translation type="unfinished"></translation>
+        <translation>Lautstärke</translation>
     </message>
     <message>
         <source>Radio mode</source>
-        <translation type="unfinished"></translation>
+        <translation>Radiomodus</translation>
     </message>
     <message>
         <source>Lyrics</source>
@@ -14774,7 +14774,7 @@
     </message>
     <message>
         <source>Recent</source>
-        <translation type="unfinished"></translation>
+        <translation>Zuletzt</translation>
     </message>
     <message>
         <source>Radio</source>
@@ -14790,7 +14790,7 @@
     </message>
     <message>
         <source>Songs, albums, artists…</source>
-        <translation type="unfinished"></translation>
+        <translation>Titel, Alben, Künstler…</translation>
     </message>
     <message>
         <source>Language</source>
@@ -14798,7 +14798,7 @@
     </message>
     <message>
         <source>For this browser. Automatic follows the device&apos;s language.</source>
-        <translation type="unfinished"></translation>
+        <translation>Für diesen Browser. Automatisch folgt der Sprache des Geräts.</translation>
     </message>
     <message>
         <source>Appearance</source>
@@ -14806,7 +14806,7 @@
     </message>
     <message>
         <source>Light or dark for this browser, or as the device is set.</source>
-        <translation type="unfinished"></translation>
+        <translation>Hell oder dunkel für diesen Browser, oder wie das Gerät eingestellt ist.</translation>
     </message>
     <message>
         <source>Dark</source>
@@ -14822,47 +14822,47 @@
     </message>
     <message>
         <source>The page this browser shows first.</source>
-        <translation type="unfinished"></translation>
+        <translation>Die Seite, die dieser Browser zuerst zeigt.</translation>
     </message>
     <message>
         <source>Keep the screen on while playing</source>
-        <translation type="unfinished"></translation>
+        <translation>Den Bildschirm beim Abspielen anlassen</translation>
     </message>
     <message>
         <source>While this page is open and showing.</source>
-        <translation type="unfinished"></translation>
+        <translation>Solange diese Seite offen und sichtbar ist.</translation>
     </message>
     <message>
         <source>Cover-coloured background</source>
-        <translation type="unfinished"></translation>
+        <translation>Hintergrund in den Farben des Covers</translation>
     </message>
     <message>
         <source>The playing album&apos;s colours, softly behind everything.</source>
-        <translation type="unfinished"></translation>
+        <translation>Die Farben des laufenden Albums, sanft hinter allem.</translation>
     </message>
     <message>
         <source>Spinning record</source>
-        <translation type="unfinished"></translation>
+        <translation>Drehende Platte</translation>
     </message>
     <message>
         <source>The cover turns like a record while the music plays.</source>
-        <translation type="unfinished"></translation>
+        <translation>Das Cover dreht sich wie eine Platte, während die Musik läuft.</translation>
     </message>
     <message>
         <source>This device</source>
-        <translation type="unfinished"></translation>
+        <translation>Dieses Gerät</translation>
     </message>
     <message>
         <source>Disconnect it from Hallucinate. To use it again, pair it with a new code.</source>
-        <translation type="unfinished"></translation>
+        <translation>Trenn es von Hallucinate. Um es wieder zu nutzen, kopple es mit einem neuen Code.</translation>
     </message>
     <message>
         <source>Disconnect this device</source>
-        <translation type="unfinished"></translation>
+        <translation>Dieses Gerät trennen</translation>
     </message>
     <message>
         <source>Play or pause</source>
-        <translation type="unfinished"></translation>
+        <translation>Abspielen oder Pause</translation>
     </message>
     <message>
         <source>Play next</source>
@@ -14878,11 +14878,11 @@
     </message>
     <message>
         <source>Go to album</source>
-        <translation type="unfinished"></translation>
+        <translation>Zum Album</translation>
     </message>
     <message>
         <source>Go to artist</source>
-        <translation type="unfinished"></translation>
+        <translation>Zum Künstler</translation>
     </message>
     <message>
         <source>Cancel</source>
