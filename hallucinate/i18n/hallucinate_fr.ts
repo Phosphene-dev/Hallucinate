@@ -13430,6 +13430,14 @@
 <context>
     <name>WhatsNew</name>
     <message>
+        <source>Organize files from their tags: an album&apos;s right-click → Organize files…, with every move shown first and an undo.</source>
+        <translation>Rangez les fichiers d’après leurs tags&#xa0;: clic droit sur un album → Ranger les fichiers…, chaque déplacement affiché d’abord, et une annulation possible.</translation>
+    </message>
+    <message>
+        <source>Hallucinate speaks German and Portuguese: Settings → Appearance → Language.</source>
+        <translation>Hallucinate parle allemand et portugais&#xa0;: Paramètres → Apparence → Langue.</translation>
+    </message>
+    <message>
         <source>Stop after this song: the player bar&apos;s ⋯ menu, or press E.</source>
         <translation>Arrêter après ce titre : le menu ⋯ de la barre du lecteur, ou appuyez sur E.</translation>
     </message>

@@ -4,6 +4,10 @@ newest version's lines are ever shown, so translators can leave the older ones."
 from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication
 
 HIGHLIGHTS = {
+    "2.5.0": [
+        QT_TRANSLATE_NOOP("WhatsNew", "Organize files from their tags: an album's right-click → Organize files…, with every move shown first and an undo."),
+        QT_TRANSLATE_NOOP("WhatsNew", "Hallucinate speaks German and Portuguese: Settings → Appearance → Language."),
+    ],
     "2.4.0": [
         QT_TRANSLATE_NOOP("WhatsNew", "Stop after this song: the player bar's ⋯ menu, or press E."),
         QT_TRANSLATE_NOOP("WhatsNew", "Long lists have an A–Z rail to jump to a letter, and middle-click scrolls them as you move the mouse."),

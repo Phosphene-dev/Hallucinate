@@ -3,6 +3,26 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.5.0] - 2026-11-15
+
+### Added
+- Organize files from tags: an album's right-click → Organize files…, or Library health → Organize files, moves
+  songs into folders and names made from their tags ("Album Artist/Album/01 Title", or another pattern; a few are
+  ready to pick). Every move is shown before anything happens, each song stays inside the music folder it's in, a
+  file is never moved over another (it gets "(2)" instead), and the last organize can be undone. Likes, plays,
+  ratings, playlist places and listens go with the songs, and so do their lyrics files and the folder's cover;
+  folders left empty are removed. CUE sheet albums and songs on music servers stay where they are.
+- Hallucinate speaks German and Portuguese (Brazil): Settings → Appearance → Language → Deutsch or Português, or
+  as the system is set. The web remote follows the phone's language, region and all ("pt-BR").
+
+### Changed
+- The A–Z rail finds its letters at once on a big library (it took a moment on every sort and reload).
+- Library health keeps its page while you visit others, so going back to it is instant and it checks again for
+  what changed.
+
+### Fixed
+- Home's formats tile said "Other" in English whatever the language.
+
 ## [2.4.0] - 2026-11-14
 
 ### Added

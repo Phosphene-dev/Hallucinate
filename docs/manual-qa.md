@@ -74,6 +74,23 @@
 - [ ] Handoff with a typed address (on a network that blocks broadcasts), a wrong code (says so), Forget in
       Settings → Remote & web (needs pairing again), and with the firewall on (firewalld: the remote's port).
 
+## Release testing for 2.5.0
+
+- [ ] An album's right-click → Organize files…: the moves are listed before anything moves (from → to), each inside
+      its own music folder. Pick another pattern chip, then type one: the list follows; a pattern without {title}
+      or with an unknown {part} says why. Move: the files are where it said, with their lyrics file and the
+      folder's cover; old folders that emptied are gone; the album's likes, plays and ratings are still there and
+      its songs are in their playlists. Undo the last organize: everything is back where it was.
+- [ ] Library health → Organize files on a whole library (a copy of it!): skipped songs (CUE sheets, music
+      servers) are counted, nothing lands on another file, Stop stops with the library right. During a scan, Move
+      waits.
+- [ ] Settings → Appearance → Language → Deutsch, then Português: every page, menu, dialog and toast reads
+      naturally, nothing spills out of its card at a narrow window, counts read right (1 Titel / 2 Titel; 0 música,
+      1 música, 2 músicas), dates are local (Montag, 3. März; segunda-feira, 3 de março). The Afterimage terminal
+      replies in the language with its columns lined up; the commands typed stay English.
+- [ ] The web remote on a phone set to German, then to Portuguese (Brazil): it opens in that language before and
+      after pairing.
+
 ## Release testing for 2.4.0
 
 - [ ] The player bar's ⋯ → Stop after this song: ticked; the song ends and nothing plays next. E toggles it and
