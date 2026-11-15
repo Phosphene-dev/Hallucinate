@@ -1064,6 +1064,11 @@ class Library(QObject):
         if self._scanning:
             self._pending = True
             return
+        from .core import organize
+
+        if organize.running():  # songs are being moved and their likes and plays caught up: scan once that's done
+            self._debounce.start()
+            return
         folders = self._db.folders()
         if not folders:
             return

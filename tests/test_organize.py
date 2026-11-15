@@ -64,6 +64,9 @@ def test_songs_move_into_the_pattern_and_their_likes_follow(lib):
     assert os.path.isfile(root / "Aurora Vale" / "Northern Lights" / "01 Echoes.lrc")
     assert os.path.isfile(root / "Aurora Vale" / "Northern Lights" / "cover.jpg")
     assert not os.path.exists(root / "downloads")
+    # the folder watcher leaves the folders it touched be (a rescan mid-way would race the likes)
+    from hallucinate.core import tagedit
+    assert all(tagedit.written_recently(str(d)) for d in (root, root / "Aurora Vale", root / "Aurora Vale" / "Northern Lights"))
     # done again: nothing to do
     assert organize.plan(db.tracks(), db.folders(), organize.PRESETS["artist_album"])["moves"] == []
     # undo: back where they were, the like with it

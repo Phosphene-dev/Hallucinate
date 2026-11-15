@@ -9,6 +9,7 @@ import json
 import os
 import re
 import shutil
+import threading
 import unicodedata
 
 from . import remote, tagedit
@@ -29,6 +30,14 @@ IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".webp")
 MAX_PART = 120  # characters in one folder or file name (long names break on some file systems)
 _BAD = re.compile(r'[\x00-\x1f<>:"/\\|?*]')
 _RESERVED = {"con", "prn", "aux", "nul", *(f"com{i}" for i in range(1, 10)), *(f"lpt{i}" for i in range(1, 10))}
+
+
+_running = threading.Event()  # set while apply() or undo() moves files (a library scan waits: see running())
+
+
+def running():
+    """Whether files are being moved right now: a scan then would see songs whose likes haven't caught up."""
+    return _running.is_set()
 
 
 class PatternError(ValueError):
@@ -164,6 +173,18 @@ def plan(tracks, folders, pattern):
     return {"moves": moves, "same": same, "skipped": skipped}
 
 
+def _note(path, roots):
+    """Tell the folder watcher Hallucinate itself is changing `path`'s folder and those above it, up to the
+    library folder (folders made or emptied change their parents): a rescan mid-way would see moved songs before
+    their likes and plays have caught up."""
+    d = os.path.dirname(os.path.normpath(path))
+    for _ in range(64):
+        tagedit.note_writing(os.path.join(d, "x"))
+        if d in roots or _root_of(d, roots) is None or os.path.dirname(d) == d:
+            break
+        d = os.path.dirname(d)
+
+
 def _move(src, dst):
     """Move one file; never over another (FileExistsError)."""
     if os.path.lexists(dst):
@@ -219,6 +240,7 @@ def _prune(dirs, roots):
     for d in sorted(set(dirs), key=len, reverse=True):
         d = os.path.normpath(d)
         while d not in roots and _root_of(d, roots) is not None:
+            _note(d, roots)
             try:
                 os.rmdir(d)  # only when empty
             except OSError:
@@ -248,14 +270,15 @@ def apply(db, scanner, moves, folders, journal, progress=None, stop=None):
     undo() can put them back. Returns {"moved", "errors": [text]}."""
     done, errors, pairs, record = 0, [], [], []
     left = []
+    roots = {os.path.normpath(f) for f in folders}
     companions = _companions(moves)
     try:
         for i, m in enumerate(moves):
             if stop and stop():
                 break
             src, dst = m["src"], m["dst"]
-            tagedit.note_writing(src)
-            tagedit.note_writing(dst)
+            _note(src, roots)
+            _note(dst, roots)
             try:
                 _move(src, dst)
             except OSError as exc:
@@ -280,7 +303,8 @@ def apply(db, scanner, moves, folders, journal, progress=None, stop=None):
             if src.lower().endswith(SIDECARS) and not any(os.path.splitext(s)[0] == owner for s in moved_srcs):
                 continue  # its song didn't move (an error, or stopped)
             try:
-                tagedit.note_writing(dst)
+                _note(src, roots)
+                _note(dst, roots)
                 _move(src, dst)
                 record.append([src, dst])
                 left.append(os.path.dirname(src))
@@ -289,6 +313,7 @@ def apply(db, scanner, moves, folders, journal, progress=None, stop=None):
     finally:
         _write_journal(journal, record)
         _prune(left, folders)
+        _running.clear()
     return {"moved": done, "errors": errors}
 
 
@@ -311,11 +336,25 @@ def undo(db, scanner, journal, folders):
     """Put back what the last organize moved (newest first); a file moved again since, or whose old place is
     taken, stays. Returns {"moved", "errors"}; the journal is cleared."""
     record = read_journal(journal)
-    pairs, errors, left, done = [], [], [], 0
+    pairs, errors, left = [], [], []
+    roots = {os.path.normpath(f) for f in folders}
+    _running.set()
+    try:
+        _undo_moves(db, scanner, record, roots, folders, errors, left, pairs)
+    finally:
+        _running.clear()
+    try:
+        os.remove(journal)
+    except OSError:
+        pass
+    return {"moved": len(pairs), "errors": errors}
+
+
+def _undo_moves(db, scanner, record, roots, folders, errors, left, pairs):
     audio = _audio_exts()
     for old, new in reversed(record):
-        tagedit.note_writing(old)
-        tagedit.note_writing(new)
+        _note(old, roots)
+        _note(new, roots)
         try:
             _move(new, old)
         except OSError as exc:
@@ -324,11 +363,5 @@ def undo(db, scanner, journal, folders):
         left.append(os.path.dirname(new))
         if os.path.splitext(old)[1].lower() in audio:
             pairs.append((new, old))
-            done += 1
     _update_library(db, scanner, pairs)
     _prune(left, folders)
-    try:
-        os.remove(journal)
-    except OSError:
-        pass
-    return {"moved": done, "errors": errors}
