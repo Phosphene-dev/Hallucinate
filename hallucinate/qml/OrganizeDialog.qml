@@ -34,7 +34,7 @@ Dialog {
             primary: true
             text: metaEditor.organizeBusy ? qsTr("Stop") : Theme.counted(qsTr("Move %n song(s)", "", dlg.plan.count || 0), dlg.plan.count || 0)
             // (not while the library is scanning: it would see the files go and come back half way)
-            enabled: metaEditor.organizeBusy || ((dlg.plan.count || 0) > 0 && !metaEditor.organizePreviewing && !library.scanning)
+            enabled: metaEditor.organizeBusy || ((dlg.plan.count || 0) > 0 && !metaEditor.organizePreviewing && !previewTimer.running && !library.scanning)
             onClicked: {
                 if (metaEditor.organizeBusy) { metaEditor.stopOrganizing(); return }
                 shell.setUiValue("organizePattern", dlg.pattern.trim())

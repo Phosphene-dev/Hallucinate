@@ -750,8 +750,8 @@ class MetadataEditor(QObject):
         from .core import organize
 
         moves = list(self._organize_moves)
-        if not moves or self._organize["busy"]:
-            return
+        if not moves or self._organize["busy"] or self._organize["previewing"]:
+            return  # (mid-preview, the moves shown are about to change)
         self._organize_stop.clear()
         self._organize.update(busy=True, done=0, total=len(moves))
         self.organizeChanged.emit()
