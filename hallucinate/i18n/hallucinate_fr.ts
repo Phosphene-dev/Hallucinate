@@ -3875,6 +3875,10 @@
         <translation>Tout voir : %1</translation>
     </message>
     <message>
+        <source>Other</source>
+        <translation>Autres</translation>
+    </message>
+    <message>
         <source>Options for this section</source>
         <translation>Options de cette section</translation>
     </message>

@@ -27,7 +27,7 @@ def library_facts(db, top_formats=4):
     shown = formats[:top_formats]
     rest = sum(f["count"] for f in formats[top_formats:])
     if rest:
-        shown.append({"name": "Other", "count": rest})
+        shown.append({"name": "Other", "count": rest, "other": True})  # (the page says "Other" in its language)
     for f in shown:
         f["share"] = f["count"] / total if total else 0.0
     return {

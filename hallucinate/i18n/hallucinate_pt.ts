@@ -1469,7 +1469,7 @@
     </message>
     <message>
         <source>Collapse sidebar</source>
-        <translation>Recolher a barra lateral</translation>
+        <translation>Recolher barra</translation>
     </message>
     <message>
         <source>View</source>
@@ -3944,6 +3944,10 @@
     <message>
         <source>lossless</source>
         <translation>sem perdas</translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation>Outros</translation>
     </message>
 </context>
 <context>
@@ -10888,7 +10892,7 @@
     </message>
     <message>
         <source>Collapse sidebar</source>
-        <translation>Recolher a barra lateral</translation>
+        <translation>Recolher barra</translation>
     </message>
     <message>
         <source>Open</source>
