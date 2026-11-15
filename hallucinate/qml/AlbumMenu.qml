@@ -105,6 +105,14 @@ readonly property string what: single ? qsTr("“%1”").arg(albumTitle) : Theme
         icon.name: "edit"
         onTriggered: Nav.editAlbum(albumMenu.keys[0])
     }
+    MenuItem {  // (its files into folders and names from their tags: see OrganizeDialog)
+        objectName: "albumOrganize"
+        visible: !albumMenu.onServer
+        height: visible ? implicitHeight : 0
+        text: qsTr("Organize files…")
+        icon.name: "folder"
+        onTriggered: Nav.organizeFiles(albumMenu.keys)
+    }
     MenuItem {
         visible: albumMenu.single && albumMenu.artist.length > 0
         height: visible ? implicitHeight : 0

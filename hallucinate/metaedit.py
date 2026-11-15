@@ -119,6 +119,9 @@ class MetadataEditor(QObject):
     genresFinished = Signal(str)  # the "find all" summary, for a toast
     _genres_progress = Signal(object)
     fixesChanged = Signal()
+    organizeChanged = Signal()
+    organizeFinished = Signal(str)  # what Organize files did, for a message
+    _organize_progress = Signal(object)
     fixesFinished = Signal(str)  # a "find all" for years, track numbers or missing tags is done: the summary
     _fixes_progress = Signal(object)
     _done = Signal(object)
@@ -154,6 +157,11 @@ class MetadataEditor(QObject):
         self._fix_save_stop = threading.Event()
         self._fixes_thread = None
         self._fixes_progress.connect(self._apply_fixes_progress)
+        # Organize files: the last preview, and a move under way
+        self._organize = {"busy": False, "done": 0, "total": 0, "plan": {}, "previewing": False}
+        self._organize_moves = []
+        self._organize_stop = threading.Event()
+        self._organize_progress.connect(self._apply_organize_progress)
         settings = QSettings("hallucinate", "hallucinate")
         # Settings → Library: a cover you set is also saved as cover.jpg in the album's folder (on unless switched
         # off) and embedded in the songs if you ask (remembered from the last time)
@@ -666,6 +674,146 @@ class MetadataEditor(QObject):
             self._run(save_all, items)
         self.genresChanged.emit()
 
+    # --- organize files from their tags ------------------------------------------------------------
+    def _organize_journal(self):
+        return os.path.join(os.path.dirname(os.path.abspath(self._db_path)), "organize-journal.json")
+
+    @Property("QVariantMap", constant=True)
+    def organizePresets(self):
+        """The ready-made patterns, by name."""
+        from .core import organize
+        return dict(organize.PRESETS)
+
+    @Property(bool, notify=organizeChanged)
+    def organizeBusy(self):
+        return self._organize["busy"]
+
+    @Property(bool, notify=organizeChanged)
+    def organizePreviewing(self):
+        return self._organize["previewing"]
+
+    @Property(int, notify=organizeChanged)
+    def organizeDone(self):
+        return self._organize["done"]
+
+    @Property(int, notify=organizeChanged)
+    def organizeTotal(self):
+        return self._organize["total"]
+
+    @Property("QVariantMap", notify=organizeChanged)
+    def organizePlan(self):
+        """The last preview: {"moves": [{"from", "to", "title"}] (paths inside their library folder; the first
+        500), "count", "same" (already in place), "skipped", "error" (a bad pattern)}."""
+        return dict(self._organize["plan"])
+
+    @Property(bool, notify=organizeChanged)
+    def organizeCanUndo(self):
+        return os.path.isfile(self._organize_journal())
+
+    @Slot(str, "QVariantList")
+    def previewOrganize(self, pattern, album_keys):
+        """Work out where every song (or those of `album_keys`) would go; nothing moves (see organizePlan)."""
+        from .core import organize
+
+        keys = [str(k) for k in album_keys or []]
+        self._organize["previewing"] = True
+        self.organizeChanged.emit()
+
+        def work(db):
+            try:
+                tracks = [t for k in keys for t in db.album_tracks(k)] if keys else db.tracks()
+                folders = db.folders()
+                p = organize.plan(tracks, folders, pattern)
+
+                def rel(path):
+                    root = organize._root_of(os.path.normpath(path), folders) or os.path.dirname(path)
+                    return os.path.relpath(path, root)
+                shown = [{"from": rel(m["src"]), "to": rel(m["dst"]), "title": m["title"]} for m in p["moves"][:500]]
+                self._organize_progress.emit({"plan": {"moves": shown, "count": len(p["moves"]), "same": p["same"],
+                                                       "skipped": len(p["skipped"]), "error": ""},
+                                              "moves": p["moves"], "previewing": False})
+            except organize.PatternError as exc:
+                self._organize_progress.emit({"plan": {"moves": [], "count": 0, "same": 0, "skipped": 0, "error": str(exc)},
+                                              "moves": [], "previewing": False})
+            except Exception:  # noqa: BLE001
+                logger.exception("Organize preview failed")
+                self._organize_progress.emit({"plan": {}, "moves": [], "previewing": False})
+
+        self._lookup.submit(work)
+
+    @Slot()
+    def organize(self):
+        """Move the songs of the last preview where it showed (never over a file); the library follows."""
+        from .core import organize
+
+        moves = list(self._organize_moves)
+        if not moves or self._organize["busy"]:
+            return
+        self._organize_stop.clear()
+        self._organize.update(busy=True, done=0, total=len(moves))
+        self.organizeChanged.emit()
+        journal = self._organize_journal()
+
+        def work(db):
+            try:
+                result = organize.apply(db, Scanner(db, self._art_dir), moves, db.folders(), journal,
+                                        progress=lambda n: self._organize_progress.emit({"done": n}),
+                                        stop=self._organize_stop.is_set)
+            except Exception as exc:  # noqa: BLE001
+                logger.exception("Organizing files failed")
+                result = {"moved": 0, "errors": [str(exc)]}
+            self._organize_progress.emit({"finished": result, "undo": False})
+            return {"kind": "organize"}
+
+        self._run(work)
+
+    @Slot()
+    def stopOrganizing(self):
+        self._organize_stop.set()
+
+    @Slot()
+    def undoOrganize(self):
+        """Put back what the last Organize files moved."""
+        from .core import organize
+
+        if self._organize["busy"] or not os.path.isfile(self._organize_journal()):
+            return
+        self._organize.update(busy=True, done=0, total=0)
+        self.organizeChanged.emit()
+        journal = self._organize_journal()
+
+        def work(db):
+            try:
+                result = organize.undo(db, Scanner(db, self._art_dir), journal, db.folders())
+            except Exception as exc:  # noqa: BLE001
+                logger.exception("Undoing the organize failed")
+                result = {"moved": 0, "errors": [str(exc)]}
+            self._organize_progress.emit({"finished": result, "undo": True})
+            return {"kind": "organize"}
+
+        self._run(work)
+
+    @Slot(object)
+    def _apply_organize_progress(self, update):
+        if "moves" in update:
+            self._organize_moves = update.pop("moves")
+        finished = update.pop("finished", None)
+        undo = update.pop("undo", False)
+        self._organize.update(update)
+        if finished is not None:
+            self._organize.update(busy=False, plan={})
+            self._organize_moves = []
+            n, errors = finished["moved"], finished["errors"]
+            text = (fill(translate("MetaEdit", "Songs put back where they were: %1"), n) if undo
+                    else fill(translate("MetaEdit", "Songs moved: %1"), n))
+            if errors:
+                text += "  ·  " + fill(translate("MetaEdit", "not moved: %1 (%2)"), len(errors), errors[0])
+            self.organizeChanged.emit()
+            self.changed.emit()  # the library: new paths
+            self.organizeFinished.emit(text)
+            return
+        self.organizeChanged.emit()
+
     # --- years, track numbers and missing artist/album, for Library health -----------------------------
     FIX_KINDS = ("year", "numbers", "untagged")
 
@@ -960,6 +1108,7 @@ class MetadataEditor(QObject):
             self._run(rename_all)
 
     def shutdown(self):
+        self._organize_stop.set()
         self._covers_stop.set()
         self._genres_stop.set()
         self._save_stop.set()
