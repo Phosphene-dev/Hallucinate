@@ -33,7 +33,8 @@ Dialog {
             objectName: "organizeMove"
             primary: true
             text: metaEditor.organizeBusy ? qsTr("Stop") : Theme.counted(qsTr("Move %n song(s)", "", dlg.plan.count || 0), dlg.plan.count || 0)
-            enabled: metaEditor.organizeBusy || ((dlg.plan.count || 0) > 0 && !metaEditor.organizePreviewing)
+            // (not while the library is scanning: it would see the files go and come back half way)
+            enabled: metaEditor.organizeBusy || ((dlg.plan.count || 0) > 0 && !metaEditor.organizePreviewing && !library.scanning)
             onClicked: {
                 if (metaEditor.organizeBusy) { metaEditor.stopOrganizing(); return }
                 shell.setUiValue("organizePattern", dlg.pattern.trim())
@@ -96,7 +97,8 @@ Dialog {
             textFormat: Text.PlainText
             width: parent.width
             wrapMode: Text.WordWrap
-            text: metaEditor.organizeBusy ? qsTr("Moving: %1 of %2").arg(Theme.num(metaEditor.organizeDone)).arg(Theme.num(metaEditor.organizeTotal))
+            text: library.scanning && !metaEditor.organizeBusy ? qsTr("Waiting for the library scan to finish…")
+                  : metaEditor.organizeBusy ? qsTr("Moving: %1 of %2").arg(Theme.num(metaEditor.organizeDone)).arg(Theme.num(metaEditor.organizeTotal))
                   : metaEditor.organizePreviewing ? qsTr("Working out where everything goes…")
                   : dlg.plan.error ? dlg.plan.error
                   : [Theme.counted(qsTr("%n song(s) to move", "", dlg.plan.count || 0), dlg.plan.count || 0),

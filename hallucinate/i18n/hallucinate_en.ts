@@ -666,6 +666,37 @@
     </message>
 </context>
 <context>
+    <name>OrganizeDialog</name>
+    <message numerus="yes">
+        <source>Move %n song(s)</source>
+        <translation>
+            <numerusform>Move %n song</numerusform>
+            <numerusform>Move %n songs</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n song(s) to move</source>
+        <translation>
+            <numerusform>%n song to move</numerusform>
+            <numerusform>%n songs to move</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n already in place</source>
+        <translation>
+            <numerusform>%n already in place</numerusform>
+            <numerusform>%n already in place</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n left where they are (CUE sheets, music servers)</source>
+        <translation>
+            <numerusform>%n left where they are (CUE sheets, music servers)</numerusform>
+            <numerusform>%n left where they are (CUE sheets, music servers)</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>PlaybackMenu</name>
     <message numerus="yes">
         <source>%n minute(s)</source>

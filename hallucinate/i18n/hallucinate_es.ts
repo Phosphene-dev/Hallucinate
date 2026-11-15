@@ -275,6 +275,10 @@
         <translation>Editar información del álbum…</translation>
     </message>
     <message>
+        <source>Organize files…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Go to %1</source>
         <translation>Ir a %1</translation>
     </message>
@@ -3393,6 +3397,10 @@
         <translation>Revisar de nuevo</translation>
     </message>
     <message>
+        <source>Organize files…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Repair covers…</source>
         <translation>Reparar portadas…</translation>
     </message>
@@ -4452,6 +4460,18 @@
     <message>
         <source>Found genres for %1 of %2 albums. Check them, then save.</source>
         <translation>Se encontraron géneros para %1 de %2 álbumes. Revísalos y luego guarda.</translation>
+    </message>
+    <message>
+        <source>Songs put back where they were: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Songs moved: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>not moved: %1 (%2)</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Found a likely artist or album for %1 of %2 songs. Check them, then save.</source>
@@ -5818,6 +5838,89 @@
     <message>
         <source>Offline mode is on: %1 can&apos;t connect, and listens wait to be sent until it&apos;s off (Settings → Online &amp; privacy).</source>
         <translation>El modo sin conexión está activado: %1 no puede conectar y las escuchas esperan a enviarse hasta que se desactive (Ajustes → En línea y privacidad).</translation>
+    </message>
+</context>
+<context>
+    <name>OrganizeDialog</name>
+    <message>
+        <source>Organize these albums&apos; files</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Organize your music files</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stop</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message numerus="yes">
+        <source>Move %n song(s)</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation type="unfinished">Cerrar</translation>
+    </message>
+    <message>
+        <source>Undo the last organize</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Songs are moved into folders and names made from their tags, inside the music folder each is in now. Their likes, plays, ratings and playlists go with them, and so do lyrics files and the folder&apos;s cover. A file is never moved over another (it gets “(2)” instead), and the last organize can be undone.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Folder and file name pattern</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Parts: {albumartist} {artist} {album} {year} {disc} {track} {title} {genre}; “/” starts a folder. {disc} is “2-” on albums with more than one disc.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Waiting for the library scan to finish…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Moving: %1 of %2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Working out where everything goes…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n song(s) to move</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n already in place</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n left where they are (CUE sheets, music servers)</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>from %1</source>
+        <translation type="unfinished">de %1</translation>
+    </message>
+    <message>
+        <source>…and %1 more</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

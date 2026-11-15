@@ -275,6 +275,10 @@
         <translation>Modifier les infos de l’album…</translation>
     </message>
     <message>
+        <source>Organize files…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Go to %1</source>
         <translation>Aller à %1</translation>
     </message>
@@ -3373,6 +3377,10 @@
         </translation>
     </message>
     <message>
+        <source>Organize files…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Covers that show blank or garbled are made again: every song&apos;s picture is read afresh (a full rescan, which can take a while with a big library), and any that turn out damaged make way for the folder&apos;s cover. Covers you chose yourself stay as they are.</source>
         <translation>Les pochettes qui s’affichent vides ou brouillées sont refaites&#xa0;: l’image de chaque morceau est relue (une analyse complète, qui peut prendre un moment avec une grande bibliothèque), et celles qui s’avèrent abîmées laissent place à la pochette du dossier. Les pochettes que vous avez choisies vous-même restent telles quelles.</translation>
     </message>
@@ -4452,6 +4460,18 @@
     <message>
         <source>Found genres for %1 of %2 albums. Check them, then save.</source>
         <translation>Genres trouvés pour %1 albums sur %2. Vérifiez-les, puis enregistrez.</translation>
+    </message>
+    <message>
+        <source>Songs put back where they were: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Songs moved: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>not moved: %1 (%2)</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Found a likely artist or album for %1 of %2 songs. Check them, then save.</source>
@@ -5818,6 +5838,89 @@
     <message>
         <source>Offline mode is on: %1 can&apos;t connect, and listens wait to be sent until it&apos;s off (Settings → Online &amp; privacy).</source>
         <translation>Le mode hors ligne est activé&#xa0;: %1 ne peut pas se connecter, et les écoutes attendent d’être envoyées jusqu’à ce qu’il soit désactivé (Paramètres → En ligne et confidentialité).</translation>
+    </message>
+</context>
+<context>
+    <name>OrganizeDialog</name>
+    <message>
+        <source>Organize these albums&apos; files</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Organize your music files</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stop</source>
+        <translation type="unfinished">Arrêter</translation>
+    </message>
+    <message numerus="yes">
+        <source>Move %n song(s)</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation type="unfinished">Fermer</translation>
+    </message>
+    <message>
+        <source>Undo the last organize</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Songs are moved into folders and names made from their tags, inside the music folder each is in now. Their likes, plays, ratings and playlists go with them, and so do lyrics files and the folder&apos;s cover. A file is never moved over another (it gets “(2)” instead), and the last organize can be undone.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Folder and file name pattern</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Parts: {albumartist} {artist} {album} {year} {disc} {track} {title} {genre}; “/” starts a folder. {disc} is “2-” on albums with more than one disc.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Waiting for the library scan to finish…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Moving: %1 of %2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Working out where everything goes…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n song(s) to move</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n already in place</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n left where they are (CUE sheets, music servers)</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>from %1</source>
+        <translation type="unfinished">de %1</translation>
+    </message>
+    <message>
+        <source>…and %1 more</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

@@ -140,6 +140,9 @@ def plan(tracks, folders, pattern):
         ext = os.path.splitext(src)[1].lower()
         rel = render(t, pattern, len(discs.get(t.get("album_key"), ())))
         base = os.path.join(root, *rel.split("/"))
+        if os.path.commonpath([os.path.abspath(base), os.path.abspath(root)]) != os.path.abspath(root):
+            skipped.append({"path": src, "why": "outside"})  # (can't happen with clean(): never leave the folder)
+            continue
         dst, n = base + ext, 1
         while True:
             key = os.path.normcase(dst)
