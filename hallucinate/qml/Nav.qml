@@ -37,6 +37,7 @@ QtObject {
     signal editTags(string path)
     signal editTagsMany(var paths)
     signal editAlbum(string key)
+    signal organizeFiles(var albumKeys)  // Organize files: these albums, or ([]) the whole library
     signal findAlbumGenre(string key)  // open the album editor and look its genre up
     signal back()
     signal routeGone(string kind, int id)  // a playlist or show was deleted: Back and Forward skip it

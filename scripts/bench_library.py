@@ -98,7 +98,7 @@ def main():
     results = []
     albums = timed("library: albums()", db.albums, results)
     timed("library: artists()", db.artists, results)
-    timed("library: tracks()", db.tracks, results)
+    timed("library: song list (the Songs page, on a worker)", db.song_list, results)
     timed("timeline rows", lambda: Library._timeline_rows(albums), results)
     db.conn.execute("DELETE FROM album_colors")
 

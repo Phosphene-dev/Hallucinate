@@ -1,6 +1,6 @@
 # Translating Hallucinate
 
-Hallucinate speaks English, Spanish and French, and can speak your language too. You don't need to know how to program:
+Hallucinate speaks English, German, Spanish, French and Portuguese, and can speak your language too. You don't need to know how to program:
 a translation is one text file, and you can work on it in Qt Linguist (a free editor made for this) or in any text
 editor.
 
@@ -17,15 +17,15 @@ Everything goes in one file per language: the desktop app, its messages, and the
 ## Starting a new language
 
 1. Add the language to the list in `hallucinate/i18n.py`. Use its code and its name *in that language*, because
-   people look for "Deutsch", not "German":
+   people look for "Italiano", not "Italian":
 
    ```python
-   LANGUAGES = [("en", "English"), ("es", "Español"), ("fr", "Français"), ("de", "Deutsch")]
+   LANGUAGES = [("en", "English"), ("de", "Deutsch"), ("es", "Español"), ("fr", "Français"), ("it", "Italiano")]
    ```
 
    Also add the code to `LANGS` in `scripts/build_translations.py`, and its plural rule to `plural_rule()` in
    `hallucinate/i18n.py` if it counts differently from English or French (see "Counts" below).
-2. Run `python scripts/build_translations.py`. This creates `hallucinate/i18n/hallucinate_de.ts` with every string,
+2. Run `python scripts/build_translations.py`. This creates `hallucinate/i18n/hallucinate_it.ts` with every string,
    all marked as not translated yet.
 3. Translate (see below), then run `python scripts/build_translations.py` again to build the `.qm` file the app
    loads.
@@ -36,7 +36,7 @@ Everything goes in one file per language: the desktop app, its messages, and the
 Open the file in the editor:
 
 ```sh
-pyside6-linguist hallucinate/i18n/hallucinate_de.ts
+pyside6-linguist hallucinate/i18n/hallucinate_it.ts
 ```
 
 Strings are grouped by where they appear. The group's name is the screen or file they come from, for example
@@ -77,7 +77,7 @@ Keep sentences natural rather than word for word: Hallucinate talks to people pl
 ### Counts
 
 A string with `%n` changes with the number: `%n song(s)` becomes "1 song" and "2 songs" in English. In the editor
-these have a box for each form your language has: French uses the first for 0 and 1 and the second for 2 and up (Spanish, like English, the first only for 1);
+these have a box for each form your language has: French and Portuguese use the first for 0 and 1 and the second for 2 and up (German and Spanish, like English, the first only for 1);
 some languages have three or more forms, and the editor shows the right number of boxes.
 
 The web remote works out which form to use itself, from `plural_rule()` in `hallucinate/i18n.py`. If your

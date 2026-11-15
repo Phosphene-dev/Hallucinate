@@ -3,6 +3,7 @@
 This catches bugs like the Stats rows that fell back to white when their colour binding failed. Rendering uses
 Qt's software renderer, so shader effects are left out, but every control, colour and layout is drawn."""
 import json
+import os
 
 import numpy as np
 import pytest
@@ -2876,7 +2877,7 @@ def test_recap_numbers_follow_the_numbers_setting(qapp, app_window):
 
 
 @pytest.mark.parametrize("app_window", ["varied"], indirect=True)
-@pytest.mark.parametrize("language", ["fr", "pseudo"])
+@pytest.mark.parametrize("language", ["de", "fr", "pt", "pseudo"])
 def test_every_page_in_another_language(qapp, app_window, language):
     """French (and the pseudo-language: every word longer and accented) on every page, at a roomy and a narrow
     width: the words change at once, nothing spills out of its card, and no binding breaks on the way."""
@@ -2907,6 +2908,10 @@ def test_every_page_in_another_language(qapp, app_window, language):
                      if isinstance(item.property("text"), str)}
             assert "Paramètres" in texts or "Podcasts" in texts
             assert "Settings" not in texts
+        if language in ("de", "pt"):
+            texts = {item.property("text") for item in window.findChildren(QQuickItem)
+                     if isinstance(item.property("text"), str)}
+            assert ("Einstellungen" if language == "de" else "Configurações") in texts
     finally:
         i18n.setLanguage("en")
         qapp.processEvents()
@@ -3465,3 +3470,38 @@ def test_home_cards_have_their_menus_and_the_headless_sections_a_button(qapp, ap
         assert find_item(window, "homeSectionMenu_" + name) is not None, name
     page = None
     assert not [w for w in warnings if "HomePage" in w], warnings[:3]
+
+
+def test_organize_files_previews_moves_and_undoes(qapp, app_window, tmp_path):
+    """Library health → Organize files…: a preview of every move first; Move moves them (the library following),
+    and Undo puts them back."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    editor, library = objects["metaEditor"], objects["library"]
+    # the seeded songs as files, somewhere untidy
+    for t in library.allTracks():
+        p = t["path"]
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "wb") as fh:
+            fh.write(b"x")
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "health"))
+    assert wait_for(lambda: "organizeFilesButton" in visible_names(window, "organizeFilesButton"))
+    QMetaObject.invokeMethod(find_item(window, "organizeFilesButton"), "clicked")
+    dlg = window.findChild(QObject, "organizeDialog")
+    assert wait_for(lambda: dlg.property("opened"))
+    assert wait_for(lambda: (plain(editor.organizePlan) or {}).get("count") == 8)
+    first = plain(editor.organizePlan)["moves"][0]
+    assert first["to"].startswith("Aurora Vale/Northern Lights/01 Song 00") or first["to"].startswith("Blue Harbor/")
+    old = library.allTracks()[0]["path"]
+    editor.changed.connect(library.reload)  # (as the app does)
+    editor.organize()
+    assert wait_for(lambda: not editor.organizeBusy and editor.organizeCanUndo, timeout=10)
+    assert not os.path.exists(old)
+    assert wait_for(lambda: all(os.path.exists(t["path"]) for t in library.allTracks()) and library.trackCount == 8)
+    editor.undoOrganize()
+    assert wait_for(lambda: not editor.organizeBusy and not editor.organizeCanUndo, timeout=10)
+    assert os.path.exists(old)
+    QMetaObject.invokeMethod(dlg, "close")
+    editor.changed.disconnect(library.reload)
+    assert not [w for w in warnings if "OrganizeDialog" in w or "HealthPage" in w], warnings[:3]

@@ -275,6 +275,10 @@
         <translation>Editar información del álbum…</translation>
     </message>
     <message>
+        <source>Organize files…</source>
+        <translation>Organizar archivos…</translation>
+    </message>
+    <message>
         <source>Go to %1</source>
         <translation>Ir a %1</translation>
     </message>
@@ -3393,6 +3397,10 @@
         <translation>Revisar de nuevo</translation>
     </message>
     <message>
+        <source>Organize files…</source>
+        <translation>Organizar archivos…</translation>
+    </message>
+    <message>
         <source>Repair covers…</source>
         <translation>Reparar portadas…</translation>
     </message>
@@ -3865,6 +3873,10 @@
     <message>
         <source>See all: %1</source>
         <translation>Ver todo: %1</translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation>Otros</translation>
     </message>
     <message>
         <source>Options for this section</source>
@@ -4452,6 +4464,30 @@
     <message>
         <source>Found genres for %1 of %2 albums. Check them, then save.</source>
         <translation>Se encontraron géneros para %1 de %2 álbumes. Revísalos y luego guarda.</translation>
+    </message>
+    <message>
+        <source>There&apos;s no part called %1</source>
+        <translation>No hay ninguna parte llamada %1</translation>
+    </message>
+    <message>
+        <source>The pattern needs {title}, so every song gets its own name</source>
+        <translation>El patrón necesita {title}, para que cada canción tenga su propio nombre</translation>
+    </message>
+    <message>
+        <source>A folder can&apos;t be called ..</source>
+        <translation>Una carpeta no puede llamarse ..</translation>
+    </message>
+    <message>
+        <source>Songs put back where they were: %1</source>
+        <translation>Canciones devueltas a su sitio: %1</translation>
+    </message>
+    <message>
+        <source>Songs moved: %1</source>
+        <translation>Canciones movidas: %1</translation>
+    </message>
+    <message>
+        <source>not moved: %1 (%2)</source>
+        <translation>no movidas: %1 (%2)</translation>
     </message>
     <message>
         <source>Found a likely artist or album for %1 of %2 songs. Check them, then save.</source>
@@ -5818,6 +5854,89 @@
     <message>
         <source>Offline mode is on: %1 can&apos;t connect, and listens wait to be sent until it&apos;s off (Settings → Online &amp; privacy).</source>
         <translation>El modo sin conexión está activado: %1 no puede conectar y las escuchas esperan a enviarse hasta que se desactive (Ajustes → En línea y privacidad).</translation>
+    </message>
+</context>
+<context>
+    <name>OrganizeDialog</name>
+    <message>
+        <source>Organize these albums&apos; files</source>
+        <translation>Organizar los archivos de estos álbumes</translation>
+    </message>
+    <message>
+        <source>Organize your music files</source>
+        <translation>Organizar tus archivos de música</translation>
+    </message>
+    <message>
+        <source>Stop</source>
+        <translation>Detener</translation>
+    </message>
+    <message numerus="yes">
+        <source>Move %n song(s)</source>
+        <translation>
+            <numerusform>Mover %n canción</numerusform>
+            <numerusform>Mover %n canciones</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Cerrar</translation>
+    </message>
+    <message>
+        <source>Undo the last organize</source>
+        <translation>Deshacer la última organización</translation>
+    </message>
+    <message>
+        <source>Songs are moved into folders and names made from their tags, inside the music folder each is in now. Their likes, plays, ratings and playlists go with them, and so do lyrics files and the folder&apos;s cover. A file is never moved over another (it gets “(2)” instead), and the last organize can be undone.</source>
+        <translation>Las canciones se mueven a carpetas y nombres creados a partir de sus etiquetas, dentro de la carpeta de música en la que está cada una. Sus me gusta, reproducciones, valoraciones y listas van con ellas, igual que los archivos de letras y la portada de la carpeta. Nunca se mueve un archivo encima de otro (en su lugar recibe «(2)»), y la última organización se puede deshacer.</translation>
+    </message>
+    <message>
+        <source>Folder and file name pattern</source>
+        <translation>Patrón de nombres de carpetas y archivos</translation>
+    </message>
+    <message>
+        <source>Parts: {albumartist} {artist} {album} {year} {disc} {track} {title} {genre}; “/” starts a folder. {disc} is “2-” on albums with more than one disc.</source>
+        <translation>Partes: {albumartist} {artist} {album} {year} {disc} {track} {title} {genre}; «/» empieza una carpeta. {disc} es «2-» en álbumes con más de un disco.</translation>
+    </message>
+    <message>
+        <source>Waiting for the library scan to finish…</source>
+        <translation>Esperando a que termine el análisis de la biblioteca…</translation>
+    </message>
+    <message>
+        <source>Moving: %1 of %2</source>
+        <translation>Moviendo: %1 de %2</translation>
+    </message>
+    <message>
+        <source>Working out where everything goes…</source>
+        <translation>Calculando dónde va cada cosa…</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n song(s) to move</source>
+        <translation>
+            <numerusform>%n canción para mover</numerusform>
+            <numerusform>%n canciones para mover</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n already in place</source>
+        <translation>
+            <numerusform>%n ya en su sitio</numerusform>
+            <numerusform>%n ya en su sitio</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n left where they are (CUE sheets, music servers)</source>
+        <translation>
+            <numerusform>%n se queda donde está (hojas CUE, servidores de música)</numerusform>
+            <numerusform>%n se quedan donde están (hojas CUE, servidores de música)</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>from %1</source>
+        <translation>desde %1</translation>
+    </message>
+    <message>
+        <source>…and %1 more</source>
+        <translation>…y %1 más</translation>
     </message>
 </context>
 <context>
@@ -13310,6 +13429,14 @@
 </context>
 <context>
     <name>WhatsNew</name>
+    <message>
+        <source>Organize files from their tags: an album&apos;s right-click → Organize files…, with every move shown first and an undo.</source>
+        <translation>Organiza los archivos según sus etiquetas: clic derecho en un álbum → Organizar archivos…, con cada movimiento a la vista antes y la opción de deshacer.</translation>
+    </message>
+    <message>
+        <source>Hallucinate speaks German and Portuguese: Settings → Appearance → Language.</source>
+        <translation>Hallucinate habla alemán y portugués: Ajustes → Apariencia → Idioma.</translation>
+    </message>
     <message>
         <source>Stop after this song: the player bar&apos;s ⋯ menu, or press E.</source>
         <translation>Parar después de esta canción: el menú ⋯ de la barra del reproductor, o pulsa E.</translation>

@@ -11,7 +11,8 @@ Item {
     readonly property var checks: report.checks || []
     readonly property int score: report.score !== undefined ? report.score : 100
     property string expanded: ""
-    Component.onCompleted: library.checkHealth()
+    // (kept between visits, see main.qml's keptPages: checked again each time it shows)
+    StackView.onActivated: library.checkHealth()
 
     function fixLabel(kind, id) {
         if (kind === "folder") return qsTr("Remove")
@@ -169,6 +170,12 @@ Item {
                             text: page.report.loading ? qsTr("Checking…") : qsTr("Check again")
                             enabled: !page.report.loading
                             onClicked: library.checkHealth()
+                        }
+                        PillButton {
+                            objectName: "organizeFilesButton"
+                            text: qsTr("Organize files…")
+                            enabled: !library.scanning
+                            onClicked: Nav.organizeFiles([])
                         }
                         // covers blank or garbled: start them over (a full rescan; your own chosen covers stay)
                         PillButton {

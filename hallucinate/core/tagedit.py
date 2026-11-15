@@ -131,6 +131,12 @@ def _note_writing(path):
         _written_dirs[os.path.dirname(os.path.abspath(path))] = time.monotonic()
 
 
+def note_writing(path):
+    """Hallucinate itself is about to change `path`'s folder (a tag save, a file moved there): the folder watcher
+    can leave it be for a moment."""
+    _note_writing(path)
+
+
 def written_recently(folder, within=10.0):
     """Whether Hallucinate itself wrote tags in `folder` in the last `within` seconds: its own saves (and their
     temporary copies) change the folder, and the library needn't scan it again for that."""

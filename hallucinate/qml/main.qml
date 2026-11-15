@@ -307,7 +307,7 @@ ApplicationWindow {
     }
     // The heaviest pages are made once and kept, hidden, between visits: made from nothing each time they took a
     // fifth of a second or more to open on a big library. Coming back is quick, and finds them as they were left.
-    readonly property var keptNames: ["settings", "stats", "discover", "history"]
+    readonly property var keptNames: ["settings", "stats", "discover", "history", "health"]
     property var keptPages: ({})
     function keptPage(name) {
         if (keptNames.indexOf(name) < 0) return null
@@ -494,6 +494,7 @@ ApplicationWindow {
             exportDialog.open()
         }
         function onNotify(message) { toast.show(message) }
+        function onOrganizeFiles(albumKeys) { organizeDlg.show(albumKeys) }
         function onStopAfterPlaying() {
             // a stop at the end of this song, or not any more (#166): the sleep timer's "end of current track"
             if (!player.hasTrack) return
@@ -948,6 +949,14 @@ ApplicationWindow {
         onSaved: function (id, name) { window.openSmartPlaylist(id, name) }
     }
     TagEditor { id: tagEditor; objectName: "tagEditor" }
+    OrganizeDialog { id: organizeDlg }
+    Connections {
+        target: metaEditor
+        function onOrganizeFinished(text) {
+            toast.show(text)
+            if (organizeDlg.opened) organizeDlg.preview()  // (what's left to do, if anything)
+        }
+    }
     MiniPlayer {}
     SpectrumWindow { id: spectrumWindow }
     onClosing: function (close) {

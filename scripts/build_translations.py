@@ -23,7 +23,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 PKG = ROOT / "hallucinate"
 OUT = PKG / "i18n"
-LANGS = ["en", "es", "fr"]
+LANGS = ["en", "de", "es", "fr", "pt"]
 PSEUDO = "pseudo"
 
 
