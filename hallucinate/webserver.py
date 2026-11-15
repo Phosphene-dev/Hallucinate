@@ -388,7 +388,8 @@ class _Handler(ServesLinks, BaseHTTPRequestHandler):
 
             # "fr" or the device's languages in its order ("de,fr,en"): the first one there's a catalogue for
             wanted = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get("lang", [""])[0][:64].split(",")
-            lang = next((code for code in wanted if code in available()), "en")
+            codes = [c.strip().split("-")[0].lower() for c in wanted]  # "pt-BR" is Portuguese
+            lang = next((code for code in codes if code in available()), "en")
             return self._send(HTTPStatus.OK, web_catalog_json(lang).encode("utf-8"), "application/json; charset=utf-8",
                               cache="no-cache")
         if path.startswith("/h/"):  # a song another computer is streaming after a handoff (see handoff.py)

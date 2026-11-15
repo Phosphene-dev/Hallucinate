@@ -83,7 +83,7 @@ def test_english_plurals_and_french(translations):
     assert translate("Player", "Playback error") == "Playback error"
 
 
-@pytest.mark.parametrize("lang", ["fr", "es"])
+@pytest.mark.parametrize("lang", ["de", "es", "fr", "pt"])
 def test_every_translation_keeps_its_placeholders(lang):
     """A translation that drops %1 or %n shows the wrong thing (or nothing) where the value should be."""
     import re
@@ -122,6 +122,12 @@ def test_the_web_catalogue():
     assert es["lang"] == "es" and es["plural"] == "en"  # (Spanish counts as English does: only 1 is singular)
     assert es["strings"]["Undo"] == "Deshacer" and es["strings"]["%n song(s)"] == ["%n canción", "%n canciones"]
     assert {"code": "es", "name": "Español"} in es["languages"]
+    pt = json.loads(web_catalog_json("pt"))
+    assert pt["plural"] == "fr"  # (Brazilian Portuguese: 0 and 1 are singular)
+    assert pt["strings"]["%n song(s)"] == ["%n música", "%n músicas"]
+    de = json.loads(web_catalog_json("de"))
+    assert de["plural"] == "en" and de["strings"]["Undo"] == "Rückgängig"
+    assert {"code": "pt", "name": "Português"} in de["languages"] and {"code": "de", "name": "Deutsch"} in pt["languages"]
     for odd in ("", "en", "xx", "../../etc/passwd", "fr\x00"):
         assert json.loads(web_catalog_json(odd))["lang"] == "en"
         assert json.loads(web_catalog_json(odd))["strings"] == {}
@@ -136,7 +142,7 @@ def test_the_web_remote_hands_out_its_words_before_pairing(remote):  # noqa: F81
         with urllib.request.urlopen(f"http://127.0.0.1:{server.port}/api/i18n?lang={lang}", timeout=5) as r:
             out[lang] = (r.status, r.headers.get("Content-Type"), json.loads(r.read()))
 
-    for lang in ("fr", "..%2F..%2Fsecret", "de,fr,en"):
+    for lang in ("fr", "..%2F..%2Fsecret", "xx,fr,en", "de-AT,fr"):
         t = threading.Thread(target=get, args=(lang,))
         t.start()
         assert wait_for(lambda: not t.is_alive(), timeout=10)
@@ -144,7 +150,8 @@ def test_the_web_remote_hands_out_its_words_before_pairing(remote):  # noqa: F81
     assert status == 200 and ctype.startswith("application/json")
     assert body["strings"]["Connect to Hallucinate"] == "Se connecter à Hallucinate"
     assert out["..%2F..%2Fsecret"][2]["lang"] == "en"
-    assert out["de,fr,en"][2]["lang"] == "fr"  # the first of the device's languages there's a catalogue for
+    assert out["xx,fr,en"][2]["lang"] == "fr"  # the first of the device's languages there's a catalogue for
+    assert out["de-AT,fr"][2]["lang"] == "de"
 
 
 NODE = shutil.which("node")
@@ -209,7 +216,7 @@ def test_the_web_remote_follows_the_phones_language(remote, tmp_path):  # noqa: 
     assert "<b>Paramètres → Télécommande et web</b>" in seen["pairHtml"] and "<code>hallucinate --pair</code>" in seen["pairHtml"]
     assert seen["codeLabel"] == "Code d’association"
     assert seen["settings"] == "Paramètres"
-    assert seen["chips"] == ["Automatique", "English", "Español", "Français"]
+    assert seen["chips"] == ["Automatique", "English", "Deutsch", "Español", "Français", "Português"]
     assert seen["settingsEn"] == "Settings" and seen["saved"] == "en"
 
 

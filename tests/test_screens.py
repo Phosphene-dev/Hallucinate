@@ -2877,7 +2877,7 @@ def test_recap_numbers_follow_the_numbers_setting(qapp, app_window):
 
 
 @pytest.mark.parametrize("app_window", ["varied"], indirect=True)
-@pytest.mark.parametrize("language", ["fr", "pseudo"])
+@pytest.mark.parametrize("language", ["de", "fr", "pt", "pseudo"])
 def test_every_page_in_another_language(qapp, app_window, language):
     """French (and the pseudo-language: every word longer and accented) on every page, at a roomy and a narrow
     width: the words change at once, nothing spills out of its card, and no binding breaks on the way."""
@@ -2908,6 +2908,10 @@ def test_every_page_in_another_language(qapp, app_window, language):
                      if isinstance(item.property("text"), str)}
             assert "Paramètres" in texts or "Podcasts" in texts
             assert "Settings" not in texts
+        if language in ("de", "pt"):
+            texts = {item.property("text") for item in window.findChildren(QQuickItem)
+                     if isinstance(item.property("text"), str)}
+            assert ("Einstellungen" if language == "de" else "Configurações") in texts
     finally:
         i18n.setLanguage("en")
         qapp.processEvents()
