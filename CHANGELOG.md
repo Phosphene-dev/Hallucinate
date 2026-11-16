@@ -3,6 +3,27 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+- Identify songs by their sound: Library health has a card for songs with no title tag or no artist or album
+  (Identify all), and a song's right-click has Identify by sound. Each song's first two minutes are turned into
+  an audio fingerprint on this computer (Chromaprint's algorithm, built in: nothing to install) and AcoustID says
+  which recording it is, with its album, year and track number. Only the fingerprint and the song's length are
+  sent. Every match is shown, with how alike it is, before anything is written. Off until switched on in
+  Settings → Online & privacy, where an AcoustID key goes.
+- Merge duplicates: Library health's probable duplicates open a review. Each set shows its copies with the best
+  one picked to stay (lossless first, then the higher bitrate); click another to keep that instead, or untick a
+  set that's on purpose. The copy kept gets the others' plays (added up), likes, ratings, listens and playlist
+  places, then they leave the library or go to the trash. A file is never trashed when it's the last copy (one
+  seen twice through a link, or when the copy kept isn't a file here).
+- Tidy up (Library health): the clean-up steps in the order that works best, each with what it found: identify
+  songs by their sound, fill in missing tags, merge duplicates, then organize the files.
+
+### Fixed
+- "Keep the best copies" left the extra copies' likes, plays and playlist places behind, and a CUE sheet's song
+  among them took its whole album out of the library.
+
 ## [2.5.0] - 2026-11-15
 
 ### Added

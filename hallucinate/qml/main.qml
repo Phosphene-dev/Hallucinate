@@ -797,7 +797,7 @@ ApplicationWindow {
     }
 
     // Fixes found while Library health isn't showing (a song's Identify by sound): the summary, then the review
-    FixReview { id: globalFixReview }
+    FixReview { id: globalFixReview; objectName: "globalFixReview" }
     Connections {
         target: metaEditor
         function onFixesFinished(text) {

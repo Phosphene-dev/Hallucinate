@@ -74,6 +74,20 @@
 - [ ] Handoff with a typed address (on a network that blocks broadcasts), a wrong code (says so), Forget in
       Settings → Remote & web (needs pairing again), and with the firewall on (firewalld: the remote's port).
 
+## Release testing for 2.6.0
+
+- [ ] Settings → Online & privacy → Identify songs by their sound, with an AcoustID key. Library health: a few
+      songs with no tags (or named "track01") show on the new card; Identify all: progress, then a review with
+      the right title, artist, album, year and track, and how alike; Save writes them. A song's right-click →
+      Identify by sound does the same for that song (and a selection). Switched off: the menu item is gone and the
+      card's button says Set up…. A wrong key says so. Offline mode: it says so, nothing is sent.
+- [ ] Library health → Probable duplicates → Review and merge…: the best copy is marked; click another; untick a
+      set. Merge with "Leave the library": the copy kept has the others' likes, plays and playlist places; the
+      others are in Settings → Library's removed songs. With "Go to the trash": the files are in the system trash.
+      A copy that's a CUE sheet's song stays in the library.
+- [ ] Library health → Tidy up…: four steps with what each found; each button does its step (Set up… while
+      identifying is off); a step with nothing left shows a tick.
+
 ## Release testing for 2.5.0
 
 - [ ] An album's right-click → Organize files…: the moves are listed before anything moves (from → to), each inside
