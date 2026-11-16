@@ -175,7 +175,8 @@ def duplicate_groups(db, limit=10_000_000):
 
 def extra_copies(db):
     """Paths of every duplicate but the best copy of each (see _quality), for removing them from the library."""
-    return [r["path"] for rows in duplicate_groups(db) for r in rows[1:]]
+    # (a CUE sheet's song isn't one: its file holds the rest of its album, so it stays)
+    return [r["path"] for rows in duplicate_groups(db) for r in rows[1:] if not r.get("file")]
 
 
 def missing_folders(db):

@@ -2475,8 +2475,8 @@
         <translation>auf einem Musikserver</translation>
     </message>
     <message>
-        <source>in a CUE sheet</source>
-        <translation>in einem CUE-Sheet</translation>
+        <source>in a CUE sheet: stays in the library either way</source>
+        <translation>in einem CUE-Sheet: bleibt so oder so in der Mediathek</translation>
     </message>
     <message numerus="yes">
         <source>Merge %n set(s)</source>
@@ -2521,8 +2521,8 @@
         </translation>
     </message>
     <message>
-        <source>a song on a music server or in a CUE sheet only leaves the library</source>
-        <translation>ein Titel auf einem Musikserver oder in einem CUE-Sheet verlässt nur die Mediathek</translation>
+        <source>a song on a music server only leaves the library</source>
+        <translation>ein Titel auf einem Musikserver verlässt nur die Mediathek</translation>
     </message>
     <message>
         <source>Merge the copies of %1</source>

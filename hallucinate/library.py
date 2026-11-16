@@ -1231,7 +1231,8 @@ class Library(QObject):
     def mergeDuplicates(self, groups, trash):
         """Keep one copy of each set [{"keep": path, "drop": [paths]}]: the dropped copies' likes, plays, ratings,
         listens and playlist places go to the kept one, then they leave the library (`trash`: their files go to
-        the system trash; a server's song or a CUE sheet's, whose file holds other songs, is only taken out)."""
+        the system trash; a server's song is only taken out). A CUE sheet's song isn't dropped at all: its file
+        holds the rest of its album."""
         groups = [{"keep": str(g.get("keep") or ""), "drop": [str(p) for p in (g.get("drop") or []) if p]}
                   for g in groups if g]
         self._bulk.submit(lambda db: self._merge_work(db, groups, trash))
@@ -1243,6 +1244,9 @@ class Library(QObject):
             return
         known = set(db.duplicate_paths_known([p for pair in pairs for p in pair]))
         pairs = [(d, k) for d, k in pairs if d in known and k in known]  # (rows gone since the review: left be)
+        # a CUE sheet's song shares its file with the rest of its album: taking it out would take them all, so
+        # it stays as it is (and so do its plays)
+        pairs = [(d, k) for d, k in pairs if db.file_of(d) == d]
         db.merge_user_data(pairs)
         db.commit()
         dropped = [d for d, _ in pairs]
@@ -1261,6 +1265,10 @@ class Library(QObject):
                 return False
 
         files = [d for d, k in pairs if trash and trashable(d, k)]
+        if not pairs:
+            self._removed.emit({"kind": "merged", "albums": 0, "songs": 0, "failed": 0, "merged": 0,
+                                "hidden": len(db.hidden_paths()), "keys": [], "paths": []})
+            return
         hide = [d for d in dropped if d not in set(files)]
         songs = db.hide_paths(hide) if hide else 0
         if files:

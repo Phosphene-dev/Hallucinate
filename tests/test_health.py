@@ -187,6 +187,9 @@ def test_library_merges_duplicates_into_the_copy_chosen(qapp, tmp_path, monkeypa
     add(seed, b, album="Two", title="Song", codec="FLAC", duration=200)
     add(seed, c, album="Three", title="Other", duration=100)
     add(seed, d, album="Four", title="Other", duration=100)
+    cue = str(music / "live.flac#3")  # a CUE sheet's song: never dropped (its file holds its whole album)
+    add(seed, cue, album="Live", title="Song", codec="MP3", bitrate=96_000, duration=200)
+    seed.conn.execute("UPDATE tracks SET file=? WHERE path=?", (str(music / "live.flac"), cue))
     seed.set_liked(b, True)
     seed.commit()
     seed.close()
@@ -195,15 +198,16 @@ def test_library_merges_duplicates_into_the_copy_chosen(qapp, tmp_path, monkeypa
     lib.duplicateGroupsLoaded.connect(found.append)
     lib.albumsRemoved.connect(removed.append)
     try:
-        assert wait_for(lambda: lib.trackCount == 4, timeout=10)
+        assert wait_for(lambda: lib.trackCount == 5, timeout=10)
         lib.loadDuplicateGroups()
         assert wait_for(lambda: found, timeout=10)
         song = next(g for g in found[0] if g["copies"][0]["title"] == "Song")
-        assert [x["path"] for x in song["copies"]] == [b, a] and song["copies"][0]["liked"]
-        lib.mergeDuplicates([{"keep": a, "drop": [b]}, {"keep": c, "drop": [d]}], True)
-        assert wait_for(lambda: removed and lib.trackCount == 2, timeout=10)
+        assert [x["path"] for x in song["copies"]] == [b, a, cue] and song["copies"][0]["liked"]
+        assert song["copies"][2]["cue"]
+        lib.mergeDuplicates([{"keep": a, "drop": [b, cue]}, {"keep": c, "drop": [d]}], True)
+        assert wait_for(lambda: removed and lib.trackCount == 3, timeout=10)
         assert removed[0]["kind"] == "merged" and removed[0]["merged"] == 2 and removed[0]["trashed"] == 1
-        assert sorted(t["path"] for t in lib.allTracks()) == [a, c]
+        assert sorted(t["path"] for t in lib.allTracks()) == sorted([a, c, cue])
         assert sorted(p.name for p in trash.iterdir()) == ["b.flac"]  # the link's file stayed: it's c itself
         assert os.path.exists(c) and lib.hiddenCount == 1
         db = Database(path)

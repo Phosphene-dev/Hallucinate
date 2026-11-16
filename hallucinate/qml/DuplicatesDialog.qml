@@ -35,7 +35,7 @@ Dialog {
         if (c.liked) bits.push("♥")
         if (c.plays > 0) bits.push(Theme.counted(qsTr("%n play(s)", "", c.plays), c.plays))
         if (c.remote) bits.push(qsTr("on a music server"))
-        if (c.cue) bits.push(qsTr("in a CUE sheet"))
+        if (c.cue) bits.push(qsTr("in a CUE sheet: stays in the library either way"))
         return bits.join("  ·  ")
     }
     onOpened: { loading = true; rows.clear(); groups = []; recount(); library.loadDuplicateGroups() }
@@ -120,7 +120,7 @@ Dialog {
             text: dlg.loading ? qsTr("Finding duplicates…")
                   : rows.count === 0 ? qsTr("No probable duplicates")
                   : Theme.counted(qsTr("%n copies to merge away", "", dlg.dropping), dlg.dropping)
-                    + (dlg.trash ? "  ·  " + qsTr("a song on a music server or in a CUE sheet only leaves the library") : "")
+                    + (dlg.trash ? "  ·  " + qsTr("a song on a music server only leaves the library") : "")
             color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); font.weight: Font.DemiBold
         }
     }
