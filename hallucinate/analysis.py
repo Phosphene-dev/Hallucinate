@@ -9,7 +9,7 @@ making progress for STALL_S, or dies, it's ended and the next song gets a fresh 
 IDLE_MS with nothing to do.
 
 The protocol is one JSON object per line. Asked: {"id", "path", "kind": "waveform" | "loudness" | "spectrogram" |
-"render" | "features", "envelope": bool, "options": {…}} ("features" measures how a song sounds, from "start"
+"render" | "features" | "fingerprint", "envelope": bool, "options": {…}} ("features" measures how a song sounds, from "start"
 seconds in: core/soundlike.py; with "low": true the helper lowers its own priority first; "render" writes the song as heard here to a WAV file for a cast
 device: see core/cast/render.py and render_options). Answered: {"id", "beat": buffers decoded so far} while working, then {"id", "result"}
 (None when the file couldn't be decoded; {"silent": true} for loudness of a silent song)."""
@@ -91,7 +91,7 @@ def serve():
     from PySide6.QtMultimedia import QAudioDecoder
 
     from . import dsd, loudness
-    from .core import soundlike
+    from .core import chromaprint, soundlike
     from .replaygain import channel_samples
     from .spectrogram import Accumulator
     from .waveform import blocks_from_samples, mono_samples, peaks_from_blocks
@@ -137,7 +137,8 @@ def serve():
             _lower_priority()
         state.update(ms=[], peak=[], rate=0, meter=loudness.Meter() if job.get("kind") == "loudness" else None,
                      spectrum=Accumulator() if job.get("kind") == "spectrogram" else None, render=None,
-                     features=soundlike.Collector(_number(job.get("start"))) if job.get("kind") == "features" else None,
+                     features=soundlike.Collector(_number(job.get("start"))) if job.get("kind") == "features"
+                     else chromaprint.Collector() if job.get("kind") == "fingerprint" else None,
                      dsd=job.get("kind") != "spectrogram" and dsd.is_dsd({"path": job.get("path")}), converter=None)
         decoder = state["decoder"] = QAudioDecoder()
         if job.get("kind") == "render":
@@ -231,7 +232,10 @@ def serve():
         job = state["job"]
         if job is None:
             return
-        if state["features"] is not None:
+        if job.get("kind") == "fingerprint":
+            got = state["features"].result()
+            result = {"empty": True} if got is None else got
+        elif state["features"] is not None:
             got = state["features"].result()
             result = {"empty": True} if got is None else {
                 "vec": _pack(got["vec"]), "bpm": got["bpm"], "key": got["key"], "keyStrength": got["keyStrength"]}

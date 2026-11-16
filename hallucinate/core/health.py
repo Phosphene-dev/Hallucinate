@@ -82,6 +82,26 @@ def unknown_artist_or_album(db):
                   QT_TRANSLATE_NOOP("Health", "Shown as “Unknown” and grouped together. Edit their tags."), "track", rows, count)
 
 
+# Songs worth identifying by their sound: no title tag (the title is the file's name), or no artist or album; a
+# file of its own here (not a server's song, not a CUE sheet's)
+UNIDENTIFIED = (f"(artist = ? OR album = ? OR instr(path, '/' || title || '.') > 0 OR instr(path, char(92) || title || '.') > 0)"
+                f" AND file IS NULL AND {SQL_LOCAL}")
+
+
+def unidentified(db, limit=None):
+    """The songs worth identifying by their sound (see UNIDENTIFIED), as rows."""
+    sql = f"SELECT * FROM tracks WHERE {UNIDENTIFIED} ORDER BY path" + (" LIMIT ?" if limit else "")
+    return db._rows(sql, (UNKNOWN_ARTIST, UNKNOWN_ALBUM, *((limit,) if limit else ())))
+
+
+def unidentified_songs(db):
+    rows = unidentified(db, LIMIT)
+    count = db.conn.execute(f"SELECT COUNT(*) FROM tracks WHERE {UNIDENTIFIED}", (UNKNOWN_ARTIST, UNKNOWN_ALBUM)).fetchone()[0]
+    return _check("identify", QT_TRANSLATE_NOOP("Health", "Songs that could be identified by their sound"),
+                  QT_TRANSLATE_NOOP("Health", "No title tag, or no artist or album. AcoustID can tell what they are from how they sound."),
+                  "track", rows, count)
+
+
 def missing_track_numbers(db):
     return _check("numbers", QT_TRANSLATE_NOOP("Health", "Albums without track numbers"),
                   QT_TRANSLATE_NOOP("Health", "Their songs play in title order instead of the album's."),
@@ -164,7 +184,7 @@ def missing_folders(db):
                   QT_TRANSLATE_NOOP("Health", "Unplugged drives show up here too. Remove a folder only if it is gone for good."), "folder", rows)
 
 
-CHECKS = (missing_folders, unknown_artist_or_album, split_albums, missing_covers, damaged_covers, missing_track_numbers,
+CHECKS = (missing_folders, unknown_artist_or_album, unidentified_songs, split_albums, missing_covers, damaged_covers, missing_track_numbers,
           missing_year, missing_genre, missing_replaygain, duplicates, low_bitrate)
 
 
@@ -173,11 +193,13 @@ def report(db):
 
     The score is the share of tracks free of track-level problems and of albums free of album-level ones."""
     results = [check(db) for check in CHECKS]
-    total = sum(r["count"] for r in results)
+    # (songs to identify overlap those missing tags: a way to fix them, not a problem of their own to count)
+    counted = [r for r in results if r["id"] != "identify"]
+    total = sum(r["count"] for r in counted)
     tracks = db.conn.execute("SELECT COUNT(*) FROM tracks").fetchone()[0]
     albums = db.conn.execute("SELECT COUNT(DISTINCT album_key) FROM tracks").fetchone()[0]
-    album_issues = sum(r["count"] for r in results if r["kind"] == "album")
-    track_issues = sum(r["count"] for r in results if r["kind"] == "track")
+    album_issues = sum(r["count"] for r in counted if r["kind"] == "album")
+    track_issues = sum(r["count"] for r in counted if r["kind"] == "track")
     parts = []
     if albums:
         parts.append(max(0.0, 1 - album_issues / (albums * 7)))  # seven album checks

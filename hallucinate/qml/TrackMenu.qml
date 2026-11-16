@@ -273,6 +273,20 @@ Menu {
         onTriggered: songMenu.single ? Nav.editTags(songMenu.path) : Nav.editTagsMany(songMenu.paths)
     }
     MenuItem {
+        objectName: "trackIdentify"
+        // (switched on in Settings → Online & privacy; files of their own here, not a server's or a CUE sheet's)
+        visible: sources.acoustid && !songMenu.stream && !songMenu.onServer
+                 && songMenu.paths.every(function (p) { return !/\.[A-Za-z0-9]+#\d+$/.test(p) })
+        height: visible ? implicitHeight : 0
+        enabled: !metaEditor.fixesBusy && !metaEditor.fixesSaving && !shell.offlineMode
+        text: qsTr("Identify by sound")
+        icon.name: "search"
+        onTriggered: {
+            metaEditor.identifySongs(songMenu.paths)
+            songMenu.done(qsTr("Identifying %1 by its sound…").arg(songMenu.what))
+        }
+    }
+    MenuItem {
         objectName: "trackRemoveFromQueue"
         visible: songMenu.single && songMenu.context === "queue"
         height: visible ? implicitHeight : 0

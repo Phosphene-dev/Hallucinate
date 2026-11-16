@@ -2514,7 +2514,7 @@
         <translation type="unfinished">No hay duplicados probables</translation>
     </message>
     <message numerus="yes">
-        <source>%n copy (or copies) to merge away</source>
+        <source>%n copies to merge away</source>
         <translation type="unfinished">
             <numerusform></numerusform>
             <numerusform></numerusform>
@@ -2780,6 +2780,14 @@
         <translation>Artistas y álbumes encontrados</translation>
     </message>
     <message>
+        <source>Songs identified by their sound</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>from AcoustID, %1% alike</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>from MusicBrainz: %1</source>
         <translation>de MusicBrainz: %1</translation>
     </message>
@@ -2796,6 +2804,14 @@
         <translation>de los nombres de archivos y carpetas</translation>
     </message>
     <message>
+        <source>track %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Now: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Save %1</source>
         <translation>Guardar %1</translation>
     </message>
@@ -2805,6 +2821,10 @@
             <numerusform>Guardando %n cambio en tus archivos</numerusform>
             <numerusform>Guardando %n cambios en tus archivos</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Ticked songs get this title, artist, album, year and track number written to their files. Untick any that look wrong.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Ticked albums get this year written to every song. Change any that look wrong; MusicBrainz&apos;s is the earliest release it knows.</source>
@@ -3343,6 +3363,14 @@
         <translation>Se muestran como «Desconocido» y se agrupan. Edita sus etiquetas.</translation>
     </message>
     <message>
+        <source>Songs that could be identified by their sound</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No title tag, or no artist or album. AcoustID can tell what they are from how they sound.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Albums without track numbers</source>
         <translation>Álbumes sin números de pista</translation>
     </message>
@@ -3432,6 +3460,18 @@
     <message>
         <source>Reads numbers from file names, then matches titles on MusicBrainz. You check them before anything is saved.</source>
         <translation>Lee los números de los nombres de archivo y luego busca los títulos en MusicBrainz. Los revisas antes de guardar nada.</translation>
+    </message>
+    <message>
+        <source>Switch it on in Settings → Online &amp; privacy: each song&apos;s fingerprint and length go to AcoustID.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Offline mode is on, so songs can&apos;t be identified.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Listens to each song on this computer, then asks AcoustID what it is (only its fingerprint and length are sent). You check them before anything is saved.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Guesses from folders (Artist/Album/song) and “Artist - Title” file names. You check them before anything is saved.</source>
@@ -3529,12 +3569,20 @@
         <translation>Pregunta a MusicBrainz, un par de segundos por álbum. Revisas lo que encuentra antes de guardar nada.</translation>
     </message>
     <message>
+        <source>Set up…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Guess all</source>
         <translation>Deducir todo</translation>
     </message>
     <message>
         <source>Find all</source>
         <translation>Buscar todo</translation>
+    </message>
+    <message>
+        <source>Identify all</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Saving to your files: %1 of %2. You can carry on meanwhile.</source>
@@ -4557,6 +4605,30 @@
     <message>
         <source>not moved: %1 (%2)</source>
         <translation>no movidas: %1 (%2)</translation>
+    </message>
+    <message>
+        <source>Identifying songs by their sound is switched off: Settings → Online &amp; privacy</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>AcoustID needs an application key: Settings → Online &amp; privacy</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Offline mode is on, so songs can&apos;t be identified</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>AcoustID didn&apos;t accept the application key: Settings → Online &amp; privacy</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>AcoustID couldn&apos;t be reached. Check your connection.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Identified %1 of %2 songs by their sound. Check them, then save.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Found a likely artist or album for %1 of %2 songs. Check them, then save.</source>
@@ -10236,8 +10308,8 @@
         <translation>Olvidar</translation>
     </message>
     <message>
-        <source>offline mode internet network privacy connection lyrics lrclib genres bios biography wikipedia discogs token musicbrainz last.fm tags similar artists discover</source>
-        <translation>modo sin conexión internet red privacidad conexión letras géneros biografía artistas parecidos descubrir etiquetas offline mode internet network privacy connection lyrics lrclib genres bios biography wikipedia discogs token musicbrainz last.fm tags similar artists discover</translation>
+        <source>offline mode internet network privacy connection lyrics lrclib genres bios biography wikipedia discogs token musicbrainz last.fm tags similar artists discover acoustid fingerprint identify recognise sound</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Offline mode</source>
@@ -10294,6 +10366,22 @@
     <message>
         <source>. Needs the Last.fm API key, under Scrobbling &amp; sharing</source>
         <translation>. Necesita la clave de API de Last.fm, en Scrobbling y compartir</translation>
+    </message>
+    <message>
+        <source>Identify songs by their sound with AcoustID (Library health, a song&apos;s menu: sends each song&apos;s fingerprint and length, nothing else)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Your own AcoustID key (optional)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>AcoustID application key</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Free at acoustid.org/new-application (sign in with MusicBrainz, then copy the application&apos;s API key).</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Genre and bio sources</source>
@@ -12932,6 +13020,14 @@
     <message>
         <source>Edit tags…</source>
         <translation>Editar etiquetas…</translation>
+    </message>
+    <message>
+        <source>Identify by sound</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Identifying %1 by its sound…</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Remove from the queue</source>

@@ -180,9 +180,10 @@ ENGLISH_PLURALS = {
     "%n of these are already in “%1”": ("%n of these is already in “%1”", "%n of these are already in “%1”"),
     "Also add the %n that are already there": ("Also add the %n that's already there", "Also add the %n that are already there"),
     "%n song(s) new to it.": ("%n song is new to it.", "%n songs are new to it."),
-    "Takes the %n extra copies out of the library and keeps the best of each. Right-click a song for more.":
-        ("Takes the %n extra copy out of the library and keeps the best of each. Right-click a song for more.",
-         "Takes the %n extra copies out of the library and keeps the best of each. Right-click a song for more."),
+    "%n copies to merge away": ("%n copy to merge away", "%n copies to merge away"),
+    "%n extra copies: the best of each set stays and gets their likes, plays and playlist places.":
+        ("%n extra copy: the best of its set stays and gets its likes, plays and playlist places.",
+         "%n extra copies: the best of each set stays and gets their likes, plays and playlist places."),
     "hours of music": ("hour of music", "hours of music"),
     "minutes of music": ("minute of music", "minutes of music"),
 }

@@ -119,7 +119,7 @@ Dialog {
             wrapMode: Text.WordWrap
             text: dlg.loading ? qsTr("Finding duplicates…")
                   : rows.count === 0 ? qsTr("No probable duplicates")
-                  : Theme.counted(qsTr("%n copy (or copies) to merge away", "", dlg.dropping), dlg.dropping)
+                  : Theme.counted(qsTr("%n copies to merge away", "", dlg.dropping), dlg.dropping)
                     + (dlg.trash ? "  ·  " + qsTr("a song on a music server or in a CUE sheet only leaves the library") : "")
             color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); font.weight: Font.DemiBold
         }

@@ -197,3 +197,65 @@ def test_each_check_keeps_what_it_found_until_reviewed(qapp, tmp_path):
     finally:
         del ed._fetch_fixes
         ed.shutdown()
+
+
+def test_songs_identified_by_their_sound(qapp, tmp_path):
+    """Identify: a song without tags is fingerprinted in the decoding helper and looked up (here, a stand-in for
+    AcoustID that checks what it's sent); the tags found are written once kept, and the song leaves the list."""
+    import threading
+    import wave
+
+    from test_chromaprint import ANSWER, song
+
+    from hallucinate.core import chromaprint
+
+    root = tmp_path / "Music" / "incoming"
+    root.mkdir(parents=True)
+    path = root / "track01.wav"
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(44100)
+        w.writeframes(song().tobytes())
+    ed = _editor(tmp_path, [tmp_path / "Music"])
+    finished, asked = [], []
+    ed.fixesFinished.connect(finished.append)
+
+    def lookup(key, fp, duration):
+        asked.append((key, chromaprint.decode(fp)[1], duration))
+        answer = __import__("copy").deepcopy(ANSWER)
+        answer[0]["recordings"][0]["duration"] = 20  # (this recording as long as the song)
+        return answer
+
+    try:
+        assert _counts(tmp_path)["identify"] == 1
+        worker = threading.Thread(target=ed._identify, args=(None, "my-key", lookup), daemon=True)
+        ed._fixes.update(kind="identify", busy=True)
+        worker.start()
+        assert wait_for(lambda: finished, timeout=60)
+        (key, fp, duration), = asked
+        assert key == "my-key" and round(duration) == 20
+        assert chromaprint.similarity(fp, chromaprint.decode(__import__("test_chromaprint").FPCALC)[1]) > 0.99
+        found = ed.fixProposals
+        assert [(p["title"], p["artist"], p["album"], p["track_no"]) for p in found] == [
+            ("Lower Your Eyelids to Die With the Sun", "M83", "Before the Dawn Heals Us", 15)]
+        assert "1 of 1" in finished[0]
+        saved = []
+        ed.saved.connect(saved.append)
+        ed.saveFixes(found)
+        assert wait_for(lambda: saved and not ed.fixesSaving)
+        from hallucinate.core.db import Database
+        db = Database(tmp_path / "lib.db")
+        row = db.track_by_path(str(path))
+        db.close()
+        assert (row["title"], row["artist"], row["album"], row["year"], row["track_no"]) == (
+            "Lower Your Eyelids to Die With the Sun", "M83", "Before the Dawn Heals Us", 2005, 15)
+        assert _counts(tmp_path)["identify"] == 0
+        # switched off, or without a key: it says so, and nothing is looked up
+        for key, words in ((None, "switched off"), ("", "application key")):
+            finished.clear()
+            ed._identify(None, key, lookup)
+            assert wait_for(lambda: finished) and words in finished[0]
+        assert len(asked) == 1
+    finally:
+        ed.shutdown()

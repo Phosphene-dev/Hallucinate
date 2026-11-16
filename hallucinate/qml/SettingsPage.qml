@@ -2627,7 +2627,7 @@ Item {
             id: sec_sharing
             objectName: "settings_sharing"
             title: qsTr("Online & privacy")
-            keywords: qsTr("offline mode internet network privacy connection lyrics lrclib genres bios biography wikipedia discogs token musicbrainz last.fm tags similar artists discover")
+            keywords: qsTr("offline mode internet network privacy connection lyrics lrclib genres bios biography wikipedia discogs token musicbrainz last.fm tags similar artists discover acoustid fingerprint identify recognise sound")
             query: page.query
             StyledCheck {
                 objectName: "offlineMode"
@@ -2677,6 +2677,42 @@ Item {
                 enabled: sources.lastfmAvailable || checked
                 checked: sources.fetchSimilar
                 onToggled: sources.setFetchSimilar(checked)
+            }
+            StyledCheck {
+                objectName: "acoustid"
+                text: qsTr("Identify songs by their sound with AcoustID (Library health, a song's menu: sends each song's fingerprint and length, nothing else)")
+                checked: sources.acoustid
+                onToggled: sources.setAcoustid(checked)
+            }
+            Flow {
+                width: parent.width
+                spacing: 10
+                leftPadding: 30
+                visible: sources.acoustid
+                TextField {
+                    id: acoustidKey
+                    objectName: "acoustidKey"
+                    width: Math.min(340, parent.width - 30)
+                    text: sources.acoustidKey
+                    placeholderText: sources.acoustidBuiltIn ? qsTr("Your own AcoustID key (optional)") : qsTr("AcoustID application key")
+                    placeholderTextColor: Theme.textDim
+                    color: Theme.text
+                    selectByMouse: true
+                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13)
+                    background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.color: acoustidKey.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
+                    onEditingFinished: sources.setAcoustidKey(text)
+                    Accessible.name: qsTr("AcoustID application key")
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: Math.min(implicitWidth, parent.width - 30)
+                    wrapMode: Text.WordWrap
+                    height: Math.max(implicitHeight, 38)
+                    verticalAlignment: Text.AlignVCenter
+                    visible: !sources.acoustidBuiltIn
+                    text: qsTr("Free at acoustid.org/new-application (sign in with MusicBrainz, then copy the application's API key).")
+                    color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                }
             }
             SettingsGroup {
                 key: "genreSources"

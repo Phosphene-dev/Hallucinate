@@ -45,6 +45,7 @@ Item {
     Connections {
         target: metaEditor
         function onFixesFinished(text) {
+            if (page.StackView.status !== StackView.Active) return  // (shown elsewhere: main.qml has it)
             Nav.notify(text)
             if (metaEditor.fixProposals.length) fixReview.open()
         }
@@ -56,6 +57,9 @@ Item {
                                                     : qsTr("Reads years from folder names, then asks MusicBrainz, about an album a second. You check them before anything is saved.")
         if (id === "numbers") return shell.offlineMode ? qsTr("Reads numbers from file names (offline mode is on, so MusicBrainz isn't asked). You check them before anything is saved.")
                                                        : qsTr("Reads numbers from file names, then matches titles on MusicBrainz. You check them before anything is saved.")
+        if (id === "identify") return !sources.acoustid ? qsTr("Switch it on in Settings → Online & privacy: each song's fingerprint and length go to AcoustID.")
+                                      : shell.offlineMode ? qsTr("Offline mode is on, so songs can't be identified.")
+                                      : qsTr("Listens to each song on this computer, then asks AcoustID what it is (only its fingerprint and length are sent). You check them before anything is saved.")
         return qsTr("Guesses from folders (Artist/Album/song) and “Artist - Title” file names. You check them before anything is saved.")
     }
     Connections {
@@ -350,7 +354,7 @@ Item {
                             // (each check keeps what it found until it's reviewed: finding another check's doesn't lose them)
                             readonly property int found: metaEditor.fixCounts[card.modelData.id] || 0
                             readonly property bool waiting: !(mine && metaEditor.fixesBusy) && found > 0
-                            visible: (card.modelData.id === "year" || card.modelData.id === "numbers" || card.modelData.id === "untagged")
+                            visible: ["year", "numbers", "untagged", "identify"].indexOf(card.modelData.id) >= 0
                                      && (card.modelData.count > 0 || working || waiting)
                             spacing: 12
                             leftPadding: 24
@@ -358,10 +362,14 @@ Item {
                                 objectName: "findAll_" + card.modelData.id
                                 primary: !fixRow.working && !fixRow.waiting
                                 height: 32
-                                text: fixRow.working ? qsTr("Stop") : card.modelData.id === "untagged" ? qsTr("Guess all") : qsTr("Find all")
+                                readonly property bool setUp: card.modelData.id !== "identify" || sources.acoustid
+                                text: fixRow.working ? qsTr("Stop") : !setUp ? qsTr("Set up…")
+                                      : card.modelData.id === "untagged" ? qsTr("Guess all")
+                                      : card.modelData.id === "identify" ? qsTr("Identify all") : qsTr("Find all")
                                 // (one at a time: another check's lookup or save holds this one back)
                                 enabled: fixRow.working || !(metaEditor.fixesBusy || metaEditor.fixesSaving)
-                                onClicked: metaEditor.fixesSaving ? metaEditor.stopSavingFixes()
+                                onClicked: !setUp ? Nav.openSettingsAt("sharing")
+                                           : metaEditor.fixesSaving ? metaEditor.stopSavingFixes()
                                            : metaEditor.fixesBusy ? metaEditor.cancelFixes() : metaEditor.findFixes(card.modelData.id)
                             }
                             PillButton {

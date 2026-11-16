@@ -796,6 +796,17 @@ ApplicationWindow {
         }
     }
 
+    // Fixes found while Library health isn't showing (a song's Identify by sound): the summary, then the review
+    FixReview { id: globalFixReview }
+    Connections {
+        target: metaEditor
+        function onFixesFinished(text) {
+            if (stack.currentItem && stack.currentItem.objectName === "health") return  // (it shows its own)
+            if (metaEditor.fixKind !== "identify") return
+            toast.show(text)
+            if (metaEditor.fixProposals.length) globalFixReview.open()
+        }
+    }
     Connections {
         target: userLib
         function onLovesMatched(n) { toast.show(n ? Theme.counted(qsTr("Liked %n song(s) you'd loved on Last.fm", "", n), n) : qsTr("No new songs to like from your Last.fm loves")) }
