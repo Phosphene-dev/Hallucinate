@@ -2680,7 +2680,7 @@ Item {
             }
             StyledCheck {
                 objectName: "acoustid"
-                text: qsTr("Identify songs by their sound with AcoustID (Library health, a song's menu: sends each song's fingerprint and length, nothing else)")
+                text: qsTr("Identify songs by their sound with AcoustID (sends each song's fingerprint and length, nothing else)")
                 checked: sources.acoustid
                 onToggled: sources.setAcoustid(checked)
             }

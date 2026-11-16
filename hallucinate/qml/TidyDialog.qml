@@ -105,6 +105,7 @@ Dialog {
             width: 30; height: 30; radius: 15
             color: step.done ? Theme.hoverTint : Theme.accent
             Text {
+                textFormat: Text.PlainText
                 anchors.centerIn: parent
                 text: step.done ? "✓" : step.number
                 color: step.done ? Theme.accent : Theme.onAccent

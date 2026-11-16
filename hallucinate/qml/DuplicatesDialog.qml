@@ -171,6 +171,7 @@ Dialog {
                         radius: Theme.radiusSmall
                         color: kept ? Theme.hoverTint : (pickArea.containsMouse ? Theme.glassHover : "transparent")
                         Text {
+                            textFormat: Text.PlainText
                             id: dot
                             x: 8; y: 4
                             text: copy.kept ? "●" : "○"

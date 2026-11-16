@@ -10146,6 +10146,10 @@
         <translation>Les biographies viennent de</translation>
     </message>
     <message>
+        <source>Identify songs by their sound with AcoustID (sends each song&apos;s fingerprint and length, nothing else)</source>
+        <translation>Identifier les morceaux par leur son avec AcoustID (envoie l’empreinte et la durée de chaque morceau, rien d’autre)</translation>
+    </message>
+    <message>
         <source>Last.fm</source>
         <translation>Last.fm</translation>
     </message>
@@ -10382,10 +10386,6 @@
     <message>
         <source>. Needs the Last.fm API key, under Scrobbling &amp; sharing</source>
         <translation>. Nécessite la clé d’API Last.fm, sous Scrobbling et partage</translation>
-    </message>
-    <message>
-        <source>Identify songs by their sound with AcoustID (Library health, a song&apos;s menu: sends each song&apos;s fingerprint and length, nothing else)</source>
-        <translation>Identifier les morceaux par leur son avec AcoustID (Santé de la bibliothèque, le menu d’un morceau&#xa0;: envoie l’empreinte et la durée de chaque morceau, rien d’autre)</translation>
     </message>
     <message>
         <source>Your own AcoustID key (optional)</source>

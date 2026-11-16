@@ -10372,8 +10372,8 @@
         <translation>. Necesita la clave de API de Last.fm, en Scrobbling y compartir</translation>
     </message>
     <message>
-        <source>Identify songs by their sound with AcoustID (Library health, a song&apos;s menu: sends each song&apos;s fingerprint and length, nothing else)</source>
-        <translation>Identificar canciones por su sonido con AcoustID (Salud de la biblioteca, el menú de una canción: envía la huella y la duración de cada canción, nada más)</translation>
+        <source>Identify songs by their sound with AcoustID (sends each song&apos;s fingerprint and length, nothing else)</source>
+        <translation>Identificar canciones por su sonido con AcoustID (envía la huella y la duración de cada canción, nada más)</translation>
     </message>
     <message>
         <source>Your own AcoustID key (optional)</source>
