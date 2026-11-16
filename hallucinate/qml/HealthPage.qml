@@ -93,6 +93,12 @@ Item {
         }
     }
     DuplicatesDialog { id: duplicatesDlg }
+    TidyDialog {
+        id: tidyDlg
+        checks: page.checks
+        onReviewFixes: function (kind) { metaEditor.reviewFixes(kind); fixReview.open() }
+        onMergeDuplicates: duplicatesDlg.show()
+    }
 
     Flickable {
         WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
@@ -163,6 +169,12 @@ Item {
                     Flow {
                         width: parent.width
                         spacing: 10
+                        PillButton {
+                            objectName: "tidyUpButton"
+                            primary: true
+                            text: qsTr("Tidy up…")
+                            onClicked: tidyDlg.open()
+                        }
                         PillButton {
                             text: page.report.loading ? qsTr("Checking…") : qsTr("Check again")
                             enabled: !page.report.loading

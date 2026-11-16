@@ -3505,6 +3505,10 @@
         </translation>
     </message>
     <message>
+        <source>Tidy up…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Checking…</source>
         <translation>Wird geprüft…</translation>
     </message>
@@ -12879,6 +12883,113 @@
     <message>
         <source>Couldn&apos;t save the theme: %1</source>
         <translation>Das Design konnte nicht gespeichert werden: %1</translation>
+    </message>
+</context>
+<context>
+    <name>TidyDialog</name>
+    <message>
+        <source>Tidy up your library</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation type="unfinished">Schließen</translation>
+    </message>
+    <message>
+        <source>Step by step, in this order: each shows what it found before anything is saved, and you can skip any of them.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Identify songs by their sound</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Off: switch it on in Settings → Online &amp; privacy (each song&apos;s fingerprint and length go to AcoustID).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>For songs with no title tag, or no artist or album: AcoustID tells what they are from how they sound.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Fill in missing tags</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Artists and albums from folder names, then years and track numbers from names and MusicBrainz.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Merge duplicates</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The best copy of each song stays and gets the others&apos; likes, plays and playlist places.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Review and merge…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Organize the files</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Folders and file names made from the tags, now that they&apos;re right. Every move is shown first, and it can be undone.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Organize files…</source>
+        <translation type="unfinished">Dateien ordnen…</translation>
+    </message>
+    <message>
+        <source>Nothing to do here</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Set up…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stop saving</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stop · %1 of %2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Review %1 found…</source>
+        <translation type="unfinished">%1 gefundene prüfen…</translation>
+    </message>
+    <message numerus="yes">
+        <source>Identify %n song(s)</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Guess artist and album for %n song(s)</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Find years for %n album(s)</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Find track numbers for %n album(s)</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
     </message>
 </context>
 <context>

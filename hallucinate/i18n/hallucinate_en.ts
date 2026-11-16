@@ -256,7 +256,9 @@
     <message numerus="yes">
         <source>%n copies to merge away</source>
         <translation>
-            <numerusform>%n copy to merge away</numerusform><numerusform>%n copies to merge away</numerusform></translation>
+            <numerusform>%n copy to merge away</numerusform>
+            <numerusform>%n copies to merge away</numerusform>
+        </translation>
     </message>
 </context>
 <context>
@@ -1327,6 +1329,29 @@
             <numerusform>%n day</numerusform>
             <numerusform>%n days</numerusform>
         </translation>
+    </message>
+</context>
+<context>
+    <name>TidyDialog</name>
+    <message numerus="yes">
+        <source>Identify %n song(s)</source>
+        <translation>
+            <numerusform>Identify %n song</numerusform><numerusform>Identify %n songs</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>Guess artist and album for %n song(s)</source>
+        <translation>
+            <numerusform>Guess artist and album for %n song</numerusform><numerusform>Guess artist and album for %n songs</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>Find years for %n album(s)</source>
+        <translation>
+            <numerusform>Find years for %n album</numerusform><numerusform>Find years for %n albums</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>Find track numbers for %n album(s)</source>
+        <translation>
+            <numerusform>Find track numbers for %n album</numerusform><numerusform>Find track numbers for %n albums</numerusform></translation>
     </message>
 </context>
 <context>

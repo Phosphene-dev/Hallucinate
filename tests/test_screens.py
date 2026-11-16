@@ -3550,3 +3550,41 @@ def test_merge_duplicates_review(qapp, app_window):
     paths = {t["path"] for t in library.allTracks()}
     assert second in paths and first not in paths
     assert not [w for w in warnings if "DuplicatesDialog" in w]
+
+
+def test_tidy_up_lists_the_steps_with_what_each_found(qapp, app_window):
+    """Library health → Tidy up…: identify, fill in tags, merge duplicates, organize; each offers what it found,
+    and identifying asks to be set up first while it's switched off."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    library = objects["library"]
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "health"))
+    assert wait_for(lambda: window.findChild(QObject, "tidyDialog") is not None)
+    assert wait_for(lambda: library.health.get("checks") is not None and not library.health["loading"])
+    library._health = {"checks": [
+        {"id": "identify", "title": "", "detail": "", "kind": "track", "count": 3, "items": []},
+        {"id": "year", "title": "", "detail": "", "kind": "album", "count": 2, "items": []},
+        {"id": "duplicates", "title": "", "detail": "", "kind": "track", "count": 4, "extra": 2, "items": []}],
+        "issues": 9, "score": 80}
+    library.healthChanged.emit()
+    dlg = window.findChild(QObject, "tidyDialog")
+    QMetaObject.invokeMethod(dlg, "open")
+    assert wait_for(lambda: dlg.property("opened"))
+
+    def names(prefix):
+        return set(plain(QMetaObject.invokeMethod(window, "visibleNames", Qt.ConnectionType.DirectConnection,
+                                                  Q_RETURN_ARG("QVariant"), Q_ARG("QVariant", prefix),
+                                                  Q_ARG("QVariant", dlg.property("contentItem")))) or [])
+
+    assert wait_for(lambda: names("tidy") == {"tidy_identify", "tidy_year", "tidyStep3", "tidyStep4"})
+    def text(name):
+        item = QMetaObject.invokeMethod(window, "findItem", Qt.ConnectionType.DirectConnection, Q_RETURN_ARG("QVariant"),
+                                        Q_ARG("QVariant", name), Q_ARG("QVariant", dlg.property("contentItem")))
+        return item.property("text")
+
+    texts = {n: text(n) for n in ("tidy_identify", "tidy_year", "tidyStep3")}
+    assert texts["tidy_identify"] == "Set up…"  # (off until switched on)
+    assert texts["tidy_year"] == "Find years for 2 albums" and texts["tidyStep3"] == "Review and merge…  (2)"
+    QMetaObject.invokeMethod(dlg, "close")
+    assert not [w for w in warnings if "TidyDialog" in w]
