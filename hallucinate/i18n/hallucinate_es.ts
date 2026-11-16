@@ -2457,88 +2457,88 @@
     <name>DuplicatesDialog</name>
     <message>
         <source>Merge duplicates</source>
-        <translation type="unfinished"></translation>
+        <translation>Fusionar duplicados</translation>
     </message>
     <message>
         <source>%1 kbps</source>
-        <translation type="unfinished">%1 kbps</translation>
+        <translation>%1 kbps</translation>
     </message>
     <message numerus="yes">
         <source>%n play(s)</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform>%n reproducción</numerusform>
             <numerusform>%n reproducciones</numerusform>
         </translation>
     </message>
     <message>
         <source>on a music server</source>
-        <translation type="unfinished"></translation>
+        <translation>en un servidor de música</translation>
     </message>
     <message>
         <source>in a CUE sheet</source>
-        <translation type="unfinished"></translation>
+        <translation>en una hoja CUE</translation>
     </message>
     <message numerus="yes">
         <source>Merge %n set(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>Fusionar %n grupo</numerusform>
+            <numerusform>Fusionar %n grupos</numerusform>
         </translation>
     </message>
     <message>
         <source>Close</source>
-        <translation type="unfinished">Cerrar</translation>
+        <translation>Cerrar</translation>
     </message>
     <message>
         <source>The same title, artist and length more than once. Of each set, the copy marked ● stays: click another copy to keep that one instead, and untick a set that&apos;s on purpose (a song on both an album and a compilation). The copy kept gets the others&apos; likes, plays, ratings, listens and playlist places.</source>
-        <translation type="unfinished"></translation>
+        <translation>El mismo título, artista y duración más de una vez. De cada grupo se queda la copia marcada con ●: haz clic en otra para quedarte con esa, y desmarca un grupo que sea a propósito (una canción en un álbum y en un recopilatorio). La copia que se queda recibe los me gusta, reproducciones, valoraciones, escuchas y lugares en listas de las demás.</translation>
     </message>
     <message>
         <source>The other copies:</source>
-        <translation type="unfinished"></translation>
+        <translation>Las demás copias:</translation>
     </message>
     <message>
         <source>Leave the library (files stay)</source>
-        <translation type="unfinished"></translation>
+        <translation>Salen de la biblioteca (los archivos se quedan)</translation>
     </message>
     <message>
         <source>Go to the trash</source>
-        <translation type="unfinished"></translation>
+        <translation>Van a la papelera</translation>
     </message>
     <message>
         <source>Finding duplicates…</source>
-        <translation type="unfinished"></translation>
+        <translation>Buscando duplicados…</translation>
     </message>
     <message>
         <source>No probable duplicates</source>
-        <translation type="unfinished">No hay duplicados probables</translation>
+        <translation>No hay duplicados probables</translation>
     </message>
     <message numerus="yes">
         <source>%n copies to merge away</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n copia para fusionar</numerusform>
+            <numerusform>%n copias para fusionar</numerusform>
         </translation>
     </message>
     <message>
         <source>a song on a music server or in a CUE sheet only leaves the library</source>
-        <translation type="unfinished"></translation>
+        <translation>una canción de un servidor de música o de una hoja CUE solo sale de la biblioteca</translation>
     </message>
     <message>
         <source>Merge the copies of %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Fusionar las copias de %1</translation>
     </message>
     <message>
         <source>Stays</source>
-        <translation type="unfinished"></translation>
+        <translation>Se queda</translation>
     </message>
     <message>
         <source>Goes</source>
-        <translation type="unfinished"></translation>
+        <translation>Se va</translation>
     </message>
     <message>
         <source>Keep this copy: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Quedarse con esta copia: %1</translation>
     </message>
 </context>
 <context>
@@ -2781,11 +2781,11 @@
     </message>
     <message>
         <source>Songs identified by their sound</source>
-        <translation type="unfinished"></translation>
+        <translation>Canciones identificadas por su sonido</translation>
     </message>
     <message>
         <source>from AcoustID, %1% alike</source>
-        <translation type="unfinished"></translation>
+        <translation>de AcoustID, %1% parecida</translation>
     </message>
     <message>
         <source>from MusicBrainz: %1</source>
@@ -2805,11 +2805,11 @@
     </message>
     <message>
         <source>track %1</source>
-        <translation type="unfinished"></translation>
+        <translation>pista %1</translation>
     </message>
     <message>
         <source>Now: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Ahora: %1</translation>
     </message>
     <message>
         <source>Save %1</source>
@@ -2824,7 +2824,7 @@
     </message>
     <message>
         <source>Ticked songs get this title, artist, album, year and track number written to their files. Untick any that look wrong.</source>
-        <translation type="unfinished"></translation>
+        <translation>Las canciones marcadas reciben este título, artista, álbum, año y número de pista en sus archivos. Desmarca las que parezcan equivocadas.</translation>
     </message>
     <message>
         <source>Ticked albums get this year written to every song. Change any that look wrong; MusicBrainz&apos;s is the earliest release it knows.</source>
@@ -3364,11 +3364,11 @@
     </message>
     <message>
         <source>Songs that could be identified by their sound</source>
-        <translation type="unfinished"></translation>
+        <translation>Canciones que se pueden identificar por su sonido</translation>
     </message>
     <message>
         <source>No title tag, or no artist or album. AcoustID can tell what they are from how they sound.</source>
-        <translation type="unfinished"></translation>
+        <translation>Sin etiqueta de título, o sin artista o álbum. AcoustID puede saber qué son por cómo suenan.</translation>
     </message>
     <message>
         <source>Albums without track numbers</source>
@@ -3463,15 +3463,15 @@
     </message>
     <message>
         <source>Switch it on in Settings → Online &amp; privacy: each song&apos;s fingerprint and length go to AcoustID.</source>
-        <translation type="unfinished"></translation>
+        <translation>Actívalo en Ajustes → En línea y privacidad: la huella y la duración de cada canción van a AcoustID.</translation>
     </message>
     <message>
         <source>Offline mode is on, so songs can&apos;t be identified.</source>
-        <translation type="unfinished"></translation>
+        <translation>El modo sin conexión está activado, así que no se pueden identificar canciones.</translation>
     </message>
     <message>
         <source>Listens to each song on this computer, then asks AcoustID what it is (only its fingerprint and length are sent). You check them before anything is saved.</source>
-        <translation type="unfinished"></translation>
+        <translation>Escucha cada canción en este ordenador y luego pregunta a AcoustID qué es (solo se envían su huella y su duración). Las revisas antes de guardar nada.</translation>
     </message>
     <message>
         <source>Guesses from folders (Artist/Album/song) and “Artist - Title” file names. You check them before anything is saved.</source>
@@ -3506,7 +3506,7 @@
     </message>
     <message>
         <source>Tidy up…</source>
-        <translation type="unfinished"></translation>
+        <translation>Ordenar…</translation>
     </message>
     <message>
         <source>Checking…</source>
@@ -3574,7 +3574,7 @@
     </message>
     <message>
         <source>Set up…</source>
-        <translation type="unfinished"></translation>
+        <translation>Configurar…</translation>
     </message>
     <message>
         <source>Guess all</source>
@@ -3586,7 +3586,7 @@
     </message>
     <message>
         <source>Identify all</source>
-        <translation type="unfinished"></translation>
+        <translation>Identificar todas</translation>
     </message>
     <message>
         <source>Saving to your files: %1 of %2. You can carry on meanwhile.</source>
@@ -3598,13 +3598,13 @@
     </message>
     <message>
         <source>Review and merge…</source>
-        <translation type="unfinished"></translation>
+        <translation>Revisar y fusionar…</translation>
     </message>
     <message numerus="yes">
         <source>%n extra copies: the best of each set stays and gets their likes, plays and playlist places.</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n copia de más: la mejor de su grupo se queda y recibe sus me gusta, reproducciones y lugares en listas.</numerusform>
+            <numerusform>%n copias de más: la mejor de cada grupo se queda y recibe sus me gusta, reproducciones y lugares en listas.</numerusform>
         </translation>
     </message>
     <message>
@@ -4612,27 +4612,27 @@
     </message>
     <message>
         <source>Identifying songs by their sound is switched off: Settings → Online &amp; privacy</source>
-        <translation type="unfinished"></translation>
+        <translation>Identificar canciones por su sonido está desactivado: Ajustes → En línea y privacidad</translation>
     </message>
     <message>
         <source>AcoustID needs an application key: Settings → Online &amp; privacy</source>
-        <translation type="unfinished"></translation>
+        <translation>AcoustID necesita una clave de aplicación: Ajustes → En línea y privacidad</translation>
     </message>
     <message>
         <source>Offline mode is on, so songs can&apos;t be identified</source>
-        <translation type="unfinished"></translation>
+        <translation>El modo sin conexión está activado, así que no se pueden identificar canciones</translation>
     </message>
     <message>
         <source>AcoustID didn&apos;t accept the application key: Settings → Online &amp; privacy</source>
-        <translation type="unfinished"></translation>
+        <translation>AcoustID no aceptó la clave de aplicación: Ajustes → En línea y privacidad</translation>
     </message>
     <message>
         <source>AcoustID couldn&apos;t be reached. Check your connection.</source>
-        <translation type="unfinished"></translation>
+        <translation>No se pudo contactar con AcoustID. Comprueba tu conexión.</translation>
     </message>
     <message>
         <source>Identified %1 of %2 songs by their sound. Check them, then save.</source>
-        <translation type="unfinished"></translation>
+        <translation>Identificadas %1 de %2 canciones por su sonido. Revísalas y luego guarda.</translation>
     </message>
     <message>
         <source>Found a likely artist or album for %1 of %2 songs. Check them, then save.</source>
@@ -10313,7 +10313,7 @@
     </message>
     <message>
         <source>offline mode internet network privacy connection lyrics lrclib genres bios biography wikipedia discogs token musicbrainz last.fm tags similar artists discover acoustid fingerprint identify recognise sound</source>
-        <translation type="unfinished"></translation>
+        <translation>modo sin conexión internet red privacidad conexión letras lrclib géneros biografías wikipedia discogs token musicbrainz last.fm etiquetas artistas parecidos descubrir acoustid huella identificar reconocer sonido offline mode internet network privacy connection lyrics lrclib genres bios biography wikipedia discogs token musicbrainz last.fm tags similar artists discover acoustid fingerprint identify recognise sound</translation>
     </message>
     <message>
         <source>Offline mode</source>
@@ -10373,19 +10373,19 @@
     </message>
     <message>
         <source>Identify songs by their sound with AcoustID (Library health, a song&apos;s menu: sends each song&apos;s fingerprint and length, nothing else)</source>
-        <translation type="unfinished"></translation>
+        <translation>Identificar canciones por su sonido con AcoustID (Salud de la biblioteca, el menú de una canción: envía la huella y la duración de cada canción, nada más)</translation>
     </message>
     <message>
         <source>Your own AcoustID key (optional)</source>
-        <translation type="unfinished"></translation>
+        <translation>Tu propia clave de AcoustID (opcional)</translation>
     </message>
     <message>
         <source>AcoustID application key</source>
-        <translation type="unfinished"></translation>
+        <translation>Clave de aplicación de AcoustID</translation>
     </message>
     <message>
         <source>Free at acoustid.org/new-application (sign in with MusicBrainz, then copy the application&apos;s API key).</source>
-        <translation type="unfinished"></translation>
+        <translation>Gratis en acoustid.org/new-application (inicia sesión con MusicBrainz y copia la clave de API de la aplicación).</translation>
     </message>
     <message>
         <source>Genre and bio sources</source>
@@ -12889,106 +12889,106 @@
     <name>TidyDialog</name>
     <message>
         <source>Tidy up your library</source>
-        <translation type="unfinished"></translation>
+        <translation>Ordena tu biblioteca</translation>
     </message>
     <message>
         <source>Close</source>
-        <translation type="unfinished">Cerrar</translation>
+        <translation>Cerrar</translation>
     </message>
     <message>
         <source>Step by step, in this order: each shows what it found before anything is saved, and you can skip any of them.</source>
-        <translation type="unfinished"></translation>
+        <translation>Paso a paso, en este orden: cada uno muestra lo que encontró antes de guardar nada, y puedes saltarte cualquiera.</translation>
     </message>
     <message>
         <source>Identify songs by their sound</source>
-        <translation type="unfinished"></translation>
+        <translation>Identificar canciones por su sonido</translation>
     </message>
     <message>
         <source>Off: switch it on in Settings → Online &amp; privacy (each song&apos;s fingerprint and length go to AcoustID).</source>
-        <translation type="unfinished"></translation>
+        <translation>Desactivado: actívalo en Ajustes → En línea y privacidad (la huella y la duración de cada canción van a AcoustID).</translation>
     </message>
     <message>
         <source>For songs with no title tag, or no artist or album: AcoustID tells what they are from how they sound.</source>
-        <translation type="unfinished"></translation>
+        <translation>Para canciones sin etiqueta de título, o sin artista o álbum: AcoustID dice qué son por cómo suenan.</translation>
     </message>
     <message>
         <source>Fill in missing tags</source>
-        <translation type="unfinished"></translation>
+        <translation>Completar las etiquetas que faltan</translation>
     </message>
     <message>
         <source>Artists and albums from folder names, then years and track numbers from names and MusicBrainz.</source>
-        <translation type="unfinished"></translation>
+        <translation>Artistas y álbumes a partir de los nombres de carpeta, luego años y números de pista por los nombres y MusicBrainz.</translation>
     </message>
     <message>
         <source>Merge duplicates</source>
-        <translation type="unfinished"></translation>
+        <translation>Fusionar duplicados</translation>
     </message>
     <message>
         <source>The best copy of each song stays and gets the others&apos; likes, plays and playlist places.</source>
-        <translation type="unfinished"></translation>
+        <translation>La mejor copia de cada canción se queda y recibe los me gusta, reproducciones y lugares en listas de las demás.</translation>
     </message>
     <message>
         <source>Review and merge…</source>
-        <translation type="unfinished"></translation>
+        <translation>Revisar y fusionar…</translation>
     </message>
     <message>
         <source>Organize the files</source>
-        <translation type="unfinished"></translation>
+        <translation>Organizar los archivos</translation>
     </message>
     <message>
         <source>Folders and file names made from the tags, now that they&apos;re right. Every move is shown first, and it can be undone.</source>
-        <translation type="unfinished"></translation>
+        <translation>Carpetas y nombres de archivo a partir de las etiquetas, ahora que están bien. Cada movimiento se muestra antes y se puede deshacer.</translation>
     </message>
     <message>
         <source>Organize files…</source>
-        <translation type="unfinished">Organizar archivos…</translation>
+        <translation>Organizar archivos…</translation>
     </message>
     <message>
         <source>Nothing to do here</source>
-        <translation type="unfinished"></translation>
+        <translation>Nada que hacer aquí</translation>
     </message>
     <message>
         <source>Set up…</source>
-        <translation type="unfinished"></translation>
+        <translation>Configurar…</translation>
     </message>
     <message>
         <source>Stop saving</source>
-        <translation type="unfinished"></translation>
+        <translation>Dejar de guardar</translation>
     </message>
     <message>
         <source>Stop · %1 of %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Detener · %1 de %2</translation>
     </message>
     <message>
         <source>Review %1 found…</source>
-        <translation type="unfinished">Revisar los %1 encontrados…</translation>
+        <translation>Revisar %1 encontrados…</translation>
     </message>
     <message numerus="yes">
         <source>Identify %n song(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>Identificar %n canción</numerusform>
+            <numerusform>Identificar %n canciones</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>Guess artist and album for %n song(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>Adivinar artista y álbum de %n canción</numerusform>
+            <numerusform>Adivinar artista y álbum de %n canciones</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>Find years for %n album(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>Buscar años para %n álbum</numerusform>
+            <numerusform>Buscar años para %n álbumes</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>Find track numbers for %n album(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>Buscar números de pista para %n álbum</numerusform>
+            <numerusform>Buscar números de pista para %n álbumes</numerusform>
         </translation>
     </message>
 </context>
@@ -13134,11 +13134,11 @@
     </message>
     <message>
         <source>Identify by sound</source>
-        <translation type="unfinished"></translation>
+        <translation>Identificar por el sonido</translation>
     </message>
     <message>
         <source>Identifying %1 by its sound…</source>
-        <translation type="unfinished"></translation>
+        <translation>Identificando %1 por su sonido…</translation>
     </message>
     <message>
         <source>Remove from the queue</source>
@@ -14410,23 +14410,23 @@
     </message>
     <message numerus="yes">
         <source>Merged %n duplicate(s) into the copies kept</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n duplicado fusionado en las copias que se quedan</numerusform>
+            <numerusform>%n duplicados fusionados en las copias que se quedan</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n file(s) moved to the trash</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n archivo movido a la papelera</numerusform>
+            <numerusform>%n archivos movidos a la papelera</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n file(s) couldn&apos;t be moved</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n archivo no se pudo mover</numerusform>
+            <numerusform>%n archivos no se pudieron mover</numerusform>
         </translation>
     </message>
     <message>
