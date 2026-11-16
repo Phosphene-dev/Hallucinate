@@ -88,14 +88,7 @@ Item {
             onTriggered: Nav.removeFolder(folderMenu.path)
         }
     }
-    ConfirmDialog {
-        id: extraDlg
-        objectName: "removeExtraCopiesDialog"
-        title: qsTr("Keep only the best copies?")
-        confirmText: qsTr("Remove %1").arg(what)
-        body: qsTr("Of each set of probable duplicates, the best copy stays: lossless first, then the higher bitrate. The other %1 are taken out of the library; the files stay on your disk, and Settings → Library can bring them back. Check the list first if some are on purpose, like a song on both an album and a compilation: right-click one to keep or remove it on its own.").arg(what)
-        onAccepted: library.removeExtraCopies()
-    }
+    DuplicatesDialog { id: duplicatesDlg }
 
     Flickable {
         WheelScroll {}  // the mouse wheel: even notches, hi-res wheels too
@@ -403,19 +396,15 @@ Item {
                                 objectName: "removeExtraCopies"
                                 primary: true
                                 height: 32
-                                text: qsTr("Keep the best copies")
-                                onClicked: {
-                                    var n = card.modelData.extra
-                                    extraDlg.what = Theme.counted(qsTr("%n copies", "", n), n)
-                                    extraDlg.open()
-                                }
+                                text: qsTr("Review and merge…")
+                                onClicked: duplicatesDlg.show()
                             }
                             Text {
                                 textFormat: Text.PlainText
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: Math.max(0, Math.min(implicitWidth, card.width - parent.x - x - 24))  // what the buttons leave (longer in some languages)
                                 elide: Text.ElideRight
-                                text: Theme.counted(qsTr("Takes the %n extra copies out of the library and keeps the best of each. Right-click a song for more.", "", card.modelData.extra), card.modelData.extra)
+                                text: Theme.counted(qsTr("%n extra copies: the best of each set stays and gets their likes, plays and playlist places.", "", card.modelData.extra), card.modelData.extra)
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily
                                 font.pixelSize: Theme.fontSize(12)

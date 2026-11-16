@@ -957,6 +957,45 @@ class Database:
                 self.conn.execute("UPDATE tracks SET rg_track=?, rg_album=?, rg_peak=?, rg_measured=1 WHERE path=?",
                                   (m["track_gain"], m["album_gain"], m["peak"], new))
 
+    def duplicate_paths_known(self, paths) -> list:
+        """Which of these paths are still songs in the library."""
+        paths, out = list(dict.fromkeys(paths)), []
+        for i in range(0, len(paths), 500):
+            chunk = paths[i:i + 500]
+            out += [r[0] for r in self.conn.execute(
+                f"SELECT path FROM tracks WHERE path IN ({','.join('?' * len(chunk))})", chunk)]
+        return out
+
+    def merge_user_data(self, pairs: Iterable[tuple]):
+        """Copies of one song merged into the copy kept [(dropped, kept)]: plays and skips add up, a like or a
+        rating carries over (the kept copy's own rating wins), listens and playlist places point at the kept
+        copy (a playlist that had both keeps one), lyrics carry over if it has none, and it keeps the earlier
+        "added". The dropped copy's own measurements (loudness, sound) stay with its file."""
+        c = self.conn
+        for old, new in pairs:
+            if not old or not new or old == new:
+                continue
+            row = c.execute("SELECT MIN(added) AS a FROM tracks WHERE path IN (?, ?)", (old, new)).fetchone()
+            if row and row["a"] is not None:
+                c.execute("UPDATE tracks SET added=? WHERE path=?", (row["a"], new))
+            c.execute("INSERT INTO likes(path, liked_at) SELECT ?, liked_at FROM likes WHERE path=? "
+                      "ON CONFLICT(path) DO UPDATE SET liked_at=MIN(liked_at, excluded.liked_at)", (new, old))
+            c.execute("INSERT OR IGNORE INTO ratings(path, stars, rated_at) SELECT ?, stars, rated_at FROM ratings "
+                      "WHERE path=?", (new, old))
+            for table in ("plays", "skips"):
+                c.execute(f"INSERT INTO {table}(path, count, last) SELECT ?, count, last FROM {table} WHERE path=? "
+                          "ON CONFLICT(path) DO UPDATE SET count=count + excluded.count, last=MAX(last, excluded.last)",
+                          (new, old))
+            c.execute("INSERT OR IGNORE INTO lyrics(path, synced, plain, source, fetched) "
+                      "SELECT ?, synced, plain, source, fetched FROM lyrics WHERE path=?", (new, old))
+            for table in ("likes", "ratings", "plays", "skips", "lyrics"):
+                c.execute(f"DELETE FROM {table} WHERE path=?", (old,))
+            # a playlist with both copies keeps the one already there; the others now hold the kept copy
+            c.execute("DELETE FROM playlist_items WHERE path=? AND playlist_id IN "
+                      "(SELECT playlist_id FROM playlist_items WHERE path=?)", (old, new))
+            c.execute("UPDATE playlist_items SET path=? WHERE path=?", (new, old))
+            c.execute("UPDATE play_log SET path=? WHERE path=?", (new, old))
+
     @staticmethod
     def file_of(path: str) -> str:
         """The file a library path lives in: CUE sheet songs are "file.flac#3"."""

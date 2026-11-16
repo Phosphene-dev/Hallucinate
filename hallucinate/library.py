@@ -236,6 +236,7 @@ class Library(QObject):
     detailChanged = Signal()
     artRevisionChanged = Signal()
     _removed = Signal(object)
+    duplicateGroupsLoaded = Signal("QVariantList")  # for reviewing which copy of each duplicate stays
 
     def __init__(self, db_path, art_dir, parent=None):
         super().__init__(parent)
@@ -1195,15 +1196,79 @@ class Library(QObject):
     @Slot()
     def removeExtraCopies(self):
         """Keep the best copy of each set of probable duplicates and take the others out of the library (their
-        files stay on disk, and Settings → Library brings them back)."""
+        files stay on disk, and Settings → Library brings them back); their likes, plays and playlist places
+        go to the copy kept."""
         def work(db):
-            paths = health_checks.extra_copies(db)
-            songs = db.hide_paths(paths)
-            self._removed.emit({"kind": "hidden", "albums": 0, "songs": songs, "failed": 0,
-                                "hidden": len(db.hidden_paths()), "keys": [], "paths": list(paths)})
+            groups = [{"keep": rows[0]["path"], "drop": [r["path"] for r in rows[1:]]}
+                      for rows in health_checks.duplicate_groups(db)]
+            self._merge_work(db, groups, False)
 
         self._bulk.submit(work)
         self.reload()
+
+    @Slot()
+    def loadDuplicateGroups(self):
+        """Every set of probable duplicates, best copy first, for reviewing (see duplicateGroupsLoaded)."""
+        def work(db):
+            out = []
+            for rows in health_checks.duplicate_groups(db, 5000):
+                paths = [r["path"] for r in rows]
+                marks = ",".join("?" * len(paths))
+                liked = {r[0] for r in db.conn.execute(f"SELECT path FROM likes WHERE path IN ({marks})", paths)}
+                plays = dict(db.conn.execute(f"SELECT path, count FROM plays WHERE path IN ({marks})", paths).fetchall())
+                out.append({"copies": [{
+                    "path": r["path"], "title": r.get("title") or "", "artist": r.get("artist") or "",
+                    "album": r.get("album") or "", "format": (r.get("codec") or r.get("fmt") or "").upper(),
+                    "bitrate": r.get("bitrate") or 0, "sampleRate": r.get("sample_rate") or 0,
+                    "bits": r.get("bit_depth") or 0, "liked": r["path"] in liked, "plays": plays.get(r["path"], 0),
+                    "remote": remote.is_remote(r["path"]), "cue": db.file_of(r["path"]) != r["path"],
+                } for r in rows]})
+            self.duplicateGroupsLoaded.emit(out)
+
+        self._bulk.submit(work)
+
+    @Slot("QVariantList", bool)
+    def mergeDuplicates(self, groups, trash):
+        """Keep one copy of each set [{"keep": path, "drop": [paths]}]: the dropped copies' likes, plays, ratings,
+        listens and playlist places go to the kept one, then they leave the library (`trash`: their files go to
+        the system trash; a server's song or a CUE sheet's, whose file holds other songs, is only taken out)."""
+        groups = [{"keep": str(g.get("keep") or ""), "drop": [str(p) for p in (g.get("drop") or []) if p]}
+                  for g in groups if g]
+        self._bulk.submit(lambda db: self._merge_work(db, groups, trash))
+        self.reload()
+
+    def _merge_work(self, db, groups, trash):
+        pairs = [(d, g["keep"]) for g in groups if g["keep"] for d in g["drop"] if d != g["keep"]]
+        if not pairs:
+            return
+        known = set(db.duplicate_paths_known([p for pair in pairs for p in pair]))
+        pairs = [(d, k) for d, k in pairs if d in known and k in known]  # (rows gone since the review: left be)
+        db.merge_user_data(pairs)
+        db.commit()
+        dropped = [d for d, _ in pairs]
+
+        def trashable(d, k):
+            # only a file of its own, while the kept copy is a file here (not a server's song, not missing) and
+            # not this very file seen twice (a link, or a folder in the library twice): never the last copy
+            if remote.is_remote(d) or db.file_of(d) != d or remote.is_remote(k):
+                return False
+            kf = db.file_of(k)
+            if not os.path.isfile(kf) or not os.path.isfile(d):
+                return False
+            try:
+                return not os.path.samefile(d, kf)
+            except OSError:
+                return False
+
+        files = [d for d, k in pairs if trash and trashable(d, k)]
+        hide = [d for d in dropped if d not in set(files)]
+        songs = db.hide_paths(hide) if hide else 0
+        if files:
+            self._trash_work(db, files, [], {os.path.normpath(f) for f in db.folders()}, merged=len(pairs),
+                             hidden=songs)
+        else:
+            self._removed.emit({"kind": "merged", "albums": 0, "songs": songs, "failed": 0, "merged": len(pairs),
+                                "hidden": len(db.hidden_paths()), "keys": [], "paths": hide})
 
     @Slot("QVariantList")
     def trashAlbums(self, keys):
@@ -1220,31 +1285,36 @@ class Library(QObject):
     def _trash(self, paths, keys):
         roots = {os.path.normpath(f) for f in self._db.folders()}
 
-        def work(db):
-            # a song on a music server isn't a file here: it can't go in the trash, and mustn't vanish as if it had
-            files = list(dict.fromkeys(db.file_of(p) for p in paths if not remote.is_remote(p)))
-            done, failed, dirs = set(), 0, set()
-            for f in files:
-                if not os.path.exists(f) or QFile.moveToTrash(f):
-                    done.add(f)
-                    dirs.add(os.path.dirname(f))
-                else:
-                    failed += 1
-            for d in dirs:
-                # Only an album's own folder inside your music, never a library folder itself or anything
-                # outside it: a song dropped in from ~/Downloads mustn't take Downloads with it.
-                if _strictly_inside(d, roots) and _only_leftovers(d):
-                    QFile.moveToTrash(d)
-            # the file's every song: trashing one song of a CUE sheet takes its file, so the rest go too
-            gone = [p for p in paths if db.file_of(p) in done]
-            gone += sorted(db.songs_of_files(done) - set(gone))
-            db.remove_paths(gone)
-            db.commit()
+        self._bulk.submit(lambda db: self._trash_work(db, paths, keys, roots))
+        self.reload()
+
+    def _trash_work(self, db, paths, keys, roots, merged=None, hidden=0):
+        # a song on a music server isn't a file here: it can't go in the trash, and mustn't vanish as if it had
+        files = list(dict.fromkeys(db.file_of(p) for p in paths if not remote.is_remote(p)))
+        done, failed, dirs = set(), 0, set()
+        for f in files:
+            if not os.path.exists(f) or QFile.moveToTrash(f):
+                done.add(f)
+                dirs.add(os.path.dirname(f))
+            else:
+                failed += 1
+        for d in dirs:
+            # Only an album's own folder inside your music, never a library folder itself or anything
+            # outside it: a song dropped in from ~/Downloads mustn't take Downloads with it.
+            if _strictly_inside(d, roots) and _only_leftovers(d):
+                QFile.moveToTrash(d)
+        # the file's every song: trashing one song of a CUE sheet takes its file, so the rest go too
+        gone = [p for p in paths if db.file_of(p) in done]
+        gone += sorted(db.songs_of_files(done) - set(gone))
+        db.remove_paths(gone)
+        db.commit()
+        if merged is not None:
+            self._removed.emit({"kind": "merged", "albums": 0, "songs": len(gone) + hidden, "failed": failed,
+                                "merged": merged, "trashed": len(gone), "hidden": len(db.hidden_paths()),
+                                "keys": []})
+        else:
             self._removed.emit({"kind": "trashed", "albums": len(keys), "songs": len(gone), "failed": failed,
                                 "keys": keys})
-
-        self._bulk.submit(work)
-        self.reload()
 
     @Slot(str, result="QVariantMap")
     def trackInfo(self, path):

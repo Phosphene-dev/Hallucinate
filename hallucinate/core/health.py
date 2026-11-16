@@ -143,18 +143,19 @@ def _quality(row):
             row.get("sample_rate") or 0, -len(row.get("path") or ""))
 
 
-def extra_copies(db):
-    """Paths of every duplicate but the best copy of each (see _quality), for removing them from the library."""
+def duplicate_groups(db, limit=10_000_000):
+    """Every set of probable duplicates, the best copy first (see _quality): [[row, ...], ...]."""
     groups = {}
-    for row in db.duplicate_tracks(10_000_000):
+    for row in db.duplicate_tracks(limit):
         # the length as SQL rounded it (half away from zero; Python's round() goes to even, so 100.5 and
         # 101.4 would fall apart here though the query found them together)
         groups.setdefault((row["s_title"], row["s_artist"], row["duration_key"]), []).append(row)
-    extra = []
-    for rows in groups.values():
-        best = max(rows, key=_quality)
-        extra += [r["path"] for r in rows if r is not best]
-    return extra
+    return [sorted(rows, key=_quality, reverse=True) for rows in groups.values() if len(rows) > 1]
+
+
+def extra_copies(db):
+    """Paths of every duplicate but the best copy of each (see _quality), for removing them from the library."""
+    return [r["path"] for rows in duplicate_groups(db) for r in rows[1:]]
 
 
 def missing_folders(db):

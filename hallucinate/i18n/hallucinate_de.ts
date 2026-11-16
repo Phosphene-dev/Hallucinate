@@ -2454,6 +2454,94 @@
     </message>
 </context>
 <context>
+    <name>DuplicatesDialog</name>
+    <message>
+        <source>Merge duplicates</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 kbps</source>
+        <translation type="unfinished">%1 kbps</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n play(s)</source>
+        <translation type="unfinished">
+            <numerusform>%n-mal gespielt</numerusform>
+            <numerusform>%n-mal gespielt</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>on a music server</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>in a CUE sheet</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message numerus="yes">
+        <source>Merge %n set(s)</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation type="unfinished">Schließen</translation>
+    </message>
+    <message>
+        <source>The same title, artist and length more than once. Of each set, the copy marked ● stays: click another copy to keep that one instead, and untick a set that&apos;s on purpose (a song on both an album and a compilation). The copy kept gets the others&apos; likes, plays, ratings, listens and playlist places.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The other copies:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Leave the library (files stay)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Go to the trash</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Finding duplicates…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No probable duplicates</source>
+        <translation type="unfinished">Keine wahrscheinlichen Duplikate</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n copy (or copies) to merge away</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>a song on a music server or in a CUE sheet only leaves the library</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Merge the copies of %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stays</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Goes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Keep this copy: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>EpisodeMenu</name>
     <message>
         <source>Show notes</source>
@@ -3358,18 +3446,6 @@
         <translation>Aus der Mediathek entfernen</translation>
     </message>
     <message>
-        <source>Keep only the best copies?</source>
-        <translation>Nur die besten Kopien behalten?</translation>
-    </message>
-    <message>
-        <source>Remove %1</source>
-        <translation>%1 entfernen</translation>
-    </message>
-    <message>
-        <source>Of each set of probable duplicates, the best copy stays: lossless first, then the higher bitrate. The other %1 are taken out of the library; the files stay on your disk, and Settings → Library can bring them back. Check the list first if some are on purpose, like a song on both an album and a compilation: right-click one to keep or remove it on its own.</source>
-        <translation>Von jeder Gruppe wahrscheinlicher Duplikate bleibt die beste Kopie: zuerst verlustfrei, dann die höhere Bitrate. Die anderen %1 werden aus der Mediathek genommen; die Dateien bleiben auf deiner Festplatte, und Einstellungen → Mediathek kann sie zurückholen. Prüf zuerst die Liste, falls manche Absicht sind, etwa ein Titel auf einem Album und einer Compilation: Klick einen mit rechts an, um ihn einzeln zu behalten oder zu entfernen.</translation>
-    </message>
-    <message>
         <source>Library health</source>
         <translation>Zustand der Mediathek</translation>
     </message>
@@ -3469,21 +3545,14 @@
         <translation>%1 von %2 angesehen  ·  %3 gefunden</translation>
     </message>
     <message>
-        <source>Keep the best copies</source>
-        <translation>Die besten Kopien behalten</translation>
+        <source>Review and merge…</source>
+        <translation type="unfinished"></translation>
     </message>
     <message numerus="yes">
-        <source>%n copies</source>
-        <translation>
-            <numerusform>%n Kopie</numerusform>
-            <numerusform>%n Kopien</numerusform>
-        </translation>
-    </message>
-    <message numerus="yes">
-        <source>Takes the %n extra copies out of the library and keeps the best of each. Right-click a song for more.</source>
-        <translation>
-            <numerusform>Nimmt die %n zusätzliche Kopie aus der Mediathek und behält jeweils die beste. Rechtsklick auf einen Titel für mehr.</numerusform>
-            <numerusform>Nimmt die %n zusätzlichen Kopien aus der Mediathek und behält jeweils die beste. Rechtsklick auf einen Titel für mehr.</numerusform>
+        <source>%n extra copies: the best of each set stays and gets their likes, plays and playlist places.</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
         </translation>
     </message>
     <message>
@@ -14130,6 +14199,27 @@
         <translation>
             <numerusform>%n Album</numerusform>
             <numerusform>%n Alben</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Merged %n duplicate(s) into the copies kept</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n file(s) moved to the trash</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n file(s) couldn&apos;t be moved</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
         </translation>
     </message>
     <message>
