@@ -95,6 +95,13 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="2.6.0" date="2026-11-18">
+      <description>
+        <p>Merge duplicates: Library health shows each set's copies with the best one picked to stay, and the copy kept gets the others' plays, likes, ratings and playlist places before they leave the library or go to the trash.</p>
+        <p>Tidy up walks through filling in missing tags, merging duplicates and organizing the files, step by step.</p>
+        <p>Keeping the best copies no longer leaves likes and plays behind, or takes a CUE sheet's whole album with it.</p>
+      </description>
+    </release>
     <release version="2.5.0" date="2026-11-15">
       <description>
         <p>Organize files from their tags: move an album's or the whole library's songs into folders and names made from a pattern, with every move shown first, never over another file, and an undo. Likes, plays, ratings and playlists follow the songs.</p>

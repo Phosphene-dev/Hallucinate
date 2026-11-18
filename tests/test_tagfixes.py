@@ -199,7 +199,7 @@ def test_each_check_keeps_what_it_found_until_reviewed(qapp, tmp_path):
         ed.shutdown()
 
 
-def test_songs_identified_by_their_sound(qapp, tmp_path):
+def test_songs_identified_by_their_sound(qapp, tmp_path, monkeypatch):
     """Identify: a song without tags is fingerprinted in the decoding helper and looked up (here, a stand-in for
     AcoustID that checks what it's sent); the tags found are written once kept, and the song leaves the list."""
     import threading
@@ -207,8 +207,9 @@ def test_songs_identified_by_their_sound(qapp, tmp_path):
 
     from test_chromaprint import ANSWER, song
 
-    from hallucinate.core import chromaprint
+    from hallucinate.core import acoustid, chromaprint
 
+    monkeypatch.setattr(acoustid, "APP_KEY", "built-in")  # (on hold without one: no card, no menu item)
     root = tmp_path / "Music" / "incoming"
     root.mkdir(parents=True)
     path = root / "track01.wav"

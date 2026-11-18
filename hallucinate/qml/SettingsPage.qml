@@ -2680,6 +2680,7 @@ Item {
             }
             StyledCheck {
                 objectName: "acoustid"
+                visible: sources.acoustidBuiltIn  // (on hold until Hallucinate has its own AcoustID key)
                 text: qsTr("Identify songs by their sound with AcoustID (sends each song's fingerprint and length, nothing else)")
                 checked: sources.acoustid
                 onToggled: sources.setAcoustid(checked)
@@ -2688,7 +2689,7 @@ Item {
                 width: parent.width
                 spacing: 10
                 leftPadding: 30
-                visible: sources.acoustid
+                visible: sources.acoustid && sources.acoustidBuiltIn
                 TextField {
                     id: acoustidKey
                     objectName: "acoustidKey"

@@ -275,7 +275,7 @@ Menu {
     MenuItem {
         objectName: "trackIdentify"
         // (switched on in Settings → Online & privacy; files of their own here, not a server's or a CUE sheet's)
-        visible: sources.acoustid && !songMenu.stream && !songMenu.onServer
+        visible: sources.acoustid && sources.acoustidBuiltIn && !songMenu.stream && !songMenu.onServer
                  && songMenu.paths.every(function (p) { return !/\.[A-Za-z0-9]+#\d+$/.test(p) })
         height: visible ? implicitHeight : 0
         enabled: !metaEditor.fixesBusy && !metaEditor.fixesSaving && !shell.offlineMode

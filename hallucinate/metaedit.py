@@ -999,7 +999,7 @@ class MetadataEditor(QObject):
     def _acoustid_key(self):
         from .core import acoustid
         prefs = QSettings("hallucinate", "hallucinate")
-        if not prefs.value("sources/acoustid", False, bool):
+        if not acoustid.APP_KEY or not prefs.value("sources/acoustid", False, bool):
             return None  # (switched off: Settings → Online & privacy)
         return acoustid.key_in_use(str(prefs.value("sources/acoustidKey", "") or ""))
 

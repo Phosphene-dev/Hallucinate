@@ -13706,6 +13706,14 @@
 <context>
     <name>WhatsNew</name>
     <message>
+        <source>Merge duplicates: Library health shows which copy stays, and it gets the others&apos; likes, plays and playlist places.</source>
+        <translation>Duplikate zusammenführen: Der Zustand der Mediathek zeigt, welche Kopie bleibt, und sie bekommt die Likes, Wiedergaben und Playlist-Plätze der anderen.</translation>
+    </message>
+    <message>
+        <source>Tidy up (Library health): fill in missing tags, merge duplicates and organize your files, step by step.</source>
+        <translation>Aufräumen (Zustand der Mediathek): fehlende Tags ergänzen, Duplikate zusammenführen und deine Dateien ordnen, Schritt für Schritt.</translation>
+    </message>
+    <message>
         <source>Organize files from their tags: an album&apos;s right-click → Organize files…, with every move shown first and an undo.</source>
         <translation>Dateien nach ihren Tags ordnen: Rechtsklick auf ein Album → Dateien ordnen…, jede Verschiebung wird vorher gezeigt, und es lässt sich rückgängig machen.</translation>
     </message>

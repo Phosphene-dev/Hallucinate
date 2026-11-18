@@ -3577,14 +3577,22 @@ def test_tidy_up_lists_the_steps_with_what_each_found(qapp, app_window):
                                                   Q_RETURN_ARG("QVariant"), Q_ARG("QVariant", prefix),
                                                   Q_ARG("QVariant", dlg.property("contentItem")))) or [])
 
-    assert wait_for(lambda: names("tidy") == {"tidy_identify", "tidy_year", "tidyStep3", "tidyStep4"})
     def text(name):
         item = QMetaObject.invokeMethod(window, "findItem", Qt.ConnectionType.DirectConnection, Q_RETURN_ARG("QVariant"),
                                         Q_ARG("QVariant", name), Q_ARG("QVariant", dlg.property("contentItem")))
         return item.property("text")
 
-    texts = {n: text(n) for n in ("tidy_identify", "tidy_year", "tidyStep3")}
-    assert texts["tidy_identify"] == "Set up…"  # (off until switched on)
-    assert texts["tidy_year"] == "Find years for 2 albums" and texts["tidyStep3"] == "Review and merge…  (2)"
+    # identifying waits for Hallucinate's own AcoustID key: without one, its step isn't there
+    assert wait_for(lambda: names("tidy") == {"tidy_year", "tidyStep2", "tidyStep3"})
+    assert text("tidy_year") == "Find years for 2 albums" and text("tidyStep2") == "Review and merge…  (2)"
+    from hallucinate.core import acoustid
+    try:
+        acoustid.APP_KEY = "built-in"
+        objects["sources"].changed.emit()
+        assert wait_for(lambda: names("tidy") == {"tidy_identify", "tidy_year", "tidyStep3", "tidyStep4"})
+        assert text("tidy_identify") == "Set up…"  # (off until switched on)
+    finally:
+        acoustid.APP_KEY = ""
+        objects["sources"].changed.emit()
     QMetaObject.invokeMethod(dlg, "close")
     assert not [w for w in warnings if "TidyDialog" in w]

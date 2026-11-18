@@ -49,6 +49,7 @@ Dialog {
             }
             Step {
                 number: 1
+                visible: sources.acoustidBuiltIn  // (on hold until Hallucinate has its own AcoustID key)
                 title: qsTr("Identify songs by their sound")
                 detail: !sources.acoustid ? qsTr("Off: switch it on in Settings → Online & privacy (each song's fingerprint and length go to AcoustID).")
                         : qsTr("For songs with no title tag, or no artist or album: AcoustID tells what they are from how they sound.")
@@ -56,13 +57,13 @@ Dialog {
                 setUp: sources.acoustid
             }
             Step {
-                number: 2
+                number: sources.acoustidBuiltIn ? 2 : 1
                 title: qsTr("Fill in missing tags")
                 detail: qsTr("Artists and albums from folder names, then years and track numbers from names and MusicBrainz.")
                 fixKinds: ["untagged", "year", "numbers"]
             }
             Step {
-                number: 3
+                number: sources.acoustidBuiltIn ? 3 : 2
                 title: qsTr("Merge duplicates")
                 detail: qsTr("The best copy of each song stays and gets the others' likes, plays and playlist places.")
                 count: dlg.count("duplicates")
@@ -70,7 +71,7 @@ Dialog {
                 onAct: dlg.mergeDuplicates()
             }
             Step {
-                number: 4
+                number: sources.acoustidBuiltIn ? 4 : 3
                 title: qsTr("Organize the files")
                 detail: qsTr("Folders and file names made from the tags, now that they're right. Every move is shown first, and it can be undone.")
                 count: -1

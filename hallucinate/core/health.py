@@ -193,7 +193,9 @@ def report(db):
     """All checks, the ones with problems first (in the order above), then a total and an overall score.
 
     The score is the share of tracks free of track-level problems and of albums free of album-level ones."""
-    results = [check(db) for check in CHECKS]
+    from . import acoustid
+    # (identifying by sound waits for Hallucinate's own AcoustID key: until then there's no card for it)
+    results = [check(db) for check in CHECKS if check is not unidentified_songs or acoustid.APP_KEY]
     # (songs to identify overlap those missing tags: a way to fix them, not a problem of their own to count)
     counted = [r for r in results if r["id"] != "identify"]
     total = sum(r["count"] for r in counted)
