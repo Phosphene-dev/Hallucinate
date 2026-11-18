@@ -232,6 +232,7 @@ def main(argv=None) -> int:
     lastfm = weakref.ref(scrobbler)  # (the scrobbler is let go of first at the end)
     sources = OnlineSources(lambda: lastfm()._api_key if lastfm() is not None else "")
     scrobbler.connectionChanged.connect(sources.lastfmChanged)
+    scrobbler.keyRefusedChanged.connect(sources.lastfmChanged)  # (a refused key: lookups use the free sources)
     meta_editor.setSources(sources, paths.data_dir())
     from .bios import ArtistBios
 

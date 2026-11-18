@@ -1064,7 +1064,7 @@ Item {
                         labelWidth: 202  // (indented: lined up with the others, and inside narrow windows)
                         label: qsTr("Ask")
                         values: ["listenbrainz", "deezer", "lastfm"]
-                        labels: [qsTr("ListenBrainz (open data)"), qsTr("Deezer (with pictures)"), qsTr("Last.fm (set up for scrobbling)")]
+                        labels: [qsTr("ListenBrainz (open data)"), qsTr("Deezer (with pictures)"), qsTr("Last.fm (needs Last.fm Pro)")]
                         current: onlineDiscover.similarSource
                         onPicked: function (v) { onlineDiscover.setSimilarSource(v) }
                     }
@@ -2798,6 +2798,93 @@ Item {
             title: qsTr("Scrobbling & sharing")
             keywords: qsTr("last.fm lastfm listenbrainz maloja koito multi-scrobbler self-hosted server scrobble scrobbling loves discord rich presence history import account radio stations podcasts episodes queued when half percent threshold point listen end")
             query: page.query
+            Text { text: qsTr("ListenBrainz"); color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: qsTr("Connect with your ListenBrainz user token to send now-playing updates and listens. The token stays in the system keyring; listens that can't be sent wait and are tried again.")
+                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+            }
+            // a server of your own that speaks the ListenBrainz API, instead of listenbrainz.org
+            StyledCheck {
+                id: lbOwnServer
+                objectName: "listenbrainzOwnServer"
+                visible: !listenbrainz.connected
+                text: qsTr("Use another server that speaks the ListenBrainz API (Maloja, Koito, Multi-Scrobbler…)")
+                checked: listenbrainz.server.length > 0
+            }
+            Column {
+                visible: lbOwnServer.checked && !listenbrainz.connected
+                width: parent.width
+                leftPadding: 28
+                spacing: 6
+                TextField {
+                    id: lbServer
+                    objectName: "listenbrainzServer"
+                    width: Math.min(420, parent.width - 28); height: 38
+                    text: listenbrainz.server
+                    placeholderText: "https://maloja.example.com/apis/listenbrainz"
+                    color: Theme.text; placeholderTextColor: Theme.textDim
+                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
+                    selectByMouse: true
+                    background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: lbServer.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
+                }
+                Text {
+                    textFormat: Text.PlainText
+                    width: parent.width - 28
+                    wrapMode: Text.WordWrap
+                    // a token over plain http can be read along the way, unless the server is on this computer or at home
+                    readonly property bool plain: /^http:\/\//i.test(lbServer.text.trim())
+                        && !/^http:\/\/(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[?::1)/i.test(lbServer.text.trim())
+                    text: plain ? "This address isn't encrypted (http://): the token and your listens can be read on the way. Use https:// unless the server is on your own network."
+                                : qsTr("The server's ListenBrainz API address and a token from it. Maloja and Koito serve it at /apis/listenbrainz.")
+                    color: plain ? Theme.error : Theme.textDim
+                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                }
+            }
+            Flow {  // wraps in a narrow window
+                width: parent.width
+                spacing: 10
+                TextField {
+                    id: lbToken
+                    width: Math.min(320, parent.width); height: 38
+                    visible: !listenbrainz.connected
+                    placeholderText: qsTr("ListenBrainz user token")
+                    echoMode: TextInput.Password
+                    color: Theme.text; placeholderTextColor: Theme.textDim
+                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
+                    background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: lbToken.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
+                }
+                PillButton {
+                    visible: !listenbrainz.connected
+                    primary: true
+                    text: listenbrainz.busy ? qsTr("Validating…") : lbOwnServer.checked ? qsTr("Connect") : qsTr("Connect ListenBrainz")
+                    enabled: lbToken.text.length > 0 && !listenbrainz.busy && (!lbOwnServer.checked || lbServer.text.trim().length > 0)
+                    onClicked: { listenbrainz.connectToken(lbToken.text, lbOwnServer.checked ? lbServer.text : ""); lbToken.text = "" }
+                }
+                PillButton {
+                    visible: !listenbrainz.connected && !lbOwnServer.checked
+                    text: qsTr("Get a token")
+                    onClicked: Qt.openUrlExternally("https://listenbrainz.org/settings/")
+                }
+                PillButton {
+                    visible: listenbrainz.connected
+                    text: qsTr("Disconnect ListenBrainz")
+                    enabled: !listenbrainz.busy
+                    onClicked: listenbrainz.disconnectAccount()
+                }
+            }
+            Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                text: listenbrainz.status + (listenbrainz.pendingCount > 0 ? " · " + qsTr("%1 waiting to be sent").arg(Theme.num(listenbrainz.pendingCount)) : "")
+                      + (listenbrainz.rejectedCount > 0 ? " · " + qsTr("%1 turned down by ListenBrainz").arg(Theme.num(listenbrainz.rejectedCount)) : "")
+                      + (listenbrainz.lastError ? " · " + qsTr("last try: %1").arg(listenbrainz.lastError) : "")
+                color: listenbrainz.connected ? Theme.accent : Theme.textDim
+                font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); wrapMode: Text.WordWrap
+            }
+            OfflineNote { visible: shell.offlineMode; what: qsTr("ListenBrainz") }
             Text { text: qsTr("Last.fm"); color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
             Text {
                 textFormat: Text.PlainText
@@ -2805,6 +2892,45 @@ Item {
                 wrapMode: Text.WordWrap
                 text: qsTr("Sends now-playing updates, and scrobbles after half a song or four minutes, whichever comes first. Last.fm asks each person for an API key of their own; it and your sign-in stay in the system keyring.")
                 color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+            }
+            Text {
+                textFormat: Text.PlainText
+                objectName: "lastfmProNote"
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: qsTr("Since 1 December 2026 Last.fm's API takes only the key of a Last.fm Pro subscriber. Without Pro, scrobble to ListenBrainz (above): it's free. Passing your listens on to Last.fm from there is up to you to set up.")
+                color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+            }
+            Rectangle {
+                objectName: "lastfmRefused"
+                visible: scrobbler.keyRefused
+                width: parent.width
+                height: refusedRow.height + 20
+                radius: Theme.radiusSmall
+                color: Theme.hoverTint
+                Row {
+                    id: refusedRow
+                    x: 12; y: 10
+                    width: parent.width - 24
+                    spacing: 12
+                    Text {
+                        textFormat: Text.PlainText
+                        width: parent.width - refusedRetry.width - 12
+                        anchors.verticalCenter: parent.verticalCenter
+                        wrapMode: Text.WordWrap
+                        text: qsTr("Last.fm turned down the API key: it needs a Last.fm Pro subscription now. Nothing is sent to Last.fm until you try again, and similar artists, genres and bios come from the free sources meanwhile.")
+                              + (scrobbler.pendingCount > 0 ? " " + qsTr("%1 waiting to be sent").arg(Theme.num(scrobbler.pendingCount)) + "." : "")
+                        color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
+                    }
+                    PillButton {
+                        id: refusedRetry
+                        objectName: "lastfmRetryKey"
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("Try again")
+                        enabled: !shell.offlineMode
+                        onClicked: scrobbler.retryNow()
+                    }
+                }
             }
             SettingsGroup {
                 id: lastfmKeyGroup
@@ -2933,93 +3059,6 @@ Item {
                 onClicked: scrobbler.importLoves()
             }
             OfflineNote { visible: shell.offlineMode && (scrobbler.configured || scrobbler.connected); what: qsTr("Last.fm") }
-            Text { text: qsTr("ListenBrainz"); color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(15); font.weight: Font.DemiBold; textFormat: Text.PlainText }
-            Text {
-                textFormat: Text.PlainText
-                width: parent.width
-                wrapMode: Text.WordWrap
-                text: qsTr("Connect with your ListenBrainz user token to send now-playing updates and listens. The token stays in the system keyring; listens that can't be sent wait and are tried again.")
-                color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
-            }
-            // a server of your own that speaks the ListenBrainz API, instead of listenbrainz.org
-            StyledCheck {
-                id: lbOwnServer
-                objectName: "listenbrainzOwnServer"
-                visible: !listenbrainz.connected
-                text: qsTr("Use another server that speaks the ListenBrainz API (Maloja, Koito, Multi-Scrobbler…)")
-                checked: listenbrainz.server.length > 0
-            }
-            Column {
-                visible: lbOwnServer.checked && !listenbrainz.connected
-                width: parent.width
-                leftPadding: 28
-                spacing: 6
-                TextField {
-                    id: lbServer
-                    objectName: "listenbrainzServer"
-                    width: Math.min(420, parent.width - 28); height: 38
-                    text: listenbrainz.server
-                    placeholderText: "https://maloja.example.com/apis/listenbrainz"
-                    color: Theme.text; placeholderTextColor: Theme.textDim
-                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
-                    selectByMouse: true
-                    background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: lbServer.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
-                }
-                Text {
-                    textFormat: Text.PlainText
-                    width: parent.width - 28
-                    wrapMode: Text.WordWrap
-                    // a token over plain http can be read along the way, unless the server is on this computer or at home
-                    readonly property bool plain: /^http:\/\//i.test(lbServer.text.trim())
-                        && !/^http:\/\/(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[?::1)/i.test(lbServer.text.trim())
-                    text: plain ? "This address isn't encrypted (http://): the token and your listens can be read on the way. Use https:// unless the server is on your own network."
-                                : qsTr("The server's ListenBrainz API address and a token from it. Maloja and Koito serve it at /apis/listenbrainz.")
-                    color: plain ? Theme.error : Theme.textDim
-                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
-                }
-            }
-            Flow {  // wraps in a narrow window
-                width: parent.width
-                spacing: 10
-                TextField {
-                    id: lbToken
-                    width: Math.min(320, parent.width); height: 38
-                    visible: !listenbrainz.connected
-                    placeholderText: qsTr("ListenBrainz user token")
-                    echoMode: TextInput.Password
-                    color: Theme.text; placeholderTextColor: Theme.textDim
-                    font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(14); leftPadding: 14
-                    background: Rectangle { radius: Theme.radiusLarge; color: Theme.surface; border.color: lbToken.activeFocus ? Theme.accent : Theme.border; Bevel { sunken: true } }
-                }
-                PillButton {
-                    visible: !listenbrainz.connected
-                    primary: true
-                    text: listenbrainz.busy ? qsTr("Validating…") : lbOwnServer.checked ? qsTr("Connect") : qsTr("Connect ListenBrainz")
-                    enabled: lbToken.text.length > 0 && !listenbrainz.busy && (!lbOwnServer.checked || lbServer.text.trim().length > 0)
-                    onClicked: { listenbrainz.connectToken(lbToken.text, lbOwnServer.checked ? lbServer.text : ""); lbToken.text = "" }
-                }
-                PillButton {
-                    visible: !listenbrainz.connected && !lbOwnServer.checked
-                    text: qsTr("Get a token")
-                    onClicked: Qt.openUrlExternally("https://listenbrainz.org/settings/")
-                }
-                PillButton {
-                    visible: listenbrainz.connected
-                    text: qsTr("Disconnect ListenBrainz")
-                    enabled: !listenbrainz.busy
-                    onClicked: listenbrainz.disconnectAccount()
-                }
-            }
-            Text {
-                textFormat: Text.PlainText
-                width: parent.width
-                text: listenbrainz.status + (listenbrainz.pendingCount > 0 ? " · " + qsTr("%1 waiting to be sent").arg(Theme.num(listenbrainz.pendingCount)) : "")
-                      + (listenbrainz.rejectedCount > 0 ? " · " + qsTr("%1 turned down by ListenBrainz").arg(Theme.num(listenbrainz.rejectedCount)) : "")
-                      + (listenbrainz.lastError ? " · " + qsTr("last try: %1").arg(listenbrainz.lastError) : "")
-                color: listenbrainz.connected ? Theme.accent : Theme.textDim
-                font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(13); wrapMode: Text.WordWrap
-            }
-            OfflineNote { visible: shell.offlineMode; what: qsTr("ListenBrainz") }
             StyledCheck {
                 objectName: "listenbrainzNowPlaying"
                 visible: listenbrainz.connected

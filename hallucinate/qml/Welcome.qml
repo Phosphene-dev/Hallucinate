@@ -402,7 +402,7 @@ FocusScope {
                     Body {
                         text: scrobbler.connected ? scrobbler.status
                             : scrobbler.configured ? scrobbler.status
-                            : qsTr("Last.fm asks each app user for an API key of their own. Add yours in Settings → Scrobbling & sharing whenever you like.")
+                            : qsTr("Last.fm's API needs a key of your own from a Last.fm Pro subscription (since 1 December 2026). If you have one, add it in Settings → Scrobbling & sharing whenever you like; ListenBrainz needs no subscription.")
                         color: scrobbler.connected ? Theme.accent : Theme.textDim
                     }
                     Item { Layout.fillHeight: true }

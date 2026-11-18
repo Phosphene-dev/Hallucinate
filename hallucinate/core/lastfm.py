@@ -6,6 +6,8 @@ Every request goes through core.net, so offline mode stops it."""
 import html
 import json
 import re
+import threading
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -27,13 +29,45 @@ _NOT_GENRES = re.compile(
 )
 
 
+# From 1 December 2026 Last.fm's API takes a key only from a Last.fm Pro subscriber. A key it turns down answers
+# with one of these codes (an invalid or suspended key), or words about Pro or a subscription; from then on
+# Hallucinate stops asking with it (scrobbles wait) and the lookups use the free sources instead.
+KEY_ERRORS = {10, 26}
+_refused = threading.Event()
+
+
+def refuses_key(code, message=""):
+    """Whether a Last.fm error means it won't take the API key any more (rather than a passing problem)."""
+    text = (message or "").lower()
+    return int(code or 0) in KEY_ERRORS or "subscription" in text or "subscriber" in text or " pro " in f" {text} "
+
+
+def key_refused():
+    """Whether Last.fm has turned the API key down (until a new key, or Send now, says otherwise)."""
+    return _refused.is_set()
+
+
+def set_key_refused(on):
+    (_refused.set if on else _refused.clear)()
+
+
 def _get(method, params, api_key, timeout=15):
     query = urllib.parse.urlencode({"method": method, **params, "api_key": api_key, "format": "json",
                                     "autocorrect": "1"})
     request = urllib.request.Request(API + "?" + query, headers={"User-Agent": USER_AGENT})
-    with net.urlopen(request, timeout=timeout, limit=2_000_000) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
+    try:
+        with net.urlopen(request, timeout=timeout, limit=2_000_000) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:  # (Last.fm says why in the body: a key it won't take, say)
+        try:
+            data = json.loads(exc.read().decode("utf-8"))
+        except (OSError, ValueError):
+            raise exc from None
+        if not (isinstance(data, dict) and data.get("error")):
+            raise
     if isinstance(data, dict) and data.get("error"):
+        if refuses_key(data.get("error"), str(data.get("message") or "")):
+            set_key_refused(True)
         return {}
     return data
 

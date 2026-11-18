@@ -95,6 +95,12 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="2.6.1" date="2026-11-18">
+      <description>
+        <p>Ready for Last.fm's paid API: from 1 December 2026 a Last.fm key works only for a Last.fm Pro subscriber. When Last.fm turns a key down, Hallucinate says so once, keeps the scrobbles waiting instead of retrying, and takes similar artists, genres and bios from the free sources.</p>
+        <p>ListenBrainz, free and open, comes first in Settings. Bring your Last.fm history and loves over while your key still works.</p>
+      </description>
+    </release>
     <release version="2.6.0" date="2026-11-18">
       <description>
         <p>Merge duplicates: Library health shows each set's copies with the best one picked to stay, and the copy kept gets the others' plays, likes, ratings and playlist places before they leave the library or go to the trash.</p>

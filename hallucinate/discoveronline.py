@@ -329,7 +329,14 @@ class OnlineDiscover(QObject):
             return {"key": key, "lat": point[0], "lon": point[1], "radius": self.concertRadius,
                     "place": self._concert_place(), "artists": CONCERT_FOLLOW[self.concertFollow]}
         key = self._sources.lastfm_key() if self._sources is not None else ""
-        return {"source": self.similarSource, "seeds": self.seeds, "lastfm": key, "pictures": self.deezerPictures}
+        return {"source": self._similar_source(), "seeds": self.seeds, "lastfm": key, "pictures": self.deezerPictures}
+
+    def _similar_source(self):
+        """Where artists like yours come from: as chosen, but ListenBrainz while Last.fm has no key it takes (it
+        needs Last.fm Pro since 1 December 2026), so the shelf isn't left empty."""
+        if self.similarSource == "lastfm" and not (self._sources is not None and self._sources.lastfm_key()):
+            return "listenbrainz"
+        return self.similarSource
 
     @Slot()
     def stop(self):
@@ -343,7 +350,7 @@ class OnlineDiscover(QObject):
         kinds = [k for k, on in (("Album", self.albums), ("EP", self.eps), ("Single", self.singles)) if on]
         since = (datetime.date.today() - datetime.timedelta(days=self.window)).isoformat()
         return {"kinds": kinds, "since": since, "live": self.live, "compilations": self.compilations,
-                "source": self.similarSource, "seeds": self.seeds, "pictures": self.deezerPictures,
+                "source": self._similar_source(), "seeds": self.seeds, "pictures": self.deezerPictures,
                 "releases": self._on("discoverNewReleases"),
                 "similar": self._on("discoverSimilar"), "concerts": self._on("discoverConcerts"),
                 "place": self._concert_place()}

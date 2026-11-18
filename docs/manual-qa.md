@@ -74,6 +74,15 @@
 - [ ] Handoff with a typed address (on a network that blocks broadcasts), a wrong code (says so), Forget in
       Settings → Remote & web (needs pairing again), and with the firewall on (firewalld: the remote's port).
 
+## Release testing for 2.6.1
+
+- [ ] With a Last.fm key that isn't Pro (after 1 December 2026): a scrobble is turned down; Settings → Scrobbling &
+      sharing says so once with Try again, the scrobbles wait (also after a restart), and the log shows no retry
+      every few minutes. An artist page's similar artists and Discover's artists like yours still come (from the
+      free sources). With a Pro key: Try again sends what waited and the notice goes.
+- [ ] Settings → Scrobbling & sharing: ListenBrainz first, then Last.fm with its Pro note. The welcome's scrobbling
+      step says Last.fm needs Pro.
+
 ## Release testing for 2.6.0
 
 - [ ] Library health → Probable duplicates → Review and merge…: the best copy is marked; click another; untick a

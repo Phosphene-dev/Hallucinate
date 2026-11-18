@@ -345,3 +345,27 @@ def test_deezer_pictures_for_any_source(qapp, db, tmp_path, monkeypatch, setting
         assert QSettings().value("discoverOnline/deezerPictures") in (True, "true")
     finally:
         o.shutdown()
+
+
+def test_artists_like_yours_from_lastfm_fall_back_without_a_key_it_takes(qapp, db, tmp_path, settings):
+    """Last.fm chosen for artists like yours, but no key it takes (it needs Last.fm Pro since 1 December 2026):
+    ListenBrainz's instead, so the shelf isn't left empty; with a key, Last.fm as chosen."""
+    from test_concerts import FakeSources
+
+    from hallucinate.discoveronline import OnlineDiscover
+
+    class Sources(FakeSources):
+        lastfm = ""
+
+        def lastfm_key(self):
+            return self.lastfm
+
+    sources = Sources("")
+    o = OnlineDiscover(tmp_path / "lib.db", tmp_path, None, None, sources, autostart=False)
+    try:
+        o.setSimilarSource("lastfm")
+        assert o._similar_source() == "listenbrainz"
+        sources.lastfm = "pro-key"
+        assert o._similar_source() == "lastfm"
+    finally:
+        o.shutdown()

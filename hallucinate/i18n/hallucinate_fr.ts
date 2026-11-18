@@ -7455,6 +7455,10 @@
         <translation>Non connecté à Last.fm.</translation>
     </message>
     <message>
+        <source>Last.fm turned down the API key: since 1 December 2026 its API needs a Last.fm Pro subscription. Scrobbles wait here; ListenBrainz needs no subscription.</source>
+        <translation>Last.fm a refusé la clé d’API&#xa0;: depuis le 1er décembre 2026, son API demande un abonnement Last.fm Pro. Les scrobbles attendent ici&#xa0;; ListenBrainz ne demande aucun abonnement.</translation>
+    </message>
+    <message>
         <source>Both the Last.fm API key and secret are required.</source>
         <translation>La clé et le secret d’API Last.fm sont tous deux nécessaires.</translation>
     </message>
@@ -9390,10 +9394,6 @@
         <translation>Deezer (avec photos)</translation>
     </message>
     <message>
-        <source>Last.fm (set up for scrobbling)</source>
-        <translation>Last.fm (configuré pour le scrobbling)</translation>
-    </message>
-    <message>
         <source>Show their pictures, from Deezer (only the artists&apos; names are sent)</source>
         <translation>Afficher leurs photos, depuis Deezer (seuls les noms des artistes sont envoyés)</translation>
     </message>
@@ -10170,6 +10170,10 @@
         <translation>Ces fonctions regardent au-delà de votre bibliothèque : elles restent désactivées tant que vous ne les activez pas. Elles n’envoient que le nom des artistes que vous écoutez (à MusicBrainz, ListenBrainz, Deezer, Last.fm ou Ticketmaster, selon votre choix ci-dessous), jamais ce que vous écoutez ni quand. Le mode hors ligne les arrête toutes.</translation>
     </message>
     <message>
+        <source>Last.fm (needs Last.fm Pro)</source>
+        <translation>Last.fm (demande Last.fm Pro)</translation>
+    </message>
+    <message>
         <source>Right-click a song and choose Sounds like this for songs in your library that sound like it: their tempo, key, energy and timbre. To know, Hallucinate first listens to about a minute of each song on this computer, quietly in the background, the songs you like and play most first. Nothing leaves this computer. Turn it off in Features.</source>
         <translation>Faites un clic droit sur un morceau et choisissez Dans le même son pour trouver dans votre bibliothèque les morceaux qui lui ressemblent : tempo, tonalité, énergie et timbre. Pour le savoir, Hallucinate écoute d’abord environ une minute de chaque morceau de cet ordinateur, discrètement en arrière-plan, en commençant par ceux que vous aimez et écoutez le plus. Rien ne quitte cet ordinateur. Désactivez-le dans Fonctionnalités.</translation>
     </message>
@@ -10454,6 +10458,18 @@
     <message>
         <source>Sends now-playing updates, and scrobbles after half a song or four minutes, whichever comes first. Last.fm asks each person for an API key of their own; it and your sign-in stay in the system keyring.</source>
         <translation>Envoie les mises à jour «&#xa0;en cours de lecture&#xa0;», et scrobble après la moitié d’un morceau ou quatre minutes, selon ce qui arrive en premier. Last.fm demande à chacun sa propre clé d’API&#xa0;; elle et votre connexion restent dans le trousseau du système.</translation>
+    </message>
+    <message>
+        <source>Since 1 December 2026 Last.fm&apos;s API takes only the key of a Last.fm Pro subscriber. Without Pro, scrobble to ListenBrainz (above): it&apos;s free. Passing your listens on to Last.fm from there is up to you to set up.</source>
+        <translation>Depuis le 1er décembre 2026, l’API de Last.fm n’accepte plus que la clé d’un abonné Last.fm Pro. Sans Pro, scrobblez vers ListenBrainz (ci-dessus)&#xa0;: c’est gratuit. Transmettre vos écoutes de là vers Last.fm est à configurer de votre côté.</translation>
+    </message>
+    <message>
+        <source>Last.fm turned down the API key: it needs a Last.fm Pro subscription now. Nothing is sent to Last.fm until you try again, and similar artists, genres and bios come from the free sources meanwhile.</source>
+        <translation>Last.fm a refusé la clé d’API&#xa0;: il faut désormais un abonnement Last.fm Pro. Rien n’est envoyé à Last.fm tant que vous ne réessayez pas, et entre-temps les artistes similaires, genres et biographies viennent des sources gratuites.</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Réessayer</translation>
     </message>
     <message>
         <source>Last.fm API key (saved)</source>
@@ -13631,10 +13647,6 @@
         <translation>Hallucinate garde votre historique d’écoute sur cet ordinateur dans tous les cas. Le scrobbling l’envoie aussi à ListenBrainz ou Last.fm. C’est facultatif, et vous pouvez le configurer plus tard dans les paramètres.</translation>
     </message>
     <message>
-        <source>Last.fm asks each app user for an API key of their own. Add yours in Settings → Scrobbling &amp; sharing whenever you like.</source>
-        <translation>Last.fm demande à chaque utilisateur d’une application sa propre clé d’API. Ajoutez la vôtre dans Paramètres → Scrobbling et partage quand vous voulez.</translation>
-    </message>
-    <message>
         <source>Keep a record of what you play?</source>
         <translation>Garder une trace de ce que vous écoutez&#xa0;?</translation>
     </message>
@@ -13683,6 +13695,10 @@
         <translation>J’ai autorisé l’accès</translation>
     </message>
     <message>
+        <source>Last.fm&apos;s API needs a key of your own from a Last.fm Pro subscription (since 1 December 2026). If you have one, add it in Settings → Scrobbling &amp; sharing whenever you like; ListenBrainz needs no subscription.</source>
+        <translation>L’API de Last.fm demande votre propre clé, issue d’un abonnement Last.fm Pro (depuis le 1er décembre 2026). Si vous en avez une, ajoutez-la quand vous voulez dans Paramètres → Scrobbling et partage&#xa0;; ListenBrainz ne demande aucun abonnement.</translation>
+    </message>
+    <message>
         <source>Skip setup</source>
         <translation>Passer la configuration</translation>
     </message>
@@ -13705,6 +13721,14 @@
 </context>
 <context>
     <name>WhatsNew</name>
+    <message>
+        <source>From 1 December, Last.fm&apos;s API needs a Last.fm Pro subscription. Without one, scrobble to ListenBrainz (free): Settings → Scrobbling &amp; sharing.</source>
+        <translation>À partir du 1er décembre, l’API de Last.fm demande un abonnement Last.fm Pro. Sans lui, scrobblez vers ListenBrainz (gratuit)&#xa0;: Paramètres → Scrobbling et partage.</translation>
+    </message>
+    <message>
+        <source>Bring your Last.fm history and loves over before then, while your key still works (Settings → Scrobbling &amp; sharing).</source>
+        <translation>Rapatriez votre historique Last.fm et vos «&#xa0;love&#xa0;» avant cette date, tant que votre clé fonctionne encore (Paramètres → Scrobbling et partage).</translation>
+    </message>
     <message>
         <source>Merge duplicates: Library health shows which copy stays, and it gets the others&apos; likes, plays and playlist places.</source>
         <translation>Fusionner les doublons&#xa0;: Santé de la bibliothèque montre quelle copie reste, et elle reçoit les j’aime, écoutes et places dans les playlists des autres.</translation>

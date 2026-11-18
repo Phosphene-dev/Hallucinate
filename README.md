@@ -54,7 +54,7 @@
 | Composers and their works | Playlist folders |
 |---|---|
 | ![A composer's page with a work and its movements in order](docs/screenshots/composer.png) | ![Playlists grouped in a folder in the sidebar](docs/screenshots/playlist-folders.png) |
-| **Similar artists** (from Last.fm, if you set it up) | **Search that forgives a typo** |
+| **Similar artists** (from ListenBrainz, Deezer, or Last.fm with Pro) | **Search that forgives a typo** |
 | ![Similar artists on an artist page, with Play a mix](docs/screenshots/similar-artists.png) | ![Search showing results for the closest match](docs/screenshots/search-typo.png) |
 
 New in 1.5: a Genres page and a spectrum analyzer (a song's spectrogram, as Spek draws it).
@@ -198,8 +198,13 @@ _Screenshots are rendered from a synthetic library by `scripts/screenshots.py` (
 - Choose the audio output device in Settings → Playback; the choice is remembered, and if that device is unplugged playback moves to the system default until it returns.
 - MPRIS2 controls and media keys on Linux; on Windows 10/11, the system media controls (volume/media overlay, lock screen and media keys) with title, artist, album, artwork, timeline, seeking, shuffle and repeat.
 - CLI controls (`hallucinate --next`, `--prev`, `--play-pause`) and JSON playback status (`--status`) through per-user single-instance IPC; optional desktop notifications on track changes.
-- Optional Last.fm account linking, now-playing updates, 50%-or-four-minutes
-  scrobbling, secure system-keyring credentials, a persistent offline retry queue, and optional two-way sync between Liked Songs and Last.fm loves.
+- Scrobbling to ListenBrainz (or a server of your own that speaks its API: Maloja, Koito, Multi-Scrobbler), free
+  and open, and to Last.fm: now-playing updates, 50%-or-four-minutes scrobbling, secure system-keyring
+  credentials, a persistent offline retry queue, and optional two-way sync between Liked Songs and Last.fm loves.
+  **Since 1 December 2026 Last.fm's API takes only a Last.fm Pro subscriber's key.** Without Pro, scrobble to
+  ListenBrainz; passing your listens on to Last.fm from there is yours to set up. When Last.fm turns a key down,
+  Hallucinate says so once, keeps the scrobbles waiting (Try again in Settings), and takes similar artists, genres
+  and bios from the free sources.
 - Liked Songs and user playlists (create, rename, delete, add from any track's "…" menu); the Stats page shows Recently played and a listening-based personal mix.
 - A Stats page with top artists/albums/tracks and listening time for all time, the last 7 days, 30 days, or 12 months. Listening time is estimated from known track durations.
 - Filter the library by genre, year, and format; find probable duplicate tracks by normalized title, artist, and duration. Manage multiple library folders in Settings.
