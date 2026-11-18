@@ -8,13 +8,19 @@ import keyring
 from PySide6.QtCore import Property, QObject, QSettings, Signal, Slot
 
 from . import keyringwait
-from .core import net
+from .core import lastfm, net
 from .core.i18n import fill, translate
 
 logger = logging.getLogger(__name__)
 KEYRING_SERVICE = "Hallucinate Discogs"
 TICKETMASTER_SERVICE = "Hallucinate Ticketmaster"
 BIO_SOURCES = ("Wikipedia", "Last.fm", "Discogs")
+
+
+def usable_lastfm_key(key):
+    """The Last.fm key the lookups may use: none while Last.fm turns it down (it needs Pro from 1 December 2026),
+    so they go to the free sources."""
+    return "" if lastfm.key_refused() else (key or "")
 
 
 class OnlineSources(QObject):
@@ -27,7 +33,8 @@ class OnlineSources(QObject):
 
     def __init__(self, lastfm_key=None, parent=None):
         super().__init__(parent)
-        self._lastfm_key = lastfm_key or (lambda: "")
+        raw = lastfm_key or (lambda: "")
+        self._lastfm_key = lambda: usable_lastfm_key(raw())
         self._settings = QSettings("hallucinate", "hallucinate")
         self._token, self._user = "", ""
         self._status, self._busy = "", False

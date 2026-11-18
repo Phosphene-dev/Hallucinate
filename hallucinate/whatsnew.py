@@ -4,6 +4,10 @@ newest version's lines are ever shown, so translators can leave the older ones."
 from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication
 
 HIGHLIGHTS = {
+    "2.6.1": [
+        QT_TRANSLATE_NOOP("WhatsNew", "From 1 December, Last.fm's API needs a Last.fm Pro subscription. Without one, scrobble to ListenBrainz (free): Settings → Scrobbling & sharing."),
+        QT_TRANSLATE_NOOP("WhatsNew", "Bring your Last.fm history and loves over before then, while your key still works (Settings → Scrobbling & sharing)."),
+    ],
     "2.6.0": [
         QT_TRANSLATE_NOOP("WhatsNew", "Merge duplicates: Library health shows which copy stays, and it gets the others' likes, plays and playlist places."),
         QT_TRANSLATE_NOOP("WhatsNew", "Tidy up (Library health): fill in missing tags, merge duplicates and organize your files, step by step."),

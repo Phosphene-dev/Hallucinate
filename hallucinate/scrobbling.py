@@ -2,6 +2,7 @@
 import hashlib
 import json
 import logging
+import math
 import os
 import threading
 import time
@@ -15,6 +16,7 @@ from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices
 
 from . import __version__, keyringwait
+from .core import lastfm as lastfm_api
 from .core import net
 from .core.i18n import QT_TRANSLATE_NOOP, fill, translate
 from .core.kinds import counts_for_scrobbling, scrobble_fields, track_kind
@@ -196,6 +198,7 @@ class LastFmScrobbler(QObject):
     syncChanged = Signal()
     lovesImported = Signal(object)  # [(artist, title)] loved on Last.fm, for the library to like
     deliveryChanged = Signal()  # rejectedCount, rejected or lastError changed
+    keyRefusedChanged = Signal()  # Last.fm turned the API key down (it needs Pro from 1 December 2026), or took it again
     _loves_done = Signal(object)
     _keyring_late = Signal(object)
     _stored = Signal(str, object)  # a keyring write finished: (what went wrong or "", what to do next)
@@ -245,6 +248,10 @@ class LastFmScrobbler(QObject):
         self._now_playing = self._qsettings.value("lastfm/nowPlaying", True, bool)
         self._loves_busy = False
         self._loves_done.connect(self._on_loves_done)
+        # turned down before (see _refuse): not asked again by itself; Send now or a new key tries again
+        if self._qsettings.value("lastfm/keyRefused", False, bool):  # (the key itself comes from the keyring later)
+            lastfm_api.set_key_refused(True)
+            self._retry_at = math.inf
         self._timer = QTimer(self)
         self._timer.setInterval(1000)
         self._timer.timeout.connect(self._tick)
@@ -354,9 +361,32 @@ class LastFmScrobbler(QObject):
         logger.info("Last.fm refused a scrobble (%s): dropped", reason)
         self.deliveryChanged.emit()
 
+    @Property(bool, notify=keyRefusedChanged)
+    def keyRefused(self):
+        """Whether Last.fm has turned the API key down: since 1 December 2026 its API needs a Last.fm Pro
+        subscription. Scrobbles wait (nothing is sent until Send now or a new key), and similar artists, genres
+        and bios come from the free sources."""
+        return lastfm_api.key_refused()
+
+    def _refuse(self, error):
+        logger.warning("Last.fm turned the API key down: %s", error)
+        self._qsettings.setValue("lastfm/keyRefused", True)
+        lastfm_api.set_key_refused(True)
+        self._retry_at = math.inf  # (asking again won't change its mind)
+        self._pending_nowplaying = None
+        self._set_status(translate("Scrobbling", "Last.fm turned down the API key: since 1 December 2026 its API needs a "
+                                   "Last.fm Pro subscription. Scrobbles wait here; ListenBrainz needs no subscription."))
+        self.keyRefusedChanged.emit()
+
+    def _accepted(self):
+        if lastfm_api.key_refused() or self._qsettings.value("lastfm/keyRefused", False, bool):
+            self._qsettings.setValue("lastfm/keyRefused", False)
+            lastfm_api.set_key_refused(False)
+            self.keyRefusedChanged.emit()
+
     @Slot()
     def retryNow(self):
-        """Send what's waiting now instead of after the back-off."""
+        """Send what's waiting now instead of after the back-off (and try a key Last.fm turned down again)."""
         self._retry_at, self._retry_delay = 0.0, 5.0
         if self._pending_nowplaying:
             self._send_nowplaying()
@@ -401,6 +431,8 @@ class LastFmScrobbler(QObject):
                 self._set_status(fill(translate("Scrobbling", "Could not save API credentials to the system keyring: %1"), error))
                 return
             self._api_key, self._api_secret = api_key, api_secret
+            self._retry_at = 0.0
+            self._accepted()  # (a new key: Last.fm is asked again)
             self.statusChanged.emit()
             self._set_status(translate("Scrobbling", "Last.fm API credentials saved securely. ")
                              + (translate("Scrobbling", "Turn off offline mode (Settings → Online & privacy) to connect your account.")
@@ -498,6 +530,9 @@ class LastFmScrobbler(QObject):
         result, item, code = payload
         if error:
             self._set_last_error(error)
+            if code and lastfm_api.refuses_key(code, error):
+                self._refuse(error)
+                return
             if code in SESSION_ERRORS and action in ("nowplaying", "scrobble"):
                 # the session was revoked (or the app's access taken back): asking again won't help
                 self._forget_session()
@@ -529,6 +564,7 @@ class LastFmScrobbler(QObject):
         self._retry_delay = 5.0
         self._retry_at = 0.0
         self._set_last_error("")
+        self._accepted()  # (a Pro key, or Last.fm took it again)
         if action == "token":
             token = result.get("token")
             if not token:

@@ -3,6 +3,21 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.6.1] - 2026-11-18
+
+Last.fm is ending free use of its API: from 1 December 2026 a key works only for a Last.fm Pro subscriber. If you
+use Last.fm without Pro, scrobble to ListenBrainz (free, Settings → Scrobbling & sharing), and bring your Last.fm
+history and loves over before then (Settings → Scrobbling & sharing → Import history, and Like the songs I've loved
+on Last.fm) while your key still works. Passing your listens on from ListenBrainz to Last.fm is yours to set up.
+
+### Changed
+- When Last.fm turns the API key down, Hallucinate says so once (Settings → Scrobbling & sharing) and stops asking:
+  no retry every few minutes. Scrobbles wait, kept across restarts; Try again (or a new key) asks again, and a key
+  Last.fm takes clears it. Similar artists, genres and bios stop asking Last.fm and use the free sources
+  (MusicBrainz, ListenBrainz, Deezer, Discogs, Wikipedia); Discover's artists like yours switch to ListenBrainz's
+  while Last.fm has no key it takes.
+- Settings → Scrobbling & sharing lists ListenBrainz first, and Last.fm says it needs Pro; so does the welcome.
+
 ## [2.6.0] - 2026-11-18
 
 ### Added

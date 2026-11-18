@@ -7455,6 +7455,10 @@
         <translation>Não conectado ao Last.fm.</translation>
     </message>
     <message>
+        <source>Last.fm turned down the API key: since 1 December 2026 its API needs a Last.fm Pro subscription. Scrobbles wait here; ListenBrainz needs no subscription.</source>
+        <translation>O Last.fm recusou a chave de API: desde 1º de dezembro de 2026 a API dele exige uma assinatura do Last.fm Pro. Os scrobbles esperam aqui; o ListenBrainz não exige assinatura.</translation>
+    </message>
+    <message>
         <source>Both the Last.fm API key and secret are required.</source>
         <translation>A chave e o segredo da API do Last.fm são os dois necessários.</translation>
     </message>
@@ -9057,10 +9061,6 @@
         <translation>Deezer (com fotos)</translation>
     </message>
     <message>
-        <source>Last.fm (set up for scrobbling)</source>
-        <translation>Last.fm (configurado para scrobbling)</translation>
-    </message>
-    <message>
         <source>Show their pictures, from Deezer (only the artists&apos; names are sent)</source>
         <translation>Mostrar as fotos deles, do Deezer (só os nomes dos artistas são enviados)</translation>
     </message>
@@ -10448,6 +10448,18 @@
         <translation>Envia atualizações do que está tocando e faz scrobble depois de metade da música ou quatro minutos, o que vier primeiro. O Last.fm pede a cada pessoa uma chave de API própria; ela e seu login ficam no chaveiro do sistema.</translation>
     </message>
     <message>
+        <source>Since 1 December 2026 Last.fm&apos;s API takes only the key of a Last.fm Pro subscriber. Without Pro, scrobble to ListenBrainz (above): it&apos;s free. Passing your listens on to Last.fm from there is up to you to set up.</source>
+        <translation>Desde 1º de dezembro de 2026 a API do Last.fm só aceita a chave de um assinante do Last.fm Pro. Sem o Pro, faça scrobble no ListenBrainz (acima): é grátis. Passar suas escutas de lá para o Last.fm fica por sua conta.</translation>
+    </message>
+    <message>
+        <source>Last.fm turned down the API key: it needs a Last.fm Pro subscription now. Nothing is sent to Last.fm until you try again, and similar artists, genres and bios come from the free sources meanwhile.</source>
+        <translation>O Last.fm recusou a chave de API: agora ele exige uma assinatura do Last.fm Pro. Nada é enviado ao Last.fm até você tentar de novo, e enquanto isso artistas parecidos, gêneros e bios vêm das fontes gratuitas.</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Tentar de novo</translation>
+    </message>
+    <message>
         <source>Last.fm API key (saved)</source>
         <translation>Chave de API do Last.fm (salva)</translation>
     </message>
@@ -10566,6 +10578,10 @@
     <message>
         <source>ListenBrainz</source>
         <translation>ListenBrainz</translation>
+    </message>
+    <message>
+        <source>Last.fm (needs Last.fm Pro)</source>
+        <translation>Last.fm (exige Last.fm Pro)</translation>
     </message>
     <message>
         <source>Connect with your ListenBrainz user token to send now-playing updates and listens. The token stays in the system keyring; listens that can&apos;t be sent wait and are tried again.</source>
@@ -13679,8 +13695,8 @@
         <translation>Já permiti o acesso</translation>
     </message>
     <message>
-        <source>Last.fm asks each app user for an API key of their own. Add yours in Settings → Scrobbling &amp; sharing whenever you like.</source>
-        <translation>O Last.fm pede a cada usuário de app uma chave de API própria. Adicione a sua em Configurações → Scrobbling e compartilhamento quando quiser.</translation>
+        <source>Last.fm&apos;s API needs a key of your own from a Last.fm Pro subscription (since 1 December 2026). If you have one, add it in Settings → Scrobbling &amp; sharing whenever you like; ListenBrainz needs no subscription.</source>
+        <translation>A API do Last.fm exige uma chave própria de uma assinatura do Last.fm Pro (desde 1º de dezembro de 2026). Se você tiver, adicione quando quiser em Configurações → Scrobbling e compartilhamento; o ListenBrainz não exige assinatura.</translation>
     </message>
     <message>
         <source>Skip setup</source>
@@ -13705,6 +13721,14 @@
 </context>
 <context>
     <name>WhatsNew</name>
+    <message>
+        <source>From 1 December, Last.fm&apos;s API needs a Last.fm Pro subscription. Without one, scrobble to ListenBrainz (free): Settings → Scrobbling &amp; sharing.</source>
+        <translation>A partir de 1º de dezembro, a API do Last.fm exige uma assinatura do Last.fm Pro. Sem ela, faça scrobble no ListenBrainz (grátis): Configurações → Scrobbling e compartilhamento.</translation>
+    </message>
+    <message>
+        <source>Bring your Last.fm history and loves over before then, while your key still works (Settings → Scrobbling &amp; sharing).</source>
+        <translation>Traga seu histórico e seus loves do Last.fm antes disso, enquanto sua chave ainda funciona (Configurações → Scrobbling e compartilhamento).</translation>
+    </message>
     <message>
         <source>Merge duplicates: Library health shows which copy stays, and it gets the others&apos; likes, plays and playlist places.</source>
         <translation>Mesclar duplicatas: a Saúde da biblioteca mostra qual cópia fica, e ela recebe as curtidas, reproduções e lugares em playlists das outras.</translation>

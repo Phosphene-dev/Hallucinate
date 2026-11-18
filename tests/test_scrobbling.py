@@ -529,3 +529,82 @@ def test_now_playing_can_be_switched_off(make_scrobbler, memory_keyring, monkeyp
         assert not make().nowPlaying  # remembered
     finally:
         s.setNowPlaying(True)
+
+
+def test_a_key_lastfm_turns_down_stops_the_asking_and_keeps_the_scrobbles(make_scrobbler, memory_keyring, monkeypatch):
+    """From 1 December 2026 Last.fm's API needs a Pro subscriber's key. A refused key: said so once, nothing more
+    sent (no retries every few minutes), the scrobbles kept, and the lookups' key withheld so they use the free
+    sources; remembered after a restart; Try again (Send now) asks again, and a key it takes clears it all."""
+    from hallucinate.core import lastfm
+
+    _player, make = make_scrobbler
+    memory_keyring["session"] = "session"
+    calls, refuse = [], [True]
+
+    def api(method, *_args, **_kwargs):
+        calls.append(method)
+        if refuse[0]:
+            raise scrobbling.LastFmError(26, "Last.fm error 26: Suspended API key - Access for your account has been suspended")
+        return {"scrobbles": {"@attr": {"accepted": "1"}}}
+
+    monkeypatch.setattr(scrobbling, "api_request", api)
+    lastfm.set_key_refused(False)
+    try:
+        s = make()
+        refused = []
+        s.keyRefusedChanged.connect(lambda: refused.append(True))
+        s._queue_scrobble({"title": "Kept", "artist": "Artist"}, 1234)
+        assert wait_for(lambda: s.keyRefused, timeout=4)
+        assert "Pro" in s.status and s.pendingCount == 1 and refused == [True]
+        sent = len(calls)
+        s._retry_at = min(s._retry_at, 10**9)  # (even past any back-off: it doesn't ask by itself)
+        s._send_pending()
+        s._queue_scrobble({"title": "Also kept", "artist": "Artist"}, 1300)
+        assert len(calls) == sent and s.pendingCount == 2
+        # remembered: a restart doesn't start asking again either
+        s.shutdown()
+        lastfm.set_key_refused(False)
+        s = make()
+        assert s.keyRefused and lastfm.key_refused()
+        # Last.fm takes it again (a Pro key): Try again sends what waited
+        refuse[0] = False
+        s.retryNow()
+        assert wait_for(lambda: s.pendingCount == 0 and not s.keyRefused, timeout=4)
+    finally:
+        lastfm.set_key_refused(False)
+
+
+def test_what_counts_as_a_refused_key():
+    from hallucinate.core import lastfm
+
+    assert lastfm.refuses_key(10) and lastfm.refuses_key(26)
+    assert lastfm.refuses_key(17, "This API requires a Last.fm Pro subscription")
+    assert not lastfm.refuses_key(11, "Service Offline - This service is temporarily offline. Try again later.")
+    assert not lastfm.refuses_key(29, "Rate limit exceeded")
+
+
+def test_lookups_give_up_a_refused_key(monkeypatch):
+    """Similar artists, genres and bios go through core.lastfm: Last.fm turning the key down there counts too
+    (and is answered with an HTTP error, its reason in the body)."""
+    import io
+    import urllib.error
+
+    from hallucinate.core import lastfm
+
+    def refuse(request, timeout=10, limit=0):
+        raise urllib.error.HTTPError(request.full_url, 403, "Forbidden", {}, io.BytesIO(
+            json.dumps({"error": 26, "message": "Suspended API key"}).encode()))
+
+    monkeypatch.setattr(lastfm.net, "urlopen", refuse)
+    lastfm.set_key_refused(False)
+    try:
+        assert lastfm.similar_artists("Band", "key") == []
+        assert lastfm.key_refused()
+        # and the key is no longer handed to the lookups (they use the free sources). (The rule itself: a real
+        # OnlineSources reads the keyring on a thread, which could answer after the test is gone.)
+        from hallucinate.onlinesources import usable_lastfm_key
+        assert usable_lastfm_key("key") == ""
+        lastfm.set_key_refused(False)
+        assert usable_lastfm_key("key") == "key"
+    finally:
+        lastfm.set_key_refused(False)

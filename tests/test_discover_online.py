@@ -4,6 +4,7 @@ left out (ones you have, Not interested, kinds not chosen), offline mode, and th
 import time
 
 import pytest
+from PySide6.QtCore import QObject, Signal
 
 from hallucinate.core import discover as dcore
 from hallucinate.core import online_discover as od
@@ -343,5 +344,35 @@ def test_deezer_pictures_for_any_source(qapp, db, tmp_path, monkeypatch, setting
         time.sleep(0.2)
         assert sorted(asked) == ["Cinder", "Nobody Knows"]  # (kept: not asked again)
         assert QSettings().value("discoverOnline/deezerPictures") in (True, "true")
+    finally:
+        o.shutdown()
+
+
+class LastfmSources(QObject):
+    """Sources with a Last.fm key or none (at module level: a class made inside a test is in a reference cycle,
+    freed by the collector at any moment later)."""
+    changed = Signal()
+    lastfm = ""
+    ticketmasterConnected = False
+
+    def ticketmaster_key(self, wait=3.0):
+        return ""
+
+    def lastfm_key(self):
+        return self.lastfm
+
+
+def test_artists_like_yours_from_lastfm_fall_back_without_a_key_it_takes(qapp, db, tmp_path, settings):
+    """Last.fm chosen for artists like yours, but no key it takes (it needs Last.fm Pro since 1 December 2026):
+    ListenBrainz's instead, so the shelf isn't left empty; with a key, Last.fm as chosen."""
+    from hallucinate.discoveronline import OnlineDiscover
+
+    sources = LastfmSources()
+    o = OnlineDiscover(tmp_path / "lib.db", tmp_path, None, None, sources, autostart=False)
+    try:
+        o.setSimilarSource("lastfm")
+        assert o._similar_source() == "listenbrainz"
+        sources.lastfm = "pro-key"
+        assert o._similar_source() == "lastfm"
     finally:
         o.shutdown()
