@@ -135,6 +135,31 @@ class OnlineSources(QObject):
     def setFetchSimilar(self, on):
         self._set_flag("fetchSimilar", on)
 
+    @Property(bool, notify=changed)
+    def acoustid(self):
+        """Identify songs by their sound with AcoustID (Library health, a song's menu): off until switched on."""
+        return self._flag("acoustid", False)
+
+    @Slot(bool)
+    def setAcoustid(self, on):
+        self._set_flag("acoustid", on)
+
+    @Property(str, notify=changed)
+    def acoustidKey(self):
+        """An AcoustID application key of your own, if Hallucinate's isn't built in (or is turned down)."""
+        return str(self._settings.value("sources/acoustidKey", "") or "")
+
+    @Slot(str)
+    def setAcoustidKey(self, key):
+        self._settings.setValue("sources/acoustidKey", "".join(str(key or "").split()))
+        self.changed.emit()
+
+    @Property(bool, notify=changed)
+    def acoustidBuiltIn(self):
+        """Whether this copy of Hallucinate comes with an AcoustID key (then one of your own is optional)."""
+        from .core import acoustid
+        return bool(acoustid.APP_KEY)
+
     @Property(str, notify=changed)
     def bioSource(self):
         """Where bios come from: "" (the first that has one: Wikipedia, then Last.fm, then Discogs) or only one."""

@@ -14,12 +14,14 @@ Dialog {
     height: Math.min(640, (parent ? parent.height : 640) - 60)
     modal: true
     property string kind: metaEditor.fixKind
-    title: kind === "year" ? qsTr("Years found") : kind === "numbers" ? qsTr("Track numbers found") : qsTr("Artists and albums found")
+    title: kind === "year" ? qsTr("Years found") : kind === "numbers" ? qsTr("Track numbers found")
+           : kind === "identify" ? qsTr("Songs identified by their sound") : qsTr("Artists and albums found")
     standardButtons: Dialog.Save | Dialog.Cancel
     property int kept: 0
     function recount() { var n = 0; for (var i = 0; i < rows.count; i++) if (rows.get(i).keep) n++; kept = n }
     function setKeep(i, on) { rows.setProperty(i, "keep", on); recount() }
-    function sourceText(source, note) {
+    function sourceText(source, note, score) {
+        if (source === "AcoustID") return qsTr("from AcoustID, %1% alike").arg(Math.round((score || 0) * 100))
         if (source === "MusicBrainz") return note ? qsTr("from MusicBrainz: %1").arg(note) : qsTr("from MusicBrainz")
         return dlg.kind === "untagged" ? qsTr("from its folder and file names") : qsTr("from the file and folder names")
     }
@@ -40,11 +42,20 @@ Dialog {
         found = metaEditor.fixProposals
         for (var i = 0; i < found.length; i++) {
             var p = found[i]
+            if (p.kind === "identify") {
+                var on = [p.album ? (p.year ? p.album + " (" + p.year + ")" : p.album) : "",
+                          p.track_no > 0 ? qsTr("track %1").arg((p.disc_no > 0 ? p.disc_no + "-" : "") + p.track_no) : ""]
+                rows.append({ at: i, title: p.artist ? p.title + "  —  " + p.artist : p.title, artist: on.filter(function (x) { return x }).join("  ·  "),
+                              album: p.album || "", year: p.year ? String(p.year) : "", songs: 1, fillArtist: false, fillAlbum: false,
+                              detail: qsTr("Now: %1").arg(p.was ? p.was + "  ·  " + p.note : p.note),
+                              source: p.source || "", note: "", score: p.score || 0, keep: true })
+                continue
+            }
             rows.append({ at: i, title: p.title || "", artist: p.artist || "", album: p.album || "",
                           year: p.year ? String(p.year) : "", songs: p.songs || 0,
                           fillArtist: !!p.fill_artist, fillAlbum: !!p.fill_album,
                           detail: p.kind === "numbers" ? numbered(p.tracks || []) : "",
-                          source: p.source || "", note: p.note || "", keep: true })
+                          source: p.source || "", note: p.note || "", score: 0, keep: true })
         }
         recount()
         keptChanged()
@@ -57,7 +68,11 @@ Dialog {
             if (!r.keep) continue
             var p = found[r.at]
             var item = { kind: p.kind, key: p.key }
-            if (p.kind === "year") { if (!/^\d{4}$/.test(r.year.trim())) continue; item.year = r.year.trim() }
+            if (p.kind === "identify") {
+                item = { kind: "identify", key: p.key, paths: p.paths, title: p.title, artist: p.artist, album: p.album,
+                         album_artist: p.album_artist, year: p.year, track_no: p.track_no, disc_no: p.disc_no }
+            }
+            else if (p.kind === "year") { if (!/^\d{4}$/.test(r.year.trim())) continue; item.year = r.year.trim() }
             else if (p.kind === "numbers") item.tracks = p.tracks
             else {
                 item.paths = p.paths
@@ -79,7 +94,8 @@ Dialog {
             textFormat: Text.PlainText
             width: parent.width
             wrapMode: Text.WordWrap
-            text: dlg.kind === "year" ? qsTr("Ticked albums get this year written to every song. Change any that look wrong; MusicBrainz's is the earliest release it knows.")
+            text: dlg.kind === "identify" ? qsTr("Ticked songs get this title, artist, album, year and track number written to their files. Untick any that look wrong.")
+                  : dlg.kind === "year" ? qsTr("Ticked albums get this year written to every song. Change any that look wrong; MusicBrainz's is the earliest release it knows.")
                   : dlg.kind === "numbers" ? qsTr("Ticked albums get these track numbers written to their songs, in the order shown.")
                   : qsTr("Ticked songs get the artist or album guessed from their folders and file names. Only what's missing is filled; change any guess that's wrong, or clear it to leave that tag alone.")
             color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(12)
@@ -136,8 +152,8 @@ Dialog {
                 Text {
                     textFormat: Text.PlainText; width: parent.width; elide: Text.ElideRight
                     text: [dlg.kind === "untagged" ? "" : row.model.artist,
-                           Theme.counted(qsTr("%n song(s)", "", row.model.songs), row.model.songs),
-                           dlg.sourceText(row.model.source, dlg.kind === "untagged" ? "" : row.model.note)]
+                           dlg.kind === "identify" ? "" : Theme.counted(qsTr("%n song(s)", "", row.model.songs), row.model.songs),
+                           dlg.sourceText(row.model.source, dlg.kind === "untagged" ? "" : row.model.note, row.model.score)]
                           .filter(function (x) { return x }).join("  ·  ")
                     color: Theme.textDim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSize(11)
                 }
@@ -152,7 +168,7 @@ Dialog {
             Column {
                 id: fields
                 anchors { right: parent.right; top: parent.top; topMargin: 6 }
-                width: dlg.kind === "numbers" ? 0 : dlg.kind === "year" ? 90 : Math.min(300, row.width * 0.45)
+                width: dlg.kind === "numbers" || dlg.kind === "identify" ? 0 : dlg.kind === "year" ? 90 : Math.min(300, row.width * 0.45)
                 spacing: 4
                 FixField {
                     visible: dlg.kind === "year"

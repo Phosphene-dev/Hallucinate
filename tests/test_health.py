@@ -121,3 +121,97 @@ def test_damaged_covers_are_found(db, tmp_path):
     add(db, "/m/g/1", album="Gone", art=str(tmp_path / "unplugged.jpg"))
     checks = by_id(health.report(db))
     assert [a["album"] for a in checks["damagedcovers"]["items"]] == ["Cut"]
+
+
+def test_merging_duplicates_carries_likes_plays_and_playlists(db):
+    """The copy kept gets the others' plays (added up), like, rating (its own wins), listens and playlist places
+    (a playlist with both keeps one)."""
+    add(db, "/m/a.mp3", album="One", title="Song", codec="MP3", bitrate=128_000, duration=200)
+    add(db, "/m/b.flac", album="Two", title="Song", codec="FLAC", duration=200)
+    db.set_liked("/m/a.mp3", True)
+    db.set_rating("/m/a.mp3", 4)
+    for t in (100.0, 200.0, 300.0):
+        db.record_play("/m/a.mp3", t)
+    db.record_play("/m/b.flac", 400.0)
+    both, one = db.create_playlist("Both"), db.create_playlist("One")
+    db.playlist_add(both, ["/m/a.mp3", "/m/b.flac"])
+    db.playlist_add(one, ["/m/a.mp3"])
+    groups = health.duplicate_groups(db)
+    assert [[r["path"] for r in g] for g in groups] == [["/m/b.flac", "/m/a.mp3"]]  # lossless first
+    db.merge_user_data([("/m/a.mp3", "/m/b.flac")])
+    q = lambda sql, *a: [tuple(r) for r in db.conn.execute(sql, a).fetchall()]  # noqa: E731
+    assert q("SELECT path FROM likes") == [("/m/b.flac",)]
+    assert q("SELECT path, stars FROM ratings") == [("/m/b.flac", 4)]
+    assert q("SELECT path, count, last FROM plays") == [("/m/b.flac", 4, 400.0)]
+    assert {r[0] for r in q("SELECT path FROM play_log")} == {"/m/b.flac"}
+    assert [r[0] for r in q("SELECT path FROM playlist_items WHERE playlist_id=? ORDER BY pos", both)] == ["/m/b.flac"]
+    assert [r[0] for r in q("SELECT path FROM playlist_items WHERE playlist_id=?", one)] == ["/m/b.flac"]
+    # its own rating wins
+    add(db, "/m/c.ogg", album="Three", title="Song", codec="VORBIS", bitrate=96_000, duration=200)
+    db.set_rating("/m/c.ogg", 1)
+    db.merge_user_data([("/m/c.ogg", "/m/b.flac")])
+    assert q("SELECT path, stars FROM ratings") == [("/m/b.flac", 4)]
+
+
+def test_library_merges_duplicates_into_the_copy_chosen(qapp, tmp_path, monkeypatch):
+    """The review's choice is kept (here the MP3, though the FLAC is better); with trash, the other file goes to
+    the trash, but never when both paths are the same file, or the copy kept isn't a file here."""
+    import os
+    import shutil
+
+    from conftest import wait_for
+
+    import hallucinate.library as library_module
+    from hallucinate.core.db import Database
+    from hallucinate.library import Library
+
+    music, trash = tmp_path / "m", tmp_path / "Trash"
+    music.mkdir()
+    trash.mkdir()
+    for name in ("a.mp3", "b.flac", "c.ogg"):
+        (music / name).write_bytes(b"x")
+    os.symlink(music / "c.ogg", music / "d.ogg")  # one file seen twice
+
+    class FakeQFile:  # the real one would fill the test machine's trash
+        @staticmethod
+        def moveToTrash(path):
+            shutil.move(path, trash / os.path.basename(path))
+            return True
+
+    monkeypatch.setattr(library_module, "QFile", FakeQFile)
+    a, b, c, d = (str(music / n) for n in ("a.mp3", "b.flac", "c.ogg", "d.ogg"))
+    path = tmp_path / "library.db"
+    seed = Database(path)
+    seed.add_folder(str(music))
+    add(seed, a, album="One", title="Song", codec="MP3", bitrate=128_000, duration=200)
+    add(seed, b, album="Two", title="Song", codec="FLAC", duration=200)
+    add(seed, c, album="Three", title="Other", duration=100)
+    add(seed, d, album="Four", title="Other", duration=100)
+    cue = str(music / "live.flac#3")  # a CUE sheet's song: never dropped (its file holds its whole album)
+    add(seed, cue, album="Live", title="Song", codec="MP3", bitrate=96_000, duration=200)
+    seed.conn.execute("UPDATE tracks SET file=? WHERE path=?", (str(music / "live.flac"), cue))
+    seed.set_liked(b, True)
+    seed.commit()
+    seed.close()
+    lib = Library(path, tmp_path / "art")
+    found, removed = [], []
+    lib.duplicateGroupsLoaded.connect(found.append)
+    lib.albumsRemoved.connect(removed.append)
+    try:
+        assert wait_for(lambda: lib.trackCount == 5, timeout=10)
+        lib.loadDuplicateGroups()
+        assert wait_for(lambda: found, timeout=10)
+        song = next(g for g in found[0] if g["copies"][0]["title"] == "Song")
+        assert [x["path"] for x in song["copies"]] == [b, a, cue] and song["copies"][0]["liked"]
+        assert song["copies"][2]["cue"]
+        lib.mergeDuplicates([{"keep": a, "drop": [b, cue]}, {"keep": c, "drop": [d]}], True)
+        assert wait_for(lambda: removed and lib.trackCount == 3, timeout=10)
+        assert removed[0]["kind"] == "merged" and removed[0]["merged"] == 2 and removed[0]["trashed"] == 1
+        assert sorted(t["path"] for t in lib.allTracks()) == sorted([a, c, cue])
+        assert sorted(p.name for p in trash.iterdir()) == ["b.flac"]  # the link's file stayed: it's c itself
+        assert os.path.exists(c) and lib.hiddenCount == 1
+        db = Database(path)
+        assert [tuple(r) for r in db.conn.execute("SELECT path FROM likes")] == [(a,)]
+        db.close()
+    finally:
+        lib.shutdown()

@@ -238,6 +238,30 @@
     </message>
 </context>
 <context>
+    <name>DuplicatesDialog</name>
+    <message numerus="yes">
+        <source>%n play(s)</source>
+        <translation>
+            <numerusform>%n play</numerusform>
+            <numerusform>%n plays</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Merge %n set(s)</source>
+        <translation>
+            <numerusform>Merge %n set</numerusform>
+            <numerusform>Merge %n sets</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n copies to merge away</source>
+        <translation>
+            <numerusform>%n copy to merge away</numerusform>
+            <numerusform>%n copies to merge away</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>FixReview</name>
     <message numerus="yes">
         <source>Saving %n change(s) to your files</source>
@@ -377,17 +401,10 @@
         </translation>
     </message>
     <message numerus="yes">
-        <source>%n copies</source>
+        <source>%n extra copies: the best of each set stays and gets their likes, plays and playlist places.</source>
         <translation>
-            <numerusform>%n copy</numerusform>
-            <numerusform>%n copies</numerusform>
-        </translation>
-    </message>
-    <message numerus="yes">
-        <source>Takes the %n extra copies out of the library and keeps the best of each. Right-click a song for more.</source>
-        <translation>
-            <numerusform>Takes the %n extra copy out of the library and keeps the best of each. Right-click a song for more.</numerusform>
-            <numerusform>Takes the %n extra copies out of the library and keeps the best of each. Right-click a song for more.</numerusform>
+            <numerusform>%n extra copies: the best of each set stays and gets their likes, plays and playlist places.</numerusform>
+            <numerusform>%n extra copies: the best of each set stays and gets their likes, plays and playlist places.</numerusform>
         </translation>
     </message>
     <message numerus="yes">
@@ -1315,6 +1332,37 @@
     </message>
 </context>
 <context>
+    <name>TidyDialog</name>
+    <message numerus="yes">
+        <source>Identify %n song(s)</source>
+        <translation>
+            <numerusform>Identify %n song</numerusform>
+            <numerusform>Identify %n songs</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Guess artist and album for %n song(s)</source>
+        <translation>
+            <numerusform>Guess artist and album for %n song</numerusform>
+            <numerusform>Guess artist and album for %n songs</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Find years for %n album(s)</source>
+        <translation>
+            <numerusform>Find years for %n album</numerusform>
+            <numerusform>Find years for %n albums</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Find track numbers for %n album(s)</source>
+        <translation>
+            <numerusform>Find track numbers for %n album</numerusform>
+            <numerusform>Find track numbers for %n albums</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>TrackMenu</name>
     <message numerus="yes">
         <source>%n song(s)</source>
@@ -1418,6 +1466,27 @@
         <translation>
             <numerusform>%n album</numerusform>
             <numerusform>%n albums</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Merged %n duplicate(s) into the copies kept</source>
+        <translation>
+            <numerusform>Merged %n duplicate into the copies kept</numerusform>
+            <numerusform>Merged %n duplicates into the copies kept</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n file(s) moved to the trash</source>
+        <translation>
+            <numerusform>%n file moved to the trash</numerusform>
+            <numerusform>%n files moved to the trash</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n file(s) couldn't be moved</source>
+        <translation>
+            <numerusform>%n file couldn't be moved</numerusform>
+            <numerusform>%n files couldn't be moved</numerusform>
         </translation>
     </message>
     <message numerus="yes">

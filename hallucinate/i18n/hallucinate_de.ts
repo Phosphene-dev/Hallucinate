@@ -2454,6 +2454,94 @@
     </message>
 </context>
 <context>
+    <name>DuplicatesDialog</name>
+    <message>
+        <source>Merge duplicates</source>
+        <translation>Duplikate zusammenführen</translation>
+    </message>
+    <message>
+        <source>%1 kbps</source>
+        <translation>%1 kbit/s</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n play(s)</source>
+        <translation>
+            <numerusform>%n Wiedergabe</numerusform>
+            <numerusform>%n Wiedergaben</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>on a music server</source>
+        <translation>auf einem Musikserver</translation>
+    </message>
+    <message>
+        <source>in a CUE sheet: stays in the library either way</source>
+        <translation>in einem CUE-Sheet: bleibt so oder so in der Mediathek</translation>
+    </message>
+    <message numerus="yes">
+        <source>Merge %n set(s)</source>
+        <translation>
+            <numerusform>%n Gruppe zusammenführen</numerusform>
+            <numerusform>%n Gruppen zusammenführen</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Schließen</translation>
+    </message>
+    <message>
+        <source>The same title, artist and length more than once. Of each set, the copy marked ● stays: click another copy to keep that one instead, and untick a set that&apos;s on purpose (a song on both an album and a compilation). The copy kept gets the others&apos; likes, plays, ratings, listens and playlist places.</source>
+        <translation>Derselbe Titel, Künstler und dieselbe Länge mehr als einmal. Von jeder Gruppe bleibt die mit ● markierte Kopie: Klick auf eine andere, um stattdessen diese zu behalten, und nimm den Haken bei einer Gruppe heraus, die Absicht ist (ein Titel auf einem Album und einer Compilation). Die behaltene Kopie bekommt die Likes, Wiedergaben, Bewertungen, Hörvorgänge und Playlist-Plätze der anderen.</translation>
+    </message>
+    <message>
+        <source>The other copies:</source>
+        <translation>Die anderen Kopien:</translation>
+    </message>
+    <message>
+        <source>Leave the library (files stay)</source>
+        <translation>Verlassen die Mediathek (Dateien bleiben)</translation>
+    </message>
+    <message>
+        <source>Go to the trash</source>
+        <translation>Kommen in den Papierkorb</translation>
+    </message>
+    <message>
+        <source>Finding duplicates…</source>
+        <translation>Suche nach Duplikaten…</translation>
+    </message>
+    <message>
+        <source>No probable duplicates</source>
+        <translation>Keine wahrscheinlichen Duplikate</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n copies to merge away</source>
+        <translation>
+            <numerusform>%n Kopie wird zusammengeführt</numerusform>
+            <numerusform>%n Kopien werden zusammengeführt</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>a song on a music server only leaves the library</source>
+        <translation>ein Titel auf einem Musikserver verlässt nur die Mediathek</translation>
+    </message>
+    <message>
+        <source>Merge the copies of %1</source>
+        <translation>Die Kopien von %1 zusammenführen</translation>
+    </message>
+    <message>
+        <source>Stays</source>
+        <translation>Bleibt</translation>
+    </message>
+    <message>
+        <source>Goes</source>
+        <translation>Geht</translation>
+    </message>
+    <message>
+        <source>Keep this copy: %1</source>
+        <translation>Diese Kopie behalten: %1</translation>
+    </message>
+</context>
+<context>
     <name>EpisodeMenu</name>
     <message>
         <source>Show notes</source>
@@ -2692,6 +2780,14 @@
         <translation>Gefundene Künstler und Alben</translation>
     </message>
     <message>
+        <source>Songs identified by their sound</source>
+        <translation>Titel, am Klang erkannt</translation>
+    </message>
+    <message>
+        <source>from AcoustID, %1% alike</source>
+        <translation>von AcoustID, zu %1 % ähnlich</translation>
+    </message>
+    <message>
         <source>from MusicBrainz: %1</source>
         <translation>von MusicBrainz: %1</translation>
     </message>
@@ -2708,6 +2804,14 @@
         <translation>aus den Datei- und Ordnernamen</translation>
     </message>
     <message>
+        <source>track %1</source>
+        <translation>Titel %1</translation>
+    </message>
+    <message>
+        <source>Now: %1</source>
+        <translation>Jetzt: %1</translation>
+    </message>
+    <message>
         <source>Save %1</source>
         <translation>%1 speichern</translation>
     </message>
@@ -2717,6 +2821,10 @@
             <numerusform>%n Änderung wird in deine Dateien gespeichert</numerusform>
             <numerusform>%n Änderungen werden in deine Dateien gespeichert</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Ticked songs get this title, artist, album, year and track number written to their files. Untick any that look wrong.</source>
+        <translation>Angehakte Titel bekommen diesen Titel, Künstler, Album, Jahr und diese Titelnummer in ihre Dateien geschrieben. Nimm den Haken heraus, wo etwas falsch aussieht.</translation>
     </message>
     <message>
         <source>Ticked albums get this year written to every song. Change any that look wrong; MusicBrainz&apos;s is the earliest release it knows.</source>
@@ -3255,6 +3363,14 @@
         <translation>Werden als „Unbekannt“ angezeigt und zusammengefasst. Bearbeite ihre Tags.</translation>
     </message>
     <message>
+        <source>Songs that could be identified by their sound</source>
+        <translation>Titel, die sich am Klang erkennen lassen</translation>
+    </message>
+    <message>
+        <source>No title tag, or no artist or album. AcoustID can tell what they are from how they sound.</source>
+        <translation>Kein Titel-Tag, oder kein Künstler oder Album. AcoustID erkennt an ihrem Klang, was sie sind.</translation>
+    </message>
+    <message>
         <source>Albums without track numbers</source>
         <translation>Alben ohne Titelnummern</translation>
     </message>
@@ -3346,6 +3462,18 @@
         <translation>Liest Nummern aus Dateinamen und gleicht dann Titel mit MusicBrainz ab. Du prüfst sie, bevor etwas gespeichert wird.</translation>
     </message>
     <message>
+        <source>Switch it on in Settings → Online &amp; privacy: each song&apos;s fingerprint and length go to AcoustID.</source>
+        <translation>Schalte es unter Einstellungen → Online &amp; Datenschutz ein: Fingerabdruck und Länge jedes Titels gehen an AcoustID.</translation>
+    </message>
+    <message>
+        <source>Offline mode is on, so songs can&apos;t be identified.</source>
+        <translation>Der Offline-Modus ist an, deshalb können Titel nicht erkannt werden.</translation>
+    </message>
+    <message>
+        <source>Listens to each song on this computer, then asks AcoustID what it is (only its fingerprint and length are sent). You check them before anything is saved.</source>
+        <translation>Hört jeden Titel auf diesem Computer an und fragt dann AcoustID, was er ist (nur Fingerabdruck und Länge werden gesendet). Du prüfst sie, bevor etwas gespeichert wird.</translation>
+    </message>
+    <message>
         <source>Guesses from folders (Artist/Album/song) and “Artist - Title” file names. You check them before anything is saved.</source>
         <translation>Errät aus Ordnern (Künstler/Album/Titel) und Dateinamen wie „Künstler - Titel“. Du prüfst sie, bevor etwas gespeichert wird.</translation>
     </message>
@@ -3356,18 +3484,6 @@
     <message>
         <source>Remove from the library</source>
         <translation>Aus der Mediathek entfernen</translation>
-    </message>
-    <message>
-        <source>Keep only the best copies?</source>
-        <translation>Nur die besten Kopien behalten?</translation>
-    </message>
-    <message>
-        <source>Remove %1</source>
-        <translation>%1 entfernen</translation>
-    </message>
-    <message>
-        <source>Of each set of probable duplicates, the best copy stays: lossless first, then the higher bitrate. The other %1 are taken out of the library; the files stay on your disk, and Settings → Library can bring them back. Check the list first if some are on purpose, like a song on both an album and a compilation: right-click one to keep or remove it on its own.</source>
-        <translation>Von jeder Gruppe wahrscheinlicher Duplikate bleibt die beste Kopie: zuerst verlustfrei, dann die höhere Bitrate. Die anderen %1 werden aus der Mediathek genommen; die Dateien bleiben auf deiner Festplatte, und Einstellungen → Mediathek kann sie zurückholen. Prüf zuerst die Liste, falls manche Absicht sind, etwa ein Titel auf einem Album und einer Compilation: Klick einen mit rechts an, um ihn einzeln zu behalten oder zu entfernen.</translation>
     </message>
     <message>
         <source>Library health</source>
@@ -3387,6 +3503,10 @@
             <numerusform>%n Sache zum Ansehen in %1 Alben und %2 Titeln</numerusform>
             <numerusform>%n Sachen zum Ansehen in %1 Alben und %2 Titeln</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Tidy up…</source>
+        <translation>Aufräumen…</translation>
     </message>
     <message>
         <source>Checking…</source>
@@ -3453,12 +3573,20 @@
         <translation>Fragt MusicBrainz, ein paar Sekunden pro Album. Du prüfst, was gefunden wird, bevor etwas gespeichert wird.</translation>
     </message>
     <message>
+        <source>Set up…</source>
+        <translation>Einrichten…</translation>
+    </message>
+    <message>
         <source>Guess all</source>
         <translation>Alle erraten</translation>
     </message>
     <message>
         <source>Find all</source>
         <translation>Alle suchen</translation>
+    </message>
+    <message>
+        <source>Identify all</source>
+        <translation>Alle erkennen</translation>
     </message>
     <message>
         <source>Saving to your files: %1 of %2. You can carry on meanwhile.</source>
@@ -3469,21 +3597,14 @@
         <translation>%1 von %2 angesehen  ·  %3 gefunden</translation>
     </message>
     <message>
-        <source>Keep the best copies</source>
-        <translation>Die besten Kopien behalten</translation>
+        <source>Review and merge…</source>
+        <translation>Prüfen und zusammenführen…</translation>
     </message>
     <message numerus="yes">
-        <source>%n copies</source>
+        <source>%n extra copies: the best of each set stays and gets their likes, plays and playlist places.</source>
         <translation>
-            <numerusform>%n Kopie</numerusform>
-            <numerusform>%n Kopien</numerusform>
-        </translation>
-    </message>
-    <message numerus="yes">
-        <source>Takes the %n extra copies out of the library and keeps the best of each. Right-click a song for more.</source>
-        <translation>
-            <numerusform>Nimmt die %n zusätzliche Kopie aus der Mediathek und behält jeweils die beste. Rechtsklick auf einen Titel für mehr.</numerusform>
-            <numerusform>Nimmt die %n zusätzlichen Kopien aus der Mediathek und behält jeweils die beste. Rechtsklick auf einen Titel für mehr.</numerusform>
+            <numerusform>%n zusätzliche Kopie: Die beste ihrer Gruppe bleibt und bekommt ihre Likes, Wiedergaben und Playlist-Plätze.</numerusform>
+            <numerusform>%n zusätzliche Kopien: Die beste jeder Gruppe bleibt und bekommt ihre Likes, Wiedergaben und Playlist-Plätze.</numerusform>
         </translation>
     </message>
     <message>
@@ -4488,6 +4609,30 @@
     <message>
         <source>not moved: %1 (%2)</source>
         <translation>nicht verschoben: %1 (%2)</translation>
+    </message>
+    <message>
+        <source>Identifying songs by their sound is switched off: Settings → Online &amp; privacy</source>
+        <translation>Das Erkennen von Titeln am Klang ist ausgeschaltet: Einstellungen → Online &amp; Datenschutz</translation>
+    </message>
+    <message>
+        <source>AcoustID needs an application key: Settings → Online &amp; privacy</source>
+        <translation>AcoustID braucht einen Anwendungsschlüssel: Einstellungen → Online &amp; Datenschutz</translation>
+    </message>
+    <message>
+        <source>Offline mode is on, so songs can&apos;t be identified</source>
+        <translation>Der Offline-Modus ist an, deshalb können Titel nicht erkannt werden</translation>
+    </message>
+    <message>
+        <source>AcoustID didn&apos;t accept the application key: Settings → Online &amp; privacy</source>
+        <translation>AcoustID hat den Anwendungsschlüssel nicht akzeptiert: Einstellungen → Online &amp; Datenschutz</translation>
+    </message>
+    <message>
+        <source>AcoustID couldn&apos;t be reached. Check your connection.</source>
+        <translation>AcoustID war nicht erreichbar. Prüf deine Verbindung.</translation>
+    </message>
+    <message>
+        <source>Identified %1 of %2 songs by their sound. Check them, then save.</source>
+        <translation>%1 von %2 Titeln am Klang erkannt. Prüf sie, dann speichern.</translation>
     </message>
     <message>
         <source>Found a likely artist or album for %1 of %2 songs. Check them, then save.</source>
@@ -10167,8 +10312,8 @@
         <translation>Vergessen</translation>
     </message>
     <message>
-        <source>offline mode internet network privacy connection lyrics lrclib genres bios biography wikipedia discogs token musicbrainz last.fm tags similar artists discover</source>
-        <translation>offline-modus internet netzwerk datenschutz verbindung songtext lrclib genres bios biografie wikipedia discogs token musicbrainz last.fm tags ähnliche künstler entdecken offline mode internet network privacy connection lyrics lrclib genres bios biography wikipedia discogs token musicbrainz last.fm tags similar artists discover</translation>
+        <source>offline mode internet network privacy connection lyrics lrclib genres bios biography wikipedia discogs token musicbrainz last.fm tags similar artists discover acoustid fingerprint identify recognise sound</source>
+        <translation>offline-modus internet netzwerk datenschutz verbindung songtext lrclib genres bios biografie wikipedia discogs token musicbrainz last.fm tags ähnliche künstler entdecken acoustid fingerabdruck erkennen klang offline mode internet network privacy connection lyrics lrclib genres bios biography wikipedia discogs token musicbrainz last.fm tags similar artists discover acoustid fingerprint identify recognise sound</translation>
     </message>
     <message>
         <source>Offline mode</source>
@@ -10225,6 +10370,22 @@
     <message>
         <source>. Needs the Last.fm API key, under Scrobbling &amp; sharing</source>
         <translation>. Braucht den Last.fm-API-Schlüssel, unter Scrobbling &amp; Teilen</translation>
+    </message>
+    <message>
+        <source>Identify songs by their sound with AcoustID (sends each song&apos;s fingerprint and length, nothing else)</source>
+        <translation>Titel mit AcoustID am Klang erkennen (sendet Fingerabdruck und Länge jedes Titels, sonst nichts)</translation>
+    </message>
+    <message>
+        <source>Your own AcoustID key (optional)</source>
+        <translation>Dein eigener AcoustID-Schlüssel (optional)</translation>
+    </message>
+    <message>
+        <source>AcoustID application key</source>
+        <translation>AcoustID-Anwendungsschlüssel</translation>
+    </message>
+    <message>
+        <source>Free at acoustid.org/new-application (sign in with MusicBrainz, then copy the application&apos;s API key).</source>
+        <translation>Kostenlos unter acoustid.org/new-application (mit MusicBrainz anmelden, dann den API-Schlüssel der Anwendung kopieren).</translation>
     </message>
     <message>
         <source>Genre and bio sources</source>
@@ -12725,6 +12886,113 @@
     </message>
 </context>
 <context>
+    <name>TidyDialog</name>
+    <message>
+        <source>Tidy up your library</source>
+        <translation>Deine Mediathek aufräumen</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Schließen</translation>
+    </message>
+    <message>
+        <source>Step by step, in this order: each shows what it found before anything is saved, and you can skip any of them.</source>
+        <translation>Schritt für Schritt, in dieser Reihenfolge: Jeder zeigt, was er gefunden hat, bevor etwas gespeichert wird, und du kannst jeden überspringen.</translation>
+    </message>
+    <message>
+        <source>Identify songs by their sound</source>
+        <translation>Titel am Klang erkennen</translation>
+    </message>
+    <message>
+        <source>Off: switch it on in Settings → Online &amp; privacy (each song&apos;s fingerprint and length go to AcoustID).</source>
+        <translation>Aus: Schalte es unter Einstellungen → Online &amp; Datenschutz ein (Fingerabdruck und Länge jedes Titels gehen an AcoustID).</translation>
+    </message>
+    <message>
+        <source>For songs with no title tag, or no artist or album: AcoustID tells what they are from how they sound.</source>
+        <translation>Für Titel ohne Titel-Tag, oder ohne Künstler oder Album: AcoustID erkennt an ihrem Klang, was sie sind.</translation>
+    </message>
+    <message>
+        <source>Fill in missing tags</source>
+        <translation>Fehlende Tags ergänzen</translation>
+    </message>
+    <message>
+        <source>Artists and albums from folder names, then years and track numbers from names and MusicBrainz.</source>
+        <translation>Künstler und Alben aus Ordnernamen, dann Jahre und Titelnummern aus Namen und von MusicBrainz.</translation>
+    </message>
+    <message>
+        <source>Merge duplicates</source>
+        <translation>Duplikate zusammenführen</translation>
+    </message>
+    <message>
+        <source>The best copy of each song stays and gets the others&apos; likes, plays and playlist places.</source>
+        <translation>Die beste Kopie jedes Titels bleibt und bekommt die Likes, Wiedergaben und Playlist-Plätze der anderen.</translation>
+    </message>
+    <message>
+        <source>Review and merge…</source>
+        <translation>Prüfen und zusammenführen…</translation>
+    </message>
+    <message>
+        <source>Organize the files</source>
+        <translation>Die Dateien ordnen</translation>
+    </message>
+    <message>
+        <source>Folders and file names made from the tags, now that they&apos;re right. Every move is shown first, and it can be undone.</source>
+        <translation>Ordner und Dateinamen aus den Tags, jetzt wo sie stimmen. Jede Verschiebung wird vorher gezeigt und lässt sich rückgängig machen.</translation>
+    </message>
+    <message>
+        <source>Organize files…</source>
+        <translation>Dateien ordnen…</translation>
+    </message>
+    <message>
+        <source>Nothing to do here</source>
+        <translation>Hier gibt es nichts zu tun</translation>
+    </message>
+    <message>
+        <source>Set up…</source>
+        <translation>Einrichten…</translation>
+    </message>
+    <message>
+        <source>Stop saving</source>
+        <translation>Speichern beenden</translation>
+    </message>
+    <message>
+        <source>Stop · %1 of %2</source>
+        <translation>Stopp · %1 von %2</translation>
+    </message>
+    <message>
+        <source>Review %1 found…</source>
+        <translation>%1 gefundene prüfen…</translation>
+    </message>
+    <message numerus="yes">
+        <source>Identify %n song(s)</source>
+        <translation>
+            <numerusform>%n Titel erkennen</numerusform>
+            <numerusform>%n Titel erkennen</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Guess artist and album for %n song(s)</source>
+        <translation>
+            <numerusform>Künstler und Album für %n Titel erraten</numerusform>
+            <numerusform>Künstler und Album für %n Titel erraten</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Find years for %n album(s)</source>
+        <translation>
+            <numerusform>Jahre für %n Album finden</numerusform>
+            <numerusform>Jahre für %n Alben finden</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Find track numbers for %n album(s)</source>
+        <translation>
+            <numerusform>Titelnummern für %n Album finden</numerusform>
+            <numerusform>Titelnummern für %n Alben finden</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>TrackMenu</name>
     <message>
         <source>“%1”</source>
@@ -12863,6 +13131,14 @@
     <message>
         <source>Edit tags…</source>
         <translation>Tags bearbeiten…</translation>
+    </message>
+    <message>
+        <source>Identify by sound</source>
+        <translation>Am Klang erkennen</translation>
+    </message>
+    <message>
+        <source>Identifying %1 by its sound…</source>
+        <translation>%1 wird am Klang erkannt…</translation>
     </message>
     <message>
         <source>Remove from the queue</source>
@@ -13429,6 +13705,14 @@
 </context>
 <context>
     <name>WhatsNew</name>
+    <message>
+        <source>Merge duplicates: Library health shows which copy stays, and it gets the others&apos; likes, plays and playlist places.</source>
+        <translation>Duplikate zusammenführen: Der Zustand der Mediathek zeigt, welche Kopie bleibt, und sie bekommt die Likes, Wiedergaben und Playlist-Plätze der anderen.</translation>
+    </message>
+    <message>
+        <source>Tidy up (Library health): fill in missing tags, merge duplicates and organize your files, step by step.</source>
+        <translation>Aufräumen (Zustand der Mediathek): fehlende Tags ergänzen, Duplikate zusammenführen und deine Dateien ordnen, Schritt für Schritt.</translation>
+    </message>
     <message>
         <source>Organize files from their tags: an album&apos;s right-click → Organize files…, with every move shown first and an undo.</source>
         <translation>Dateien nach ihren Tags ordnen: Rechtsklick auf ein Album → Dateien ordnen…, jede Verschiebung wird vorher gezeigt, und es lässt sich rückgängig machen.</translation>
@@ -14130,6 +14414,27 @@
         <translation>
             <numerusform>%n Album</numerusform>
             <numerusform>%n Alben</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Merged %n duplicate(s) into the copies kept</source>
+        <translation>
+            <numerusform>%n Duplikat in die behaltenen Kopien zusammengeführt</numerusform>
+            <numerusform>%n Duplikate in die behaltenen Kopien zusammengeführt</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n file(s) moved to the trash</source>
+        <translation>
+            <numerusform>%n Datei in den Papierkorb verschoben</numerusform>
+            <numerusform>%n Dateien in den Papierkorb verschoben</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n file(s) couldn&apos;t be moved</source>
+        <translation>
+            <numerusform>%n Datei konnte nicht verschoben werden</numerusform>
+            <numerusform>%n Dateien konnten nicht verschoben werden</numerusform>
         </translation>
     </message>
     <message>

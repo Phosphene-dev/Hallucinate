@@ -197,6 +197,10 @@ def app_window(qapp, tmp_path, monkeypatch, request):
         player.pause()
 
     yield window, objects, warnings
+    # what the test left queued (a resize above all: the overlay lays its popups out again) is handled while
+    # every item is still there; handled as the window goes, it could reach one being torn down (a crash)
+    for _ in range(5):
+        qapp.processEvents()
     window.close()
     del stack
     qapp.processEvents()
@@ -1621,8 +1625,11 @@ def test_home_sections_follow_the_chosen_order_and_switches(qapp, app_window):
         shell.resetHomeOrder()
         window.resize(1280, 800)
         assert wait_for(lambda: home_sections(window)[:2] == ["random", "listening"])
+        # beside it, once the resize has been laid out (the width read again each time: on a slow machine the
+        # random album can still be full width the first time it's looked at)
+        assert wait_for(lambda: find_item(window, "homeSection_listening").property("x")
+                        > find_item(window, "homeSection_random").property("width"))
         width = find_item(window, "homeSection_random").property("width")
-        assert wait_for(lambda: find_item(window, "homeSection_listening").property("x") > width)  # beside it
         shell.moveHomeSection("listening", 1)
         assert wait_for(lambda: home_sections(window)[:3] == ["random", "facts", "listening"])
         assert wait_for(lambda: find_item(window, "homeSection_random").property("width") > 2 * width - 50)  # alone: full width
@@ -3505,3 +3512,100 @@ def test_organize_files_previews_moves_and_undoes(qapp, app_window, tmp_path):
     QMetaObject.invokeMethod(dlg, "close")
     editor.changed.disconnect(library.reload)
     assert not [w for w in warnings if "OrganizeDialog" in w or "HealthPage" in w], warnings[:3]
+
+
+def test_merge_duplicates_review(qapp, app_window):
+    """Library health → probable duplicates → Review and merge…: each set's copies with the best one staying; a
+    click on another keeps that one; Merge sends what was chosen."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    library = objects["library"]
+    dlg = window.findChild(QObject, "mergeDuplicatesDialog")
+    if dlg is None:
+        QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "health"))
+        assert wait_for(lambda: window.findChild(QObject, "mergeDuplicatesDialog") is not None)
+        dlg = window.findChild(QObject, "mergeDuplicatesDialog")
+    sent = []
+    copy = {"title": "Song", "artist": "Band", "album": "", "bitrate": 0, "sampleRate": 0, "bits": 0, "liked": False,
+            "plays": 0, "remote": False, "cue": False}
+    first, second = [t["path"] for t in library.allTracks()[:2]]
+    groups = [{"copies": [dict(copy, path=first, format="FLAC", bits=24, sampleRate=96000),
+                          dict(copy, path=second, format="MP3", bitrate=320, liked=True, plays=3)]}]
+    QMetaObject.invokeMethod(dlg, "open")
+    assert wait_for(lambda: dlg.property("opened") and not dlg.property("loading"))  # (the library's own answer)
+    library.duplicateGroupsLoaded.emit(groups)
+    assert wait_for(lambda: dlg.property("merging") == 1 and dlg.property("dropping") == 1)
+    lst = window.findChild(QObject, "duplicatesList")
+    assert lst.property("count") == 1
+    def copies():  # (the dialog is on the overlay, outside the window's content)
+        return set(plain(QMetaObject.invokeMethod(window, "visibleNames", Qt.ConnectionType.DirectConnection,
+                                                  Q_RETURN_ARG("QVariant"), Q_ARG("QVariant", "dupCopy0_"),
+                                                  Q_ARG("QVariant", lst))) or [])
+
+    assert wait_for(lambda: copies() == {"dupCopy0_0_kept", "dupCopy0_1"})
+    # keep the MP3 instead (as a click on it does)
+    QMetaObject.invokeMethod(lst.property("model"), "setProperty", Q_ARG(int, 0), Q_ARG(str, "keep"), Q_ARG("QVariant", 1))
+    assert wait_for(lambda: copies() == {"dupCopy0_0", "dupCopy0_1_kept"})
+    library.albumsRemoved.connect(sent.append)
+    before = library.trackCount
+    merge = window.findChild(QObject, "duplicatesMerge")
+    assert merge is not None and merge.property("enabled")
+    QMetaObject.invokeMethod(merge, "clicked")
+    assert wait_for(lambda: sent and library.trackCount == before - 1)
+    assert sent[0]["kind"] == "merged" and sent[0]["merged"] == 1 and sent[0]["paths"] == [first]
+    paths = {t["path"] for t in library.allTracks()}
+    assert second in paths and first not in paths
+    assert not [w for w in warnings if "DuplicatesDialog" in w]
+
+
+def test_tidy_up_lists_the_steps_with_what_each_found(qapp, app_window):
+    """Library health → Tidy up…: identify, fill in tags, merge duplicates, organize; each offers what it found,
+    and identifying asks to be set up first while it's switched off."""
+    from conftest import wait_for
+
+    window, objects, warnings = app_window
+    library = objects["library"]
+    checked = []
+    library.healthChanged.connect(lambda: checked.append(library.health.get("loading")))
+    QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "health"))
+    assert wait_for(lambda: window.findChild(QObject, "tidyDialog") is not None)
+    # the page checks the library once it's open: what that finds would replace what's set here, so it's let
+    # finish first (on a slow machine it can end well after the page is there)
+    assert wait_for(lambda: False in checked and not library.health["loading"])
+    library._health = {"checks": [
+        {"id": "identify", "title": "", "detail": "", "kind": "track", "count": 3, "items": []},
+        {"id": "year", "title": "", "detail": "", "kind": "album", "count": 2, "items": []},
+        {"id": "duplicates", "title": "", "detail": "", "kind": "track", "count": 4, "extra": 2, "items": []}],
+        "issues": 9, "score": 80}
+    library.healthChanged.emit()
+    dlg = window.findChild(QObject, "tidyDialog")
+    QMetaObject.invokeMethod(dlg, "open")
+    assert wait_for(lambda: dlg.property("opened"))
+    try:
+        def names(prefix):
+            return set(plain(QMetaObject.invokeMethod(window, "visibleNames", Qt.ConnectionType.DirectConnection,
+                                                      Q_RETURN_ARG("QVariant"), Q_ARG("QVariant", prefix),
+                                                      Q_ARG("QVariant", dlg.property("contentItem")))) or [])
+
+        def text(name):
+            item = QMetaObject.invokeMethod(window, "findItem", Qt.ConnectionType.DirectConnection, Q_RETURN_ARG("QVariant"),
+                                            Q_ARG("QVariant", name), Q_ARG("QVariant", dlg.property("contentItem")))
+            return item.property("text")
+
+        # identifying waits for Hallucinate's own AcoustID key: without one, its step isn't there
+        assert wait_for(lambda: names("tidy") == {"tidy_year", "tidyStep2", "tidyStep3"})
+        assert text("tidy_year") == "Find years for 2 albums" and text("tidyStep2") == "Review and merge…  (2)"
+        from hallucinate.core import acoustid
+        try:
+            acoustid.APP_KEY = "built-in"
+            objects["sources"].changed.emit()
+            assert wait_for(lambda: names("tidy") == {"tidy_identify", "tidy_year", "tidyStep3", "tidyStep4"})
+            assert text("tidy_identify") == "Set up…"  # (off until switched on)
+        finally:
+            acoustid.APP_KEY = ""
+            objects["sources"].changed.emit()
+    finally:
+        QMetaObject.invokeMethod(dlg, "close")  # (a dialog left open as the window goes can take the process down)
+        qapp.processEvents()
+    assert not [w for w in warnings if "TidyDialog" in w]

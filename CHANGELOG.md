@@ -3,6 +3,21 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.6.0] - 2026-11-18
+
+### Added
+- Merge duplicates: Library health's probable duplicates open a review. Each set shows its copies with the best
+  one picked to stay (lossless first, then the higher bitrate); click another to keep that instead, or untick a
+  set that's on purpose. The copy kept gets the others' plays (added up), likes, ratings, listens and playlist
+  places, then they leave the library or go to the trash. A file is never trashed when it's the last copy (one
+  seen twice through a link, or when the copy kept isn't a file here), and a CUE sheet's song stays.
+- Tidy up (Library health): the clean-up steps in the order that works best, each with what it found: fill in
+  missing tags, merge duplicates, then organize the files.
+
+### Fixed
+- "Keep the best copies" left the extra copies' likes, plays and playlist places behind, and a CUE sheet's song
+  among them took its whole album out of the library.
+
 ## [2.5.0] - 2026-11-15
 
 ### Added

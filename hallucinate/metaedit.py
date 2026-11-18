@@ -124,6 +124,7 @@ class MetadataEditor(QObject):
     _organize_progress = Signal(object)
     fixesFinished = Signal(str)  # a "find all" for years, track numbers or missing tags is done: the summary
     _fixes_progress = Signal(object)
+    _fingerprint_ask = Signal(str, object)  # (path, queue): fingerprint a song in the decoding helper (this thread)
     _done = Signal(object)
 
     def __init__(self, db_path, art_dir, parent=None):
@@ -161,6 +162,8 @@ class MetadataEditor(QObject):
         self._organize = {"busy": False, "done": 0, "total": 0, "plan": {}, "previewing": False}
         self._organize_moves = []
         self._organize_stop = threading.Event()
+        self._fingerprint_ask.connect(self._fingerprint)
+        self._fingerprinter = None  # (a decoding helper, started the first time songs are identified)
         self._organize_progress.connect(self._apply_organize_progress)
         settings = QSettings("hallucinate", "hallucinate")
         # Settings → Library: a cover you set is also saved as cover.jpg in the album's folder (on unless switched
@@ -818,7 +821,7 @@ class MetadataEditor(QObject):
         self.organizeChanged.emit()
 
     # --- years, track numbers and missing artist/album, for Library health -----------------------------
-    FIX_KINDS = ("year", "numbers", "untagged")
+    FIX_KINDS = ("year", "numbers", "untagged", "identify")
 
     @Property(str, notify=fixesChanged)
     def fixKind(self):
@@ -885,8 +888,13 @@ class MetadataEditor(QObject):
                        "proposals": self._fix_kept.pop(kind, [])}
         self.fixesChanged.emit()
 
+    @Slot("QVariantList")
+    def identifySongs(self, paths):
+        """Identify these songs by their sound (a song's menu), as "Find all" does for Library health's."""
+        self.findFixes("identify", [str(p) for p in paths or [] if p])
+
     @Slot(str)
-    def findFixes(self, kind):
+    def findFixes(self, kind, paths=None):
         """Suggest a year for every album without one, track numbers for every album without them, or an artist
         and album for every song without them, from folder and file names and (unless offline) MusicBrainz, about
         one album a second. Nothing is written until saveFixes() is called with the ones you keep."""
@@ -898,8 +906,11 @@ class MetadataEditor(QObject):
         self._fix_kept.pop(kind, None)
         self._fixes = {"kind": kind, "busy": True, "done": 0, "total": 0, "found": 0, "current": "", "proposals": []}
         self.fixesChanged.emit()
-        self._fixes_thread = threading.Thread(target=self._fetch_fixes, args=(kind, not net.is_offline()),
-                                              name="tag-fixes", daemon=True)
+        if kind == "identify":
+            target, args = self._identify, (paths, self._acoustid_key())
+        else:
+            target, args = self._fetch_fixes, (kind, not net.is_offline())
+        self._fixes_thread = threading.Thread(target=target, args=args, name="tag-fixes", daemon=True)
         self._fixes_thread.start()
 
     @Slot()
@@ -985,6 +996,98 @@ class MetadataEditor(QObject):
             db.close()
             self._fixes_progress.emit({"busy": False, "current": "", "proposals": proposals, "finished": True})
 
+    def _acoustid_key(self):
+        from .core import acoustid
+        prefs = QSettings("hallucinate", "hallucinate")
+        if not acoustid.APP_KEY or not prefs.value("sources/acoustid", False, bool):
+            return None  # (switched off: Settings → Online & privacy)
+        return acoustid.key_in_use(str(prefs.value("sources/acoustidKey", "") or ""))
+
+    @Slot(str, object)
+    def _fingerprint(self, path, answer):
+        if self._fingerprinter is None:
+            from .analysis import Analyser
+            self._fingerprinter = Analyser(self)
+        self._fingerprinter.submit(path, "fingerprint", answer.put)
+
+    def _identify(self, paths, key, lookup=None):
+        """What AcoustID says each song is (`paths`, or every song Library health would identify), from its
+        sound: a proposal per song it knows, to review and save like the other fixes."""
+        import queue
+
+        from .core import acoustid
+
+        lookup = lookup or acoustid.lookup
+        db = Database(self._db_path)
+        proposals, problem = [], ""
+        try:
+            if key is None:
+                problem = "off"
+                return
+            if not key:
+                problem = "key"
+                return
+            if net.is_offline():
+                problem = "offline"
+                return
+            if paths:
+                rows = [r for r in (db.track_by_path(p) for p in paths) if r]
+            else:
+                rows = health.unidentified(db)
+            rows = [r for r in rows if not remote.is_remote(r["path"]) and not r.get("file")
+                    and os.path.isfile(r["path"])]
+            self._fixes_progress.emit({"total": len(rows)})
+            failures = 0
+            for done, row in enumerate(rows, start=1):
+                if self._fixes_stop.is_set():
+                    break
+                path = row["path"]
+                self._fixes_progress.emit({"current": os.path.basename(path)})
+                answer = queue.Queue()
+                self._fingerprint_ask.emit(path, answer)
+                got, waited = None, 0.0
+                while not self._fixes_stop.is_set() and waited < 180:  # (Stop doesn't wait for the song)
+                    try:
+                        got = answer.get(timeout=0.5)
+                        break
+                    except queue.Empty:
+                        waited += 0.5
+                if got and got.get("fingerprint") and not self._fixes_stop.is_set():
+                    try:
+                        found = acoustid.candidates(lookup(key, got["fingerprint"], row.get("duration") or 0),
+                                                    "" if row.get("album") == health.UNKNOWN_ALBUM else row.get("album") or "",
+                                                    float(row.get("duration") or 0))
+                        failures = 0
+                    except acoustid.AcoustIDError as exc:
+                        logger.info("AcoustID refused: %s", exc)
+                        problem = "refused" if exc.code in (3, 4, 5) else "error"  # (3-5: the key)
+                        if problem == "refused":
+                            break
+                        found = []
+                    except (OSError, ValueError) as exc:
+                        logger.info("AcoustID lookup failed: %s", exc)
+                        failures += 1
+                        found = []
+                        if failures >= 5:  # (the service can't be reached: no use going on)
+                            problem = "network"
+                            break
+                    if found:
+                        best = found[0]
+                        proposals.append({
+                            "kind": "identify", "key": path, "paths": [path], "songs": 1, "source": "AcoustID",
+                            "title": best["title"], "artist": best["artist"], "album": best["album"],
+                            "album_artist": best["album_artist"], "year": best["year"], "track_no": best["track_no"],
+                            "disc_no": best["disc_no"] if best["discs"] > 1 else 0, "score": best["score"],
+                            "note": os.path.basename(path),
+                            "was": " — ".join(x for x in (row.get("title"), row.get("artist")) if x)})
+                self._fixes_progress.emit({"done": done, "found": len(proposals)})
+        except Exception:  # noqa: BLE001
+            logger.exception("Identifying songs failed")
+        finally:
+            db.close()
+            self._fixes_progress.emit({"busy": False, "current": "", "proposals": proposals, "finished": True,
+                                       "problem": problem})
+
     @Slot(object)
     def _apply_fixes_progress(self, update):
         if "saved" in update:  # writing the kept ones: one more done
@@ -1002,7 +1105,17 @@ class MetadataEditor(QObject):
             return
         f = self._fixes
         stopped = f["done"] < f["total"]
-        if f["kind"] == "untagged":
+        problem = f.pop("problem", "")
+        if f["kind"] == "identify":
+            text = {
+                "off": translate("MetaEdit", "Identifying songs by their sound is switched off: Settings → Online & privacy"),
+                "key": translate("MetaEdit", "AcoustID needs an application key: Settings → Online & privacy"),
+                "offline": translate("MetaEdit", "Offline mode is on, so songs can't be identified"),
+                "refused": translate("MetaEdit", "AcoustID didn't accept the application key: Settings → Online & privacy"),
+                "network": translate("MetaEdit", "AcoustID couldn't be reached. Check your connection."),
+            }.get(problem) or fill(translate("MetaEdit", "Identified %1 of %2 songs by their sound. Check them, then save."),
+                                   f["found"], f["done"])
+        elif f["kind"] == "untagged":
             text = fill(translate("MetaEdit", "Found a likely artist or album for %1 of %2 songs. Check them, then save."),
                         f["found"], f["total"])
         elif f["kind"] == "year":
@@ -1055,6 +1168,20 @@ class MetadataEditor(QObject):
                                         fields["disc_no"] = str(int(t["disc_no"]))
                                     pairs.append((t["path"], fields))
                             write(db, total, pairs)  # (the album's songs read back together)
+                    elif item["kind"] == "identify":
+                        pairs = []
+                        for path in item.get("paths") or []:
+                            if not db.track_by_path(path):
+                                continue  # (gone since it was looked up)
+                            fields = {k: str(item.get(k) or "").strip() for k in ("title", "artist", "album", "album_artist")}
+                            fields = {k: v for k, v in fields.items() if v}
+                            for k in ("year", "track_no", "disc_no"):
+                                n = int(item.get(k) or 0)
+                                if n > 0:
+                                    fields[k] = str(n)
+                            if fields.get("title"):
+                                pairs.append((path, fields))
+                        write(db, total, pairs)
                     else:
                         artist = str(item.get("artist") or "").strip() if item.get("fill_artist") else ""
                         album = str(item.get("album") or "").strip() if item.get("fill_album") else ""
@@ -1117,6 +1244,8 @@ class MetadataEditor(QObject):
         self._save_stop.set()
         self._fixes_stop.set()
         self._fix_save_stop.set()
+        if self._fingerprinter is not None:
+            self._fingerprinter.shutdown()
         if self._fixes_thread is not None:
             self._fixes_thread.join(timeout=2)
         if self._covers_thread is not None:

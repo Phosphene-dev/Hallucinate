@@ -74,6 +74,15 @@
 - [ ] Handoff with a typed address (on a network that blocks broadcasts), a wrong code (says so), Forget in
       Settings → Remote & web (needs pairing again), and with the firewall on (firewalld: the remote's port).
 
+## Release testing for 2.6.0
+
+- [ ] Library health → Probable duplicates → Review and merge…: the best copy is marked; click another; untick a
+      set. Merge with "Leave the library": the copy kept has the others' likes, plays and playlist places; the
+      others are in Settings → Library's removed songs. With "Go to the trash": the files are in the system trash.
+      A copy that's a CUE sheet's song stays in the library.
+- [ ] Library health → Tidy up…: three steps (fill in tags, merge duplicates, organize) with what each found;
+      each button does its step; a step with nothing left shows a tick.
+
 ## Release testing for 2.5.0
 
 - [ ] An album's right-click → Organize files…: the moves are listed before anything moves (from → to), each inside

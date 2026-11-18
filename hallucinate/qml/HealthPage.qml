@@ -45,6 +45,7 @@ Item {
     Connections {
         target: metaEditor
         function onFixesFinished(text) {
+            if (page.StackView.status !== StackView.Active) return  // (shown elsewhere: main.qml has it)
             Nav.notify(text)
             if (metaEditor.fixProposals.length) fixReview.open()
         }
@@ -56,6 +57,9 @@ Item {
                                                     : qsTr("Reads years from folder names, then asks MusicBrainz, about an album a second. You check them before anything is saved.")
         if (id === "numbers") return shell.offlineMode ? qsTr("Reads numbers from file names (offline mode is on, so MusicBrainz isn't asked). You check them before anything is saved.")
                                                        : qsTr("Reads numbers from file names, then matches titles on MusicBrainz. You check them before anything is saved.")
+        if (id === "identify") return !sources.acoustid ? qsTr("Switch it on in Settings → Online & privacy: each song's fingerprint and length go to AcoustID.")
+                                      : shell.offlineMode ? qsTr("Offline mode is on, so songs can't be identified.")
+                                      : qsTr("Listens to each song on this computer, then asks AcoustID what it is (only its fingerprint and length are sent). You check them before anything is saved.")
         return qsTr("Guesses from folders (Artist/Album/song) and “Artist - Title” file names. You check them before anything is saved.")
     }
     Connections {
@@ -88,13 +92,12 @@ Item {
             onTriggered: Nav.removeFolder(folderMenu.path)
         }
     }
-    ConfirmDialog {
-        id: extraDlg
-        objectName: "removeExtraCopiesDialog"
-        title: qsTr("Keep only the best copies?")
-        confirmText: qsTr("Remove %1").arg(what)
-        body: qsTr("Of each set of probable duplicates, the best copy stays: lossless first, then the higher bitrate. The other %1 are taken out of the library; the files stay on your disk, and Settings → Library can bring them back. Check the list first if some are on purpose, like a song on both an album and a compilation: right-click one to keep or remove it on its own.").arg(what)
-        onAccepted: library.removeExtraCopies()
+    DuplicatesDialog { id: duplicatesDlg }
+    TidyDialog {
+        id: tidyDlg
+        checks: page.checks
+        onReviewFixes: function (kind) { metaEditor.reviewFixes(kind); fixReview.open() }
+        onMergeDuplicates: duplicatesDlg.show()
     }
 
     Flickable {
@@ -166,6 +169,12 @@ Item {
                     Flow {
                         width: parent.width
                         spacing: 10
+                        PillButton {
+                            objectName: "tidyUpButton"
+                            primary: true
+                            text: qsTr("Tidy up…")
+                            onClicked: tidyDlg.open()
+                        }
                         PillButton {
                             text: page.report.loading ? qsTr("Checking…") : qsTr("Check again")
                             enabled: !page.report.loading
@@ -357,7 +366,7 @@ Item {
                             // (each check keeps what it found until it's reviewed: finding another check's doesn't lose them)
                             readonly property int found: metaEditor.fixCounts[card.modelData.id] || 0
                             readonly property bool waiting: !(mine && metaEditor.fixesBusy) && found > 0
-                            visible: (card.modelData.id === "year" || card.modelData.id === "numbers" || card.modelData.id === "untagged")
+                            visible: ["year", "numbers", "untagged", "identify"].indexOf(card.modelData.id) >= 0
                                      && (card.modelData.count > 0 || working || waiting)
                             spacing: 12
                             leftPadding: 24
@@ -365,10 +374,14 @@ Item {
                                 objectName: "findAll_" + card.modelData.id
                                 primary: !fixRow.working && !fixRow.waiting
                                 height: 32
-                                text: fixRow.working ? qsTr("Stop") : card.modelData.id === "untagged" ? qsTr("Guess all") : qsTr("Find all")
+                                readonly property bool setUp: card.modelData.id !== "identify" || sources.acoustid
+                                text: fixRow.working ? qsTr("Stop") : !setUp ? qsTr("Set up…")
+                                      : card.modelData.id === "untagged" ? qsTr("Guess all")
+                                      : card.modelData.id === "identify" ? qsTr("Identify all") : qsTr("Find all")
                                 // (one at a time: another check's lookup or save holds this one back)
                                 enabled: fixRow.working || !(metaEditor.fixesBusy || metaEditor.fixesSaving)
-                                onClicked: metaEditor.fixesSaving ? metaEditor.stopSavingFixes()
+                                onClicked: !setUp ? Nav.openSettingsAt("sharing")
+                                           : metaEditor.fixesSaving ? metaEditor.stopSavingFixes()
                                            : metaEditor.fixesBusy ? metaEditor.cancelFixes() : metaEditor.findFixes(card.modelData.id)
                             }
                             PillButton {
@@ -403,19 +416,15 @@ Item {
                                 objectName: "removeExtraCopies"
                                 primary: true
                                 height: 32
-                                text: qsTr("Keep the best copies")
-                                onClicked: {
-                                    var n = card.modelData.extra
-                                    extraDlg.what = Theme.counted(qsTr("%n copies", "", n), n)
-                                    extraDlg.open()
-                                }
+                                text: qsTr("Review and merge…")
+                                onClicked: duplicatesDlg.show()
                             }
                             Text {
                                 textFormat: Text.PlainText
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: Math.max(0, Math.min(implicitWidth, card.width - parent.x - x - 24))  // what the buttons leave (longer in some languages)
                                 elide: Text.ElideRight
-                                text: Theme.counted(qsTr("Takes the %n extra copies out of the library and keeps the best of each. Right-click a song for more.", "", card.modelData.extra), card.modelData.extra)
+                                text: Theme.counted(qsTr("%n extra copies: the best of each set stays and gets their likes, plays and playlist places.", "", card.modelData.extra), card.modelData.extra)
                                 color: Theme.textDim
                                 font.family: Theme.fontFamily
                                 font.pixelSize: Theme.fontSize(12)

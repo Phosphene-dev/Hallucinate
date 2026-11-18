@@ -777,6 +777,13 @@ ApplicationWindow {
         function onAlbumsRemoved(r) {
             var n = r.albums > 0 ? Theme.counted(qsTr("%n album(s)", "", r.albums), r.albums)
                                  : Theme.counted(qsTr("%n song(s)", "", r.songs), r.songs)
+            if (r.kind === "merged") {
+                var m = Theme.counted(qsTr("Merged %n duplicate(s) into the copies kept", "", r.merged), r.merged)
+                if (r.trashed) m += " · " + Theme.counted(qsTr("%n file(s) moved to the trash", "", r.trashed), r.trashed)
+                if (r.failed) m += " · " + Theme.counted(qsTr("%n file(s) couldn't be moved", "", r.failed), r.failed)
+                toast.show(m)
+                return
+            }
             if (r.kind === "hidden") toast.show(qsTr("%1 removed from the library").arg(n), 0, qsTr("Undo"),
                                                 function () { library.unhidePaths(r.paths || []) })
             else if (r.failed && !r.songs) toast.show(qsTr("Couldn't move the files to the trash"))
@@ -789,6 +796,17 @@ ApplicationWindow {
         }
     }
 
+    // Fixes found while Library health isn't showing (a song's Identify by sound): the summary, then the review
+    FixReview { id: globalFixReview; objectName: "globalFixReview" }
+    Connections {
+        target: metaEditor
+        function onFixesFinished(text) {
+            if (stack.currentItem && stack.currentItem.objectName === "health") return  // (it shows its own)
+            if (metaEditor.fixKind !== "identify") return
+            toast.show(text)
+            if (metaEditor.fixProposals.length) globalFixReview.open()
+        }
+    }
     Connections {
         target: userLib
         function onLovesMatched(n) { toast.show(n ? Theme.counted(qsTr("Liked %n song(s) you'd loved on Last.fm", "", n), n) : qsTr("No new songs to like from your Last.fm loves")) }
