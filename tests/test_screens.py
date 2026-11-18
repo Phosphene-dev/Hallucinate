@@ -197,6 +197,10 @@ def app_window(qapp, tmp_path, monkeypatch, request):
         player.pause()
 
     yield window, objects, warnings
+    # what the test left queued (a resize above all: the overlay lays its popups out again) is handled while
+    # every item is still there; handled as the window goes, it could reach one being torn down (a crash)
+    for _ in range(5):
+        qapp.processEvents()
     window.close()
     del stack
     qapp.processEvents()
@@ -3562,9 +3566,13 @@ def test_tidy_up_lists_the_steps_with_what_each_found(qapp, app_window):
 
     window, objects, warnings = app_window
     library = objects["library"]
+    checked = []
+    library.healthChanged.connect(lambda: checked.append(library.health.get("loading")))
     QMetaObject.invokeMethod(window, "go", Q_ARG("QVariant", "health"))
     assert wait_for(lambda: window.findChild(QObject, "tidyDialog") is not None)
-    assert wait_for(lambda: library.health.get("checks") is not None and not library.health["loading"])
+    # the page checks the library once it's open: what that finds would replace what's set here, so it's let
+    # finish first (on a slow machine it can end well after the page is there)
+    assert wait_for(lambda: False in checked and not library.health["loading"])
     library._health = {"checks": [
         {"id": "identify", "title": "", "detail": "", "kind": "track", "count": 3, "items": []},
         {"id": "year", "title": "", "detail": "", "kind": "album", "count": 2, "items": []},
@@ -3574,28 +3582,30 @@ def test_tidy_up_lists_the_steps_with_what_each_found(qapp, app_window):
     dlg = window.findChild(QObject, "tidyDialog")
     QMetaObject.invokeMethod(dlg, "open")
     assert wait_for(lambda: dlg.property("opened"))
-
-    def names(prefix):
-        return set(plain(QMetaObject.invokeMethod(window, "visibleNames", Qt.ConnectionType.DirectConnection,
-                                                  Q_RETURN_ARG("QVariant"), Q_ARG("QVariant", prefix),
-                                                  Q_ARG("QVariant", dlg.property("contentItem")))) or [])
-
-    def text(name):
-        item = QMetaObject.invokeMethod(window, "findItem", Qt.ConnectionType.DirectConnection, Q_RETURN_ARG("QVariant"),
-                                        Q_ARG("QVariant", name), Q_ARG("QVariant", dlg.property("contentItem")))
-        return item.property("text")
-
-    # identifying waits for Hallucinate's own AcoustID key: without one, its step isn't there
-    assert wait_for(lambda: names("tidy") == {"tidy_year", "tidyStep2", "tidyStep3"})
-    assert text("tidy_year") == "Find years for 2 albums" and text("tidyStep2") == "Review and merge…  (2)"
-    from hallucinate.core import acoustid
     try:
-        acoustid.APP_KEY = "built-in"
-        objects["sources"].changed.emit()
-        assert wait_for(lambda: names("tidy") == {"tidy_identify", "tidy_year", "tidyStep3", "tidyStep4"})
-        assert text("tidy_identify") == "Set up…"  # (off until switched on)
+        def names(prefix):
+            return set(plain(QMetaObject.invokeMethod(window, "visibleNames", Qt.ConnectionType.DirectConnection,
+                                                      Q_RETURN_ARG("QVariant"), Q_ARG("QVariant", prefix),
+                                                      Q_ARG("QVariant", dlg.property("contentItem")))) or [])
+
+        def text(name):
+            item = QMetaObject.invokeMethod(window, "findItem", Qt.ConnectionType.DirectConnection, Q_RETURN_ARG("QVariant"),
+                                            Q_ARG("QVariant", name), Q_ARG("QVariant", dlg.property("contentItem")))
+            return item.property("text")
+
+        # identifying waits for Hallucinate's own AcoustID key: without one, its step isn't there
+        assert wait_for(lambda: names("tidy") == {"tidy_year", "tidyStep2", "tidyStep3"})
+        assert text("tidy_year") == "Find years for 2 albums" and text("tidyStep2") == "Review and merge…  (2)"
+        from hallucinate.core import acoustid
+        try:
+            acoustid.APP_KEY = "built-in"
+            objects["sources"].changed.emit()
+            assert wait_for(lambda: names("tidy") == {"tidy_identify", "tidy_year", "tidyStep3", "tidyStep4"})
+            assert text("tidy_identify") == "Set up…"  # (off until switched on)
+        finally:
+            acoustid.APP_KEY = ""
+            objects["sources"].changed.emit()
     finally:
-        acoustid.APP_KEY = ""
-        objects["sources"].changed.emit()
-    QMetaObject.invokeMethod(dlg, "close")
+        QMetaObject.invokeMethod(dlg, "close")  # (a dialog left open as the window goes can take the process down)
+        qapp.processEvents()
     assert not [w for w in warnings if "TidyDialog" in w]
