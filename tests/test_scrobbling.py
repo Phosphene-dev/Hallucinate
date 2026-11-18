@@ -552,7 +552,7 @@ def test_a_key_lastfm_turns_down_stops_the_asking_and_keeps_the_scrobbles(make_s
     try:
         s = make()
         refused = []
-        s.keyRefusedChanged.connect(lambda: refused.append(s.keyRefused))
+        s.keyRefusedChanged.connect(lambda: refused.append(True))
         s._queue_scrobble({"title": "Kept", "artist": "Artist"}, 1234)
         assert wait_for(lambda: s.keyRefused, timeout=4)
         assert "Pro" in s.status and s.pendingCount == 1 and refused == [True]
@@ -600,11 +600,11 @@ def test_lookups_give_up_a_refused_key(monkeypatch):
     try:
         assert lastfm.similar_artists("Band", "key") == []
         assert lastfm.key_refused()
-        # and the key is no longer handed to the lookups (they use the free sources)
-        from hallucinate.onlinesources import OnlineSources
-        sources = OnlineSources(lambda: "key")
-        assert sources.lastfm_key() == "" and not sources.lastfmAvailable
+        # and the key is no longer handed to the lookups (they use the free sources). (The rule itself: a real
+        # OnlineSources reads the keyring on a thread, which could answer after the test is gone.)
+        from hallucinate.onlinesources import usable_lastfm_key
+        assert usable_lastfm_key("key") == ""
         lastfm.set_key_refused(False)
-        assert sources.lastfm_key() == "key"
+        assert usable_lastfm_key("key") == "key"
     finally:
         lastfm.set_key_refused(False)

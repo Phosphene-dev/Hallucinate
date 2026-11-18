@@ -17,6 +17,12 @@ TICKETMASTER_SERVICE = "Hallucinate Ticketmaster"
 BIO_SOURCES = ("Wikipedia", "Last.fm", "Discogs")
 
 
+def usable_lastfm_key(key):
+    """The Last.fm key the lookups may use: none while Last.fm turns it down (it needs Pro from 1 December 2026),
+    so they go to the free sources."""
+    return "" if lastfm.key_refused() else (key or "")
+
+
 class OnlineSources(QObject):
     changed = Signal()
     _keyring_late = Signal(object)
@@ -28,9 +34,7 @@ class OnlineSources(QObject):
     def __init__(self, lastfm_key=None, parent=None):
         super().__init__(parent)
         raw = lastfm_key or (lambda: "")
-        # a key Last.fm has turned down (it needs Pro from 1 December 2026) is as good as none: the lookups go
-        # to the free sources
-        self._lastfm_key = lambda: "" if lastfm.key_refused() else raw()
+        self._lastfm_key = lambda: usable_lastfm_key(raw())
         self._settings = QSettings("hallucinate", "hallucinate")
         self._token, self._user = "", ""
         self._status, self._busy = "", False
