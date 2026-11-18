@@ -1621,8 +1621,11 @@ def test_home_sections_follow_the_chosen_order_and_switches(qapp, app_window):
         shell.resetHomeOrder()
         window.resize(1280, 800)
         assert wait_for(lambda: home_sections(window)[:2] == ["random", "listening"])
+        # beside it, once the resize has been laid out (the width read again each time: on a slow machine the
+        # random album can still be full width the first time it's looked at)
+        assert wait_for(lambda: find_item(window, "homeSection_listening").property("x")
+                        > find_item(window, "homeSection_random").property("width"))
         width = find_item(window, "homeSection_random").property("width")
-        assert wait_for(lambda: find_item(window, "homeSection_listening").property("x") > width)  # beside it
         shell.moveHomeSection("listening", 1)
         assert wait_for(lambda: home_sections(window)[:3] == ["random", "facts", "listening"])
         assert wait_for(lambda: find_item(window, "homeSection_random").property("width") > 2 * width - 50)  # alone: full width
